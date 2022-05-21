@@ -1,0 +1,56 @@
+// Copyright (C) 2022 Jérôme "Lynix" Leclercq (lynix680@gmail.com)
+// This file is part of the "Nazara Shading Language" project
+// For conditions of distribution and use, see copyright notice in Config.hpp
+
+#pragma once
+
+#ifndef NZSL_AST_MODULE_HPP
+#define NZSL_AST_MODULE_HPP
+
+#include <NZSL/Config.hpp>
+#include <NZSL/Ast/Nodes.hpp>
+#include <memory>
+
+namespace nzsl::ShaderAst
+{
+	class Module;
+
+	using ModulePtr = std::shared_ptr<Module>;
+
+	class Module
+	{
+		public:
+			struct ImportedModule;
+			struct Metadata;
+
+			inline Module(std::uint32_t shaderLangVersion, std::string moduleName = std::string());
+			inline Module(std::shared_ptr<const Metadata> metadata, std::vector<ImportedModule> importedModules = {});
+			inline Module(std::shared_ptr<const Metadata> metadata, MultiStatementPtr rootNode, std::vector<ImportedModule> importedModules = {});
+			Module(const Module&) = delete;
+			Module(Module&&) noexcept = default;
+			~Module() = default;
+
+			Module& operator=(const Module&) = delete;
+			Module& operator=(Module&&) noexcept = default;
+
+			struct ImportedModule
+			{
+				std::string identifier;
+				ModulePtr module;
+			};
+
+			struct Metadata
+			{
+				std::string moduleName;
+				std::uint32_t shaderLangVersion;
+			};
+
+			std::shared_ptr<const Metadata> metadata;
+			std::vector<ImportedModule> importedModules;
+			MultiStatementPtr rootNode;
+	};
+}
+
+#include <NZSL/Ast/Module.inl>
+
+#endif // NZSL_AST_MODULE_HPP

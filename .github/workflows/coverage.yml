@@ -1,0 +1,113 @@
+name: Coverage
+
+on:
+  pull_request:
+  push:
+    paths-ignore:
+      - '.github/workflows/linux-build.yml'
+      - '.github/workflows/macos-build.yml'
+      - '.github/workflows/msys2-build.yml'
+      - '.github/workflows/windows-build.yml'
+      - '.gitignore'
+      - 'LICENSE'
+      - 'CHANGELOG.md'
+      - 'README.md'
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        config:
+        - { name: "Windows x64", os: windows-latest, arch: x64 }
+        - { name: "Ubuntu x86_64", os: ubuntu-latest, arch: x86_64 }
+
+    name: ${{ matrix.config.name }}
+    runs-on: ${{ matrix.config.os }}
+    if: "!contains(github.event.head_commit.message, 'coverage skip')"
+
+    steps:
+    - name: Get current date as package key
+      id: pkg_key
+      run: echo "::set-output name=key::$(date +'%W')"
+
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    # Install system dependencies
+    - name: Install system dependencies (Linux)
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get -y install gcovr
+
+    - name: Install OpenCppCoverage (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        choco install -y OpenCppCoverage
+
+    # Force xmake to a specific folder (for cache)
+    - name: Set xmake env (Linux)
+      if: runner.os == 'Linux'
+      run: echo "XMAKE_GLOBALDIR=${{ runner.workspace }}/xmake-global" >> $GITHUB_ENV
+
+    - name: Set xmake env (Windows)
+      if: runner.os == 'Windows'
+      run: echo "XMAKE_GLOBALDIR=${{ runner.workspace }}/xmake-global" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+    # Install xmake
+    - name: Setup xmake
+      uses: xmake-io/github-action-setup-xmake@v1
+      with:
+        xmake-version: branch@dev
+
+    # Update xmake repository (in order to have the file that will be cached)
+    - name: Update xmake repository
+      run: xmake repo --update
+
+    # Fetch xmake dephash
+    - name: Retrieve dependencies hash
+      id: dep_hash
+      run: echo "::set-output name=hash::$(xmake l utils.ci.packageskey)"
+
+    # Cache xmake dependencies
+    - name: Retrieve cached xmake dependencies (Linux)
+      if: runner.os == 'Linux'
+      uses: actions/cache@v3
+      with:
+        path: ${{ env.XMAKE_GLOBALDIR }}/.xmake/packages
+        key: Linux-${{ matrix.config.arch }}-coverage-${{ steps.dep_hash.outputs.hash }}-W${{ steps.pkg_key.outputs.key }}
+
+    # Cache xmake dependencies
+    - name: Retrieve cached xmake dependencies (Windows)
+      if: runner.os == 'Windows'
+      uses: actions/cache@v3
+      with:
+        path: ${{ env.XMAKE_GLOBALDIR }}\.xmake\packages
+        key: MSVC-${{ matrix.config.arch }}-coverage-${{ steps.dep_hash.outputs.hash }}-W${{ steps.pkg_key.outputs.key }}
+
+    # Setup compilation mode and install project dependencies
+    - name: Configure xmake and install dependencies
+      run: xmake config --tests=y --unitybuild=y --arch=${{ matrix.config.arch }} --mode=coverage --yes
+
+    # Build library and tests
+    - name: Build library
+      run: xmake
+
+    # Run unit tests to generate coverage reports
+    - name: Run unit tests and generate coverage output (Linux)
+      if: runner.os == 'Linux'
+      run: |
+        xmake run UnitTests
+        gcovr -x coverage.out -s -f 'include/NZSL/.*' -f 'src/NZSL/.*' build/.objs/
+
+    - name: Run unit tests and generate coverage output (Windows)
+      if: runner.os == 'Windows'
+      shell: cmd
+      run: |
+        "C:\Program Files\OpenCppCoverage\OpenCppCoverage.exe" --export_type cobertura:coverage.out --sources "ShaderLang\include\NZSL\*" --sources "ShaderLang\src\NZSL\*" --modules "ShaderLang\bin\*" --cover_children -- xmake run UnitTests
+
+    - name: Upload Coverage Report to Codecov
+      uses: codecov/codecov-action@v2
+      with:
+        files: ./coverage.out
+        fail_ci_if_error: true

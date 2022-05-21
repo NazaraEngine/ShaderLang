@@ -1,0 +1,109 @@
+#include <Tests/ShaderUtils.hpp>
+#include <NZSL/ShaderBuilder.hpp>
+#include <NZSL/ShaderLangParser.hpp>
+#include <catch2/catch.hpp>
+#include <cctype>
+
+TEST_CASE("structure member access", "[Shader]")
+{
+	SECTION("Nested member loading")
+	{
+		std::string_view nzslSource = R"(
+[nzsl_version("1.0")]
+module;
+
+struct innerStruct
+{
+	field: vec3[f32]
+}
+
+struct outerStruct
+{
+	s: innerStruct
+}
+
+external
+{
+	[set(0), binding(0)] ubo: uniform[outerStruct]
+}
+)";
+
+		nzsl::ShaderAst::ModulePtr shaderModule = nzsl::ShaderLang::Parse(nzslSource);
+		shaderModule = SanitizeModule(*shaderModule);
+
+		SECTION("Nested AccessMember")
+		{
+			auto ubo = nzsl::ShaderBuilder::Identifier("ubo");
+			auto firstAccess = nzsl::ShaderBuilder::AccessMember(std::move(ubo), { "s" });
+			auto secondAccess = nzsl::ShaderBuilder::AccessMember(std::move(firstAccess), { "field" });
+
+			auto swizzle = nzsl::ShaderBuilder::Swizzle(std::move(secondAccess), { 2u });
+			auto varDecl = nzsl::ShaderBuilder::DeclareVariable("result", nzsl::ShaderAst::ExpressionType{ nzsl::ShaderAst::PrimitiveType::Float32 }, std::move(swizzle));
+
+			shaderModule->rootNode->statements.push_back(nzsl::ShaderBuilder::DeclareFunction(nzsl::ShaderStageType::Vertex, "main", std::move(varDecl)));
+
+			ExpectGLSL(*shaderModule, R"(
+void main()
+{
+	float result = ubo.s.field.z;
+}
+)");
+
+			ExpectNZSL(*shaderModule, R"(
+[entry(vert)]
+fn main()
+{
+	let result: f32 = ubo.s.field.z;
+}
+)");
+
+			ExpectSPIRV(*shaderModule, R"(
+OpFunction
+OpLabel
+OpVariable
+OpAccessChain
+OpLoad
+OpCompositeExtract
+OpStore
+OpReturn
+OpFunctionEnd)");
+		}
+
+		SECTION("AccessMember with multiples fields")
+		{
+			auto ubo = nzsl::ShaderBuilder::Identifier("ubo");
+			auto access = nzsl::ShaderBuilder::AccessMember(std::move(ubo), { "s", "field" });
+
+			auto swizzle = nzsl::ShaderBuilder::Swizzle(std::move(access), { 2u });
+			auto varDecl = nzsl::ShaderBuilder::DeclareVariable("result", nzsl::ShaderAst::ExpressionType{ nzsl::ShaderAst::PrimitiveType::Float32 }, std::move(swizzle));
+
+			shaderModule->rootNode->statements.push_back(nzsl::ShaderBuilder::DeclareFunction(nzsl::ShaderStageType::Vertex, "main", std::move(varDecl)));
+
+			ExpectGLSL(*shaderModule, R"(
+void main()
+{
+	float result = ubo.s.field.z;
+}
+)");
+
+			ExpectNZSL(*shaderModule, R"(
+[entry(vert)]
+fn main()
+{
+	let result: f32 = ubo.s.field.z;
+}
+)");
+
+			ExpectSPIRV(*shaderModule, R"(
+OpFunction
+OpLabel
+OpVariable
+OpAccessChain
+OpLoad
+OpCompositeExtract
+OpStore
+OpReturn
+OpFunctionEnd)");
+		}
+	}
+}
