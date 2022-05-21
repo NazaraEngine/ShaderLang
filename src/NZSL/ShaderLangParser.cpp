@@ -303,7 +303,7 @@ namespace nzsl::ShaderLang
 			
 				const char characterSet[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 				std::default_random_engine randomEngine(std::random_device{}());
-				std::uniform_int_distribution<std::size_t> dis(0, std::size(characterSet));
+				std::uniform_int_distribution<std::size_t> dis(0, std::size(characterSet) - 1);
 				
 				for (std::size_t i = 1; i < moduleName.size(); ++i)
 					moduleName[i] = characterSet[dis(randomEngine)];
