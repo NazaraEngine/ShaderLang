@@ -1,3 +1,10 @@
+# XMake
+.xmake
+bin
+build
+vs*
+vsxmake*
+
 # Prerequisites
 *.d
 
