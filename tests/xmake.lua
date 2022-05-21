@@ -19,8 +19,9 @@ if has_config("tests") then
         set_kind("binary")
         set_group("Tests")
         add_headerfiles("src/**.hpp")
+        add_files("src/main.cpp", {unity_ignored = true})
         add_files("src/**.cpp")
 
-		add_deps("nzsl")
+	add_deps("nzsl")
         add_packages("catch2", "glslang", "spirv-tools")
 end
