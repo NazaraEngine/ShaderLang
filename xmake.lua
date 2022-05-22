@@ -17,7 +17,6 @@ add_requires("nazarautils", "cxxopts", "fmt", "efsw", "frozen", "ordered_map")
 add_includedirs("include", "thirdparty/include")
 set_languages("c89", "c++17")
 set_rundir("./bin/$(plat)_$(arch)_$(mode)")
-set_symbols("debug", "hidden")
 set_targetdir("./bin/$(plat)_$(arch)_$(mode)")
 set_warnings("allextra")
 
@@ -59,6 +58,12 @@ target("nzsl")
 	add_files("src/NZSL/**.cpp")
 	add_packages("nazarautils", { public = true })
 	add_packages("fmt", "efsw", "frozen", "ordered_map")
+
+	on_load(function (target)
+		if target:kind() == "static" then
+			target:add("defines", "NZSL_STATIC")
+		end
+	end)
 
 target("nzslc")
 	set_kind("binary")
