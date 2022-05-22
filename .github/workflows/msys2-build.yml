@@ -46,9 +46,32 @@ jobs:
         install: base-devel git unzip p7zip mingw-w64-${{ matrix.arch }}-toolchain
         update: true
 
-    # Install xmake
+    # Force xmake to a specific folder (for cache)
+    - name: Set xmake env
+      run: echo "XMAKE_GLOBALDIR=${{ runner.workspace }}/xmake-global" >> $GITHUB_ENV
+
+    # Cache xmake build
+    - name: Retrieve cached xmake build
+      uses: actions/cache@v3
+      id: xmake_cache
+      with:
+        path: ${{ github.workspace }}/xmake_git
+        key: MinGW-XMake-W${{ steps.pkg_key.outputs.key }}
+
+    # Build xmake
     - name: Setup xmake
-      uses: xmake-io/github-action-setup-xmake@v1
+      if: steps.xmake_cache.outputs.cache-hit != 'true'
+      run: |
+        git clone https://github.com/xmake-io/xmake.git --recurse-submodules -b dev xmake_git
+        cd xmake_git
+        make build
+
+    # Install xmake
+    - name: Install xmake
+      run: |
+        cd xmake_git
+        make install PREFIX=/${{ matrix.msystem }}
+        xmake --version
 
     # Update xmake repository (in order to have the file that will be cached)
     - name: Update xmake repository
