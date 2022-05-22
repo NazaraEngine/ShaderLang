@@ -4,6 +4,7 @@ bin
 build
 vs*
 vsxmake*
+*.user
 
 # Prerequisites
 *.d
