@@ -61,7 +61,7 @@ target("nzsl")
 
 	on_load(function (target)
 		if target:kind() == "static" then
-			target:add("defines", "NZSL_STATIC")
+			target:add("defines", "NZSL_STATIC", { public = true })
 		end
 	end)
 
