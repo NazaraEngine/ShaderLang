@@ -19,7 +19,7 @@ jobs:
       matrix:
         msystem: [mingw64]
         os: [windows-latest]
-        arch: [i686, x86_64]
+        arch: [x86_64]
         mode: [debug, release]
         kind: [static, shared]
 
