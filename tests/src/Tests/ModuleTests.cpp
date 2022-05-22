@@ -11,7 +11,6 @@ TEST_CASE("Modules", "[Shader]")
 {
 	WHEN("using a simple module")
 	{
-		// UUID are required here to have a stable output
 		std::string_view importedSource = R"(
 [nzsl_version("1.0")]
 module SimpleModule;
@@ -222,7 +221,6 @@ OpFunctionEnd)");
 
 	WHEN("Using nested modules")
 	{
-		// UUID are required here to have a stable output
 		std::string_view dataModule = R"(
 [nzsl_version("1.0")]
 module Modules.Data;
