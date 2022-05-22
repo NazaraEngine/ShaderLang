@@ -11,7 +11,7 @@ add_rules("plugin.vsxmake.autoupdate")
 
 includes("xmake/**.lua")
 
-add_repositories("local-repo xmake-repo")
+add_repositories("nazara-engine-repo https://github.com/NazaraEngine/xmake-repo")
 
 add_requires("nazarautils", "cxxopts", "fmt", "efsw", "frozen", "ordered_map")
 add_includedirs("include", "thirdparty/include")
