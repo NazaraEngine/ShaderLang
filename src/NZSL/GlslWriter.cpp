@@ -14,6 +14,7 @@
 #include <NZSL/Ast/AstUtils.hpp>
 #include <NZSL/Ast/EliminateUnusedPassVisitor.hpp>
 #include <frozen/unordered_map.h>
+#include <cassert>
 #include <optional>
 #include <set>
 #include <stdexcept>
@@ -426,7 +427,7 @@ namespace nzsl
 	template<typename T>
 	void GlslWriter::Append(const T& param)
 	{
-		NazaraAssert(m_currentState, "This function should only be called while processing an AST");
+		assert(m_currentState && "This function should only be called while processing an AST");
 
 		m_currentState->stream << param;
 	}
@@ -460,7 +461,7 @@ namespace nzsl
 
 	void GlslWriter::AppendCommentSection(const std::string& section)
 	{
-		NazaraAssert(m_currentState, "This function should only be called while processing an AST");
+		assert(m_currentState && "This function should only be called while processing an AST");
 
 		std::string stars((section.size() < 33) ? (36 - section.size()) / 2 : 3, '*');
 		m_currentState->stream << "/*" << stars << ' ' << section << ' ' << stars << "*/";
@@ -581,7 +582,7 @@ namespace nzsl
 
 	void GlslWriter::AppendLine(const std::string& txt)
 	{
-		NazaraAssert(m_currentState, "This function should only be called while processing an AST");
+		assert(m_currentState && "This function should only be called while processing an AST");
 
 		m_currentState->stream << txt << '\n' << std::string(m_currentState->indentLevel, '\t');
 	}
@@ -637,7 +638,7 @@ namespace nzsl
 
 	void GlslWriter::EnterScope()
 	{
-		NazaraAssert(m_currentState, "This function should only be called while processing an AST");
+		assert(m_currentState && "This function should only be called while processing an AST");
 
 		m_currentState->indentLevel++;
 		AppendLine("{");
@@ -645,7 +646,7 @@ namespace nzsl
 
 	void GlslWriter::LeaveScope(bool skipLine)
 	{
-		NazaraAssert(m_currentState, "This function should only be called while processing an AST");
+		assert(m_currentState && "This function should only be called while processing an AST");
 
 		m_currentState->indentLevel--;
 		AppendLine();
@@ -1191,7 +1192,7 @@ namespace nzsl
 
 	void GlslWriter::Visit(ShaderAst::DeclareFunctionStatement& node)
 	{
-		NazaraAssert(m_currentState, "This function should only be called while processing an AST");
+		assert(m_currentState && "This function should only be called while processing an AST");
 
 		if (node.entryStage.HasValue() && m_currentState->previsitor.entryPoint != &node)
 			return; //< Ignore other entry points
