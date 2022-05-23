@@ -225,3 +225,19 @@ namespace nzsl
 	}
 }
 
+namespace std
+{
+	template<typename T, std::size_t N>
+	struct hash<nzsl::Vector<T, N>>
+	{
+		std::size_t operator()(const nzsl::Vector<T, N>& v) const
+		{
+			std::size_t seed{};
+
+			for (std::size_t i = 0; i < N; ++i)
+				Nz::HashCombine(seed, v[i]);
+
+			return seed;
+		}
+	};
+}
