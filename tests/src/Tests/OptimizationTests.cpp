@@ -9,23 +9,23 @@
 
 void PropagateConstantAndExpect(std::string_view sourceCode, std::string_view expectedOptimizedResult)
 {
-	nzsl::ShaderAst::ModulePtr shaderModule;
-	REQUIRE_NOTHROW(shaderModule = nzsl::ShaderLang::Parse(sourceCode));
+	nzsl::Ast::ModulePtr shaderModule;
+	REQUIRE_NOTHROW(shaderModule = nzsl::Parse(sourceCode));
 	shaderModule = SanitizeModule(*shaderModule);
-	REQUIRE_NOTHROW(shaderModule = nzsl::ShaderAst::PropagateConstants(*shaderModule));
+	REQUIRE_NOTHROW(shaderModule = nzsl::Ast::PropagateConstants(*shaderModule));
 
 	ExpectNZSL(*shaderModule, expectedOptimizedResult);
 }
 
 void EliminateUnusedAndExpect(std::string_view sourceCode, std::string_view expectedOptimizedResult)
 {
-	nzsl::ShaderAst::DependencyCheckerVisitor::Config depConfig;
+	nzsl::Ast::DependencyCheckerVisitor::Config depConfig;
 	depConfig.usedShaderStages = nzsl::ShaderStageType_All;
 
-	nzsl::ShaderAst::ModulePtr shaderModule;
-	REQUIRE_NOTHROW(shaderModule = nzsl::ShaderLang::Parse(sourceCode));
+	nzsl::Ast::ModulePtr shaderModule;
+	REQUIRE_NOTHROW(shaderModule = nzsl::Parse(sourceCode));
 	shaderModule = SanitizeModule(*shaderModule);
-	REQUIRE_NOTHROW(shaderModule = nzsl::ShaderAst::EliminateUnusedPass(*shaderModule, depConfig));
+	REQUIRE_NOTHROW(shaderModule = nzsl::Ast::EliminateUnusedPass(*shaderModule, depConfig));
 
 	ExpectNZSL(*shaderModule, expectedOptimizedResult);
 }

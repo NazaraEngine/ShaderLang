@@ -21,8 +21,8 @@ fn main()
 }
 )";
 
-		std::vector<nzsl::ShaderLang::Token> tokens = nzsl::ShaderLang::Tokenize(nzslSource);
-		CHECK(nzsl::ShaderLang::ToString(tokens) == R"(OpenSquareBracket Identifier(nzsl_version) OpenParenthesis StringValue("1.0") ClosingParenthesis ClosingSquareBracket
+		std::vector<nzsl::Token> tokens = nzsl::Tokenize(nzslSource);
+		CHECK(nzsl::ToString(tokens) == R"(OpenSquareBracket Identifier(nzsl_version) OpenParenthesis StringValue("1.0") ClosingParenthesis ClosingSquareBracket
 Module Semicolon
 OpenSquareBracket Identifier(entry) OpenParenthesis Identifier(frag) ClosingParenthesis ClosingSquareBracket
 FunctionDeclaration Identifier(main) OpenParenthesis ClosingParenthesis

@@ -4,7 +4,7 @@
 #include <NZSL/ShaderLangParser.hpp>
 #include <NZSL/SpirvPrinter.hpp>
 #include <NZSL/SpirvWriter.hpp>
-#include <NZSL/Ast/Reflect.hpp>
+#include <NZSL/Ast/ReflectVisitor.hpp>
 #include <NZSL/Ast/SanitizeVisitor.hpp>
 #include <catch2/catch.hpp>
 #include <glslang/Public/ShaderLang.h>
@@ -132,23 +132,23 @@ namespace
 	}
 }
 
-void ExpectGLSL(const nzsl::ShaderAst::Module& shaderModule, std::string_view expectedOutput)
+void ExpectGLSL(const nzsl::Ast::Module& shaderModule, std::string_view expectedOutput)
 {
 	expectedOutput = Trim(expectedOutput);
 
 	SECTION("Generating GLSL")
 	{
-		nzsl::ShaderAst::ModulePtr sanitizedModule;
+		nzsl::Ast::ModulePtr sanitizedModule;
 		WHEN("Sanitizing a second time")
 		{
-			CHECK_NOTHROW(sanitizedModule = nzsl::ShaderAst::Sanitize(shaderModule));
+			CHECK_NOTHROW(sanitizedModule = nzsl::Ast::Sanitize(shaderModule));
 		}
-		const nzsl::ShaderAst::Module& targetModule = (sanitizedModule) ? *sanitizedModule : shaderModule;
+		const nzsl::Ast::Module& targetModule = (sanitizedModule) ? *sanitizedModule : shaderModule;
 
 		// Retrieve entry-point to get shader type
 		std::optional<nzsl::ShaderStageType> entryShaderStage;
 
-		nzsl::ShaderAst::AstReflect::Callbacks callbacks;
+		nzsl::Ast::ReflectVisitor::Callbacks callbacks;
 		callbacks.onEntryPointDeclaration = [&](nzsl::ShaderStageType stageType, const std::string& functionName)
 		{
 			INFO("multiple entry points found! (" << functionName << ")");
@@ -157,7 +157,7 @@ void ExpectGLSL(const nzsl::ShaderAst::Module& shaderModule, std::string_view ex
 			entryShaderStage = stageType;
 		};
 
-		nzsl::ShaderAst::AstReflect reflectVisitor;
+		nzsl::Ast::ReflectVisitor reflectVisitor;
 		reflectVisitor.Reflect(*targetModule.rootNode, callbacks);
 
 		{
@@ -206,18 +206,18 @@ void ExpectGLSL(const nzsl::ShaderAst::Module& shaderModule, std::string_view ex
 	}
 }
 
-void ExpectNZSL(const nzsl::ShaderAst::Module& shaderModule, std::string_view expectedOutput)
+void ExpectNZSL(const nzsl::Ast::Module& shaderModule, std::string_view expectedOutput)
 {
 	expectedOutput = Trim(expectedOutput);
 
 	SECTION("Generating NZSL")
 	{
-		nzsl::ShaderAst::ModulePtr sanitizedModule;
+		nzsl::Ast::ModulePtr sanitizedModule;
 		WHEN("Sanitizing a second time")
 		{
-			CHECK_NOTHROW(sanitizedModule = nzsl::ShaderAst::Sanitize(shaderModule));
+			CHECK_NOTHROW(sanitizedModule = nzsl::Ast::Sanitize(shaderModule));
 		}
-		const nzsl::ShaderAst::Module& targetModule = (sanitizedModule) ? *sanitizedModule : shaderModule;
+		const nzsl::Ast::Module& targetModule = (sanitizedModule) ? *sanitizedModule : shaderModule;
 
 		nzsl::LangWriter writer;
 		std::string output = writer.Generate(targetModule);
@@ -231,23 +231,23 @@ void ExpectNZSL(const nzsl::ShaderAst::Module& shaderModule, std::string_view ex
 		WHEN("Validating full NZSL code (by recompiling it)")
 		{
 			// validate NZSL by recompiling it
-			REQUIRE_NOTHROW(nzsl::ShaderLang::Parse(output));
+			REQUIRE_NOTHROW(nzsl::Parse(output));
 		}
 	}
 }
 
-void ExpectSPIRV(const nzsl::ShaderAst::Module& shaderModule, std::string_view expectedOutput, bool outputParameter)
+void ExpectSPIRV(const nzsl::Ast::Module& shaderModule, std::string_view expectedOutput, bool outputParameter)
 {
 	expectedOutput = Trim(expectedOutput);
 
 	SECTION("Generating SPIRV")
 	{
-		nzsl::ShaderAst::ModulePtr sanitizedModule;
+		nzsl::Ast::ModulePtr sanitizedModule;
 		WHEN("Sanitizing a second time")
 		{
-			CHECK_NOTHROW(sanitizedModule = nzsl::ShaderAst::Sanitize(shaderModule));
+			CHECK_NOTHROW(sanitizedModule = nzsl::Ast::Sanitize(shaderModule));
 		}
-		const nzsl::ShaderAst::Module& targetModule = (sanitizedModule) ? *sanitizedModule : shaderModule;
+		const nzsl::Ast::Module& targetModule = (sanitizedModule) ? *sanitizedModule : shaderModule;
 
 		nzsl::SpirvWriter writer;
 		nzsl::SpirvPrinter printer;
@@ -283,30 +283,30 @@ void ExpectSPIRV(const nzsl::ShaderAst::Module& shaderModule, std::string_view e
 	}
 }
 
-nzsl::ShaderAst::ModulePtr SanitizeModule(const nzsl::ShaderAst::Module& module)
+nzsl::Ast::ModulePtr SanitizeModule(const nzsl::Ast::Module& module)
 {
-	nzsl::ShaderAst::SanitizeVisitor::Options defaultOptions;
+	nzsl::Ast::SanitizeVisitor::Options defaultOptions;
 	return SanitizeModule(module, defaultOptions);
 }
 
-nzsl::ShaderAst::ModulePtr SanitizeModule(const nzsl::ShaderAst::Module& module, const nzsl::ShaderAst::SanitizeVisitor::Options& options)
+nzsl::Ast::ModulePtr SanitizeModule(const nzsl::Ast::Module& module, const nzsl::Ast::SanitizeVisitor::Options& options)
 {
-	nzsl::ShaderAst::ModulePtr shaderModule;
+	nzsl::Ast::ModulePtr shaderModule;
 	WHEN("We sanitize the shader")
 	{
-		REQUIRE_NOTHROW(shaderModule = nzsl::ShaderAst::Sanitize(module, options));
+		REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(module, options));
 	}
 
 	WHEN("We output NZSL and try to parse it again")
 	{
 		nzsl::LangWriter langWriter;
 		std::string outputCode = langWriter.Generate((shaderModule) ? *shaderModule : module);
-		REQUIRE_NOTHROW(shaderModule = nzsl::ShaderAst::Sanitize(*nzsl::ShaderLang::Parse(outputCode), options));
+		REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(*nzsl::Parse(outputCode), options));
 	}
 
 	// Ensure sanitization
 	if (!shaderModule)
-		REQUIRE_NOTHROW(shaderModule = nzsl::ShaderAst::Sanitize(module, options));
+		REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(module, options));
 
 	return shaderModule;
 }

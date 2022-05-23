@@ -7,11 +7,11 @@
 #include <NZSL/Ast/SanitizeVisitor.hpp>
 #include <string>
 
-void ExpectGLSL(const nzsl::ShaderAst::Module& shader, std::string_view expectedOutput);
-void ExpectNZSL(const nzsl::ShaderAst::Module& shader, std::string_view expectedOutput);
-void ExpectSPIRV(const nzsl::ShaderAst::Module& shader, std::string_view expectedOutput, bool outputParameter = false);
+void ExpectGLSL(const nzsl::Ast::Module& shader, std::string_view expectedOutput);
+void ExpectNZSL(const nzsl::Ast::Module& shader, std::string_view expectedOutput);
+void ExpectSPIRV(const nzsl::Ast::Module& shader, std::string_view expectedOutput, bool outputParameter = false);
 
-nzsl::ShaderAst::ModulePtr SanitizeModule(const nzsl::ShaderAst::Module& module);
-nzsl::ShaderAst::ModulePtr SanitizeModule(const nzsl::ShaderAst::Module& module, const nzsl::ShaderAst::SanitizeVisitor::Options& options);
+nzsl::Ast::ModulePtr SanitizeModule(const nzsl::Ast::Module& module);
+nzsl::Ast::ModulePtr SanitizeModule(const nzsl::Ast::Module& module, const nzsl::Ast::SanitizeVisitor::Options& options);
 
 #endif

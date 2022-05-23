@@ -69,12 +69,12 @@ fn main(input: InputData) -> OutputData
 }
 )";
 
-		nzsl::ShaderAst::ModulePtr shaderModule = nzsl::ShaderLang::Parse(shaderSource);
+		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(shaderSource);
 
 		auto directoryModuleResolver = std::make_shared<nzsl::FilesystemModuleResolver>();
 		directoryModuleResolver->RegisterModule(importedSource);
 
-		nzsl::ShaderAst::SanitizeVisitor::Options sanitizeOpt;
+		nzsl::Ast::SanitizeVisitor::Options sanitizeOpt;
 		sanitizeOpt.moduleResolver = directoryModuleResolver;
 
 		shaderModule = SanitizeModule(*shaderModule, sanitizeOpt);
@@ -289,14 +289,14 @@ fn main(input: InputData) -> OutputData
 }
 )";
 		
-		nzsl::ShaderAst::ModulePtr shaderModule = nzsl::ShaderLang::Parse(shaderSource);
+		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(shaderSource);
 
 		auto directoryModuleResolver = std::make_shared<nzsl::FilesystemModuleResolver>();
 		directoryModuleResolver->RegisterModule(dataModule);
 		directoryModuleResolver->RegisterModule(blockModule);
 		directoryModuleResolver->RegisterModule(inputOutputModule);
 
-		nzsl::ShaderAst::SanitizeVisitor::Options sanitizeOpt;
+		nzsl::Ast::SanitizeVisitor::Options sanitizeOpt;
 		sanitizeOpt.moduleResolver = directoryModuleResolver;
 
 		shaderModule = SanitizeModule(*shaderModule, sanitizeOpt);

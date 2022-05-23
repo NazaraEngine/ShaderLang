@@ -6,9 +6,9 @@
 #include <catch2/catch.hpp>
 #include <cctype>
 
-void ExpectOutput(nzsl::ShaderAst::Module& shaderModule, const nzsl::ShaderAst::SanitizeVisitor::Options& options, std::string_view expectedOptimizedResult)
+void ExpectOutput(nzsl::Ast::Module& shaderModule, const nzsl::Ast::SanitizeVisitor::Options& options, std::string_view expectedOptimizedResult)
 {
-	nzsl::ShaderAst::ModulePtr sanitizedShader;
+	nzsl::Ast::ModulePtr sanitizedShader;
 	sanitizedShader = SanitizeModule(shaderModule, options);
 
 	ExpectNZSL(*sanitizedShader, expectedOptimizedResult);
@@ -57,10 +57,10 @@ fn main()
 }
 )";
 
-		nzsl::ShaderAst::ModulePtr shaderModule;
-		REQUIRE_NOTHROW(shaderModule = nzsl::ShaderLang::Parse(sourceCode));
+		nzsl::Ast::ModulePtr shaderModule;
+		REQUIRE_NOTHROW(shaderModule = nzsl::Parse(sourceCode));
 
-		nzsl::ShaderAst::SanitizeVisitor::Options options;
+		nzsl::Ast::SanitizeVisitor::Options options;
 
 		WHEN("Enabling option")
 		{
@@ -149,8 +149,8 @@ fn main()
 }
 )";
 
-		nzsl::ShaderAst::ModulePtr shaderModule;
-		REQUIRE_NOTHROW(shaderModule = nzsl::ShaderLang::Parse(sourceCode));
+		nzsl::Ast::ModulePtr shaderModule;
+		REQUIRE_NOTHROW(shaderModule = nzsl::Parse(sourceCode));
 
 		ExpectOutput(*shaderModule, {}, R"(
 [entry(frag)]
@@ -224,8 +224,8 @@ fn main()
 }
 )";
 
-		nzsl::ShaderAst::ModulePtr shaderModule;
-		REQUIRE_NOTHROW(shaderModule = nzsl::ShaderLang::Parse(sourceCode));
+		nzsl::Ast::ModulePtr shaderModule;
+		REQUIRE_NOTHROW(shaderModule = nzsl::Parse(sourceCode));
 
 		ExpectOutput(*shaderModule, {}, R"(
 [entry(frag)]
