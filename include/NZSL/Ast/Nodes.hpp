@@ -18,7 +18,7 @@
 #include <optional>
 #include <string>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
 	class AstExpressionVisitor;
 	class AstStatementVisitor;
@@ -39,7 +39,7 @@ namespace nzsl::ShaderAst
 		Node& operator=(const Node&) = delete;
 		Node& operator=(Node&&) noexcept = default;
 
-		ShaderLang::SourceLocation sourceLocation;
+		SourceLocation sourceLocation;
 	};
 
 	// Expressions
@@ -71,7 +71,7 @@ namespace nzsl::ShaderAst
 		struct Identifier
 		{
 			std::string identifier;
-			ShaderLang::SourceLocation sourceLocation;
+			SourceLocation sourceLocation;
 		};
 
 		std::vector<Identifier> identifiers;
@@ -322,7 +322,7 @@ namespace nzsl::ShaderAst
 			ExpressionValue<std::uint32_t> bindingIndex;
 			ExpressionValue<std::uint32_t> bindingSet;
 			ExpressionValue<ExpressionType> type;
-			ShaderLang::SourceLocation sourceLocation;
+			SourceLocation sourceLocation;
 		};
 
 		std::vector<ExternalVar> externalVars;
@@ -339,7 +339,7 @@ namespace nzsl::ShaderAst
 			std::optional<std::size_t> varIndex;
 			std::string name;
 			ExpressionValue<ExpressionType> type;
-			ShaderLang::SourceLocation sourceLocation;
+			SourceLocation sourceLocation;
 		};
 
 		std::optional<std::size_t> funcIndex;

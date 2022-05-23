@@ -4,7 +4,7 @@
 
 #include <NZSL/Ast/AstExportVisitor.hpp>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
 }
 

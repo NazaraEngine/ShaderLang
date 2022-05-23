@@ -19,7 +19,7 @@ namespace nzsl
 	class SpirvBlock;
 	class SpirvWriter;
 
-	class NZSL_API SpirvExpressionLoad : public ShaderAst::AstExpressionVisitorExcept
+	class NZSL_API SpirvExpressionLoad : public Ast::AstExpressionVisitorExcept
 	{
 		public:
 			inline SpirvExpressionLoad(SpirvWriter& writer, SpirvAstVisitor& visitor, SpirvBlock& block);
@@ -27,11 +27,11 @@ namespace nzsl
 			SpirvExpressionLoad(SpirvExpressionLoad&&) = delete;
 			~SpirvExpressionLoad() = default;
 
-			std::uint32_t Evaluate(ShaderAst::Expression& node);
+			std::uint32_t Evaluate(Ast::Expression& node);
 
 			using AstExpressionVisitorExcept::Visit;
-			void Visit(ShaderAst::AccessIndexExpression& node) override;
-			void Visit(ShaderAst::VariableValueExpression& node) override;
+			void Visit(Ast::AccessIndexExpression& node) override;
+			void Visit(Ast::VariableValueExpression& node) override;
 
 			SpirvExpressionLoad& operator=(const SpirvExpressionLoad&) = delete;
 			SpirvExpressionLoad& operator=(SpirvExpressionLoad&&) = delete;
@@ -40,7 +40,7 @@ namespace nzsl
 			struct PointerChainAccess
 			{
 				std::vector<std::uint32_t> indices;
-				const ShaderAst::ExpressionType* exprType;
+				const Ast::ExpressionType* exprType;
 				SpirvStorageClass storage;
 				std::uint32_t pointerId;
 				std::uint32_t pointedTypeId;

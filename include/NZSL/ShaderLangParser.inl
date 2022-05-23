@@ -4,19 +4,19 @@
 
 #include <NZSL/ShaderLangParser.hpp>
 
-namespace nzsl::ShaderLang
+namespace nzsl
 {
 	inline Parser::Parser() :
 	m_context(nullptr)
 	{
 	}
 
-	inline ShaderAst::ModulePtr Parse(const std::string_view& source, const std::string& filePath)
+	inline Ast::ModulePtr Parse(const std::string_view& source, const std::string& filePath)
 	{
 		return Parse(Tokenize(source, filePath));
 	}
 
-	inline ShaderAst::ModulePtr Parse(const std::vector<Token>& tokens)
+	inline Ast::ModulePtr Parse(const std::vector<Token>& tokens)
 	{
 		Parser parser;
 		return parser.Parse(tokens);

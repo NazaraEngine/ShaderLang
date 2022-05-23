@@ -12,7 +12,7 @@
 #include <NZSL/Ast/AstRecursiveVisitor.hpp>
 #include <vector>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
 	class NZSL_API AstExportVisitor : public AstRecursiveVisitor
 	{

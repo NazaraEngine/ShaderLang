@@ -4,7 +4,7 @@
 
 #include <NZSL/Ast/AstReflect.hpp>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
 }
 

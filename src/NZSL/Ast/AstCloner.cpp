@@ -5,7 +5,7 @@
 #include <NZSL/Ast/AstCloner.hpp>
 #include <stdexcept>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
 	ExpressionPtr AstCloner::Clone(Expression& expr)
 	{

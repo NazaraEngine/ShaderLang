@@ -5,7 +5,7 @@
 #include <NZSL/Ast/Module.hpp>
 #include <NZSL/ShaderBuilder.hpp>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
 	inline Module::Module(std::uint32_t shaderLangVersion, std::string moduleName)
 	{

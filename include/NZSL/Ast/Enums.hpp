@@ -10,7 +10,7 @@
 #include <NZSL/Config.hpp>
 #include <Nazara/Utils/Flags.hpp>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
 	enum class AssignType
 	{
@@ -139,15 +139,15 @@ namespace nzsl::ShaderAst
 namespace Nz
 {
 	template<>
-	struct EnumAsFlags<nzsl::ShaderAst::FunctionFlag>
+	struct EnumAsFlags<nzsl::Ast::FunctionFlag>
 	{
-		static constexpr nzsl::ShaderAst::FunctionFlag max = nzsl::ShaderAst::FunctionFlag::Max;
+		static constexpr nzsl::Ast::FunctionFlag max = nzsl::Ast::FunctionFlag::Max;
 	};
 }
 
 namespace nzsl
 {
-	using FunctionFlags = Nz::Flags<ShaderAst::FunctionFlag>;
+	using FunctionFlags = Nz::Flags<Ast::FunctionFlag>;
 }
 
 #endif // NZSL_AST_ENUMS_HPP

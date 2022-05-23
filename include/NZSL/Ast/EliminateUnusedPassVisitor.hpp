@@ -13,7 +13,7 @@
 #include <NZSL/Ast/DependencyCheckerVisitor.hpp>
 #include <NZSL/Ast/Module.hpp>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
 	class NZSL_API EliminateUnusedPassVisitor : AstCloner
 	{

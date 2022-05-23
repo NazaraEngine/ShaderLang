@@ -4,7 +4,7 @@
 
 #include <NZSL/Ast/DependencyCheckerVisitor.hpp>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
 	void DependencyCheckerVisitor::Register(Statement& statement, const Config& config)
 	{

@@ -19,7 +19,7 @@ namespace nzsl
 	class SpirvBlock;
 	class SpirvWriter;
 
-	class NZSL_API SpirvExpressionStore : public ShaderAst::AstExpressionVisitorExcept
+	class NZSL_API SpirvExpressionStore : public Ast::AstExpressionVisitorExcept
 	{
 		public:
 			inline SpirvExpressionStore(SpirvWriter& writer, SpirvAstVisitor& visitor, SpirvBlock& block);
@@ -27,12 +27,12 @@ namespace nzsl
 			SpirvExpressionStore(SpirvExpressionStore&&) = delete;
 			~SpirvExpressionStore() = default;
 
-			void Store(ShaderAst::ExpressionPtr& node, std::uint32_t resultId);
+			void Store(Ast::ExpressionPtr& node, std::uint32_t resultId);
 
 			using AstExpressionVisitorExcept::Visit;
-			void Visit(ShaderAst::AccessIndexExpression& node) override;
-			void Visit(ShaderAst::SwizzleExpression& node) override;
-			void Visit(ShaderAst::VariableValueExpression& node) override;
+			void Visit(Ast::AccessIndexExpression& node) override;
+			void Visit(Ast::SwizzleExpression& node) override;
+			void Visit(Ast::VariableValueExpression& node) override;
 
 			SpirvExpressionStore& operator=(const SpirvExpressionStore&) = delete;
 			SpirvExpressionStore& operator=(SpirvExpressionStore&&) = delete;
@@ -46,7 +46,7 @@ namespace nzsl
 
 			struct SwizzledPointer : Pointer
 			{
-				ShaderAst::VectorType swizzledType;
+				Ast::VectorType swizzledType;
 				std::array<std::uint32_t, 4> swizzleIndices;
 				std::size_t componentCount;
 			};

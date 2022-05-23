@@ -4,7 +4,7 @@
 
 #include <NZSL/Ast/EliminateUnusedPassVisitor.hpp>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
 	inline ModulePtr EliminateUnusedPass(const Module& shaderModule)
 	{

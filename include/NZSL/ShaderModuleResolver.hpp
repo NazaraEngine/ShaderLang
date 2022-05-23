@@ -16,7 +16,7 @@
 
 namespace nzsl
 {
-	namespace ShaderAst
+	namespace Ast
 	{
 		using ModulePtr = std::shared_ptr<class Module>;
 	}
@@ -29,7 +29,7 @@ namespace nzsl
 			ShaderModuleResolver(ShaderModuleResolver&&) = default;
 			virtual ~ShaderModuleResolver();
 
-			virtual ShaderAst::ModulePtr Resolve(const std::string& /*moduleName*/) = 0;
+			virtual Ast::ModulePtr Resolve(const std::string& /*moduleName*/) = 0;
 
 			ShaderModuleResolver& operator=(const ShaderModuleResolver&) = default;
 			ShaderModuleResolver& operator=(ShaderModuleResolver&&) = default;

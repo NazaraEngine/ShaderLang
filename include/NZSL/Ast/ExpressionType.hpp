@@ -17,7 +17,7 @@
 #include <variant>
 #include <vector>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
 	struct ContainedType;
 
@@ -159,7 +159,7 @@ namespace nzsl::ShaderAst
 			ExpressionValue<std::uint32_t> locationIndex;
 			ExpressionValue<ExpressionType> type;
 			std::string name;
-			ShaderLang::SourceLocation sourceLocation;
+			SourceLocation sourceLocation;
 		};
 
 		ExpressionValue<StructLayout> layout;

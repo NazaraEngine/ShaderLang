@@ -11,7 +11,7 @@
 #include <NZSL/Config.hpp>
 #include <NZSL/Ast/Nodes.hpp>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
 	class NZSL_API AstStatementVisitor
 	{
@@ -21,7 +21,7 @@ namespace nzsl::ShaderAst
 			AstStatementVisitor(AstStatementVisitor&&) = delete;
 			virtual ~AstStatementVisitor();
 
-#define NZSL_SHADERAST_STATEMENT(NodeType) virtual void Visit(ShaderAst::NodeType& node) = 0;
+#define NZSL_SHADERAST_STATEMENT(NodeType) virtual void Visit(Ast::NodeType& node) = 0;
 #include <NZSL/Ast/AstNodeList.hpp>
 
 			AstStatementVisitor& operator=(const AstStatementVisitor&) = delete;

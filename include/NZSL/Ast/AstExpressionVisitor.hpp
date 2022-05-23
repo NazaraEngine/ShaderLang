@@ -11,7 +11,7 @@
 #include <NZSL/Config.hpp>
 #include <NZSL/Ast/Nodes.hpp>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
 	class NZSL_API AstExpressionVisitor
 	{

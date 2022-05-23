@@ -5,7 +5,7 @@
 #include <NZSL/Ast/AstCompare.hpp>
 #include <stdexcept>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
 	inline bool Compare(const Expression& lhs, const Expression& rhs)
 	{
@@ -222,7 +222,7 @@ namespace nzsl::ShaderAst
 		return true;
 	}
 
-	bool Compare(const ShaderLang::SourceLocation& lhs, const ShaderLang::SourceLocation& rhs)
+	bool Compare(const SourceLocation& lhs, const SourceLocation& rhs)
 	{
 		if (!Compare(lhs.endColumn, rhs.endColumn))
 			return false;

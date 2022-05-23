@@ -7,7 +7,7 @@
 #include <NZSL/Ast/AstExpressionVisitor.hpp>
 #include <NZSL/Ast/AstStatementVisitor.hpp>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
 	Node::~Node() = default;
 

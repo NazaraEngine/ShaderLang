@@ -11,7 +11,7 @@
 #include <NZSL/Ast/Enums.hpp>
 #include <variant>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
 	struct Expression;
 

@@ -4,9 +4,9 @@
 
 #include <NZSL/Ast/AstStatementVisitorExcept.hpp>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
-#define NZSL_SHADERAST_STATEMENT(Node) void AstStatementVisitorExcept::Visit(ShaderAst::Node& /*node*/) \
+#define NZSL_SHADERAST_STATEMENT(Node) void AstStatementVisitorExcept::Visit(Ast::Node& /*node*/) \
 	{ \
 		throw std::runtime_error("unexpected " #Node " node"); \
 	}

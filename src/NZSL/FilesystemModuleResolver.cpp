@@ -27,7 +27,7 @@ namespace nzsl
 
 	void FilesystemModuleResolver::RegisterModule(const std::filesystem::path& realPath)
 	{
-		ShaderAst::ModulePtr module;
+		Ast::ModulePtr module;
 		try
 		{
 			std::string ext = realPath.extension().generic_u8string();
@@ -48,10 +48,10 @@ namespace nzsl
 					throw std::runtime_error("failed to read " + realPath.generic_u8string());
 
 				Unserializer unserializer(content.data(), content.size());
-				module = ShaderAst::UnserializeShader(unserializer);
+				module = Ast::UnserializeShader(unserializer);
 			}
 			else if (ext == ModuleExtension)
-				module = ShaderLang::ParseFromFile(realPath);
+				module = ParseFromFile(realPath);
 			else
 				throw std::runtime_error("unknown extension " + ext);
 		}
@@ -73,14 +73,14 @@ namespace nzsl
 
 	void FilesystemModuleResolver::RegisterModule(std::string_view moduleSource)
 	{
-		ShaderAst::ModulePtr module = ShaderLang::Parse(moduleSource);
+		Ast::ModulePtr module = Parse(moduleSource);
 		if (!module)
 			return;
 
 		return RegisterModule(std::move(module));
 	}
 
-	void FilesystemModuleResolver::RegisterModule(ShaderAst::ModulePtr module)
+	void FilesystemModuleResolver::RegisterModule(Ast::ModulePtr module)
 	{
 		assert(module);
 
@@ -147,7 +147,7 @@ namespace nzsl
 		}
 	}
 
-	ShaderAst::ModulePtr FilesystemModuleResolver::Resolve(const std::string& moduleName)
+	Ast::ModulePtr FilesystemModuleResolver::Resolve(const std::string& moduleName)
 	{
 		auto it = m_modules.find(moduleName);
 		if (it == m_modules.end())

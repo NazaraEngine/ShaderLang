@@ -26,7 +26,7 @@ namespace nzsl
 	class NZSL_API SpirvConstantCache
 	{
 		public:
-			using StructCallback = std::function<const ShaderAst::StructDescription&(std::size_t structIndex)>;
+			using StructCallback = std::function<const Ast::StructDescription&(std::size_t structIndex)>;
 
 			SpirvConstantCache(std::uint32_t& resultId);
 			SpirvConstantCache(const SpirvConstantCache& cache) = delete;
@@ -172,23 +172,23 @@ namespace nzsl
 				AnyType type;
 			};
 
-			ConstantPtr BuildConstant(const ShaderAst::ConstantValue& value) const;
+			ConstantPtr BuildConstant(const Ast::ConstantValue& value) const;
 			FieldOffsets BuildFieldOffsets(const Structure& structData) const;
-			TypePtr BuildFunctionType(const ShaderAst::ExpressionType& retType, const std::vector<ShaderAst::ExpressionType>& parameters) const;
-			TypePtr BuildPointerType(const ShaderAst::PrimitiveType& type, SpirvStorageClass storageClass) const;
-			TypePtr BuildPointerType(const ShaderAst::ExpressionType& type, SpirvStorageClass storageClass) const;
+			TypePtr BuildFunctionType(const Ast::ExpressionType& retType, const std::vector<Ast::ExpressionType>& parameters) const;
+			TypePtr BuildPointerType(const Ast::PrimitiveType& type, SpirvStorageClass storageClass) const;
+			TypePtr BuildPointerType(const Ast::ExpressionType& type, SpirvStorageClass storageClass) const;
 			TypePtr BuildPointerType(const TypePtr& type, SpirvStorageClass storageClass) const;
-			TypePtr BuildType(const ShaderAst::AliasType& type) const;
-			TypePtr BuildType(const ShaderAst::ArrayType& type) const;
-			TypePtr BuildType(const ShaderAst::ExpressionType& type) const;
-			TypePtr BuildType(const ShaderAst::MatrixType& type) const;
-			TypePtr BuildType(const ShaderAst::NoType& type) const;
-			TypePtr BuildType(const ShaderAst::PrimitiveType& type) const;
-			TypePtr BuildType(const ShaderAst::SamplerType& type) const;
-			TypePtr BuildType(const ShaderAst::StructType& type) const;
-			TypePtr BuildType(const ShaderAst::StructDescription& structDesc, std::vector<SpirvDecoration> decorations = {}) const;
-			TypePtr BuildType(const ShaderAst::VectorType& type) const;
-			TypePtr BuildType(const ShaderAst::UniformType& type) const;
+			TypePtr BuildType(const Ast::AliasType& type) const;
+			TypePtr BuildType(const Ast::ArrayType& type) const;
+			TypePtr BuildType(const Ast::ExpressionType& type) const;
+			TypePtr BuildType(const Ast::MatrixType& type) const;
+			TypePtr BuildType(const Ast::NoType& type) const;
+			TypePtr BuildType(const Ast::PrimitiveType& type) const;
+			TypePtr BuildType(const Ast::SamplerType& type) const;
+			TypePtr BuildType(const Ast::StructType& type) const;
+			TypePtr BuildType(const Ast::StructDescription& structDesc, std::vector<SpirvDecoration> decorations = {}) const;
+			TypePtr BuildType(const Ast::VectorType& type) const;
+			TypePtr BuildType(const Ast::UniformType& type) const;
 
 			std::uint32_t GetId(const Constant& c);
 			std::uint32_t GetId(const Type& t);

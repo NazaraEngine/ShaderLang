@@ -5,7 +5,7 @@
 #include <NZSL/Ast/AstSerializer.hpp>
 #include <Nazara/Utils/Algorithm.hpp>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
 	template<typename T>
 	void AstSerializerBase::Container(T& container)
@@ -165,7 +165,7 @@ namespace nzsl::ShaderAst
 		}
 	}
 
-	inline void AstSerializerBase::SourceLoc(ShaderLang::SourceLocation& sourceLoc)
+	inline void AstSerializerBase::SourceLoc(SourceLocation& sourceLoc)
 	{
 		SharedString(sourceLoc.file);
 		Value(sourceLoc.endColumn);

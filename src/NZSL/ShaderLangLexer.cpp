@@ -15,7 +15,7 @@
 #include <stdexcept>
 #include <unordered_map>
 
-namespace nzsl::ShaderLang
+namespace nzsl
 {
 	namespace
 	{

@@ -4,7 +4,7 @@
 
 #include <NZSL/Ast/Nodes.hpp>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
 	inline const ExpressionType* GetExpressionType(Expression& expr)
 	{

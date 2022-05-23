@@ -4,7 +4,7 @@
 
 #include <NZSL/ShaderLangErrors.hpp>
 
-namespace nzsl::ShaderLang
+namespace nzsl
 {
 	inline Error::Error(SourceLocation sourceLocation, ErrorCategory errorCategory, ErrorType errorType) noexcept :
 	m_errorCategory(errorCategory),

@@ -14,7 +14,7 @@
 #include <NZSL/Ast/Module.hpp>
 #include <vector>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
 	inline bool Compare(const Expression& lhs, const Expression& rhs);
 	inline bool Compare(const Module& lhs, const Module& rhs);
@@ -32,7 +32,7 @@ namespace nzsl::ShaderAst
 	inline bool Compare(const BranchStatement::ConditionalStatement& lhs, const BranchStatement::ConditionalStatement& rhs);
 	inline bool Compare(const DeclareExternalStatement::ExternalVar& lhs, const DeclareExternalStatement::ExternalVar& rhs);
 	inline bool Compare(const DeclareFunctionStatement::Parameter& lhs, const DeclareFunctionStatement::Parameter& rhs);
-	inline bool Compare(const ShaderLang::SourceLocation& lhs, const ShaderLang::SourceLocation& rhs);
+	inline bool Compare(const SourceLocation& lhs, const SourceLocation& rhs);
 	inline bool Compare(const StructDescription& lhs, const StructDescription& rhs);
 	inline bool Compare(const StructDescription::StructMember& lhs, const StructDescription::StructMember& rhs);
 

@@ -16,7 +16,7 @@
 #include <string>
 #include <tuple>
 
-namespace nzsl::ShaderLang
+namespace nzsl
 {
 	enum class ErrorCategory
 	{

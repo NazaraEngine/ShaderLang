@@ -13,7 +13,7 @@
 #include <NZSL/Ast/ExpressionType.hpp>
 #include <variant>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
 	using NoValue = std::monostate;
 

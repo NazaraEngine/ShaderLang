@@ -6,7 +6,7 @@
 #include <cassert>
 #include <stdexcept>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
 	template<typename T>
 	ExpressionValue<T>::ExpressionValue(T value) :

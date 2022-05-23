@@ -9,27 +9,27 @@
 
 // https://fmt.dev/latest/api.html#udt
 template <>
-struct fmt::formatter<nzsl::ShaderAst::AttributeType> : formatter<string_view>
+struct fmt::formatter<nzsl::Ast::AttributeType> : formatter<string_view>
 {
 	template <typename FormatContext>
-	auto format(const nzsl::ShaderAst::AttributeType& p, FormatContext& ctx) -> decltype(ctx.out())
+	auto format(const nzsl::Ast::AttributeType& p, FormatContext& ctx) -> decltype(ctx.out())
 	{
 		// TODO: Add ToString
 		std::string_view name = "<unhandled attribute type>";
 		switch (p)
 		{
-			case nzsl::ShaderAst::AttributeType::Binding:            name = "binding"; break;
-			case nzsl::ShaderAst::AttributeType::Builtin:            name = "builtin"; break;
-			case nzsl::ShaderAst::AttributeType::Cond:               name = "cond"; break;
-			case nzsl::ShaderAst::AttributeType::DepthWrite:         name = "depth_write"; break;
-			case nzsl::ShaderAst::AttributeType::EarlyFragmentTests: name = "early_fragment_tests"; break;
-			case nzsl::ShaderAst::AttributeType::Entry:              name = "entry"; break;
-			case nzsl::ShaderAst::AttributeType::Export:             name = "export"; break;
-			case nzsl::ShaderAst::AttributeType::Layout:             name = "layout"; break;
-			case nzsl::ShaderAst::AttributeType::Location:           name = "location"; break;
-			case nzsl::ShaderAst::AttributeType::LangVersion:        name = "nzsl_version"; break;
-			case nzsl::ShaderAst::AttributeType::Set:                name = "set"; break;
-			case nzsl::ShaderAst::AttributeType::Unroll:             name = "unroll"; break;
+			case nzsl::Ast::AttributeType::Binding:            name = "binding"; break;
+			case nzsl::Ast::AttributeType::Builtin:            name = "builtin"; break;
+			case nzsl::Ast::AttributeType::Cond:               name = "cond"; break;
+			case nzsl::Ast::AttributeType::DepthWrite:         name = "depth_write"; break;
+			case nzsl::Ast::AttributeType::EarlyFragmentTests: name = "early_fragment_tests"; break;
+			case nzsl::Ast::AttributeType::Entry:              name = "entry"; break;
+			case nzsl::Ast::AttributeType::Export:             name = "export"; break;
+			case nzsl::Ast::AttributeType::Layout:             name = "layout"; break;
+			case nzsl::Ast::AttributeType::Location:           name = "location"; break;
+			case nzsl::Ast::AttributeType::LangVersion:        name = "nzsl_version"; break;
+			case nzsl::Ast::AttributeType::Set:                name = "set"; break;
+			case nzsl::Ast::AttributeType::Unroll:             name = "unroll"; break;
 		}
 
 		return formatter<string_view>::format(name, ctx);
@@ -37,20 +37,20 @@ struct fmt::formatter<nzsl::ShaderAst::AttributeType> : formatter<string_view>
 };
 
 template <>
-struct fmt::formatter<nzsl::ShaderLang::ErrorCategory> : formatter<string_view>
+struct fmt::formatter<nzsl::ErrorCategory> : formatter<string_view>
 {
 	template <typename FormatContext>
-	auto format(const nzsl::ShaderLang::ErrorCategory& p, FormatContext& ctx) -> decltype(ctx.out())
+	auto format(const nzsl::ErrorCategory& p, FormatContext& ctx) -> decltype(ctx.out())
 	{
 		return formatter<string_view>::format(ToString(p), ctx);
 	}
 };
 
 template <>
-struct fmt::formatter<nzsl::ShaderLang::ErrorType> : formatter<string_view>
+struct fmt::formatter<nzsl::ErrorType> : formatter<string_view>
 {
 	template <typename FormatContext>
-	auto format(const nzsl::ShaderLang::ErrorType& p, FormatContext& ctx) -> decltype(ctx.out())
+	auto format(const nzsl::ErrorType& p, FormatContext& ctx) -> decltype(ctx.out())
 	{
 		return formatter<string_view>::format(ToString(p), ctx);
 	}
@@ -75,16 +75,16 @@ struct fmt::formatter<nzsl::ShaderStageType> : formatter<string_view>
 };
 
 template <>
-struct fmt::formatter<nzsl::ShaderLang::TokenType> : formatter<string_view>
+struct fmt::formatter<nzsl::TokenType> : formatter<string_view>
 {
 	template <typename FormatContext>
-	auto format(const nzsl::ShaderLang::TokenType& p, FormatContext& ctx) -> decltype(ctx.out())
+	auto format(const nzsl::TokenType& p, FormatContext& ctx) -> decltype(ctx.out())
 	{
 		return formatter<string_view>::format(ToString(p), ctx);
 	}
 };
 
-namespace nzsl::ShaderLang
+namespace nzsl
 {
 	std::string_view ToString(ErrorCategory errorCategory)
 	{

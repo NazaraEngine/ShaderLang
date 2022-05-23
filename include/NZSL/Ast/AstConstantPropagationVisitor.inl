@@ -4,7 +4,7 @@
 
 #include <NZSL/Ast/AstConstantPropagationVisitor.hpp>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
 	inline ExpressionPtr AstConstantPropagationVisitor::Process(Expression& expression)
 	{

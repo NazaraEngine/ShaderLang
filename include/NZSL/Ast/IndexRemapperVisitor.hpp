@@ -12,7 +12,7 @@
 #include <NZSL/Ast/AstCloner.hpp>
 #include <functional>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
 	class NZSL_API IndexRemapperVisitor : public AstCloner
 	{

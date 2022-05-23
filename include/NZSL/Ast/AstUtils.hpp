@@ -13,7 +13,7 @@
 #include <NZSL/Ast/Enums.hpp>
 #include <vector>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
 	class NZSL_API ShaderAstValueCategory final : public AstExpressionVisitor
 	{

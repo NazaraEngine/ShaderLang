@@ -5,7 +5,7 @@
 #include <NZSL/ShaderLangSourceLocation.hpp>
 #include <cassert>
 
-namespace nzsl::ShaderLang
+namespace nzsl
 {
 	inline SourceLocation::SourceLocation() :
 	endColumn(0),

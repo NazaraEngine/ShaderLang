@@ -4,7 +4,7 @@
 
 #include <NZSL/Ast/AstUtils.hpp>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
 	ExpressionCategory GetExpressionCategory(Expression& expression)
 	{

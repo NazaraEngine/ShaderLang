@@ -108,21 +108,21 @@ int main(int argc, char* argv[])
 
 		try
 		{
-			nzsl::ShaderAst::ModulePtr shaderModule;
+			nzsl::Ast::ModulePtr shaderModule;
 			if (inputPath.extension() == ".nzsl")
 			{
 				std::string sourceContent = ReadSourceFileContent(inputPath);
 
-				std::vector<nzsl::ShaderLang::Token> tokens = nzsl::ShaderLang::Tokenize(sourceContent, inputPath.generic_u8string());
+				std::vector<nzsl::Token> tokens = nzsl::Tokenize(sourceContent, inputPath.generic_u8string());
 
-				shaderModule = nzsl::ShaderLang::Parse(tokens);
+				shaderModule = nzsl::Parse(tokens);
 			}
 			else if (inputPath.extension() == ".nzslb")
 			{
 				std::vector<std::uint8_t> sourceContent = ReadFileContent(inputPath);
 				nzsl::Unserializer unserializer(sourceContent.data(), sourceContent.size());
 
-				shaderModule = nzsl::ShaderAst::UnserializeShader(unserializer);
+				shaderModule = nzsl::Ast::UnserializeShader(unserializer);
 			}
 			else
 			{
@@ -132,13 +132,13 @@ int main(int argc, char* argv[])
 
 			if (result.count("compile") > 0)
 			{
-				nzsl::ShaderAst::SanitizeVisitor::Options sanitizeOptions;
+				nzsl::Ast::SanitizeVisitor::Options sanitizeOptions;
 				sanitizeOptions.allowPartialSanitization = result.count("partial") > 0;
 
-				shaderModule = nzsl::ShaderAst::Sanitize(*shaderModule, sanitizeOptions);
+				shaderModule = nzsl::Ast::Sanitize(*shaderModule, sanitizeOptions);
 
 				nzsl::Serializer unserializer;
-				nzsl::ShaderAst::SerializeShader(unserializer, shaderModule);
+				nzsl::Ast::SerializeShader(unserializer, shaderModule);
 
 				const std::vector<std::uint8_t>& shaderData = unserializer.GetData();
 
@@ -178,9 +178,9 @@ int main(int argc, char* argv[])
 
 			return EXIT_SUCCESS;
 		}
-		catch (const nzsl::ShaderLang::Error& error)
+		catch (const nzsl::Error& error)
 		{
-			const nzsl::ShaderLang::SourceLocation& errorLocation = error.GetSourceLocation();
+			const nzsl::SourceLocation& errorLocation = error.GetSourceLocation();
 			if (errorLocation.IsValid())
 			{
 				if (logFormat == LogFormat::Classic)

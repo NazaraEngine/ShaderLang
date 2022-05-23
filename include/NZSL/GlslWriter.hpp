@@ -21,7 +21,7 @@
 
 namespace nzsl
 {
-	class NZSL_API GlslWriter : public ShaderWriter, public ShaderAst::AstExpressionVisitorExcept, public ShaderAst::AstStatementVisitorExcept
+	class NZSL_API GlslWriter : public ShaderWriter, public Ast::AstExpressionVisitorExcept, public Ast::AstStatementVisitorExcept
 	{
 		public:
 			using BindingMapping = std::unordered_map<std::uint64_t /* set | binding */, unsigned /*glBinding*/>;
@@ -33,8 +33,8 @@ namespace nzsl
 			GlslWriter(GlslWriter&&) = delete;
 			~GlslWriter() = default;
 
-			inline std::string Generate(const ShaderAst::Module& module, const BindingMapping& bindingMapping = {}, const States& states = {});
-			std::string Generate(std::optional<ShaderStageType> shaderStage, const ShaderAst::Module& module, const BindingMapping& bindingMapping = {}, const States& states = {});
+			inline std::string Generate(const Ast::Module& module, const BindingMapping& bindingMapping = {}, const States& states = {});
+			std::string Generate(std::optional<ShaderStageType> shaderStage, const Ast::Module& module, const BindingMapping& bindingMapping = {}, const States& states = {});
 
 			void SetEnv(Environment environment);
 
@@ -49,83 +49,83 @@ namespace nzsl
 			};
 
 			static const char* GetFlipYUniformName();
-			static ShaderAst::SanitizeVisitor::Options GetSanitizeOptions();
+			static Ast::SanitizeVisitor::Options GetSanitizeOptions();
 
 		private:
-			void Append(const ShaderAst::AliasType& aliasType);
-			void Append(const ShaderAst::ArrayType& type);
-			void Append(ShaderAst::BuiltinEntry builtin);
-			void Append(const ShaderAst::ExpressionType& type);
-			void Append(const ShaderAst::ExpressionValue<ShaderAst::ExpressionType>& type);
-			void Append(const ShaderAst::FunctionType& functionType);
-			void Append(const ShaderAst::IntrinsicFunctionType& intrinsicFunctionType);
-			void Append(const ShaderAst::MatrixType& matrixType);
-			void Append(const ShaderAst::MethodType& methodType);
-			void Append(ShaderAst::MemoryLayout layout);
-			void Append(ShaderAst::NoType);
-			void Append(ShaderAst::PrimitiveType type);
-			void Append(const ShaderAst::SamplerType& samplerType);
-			void Append(const ShaderAst::StructType& structType);
-			void Append(const ShaderAst::Type& type);
-			void Append(const ShaderAst::UniformType& uniformType);
-			void Append(const ShaderAst::VectorType& vecType);
+			void Append(const Ast::AliasType& aliasType);
+			void Append(const Ast::ArrayType& type);
+			void Append(Ast::BuiltinEntry builtin);
+			void Append(const Ast::ExpressionType& type);
+			void Append(const Ast::ExpressionValue<Ast::ExpressionType>& type);
+			void Append(const Ast::FunctionType& functionType);
+			void Append(const Ast::IntrinsicFunctionType& intrinsicFunctionType);
+			void Append(const Ast::MatrixType& matrixType);
+			void Append(const Ast::MethodType& methodType);
+			void Append(Ast::MemoryLayout layout);
+			void Append(Ast::NoType);
+			void Append(Ast::PrimitiveType type);
+			void Append(const Ast::SamplerType& samplerType);
+			void Append(const Ast::StructType& structType);
+			void Append(const Ast::Type& type);
+			void Append(const Ast::UniformType& uniformType);
+			void Append(const Ast::VectorType& vecType);
 			template<typename T> void Append(const T& param);
 			template<typename T1, typename T2, typename... Args> void Append(const T1& firstParam, const T2& secondParam, Args&&... params);
 			void AppendComment(const std::string& section);
 			void AppendCommentSection(const std::string& section);
-			void AppendFunctionDeclaration(const ShaderAst::DeclareFunctionStatement& node, const std::string& nameOverride, bool forward = false);
+			void AppendFunctionDeclaration(const Ast::DeclareFunctionStatement& node, const std::string& nameOverride, bool forward = false);
 			void AppendHeader();
 			void AppendLine(const std::string& txt = {});
 			template<typename... Args> void AppendLine(Args&&... params);
-			void AppendStatementList(std::vector<ShaderAst::StatementPtr>& statements);
-			void AppendVariableDeclaration(const ShaderAst::ExpressionType& varType, const std::string& varName);
+			void AppendStatementList(std::vector<Ast::StatementPtr>& statements);
+			void AppendVariableDeclaration(const Ast::ExpressionType& varType, const std::string& varName);
 
 			void EnterScope();
 			void LeaveScope(bool skipLine = true);
 
-			void HandleEntryPoint(ShaderAst::DeclareFunctionStatement& node);
+			void HandleEntryPoint(Ast::DeclareFunctionStatement& node);
 			void HandleInOut();
 
-			void RegisterStruct(std::size_t structIndex, ShaderAst::StructDescription* desc, std::string structName);
+			void RegisterStruct(std::size_t structIndex, Ast::StructDescription* desc, std::string structName);
 			void RegisterVariable(std::size_t varIndex, std::string varName);
 
-			void ScopeVisit(ShaderAst::Statement& node);
+			void ScopeVisit(Ast::Statement& node);
 
-			void Visit(ShaderAst::ExpressionPtr& expr, bool encloseIfRequired = false);
+			void Visit(Ast::ExpressionPtr& expr, bool encloseIfRequired = false);
 
-			void Visit(ShaderAst::AccessIdentifierExpression& node) override;
-			void Visit(ShaderAst::AccessIndexExpression& node) override;
-			void Visit(ShaderAst::AliasValueExpression& node) override;
-			void Visit(ShaderAst::AssignExpression& node) override;
-			void Visit(ShaderAst::BinaryExpression& node) override;
-			void Visit(ShaderAst::CallFunctionExpression& node) override;
-			void Visit(ShaderAst::CastExpression& node) override;
-			void Visit(ShaderAst::ConstantValueExpression& node) override;
-			void Visit(ShaderAst::FunctionExpression& node) override;
-			void Visit(ShaderAst::IntrinsicExpression& node) override;
-			void Visit(ShaderAst::SwizzleExpression& node) override;
-			void Visit(ShaderAst::VariableValueExpression& node) override;
-			void Visit(ShaderAst::UnaryExpression& node) override;
+			void Visit(Ast::AccessIdentifierExpression& node) override;
+			void Visit(Ast::AccessIndexExpression& node) override;
+			void Visit(Ast::AliasValueExpression& node) override;
+			void Visit(Ast::AssignExpression& node) override;
+			void Visit(Ast::BinaryExpression& node) override;
+			void Visit(Ast::CallFunctionExpression& node) override;
+			void Visit(Ast::CastExpression& node) override;
+			void Visit(Ast::ConstantValueExpression& node) override;
+			void Visit(Ast::FunctionExpression& node) override;
+			void Visit(Ast::IntrinsicExpression& node) override;
+			void Visit(Ast::SwizzleExpression& node) override;
+			void Visit(Ast::VariableValueExpression& node) override;
+			void Visit(Ast::UnaryExpression& node) override;
 
-			void Visit(ShaderAst::BranchStatement& node) override;
-			void Visit(ShaderAst::DeclareAliasStatement& node) override;
-			void Visit(ShaderAst::DeclareConstStatement& node) override;
-			void Visit(ShaderAst::DeclareExternalStatement& node) override;
-			void Visit(ShaderAst::DeclareFunctionStatement& node) override;
-			void Visit(ShaderAst::DeclareOptionStatement& node) override;
-			void Visit(ShaderAst::DeclareStructStatement& node) override;
-			void Visit(ShaderAst::DeclareVariableStatement& node) override;
-			void Visit(ShaderAst::DiscardStatement& node) override;
-			void Visit(ShaderAst::ExpressionStatement& node) override;
-			void Visit(ShaderAst::ImportStatement& node) override;
-			void Visit(ShaderAst::MultiStatement& node) override;
-			void Visit(ShaderAst::NoOpStatement& node) override;
-			void Visit(ShaderAst::ReturnStatement& node) override;
-			void Visit(ShaderAst::ScopedStatement& node) override;
-			void Visit(ShaderAst::WhileStatement& node) override;
+			void Visit(Ast::BranchStatement& node) override;
+			void Visit(Ast::DeclareAliasStatement& node) override;
+			void Visit(Ast::DeclareConstStatement& node) override;
+			void Visit(Ast::DeclareExternalStatement& node) override;
+			void Visit(Ast::DeclareFunctionStatement& node) override;
+			void Visit(Ast::DeclareOptionStatement& node) override;
+			void Visit(Ast::DeclareStructStatement& node) override;
+			void Visit(Ast::DeclareVariableStatement& node) override;
+			void Visit(Ast::DiscardStatement& node) override;
+			void Visit(Ast::ExpressionStatement& node) override;
+			void Visit(Ast::ImportStatement& node) override;
+			void Visit(Ast::MultiStatement& node) override;
+			void Visit(Ast::NoOpStatement& node) override;
+			void Visit(Ast::ReturnStatement& node) override;
+			void Visit(Ast::ScopedStatement& node) override;
+			void Visit(Ast::WhileStatement& node) override;
 
-			static bool HasExplicitBinding(ShaderAst::StatementPtr& shader);
-			static bool HasExplicitLocation(ShaderAst::StatementPtr& shader);
+			static bool HasExplicitBinding(Ast::StatementPtr& shader);
+			static bool HasExplicitLocation(Ast::StatementPtr& shader);
 
 			struct State;
 

@@ -12,7 +12,7 @@
 #include <NZSL/Ast/AstExpressionVisitor.hpp>
 #include <NZSL/Ast/AstStatementVisitor.hpp>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
 	class NZSL_API AstRecursiveVisitor : public AstExpressionVisitor, public AstStatementVisitor
 	{

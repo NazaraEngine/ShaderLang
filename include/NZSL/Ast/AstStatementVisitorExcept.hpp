@@ -11,14 +11,14 @@
 #include <NZSL/Config.hpp>
 #include <NZSL/Ast/AstStatementVisitor.hpp>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
 	class NZSL_API AstStatementVisitorExcept : public AstStatementVisitor
 	{
 		public:
 			using AstStatementVisitor::Visit;
 
-#define NZSL_SHADERAST_STATEMENT(Node) void Visit(ShaderAst::Node& node) override;
+#define NZSL_SHADERAST_STATEMENT(Node) void Visit(Ast::Node& node) override;
 #include <NZSL/Ast/AstNodeList.hpp>
 	};
 }

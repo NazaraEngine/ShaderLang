@@ -14,7 +14,7 @@
 #include <NZSL/Ast/ExpressionValue.hpp>
 #include <vector>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
 	class NZSL_API AstCloner : public AstExpressionVisitor, public AstStatementVisitor
 	{

@@ -11,7 +11,7 @@
 #include <memory>
 #include <string>
 
-namespace nzsl::ShaderLang
+namespace nzsl
 {
 	struct SourceLocation
 	{

@@ -12,7 +12,7 @@
 #include <NZSL/Ast/ExpressionType.hpp>
 #include <functional>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
 	enum class TypeParameterCategory
 	{
@@ -29,7 +29,7 @@ namespace nzsl::ShaderAst
 	struct PartialType
 	{
 		std::vector<TypeParameterCategory> parameters;
-		std::function<ExpressionType(const TypeParameter* parameters, std::size_t parameterCount, const ShaderLang::SourceLocation& sourceLocation)> buildFunc;
+		std::function<ExpressionType(const TypeParameter* parameters, std::size_t parameterCount, const SourceLocation& sourceLocation)> buildFunc;
 	};
 
 }
