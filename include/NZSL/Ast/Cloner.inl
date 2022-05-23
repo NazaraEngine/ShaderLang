@@ -2,12 +2,12 @@
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
-#include <NZSL/Ast/AstCloner.hpp>
+#include <NZSL/Ast/Cloner.hpp>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
 	template<typename T>
-	ExpressionValue<T> AstCloner::Clone(const ExpressionValue<T>& expressionValue)
+	ExpressionValue<T> Cloner::Clone(const ExpressionValue<T>& expressionValue)
 	{
 		if (!expressionValue.HasValue())
 			return {};
@@ -21,12 +21,12 @@ namespace nzsl::ShaderAst
 		}
 	}
 
-	inline ExpressionValue<ExpressionType> AstCloner::Clone(const ExpressionValue<ExpressionType>& expressionValue)
+	inline ExpressionValue<ExpressionType> Cloner::Clone(const ExpressionValue<ExpressionType>& expressionValue)
 	{
 		return CloneType(expressionValue);
 	}
 
-	ExpressionPtr AstCloner::CloneExpression(const ExpressionPtr& expr)
+	ExpressionPtr Cloner::CloneExpression(const ExpressionPtr& expr)
 	{
 		if (!expr)
 			return nullptr;
@@ -34,7 +34,7 @@ namespace nzsl::ShaderAst
 		return CloneExpression(*expr);
 	}
 
-	StatementPtr AstCloner::CloneStatement(const StatementPtr& statement)
+	StatementPtr Cloner::CloneStatement(const StatementPtr& statement)
 	{
 		if (!statement)
 			return nullptr;
@@ -46,19 +46,19 @@ namespace nzsl::ShaderAst
 	template<typename T>
 	ExpressionValue<T> Clone(const ExpressionValue<T>& attribute)
 	{
-		AstCloner cloner;
+		Cloner cloner;
 		return cloner.Clone(attribute);
 	}
 
 	inline ExpressionPtr Clone(Expression& node)
 	{
-		AstCloner cloner;
+		Cloner cloner;
 		return cloner.Clone(node);
 	}
 
 	inline StatementPtr Clone(Statement& node)
 	{
-		AstCloner cloner;
+		Cloner cloner;
 		return cloner.Clone(node);
 	}
 }

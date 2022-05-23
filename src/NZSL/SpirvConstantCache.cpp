@@ -452,13 +452,13 @@ namespace nzsl
 
 	SpirvConstantCache::~SpirvConstantCache() = default;
 	
-	auto SpirvConstantCache::BuildConstant(const ShaderAst::ConstantValue& value) const -> ConstantPtr
+	auto SpirvConstantCache::BuildConstant(const Ast::ConstantValue& value) const -> ConstantPtr
 	{
 		return std::make_shared<Constant>(std::visit([&](auto&& arg) -> SpirvConstantCache::AnyConstant
 		{
 			using T = std::decay_t<decltype(arg)>;
 
-			if constexpr (std::is_same_v<T, ShaderAst::NoValue>)
+			if constexpr (std::is_same_v<T, Ast::NoValue>)
 				throw std::runtime_error("invalid type (value expected)");
 			else if constexpr (std::is_same_v<T, std::string>)
 				throw std::runtime_error("unexpected string litteral");
@@ -469,7 +469,7 @@ namespace nzsl
 			else if constexpr (std::is_same_v<T, Vector2f> || std::is_same_v<T, Vector2i32>)
 			{
 				return ConstantComposite{
-					BuildType(ShaderAst::VectorType{ 2, (std::is_same_v<T, Vector2f>) ? ShaderAst::PrimitiveType::Float32 : ShaderAst::PrimitiveType::Int32 }),
+					BuildType(Ast::VectorType{ 2, (std::is_same_v<T, Vector2f>) ? Ast::PrimitiveType::Float32 : Ast::PrimitiveType::Int32 }),
 					{
 						BuildConstant(arg.x()),
 						BuildConstant(arg.y())
@@ -479,7 +479,7 @@ namespace nzsl
 			else if constexpr (std::is_same_v<T, Vector3f> || std::is_same_v<T, Vector3i32>)
 			{
 				return ConstantComposite{
-					BuildType(ShaderAst::VectorType{ 3, (std::is_same_v<T, Vector3f>) ? ShaderAst::PrimitiveType::Float32 : ShaderAst::PrimitiveType::Int32 }),
+					BuildType(Ast::VectorType{ 3, (std::is_same_v<T, Vector3f>) ? Ast::PrimitiveType::Float32 : Ast::PrimitiveType::Int32 }),
 					{
 						BuildConstant(arg.x()),
 						BuildConstant(arg.y()),
@@ -490,7 +490,7 @@ namespace nzsl
 			else if constexpr (std::is_same_v<T, Vector4f> || std::is_same_v<T, Vector4i32>)
 			{
 				return ConstantComposite{
-					BuildType(ShaderAst::VectorType{ 4, (std::is_same_v<T, Vector4f>) ? ShaderAst::PrimitiveType::Float32 : ShaderAst::PrimitiveType::Int32 }),
+					BuildType(Ast::VectorType{ 4, (std::is_same_v<T, Vector4f>) ? Ast::PrimitiveType::Float32 : Ast::PrimitiveType::Int32 }),
 					{
 						BuildConstant(arg.x()),
 						BuildConstant(arg.y()),
@@ -604,7 +604,7 @@ namespace nzsl
 		return structOffsets;
 	}
 
-	auto SpirvConstantCache::BuildFunctionType(const ShaderAst::ExpressionType& retType, const std::vector<ShaderAst::ExpressionType>& parameters) const -> TypePtr
+	auto SpirvConstantCache::BuildFunctionType(const Ast::ExpressionType& retType, const std::vector<Ast::ExpressionType>& parameters) const -> TypePtr
 	{
 		std::vector<SpirvConstantCache::TypePtr> parameterTypes;
 		parameterTypes.reserve(parameters.size());
@@ -618,7 +618,7 @@ namespace nzsl
 		});
 	}
 
-	auto SpirvConstantCache::BuildPointerType(const ShaderAst::ExpressionType& type, SpirvStorageClass storageClass) const -> TypePtr
+	auto SpirvConstantCache::BuildPointerType(const Ast::ExpressionType& type, SpirvStorageClass storageClass) const -> TypePtr
 	{
 		bool wasInblockStruct = m_internal->isInBlockStruct;
 		if (storageClass == SpirvStorageClass::Uniform)
@@ -650,7 +650,7 @@ namespace nzsl
 		return typePtr;
 	}
 
-	auto SpirvConstantCache::BuildPointerType(const ShaderAst::PrimitiveType& type, SpirvStorageClass storageClass) const -> TypePtr
+	auto SpirvConstantCache::BuildPointerType(const Ast::PrimitiveType& type, SpirvStorageClass storageClass) const -> TypePtr
 	{
 		bool wasInblockStruct = m_internal->isInBlockStruct;
 		if (storageClass == SpirvStorageClass::Uniform)
@@ -666,13 +666,13 @@ namespace nzsl
 		return typePtr;
 	}
 
-	auto SpirvConstantCache::BuildType(const ShaderAst::AliasType& /*type*/) const -> TypePtr
+	auto SpirvConstantCache::BuildType(const Ast::AliasType& /*type*/) const -> TypePtr
 	{
 		// No AliasType is expected (as they should have been resolved by now)
 		throw std::runtime_error("unexpected alias");
 	}
 
-	auto SpirvConstantCache::BuildType(const ShaderAst::ArrayType& type) const -> TypePtr
+	auto SpirvConstantCache::BuildType(const Ast::ArrayType& type) const -> TypePtr
 	{
 		const auto& containedType = type.containedType->type;
 
@@ -695,7 +695,7 @@ namespace nzsl
 		});
 	}
 
-	auto SpirvConstantCache::BuildType(const ShaderAst::ExpressionType& type) const -> TypePtr
+	auto SpirvConstantCache::BuildType(const Ast::ExpressionType& type) const -> TypePtr
 	{
 		return std::visit([&](auto&& arg) -> TypePtr
 		{
@@ -703,25 +703,25 @@ namespace nzsl
 		}, type);
 	}
 
-	auto SpirvConstantCache::BuildType(const ShaderAst::PrimitiveType& type) const -> TypePtr
+	auto SpirvConstantCache::BuildType(const Ast::PrimitiveType& type) const -> TypePtr
 	{
 		return std::make_shared<Type>([&]() -> AnyType
 		{
 			switch (type)
 			{
-				case ShaderAst::PrimitiveType::Boolean:
+				case Ast::PrimitiveType::Boolean:
 					return Bool{};
 
-				case ShaderAst::PrimitiveType::Float32:
+				case Ast::PrimitiveType::Float32:
 					return Float{ 32 };
 
-				case ShaderAst::PrimitiveType::Int32:
+				case Ast::PrimitiveType::Int32:
 					return Integer{ 32, true };
 
-				case ShaderAst::PrimitiveType::UInt32:
+				case Ast::PrimitiveType::UInt32:
 					return Integer{ 32, false };
 
-				case ShaderAst::PrimitiveType::String:
+				case Ast::PrimitiveType::String:
 					break;
 			}
 
@@ -729,23 +729,23 @@ namespace nzsl
 		}());
 	}
 
-	auto SpirvConstantCache::BuildType(const ShaderAst::MatrixType& type) const -> TypePtr
+	auto SpirvConstantCache::BuildType(const Ast::MatrixType& type) const -> TypePtr
 	{
 		return std::make_shared<Type>(
 			Matrix{
-				BuildType(ShaderAst::VectorType {
+				BuildType(Ast::VectorType {
 					std::uint32_t(type.rowCount), type.type
 				}),
 				std::uint32_t(type.columnCount)
 			});
 	}
 
-	auto SpirvConstantCache::BuildType(const ShaderAst::NoType& /*type*/) const -> TypePtr
+	auto SpirvConstantCache::BuildType(const Ast::NoType& /*type*/) const -> TypePtr
 	{
 		return std::make_shared<Type>(Void{});
 	}
 
-	auto SpirvConstantCache::BuildType(const ShaderAst::SamplerType& type) const -> TypePtr
+	auto SpirvConstantCache::BuildType(const Ast::SamplerType& type) const -> TypePtr
 	{
 		Image imageType;
 		imageType.sampled = true;
@@ -779,13 +779,13 @@ namespace nzsl
 		return std::make_shared<Type>(SampledImage{ std::make_shared<Type>(imageType) });
 	}
 
-	auto SpirvConstantCache::BuildType(const ShaderAst::StructType& type) const -> TypePtr
+	auto SpirvConstantCache::BuildType(const Ast::StructType& type) const -> TypePtr
 	{
 		assert(m_internal->structCallback);
 		return BuildType(m_internal->structCallback(type.structIndex));
 	}
 
-	auto SpirvConstantCache::BuildType(const ShaderAst::StructDescription& structDesc, std::vector<SpirvDecoration> decorations) const -> TypePtr
+	auto SpirvConstantCache::BuildType(const Ast::StructDescription& structDesc, std::vector<SpirvDecoration> decorations) const -> TypePtr
 	{
 		Structure sType;
 		sType.name = structDesc.name;
@@ -810,12 +810,12 @@ namespace nzsl
 		return std::make_shared<Type>(std::move(sType));
 	}
 
-	auto SpirvConstantCache::BuildType(const ShaderAst::VectorType& type) const -> TypePtr
+	auto SpirvConstantCache::BuildType(const Ast::VectorType& type) const -> TypePtr
 	{
 		return std::make_shared<Type>(Vector{ BuildType(type.type), std::uint32_t(type.componentCount) });
 	}
 
-	auto SpirvConstantCache::BuildType(const ShaderAst::UniformType& type) const -> TypePtr
+	auto SpirvConstantCache::BuildType(const Ast::UniformType& type) const -> TypePtr
 	{
 		return BuildType(type.containedType);
 	}

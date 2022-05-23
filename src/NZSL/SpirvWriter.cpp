@@ -11,9 +11,9 @@
 #include <NZSL/SpirvConstantCache.hpp>
 #include <NZSL/SpirvData.hpp>
 #include <NZSL/SpirvSection.hpp>
-#include <NZSL/Ast/AstCloner.hpp>
-#include <NZSL/Ast/AstConstantPropagationVisitor.hpp>
-#include <NZSL/Ast/AstRecursiveVisitor.hpp>
+#include <NZSL/Ast/Cloner.hpp>
+#include <NZSL/Ast/ConstantPropagationVisitor.hpp>
+#include <NZSL/Ast/RecursiveVisitor.hpp>
 #include <NZSL/Ast/EliminateUnusedPassVisitor.hpp>
 #include <NZSL/Ast/SanitizeVisitor.hpp>
 #include <SpirV/GLSL.std.450.h>
@@ -37,13 +37,13 @@ namespace nzsl
 			SpirvBuiltIn decoration;
 		};
 
-		constexpr auto s_spirvBuiltinMapping = frozen::make_unordered_map<ShaderAst::BuiltinEntry, SpirvBuiltin>({
-			{ ShaderAst::BuiltinEntry::FragCoord,      { "FragmentCoordinates", ShaderStageType::Fragment, SpirvBuiltIn::FragCoord } },
-			{ ShaderAst::BuiltinEntry::FragDepth,      { "FragmentDepth",       ShaderStageType::Fragment, SpirvBuiltIn::FragDepth } },
-			{ ShaderAst::BuiltinEntry::VertexPosition, { "VertexPosition",      ShaderStageType::Vertex,   SpirvBuiltIn::Position } }
+		constexpr auto s_spirvBuiltinMapping = frozen::make_unordered_map<Ast::BuiltinEntry, SpirvBuiltin>({
+			{ Ast::BuiltinEntry::FragCoord,      { "FragmentCoordinates", ShaderStageType::Fragment, SpirvBuiltIn::FragCoord } },
+			{ Ast::BuiltinEntry::FragDepth,      { "FragmentDepth",       ShaderStageType::Fragment, SpirvBuiltIn::FragDepth } },
+			{ Ast::BuiltinEntry::VertexPosition, { "VertexPosition",      ShaderStageType::Vertex,   SpirvBuiltIn::Position } }
 		});
 
-		class SpirvPreVisitor : public ShaderAst::AstRecursiveVisitor
+		class SpirvPreVisitor : public Ast::RecursiveVisitor
 		{
 			public:
 				struct UniformVar
@@ -57,38 +57,38 @@ namespace nzsl
 				using LocationDecoration = std::map<std::uint32_t, std::uint32_t>;
 				using ExtInstList = std::unordered_set<std::string>;
 				using ExtVarContainer = std::unordered_map<std::size_t /*varIndex*/, UniformVar>;
-				using LocalContainer = std::unordered_set<ShaderAst::ExpressionType>;
-				using FunctionContainer = std::vector<std::reference_wrapper<ShaderAst::DeclareFunctionStatement>>;
-				using StructContainer = std::vector<ShaderAst::StructDescription*>;
+				using LocalContainer = std::unordered_set<Ast::ExpressionType>;
+				using FunctionContainer = std::vector<std::reference_wrapper<Ast::DeclareFunctionStatement>>;
+				using StructContainer = std::vector<Ast::StructDescription*>;
 
 				SpirvPreVisitor(SpirvConstantCache& constantCache, std::unordered_map<std::size_t, SpirvAstVisitor::FuncData>& funcs) :
 				m_constantCache(constantCache),
 				m_funcs(funcs)
 				{
-					m_constantCache.SetStructCallback([this](std::size_t structIndex) -> const ShaderAst::StructDescription&
+					m_constantCache.SetStructCallback([this](std::size_t structIndex) -> const Ast::StructDescription&
 					{
 						assert(structIndex < declaredStructs.size());
 						return *declaredStructs[structIndex];
 					});
 				}
 
-				void Visit(ShaderAst::AccessIndexExpression& node) override
+				void Visit(Ast::AccessIndexExpression& node) override
 				{
-					AstRecursiveVisitor::Visit(node);
+					RecursiveVisitor::Visit(node);
 
 					m_constantCache.Register(*m_constantCache.BuildType(node.cachedExpressionType.value()));
 				}
 
-				void Visit(ShaderAst::BinaryExpression& node) override
+				void Visit(Ast::BinaryExpression& node) override
 				{
-					AstRecursiveVisitor::Visit(node);
+					RecursiveVisitor::Visit(node);
 
 					m_constantCache.Register(*m_constantCache.BuildType(node.cachedExpressionType.value()));
 				}
 
-				void Visit(ShaderAst::CallFunctionExpression& node) override
+				void Visit(Ast::CallFunctionExpression& node) override
 				{
-					AstRecursiveVisitor::Visit(node);
+					RecursiveVisitor::Visit(node);
 
 					assert(m_funcIndex);
 					auto& func = Nz::Retrieve(m_funcs, *m_funcIndex);
@@ -103,44 +103,44 @@ namespace nzsl
 					}
 				}
 
-				void Visit(ShaderAst::ConditionalExpression& /*node*/) override
+				void Visit(Ast::ConditionalExpression& /*node*/) override
 				{
 					throw std::runtime_error("unexpected conditional expression, did you forget to sanitize the shader?");
 				}
 
-				void Visit(ShaderAst::ConditionalStatement& /*node*/) override
+				void Visit(Ast::ConditionalStatement& /*node*/) override
 				{
 					throw std::runtime_error("unexpected conditional expression, did you forget to sanitize the shader?");
 				}
 
-				void Visit(ShaderAst::ConstantValueExpression& node) override
+				void Visit(Ast::ConstantValueExpression& node) override
 				{
 					std::visit([&](auto&& arg)
 					{
 						m_constantCache.Register(*m_constantCache.BuildConstant(arg));
 					}, node.value);
 
-					AstRecursiveVisitor::Visit(node);
+					RecursiveVisitor::Visit(node);
 				}
 
-				void Visit(ShaderAst::DeclareExternalStatement& node) override
+				void Visit(Ast::DeclareExternalStatement& node) override
 				{
 					for (auto& extVar : node.externalVars)
 					{
 						SpirvConstantCache::Variable variable;
 						variable.debugName = extVar.name;
 
-						const ShaderAst::ExpressionType& extVarType = extVar.type.GetResultingValue();
+						const Ast::ExpressionType& extVarType = extVar.type.GetResultingValue();
 
-						if (ShaderAst::IsSamplerType(extVarType))
+						if (Ast::IsSamplerType(extVarType))
 						{
 							variable.storageClass = SpirvStorageClass::UniformConstant;
 							variable.type = m_constantCache.BuildPointerType(extVarType, variable.storageClass);
 						}
 						else
 						{
-							assert(ShaderAst::IsUniformType(extVarType));
-							const auto& uniformType = std::get<ShaderAst::UniformType>(extVarType);
+							assert(Ast::IsUniformType(extVarType));
+							const auto& uniformType = std::get<Ast::UniformType>(extVarType);
 							const auto& structType = uniformType.containedType;
 							assert(structType.structIndex < declaredStructs.size());
 							const auto& type = m_constantCache.BuildType(*declaredStructs[structType.structIndex], { SpirvDecoration::Block });
@@ -159,7 +159,7 @@ namespace nzsl
 					}
 				}
 
-				void Visit(ShaderAst::DeclareFunctionStatement& node) override
+				void Visit(Ast::DeclareFunctionStatement& node) override
 				{
 					std::optional<ShaderStageType> entryPointType;
 					if (node.entryStage.HasValue())
@@ -174,7 +174,7 @@ namespace nzsl
 
 					if (!entryPointType)
 					{
-						std::vector<ShaderAst::ExpressionType> parameterTypes;
+						std::vector<Ast::ExpressionType> parameterTypes;
 						for (auto& parameter : node.parameters)
 							parameterTypes.push_back(parameter.type.GetResultingValue());
 
@@ -186,8 +186,8 @@ namespace nzsl
 						}
 						else
 						{
-							funcData.returnTypeId = m_constantCache.Register(*m_constantCache.BuildType(ShaderAst::NoType{}));
-							funcData.funcTypeId = m_constantCache.Register(*m_constantCache.BuildFunctionType(ShaderAst::NoType{}, parameterTypes));
+							funcData.returnTypeId = m_constantCache.Register(*m_constantCache.BuildType(Ast::NoType{}));
+							funcData.funcTypeId = m_constantCache.Register(*m_constantCache.BuildFunctionType(Ast::NoType{}, parameterTypes));
 						}
 
 						for (auto& parameter : node.parameters)
@@ -217,16 +217,16 @@ namespace nzsl
 
 								switch (node.depthWrite.GetResultingValue())
 								{
-									case ShaderAst::DepthWriteMode::Replace:   break;
-									case ShaderAst::DepthWriteMode::Greater:   executionModes.push_back(SpirvExecutionMode::DepthGreater); break;
-									case ShaderAst::DepthWriteMode::Less:      executionModes.push_back(SpirvExecutionMode::DepthLess); break;
-									case ShaderAst::DepthWriteMode::Unchanged: executionModes.push_back(SpirvExecutionMode::DepthUnchanged); break;
+									case Ast::DepthWriteMode::Replace:   break;
+									case Ast::DepthWriteMode::Greater:   executionModes.push_back(SpirvExecutionMode::DepthGreater); break;
+									case Ast::DepthWriteMode::Less:      executionModes.push_back(SpirvExecutionMode::DepthLess); break;
+									case Ast::DepthWriteMode::Unchanged: executionModes.push_back(SpirvExecutionMode::DepthUnchanged); break;
 								}
 							}
 						}
 
-						funcData.returnTypeId = m_constantCache.Register(*m_constantCache.BuildType(ShaderAst::NoType{}));
-						funcData.funcTypeId = m_constantCache.Register(*m_constantCache.BuildFunctionType(ShaderAst::NoType{}, {}));
+						funcData.returnTypeId = m_constantCache.Register(*m_constantCache.BuildType(Ast::NoType{}));
+						funcData.funcTypeId = m_constantCache.Register(*m_constantCache.BuildFunctionType(Ast::NoType{}, {}));
 
 						std::optional<EntryPoint::InputStruct> inputStruct;
 						std::vector<EntryPoint::Input> inputs;
@@ -236,10 +236,10 @@ namespace nzsl
 							auto& parameter = node.parameters.front();
 							const auto& parameterType = parameter.type.GetResultingValue();
 
-							assert(std::holds_alternative<ShaderAst::StructType>(parameterType));
+							assert(std::holds_alternative<Ast::StructType>(parameterType));
 
-							std::size_t structIndex = std::get<ShaderAst::StructType>(parameterType).structIndex;
-							const ShaderAst::StructDescription* structDesc = declaredStructs[structIndex];
+							std::size_t structIndex = std::get<Ast::StructType>(parameterType).structIndex;
+							const Ast::StructDescription* structDesc = declaredStructs[structIndex];
 
 							std::size_t memberIndex = 0;
 							for (const auto& member : structDesc->members)
@@ -269,12 +269,12 @@ namespace nzsl
 						std::vector<EntryPoint::Output> outputs;
 						if (node.returnType.HasValue() && !IsNoType(node.returnType.GetResultingValue()))
 						{
-							const ShaderAst::ExpressionType& returnType = node.returnType.GetResultingValue();
+							const Ast::ExpressionType& returnType = node.returnType.GetResultingValue();
 
-							assert(std::holds_alternative<ShaderAst::StructType>(returnType));
+							assert(std::holds_alternative<Ast::StructType>(returnType));
 
-							std::size_t structIndex = std::get<ShaderAst::StructType>(returnType).structIndex;
-							const ShaderAst::StructDescription* structDesc = declaredStructs[structIndex];
+							std::size_t structIndex = std::get<Ast::StructType>(returnType).structIndex;
+							const Ast::StructDescription* structDesc = declaredStructs[structIndex];
 
 							std::size_t memberIndex = 0;
 							for (const auto& member : structDesc->members)
@@ -308,13 +308,13 @@ namespace nzsl
 					}
 
 					m_funcIndex = funcIndex;
-					AstRecursiveVisitor::Visit(node);
+					RecursiveVisitor::Visit(node);
 					m_funcIndex.reset();
 				}
 
-				void Visit(ShaderAst::DeclareStructStatement& node) override
+				void Visit(Ast::DeclareStructStatement& node) override
 				{
-					AstRecursiveVisitor::Visit(node);
+					RecursiveVisitor::Visit(node);
 
 					assert(node.structIndex);
 					std::size_t structIndex = *node.structIndex;
@@ -326,9 +326,9 @@ namespace nzsl
 					m_constantCache.Register(*m_constantCache.BuildType(node.description));
 				}
 
-				void Visit(ShaderAst::DeclareVariableStatement& node) override
+				void Visit(Ast::DeclareVariableStatement& node) override
 				{
-					AstRecursiveVisitor::Visit(node);
+					RecursiveVisitor::Visit(node);
 
 					assert(m_funcIndex);
 					auto& func = m_funcs[*m_funcIndex];
@@ -340,43 +340,43 @@ namespace nzsl
 					var.typeId = m_constantCache.Register(*m_constantCache.BuildPointerType(node.varType.GetResultingValue(), SpirvStorageClass::Function));
 				}
 
-				void Visit(ShaderAst::IdentifierExpression& node) override
+				void Visit(Ast::IdentifierExpression& node) override
 				{
 					m_constantCache.Register(*m_constantCache.BuildType(node.cachedExpressionType.value()));
 
-					AstRecursiveVisitor::Visit(node);
+					RecursiveVisitor::Visit(node);
 				}
 
-				void Visit(ShaderAst::IntrinsicExpression& node) override
+				void Visit(Ast::IntrinsicExpression& node) override
 				{
-					AstRecursiveVisitor::Visit(node);
+					RecursiveVisitor::Visit(node);
 
 					switch (node.intrinsic)
 					{
 						// Require GLSL.std.450
-						case ShaderAst::IntrinsicType::CrossProduct:
-						case ShaderAst::IntrinsicType::Exp:
-						case ShaderAst::IntrinsicType::Length:
-						case ShaderAst::IntrinsicType::Max:
-						case ShaderAst::IntrinsicType::Min:
-						case ShaderAst::IntrinsicType::Normalize:
-						case ShaderAst::IntrinsicType::Pow:
-						case ShaderAst::IntrinsicType::Reflect:
+						case Ast::IntrinsicType::CrossProduct:
+						case Ast::IntrinsicType::Exp:
+						case Ast::IntrinsicType::Length:
+						case Ast::IntrinsicType::Max:
+						case Ast::IntrinsicType::Min:
+						case Ast::IntrinsicType::Normalize:
+						case Ast::IntrinsicType::Pow:
+						case Ast::IntrinsicType::Reflect:
 							extInsts.emplace("GLSL.std.450");
 							break;
 
 						// Part of SPIR-V core
-						case ShaderAst::IntrinsicType::DotProduct:
-						case ShaderAst::IntrinsicType::SampleTexture:
+						case Ast::IntrinsicType::DotProduct:
+						case Ast::IntrinsicType::SampleTexture:
 							break;
 					}
 
 					m_constantCache.Register(*m_constantCache.BuildType(node.cachedExpressionType.value()));
 				}
 
-				void Visit(ShaderAst::SwizzleExpression& node) override
+				void Visit(Ast::SwizzleExpression& node) override
 				{
-					AstRecursiveVisitor::Visit(node);
+					RecursiveVisitor::Visit(node);
 
 					for (std::size_t i = 0; i < node.componentCount; ++i)
 					{
@@ -387,14 +387,14 @@ namespace nzsl
 					m_constantCache.Register(*m_constantCache.BuildType(node.cachedExpressionType.value()));
 				}
 
-				void Visit(ShaderAst::UnaryExpression& node) override
+				void Visit(Ast::UnaryExpression& node) override
 				{
-					AstRecursiveVisitor::Visit(node);
+					RecursiveVisitor::Visit(node);
 
 					m_constantCache.Register(*m_constantCache.BuildType(node.cachedExpressionType.value()));
 				}
 
-				std::uint32_t HandleEntryInOutType(ShaderStageType entryPointType, std::size_t funcIndex, const ShaderAst::StructDescription::StructMember& member, SpirvStorageClass storageClass)
+				std::uint32_t HandleEntryInOutType(ShaderStageType entryPointType, std::size_t funcIndex, const Ast::StructDescription::StructMember& member, SpirvStorageClass storageClass)
 				{
 					if (member.builtin.HasValue())
 					{
@@ -457,7 +457,7 @@ namespace nzsl
 
 		struct Func
 		{
-			const ShaderAst::DeclareFunctionStatement* statement = nullptr;
+			const Ast::DeclareFunctionStatement* statement = nullptr;
 			std::uint32_t typeId;
 			std::uint32_t id;
 		};
@@ -483,13 +483,13 @@ namespace nzsl
 	{
 	}
 
-	std::vector<std::uint32_t> SpirvWriter::Generate(const ShaderAst::Module& module, const States& states)
+	std::vector<std::uint32_t> SpirvWriter::Generate(const Ast::Module& module, const States& states)
 	{
-		ShaderAst::ModulePtr sanitizedModule;
-		const ShaderAst::Module* targetModule;
+		Ast::ModulePtr sanitizedModule;
+		const Ast::Module* targetModule;
 		if (!states.sanitized)
 		{
-			ShaderAst::SanitizeVisitor::Options options;
+			Ast::SanitizeVisitor::Options options;
 			options.moduleResolver = states.shaderModuleResolver;
 			options.optionValues = states.optionValues;
 			options.reduceLoopsToWhile = true;
@@ -501,22 +501,22 @@ namespace nzsl
 			options.splitMultipleBranches = true;
 			options.useIdentifierAccessesForStructs = false;
 
-			sanitizedModule = ShaderAst::Sanitize(module, options);
+			sanitizedModule = Ast::Sanitize(module, options);
 			targetModule = sanitizedModule.get();
 		}
 		else
 			targetModule = &module;
 
-		ShaderAst::ModulePtr optimizedModule;
+		Ast::ModulePtr optimizedModule;
 		if (states.optimize)
 		{
-			ShaderAst::StatementPtr tempAst;
+			Ast::StatementPtr tempAst;
 
-			ShaderAst::DependencyCheckerVisitor::Config dependencyConfig;
+			Ast::DependencyCheckerVisitor::Config dependencyConfig;
 			dependencyConfig.usedShaderStages = ShaderStageType_All;
 
-			optimizedModule = ShaderAst::PropagateConstants(*targetModule);
-			optimizedModule = ShaderAst::EliminateUnusedPass(*optimizedModule, dependencyConfig);
+			optimizedModule = Ast::PropagateConstants(*targetModule);
+			optimizedModule = Ast::EliminateUnusedPass(*optimizedModule, dependencyConfig);
 
 			targetModule = optimizedModule.get();
 		}
@@ -659,9 +659,9 @@ namespace nzsl
 		}
 	}
 
-	SpirvConstantCache::TypePtr SpirvWriter::BuildFunctionType(const ShaderAst::DeclareFunctionStatement& functionNode)
+	SpirvConstantCache::TypePtr SpirvWriter::BuildFunctionType(const Ast::DeclareFunctionStatement& functionNode)
 	{
-		std::vector<ShaderAst::ExpressionType> parameterTypes;
+		std::vector<Ast::ExpressionType> parameterTypes;
 		parameterTypes.reserve(functionNode.parameters.size());
 
 		for (const auto& parameter : functionNode.parameters)
@@ -670,10 +670,10 @@ namespace nzsl
 		if (functionNode.returnType.HasValue())
 			return m_currentState->constantTypeCache.BuildFunctionType(functionNode.returnType.GetResultingValue(), parameterTypes);
 		else
-			return m_currentState->constantTypeCache.BuildFunctionType(ShaderAst::NoType{}, parameterTypes);
+			return m_currentState->constantTypeCache.BuildFunctionType(Ast::NoType{}, parameterTypes);
 	}
 
-	std::uint32_t SpirvWriter::GetConstantId(const ShaderAst::ConstantValue& value) const
+	std::uint32_t SpirvWriter::GetConstantId(const Ast::ConstantValue& value) const
 	{
 		return m_currentState->constantTypeCache.GetId(*m_currentState->constantTypeCache.BuildConstant(value));
 	}
@@ -694,37 +694,37 @@ namespace nzsl
 		return it->second.pointerId;
 	}
 
-	std::uint32_t SpirvWriter::GetFunctionTypeId(const ShaderAst::DeclareFunctionStatement& functionNode)
+	std::uint32_t SpirvWriter::GetFunctionTypeId(const Ast::DeclareFunctionStatement& functionNode)
 	{
 		return m_currentState->constantTypeCache.GetId({ *BuildFunctionType(functionNode) });
 	}
 
-	std::uint32_t SpirvWriter::GetPointerTypeId(const ShaderAst::ExpressionType& type, SpirvStorageClass storageClass) const
+	std::uint32_t SpirvWriter::GetPointerTypeId(const Ast::ExpressionType& type, SpirvStorageClass storageClass) const
 	{
 		return m_currentState->constantTypeCache.GetId(*m_currentState->constantTypeCache.BuildPointerType(type, storageClass));
 	}
 
-	std::uint32_t SpirvWriter::GetTypeId(const ShaderAst::ExpressionType& type) const
+	std::uint32_t SpirvWriter::GetTypeId(const Ast::ExpressionType& type) const
 	{
 		return m_currentState->constantTypeCache.GetId(*m_currentState->constantTypeCache.BuildType(type));
 	}
 
-	std::uint32_t SpirvWriter::RegisterConstant(const ShaderAst::ConstantValue& value)
+	std::uint32_t SpirvWriter::RegisterConstant(const Ast::ConstantValue& value)
 	{
 		return m_currentState->constantTypeCache.Register(*m_currentState->constantTypeCache.BuildConstant(value));
 	}
 
-	std::uint32_t SpirvWriter::RegisterFunctionType(const ShaderAst::DeclareFunctionStatement& functionNode)
+	std::uint32_t SpirvWriter::RegisterFunctionType(const Ast::DeclareFunctionStatement& functionNode)
 	{
 		return m_currentState->constantTypeCache.Register({ *BuildFunctionType(functionNode) });
 	}
 
-	std::uint32_t SpirvWriter::RegisterPointerType(ShaderAst::ExpressionType type, SpirvStorageClass storageClass)
+	std::uint32_t SpirvWriter::RegisterPointerType(Ast::ExpressionType type, SpirvStorageClass storageClass)
 	{
 		return m_currentState->constantTypeCache.Register(*m_currentState->constantTypeCache.BuildPointerType(type, storageClass));
 	}
 
-	std::uint32_t SpirvWriter::RegisterType(ShaderAst::ExpressionType type)
+	std::uint32_t SpirvWriter::RegisterType(Ast::ExpressionType type)
 	{
 		assert(m_currentState);
 		return m_currentState->constantTypeCache.Register(*m_currentState->constantTypeCache.BuildType(type));

@@ -4,10 +4,10 @@
 
 #include <NZSL/Ast/Nodes.hpp>
 #include <Nazara/Utils/Algorithm.hpp>
-#include <NZSL/Ast/AstExpressionVisitor.hpp>
-#include <NZSL/Ast/AstStatementVisitor.hpp>
+#include <NZSL/Ast/ExpressionVisitor.hpp>
+#include <NZSL/Ast/StatementVisitor.hpp>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
 	Node::~Node() = default;
 
@@ -15,17 +15,17 @@ namespace nzsl::ShaderAst
 	{ \
 		return NodeType:: Node; \
 	}
-#include <NZSL/Ast/AstNodeList.hpp>
+#include <NZSL/Ast/NodeList.hpp>
 
-#define NZSL_SHADERAST_EXPRESSION(Node) void Node::Visit(AstExpressionVisitor& visitor) \
+#define NZSL_SHADERAST_EXPRESSION(Node) void Node::Visit(ExpressionVisitor& visitor) \
 	{\
 		visitor.Visit(*this); \
 	}
 
-#define NZSL_SHADERAST_STATEMENT(Node) void Node::Visit(AstStatementVisitor& visitor) \
+#define NZSL_SHADERAST_STATEMENT(Node) void Node::Visit(StatementVisitor& visitor) \
 	{\
 		visitor.Visit(*this); \
 	}
 
-#include <NZSL/Ast/AstNodeList.hpp>
+#include <NZSL/Ast/NodeList.hpp>
 }

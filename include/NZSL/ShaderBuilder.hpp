@@ -19,142 +19,142 @@ namespace nzsl::ShaderBuilder
 	{
 		struct AccessIndex
 		{
-			inline ShaderAst::AccessIndexExpressionPtr operator()(ShaderAst::ExpressionPtr expr, std::int32_t index) const;
-			inline ShaderAst::AccessIndexExpressionPtr operator()(ShaderAst::ExpressionPtr expr, const std::vector<std::int32_t>& indexConstants) const;
-			inline ShaderAst::AccessIndexExpressionPtr operator()(ShaderAst::ExpressionPtr expr, ShaderAst::ExpressionPtr indexExpression) const;
-			inline ShaderAst::AccessIndexExpressionPtr operator()(ShaderAst::ExpressionPtr expr, std::vector<ShaderAst::ExpressionPtr> indexExpressions) const;
+			inline Ast::AccessIndexExpressionPtr operator()(Ast::ExpressionPtr expr, std::int32_t index) const;
+			inline Ast::AccessIndexExpressionPtr operator()(Ast::ExpressionPtr expr, const std::vector<std::int32_t>& indexConstants) const;
+			inline Ast::AccessIndexExpressionPtr operator()(Ast::ExpressionPtr expr, Ast::ExpressionPtr indexExpression) const;
+			inline Ast::AccessIndexExpressionPtr operator()(Ast::ExpressionPtr expr, std::vector<Ast::ExpressionPtr> indexExpressions) const;
 		};
 
 		struct AccessMember
 		{
-			inline ShaderAst::AccessIdentifierExpressionPtr operator()(ShaderAst::ExpressionPtr expr, std::vector<std::string> memberIdentifiers) const;
+			inline Ast::AccessIdentifierExpressionPtr operator()(Ast::ExpressionPtr expr, std::vector<std::string> memberIdentifiers) const;
 		};
 
 		struct Assign
 		{
-			inline ShaderAst::AssignExpressionPtr operator()(ShaderAst::AssignType op, ShaderAst::ExpressionPtr left, ShaderAst::ExpressionPtr right) const;
+			inline Ast::AssignExpressionPtr operator()(Ast::AssignType op, Ast::ExpressionPtr left, Ast::ExpressionPtr right) const;
 		};
 
 		struct Binary
 		{
-			inline ShaderAst::BinaryExpressionPtr operator()(ShaderAst::BinaryType op, ShaderAst::ExpressionPtr left, ShaderAst::ExpressionPtr right) const;
+			inline Ast::BinaryExpressionPtr operator()(Ast::BinaryType op, Ast::ExpressionPtr left, Ast::ExpressionPtr right) const;
 		};
 
 		template<bool Const>
 		struct Branch
 		{
-			inline ShaderAst::BranchStatementPtr operator()(ShaderAst::ExpressionPtr condition, ShaderAst::StatementPtr truePath, ShaderAst::StatementPtr falsePath = nullptr) const;
-			inline ShaderAst::BranchStatementPtr operator()(std::vector<ShaderAst::BranchStatement::ConditionalStatement> condStatements, ShaderAst::StatementPtr elseStatement = nullptr) const;
+			inline Ast::BranchStatementPtr operator()(Ast::ExpressionPtr condition, Ast::StatementPtr truePath, Ast::StatementPtr falsePath = nullptr) const;
+			inline Ast::BranchStatementPtr operator()(std::vector<Ast::BranchStatement::ConditionalStatement> condStatements, Ast::StatementPtr elseStatement = nullptr) const;
 		};
 
 		struct CallFunction
 		{
-			inline ShaderAst::CallFunctionExpressionPtr operator()(std::string functionName, std::vector<ShaderAst::ExpressionPtr> parameters) const;
-			inline ShaderAst::CallFunctionExpressionPtr operator()(ShaderAst::ExpressionPtr functionExpr, std::vector<ShaderAst::ExpressionPtr> parameters) const;
+			inline Ast::CallFunctionExpressionPtr operator()(std::string functionName, std::vector<Ast::ExpressionPtr> parameters) const;
+			inline Ast::CallFunctionExpressionPtr operator()(Ast::ExpressionPtr functionExpr, std::vector<Ast::ExpressionPtr> parameters) const;
 		};
 
 		struct Cast
 		{
-			inline ShaderAst::CastExpressionPtr operator()(ShaderAst::ExpressionValue<ShaderAst::ExpressionType> targetType, ShaderAst::ExpressionPtr expression) const;
-			inline ShaderAst::CastExpressionPtr operator()(ShaderAst::ExpressionValue<ShaderAst::ExpressionType> targetType, std::array<ShaderAst::ExpressionPtr, 4> expressions) const;
-			inline ShaderAst::CastExpressionPtr operator()(ShaderAst::ExpressionValue<ShaderAst::ExpressionType> targetType, std::vector<ShaderAst::ExpressionPtr> expressions) const;
+			inline Ast::CastExpressionPtr operator()(Ast::ExpressionValue<Ast::ExpressionType> targetType, Ast::ExpressionPtr expression) const;
+			inline Ast::CastExpressionPtr operator()(Ast::ExpressionValue<Ast::ExpressionType> targetType, std::array<Ast::ExpressionPtr, 4> expressions) const;
+			inline Ast::CastExpressionPtr operator()(Ast::ExpressionValue<Ast::ExpressionType> targetType, std::vector<Ast::ExpressionPtr> expressions) const;
 		};
 
 		struct ConditionalExpression
 		{
-			inline ShaderAst::ConditionalExpressionPtr operator()(ShaderAst::ExpressionPtr condition, ShaderAst::ExpressionPtr truePath, ShaderAst::ExpressionPtr falsePath) const;
+			inline Ast::ConditionalExpressionPtr operator()(Ast::ExpressionPtr condition, Ast::ExpressionPtr truePath, Ast::ExpressionPtr falsePath) const;
 		};
 
 		struct ConditionalStatement
 		{
-			inline ShaderAst::ConditionalStatementPtr operator()(ShaderAst::ExpressionPtr condition, ShaderAst::StatementPtr statement) const;
+			inline Ast::ConditionalStatementPtr operator()(Ast::ExpressionPtr condition, Ast::StatementPtr statement) const;
 		};
 
 		struct Constant
 		{
-			inline ShaderAst::ConstantValueExpressionPtr operator()(ShaderAst::ConstantValue value) const;
-			template<typename T> ShaderAst::ConstantValueExpressionPtr operator()(ShaderAst::ExpressionType type, T value) const;
+			inline Ast::ConstantValueExpressionPtr operator()(Ast::ConstantValue value) const;
+			template<typename T> Ast::ConstantValueExpressionPtr operator()(Ast::ExpressionType type, T value) const;
 		};
 
 		struct DeclareAlias
 		{
-			inline ShaderAst::DeclareAliasStatementPtr operator()(std::string name, ShaderAst::ExpressionPtr expression) const;
+			inline Ast::DeclareAliasStatementPtr operator()(std::string name, Ast::ExpressionPtr expression) const;
 		};
 
 		struct DeclareConst
 		{
-			inline ShaderAst::DeclareConstStatementPtr operator()(std::string name, ShaderAst::ExpressionPtr initialValue) const;
-			inline ShaderAst::DeclareConstStatementPtr operator()(std::string name, ShaderAst::ExpressionValue<ShaderAst::ExpressionType> type, ShaderAst::ExpressionPtr initialValue = nullptr) const;
+			inline Ast::DeclareConstStatementPtr operator()(std::string name, Ast::ExpressionPtr initialValue) const;
+			inline Ast::DeclareConstStatementPtr operator()(std::string name, Ast::ExpressionValue<Ast::ExpressionType> type, Ast::ExpressionPtr initialValue = nullptr) const;
 		};
 
 		struct DeclareFunction
 		{
-			inline ShaderAst::DeclareFunctionStatementPtr operator()(std::string name, ShaderAst::StatementPtr statement) const;
-			inline ShaderAst::DeclareFunctionStatementPtr operator()(std::string name, std::vector<ShaderAst::DeclareFunctionStatement::Parameter> parameters, std::vector<ShaderAst::StatementPtr> statements, ShaderAst::ExpressionValue<ShaderAst::ExpressionType> returnType = ShaderAst::ExpressionType{ ShaderAst::NoType{} }) const;
-			inline ShaderAst::DeclareFunctionStatementPtr operator()(std::optional<ShaderStageType> entryStage, std::string name, ShaderAst::StatementPtr statement) const;
-			inline ShaderAst::DeclareFunctionStatementPtr operator()(std::optional<ShaderStageType> entryStage, std::string name, std::vector<ShaderAst::DeclareFunctionStatement::Parameter> parameters, std::vector<ShaderAst::StatementPtr> statements, ShaderAst::ExpressionValue<ShaderAst::ExpressionType> returnType = ShaderAst::ExpressionType{ ShaderAst::NoType{} }) const;
+			inline Ast::DeclareFunctionStatementPtr operator()(std::string name, Ast::StatementPtr statement) const;
+			inline Ast::DeclareFunctionStatementPtr operator()(std::string name, std::vector<Ast::DeclareFunctionStatement::Parameter> parameters, std::vector<Ast::StatementPtr> statements, Ast::ExpressionValue<Ast::ExpressionType> returnType = Ast::ExpressionType{ Ast::NoType{} }) const;
+			inline Ast::DeclareFunctionStatementPtr operator()(std::optional<ShaderStageType> entryStage, std::string name, Ast::StatementPtr statement) const;
+			inline Ast::DeclareFunctionStatementPtr operator()(std::optional<ShaderStageType> entryStage, std::string name, std::vector<Ast::DeclareFunctionStatement::Parameter> parameters, std::vector<Ast::StatementPtr> statements, Ast::ExpressionValue<Ast::ExpressionType> returnType = Ast::ExpressionType{ Ast::NoType{} }) const;
 		};
 
 		struct DeclareOption
 		{
-			inline ShaderAst::DeclareOptionStatementPtr operator()(std::string name, ShaderAst::ExpressionValue<ShaderAst::ExpressionType> type, ShaderAst::ExpressionPtr initialValue = nullptr) const;
+			inline Ast::DeclareOptionStatementPtr operator()(std::string name, Ast::ExpressionValue<Ast::ExpressionType> type, Ast::ExpressionPtr initialValue = nullptr) const;
 		};
 
 		struct DeclareStruct
 		{
-			inline ShaderAst::DeclareStructStatementPtr operator()(ShaderAst::StructDescription description, ShaderAst::ExpressionValue<bool> isExported) const;
+			inline Ast::DeclareStructStatementPtr operator()(Ast::StructDescription description, Ast::ExpressionValue<bool> isExported) const;
 		};
 
 		struct DeclareVariable
 		{
-			inline ShaderAst::DeclareVariableStatementPtr operator()(std::string name, ShaderAst::ExpressionPtr initialValue) const;
-			inline ShaderAst::DeclareVariableStatementPtr operator()(std::string name, ShaderAst::ExpressionValue<ShaderAst::ExpressionType> type, ShaderAst::ExpressionPtr initialValue = nullptr) const;
+			inline Ast::DeclareVariableStatementPtr operator()(std::string name, Ast::ExpressionPtr initialValue) const;
+			inline Ast::DeclareVariableStatementPtr operator()(std::string name, Ast::ExpressionValue<Ast::ExpressionType> type, Ast::ExpressionPtr initialValue = nullptr) const;
 		};
 
 		struct ExpressionStatement
 		{
-			inline ShaderAst::ExpressionStatementPtr operator()(ShaderAst::ExpressionPtr expression) const;
+			inline Ast::ExpressionStatementPtr operator()(Ast::ExpressionPtr expression) const;
 		};
 
 		struct For
 		{
-			inline ShaderAst::ForStatementPtr operator()(std::string varName, ShaderAst::ExpressionPtr fromExpression, ShaderAst::ExpressionPtr toExpression, ShaderAst::StatementPtr statement) const;
-			inline ShaderAst::ForStatementPtr operator()(std::string varName, ShaderAst::ExpressionPtr fromExpression, ShaderAst::ExpressionPtr toExpression, ShaderAst::ExpressionPtr stepExpression, ShaderAst::StatementPtr statement) const;
+			inline Ast::ForStatementPtr operator()(std::string varName, Ast::ExpressionPtr fromExpression, Ast::ExpressionPtr toExpression, Ast::StatementPtr statement) const;
+			inline Ast::ForStatementPtr operator()(std::string varName, Ast::ExpressionPtr fromExpression, Ast::ExpressionPtr toExpression, Ast::ExpressionPtr stepExpression, Ast::StatementPtr statement) const;
 		};
 
 		struct ForEach
 		{
-			inline ShaderAst::ForEachStatementPtr operator()(std::string varName, ShaderAst::ExpressionPtr expression, ShaderAst::StatementPtr statement) const;
+			inline Ast::ForEachStatementPtr operator()(std::string varName, Ast::ExpressionPtr expression, Ast::StatementPtr statement) const;
 		};
 
 		struct Function
 		{
-			inline ShaderAst::FunctionExpressionPtr operator()(std::size_t funcId) const;
+			inline Ast::FunctionExpressionPtr operator()(std::size_t funcId) const;
 		};
 
 		struct Identifier
 		{
-			inline ShaderAst::IdentifierExpressionPtr operator()(std::string name) const;
+			inline Ast::IdentifierExpressionPtr operator()(std::string name) const;
 		};
 
 		struct Import
 		{
-			inline ShaderAst::ImportStatementPtr operator()(std::string modulePath) const;
+			inline Ast::ImportStatementPtr operator()(std::string modulePath) const;
 		};
 
 		struct Intrinsic
 		{
-			inline ShaderAst::IntrinsicExpressionPtr operator()(ShaderAst::IntrinsicType intrinsicType, std::vector<ShaderAst::ExpressionPtr> parameters) const;
+			inline Ast::IntrinsicExpressionPtr operator()(Ast::IntrinsicType intrinsicType, std::vector<Ast::ExpressionPtr> parameters) const;
 		};
 
 		struct IntrinsicFunction
 		{
-			inline ShaderAst::IntrinsicFunctionExpressionPtr operator()(std::size_t intrinsicFunctionId, ShaderAst::IntrinsicType intrinsicType) const;
+			inline Ast::IntrinsicFunctionExpressionPtr operator()(std::size_t intrinsicFunctionId, Ast::IntrinsicType intrinsicType) const;
 		};
 
 		struct Multi
 		{
-			inline ShaderAst::MultiStatementPtr operator()(std::vector<ShaderAst::StatementPtr> statements = {}) const;
+			inline Ast::MultiStatementPtr operator()(std::vector<Ast::StatementPtr> statements = {}) const;
 		};
 
 		template<typename T>
@@ -165,38 +165,38 @@ namespace nzsl::ShaderBuilder
 
 		struct Return
 		{
-			inline ShaderAst::ReturnStatementPtr operator()(ShaderAst::ExpressionPtr expr = nullptr) const;
+			inline Ast::ReturnStatementPtr operator()(Ast::ExpressionPtr expr = nullptr) const;
 		};
 
 		struct Scoped
 		{
-			inline ShaderAst::ScopedStatementPtr operator()(ShaderAst::StatementPtr statement) const;
+			inline Ast::ScopedStatementPtr operator()(Ast::StatementPtr statement) const;
 		};
 
 		struct StructType
 		{
-			inline ShaderAst::StructTypeExpressionPtr operator()(std::size_t structTypeId) const;
+			inline Ast::StructTypeExpressionPtr operator()(std::size_t structTypeId) const;
 		};
 
 		struct Swizzle
 		{
-			inline ShaderAst::SwizzleExpressionPtr operator()(ShaderAst::ExpressionPtr expression, std::array<std::uint32_t, 4> swizzleComponents, std::size_t componentCount) const;
-			inline ShaderAst::SwizzleExpressionPtr operator()(ShaderAst::ExpressionPtr expression, std::vector<std::uint32_t> swizzleComponents) const;
+			inline Ast::SwizzleExpressionPtr operator()(Ast::ExpressionPtr expression, std::array<std::uint32_t, 4> swizzleComponents, std::size_t componentCount) const;
+			inline Ast::SwizzleExpressionPtr operator()(Ast::ExpressionPtr expression, std::vector<std::uint32_t> swizzleComponents) const;
 		};
 
 		struct Unary
 		{
-			inline ShaderAst::UnaryExpressionPtr operator()(ShaderAst::UnaryType op, ShaderAst::ExpressionPtr expression) const;
+			inline Ast::UnaryExpressionPtr operator()(Ast::UnaryType op, Ast::ExpressionPtr expression) const;
 		};
 
 		struct Variable
 		{
-			inline ShaderAst::VariableValueExpressionPtr operator()(std::size_t variableId, ShaderAst::ExpressionType expressionType) const;
+			inline Ast::VariableValueExpressionPtr operator()(std::size_t variableId, Ast::ExpressionType expressionType) const;
 		};
 
 		struct While
 		{
-			inline ShaderAst::WhileStatementPtr operator()(ShaderAst::ExpressionPtr condition, ShaderAst::StatementPtr body) const;
+			inline Ast::WhileStatementPtr operator()(Ast::ExpressionPtr condition, Ast::StatementPtr body) const;
 		};
 	}
 
@@ -218,7 +218,7 @@ namespace nzsl::ShaderBuilder
 	constexpr Impl::DeclareStruct DeclareStruct;
 	constexpr Impl::DeclareVariable DeclareVariable;
 	constexpr Impl::ExpressionStatement ExpressionStatement;
-	constexpr Impl::NoParam<ShaderAst::DiscardStatement> Discard;
+	constexpr Impl::NoParam<Ast::DiscardStatement> Discard;
 	constexpr Impl::For For;
 	constexpr Impl::ForEach ForEach;
 	constexpr Impl::Function Function;
@@ -227,7 +227,7 @@ namespace nzsl::ShaderBuilder
 	constexpr Impl::Import Import;
 	constexpr Impl::Intrinsic Intrinsic;
 	constexpr Impl::Multi MultiStatement;
-	constexpr Impl::NoParam<ShaderAst::NoOpStatement> NoOp;
+	constexpr Impl::NoParam<Ast::NoOpStatement> NoOp;
 	constexpr Impl::Return Return;
 	constexpr Impl::Scoped Scoped;
 	constexpr Impl::StructType StructType;

@@ -2,9 +2,9 @@
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
-#include <NZSL/Ast/AstExpressionVisitor.hpp>
+#include <NZSL/Ast/RecursiveVisitor.hpp>
 
-namespace nzsl::ShaderAst
+namespace nzsl
 {
-	AstExpressionVisitor::~AstExpressionVisitor() = default;
 }
+

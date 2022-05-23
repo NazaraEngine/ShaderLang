@@ -15,7 +15,7 @@
 #include <variant>
 #include <vector>
 
-namespace nzsl::ShaderLang
+namespace nzsl
 {
 	enum class TokenType
 	{

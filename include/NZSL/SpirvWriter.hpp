@@ -36,7 +36,7 @@ namespace nzsl
 			SpirvWriter(SpirvWriter&&) = delete;
 			~SpirvWriter() = default;
 
-			std::vector<std::uint32_t> Generate(const ShaderAst::Module& module, const States& states = {});
+			std::vector<std::uint32_t> Generate(const Ast::Module& module, const States& states = {});
 
 			void SetEnv(Environment environment);
 
@@ -54,19 +54,19 @@ namespace nzsl
 
 			void AppendHeader();
 
-			SpirvConstantCache::TypePtr BuildFunctionType(const ShaderAst::DeclareFunctionStatement& functionNode);
+			SpirvConstantCache::TypePtr BuildFunctionType(const Ast::DeclareFunctionStatement& functionNode);
 
-			std::uint32_t GetConstantId(const ShaderAst::ConstantValue& value) const;
+			std::uint32_t GetConstantId(const Ast::ConstantValue& value) const;
 			std::uint32_t GetExtendedInstructionSet(const std::string& instructionSetName) const;
 			std::uint32_t GetExtVarPointerId(std::size_t varIndex) const;
-			std::uint32_t GetFunctionTypeId(const ShaderAst::DeclareFunctionStatement& functionNode);
-			std::uint32_t GetPointerTypeId(const ShaderAst::ExpressionType& type, SpirvStorageClass storageClass) const;
-			std::uint32_t GetTypeId(const ShaderAst::ExpressionType& type) const;
+			std::uint32_t GetFunctionTypeId(const Ast::DeclareFunctionStatement& functionNode);
+			std::uint32_t GetPointerTypeId(const Ast::ExpressionType& type, SpirvStorageClass storageClass) const;
+			std::uint32_t GetTypeId(const Ast::ExpressionType& type) const;
 
-			std::uint32_t RegisterConstant(const ShaderAst::ConstantValue& value);
-			std::uint32_t RegisterFunctionType(const ShaderAst::DeclareFunctionStatement& functionNode);
-			std::uint32_t RegisterPointerType(ShaderAst::ExpressionType type, SpirvStorageClass storageClass);
-			std::uint32_t RegisterType(ShaderAst::ExpressionType type);
+			std::uint32_t RegisterConstant(const Ast::ConstantValue& value);
+			std::uint32_t RegisterFunctionType(const Ast::DeclareFunctionStatement& functionNode);
+			std::uint32_t RegisterPointerType(Ast::ExpressionType type, SpirvStorageClass storageClass);
+			std::uint32_t RegisterType(Ast::ExpressionType type);
 
 			static void MergeSections(std::vector<std::uint32_t>& output, const SpirvSection& from);
 

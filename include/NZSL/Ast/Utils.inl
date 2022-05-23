@@ -2,13 +2,13 @@
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
-#include <NZSL/Ast/AstUtils.hpp>
+#include <NZSL/Ast/Utils.hpp>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
 	ExpressionCategory GetExpressionCategory(Expression& expression)
 	{
-		ShaderAstValueCategory visitor;
+		ValueCategory visitor;
 		return visitor.GetExpressionCategory(expression);
 	}
 }

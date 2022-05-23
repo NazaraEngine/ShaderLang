@@ -5,10 +5,10 @@
 #include <NZSL/Ast/AstSerializer.hpp>
 #include <Nazara/Utils/Algorithm.hpp>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
 	template<typename T>
-	void AstSerializerBase::Container(T& container)
+	void SerializerBase::Container(T& container)
 	{
 		bool isWriting = IsWriting();
 
@@ -23,7 +23,7 @@ namespace nzsl::ShaderAst
 
 
 	template<typename T>
-	void AstSerializerBase::Enum(T& enumVal)
+	void SerializerBase::Enum(T& enumVal)
 	{
 		bool isWriting = IsWriting();
 
@@ -37,7 +37,7 @@ namespace nzsl::ShaderAst
 	}
 	
 	template<typename T>
-	void AstSerializerBase::ExprValue(ExpressionValue<T>& attribute)
+	void SerializerBase::ExprValue(ExpressionValue<T>& attribute)
 	{
 		std::uint32_t valueType;
 		if (IsWriting())
@@ -108,7 +108,7 @@ namespace nzsl::ShaderAst
 	}
 
 	template<typename T>
-	void AstSerializerBase::OptEnum(std::optional<T>& optVal)
+	void SerializerBase::OptEnum(std::optional<T>& optVal)
 	{
 		bool isWriting = IsWriting();
 
@@ -125,7 +125,7 @@ namespace nzsl::ShaderAst
 			Enum(optVal.value());
 	}
 
-	inline void AstSerializerBase::OptType(std::optional<ExpressionType>& optType)
+	inline void SerializerBase::OptType(std::optional<ExpressionType>& optType)
 	{
 		bool isWriting = IsWriting();
 
@@ -143,7 +143,7 @@ namespace nzsl::ShaderAst
 	}
 
 	template<typename T>
-	void AstSerializerBase::OptVal(std::optional<T>& optVal)
+	void SerializerBase::OptVal(std::optional<T>& optVal)
 	{
 		bool isWriting = IsWriting();
 
@@ -165,7 +165,7 @@ namespace nzsl::ShaderAst
 		}
 	}
 
-	inline void AstSerializerBase::SourceLoc(ShaderLang::SourceLocation& sourceLoc)
+	inline void SerializerBase::SourceLoc(SourceLocation& sourceLoc)
 	{
 		SharedString(sourceLoc.file);
 		Value(sourceLoc.endColumn);
@@ -174,7 +174,7 @@ namespace nzsl::ShaderAst
 		Value(sourceLoc.startLine);
 	}
 
-	inline void AstSerializerBase::SizeT(std::size_t& val)
+	inline void SerializerBase::SizeT(std::size_t& val)
 	{
 		bool isWriting = IsWriting();
 

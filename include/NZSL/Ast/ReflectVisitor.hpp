@@ -4,31 +4,31 @@
 
 #pragma once
 
-#ifndef NZSL_AST_ASTREFLECT_HPP
-#define NZSL_AST_ASTREFLECT_HPP
+#ifndef NZSL_AST_REFLECT_HPP
+#define NZSL_AST_REFLECT_HPP
 
 #include <NZSL/Config.hpp>
 #include <NZSL/Config.hpp>
 #include <NZSL/ShaderLangSourceLocation.hpp>
-#include <NZSL/Ast/AstRecursiveVisitor.hpp>
+#include <NZSL/Ast/RecursiveVisitor.hpp>
 #include <vector>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
-	class NZSL_API AstReflect : public AstRecursiveVisitor
+	class NZSL_API ReflectVisitor : public RecursiveVisitor
 	{
 		public:
 			struct Callbacks;
 
-			AstReflect() = default;
-			AstReflect(const AstReflect&) = delete;
-			AstReflect(AstReflect&&) = delete;
-			~AstReflect() = default;
+			ReflectVisitor() = default;
+			ReflectVisitor(const ReflectVisitor&) = delete;
+			ReflectVisitor(ReflectVisitor&&) = delete;
+			~ReflectVisitor() = default;
 
 			void Reflect(Statement& statement, const Callbacks& callbacks);
 
-			AstReflect& operator=(const AstReflect&) = delete;
-			AstReflect& operator=(AstReflect&&) = delete;
+			ReflectVisitor& operator=(const ReflectVisitor&) = delete;
+			ReflectVisitor& operator=(ReflectVisitor&&) = delete;
 
 			struct Callbacks
 			{
@@ -42,12 +42,12 @@ namespace nzsl::ShaderAst
 				std::function<void(const DeclareStructStatement& structDecl)> onStructDeclaration;
 				std::function<void(const DeclareVariableStatement& variableDecl)> onVariableDeclaration;
 
-				std::function<void(const std::string& name, std::size_t aliasIndex,  const ShaderLang::SourceLocation& sourceLocation)> onAliasIndex;
-				std::function<void(const std::string& name, std::size_t constIndex,  const ShaderLang::SourceLocation& sourceLocation)> onConstIndex;
-				std::function<void(const std::string& name, std::size_t funcIndex,   const ShaderLang::SourceLocation& sourceLocation)> onFunctionIndex;
-				std::function<void(const std::string& name, std::size_t optIndex,    const ShaderLang::SourceLocation& sourceLocation)> onOptionIndex;
-				std::function<void(const std::string& name, std::size_t structIndex, const ShaderLang::SourceLocation& sourceLocation)> onStructIndex;
-				std::function<void(const std::string& name, std::size_t varIndex,    const ShaderLang::SourceLocation& sourceLocation)> onVariableIndex;
+				std::function<void(const std::string& name, std::size_t aliasIndex,  const SourceLocation& sourceLocation)> onAliasIndex;
+				std::function<void(const std::string& name, std::size_t constIndex,  const SourceLocation& sourceLocation)> onConstIndex;
+				std::function<void(const std::string& name, std::size_t funcIndex,   const SourceLocation& sourceLocation)> onFunctionIndex;
+				std::function<void(const std::string& name, std::size_t optIndex,    const SourceLocation& sourceLocation)> onOptionIndex;
+				std::function<void(const std::string& name, std::size_t structIndex, const SourceLocation& sourceLocation)> onStructIndex;
+				std::function<void(const std::string& name, std::size_t varIndex,    const SourceLocation& sourceLocation)> onVariableIndex;
 			};
 
 		private:
@@ -65,6 +65,6 @@ namespace nzsl::ShaderAst
 	};
 }
 
-#include <NZSL/Ast/AstReflect.inl>
+#include <NZSL/Ast/ReflectVisitor.inl>
 
-#endif // NZSL_AST_ASTREFLECT_HPP
+#endif // NZSL_AST_REFLECT_HPP

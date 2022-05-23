@@ -5,11 +5,11 @@
 #include <NZSL/Ast/ConstantValue.hpp>
 #include <NZSL/Ast/Nodes.hpp>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
 	ExpressionType GetConstantType(const ConstantValue& constant)
 	{
-		return std::visit([&](auto&& arg) -> ShaderAst::ExpressionType
+		return std::visit([&](auto&& arg) -> Ast::ExpressionType
 		{
 			using T = std::decay_t<decltype(arg)>;
 

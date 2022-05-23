@@ -2,10 +2,10 @@
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
-#include <NZSL/Ast/AstCompare.hpp>
+#include <NZSL/Ast/Compare.hpp>
 #include <stdexcept>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
 	inline bool Compare(const Expression& lhs, const Expression& rhs)
 	{
@@ -20,7 +20,7 @@ namespace nzsl::ShaderAst
 			case NodeType::None: break;
 
 #define NZSL_SHADERAST_EXPRESSION(Node) case NodeType::Node: return Compare(static_cast<const Node&>(lhs), static_cast<const Node&>(lhs));
-#include <NZSL/Ast/AstNodeList.hpp>
+#include <NZSL/Ast/NodeList.hpp>
 
 			default: throw std::runtime_error("unexpected node type");
 		}
@@ -77,7 +77,7 @@ namespace nzsl::ShaderAst
 			case NodeType::None: break;
 
 #define NZSL_SHADERAST_STATEMENT(Node) case NodeType::Node: return Compare(static_cast<const Node&>(lhs), static_cast<const Node&>(lhs));
-#include <NZSL/Ast/AstNodeList.hpp>
+#include <NZSL/Ast/NodeList.hpp>
 
 			default: throw std::runtime_error("unexpected node type");
 		}
@@ -222,7 +222,7 @@ namespace nzsl::ShaderAst
 		return true;
 	}
 
-	bool Compare(const ShaderLang::SourceLocation& lhs, const ShaderLang::SourceLocation& rhs)
+	bool Compare(const SourceLocation& lhs, const SourceLocation& rhs)
 	{
 		if (!Compare(lhs.endColumn, rhs.endColumn))
 			return false;

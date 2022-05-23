@@ -4,15 +4,15 @@
 
 #pragma once
 
-#ifndef NZSL_AST_ASTTYPES_HPP
-#define NZSL_AST_ASTTYPES_HPP
+#ifndef NZSL_AST_TYPES_HPP
+#define NZSL_AST_TYPES_HPP
 
 #include <NZSL/ShaderLangSourceLocation.hpp>
 #include <NZSL/Ast/ConstantValue.hpp>
 #include <NZSL/Ast/ExpressionType.hpp>
 #include <functional>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
 	enum class TypeParameterCategory
 	{
@@ -29,9 +29,9 @@ namespace nzsl::ShaderAst
 	struct PartialType
 	{
 		std::vector<TypeParameterCategory> parameters;
-		std::function<ExpressionType(const TypeParameter* parameters, std::size_t parameterCount, const ShaderLang::SourceLocation& sourceLocation)> buildFunc;
+		std::function<ExpressionType(const TypeParameter* parameters, std::size_t parameterCount, const SourceLocation& sourceLocation)> buildFunc;
 	};
 
 }
 
-#endif // NZSL_AST_ASTTYPES_HPP
+#endif // NZSL_AST_TYPES_HPP

@@ -11,7 +11,7 @@
 #include <NZSL/Ast/Nodes.hpp>
 #include <memory>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
 	class Module;
 

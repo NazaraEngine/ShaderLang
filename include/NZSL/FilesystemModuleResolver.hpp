@@ -28,10 +28,10 @@ namespace nzsl
 
 			void RegisterModule(const std::filesystem::path& realPath);
 			void RegisterModule(std::string_view moduleSource);
-			void RegisterModule(ShaderAst::ModulePtr module);
+			void RegisterModule(Ast::ModulePtr module);
 			void RegisterModuleDirectory(const std::filesystem::path& realPath, bool watchDirectory = true);
 
-			ShaderAst::ModulePtr Resolve(const std::string& moduleName) override;
+			Ast::ModulePtr Resolve(const std::string& moduleName) override;
 
 			FilesystemModuleResolver& operator=(const FilesystemModuleResolver&) = delete;
 			FilesystemModuleResolver& operator=(FilesystemModuleResolver&&) noexcept = delete;
@@ -48,7 +48,7 @@ namespace nzsl
 			static bool CheckExtension(std::string_view filename);
 
 			std::unordered_map<std::string, std::string> m_moduleByFilepath;
-			std::unordered_map<std::string, ShaderAst::ModulePtr> m_modules;
+			std::unordered_map<std::string, Ast::ModulePtr> m_modules;
 			Nz::MovablePtr<void> m_fileWatcher;
 	};
 }

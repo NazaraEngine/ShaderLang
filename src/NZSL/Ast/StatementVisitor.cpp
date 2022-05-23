@@ -2,9 +2,9 @@
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
-#include <NZSL/Ast/AstRecursiveVisitor.hpp>
+#include <NZSL/Ast/StatementVisitor.hpp>
 
-namespace nzsl
+namespace nzsl::Ast
 {
+	StatementVisitor::~StatementVisitor() = default;
 }
-

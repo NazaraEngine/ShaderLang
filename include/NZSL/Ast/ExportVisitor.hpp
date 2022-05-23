@@ -4,30 +4,30 @@
 
 #pragma once
 
-#ifndef NZSL_AST_ASTEXPORTVISITOR_HPP
-#define NZSL_AST_ASTEXPORTVISITOR_HPP
+#ifndef NZSL_AST_EXPORTVISITOR_HPP
+#define NZSL_AST_EXPORTVISITOR_HPP
 
 #include <NZSL/Config.hpp>
 #include <NZSL/Config.hpp>
-#include <NZSL/Ast/AstRecursiveVisitor.hpp>
+#include <NZSL/Ast/RecursiveVisitor.hpp>
 #include <vector>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
-	class NZSL_API AstExportVisitor : public AstRecursiveVisitor
+	class NZSL_API ExportVisitor : public RecursiveVisitor
 	{
 		public:
 			struct Callbacks;
 
-			AstExportVisitor() = default;
-			AstExportVisitor(const AstExportVisitor&) = delete;
-			AstExportVisitor(AstExportVisitor&&) = delete;
-			~AstExportVisitor() = default;
+			ExportVisitor() = default;
+			ExportVisitor(const ExportVisitor&) = delete;
+			ExportVisitor(ExportVisitor&&) = delete;
+			~ExportVisitor() = default;
 
 			void Visit(Statement& statement, const Callbacks& callbacks);
 
-			AstExportVisitor& operator=(const AstExportVisitor&) = delete;
-			AstExportVisitor& operator=(AstExportVisitor&&) = delete;
+			ExportVisitor& operator=(const ExportVisitor&) = delete;
+			ExportVisitor& operator=(ExportVisitor&&) = delete;
 
 			struct Callbacks
 			{
@@ -43,6 +43,6 @@ namespace nzsl::ShaderAst
 	};
 }
 
-#include <NZSL/Ast/AstExportVisitor.inl>
+#include <NZSL/Ast/ExportVisitor.inl>
 
-#endif // NZSL_AST_ASTEXPORTVISITOR_HPP
+#endif // NZSL_AST_EXPORTVISITOR_HPP

@@ -9,12 +9,12 @@
 
 #include <NZSL/Config.hpp>
 #include <NZSL/Config.hpp>
-#include <NZSL/Ast/AstCloner.hpp>
+#include <NZSL/Ast/Cloner.hpp>
 #include <functional>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
-	class NZSL_API IndexRemapperVisitor : public AstCloner
+	class NZSL_API IndexRemapperVisitor : public Cloner
 	{
 		public:
 			struct Options;

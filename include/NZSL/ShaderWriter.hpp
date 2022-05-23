@@ -31,7 +31,7 @@ namespace nzsl
 			struct States
 			{
 				std::shared_ptr<ShaderModuleResolver> shaderModuleResolver;
-				std::unordered_map<std::uint32_t, ShaderAst::ConstantValue> optionValues;
+				std::unordered_map<std::uint32_t, Ast::ConstantValue> optionValues;
 				bool optimize = false;
 				bool sanitized = false;
 			};

@@ -9,13 +9,13 @@
 
 #include <Nazara/Utils/Bitset.hpp>
 #include <NZSL/Config.hpp>
-#include <NZSL/Ast/AstCloner.hpp>
+#include <NZSL/Ast/Cloner.hpp>
 #include <NZSL/Ast/DependencyCheckerVisitor.hpp>
 #include <NZSL/Ast/Module.hpp>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
-	class NZSL_API EliminateUnusedPassVisitor : AstCloner
+	class NZSL_API EliminateUnusedPassVisitor : Cloner
 	{
 		public:
 			EliminateUnusedPassVisitor() = default;
@@ -30,7 +30,7 @@ namespace nzsl::ShaderAst
 			EliminateUnusedPassVisitor& operator=(EliminateUnusedPassVisitor&&) = delete;
 
 		private:
-			using AstCloner::Clone;
+			using Cloner::Clone;
 			StatementPtr Clone(DeclareAliasStatement& node) override;
 			StatementPtr Clone(DeclareExternalStatement& node) override;
 			StatementPtr Clone(DeclareFunctionStatement& node) override;

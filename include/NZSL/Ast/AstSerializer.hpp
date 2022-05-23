@@ -4,23 +4,23 @@
 
 #pragma once
 
-#ifndef NZSL_AST_ASTSERIALIZER_HPP
-#define NZSL_AST_ASTSERIALIZER_HPP
+#ifndef NZSL_AST_SERIALIZER_HPP
+#define NZSL_AST_SERIALIZER_HPP
 
 #include <NZSL/Config.hpp>
 #include <NZSL/ShaderLangSourceLocation.hpp>
 #include <NZSL/Serializer.hpp>
 #include <NZSL/Ast/Module.hpp>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
-	class NZSL_API AstSerializerBase
+	class NZSL_API SerializerBase
 	{
 		public:
-			AstSerializerBase() = default;
-			AstSerializerBase(const AstSerializerBase&) = delete;
-			AstSerializerBase(AstSerializerBase&&) = delete;
-			~AstSerializerBase() = default;
+			SerializerBase() = default;
+			SerializerBase(const SerializerBase&) = delete;
+			SerializerBase(SerializerBase&&) = delete;
+			~SerializerBase() = default;
 
 			void Serialize(AccessIdentifierExpression& node);
 			void Serialize(AccessIndexExpression& node);
@@ -64,7 +64,7 @@ namespace nzsl::ShaderAst
 			void Serialize(WhileStatement& node);
 
 			void SerializeExpressionCommon(Expression& expr);
-			void SerializeNodeCommon(ShaderAst::Node& node);
+			void SerializeNodeCommon(Ast::Node& node);
 
 		protected:
 			template<typename T> void Container(T& container);
@@ -82,7 +82,7 @@ namespace nzsl::ShaderAst
 			virtual void SerializeModule(ModulePtr& module) = 0;
 			virtual void SharedString(std::shared_ptr<const std::string>& val) = 0;
 
-			inline void SourceLoc(ShaderLang::SourceLocation& sourceLoc);
+			inline void SourceLoc(SourceLocation& sourceLoc);
 
 			virtual void Type(ExpressionType& type) = 0;
 
@@ -103,7 +103,7 @@ namespace nzsl::ShaderAst
 			inline void SizeT(std::size_t& val);
 	};
 
-	class NZSL_API ShaderAstSerializer final : public AstSerializerBase
+	class NZSL_API ShaderAstSerializer final : public SerializerBase
 	{
 		public:
 			inline ShaderAstSerializer(AbstractSerializer& stream);
@@ -112,7 +112,7 @@ namespace nzsl::ShaderAst
 			void Serialize(ModulePtr& shader);
 
 		private:
-			using AstSerializerBase::Serialize;
+			using SerializerBase::Serialize;
 
 			bool IsWriting() const override;
 			void Node(ExpressionPtr& node) override;
@@ -139,7 +139,7 @@ namespace nzsl::ShaderAst
 			AbstractSerializer& m_serializer;
 	};
 
-	class NZSL_API ShaderAstUnserializer final : public AstSerializerBase
+	class NZSL_API ShaderAstUnserializer final : public SerializerBase
 	{
 		public:
 			ShaderAstUnserializer(AbstractUnserializer& stream);
@@ -148,7 +148,7 @@ namespace nzsl::ShaderAst
 			ModulePtr Unserialize();
 
 		private:
-			using AstSerializerBase::Serialize;
+			using SerializerBase::Serialize;
 
 			bool IsWriting() const override;
 			void Node(ExpressionPtr& node) override;
@@ -181,4 +181,4 @@ namespace nzsl::ShaderAst
 
 #include <NZSL/Ast/AstSerializer.inl>
 
-#endif // NZSL_AST_ASTSERIALIZER_HPP
+#endif // NZSL_AST_SERIALIZER_HPP

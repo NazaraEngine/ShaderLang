@@ -48,7 +48,7 @@ std::string ReadSourceFileContent(const std::filesystem::path& filePath)
 	return std::string(reinterpret_cast<const char*>(&content[0]), content.size());
 }
 
-std::vector<std::uint8_t> CompileToNZSL(const nzsl::ShaderAst::Module &module)
+std::vector<std::uint8_t> CompileToNZSL(const nzsl::Ast::Module &module)
 {
 	nzsl::LangWriter nzslWriter;
 	std::string nzsl = nzslWriter.Generate(module, {});
@@ -60,15 +60,15 @@ std::vector<std::uint8_t> CompileToNZSL(const nzsl::ShaderAst::Module &module)
 
 	return out;
 }
-std::vector<std::uint8_t> CompileToNZSLB(const nzsl::ShaderAst::Module &module, bool allowPartial)
+std::vector<std::uint8_t> CompileToNZSLB(const nzsl::Ast::Module &module, bool allowPartial)
 {
-	nzsl::ShaderAst::SanitizeVisitor::Options sanitizeOptions;
+	nzsl::Ast::SanitizeVisitor::Options sanitizeOptions;
 	sanitizeOptions.allowPartialSanitization = allowPartial;
 
-	nzsl::ShaderAst::ModulePtr shaderModule = nzsl::ShaderAst::Sanitize(module, sanitizeOptions);
+	nzsl::Ast::ModulePtr shaderModule = nzsl::Ast::Sanitize(module, sanitizeOptions);
 
 	nzsl::Serializer serializer;
-	nzsl::ShaderAst::SerializeShader(serializer, shaderModule);
+	nzsl::Ast::SerializeShader(serializer, shaderModule);
 
 	const std::vector<std::uint8_t>& shaderData = serializer.GetData();
 
@@ -79,7 +79,7 @@ std::vector<std::uint8_t> CompileToNZSLB(const nzsl::ShaderAst::Module &module, 
 	return out;
 }
 
-std::vector<std::uint8_t> CompileToSPV(const nzsl::ShaderAst::Module &module)
+std::vector<std::uint8_t> CompileToSPV(const nzsl::Ast::Module &module)
 {
 	nzsl::SpirvWriter::Environment env;
 
@@ -185,21 +185,21 @@ int main(int argc, char* argv[])
 
 		try
 		{
-			nzsl::ShaderAst::ModulePtr shaderModule;
+			nzsl::Ast::ModulePtr shaderModule;
 			if (inputFilePath.extension() == ".nzsl")
 			{
 				std::string sourceContent = ReadSourceFileContent(inputFilePath);
 
-				std::vector<nzsl::ShaderLang::Token> tokens = nzsl::ShaderLang::Tokenize(sourceContent, inputFilePath.generic_u8string());
+				std::vector<nzsl::Token> tokens = nzsl::Tokenize(sourceContent, inputFilePath.generic_u8string());
 
-				shaderModule = nzsl::ShaderLang::Parse(tokens);
+				shaderModule = nzsl::Parse(tokens);
 			}
 			else if (inputFilePath.extension() == ".nzslb")
 			{
 				std::vector<std::uint8_t> sourceContent = ReadFileContent(inputFilePath);
 				nzsl::Unserializer unserializer(sourceContent.data(), sourceContent.size());
 
-				shaderModule = nzsl::ShaderAst::UnserializeShader(unserializer);
+				shaderModule = nzsl::Ast::UnserializeShader(unserializer);
 			}
 			else
 			{
@@ -271,9 +271,9 @@ int main(int argc, char* argv[])
 
 			return EXIT_SUCCESS;
 		}
-		catch (const nzsl::ShaderLang::Error& error)
+		catch (const nzsl::Error& error)
 		{
-			const nzsl::ShaderLang::SourceLocation& errorLocation = error.GetSourceLocation();
+			const nzsl::SourceLocation& errorLocation = error.GetSourceLocation();
 			if (errorLocation.IsValid())
 			{
 				if (logFormat == LogFormat::Classic)

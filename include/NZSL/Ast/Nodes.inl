@@ -4,7 +4,7 @@
 
 #include <NZSL/Ast/Nodes.hpp>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
 	inline const ExpressionType* GetExpressionType(Expression& expr)
 	{
@@ -32,7 +32,7 @@ namespace nzsl::ShaderAst
 		switch (nodeType)
 		{
 #define NZSL_SHADERAST_EXPRESSION(Node) case NodeType::Node: return true;
-#include <NZSL/Ast/AstNodeList.hpp>
+#include <NZSL/Ast/NodeList.hpp>
 
 		default:
 			return false;
@@ -44,7 +44,7 @@ namespace nzsl::ShaderAst
 		switch (nodeType)
 		{
 #define NZSL_SHADERAST_STATEMENT(Node) case NodeType::Node: return true;
-#include <NZSL/Ast/AstNodeList.hpp>
+#include <NZSL/Ast/NodeList.hpp>
 
 		default:
 			return false;

@@ -2,18 +2,18 @@
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
-#include <NZSL/Ast/AstReflect.hpp>
+#include <NZSL/Ast/ReflectVisitor.hpp>
 #include <stdexcept>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
-	void AstReflect::Reflect(Statement& statement, const Callbacks& callbacks)
+	void ReflectVisitor::Reflect(Statement& statement, const Callbacks& callbacks)
 	{
 		m_callbacks = &callbacks;
 		statement.Visit(*this);
 	}
 
-	void AstReflect::Visit(DeclareAliasStatement& node)
+	void ReflectVisitor::Visit(DeclareAliasStatement& node)
 	{
 		assert(m_callbacks);
 		if (m_callbacks->onAliasDeclaration)
@@ -22,10 +22,10 @@ namespace nzsl::ShaderAst
 		if (m_callbacks->onAliasIndex && node.aliasIndex)
 			m_callbacks->onAliasIndex(node.name, *node.aliasIndex, node.sourceLocation);
 
-		AstRecursiveVisitor::Visit(node);
+		RecursiveVisitor::Visit(node);
 	}
 
-	void AstReflect::Visit(DeclareConstStatement& node)
+	void ReflectVisitor::Visit(DeclareConstStatement& node)
 	{
 		assert(m_callbacks);
 		if (m_callbacks->onConstDeclaration)
@@ -34,10 +34,10 @@ namespace nzsl::ShaderAst
 		if (m_callbacks->onConstIndex && node.constIndex)
 			m_callbacks->onConstIndex(node.name, *node.constIndex, node.sourceLocation);
 
-		AstRecursiveVisitor::Visit(node);
+		RecursiveVisitor::Visit(node);
 	}
 
-	void AstReflect::Visit(DeclareExternalStatement& node)
+	void ReflectVisitor::Visit(DeclareExternalStatement& node)
 	{
 		assert(m_callbacks);
 		if (m_callbacks->onExternalDeclaration)
@@ -52,10 +52,10 @@ namespace nzsl::ShaderAst
 			}
 		}
 
-		AstRecursiveVisitor::Visit(node);
+		RecursiveVisitor::Visit(node);
 	}
 
-	void AstReflect::Visit(DeclareFunctionStatement& node)
+	void ReflectVisitor::Visit(DeclareFunctionStatement& node)
 	{
 		assert(m_callbacks);
 
@@ -82,10 +82,10 @@ namespace nzsl::ShaderAst
 			}
 		}
 
-		AstRecursiveVisitor::Visit(node);
+		RecursiveVisitor::Visit(node);
 	}
 
-	void AstReflect::Visit(DeclareOptionStatement& node)
+	void ReflectVisitor::Visit(DeclareOptionStatement& node)
 	{
 		assert(m_callbacks);
 		if (m_callbacks->onOptionDeclaration)
@@ -94,10 +94,10 @@ namespace nzsl::ShaderAst
 		if (m_callbacks->onOptionIndex && node.optIndex)
 			m_callbacks->onOptionIndex(node.optName, *node.optIndex, node.sourceLocation);
 
-		AstRecursiveVisitor::Visit(node);
+		RecursiveVisitor::Visit(node);
 	}
 
-	void AstReflect::Visit(DeclareStructStatement& node)
+	void ReflectVisitor::Visit(DeclareStructStatement& node)
 	{
 		assert(m_callbacks);
 		if (m_callbacks->onStructDeclaration)
@@ -106,10 +106,10 @@ namespace nzsl::ShaderAst
 		if (m_callbacks->onStructIndex && node.structIndex)
 			m_callbacks->onStructIndex(node.description.name, *node.structIndex, node.sourceLocation);
 
-		AstRecursiveVisitor::Visit(node);
+		RecursiveVisitor::Visit(node);
 	}
 
-	void AstReflect::Visit(DeclareVariableStatement& node)
+	void ReflectVisitor::Visit(DeclareVariableStatement& node)
 	{
 		assert(m_callbacks);
 		if (m_callbacks->onVariableDeclaration)
@@ -118,24 +118,24 @@ namespace nzsl::ShaderAst
 		if (m_callbacks->onVariableIndex && node.varIndex)
 			m_callbacks->onVariableIndex(node.varName, *node.varIndex, node.sourceLocation);
 
-		AstRecursiveVisitor::Visit(node);
+		RecursiveVisitor::Visit(node);
 	}
 
-	void AstReflect::Visit(ForStatement& node)
+	void ReflectVisitor::Visit(ForStatement& node)
 	{
 		assert(m_callbacks);
 		if (m_callbacks->onVariableIndex && node.varIndex)
 			m_callbacks->onVariableIndex(node.varName, *node.varIndex, node.sourceLocation);
 
-		AstRecursiveVisitor::Visit(node);
+		RecursiveVisitor::Visit(node);
 	}
 
-	void AstReflect::Visit(ForEachStatement& node)
+	void ReflectVisitor::Visit(ForEachStatement& node)
 	{
 		assert(m_callbacks);
 		if (m_callbacks->onVariableIndex && node.varIndex)
 			m_callbacks->onVariableIndex(node.varName, *node.varIndex, node.sourceLocation);
 
-		AstRecursiveVisitor::Visit(node);
+		RecursiveVisitor::Visit(node);
 	}
 }

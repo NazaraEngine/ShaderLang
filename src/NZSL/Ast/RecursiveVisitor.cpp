@@ -2,46 +2,46 @@
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
-#include <NZSL/Ast/AstRecursiveVisitor.hpp>
+#include <NZSL/Ast/RecursiveVisitor.hpp>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
-	void AstRecursiveVisitor::Visit(AccessIdentifierExpression& node)
+	void RecursiveVisitor::Visit(AccessIdentifierExpression& node)
 	{
 		node.expr->Visit(*this);
 	}
 
-	void AstRecursiveVisitor::Visit(AccessIndexExpression& node)
+	void RecursiveVisitor::Visit(AccessIndexExpression& node)
 	{
 		node.expr->Visit(*this);
 		for (auto& index : node.indices)
 			index->Visit(*this);
 	}
 
-	void AstRecursiveVisitor::Visit(AliasValueExpression& /*node*/)
+	void RecursiveVisitor::Visit(AliasValueExpression& /*node*/)
 	{
 		/* nothing to do */
 	}
 
-	void AstRecursiveVisitor::Visit(AssignExpression& node)
+	void RecursiveVisitor::Visit(AssignExpression& node)
 	{
 		node.left->Visit(*this);
 		node.right->Visit(*this);
 	}
 
-	void AstRecursiveVisitor::Visit(BinaryExpression& node)
+	void RecursiveVisitor::Visit(BinaryExpression& node)
 	{
 		node.left->Visit(*this);
 		node.right->Visit(*this);
 	}
 
-	void AstRecursiveVisitor::Visit(CallFunctionExpression& node)
+	void RecursiveVisitor::Visit(CallFunctionExpression& node)
 	{
 		for (auto& param : node.parameters)
 			param->Visit(*this);
 	}
 
-	void AstRecursiveVisitor::Visit(CallMethodExpression& node)
+	void RecursiveVisitor::Visit(CallMethodExpression& node)
 	{
 		node.object->Visit(*this);
 
@@ -49,7 +49,7 @@ namespace nzsl::ShaderAst
 			param->Visit(*this);
 	}
 
-	void AstRecursiveVisitor::Visit(CastExpression& node)
+	void RecursiveVisitor::Visit(CastExpression& node)
 	{
 		for (auto& expr : node.expressions)
 		{
@@ -60,71 +60,71 @@ namespace nzsl::ShaderAst
 		}
 	}
 
-	void AstRecursiveVisitor::Visit(ConditionalExpression& node)
+	void RecursiveVisitor::Visit(ConditionalExpression& node)
 	{
 		node.truePath->Visit(*this);
 		node.falsePath->Visit(*this);
 	}
 
-	void AstRecursiveVisitor::Visit(ConstantValueExpression& /*node*/)
+	void RecursiveVisitor::Visit(ConstantValueExpression& /*node*/)
 	{
 		/* Nothing to do */
 	}
 
-	void AstRecursiveVisitor::Visit(ConstantExpression& /*node*/)
+	void RecursiveVisitor::Visit(ConstantExpression& /*node*/)
 	{
 		/* Nothing to do */
 	}
 
-	void AstRecursiveVisitor::Visit(FunctionExpression& /*node*/)
+	void RecursiveVisitor::Visit(FunctionExpression& /*node*/)
 	{
 		/* Nothing to do */
 	}
 
-	void AstRecursiveVisitor::Visit(IdentifierExpression& /*node*/)
+	void RecursiveVisitor::Visit(IdentifierExpression& /*node*/)
 	{
 		/* Nothing to do */
 	}
 
-	void AstRecursiveVisitor::Visit(IntrinsicExpression& node)
+	void RecursiveVisitor::Visit(IntrinsicExpression& node)
 	{
 		for (auto& param : node.parameters)
 			param->Visit(*this);
 	}
 
-	void AstRecursiveVisitor::Visit(IntrinsicFunctionExpression& /*node*/)
+	void RecursiveVisitor::Visit(IntrinsicFunctionExpression& /*node*/)
 	{
 		/* Nothing to do */
 	}
 
-	void AstRecursiveVisitor::Visit(StructTypeExpression& /*node*/)
+	void RecursiveVisitor::Visit(StructTypeExpression& /*node*/)
 	{
 		/* Nothing to do */
 	}
 
-	void AstRecursiveVisitor::Visit(SwizzleExpression& node)
+	void RecursiveVisitor::Visit(SwizzleExpression& node)
 	{
 		if (node.expression)
 			node.expression->Visit(*this);
 	}
 
-	void AstRecursiveVisitor::Visit(TypeExpression& /*node*/)
+	void RecursiveVisitor::Visit(TypeExpression& /*node*/)
 	{
 		/* Nothing to do */
 	}
 
-	void AstRecursiveVisitor::Visit(VariableValueExpression& /*node*/)
+	void RecursiveVisitor::Visit(VariableValueExpression& /*node*/)
 	{
 		/* Nothing to do */
 	}
 
-	void AstRecursiveVisitor::Visit(UnaryExpression& node)
+	void RecursiveVisitor::Visit(UnaryExpression& node)
 	{
 		if (node.expression)
 			node.expression->Visit(*this);
 	}
 
-	void AstRecursiveVisitor::Visit(BranchStatement& node)
+	void RecursiveVisitor::Visit(BranchStatement& node)
 	{
 		for (auto& cond : node.condStatements)
 		{
@@ -136,62 +136,62 @@ namespace nzsl::ShaderAst
 			node.elseStatement->Visit(*this);
 	}
 
-	void AstRecursiveVisitor::Visit(ConditionalStatement& node)
+	void RecursiveVisitor::Visit(ConditionalStatement& node)
 	{
 		node.statement->Visit(*this);
 	}
 
-	void AstRecursiveVisitor::Visit(DeclareAliasStatement& node)
+	void RecursiveVisitor::Visit(DeclareAliasStatement& node)
 	{
 		if (node.expression)
 			node.expression->Visit(*this);
 	}
 
-	void AstRecursiveVisitor::Visit(DeclareConstStatement& node)
+	void RecursiveVisitor::Visit(DeclareConstStatement& node)
 	{
 		if (node.expression)
 			node.expression->Visit(*this);
 	}
 
-	void AstRecursiveVisitor::Visit(DeclareExternalStatement& /*node*/)
+	void RecursiveVisitor::Visit(DeclareExternalStatement& /*node*/)
 	{
 		/* Nothing to do */
 	}
 
-	void AstRecursiveVisitor::Visit(DeclareFunctionStatement& node)
+	void RecursiveVisitor::Visit(DeclareFunctionStatement& node)
 	{
 		for (auto& statement : node.statements)
 			statement->Visit(*this);
 	}
 
-	void AstRecursiveVisitor::Visit(DeclareOptionStatement& node)
+	void RecursiveVisitor::Visit(DeclareOptionStatement& node)
 	{
 		if (node.defaultValue)
 			node.defaultValue->Visit(*this);
 	}
 
-	void AstRecursiveVisitor::Visit(DeclareStructStatement& /*node*/)
+	void RecursiveVisitor::Visit(DeclareStructStatement& /*node*/)
 	{
 		/* Nothing to do */
 	}
 
-	void AstRecursiveVisitor::Visit(DeclareVariableStatement& node)
+	void RecursiveVisitor::Visit(DeclareVariableStatement& node)
 	{
 		if (node.initialExpression)
 			node.initialExpression->Visit(*this);
 	}
 
-	void AstRecursiveVisitor::Visit(DiscardStatement& /*node*/)
+	void RecursiveVisitor::Visit(DiscardStatement& /*node*/)
 	{
 		/* Nothing to do */
 	}
 
-	void AstRecursiveVisitor::Visit(ExpressionStatement& node)
+	void RecursiveVisitor::Visit(ExpressionStatement& node)
 	{
 		node.expression->Visit(*this);
 	}
 
-	void AstRecursiveVisitor::Visit(ForStatement& node)
+	void RecursiveVisitor::Visit(ForStatement& node)
 	{
 		if (node.fromExpr)
 			node.fromExpr->Visit(*this);
@@ -206,7 +206,7 @@ namespace nzsl::ShaderAst
 			node.statement->Visit(*this);
 	}
 
-	void AstRecursiveVisitor::Visit(ForEachStatement& node)
+	void RecursiveVisitor::Visit(ForEachStatement& node)
 	{
 		if (node.expression)
 			node.expression->Visit(*this);
@@ -215,35 +215,35 @@ namespace nzsl::ShaderAst
 			node.statement->Visit(*this);
 	}
 
-	void AstRecursiveVisitor::Visit(ImportStatement& /*node*/)
+	void RecursiveVisitor::Visit(ImportStatement& /*node*/)
 	{
 		/* nothing to do */
 	}
 
-	void AstRecursiveVisitor::Visit(MultiStatement& node)
+	void RecursiveVisitor::Visit(MultiStatement& node)
 	{
 		for (auto& statement : node.statements)
 			statement->Visit(*this);
 	}
 
-	void AstRecursiveVisitor::Visit(NoOpStatement& /*node*/)
+	void RecursiveVisitor::Visit(NoOpStatement& /*node*/)
 	{
 		/* Nothing to do */
 	}
 
-	void AstRecursiveVisitor::Visit(ReturnStatement& node)
+	void RecursiveVisitor::Visit(ReturnStatement& node)
 	{
 		if (node.returnExpr)
 			node.returnExpr->Visit(*this);
 	}
 
-	void AstRecursiveVisitor::Visit(ScopedStatement& node)
+	void RecursiveVisitor::Visit(ScopedStatement& node)
 	{
 		if (node.statement)
 			node.statement->Visit(*this);
 	}
 
-	void AstRecursiveVisitor::Visit(WhileStatement& node)
+	void RecursiveVisitor::Visit(WhileStatement& node)
 	{
 		if (node.condition)
 			node.condition->Visit(*this);

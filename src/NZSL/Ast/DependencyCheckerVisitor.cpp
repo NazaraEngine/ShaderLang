@@ -4,7 +4,7 @@
 
 #include <NZSL/Ast/DependencyCheckerVisitor.hpp>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
 	void DependencyCheckerVisitor::Register(Statement& statement, const Config& config)
 	{
@@ -93,7 +93,7 @@ namespace nzsl::ShaderAst
 
 		assert(node.aliasIndex);
 		m_currentAliasDeclIndex = *node.aliasIndex;
-		AstRecursiveVisitor::Visit(node);
+		RecursiveVisitor::Visit(node);
 		m_currentAliasDeclIndex = {};
 	}
 
@@ -113,7 +113,7 @@ namespace nzsl::ShaderAst
 			++varIndex;
 		}
 
-		AstRecursiveVisitor::Visit(node);
+		RecursiveVisitor::Visit(node);
 	}
 
 	void DependencyCheckerVisitor::Visit(DeclareFunctionStatement& node)
@@ -152,7 +152,7 @@ namespace nzsl::ShaderAst
 		}
 
 		m_currentFunctionIndex = node.funcIndex;
-		AstRecursiveVisitor::Visit(node);
+		RecursiveVisitor::Visit(node);
 		m_currentFunctionIndex = {};
 	}
 
@@ -168,7 +168,7 @@ namespace nzsl::ShaderAst
 			RegisterType(usageSet, memberExprType);
 		}
 
-		AstRecursiveVisitor::Visit(node);
+		RecursiveVisitor::Visit(node);
 	}
 
 	void DependencyCheckerVisitor::Visit(DeclareVariableStatement& node)
@@ -181,7 +181,7 @@ namespace nzsl::ShaderAst
 		RegisterType(usageSet, varType);
 
 		m_currentVariableDeclIndex = node.varIndex;
-		AstRecursiveVisitor::Visit(node);
+		RecursiveVisitor::Visit(node);
 		m_currentVariableDeclIndex = {};
 	}
 

@@ -4,8 +4,8 @@
 
 #pragma once
 
-#ifndef NZSL_AST_ASTCOMPARE_HPP
-#define NZSL_AST_ASTCOMPARE_HPP
+#ifndef NZSL_AST_COMPARE_HPP
+#define NZSL_AST_COMPARE_HPP
 
 #include <NZSL/Config.hpp>
 #include <NZSL/Config.hpp>
@@ -14,7 +14,7 @@
 #include <NZSL/Ast/Module.hpp>
 #include <vector>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
 	inline bool Compare(const Expression& lhs, const Expression& rhs);
 	inline bool Compare(const Module& lhs, const Module& rhs);
@@ -32,7 +32,7 @@ namespace nzsl::ShaderAst
 	inline bool Compare(const BranchStatement::ConditionalStatement& lhs, const BranchStatement::ConditionalStatement& rhs);
 	inline bool Compare(const DeclareExternalStatement::ExternalVar& lhs, const DeclareExternalStatement::ExternalVar& rhs);
 	inline bool Compare(const DeclareFunctionStatement::Parameter& lhs, const DeclareFunctionStatement::Parameter& rhs);
-	inline bool Compare(const ShaderLang::SourceLocation& lhs, const ShaderLang::SourceLocation& rhs);
+	inline bool Compare(const SourceLocation& lhs, const SourceLocation& rhs);
 	inline bool Compare(const StructDescription& lhs, const StructDescription& rhs);
 	inline bool Compare(const StructDescription::StructMember& lhs, const StructDescription::StructMember& rhs);
 
@@ -78,6 +78,6 @@ namespace nzsl::ShaderAst
 	inline bool Compare(const WhileStatement& lhs, const WhileStatement& rhs);
 }
 
-#include <NZSL/Ast/AstCompare.inl>
+#include <NZSL/Ast/Compare.inl>
 
-#endif // NZSL_AST_ASTCOMPARE_HPP
+#endif // NZSL_AST_COMPARE_HPP

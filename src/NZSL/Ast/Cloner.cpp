@@ -2,12 +2,12 @@
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
-#include <NZSL/Ast/AstCloner.hpp>
+#include <NZSL/Ast/Cloner.hpp>
 #include <stdexcept>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
-	ExpressionPtr AstCloner::Clone(Expression& expr)
+	ExpressionPtr Cloner::Clone(Expression& expr)
 	{
 		expr.Visit(*this);
 
@@ -15,7 +15,7 @@ namespace nzsl::ShaderAst
 		return PopExpression();
 	}
 
-	StatementPtr AstCloner::Clone(Statement& statement)
+	StatementPtr Cloner::Clone(Statement& statement)
 	{
 		statement.Visit(*this);
 
@@ -23,19 +23,19 @@ namespace nzsl::ShaderAst
 		return PopStatement();
 	}
 
-	ExpressionPtr AstCloner::CloneExpression(Expression& expr)
+	ExpressionPtr Cloner::CloneExpression(Expression& expr)
 	{
 		expr.Visit(*this);
 		return PopExpression();
 	}
 
-	StatementPtr AstCloner::CloneStatement(Statement& statement)
+	StatementPtr Cloner::CloneStatement(Statement& statement)
 	{
 		statement.Visit(*this);
 		return PopStatement();
 	}
 
-	ExpressionValue<ExpressionType> AstCloner::CloneType(const ExpressionValue<ExpressionType>& exprType)
+	ExpressionValue<ExpressionType> Cloner::CloneType(const ExpressionValue<ExpressionType>& exprType)
 	{
 		if (!exprType.HasValue())
 			return {};
@@ -49,7 +49,7 @@ namespace nzsl::ShaderAst
 		}
 	}
 
-	StatementPtr AstCloner::Clone(BranchStatement& node)
+	StatementPtr Cloner::Clone(BranchStatement& node)
 	{
 		auto clone = std::make_unique<BranchStatement>();
 		clone->condStatements.reserve(node.condStatements.size());
@@ -69,7 +69,7 @@ namespace nzsl::ShaderAst
 		return clone;
 	}
 
-	StatementPtr AstCloner::Clone(ConditionalStatement& node)
+	StatementPtr Cloner::Clone(ConditionalStatement& node)
 	{
 		auto clone = std::make_unique<ConditionalStatement>();
 		clone->condition = CloneExpression(node.condition);
@@ -80,7 +80,7 @@ namespace nzsl::ShaderAst
 		return clone;
 	}
 
-	StatementPtr AstCloner::Clone(DeclareAliasStatement& node)
+	StatementPtr Cloner::Clone(DeclareAliasStatement& node)
 	{
 		auto clone = std::make_unique<DeclareAliasStatement>();
 		clone->aliasIndex = node.aliasIndex;
@@ -92,7 +92,7 @@ namespace nzsl::ShaderAst
 		return clone;
 	}
 
-	StatementPtr AstCloner::Clone(DeclareConstStatement& node)
+	StatementPtr Cloner::Clone(DeclareConstStatement& node)
 	{
 		auto clone = std::make_unique<DeclareConstStatement>();
 		clone->constIndex = node.constIndex;
@@ -105,7 +105,7 @@ namespace nzsl::ShaderAst
 		return clone;
 	}
 
-	StatementPtr AstCloner::Clone(DeclareExternalStatement& node)
+	StatementPtr Cloner::Clone(DeclareExternalStatement& node)
 	{
 		auto clone = std::make_unique<DeclareExternalStatement>();
 		clone->bindingSet = Clone(node.bindingSet);
@@ -128,7 +128,7 @@ namespace nzsl::ShaderAst
 		return clone;
 	}
 
-	StatementPtr AstCloner::Clone(DeclareFunctionStatement& node)
+	StatementPtr Cloner::Clone(DeclareFunctionStatement& node)
 	{
 		auto clone = std::make_unique<DeclareFunctionStatement>();
 		clone->depthWrite = Clone(node.depthWrite);
@@ -159,7 +159,7 @@ namespace nzsl::ShaderAst
 		return clone;
 	}
 
-	StatementPtr AstCloner::Clone(DeclareOptionStatement& node)
+	StatementPtr Cloner::Clone(DeclareOptionStatement& node)
 	{
 		auto clone = std::make_unique<DeclareOptionStatement>();
 		clone->defaultValue = CloneExpression(node.defaultValue);
@@ -172,7 +172,7 @@ namespace nzsl::ShaderAst
 		return clone;
 	}
 
-	StatementPtr AstCloner::Clone(DeclareStructStatement& node)
+	StatementPtr Cloner::Clone(DeclareStructStatement& node)
 	{
 		auto clone = std::make_unique<DeclareStructStatement>();
 		clone->isExported = Clone(node.isExported);
@@ -199,7 +199,7 @@ namespace nzsl::ShaderAst
 		return clone;
 	}
 
-	StatementPtr AstCloner::Clone(DeclareVariableStatement& node)
+	StatementPtr Cloner::Clone(DeclareVariableStatement& node)
 	{
 		auto clone = std::make_unique<DeclareVariableStatement>();
 		clone->initialExpression = CloneExpression(node.initialExpression);
@@ -212,7 +212,7 @@ namespace nzsl::ShaderAst
 		return clone;
 	}
 
-	StatementPtr AstCloner::Clone(DiscardStatement& node)
+	StatementPtr Cloner::Clone(DiscardStatement& node)
 	{
 		auto clone = std::make_unique<DiscardStatement>();
 
@@ -221,7 +221,7 @@ namespace nzsl::ShaderAst
 		return clone;
 	}
 
-	StatementPtr AstCloner::Clone(ExpressionStatement& node)
+	StatementPtr Cloner::Clone(ExpressionStatement& node)
 	{
 		auto clone = std::make_unique<ExpressionStatement>();
 		clone->expression = CloneExpression(node.expression);
@@ -231,7 +231,7 @@ namespace nzsl::ShaderAst
 		return clone;
 	}
 
-	StatementPtr AstCloner::Clone(ForStatement& node)
+	StatementPtr Cloner::Clone(ForStatement& node)
 	{
 		auto clone = std::make_unique<ForStatement>();
 		clone->fromExpr = CloneExpression(node.fromExpr);
@@ -246,7 +246,7 @@ namespace nzsl::ShaderAst
 		return clone;
 	}
 
-	StatementPtr AstCloner::Clone(ForEachStatement& node)
+	StatementPtr Cloner::Clone(ForEachStatement& node)
 	{
 		auto clone = std::make_unique<ForEachStatement>();
 		clone->expression = CloneExpression(node.expression);
@@ -259,7 +259,7 @@ namespace nzsl::ShaderAst
 		return clone;
 	}
 
-	StatementPtr AstCloner::Clone(ImportStatement& node)
+	StatementPtr Cloner::Clone(ImportStatement& node)
 	{
 		auto clone = std::make_unique<ImportStatement>();
 		clone->moduleName = node.moduleName;
@@ -269,7 +269,7 @@ namespace nzsl::ShaderAst
 		return clone;
 	}
 
-	StatementPtr AstCloner::Clone(MultiStatement& node)
+	StatementPtr Cloner::Clone(MultiStatement& node)
 	{
 		auto clone = std::make_unique<MultiStatement>();
 		clone->statements.reserve(node.statements.size());
@@ -281,7 +281,7 @@ namespace nzsl::ShaderAst
 		return clone;
 	}
 
-	StatementPtr AstCloner::Clone(NoOpStatement& node)
+	StatementPtr Cloner::Clone(NoOpStatement& node)
 	{
 		auto clone = std::make_unique<NoOpStatement>();
 
@@ -290,7 +290,7 @@ namespace nzsl::ShaderAst
 		return clone;
 	}
 
-	StatementPtr AstCloner::Clone(ReturnStatement& node)
+	StatementPtr Cloner::Clone(ReturnStatement& node)
 	{
 		auto clone = std::make_unique<ReturnStatement>();
 		clone->returnExpr = CloneExpression(node.returnExpr);
@@ -300,7 +300,7 @@ namespace nzsl::ShaderAst
 		return clone;
 	}
 
-	StatementPtr AstCloner::Clone(ScopedStatement& node)
+	StatementPtr Cloner::Clone(ScopedStatement& node)
 	{
 		auto clone = std::make_unique<ScopedStatement>();
 		clone->statement = CloneStatement(node.statement);
@@ -310,7 +310,7 @@ namespace nzsl::ShaderAst
 		return clone;
 	}
 
-	StatementPtr AstCloner::Clone(WhileStatement& node)
+	StatementPtr Cloner::Clone(WhileStatement& node)
 	{
 		auto clone = std::make_unique<WhileStatement>();
 		clone->condition = CloneExpression(node.condition);
@@ -322,7 +322,7 @@ namespace nzsl::ShaderAst
 		return clone;
 	}
 
-	ExpressionPtr AstCloner::Clone(AccessIdentifierExpression& node)
+	ExpressionPtr Cloner::Clone(AccessIdentifierExpression& node)
 	{
 		auto clone = std::make_unique<AccessIdentifierExpression>();
 		clone->identifiers = node.identifiers;
@@ -334,7 +334,7 @@ namespace nzsl::ShaderAst
 		return clone;
 	}
 
-	ExpressionPtr AstCloner::Clone(AccessIndexExpression& node)
+	ExpressionPtr Cloner::Clone(AccessIndexExpression& node)
 	{
 		auto clone = std::make_unique<AccessIndexExpression>();
 		clone->expr = CloneExpression(node.expr);
@@ -349,7 +349,7 @@ namespace nzsl::ShaderAst
 		return clone;
 	}
 
-	ExpressionPtr AstCloner::Clone(AliasValueExpression& node)
+	ExpressionPtr Cloner::Clone(AliasValueExpression& node)
 	{
 		auto clone = std::make_unique<AliasValueExpression>();
 		clone->aliasId = node.aliasId;
@@ -360,7 +360,7 @@ namespace nzsl::ShaderAst
 		return clone;
 	}
 
-	ExpressionPtr AstCloner::Clone(AssignExpression& node)
+	ExpressionPtr Cloner::Clone(AssignExpression& node)
 	{
 		auto clone = std::make_unique<AssignExpression>();
 		clone->op = node.op;
@@ -373,7 +373,7 @@ namespace nzsl::ShaderAst
 		return clone;
 	}
 
-	ExpressionPtr AstCloner::Clone(BinaryExpression& node)
+	ExpressionPtr Cloner::Clone(BinaryExpression& node)
 	{
 		auto clone = std::make_unique<BinaryExpression>();
 		clone->op = node.op;
@@ -386,7 +386,7 @@ namespace nzsl::ShaderAst
 		return clone;
 	}
 
-	ExpressionPtr AstCloner::Clone(CallFunctionExpression& node)
+	ExpressionPtr Cloner::Clone(CallFunctionExpression& node)
 	{
 		auto clone = std::make_unique<CallFunctionExpression>();
 		clone->targetFunction = CloneExpression(node.targetFunction);
@@ -401,7 +401,7 @@ namespace nzsl::ShaderAst
 		return clone;
 	}
 
-	ExpressionPtr AstCloner::Clone(CallMethodExpression& node)
+	ExpressionPtr Cloner::Clone(CallMethodExpression& node)
 	{
 		auto clone = std::make_unique<CallMethodExpression>();
 		clone->methodName = node.methodName;
@@ -418,7 +418,7 @@ namespace nzsl::ShaderAst
 		return clone;
 	}
 
-	ExpressionPtr AstCloner::Clone(CastExpression& node)
+	ExpressionPtr Cloner::Clone(CastExpression& node)
 	{
 		auto clone = std::make_unique<CastExpression>();
 		clone->targetType = Clone(node.targetType);
@@ -438,7 +438,7 @@ namespace nzsl::ShaderAst
 		return clone;
 	}
 
-	ExpressionPtr AstCloner::Clone(ConditionalExpression& node)
+	ExpressionPtr Cloner::Clone(ConditionalExpression& node)
 	{
 		auto clone = std::make_unique<ConditionalExpression>();
 		clone->condition = CloneExpression(node.condition);
@@ -451,7 +451,7 @@ namespace nzsl::ShaderAst
 		return clone;
 	}
 
-	ExpressionPtr AstCloner::Clone(ConstantExpression& node)
+	ExpressionPtr Cloner::Clone(ConstantExpression& node)
 	{
 		auto clone = std::make_unique<ConstantExpression>();
 		clone->constantId = node.constantId;
@@ -462,7 +462,7 @@ namespace nzsl::ShaderAst
 		return clone;
 	}
 
-	ExpressionPtr AstCloner::Clone(ConstantValueExpression& node)
+	ExpressionPtr Cloner::Clone(ConstantValueExpression& node)
 	{
 		auto clone = std::make_unique<ConstantValueExpression>();
 		clone->value = node.value;
@@ -473,7 +473,7 @@ namespace nzsl::ShaderAst
 		return clone;
 	}
 
-	ExpressionPtr AstCloner::Clone(FunctionExpression& node)
+	ExpressionPtr Cloner::Clone(FunctionExpression& node)
 	{
 		auto clone = std::make_unique<FunctionExpression>();
 		clone->funcId = node.funcId;
@@ -484,7 +484,7 @@ namespace nzsl::ShaderAst
 		return clone;
 	}
 
-	ExpressionPtr AstCloner::Clone(IdentifierExpression& node)
+	ExpressionPtr Cloner::Clone(IdentifierExpression& node)
 	{
 		auto clone = std::make_unique<IdentifierExpression>();
 		clone->identifier = node.identifier;
@@ -495,7 +495,7 @@ namespace nzsl::ShaderAst
 		return clone;
 	}
 
-	ExpressionPtr AstCloner::Clone(IntrinsicExpression& node)
+	ExpressionPtr Cloner::Clone(IntrinsicExpression& node)
 	{
 		auto clone = std::make_unique<IntrinsicExpression>();
 		clone->intrinsic = node.intrinsic;
@@ -510,7 +510,7 @@ namespace nzsl::ShaderAst
 		return clone;
 	}
 
-	ExpressionPtr AstCloner::Clone(IntrinsicFunctionExpression& node)
+	ExpressionPtr Cloner::Clone(IntrinsicFunctionExpression& node)
 	{
 		auto clone = std::make_unique<IntrinsicFunctionExpression>();
 		clone->intrinsicId = node.intrinsicId;
@@ -521,7 +521,7 @@ namespace nzsl::ShaderAst
 		return clone;
 	}
 
-	ExpressionPtr AstCloner::Clone(StructTypeExpression& node)
+	ExpressionPtr Cloner::Clone(StructTypeExpression& node)
 	{
 		auto clone = std::make_unique<StructTypeExpression>();
 		clone->structTypeId = node.structTypeId;
@@ -532,7 +532,7 @@ namespace nzsl::ShaderAst
 		return clone;
 	}
 
-	ExpressionPtr AstCloner::Clone(SwizzleExpression& node)
+	ExpressionPtr Cloner::Clone(SwizzleExpression& node)
 	{
 		auto clone = std::make_unique<SwizzleExpression>();
 		clone->componentCount = node.componentCount;
@@ -545,7 +545,7 @@ namespace nzsl::ShaderAst
 		return clone;
 	}
 
-	ExpressionPtr AstCloner::Clone(TypeExpression& node)
+	ExpressionPtr Cloner::Clone(TypeExpression& node)
 	{
 		auto clone = std::make_unique<TypeExpression>();
 		clone->typeId = node.typeId;
@@ -556,7 +556,7 @@ namespace nzsl::ShaderAst
 		return clone;
 	}
 
-	ExpressionPtr AstCloner::Clone(VariableValueExpression& node)
+	ExpressionPtr Cloner::Clone(VariableValueExpression& node)
 	{
 		auto clone = std::make_unique<VariableValueExpression>();
 		clone->variableId = node.variableId;
@@ -567,7 +567,7 @@ namespace nzsl::ShaderAst
 		return clone;
 	}
 
-	ExpressionPtr AstCloner::Clone(UnaryExpression& node)
+	ExpressionPtr Cloner::Clone(UnaryExpression& node)
 	{
 		auto clone = std::make_unique<UnaryExpression>();
 		clone->expression = CloneExpression(node.expression);
@@ -579,29 +579,29 @@ namespace nzsl::ShaderAst
 		return clone;
 	}
 
-#define NZSL_SHADERAST_EXPRESSION(NodeType) void AstCloner::Visit(NodeType& node) \
+#define NZSL_SHADERAST_EXPRESSION(NodeType) void Cloner::Visit(NodeType& node) \
 	{ \
 		PushExpression(Clone(node)); \
 	}
 
-#define NZSL_SHADERAST_STATEMENT(NodeType) void AstCloner::Visit(NodeType& node) \
+#define NZSL_SHADERAST_STATEMENT(NodeType) void Cloner::Visit(NodeType& node) \
 	{ \
 		PushStatement(Clone(node)); \
 	}
 
-#include <NZSL/Ast/AstNodeList.hpp>
+#include <NZSL/Ast/NodeList.hpp>
 
-	void AstCloner::PushExpression(ExpressionPtr expression)
+	void Cloner::PushExpression(ExpressionPtr expression)
 	{
 		m_expressionStack.emplace_back(std::move(expression));
 	}
 
-	void AstCloner::PushStatement(StatementPtr statement)
+	void Cloner::PushStatement(StatementPtr statement)
 	{
 		m_statementStack.emplace_back(std::move(statement));
 	}
 
-	ExpressionPtr AstCloner::PopExpression()
+	ExpressionPtr Cloner::PopExpression()
 	{
 		assert(!m_expressionStack.empty());
 
@@ -611,7 +611,7 @@ namespace nzsl::ShaderAst
 		return expr;
 	}
 
-	StatementPtr AstCloner::PopStatement()
+	StatementPtr Cloner::PopStatement()
 	{
 		assert(!m_statementStack.empty());
 

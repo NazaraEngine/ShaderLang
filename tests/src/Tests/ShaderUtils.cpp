@@ -4,7 +4,7 @@
 #include <NZSL/ShaderLangParser.hpp>
 #include <NZSL/SpirvPrinter.hpp>
 #include <NZSL/SpirvWriter.hpp>
-#include <NZSL/Ast/AstReflect.hpp>
+#include <NZSL/Ast/Reflect.hpp>
 #include <NZSL/Ast/SanitizeVisitor.hpp>
 #include <catch2/catch.hpp>
 #include <glslang/Public/ShaderLang.h>

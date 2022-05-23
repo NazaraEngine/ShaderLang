@@ -18,10 +18,10 @@
 #include <optional>
 #include <string>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
-	class AstExpressionVisitor;
-	class AstStatementVisitor;
+	class ExpressionVisitor;
+	class StatementVisitor;
 
 	struct Node;
 
@@ -39,7 +39,7 @@ namespace nzsl::ShaderAst
 		Node& operator=(const Node&) = delete;
 		Node& operator=(Node&&) noexcept = default;
 
-		ShaderLang::SourceLocation sourceLocation;
+		SourceLocation sourceLocation;
 	};
 
 	// Expressions
@@ -55,7 +55,7 @@ namespace nzsl::ShaderAst
 		Expression(Expression&&) noexcept = default;
 		~Expression() = default;
 
-		virtual void Visit(AstExpressionVisitor& visitor) = 0;
+		virtual void Visit(ExpressionVisitor& visitor) = 0;
 
 		Expression& operator=(const Expression&) = delete;
 		Expression& operator=(Expression&&) noexcept = default;
@@ -66,12 +66,12 @@ namespace nzsl::ShaderAst
 	struct NZSL_API AccessIdentifierExpression : Expression
 	{
 		NodeType GetType() const override;
-		void Visit(AstExpressionVisitor& visitor) override;
+		void Visit(ExpressionVisitor& visitor) override;
 
 		struct Identifier
 		{
 			std::string identifier;
-			ShaderLang::SourceLocation sourceLocation;
+			SourceLocation sourceLocation;
 		};
 
 		std::vector<Identifier> identifiers;
@@ -81,7 +81,7 @@ namespace nzsl::ShaderAst
 	struct NZSL_API AccessIndexExpression : Expression
 	{
 		NodeType GetType() const override;
-		void Visit(AstExpressionVisitor& visitor) override;
+		void Visit(ExpressionVisitor& visitor) override;
 
 		std::vector<ExpressionPtr> indices;
 		ExpressionPtr expr;
@@ -90,7 +90,7 @@ namespace nzsl::ShaderAst
 	struct NZSL_API AliasValueExpression : Expression
 	{
 		NodeType GetType() const override;
-		void Visit(AstExpressionVisitor& visitor) override;
+		void Visit(ExpressionVisitor& visitor) override;
 
 		std::size_t aliasId;
 	};
@@ -98,7 +98,7 @@ namespace nzsl::ShaderAst
 	struct NZSL_API AssignExpression : Expression
 	{
 		NodeType GetType() const override;
-		void Visit(AstExpressionVisitor& visitor) override;
+		void Visit(ExpressionVisitor& visitor) override;
 
 		AssignType    op;
 		ExpressionPtr left;
@@ -108,7 +108,7 @@ namespace nzsl::ShaderAst
 	struct NZSL_API BinaryExpression : Expression
 	{
 		NodeType GetType() const override;
-		void Visit(AstExpressionVisitor& visitor) override;
+		void Visit(ExpressionVisitor& visitor) override;
 
 		BinaryType    op;
 		ExpressionPtr left;
@@ -118,7 +118,7 @@ namespace nzsl::ShaderAst
 	struct NZSL_API CallFunctionExpression : Expression
 	{
 		NodeType GetType() const override;
-		void Visit(AstExpressionVisitor& visitor) override;
+		void Visit(ExpressionVisitor& visitor) override;
 
 		std::vector<ExpressionPtr> parameters;
 		ExpressionPtr targetFunction;
@@ -127,7 +127,7 @@ namespace nzsl::ShaderAst
 	struct NZSL_API CallMethodExpression : Expression
 	{
 		NodeType GetType() const override;
-		void Visit(AstExpressionVisitor& visitor) override;
+		void Visit(ExpressionVisitor& visitor) override;
 
 		std::string methodName;
 		std::vector<ExpressionPtr> parameters;
@@ -137,7 +137,7 @@ namespace nzsl::ShaderAst
 	struct NZSL_API CastExpression : Expression
 	{
 		NodeType GetType() const override;
-		void Visit(AstExpressionVisitor& visitor) override;
+		void Visit(ExpressionVisitor& visitor) override;
 
 		std::array<ExpressionPtr, 4> expressions;
 		ExpressionValue<ExpressionType> targetType;
@@ -146,7 +146,7 @@ namespace nzsl::ShaderAst
 	struct NZSL_API ConditionalExpression : Expression
 	{
 		NodeType GetType() const override;
-		void Visit(AstExpressionVisitor& visitor) override;
+		void Visit(ExpressionVisitor& visitor) override;
 
 		ExpressionPtr condition;
 		ExpressionPtr falsePath;
@@ -156,7 +156,7 @@ namespace nzsl::ShaderAst
 	struct NZSL_API ConstantExpression : Expression
 	{
 		NodeType GetType() const override;
-		void Visit(AstExpressionVisitor& visitor) override;
+		void Visit(ExpressionVisitor& visitor) override;
 
 		std::size_t constantId;
 	};
@@ -164,7 +164,7 @@ namespace nzsl::ShaderAst
 	struct NZSL_API ConstantValueExpression : Expression
 	{
 		NodeType GetType() const override;
-		void Visit(AstExpressionVisitor& visitor) override;
+		void Visit(ExpressionVisitor& visitor) override;
 
 		ConstantValue value;
 	};
@@ -172,7 +172,7 @@ namespace nzsl::ShaderAst
 	struct NZSL_API FunctionExpression : Expression
 	{
 		NodeType GetType() const override;
-		void Visit(AstExpressionVisitor& visitor) override;
+		void Visit(ExpressionVisitor& visitor) override;
 
 		std::size_t funcId;
 	};
@@ -180,7 +180,7 @@ namespace nzsl::ShaderAst
 	struct NZSL_API IdentifierExpression : Expression
 	{
 		NodeType GetType() const override;
-		void Visit(AstExpressionVisitor& visitor) override;
+		void Visit(ExpressionVisitor& visitor) override;
 
 		std::string identifier;
 	};
@@ -188,7 +188,7 @@ namespace nzsl::ShaderAst
 	struct NZSL_API IntrinsicExpression : Expression
 	{
 		NodeType GetType() const override;
-		void Visit(AstExpressionVisitor& visitor) override;
+		void Visit(ExpressionVisitor& visitor) override;
 
 		std::vector<ExpressionPtr> parameters;
 		IntrinsicType intrinsic;
@@ -197,7 +197,7 @@ namespace nzsl::ShaderAst
 	struct NZSL_API IntrinsicFunctionExpression : Expression
 	{
 		NodeType GetType() const override;
-		void Visit(AstExpressionVisitor& visitor) override;
+		void Visit(ExpressionVisitor& visitor) override;
 
 		std::size_t intrinsicId;
 	};
@@ -205,7 +205,7 @@ namespace nzsl::ShaderAst
 	struct NZSL_API StructTypeExpression : Expression
 	{
 		NodeType GetType() const override;
-		void Visit(AstExpressionVisitor& visitor) override;
+		void Visit(ExpressionVisitor& visitor) override;
 
 		std::size_t structTypeId;
 	};
@@ -213,7 +213,7 @@ namespace nzsl::ShaderAst
 	struct NZSL_API SwizzleExpression : Expression
 	{
 		NodeType GetType() const override;
-		void Visit(AstExpressionVisitor& visitor) override;
+		void Visit(ExpressionVisitor& visitor) override;
 
 		std::array<std::uint32_t, 4> components;
 		std::size_t componentCount;
@@ -223,7 +223,7 @@ namespace nzsl::ShaderAst
 	struct NZSL_API TypeExpression : Expression
 	{
 		NodeType GetType() const override;
-		void Visit(AstExpressionVisitor& visitor) override;
+		void Visit(ExpressionVisitor& visitor) override;
 
 		std::size_t typeId;
 	};
@@ -231,7 +231,7 @@ namespace nzsl::ShaderAst
 	struct NZSL_API VariableValueExpression : Expression
 	{
 		NodeType GetType() const override;
-		void Visit(AstExpressionVisitor& visitor) override;
+		void Visit(ExpressionVisitor& visitor) override;
 
 		std::size_t variableId;
 	};
@@ -239,7 +239,7 @@ namespace nzsl::ShaderAst
 	struct NZSL_API UnaryExpression : Expression
 	{
 		NodeType GetType() const override;
-		void Visit(AstExpressionVisitor& visitor) override;
+		void Visit(ExpressionVisitor& visitor) override;
 
 		ExpressionPtr expression;
 		UnaryType op;
@@ -258,7 +258,7 @@ namespace nzsl::ShaderAst
 		Statement(Statement&&) noexcept = default;
 		~Statement() = default;
 
-		virtual void Visit(AstStatementVisitor& visitor) = 0;
+		virtual void Visit(StatementVisitor& visitor) = 0;
 
 		Statement& operator=(const Statement&) = delete;
 		Statement& operator=(Statement&&) noexcept = default;
@@ -267,7 +267,7 @@ namespace nzsl::ShaderAst
 	struct NZSL_API BranchStatement : Statement
 	{
 		NodeType GetType() const override;
-		void Visit(AstStatementVisitor& visitor) override;
+		void Visit(StatementVisitor& visitor) override;
 
 		struct ConditionalStatement
 		{
@@ -283,7 +283,7 @@ namespace nzsl::ShaderAst
 	struct NZSL_API ConditionalStatement : Statement
 	{
 		NodeType GetType() const override;
-		void Visit(AstStatementVisitor& visitor) override;
+		void Visit(StatementVisitor& visitor) override;
 
 		ExpressionPtr condition;
 		StatementPtr statement;
@@ -292,7 +292,7 @@ namespace nzsl::ShaderAst
 	struct NZSL_API DeclareAliasStatement : Statement
 	{
 		NodeType GetType() const override;
-		void Visit(AstStatementVisitor& visitor) override;
+		void Visit(StatementVisitor& visitor) override;
 
 		std::optional<std::size_t> aliasIndex;
 		std::string name;
@@ -302,7 +302,7 @@ namespace nzsl::ShaderAst
 	struct NZSL_API DeclareConstStatement : Statement
 	{
 		NodeType GetType() const override;
-		void Visit(AstStatementVisitor& visitor) override;
+		void Visit(StatementVisitor& visitor) override;
 
 		std::optional<std::size_t> constIndex;
 		std::string name;
@@ -313,7 +313,7 @@ namespace nzsl::ShaderAst
 	struct NZSL_API DeclareExternalStatement : Statement
 	{
 		NodeType GetType() const override;
-		void Visit(AstStatementVisitor& visitor) override;
+		void Visit(StatementVisitor& visitor) override;
 
 		struct ExternalVar
 		{
@@ -322,7 +322,7 @@ namespace nzsl::ShaderAst
 			ExpressionValue<std::uint32_t> bindingIndex;
 			ExpressionValue<std::uint32_t> bindingSet;
 			ExpressionValue<ExpressionType> type;
-			ShaderLang::SourceLocation sourceLocation;
+			SourceLocation sourceLocation;
 		};
 
 		std::vector<ExternalVar> externalVars;
@@ -332,14 +332,14 @@ namespace nzsl::ShaderAst
 	struct NZSL_API DeclareFunctionStatement : Statement
 	{
 		NodeType GetType() const override;
-		void Visit(AstStatementVisitor& visitor) override;
+		void Visit(StatementVisitor& visitor) override;
 
 		struct Parameter
 		{
 			std::optional<std::size_t> varIndex;
 			std::string name;
 			ExpressionValue<ExpressionType> type;
-			ShaderLang::SourceLocation sourceLocation;
+			SourceLocation sourceLocation;
 		};
 
 		std::optional<std::size_t> funcIndex;
@@ -356,7 +356,7 @@ namespace nzsl::ShaderAst
 	struct NZSL_API DeclareOptionStatement : Statement
 	{
 		NodeType GetType() const override;
-		void Visit(AstStatementVisitor& visitor) override;
+		void Visit(StatementVisitor& visitor) override;
 
 		std::optional<std::size_t> optIndex;
 		std::string optName;
@@ -367,7 +367,7 @@ namespace nzsl::ShaderAst
 	struct NZSL_API DeclareStructStatement : Statement
 	{
 		NodeType GetType() const override;
-		void Visit(AstStatementVisitor& visitor) override;
+		void Visit(StatementVisitor& visitor) override;
 
 		std::optional<std::size_t> structIndex;
 		ExpressionValue<bool> isExported;
@@ -377,7 +377,7 @@ namespace nzsl::ShaderAst
 	struct NZSL_API DeclareVariableStatement : Statement
 	{
 		NodeType GetType() const override;
-		void Visit(AstStatementVisitor& visitor) override;
+		void Visit(StatementVisitor& visitor) override;
 
 		std::optional<std::size_t> varIndex;
 		std::string varName;
@@ -388,13 +388,13 @@ namespace nzsl::ShaderAst
 	struct NZSL_API DiscardStatement : Statement
 	{
 		NodeType GetType() const override;
-		void Visit(AstStatementVisitor& visitor) override;
+		void Visit(StatementVisitor& visitor) override;
 	};
 
 	struct NZSL_API ExpressionStatement : Statement
 	{
 		NodeType GetType() const override;
-		void Visit(AstStatementVisitor& visitor) override;
+		void Visit(StatementVisitor& visitor) override;
 
 		ExpressionPtr expression;
 	};
@@ -402,7 +402,7 @@ namespace nzsl::ShaderAst
 	struct NZSL_API ForStatement : Statement
 	{
 		NodeType GetType() const override;
-		void Visit(AstStatementVisitor& visitor) override;
+		void Visit(StatementVisitor& visitor) override;
 
 		std::optional<std::size_t> varIndex;
 		std::string varName;
@@ -416,7 +416,7 @@ namespace nzsl::ShaderAst
 	struct NZSL_API ForEachStatement : Statement
 	{
 		NodeType GetType() const override;
-		void Visit(AstStatementVisitor& visitor) override;
+		void Visit(StatementVisitor& visitor) override;
 
 		std::optional<std::size_t> varIndex;
 		std::string varName;
@@ -428,7 +428,7 @@ namespace nzsl::ShaderAst
 	struct NZSL_API ImportStatement : Statement
 	{
 		NodeType GetType() const override;
-		void Visit(AstStatementVisitor& visitor) override;
+		void Visit(StatementVisitor& visitor) override;
 
 		std::string moduleName;
 	};
@@ -436,7 +436,7 @@ namespace nzsl::ShaderAst
 	struct NZSL_API MultiStatement : Statement
 	{
 		NodeType GetType() const override;
-		void Visit(AstStatementVisitor& visitor) override;
+		void Visit(StatementVisitor& visitor) override;
 
 		std::vector<StatementPtr> statements;
 	};
@@ -444,13 +444,13 @@ namespace nzsl::ShaderAst
 	struct NZSL_API NoOpStatement : Statement
 	{
 		NodeType GetType() const override;
-		void Visit(AstStatementVisitor& visitor) override;
+		void Visit(StatementVisitor& visitor) override;
 	};
 
 	struct NZSL_API ReturnStatement : Statement
 	{
 		NodeType GetType() const override;
-		void Visit(AstStatementVisitor& visitor) override;
+		void Visit(StatementVisitor& visitor) override;
 
 		ExpressionPtr returnExpr;
 	};
@@ -458,7 +458,7 @@ namespace nzsl::ShaderAst
 	struct NZSL_API ScopedStatement : Statement
 	{
 		NodeType GetType() const override;
-		void Visit(AstStatementVisitor& visitor) override;
+		void Visit(StatementVisitor& visitor) override;
 
 		StatementPtr statement;
 	};
@@ -466,7 +466,7 @@ namespace nzsl::ShaderAst
 	struct NZSL_API WhileStatement : Statement
 	{
 		NodeType GetType() const override;
-		void Visit(AstStatementVisitor& visitor) override;
+		void Visit(StatementVisitor& visitor) override;
 
 		ExpressionPtr condition;
 		ExpressionValue<LoopUnroll> unroll;
@@ -475,7 +475,7 @@ namespace nzsl::ShaderAst
 
 #define NZSL_SHADERAST_NODE(X) using X##Ptr = std::unique_ptr<X>;
 
-#include <NZSL/Ast/AstNodeList.hpp>
+#include <NZSL/Ast/NodeList.hpp>
 
 	inline const ExpressionType* GetExpressionType(Expression& expr);
 	inline ExpressionType* GetExpressionTypeMut(Expression& expr);
