@@ -57,7 +57,7 @@ namespace nzsl
 		}
 		catch (const std::exception& e)
 		{
-			std::cerr << "failed to register module from file " << realPath.generic_u8string() << ": " << e.what();
+			std::cerr << "failed to register module from file " << realPath.generic_u8string() << ": " << e.what() << std::endl;
 			return;
 		}
 
@@ -141,7 +141,7 @@ namespace nzsl
 				}
 				catch (const std::exception& e)
 				{
-					std::cerr << "failed to register module " << entry.path().generic_u8string() << ": " << e.what();
+					std::cerr << "failed to register module " << entry.path().generic_u8string() << ": " << e.what() << std::endl;
 				}
 			}
 		}
