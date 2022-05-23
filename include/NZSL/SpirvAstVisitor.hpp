@@ -10,8 +10,8 @@
 #include <NZSL/Config.hpp>
 #include <NZSL/Config.hpp>
 #include <NZSL/SpirvBlock.hpp>
-#include <NZSL/Ast/AstExpressionVisitorExcept.hpp>
-#include <NZSL/Ast/AstStatementVisitorExcept.hpp>
+#include <NZSL/Ast/ExpressionVisitorExcept.hpp>
+#include <NZSL/Ast/StatementVisitorExcept.hpp>
 #include <NZSL/Ast/ExpressionType.hpp>
 #include <unordered_map>
 #include <vector>
@@ -20,7 +20,7 @@ namespace nzsl
 {
 	class SpirvWriter;
 
-	class NZSL_API SpirvAstVisitor : public Ast::AstExpressionVisitorExcept, public Ast::AstStatementVisitorExcept
+	class NZSL_API SpirvAstVisitor : public Ast::ExpressionVisitorExcept, public Ast::StatementVisitorExcept
 	{
 		public:
 			struct EntryPoint;
@@ -38,8 +38,8 @@ namespace nzsl
 
 			const Variable& GetVariable(std::size_t varIndex) const;
 
-			using AstExpressionVisitorExcept::Visit;
-			using AstStatementVisitorExcept::Visit;
+			using ExpressionVisitorExcept::Visit;
+			using StatementVisitorExcept::Visit;
 
 			void Visit(Ast::AccessIndexExpression& node) override;
 			void Visit(Ast::AssignExpression& node) override;

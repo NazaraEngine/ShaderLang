@@ -7,9 +7,9 @@
 #include <Nazara/Utils/CallOnExit.hpp>
 #include <NZSL/Enums.hpp>
 #include <NZSL/ShaderBuilder.hpp>
-#include <NZSL/Ast/AstCloner.hpp>
-#include <NZSL/Ast/AstRecursiveVisitor.hpp>
-#include <NZSL/Ast/AstUtils.hpp>
+#include <NZSL/Ast/Cloner.hpp>
+#include <NZSL/Ast/RecursiveVisitor.hpp>
+#include <NZSL/Ast/Utils.hpp>
 #include <NZSL/Ast/SanitizeVisitor.hpp>
 #include <cassert>
 #include <optional>

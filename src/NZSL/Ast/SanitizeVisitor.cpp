@@ -9,11 +9,11 @@
 #include <Nazara/Utils/StackVector.hpp>
 #include <NZSL/ShaderBuilder.hpp>
 #include <NZSL/ShaderLangErrors.hpp>
-#include <NZSL/Ast/AstConstantPropagationVisitor.hpp>
-#include <NZSL/Ast/AstExportVisitor.hpp>
-#include <NZSL/Ast/AstRecursiveVisitor.hpp>
-#include <NZSL/Ast/AstReflect.hpp>
-#include <NZSL/Ast/AstUtils.hpp>
+#include <NZSL/Ast/ConstantPropagationVisitor.hpp>
+#include <NZSL/Ast/ExportVisitor.hpp>
+#include <NZSL/Ast/RecursiveVisitor.hpp>
+#include <NZSL/Ast/ReflectVisitor.hpp>
+#include <NZSL/Ast/Utils.hpp>
 #include <NZSL/Ast/DependencyCheckerVisitor.hpp>
 #include <NZSL/Ast/EliminateUnusedPassVisitor.hpp>
 #include <NZSL/Ast/ExpressionType.hpp>
@@ -262,7 +262,7 @@ namespace nzsl::Ast
 
 		std::optional<ExpressionType> resolvedType = ResolveTypeExpr(exprType, false, {});
 		if (!resolvedType.has_value())
-			return AstCloner::CloneType(exprType);
+			return Cloner::CloneType(exprType);
 
 		return std::move(resolvedType).value();
 	}
@@ -298,7 +298,7 @@ namespace nzsl::Ast
 
 			const ExpressionType* exprType = GetExpressionType(*indexedExpr);
 			if (!exprType)
-				return AstCloner::Clone(node); //< unresolved type
+				return Cloner::Clone(node); //< unresolved type
 
 			const ExpressionType& resolvedType = ResolveAlias(*exprType);
 			// TODO: Add proper support for methods
@@ -337,7 +337,7 @@ namespace nzsl::Ast
 						if (!field.cond.IsResultingValue())
 						{
 							if (m_context->options.allowPartialSanitization)
-								return AstCloner::Clone(node); //< unresolved
+								return Cloner::Clone(node); //< unresolved
 
 							throw CompilerConstantExpressionRequiredError{ field.cond.GetExpression()->sourceLocation };
 						}
@@ -357,7 +357,7 @@ namespace nzsl::Ast
 				if (!fieldPtr)
 				{
 					if (s->isConditional)
-						return AstCloner::Clone(node); //< unresolved
+						return Cloner::Clone(node); //< unresolved
 
 					throw CompilerUnknownFieldError{ indexedExpr->sourceLocation, identifierEntry.identifier };
 				}
@@ -462,7 +462,7 @@ namespace nzsl::Ast
 		for (auto& index : node.indices)
 			MandatoryExpr(index, node.sourceLocation);
 
-		auto clone = Nz::StaticUniquePointerCast<AccessIndexExpression>(AstCloner::Clone(node));
+		auto clone = Nz::StaticUniquePointerCast<AccessIndexExpression>(Cloner::Clone(node));
 		Validate(*clone);
 
 		// TODO: Handle AccessIndex on structs with m_context->options.useIdentifierAccessesForStructs
@@ -483,7 +483,7 @@ namespace nzsl::Ast
 		aliasType.targetType = std::make_unique<ContainedType>();
 		aliasType.targetType->type = *targetExpr->cachedExpressionType;
 
-		auto clone = Nz::StaticUniquePointerCast<AliasValueExpression>(AstCloner::Clone(node));
+		auto clone = Nz::StaticUniquePointerCast<AliasValueExpression>(Cloner::Clone(node));
 		clone->cachedExpressionType = std::move(aliasType);
 
 		return clone;
@@ -494,7 +494,7 @@ namespace nzsl::Ast
 		MandatoryExpr(node.left, node.sourceLocation);
 		MandatoryExpr(node.right, node.sourceLocation);
 
-		auto clone = Nz::StaticUniquePointerCast<AssignExpression>(AstCloner::Clone(node));
+		auto clone = Nz::StaticUniquePointerCast<AssignExpression>(Cloner::Clone(node));
 		Validate(*clone);
 
 		return clone;
@@ -502,7 +502,7 @@ namespace nzsl::Ast
 
 	ExpressionPtr SanitizeVisitor::Clone(BinaryExpression& node)
 	{
-		auto clone = Nz::StaticUniquePointerCast<BinaryExpression>(AstCloner::Clone(node));
+		auto clone = Nz::StaticUniquePointerCast<BinaryExpression>(Cloner::Clone(node));
 		Validate(*clone);
 
 		return clone;
@@ -513,7 +513,7 @@ namespace nzsl::Ast
 		ExpressionPtr targetExpr = CloneExpression(MandatoryExpr(node.targetFunction, node.sourceLocation));
 		const ExpressionType* targetExprType = GetExpressionType(*targetExpr);
 		if (!targetExprType)
-			return AstCloner::Clone(node); //< unresolved type
+			return Cloner::Clone(node); //< unresolved type
 
 		const ExpressionType& resolvedType = ResolveAlias(*targetExprType);
 
@@ -613,7 +613,7 @@ namespace nzsl::Ast
 
 	ExpressionPtr SanitizeVisitor::Clone(CastExpression& node)
 	{
-		auto clone = Nz::StaticUniquePointerCast<CastExpression>(AstCloner::Clone(node));
+		auto clone = Nz::StaticUniquePointerCast<CastExpression>(Cloner::Clone(node));
 		if (Validate(*clone) == ValidationResult::Unresolved)
 			return clone; //< unresolved
 
@@ -721,22 +721,22 @@ namespace nzsl::Ast
 		MandatoryExpr(node.truePath, node.sourceLocation);
 		MandatoryExpr(node.falsePath, node.sourceLocation);
 
-		ExpressionPtr cloneCondition = AstCloner::Clone(*node.condition);
+		ExpressionPtr cloneCondition = Cloner::Clone(*node.condition);
 
 		std::optional<ConstantValue> conditionValue = ComputeConstantValue(*cloneCondition);
 		if (!conditionValue.has_value())
 		{
 			// Unresolvable condition
-			return AstCloner::Clone(node);
+			return Cloner::Clone(node);
 		}
 
 		if (GetConstantType(*conditionValue) != ExpressionType{ PrimitiveType::Boolean })
 			throw CompilerConditionExpectedBoolError{ cloneCondition->sourceLocation, ToString(GetConstantType(*conditionValue), cloneCondition->sourceLocation) };
 
 		if (std::get<bool>(*conditionValue))
-			return AstCloner::Clone(*node.truePath);
+			return Cloner::Clone(*node.truePath);
 		else
-			return AstCloner::Clone(*node.falsePath);
+			return Cloner::Clone(*node.falsePath);
 	}
 
 	ExpressionPtr SanitizeVisitor::Clone(ConstantValueExpression& node)
@@ -744,7 +744,7 @@ namespace nzsl::Ast
 		if (std::holds_alternative<NoValue>(node.value))
 			throw CompilerConstantExpectedValueError{ node.sourceLocation };
 
-		auto clone = Nz::StaticUniquePointerCast<ConstantValueExpression>(AstCloner::Clone(node));
+		auto clone = Nz::StaticUniquePointerCast<ConstantValueExpression>(Cloner::Clone(node));
 		clone->cachedExpressionType = GetConstantType(clone->value);
 
 		return clone;
@@ -758,7 +758,7 @@ namespace nzsl::Ast
 			if (!m_context->options.allowPartialSanitization)
 				throw AstInvalidConstantIndexError{ node.sourceLocation, node.constantId };
 
-			return AstCloner::Clone(node); //< unresolved
+			return Cloner::Clone(node); //< unresolved
 		}
 
 		// Replace by constant value
@@ -777,20 +777,20 @@ namespace nzsl::Ast
 		if (!identifierData)
 		{
 			if (m_context->allowUnknownIdentifiers)
-				return AstCloner::Clone(node);
+				return Cloner::Clone(node);
 
 			throw CompilerUnknownIdentifierError{ node.sourceLocation, node.identifier };
 		}
 
 		if (identifierData->category == IdentifierCategory::Unresolved)
-			return AstCloner::Clone(node);
+			return Cloner::Clone(node);
 
 		return HandleIdentifier(identifierData, node.sourceLocation);
 	}
 
 	ExpressionPtr SanitizeVisitor::Clone(IntrinsicExpression& node)
 	{
-		auto clone = Nz::StaticUniquePointerCast<IntrinsicExpression>(AstCloner::Clone(node));
+		auto clone = Nz::StaticUniquePointerCast<IntrinsicExpression>(Cloner::Clone(node));
 		Validate(*clone);
 
 		return clone;
@@ -857,7 +857,7 @@ namespace nzsl::Ast
 
 	ExpressionPtr SanitizeVisitor::Clone(UnaryExpression& node)
 	{
-		auto clone = Nz::StaticUniquePointerCast<UnaryExpression>(AstCloner::Clone(node));
+		auto clone = Nz::StaticUniquePointerCast<UnaryExpression>(Cloner::Clone(node));
 		Validate(*clone);
 
 		return clone;
@@ -865,7 +865,7 @@ namespace nzsl::Ast
 
 	ExpressionPtr SanitizeVisitor::Clone(VariableValueExpression& node)
 	{
-		auto clone = Nz::StaticUniquePointerCast<VariableValueExpression>(AstCloner::Clone(node));
+		auto clone = Nz::StaticUniquePointerCast<VariableValueExpression>(Cloner::Clone(node));
 		Validate(*clone);
 
 		return clone;
@@ -880,20 +880,20 @@ namespace nzsl::Ast
 			{
 				MandatoryExpr(cond.condition, node.sourceLocation);
 
-				std::optional<ConstantValue> conditionValue = ComputeConstantValue(*AstCloner::Clone(*cond.condition));
+				std::optional<ConstantValue> conditionValue = ComputeConstantValue(*Cloner::Clone(*cond.condition));
 				if (!conditionValue.has_value())
-					return AstCloner::Clone(node); //< Unresolvable condition
+					return Cloner::Clone(node); //< Unresolvable condition
 
 				if (GetConstantType(*conditionValue) != ExpressionType{ PrimitiveType::Boolean })
 					throw CompilerConditionExpectedBoolError{ cond.condition->sourceLocation, ToString(GetConstantType(*conditionValue), cond.condition->sourceLocation) };
 
 				if (std::get<bool>(*conditionValue))
-					return Unscope(AstCloner::Clone(*cond.statement));
+					return Unscope(Cloner::Clone(*cond.statement));
 			}
 
 			// Every condition failed, fallback to else if any
 			if (node.elseStatement)
-				return Unscope(AstCloner::Clone(*node.elseStatement));
+				return Unscope(Cloner::Clone(*node.elseStatement));
 			else
 				return ShaderBuilder::NoOp();
 		}
@@ -931,7 +931,7 @@ namespace nzsl::Ast
 				auto currentBranch = std::make_unique<BranchStatement>();
 
 				if (BuildCondStatement(currentBranch->condStatements.emplace_back()) == ValidationResult::Unresolved)
-					return AstCloner::Clone(node);
+					return Cloner::Clone(node);
 
 				root->elseStatement = std::move(currentBranch);
 				root = static_cast<BranchStatement*>(root->elseStatement.get());
@@ -939,7 +939,7 @@ namespace nzsl::Ast
 			else
 			{
 				if (BuildCondStatement(clone->condStatements.emplace_back()) == ValidationResult::Unresolved)
-					return AstCloner::Clone(node);
+					return Cloner::Clone(node);
 			}
 
 			PopScope();
@@ -960,7 +960,7 @@ namespace nzsl::Ast
 		MandatoryExpr(node.condition, node.sourceLocation);
 		MandatoryStatement(node.statement, node.sourceLocation);
 
-		ExpressionPtr cloneCondition = AstCloner::Clone(*node.condition);
+		ExpressionPtr cloneCondition = Cloner::Clone(*node.condition);
 
 		std::optional<ConstantValue> conditionValue = ComputeConstantValue(*cloneCondition);
 
@@ -971,7 +971,7 @@ namespace nzsl::Ast
 		if (!conditionValue.has_value())
 		{
 			// Unresolvable condition
-			auto condStatement = ShaderBuilder::ConditionalStatement(std::move(cloneCondition), AstCloner::Clone(*node.statement));
+			auto condStatement = ShaderBuilder::ConditionalStatement(std::move(cloneCondition), Cloner::Clone(*node.statement));
 			condStatement->sourceLocation = node.sourceLocation;
 
 			return condStatement;
@@ -981,14 +981,14 @@ namespace nzsl::Ast
 			throw CompilerConditionExpectedBoolError{ cloneCondition->sourceLocation, ToString(GetConstantType(*conditionValue), cloneCondition->sourceLocation) };
 
 		if (std::get<bool>(*conditionValue))
-			return AstCloner::Clone(*node.statement);
+			return Cloner::Clone(*node.statement);
 		else
 			return ShaderBuilder::NoOp();
 	}
 
 	StatementPtr SanitizeVisitor::Clone(DeclareAliasStatement& node)
 	{
-		auto clone = Nz::StaticUniquePointerCast<DeclareAliasStatement>(AstCloner::Clone(node));
+		auto clone = Nz::StaticUniquePointerCast<DeclareAliasStatement>(Cloner::Clone(node));
 		Validate(*clone);
 
 		if (m_context->options.removeAliases)
@@ -999,7 +999,7 @@ namespace nzsl::Ast
 
 	StatementPtr SanitizeVisitor::Clone(DeclareConstStatement& node)
 	{
-		auto clone = Nz::StaticUniquePointerCast<DeclareConstStatement>(AstCloner::Clone(node));
+		auto clone = Nz::StaticUniquePointerCast<DeclareConstStatement>(Cloner::Clone(node));
 
 		if (!clone->expression)
 			throw CompilerConstMissingExpressionError{ node.sourceLocation };
@@ -1037,7 +1037,7 @@ namespace nzsl::Ast
 	{
 		assert(m_context);
 
-		auto clone = Nz::StaticUniquePointerCast<DeclareExternalStatement>(AstCloner::Clone(node));
+		auto clone = Nz::StaticUniquePointerCast<DeclareExternalStatement>(Cloner::Clone(node));
 
 		std::optional<std::uint32_t> defaultBlockSet = 0;
 		if (clone->bindingSet.HasValue())
@@ -1209,7 +1209,7 @@ namespace nzsl::Ast
 		if (m_context->currentFunction)
 			throw CompilerOptionDeclarationInsideFunctionError{ node.sourceLocation };
 
-		auto clone = Nz::StaticUniquePointerCast<DeclareOptionStatement>(AstCloner::Clone(node));
+		auto clone = Nz::StaticUniquePointerCast<DeclareOptionStatement>(Cloner::Clone(node));
 		if (clone->optName.empty())
 			throw AstEmptyIdentifierError{ node.sourceLocation };
 
@@ -1269,7 +1269,7 @@ namespace nzsl::Ast
 		if (m_context->currentFunction)
 			throw CompilerStructDeclarationInsideFunctionError{ node.sourceLocation };
 
-		auto clone = Nz::StaticUniquePointerCast<DeclareStructStatement>(AstCloner::Clone(node));
+		auto clone = Nz::StaticUniquePointerCast<DeclareStructStatement>(Cloner::Clone(node));
 
 		if (clone->isExported.HasValue())
 			ComputeExprValue(clone->isExported, node.sourceLocation);
@@ -1341,7 +1341,7 @@ namespace nzsl::Ast
 		if (!m_context->currentFunction)
 			throw CompilerVarDeclarationOutsideOfFunctionError{ node.sourceLocation };
 
-		auto clone = Nz::StaticUniquePointerCast<DeclareVariableStatement>(AstCloner::Clone(node));
+		auto clone = Nz::StaticUniquePointerCast<DeclareVariableStatement>(Cloner::Clone(node));
 		Validate(*clone);
 
 		return clone;
@@ -1354,14 +1354,14 @@ namespace nzsl::Ast
 
 		m_context->currentFunction->flags |= FunctionFlag::DoesDiscard;
 
-		return AstCloner::Clone(node);
+		return Cloner::Clone(node);
 	}
 
 	StatementPtr SanitizeVisitor::Clone(ExpressionStatement& node)
 	{
 		MandatoryExpr(node.expression, node.sourceLocation);
 
-		return AstCloner::Clone(node);
+		return Cloner::Clone(node);
 	}
 
 	StatementPtr SanitizeVisitor::Clone(ForStatement& node)
@@ -1598,7 +1598,7 @@ namespace nzsl::Ast
 
 		const ExpressionType* exprType = GetExpressionType(*expr);
 		if (!exprType)
-			return AstCloner::Clone(node); //< unresolved expression type
+			return Cloner::Clone(node); //< unresolved expression type
 
 		const ExpressionType& resolvedExprType = ResolveAlias(*exprType);
 
@@ -1615,7 +1615,7 @@ namespace nzsl::Ast
 		if (node.unroll.HasValue())
 		{
 			if (ComputeExprValue(node.unroll, unrollValue, node.sourceLocation) == ValidationResult::Unresolved)
-				return AstCloner::Clone(node); //< unresolved unroll type
+				return Cloner::Clone(node); //< unresolved unroll type
 
 			if (unrollValue.GetResultingValue() == LoopUnroll::Always)
 			{
@@ -1744,7 +1744,7 @@ namespace nzsl::Ast
 			// when partially sanitizing, importing a whole module could register any identifier, so at this point we can't see unknown identifiers as errors
 			m_context->allowUnknownIdentifiers = true;
 
-			return Nz::StaticUniquePointerCast<ImportStatement>(AstCloner::Clone(node));
+			return Nz::StaticUniquePointerCast<ImportStatement>(Cloner::Clone(node));
 		}
 
 		ModulePtr targetModule = m_context->options.moduleResolver->Resolve(node.moduleName);
@@ -1835,7 +1835,7 @@ namespace nzsl::Ast
 		// Extract exported nodes and their dependencies
 		std::vector<DeclareAliasStatementPtr> aliasStatements;
 
-		AstExportVisitor::Callbacks callbacks;
+		ExportVisitor::Callbacks callbacks;
 		callbacks.onExportedFunc = [&](DeclareFunctionStatement& node)
 		{
 			assert(node.funcIndex);
@@ -1864,7 +1864,7 @@ namespace nzsl::Ast
 			}
 		};
 
-		AstExportVisitor exportVisitor;
+		ExportVisitor exportVisitor;
 		exportVisitor.Visit(*m_context->currentModule->importedModules[moduleIndex].module->rootNode, callbacks);
 
 		if (aliasStatements.empty())
@@ -1896,7 +1896,7 @@ namespace nzsl::Ast
 		m_context->currentStatementList = &clone->statements;
 
 		for (auto& statement : node.statements)
-			clone->statements.push_back(AstCloner::Clone(MandatoryStatement(statement, node.sourceLocation)));
+			clone->statements.push_back(Cloner::Clone(MandatoryStatement(statement, node.sourceLocation)));
 
 		m_context->currentStatementList = previousList;
 
@@ -1909,7 +1909,7 @@ namespace nzsl::Ast
 
 		PushScope();
 
-		auto scopedClone = AstCloner::Clone(node);
+		auto scopedClone = Cloner::Clone(node);
 
 		PopScope();
 
@@ -1921,7 +1921,7 @@ namespace nzsl::Ast
 		MandatoryExpr(node.condition, node.sourceLocation);
 		MandatoryStatement(node.body, node.sourceLocation);
 
-		auto clone = Nz::StaticUniquePointerCast<WhileStatement>(AstCloner::Clone(node));
+		auto clone = Nz::StaticUniquePointerCast<WhileStatement>(Cloner::Clone(node));
 		if (Validate(*clone) == ValidationResult::Unresolved)
 			return clone;
 
@@ -2189,7 +2189,7 @@ namespace nzsl::Ast
 			std::optional<ConstantValue> value = ComputeConstantValue(*attribute.GetExpression());
 			if (!value)
 			{
-				targetAttribute = AstCloner::Clone(*attribute.GetExpression());
+				targetAttribute = Cloner::Clone(*attribute.GetExpression());
 				return ValidationResult::Unresolved;
 			}
 
@@ -2221,7 +2221,7 @@ namespace nzsl::Ast
 	template<typename T>
 	std::unique_ptr<T> SanitizeVisitor::PropagateConstants(T& node) const
 	{
-		AstConstantPropagationVisitor::Options optimizerOptions;
+		ConstantPropagationVisitor::Options optimizerOptions;
 		optimizerOptions.constantQueryCallback = [&](std::size_t constantId) -> const ConstantValue*
 		{
 			const ConstantValue* value = m_context->constantValues.TryRetrieve(constantId, node.sourceLocation);
@@ -2241,7 +2241,7 @@ namespace nzsl::Ast
 		// we have to make sure we won't override variable indices. This is done by visiting the AST a first time and preregistering all indices.
 		// TODO: Only do this is the AST has been already sanitized, maybe using a flag stored in the module?
 
-		AstReflect::Callbacks registerCallbacks;
+		ReflectVisitor::Callbacks registerCallbacks;
 		registerCallbacks.onAliasIndex = [this](const std::string& /*name*/, std::size_t index, const SourceLocation& sourceLocation) { m_context->aliases.PreregisterIndex(index, sourceLocation); };
 		registerCallbacks.onConstIndex = [this](const std::string& /*name*/, std::size_t index, const SourceLocation& sourceLocation) { m_context->constantValues.PreregisterIndex(index, sourceLocation); };
 		registerCallbacks.onFunctionIndex = [this](const std::string& /*name*/, std::size_t index, const SourceLocation& sourceLocation) { m_context->functions.PreregisterIndex(index, sourceLocation); };
@@ -2249,7 +2249,7 @@ namespace nzsl::Ast
 		registerCallbacks.onStructIndex = [this](const std::string& /*name*/, std::size_t index, const SourceLocation& sourceLocation) { m_context->structs.PreregisterIndex(index, sourceLocation); };
 		registerCallbacks.onVariableIndex = [this](const std::string& /*name*/, std::size_t index, const SourceLocation& sourceLocation) { m_context->variableTypes.PreregisterIndex(index, sourceLocation); };
 
-		AstReflect reflectVisitor;
+		ReflectVisitor reflectVisitor;
 		for (const auto& importedModule : module.importedModules)
 			reflectVisitor.Reflect(*importedModule.module->rootNode, registerCallbacks);
 
@@ -2879,7 +2879,7 @@ namespace nzsl::Ast
 			// First pass, evaluate everything except function code
 			try
 			{
-				output = Nz::StaticUniquePointerCast<MultiStatement>(AstCloner::Clone(rootNode));
+				output = Nz::StaticUniquePointerCast<MultiStatement>(Cloner::Clone(rootNode));
 			}
 			catch (const std::runtime_error& err)
 			{
@@ -3180,7 +3180,7 @@ namespace nzsl::Ast
 			if (m_context->options.removeCompoundAssignments)
 			{
 				node.op = AssignType::Simple;
-				node.right = ShaderBuilder::Binary(*binaryType, AstCloner::Clone(*node.left), std::move(node.right));
+				node.right = ShaderBuilder::Binary(*binaryType, Cloner::Clone(*node.left), std::move(node.right));
 				node.right->cachedExpressionType = std::move(expressionType);
 			}
 		}

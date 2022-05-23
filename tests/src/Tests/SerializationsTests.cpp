@@ -3,7 +3,7 @@
 #include <NZSL/ShaderBuilder.hpp>
 #include <NZSL/ShaderLangParser.hpp>
 #include <NZSL/Ast/AstSerializer.hpp>
-#include <NZSL/Ast/AstCompare.hpp>
+#include <NZSL/Ast/Compare.hpp>
 #include <NZSL/Ast/SanitizeVisitor.hpp>
 #include <catch2/catch.hpp>
 #include <cctype>

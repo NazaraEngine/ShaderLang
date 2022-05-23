@@ -116,7 +116,7 @@ namespace nzsl::Ast
 
 #define NZSL_SHADERAST_NODE(Node) Node,
 #define NZSL_SHADERAST_STATEMENT_LAST(Node) Node, Max = Node
-#include <NZSL/Ast/AstNodeList.hpp>
+#include <NZSL/Ast/NodeList.hpp>
 	};
 
 	enum class PrimitiveType

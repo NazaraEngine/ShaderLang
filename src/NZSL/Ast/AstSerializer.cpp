@@ -4,8 +4,8 @@
 
 #include <NZSL/Ast/AstSerializer.hpp>
 #include <NZSL/ShaderBuilder.hpp>
-#include <NZSL/Ast/AstExpressionVisitor.hpp>
-#include <NZSL/Ast/AstStatementVisitor.hpp>
+#include <NZSL/Ast/ExpressionVisitor.hpp>
+#include <NZSL/Ast/StatementVisitor.hpp>
 
 namespace nzsl::Ast
 {
@@ -14,10 +14,10 @@ namespace nzsl::Ast
 		constexpr std::uint32_t s_shaderAstMagicNumber = 0x4E534852;
 		constexpr std::uint32_t s_shaderAstCurrentVersion = 1;
 
-		class ShaderSerializerVisitor : public AstExpressionVisitor, public AstStatementVisitor
+		class ShaderSerializerVisitor : public ExpressionVisitor, public StatementVisitor
 		{
 			public:
-				ShaderSerializerVisitor(AstSerializerBase& serializer) :
+				ShaderSerializerVisitor(SerializerBase& serializer) :
 				m_serializer(serializer)
 				{
 				}
@@ -34,14 +34,14 @@ namespace nzsl::Ast
 					m_serializer.Serialize(node); \
 					m_serializer.SerializeNodeCommon(node); \
 				}
-#include <NZSL/Ast/AstNodeList.hpp>
+#include <NZSL/Ast/NodeList.hpp>
 
 			private:
-				AstSerializerBase& m_serializer;
+				SerializerBase& m_serializer;
 		};
 	}
 
-	void AstSerializerBase::Serialize(AccessIdentifierExpression& node)
+	void SerializerBase::Serialize(AccessIdentifierExpression& node)
 	{
 		Node(node.expr);
 
@@ -53,7 +53,7 @@ namespace nzsl::Ast
 		}
 	}
 
-	void AstSerializerBase::Serialize(AccessIndexExpression& node)
+	void SerializerBase::Serialize(AccessIndexExpression& node)
 	{
 		Node(node.expr);
 
@@ -62,26 +62,26 @@ namespace nzsl::Ast
 			Node(identifier);
 	}
 
-	void AstSerializerBase::Serialize(AliasValueExpression& node)
+	void SerializerBase::Serialize(AliasValueExpression& node)
 	{
 		SizeT(node.aliasId);
 	}
 
-	void AstSerializerBase::Serialize(AssignExpression& node)
+	void SerializerBase::Serialize(AssignExpression& node)
 	{
 		Enum(node.op);
 		Node(node.left);
 		Node(node.right);
 	}
 
-	void AstSerializerBase::Serialize(BinaryExpression& node)
+	void SerializerBase::Serialize(BinaryExpression& node)
 	{
 		Enum(node.op);
 		Node(node.left);
 		Node(node.right);
 	}
 
-	void AstSerializerBase::Serialize(CallFunctionExpression& node)
+	void SerializerBase::Serialize(CallFunctionExpression& node)
 	{
 		Node(node.targetFunction);
 
@@ -90,7 +90,7 @@ namespace nzsl::Ast
 			Node(param);
 	}
 
-	void AstSerializerBase::Serialize(CallMethodExpression& node)
+	void SerializerBase::Serialize(CallMethodExpression& node)
 	{
 		Node(node.object);
 		Value(node.methodName);
@@ -100,26 +100,26 @@ namespace nzsl::Ast
 			Node(param);
 	}
 
-	void AstSerializerBase::Serialize(CastExpression& node)
+	void SerializerBase::Serialize(CastExpression& node)
 	{
 		ExprValue(node.targetType);
 		for (auto& expr : node.expressions)
 			Node(expr);
 	}
 
-	void AstSerializerBase::Serialize(ConstantExpression& node)
+	void SerializerBase::Serialize(ConstantExpression& node)
 	{
 		SizeT(node.constantId);
 	}
 
-	void AstSerializerBase::Serialize(ConditionalExpression& node)
+	void SerializerBase::Serialize(ConditionalExpression& node)
 	{
 		Node(node.condition);
 		Node(node.truePath);
 		Node(node.falsePath);
 	}
 	
-	void AstSerializerBase::Serialize(ConstantValueExpression& node)
+	void SerializerBase::Serialize(ConstantValueExpression& node)
 	{
 		std::uint32_t typeIndex;
 		if (IsWriting())
@@ -155,12 +155,12 @@ namespace nzsl::Ast
 		}
 	}
 
-	void AstSerializerBase::Serialize(IdentifierExpression& node)
+	void SerializerBase::Serialize(IdentifierExpression& node)
 	{
 		Value(node.identifier);
 	}
 
-	void AstSerializerBase::Serialize(IntrinsicExpression& node)
+	void SerializerBase::Serialize(IntrinsicExpression& node)
 	{
 		Enum(node.intrinsic);
 		Container(node.parameters);
@@ -168,27 +168,27 @@ namespace nzsl::Ast
 			Node(param);
 	}
 
-	void AstSerializerBase::Serialize(IntrinsicFunctionExpression& node)
+	void SerializerBase::Serialize(IntrinsicFunctionExpression& node)
 	{
 		SizeT(node.intrinsicId);
 	}
 
-	void AstSerializerBase::Serialize(StructTypeExpression& node)
+	void SerializerBase::Serialize(StructTypeExpression& node)
 	{
 		SizeT(node.structTypeId);
 	}
 
-	void AstSerializerBase::Serialize(TypeExpression& node)
+	void SerializerBase::Serialize(TypeExpression& node)
 	{
 		SizeT(node.typeId);
 	}
 
-	void AstSerializerBase::Serialize(FunctionExpression& node)
+	void SerializerBase::Serialize(FunctionExpression& node)
 	{
 		SizeT(node.funcId);
 	}
 
-	void AstSerializerBase::Serialize(SwizzleExpression& node)
+	void SerializerBase::Serialize(SwizzleExpression& node)
 	{
 		SizeT(node.componentCount);
 		Node(node.expression);
@@ -197,18 +197,18 @@ namespace nzsl::Ast
 			Enum(node.components[i]);
 	}
 
-	void AstSerializerBase::Serialize(VariableValueExpression& node)
+	void SerializerBase::Serialize(VariableValueExpression& node)
 	{
 		SizeT(node.variableId);
 	}
 
-	void AstSerializerBase::Serialize(UnaryExpression& node)
+	void SerializerBase::Serialize(UnaryExpression& node)
 	{
 		Enum(node.op);
 		Node(node.expression);
 	}
 
-	void AstSerializerBase::Serialize(BranchStatement& node)
+	void SerializerBase::Serialize(BranchStatement& node)
 	{
 		Container(node.condStatements);
 		for (auto& condStatement : node.condStatements)
@@ -221,20 +221,20 @@ namespace nzsl::Ast
 		Value(node.isConst);
 	}
 
-	void AstSerializerBase::Serialize(ConditionalStatement& node)
+	void SerializerBase::Serialize(ConditionalStatement& node)
 	{
 		Node(node.condition);
 		Node(node.statement);
 	}
 
-	void AstSerializerBase::Serialize(DeclareAliasStatement& node)
+	void SerializerBase::Serialize(DeclareAliasStatement& node)
 	{
 		OptVal(node.aliasIndex);
 		Value(node.name);
 		Node(node.expression);
 	}
 
-	void AstSerializerBase::Serialize(DeclareConstStatement& node)
+	void SerializerBase::Serialize(DeclareConstStatement& node)
 	{
 		OptVal(node.constIndex);
 		Value(node.name);
@@ -242,7 +242,7 @@ namespace nzsl::Ast
 		Node(node.expression);
 	}
 
-	void AstSerializerBase::Serialize(DeclareExternalStatement& node)
+	void SerializerBase::Serialize(DeclareExternalStatement& node)
 	{
 		ExprValue(node.bindingSet);
 
@@ -258,7 +258,7 @@ namespace nzsl::Ast
 		}
 	}
 
-	void AstSerializerBase::Serialize(DeclareFunctionStatement& node)
+	void SerializerBase::Serialize(DeclareFunctionStatement& node)
 	{
 		Value(node.name);
 		ExprValue(node.returnType);
@@ -282,7 +282,7 @@ namespace nzsl::Ast
 			Node(statement);
 	}
 
-	void AstSerializerBase::Serialize(DeclareOptionStatement& node)
+	void SerializerBase::Serialize(DeclareOptionStatement& node)
 	{
 		OptVal(node.optIndex);
 		Value(node.optName);
@@ -290,7 +290,7 @@ namespace nzsl::Ast
 		Node(node.defaultValue);
 	}
 
-	void AstSerializerBase::Serialize(DeclareStructStatement& node)
+	void SerializerBase::Serialize(DeclareStructStatement& node)
 	{
 		OptVal(node.structIndex);
 		ExprValue(node.isExported);
@@ -310,7 +310,7 @@ namespace nzsl::Ast
 		}
 	}
 	
-	void AstSerializerBase::Serialize(DeclareVariableStatement& node)
+	void SerializerBase::Serialize(DeclareVariableStatement& node)
 	{
 		OptVal(node.varIndex);
 		Value(node.varName);
@@ -318,17 +318,17 @@ namespace nzsl::Ast
 		Node(node.initialExpression);
 	}
 
-	void AstSerializerBase::Serialize(DiscardStatement& /*node*/)
+	void SerializerBase::Serialize(DiscardStatement& /*node*/)
 	{
 		/* Nothing to do */
 	}
 
-	void AstSerializerBase::Serialize(ExpressionStatement& node)
+	void SerializerBase::Serialize(ExpressionStatement& node)
 	{
 		Node(node.expression);
 	}
 
-	void AstSerializerBase::Serialize(ForStatement& node)
+	void SerializerBase::Serialize(ForStatement& node)
 	{
 		ExprValue(node.unroll);
 		Value(node.varName);
@@ -338,7 +338,7 @@ namespace nzsl::Ast
 		Node(node.statement);
 	}
 
-	void AstSerializerBase::Serialize(ForEachStatement& node)
+	void SerializerBase::Serialize(ForEachStatement& node)
 	{
 		ExprValue(node.unroll);
 		Value(node.varName);
@@ -346,46 +346,46 @@ namespace nzsl::Ast
 		Node(node.statement);
 	}
 
-	void AstSerializerBase::Serialize(ImportStatement& node)
+	void SerializerBase::Serialize(ImportStatement& node)
 	{
 		Value(node.moduleName);
 	}
 
-	void AstSerializerBase::Serialize(MultiStatement& node)
+	void SerializerBase::Serialize(MultiStatement& node)
 	{
 		Container(node.statements);
 		for (auto& statement : node.statements)
 			Node(statement);
 	}
 
-	void AstSerializerBase::Serialize(NoOpStatement& /*node*/)
+	void SerializerBase::Serialize(NoOpStatement& /*node*/)
 	{
 		/* Nothing to do */
 	}
 
-	void AstSerializerBase::Serialize(ReturnStatement& node)
+	void SerializerBase::Serialize(ReturnStatement& node)
 	{
 		Node(node.returnExpr);
 	}
 
-	void AstSerializerBase::Serialize(ScopedStatement& node)
+	void SerializerBase::Serialize(ScopedStatement& node)
 	{
 		Node(node.statement);
 	}
 
-	void AstSerializerBase::Serialize(WhileStatement& node)
+	void SerializerBase::Serialize(WhileStatement& node)
 	{
 		ExprValue(node.unroll);
 		Node(node.condition);
 		Node(node.body);
 	}
 
-	void AstSerializerBase::SerializeExpressionCommon(Expression& expr)
+	void SerializerBase::SerializeExpressionCommon(Expression& expr)
 	{
 		OptType(expr.cachedExpressionType);
 	}
 
-	void AstSerializerBase::SerializeNodeCommon(Ast::Node& node)
+	void SerializerBase::SerializeNodeCommon(Ast::Node& node)
 	{
 		SourceLoc(node.sourceLocation);
 	}
@@ -663,7 +663,7 @@ namespace nzsl::Ast
 			case NodeType::None: break;
 
 #define NZSL_SHADERAST_EXPRESSION(Node) case NodeType:: Node : node = std::make_unique<Node>(); break;
-#include <NZSL/Ast/AstNodeList.hpp>
+#include <NZSL/Ast/NodeList.hpp>
 
 			default: throw std::runtime_error("unexpected node type");
 		}
@@ -689,7 +689,7 @@ namespace nzsl::Ast
 			case NodeType::None: break;
 
 #define NZSL_SHADERAST_STATEMENT(Node) case NodeType:: Node : node = std::make_unique<Node>(); break;
-#include <NZSL/Ast/AstNodeList.hpp>
+#include <NZSL/Ast/NodeList.hpp>
 
 			default: throw std::runtime_error("unexpected node type");
 		}

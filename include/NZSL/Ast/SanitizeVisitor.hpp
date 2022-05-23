@@ -10,8 +10,8 @@
 #include <Nazara/Utils/Bitset.hpp>
 #include <NZSL/Config.hpp>
 #include <NZSL/ShaderModuleResolver.hpp>
-#include <NZSL/Ast/AstCloner.hpp>
-#include <NZSL/Ast/AstTypes.hpp>
+#include <NZSL/Ast/Cloner.hpp>
+#include <NZSL/Ast/Types.hpp>
 #include <NZSL/Ast/Module.hpp>
 #include <functional>
 #include <unordered_map>
@@ -20,7 +20,7 @@
 
 namespace nzsl::Ast
 {
-	class NZSL_API SanitizeVisitor final : AstCloner
+	class NZSL_API SanitizeVisitor final : Cloner
 	{
 		friend class AstTypeExpressionVisitor;
 
@@ -68,7 +68,7 @@ namespace nzsl::Ast
 			struct NamedPartialType;
 			struct Scope;
 
-			using AstCloner::CloneExpression;
+			using Cloner::CloneExpression;
 			ExpressionValue<ExpressionType> CloneType(const ExpressionValue<ExpressionType>& exprType) override;
 
 			ExpressionPtr Clone(AccessIdentifierExpression& node) override;

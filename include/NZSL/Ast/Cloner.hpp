@@ -4,33 +4,33 @@
 
 #pragma once
 
-#ifndef NZSL_AST_ASTCLONER_HPP
-#define NZSL_AST_ASTCLONER_HPP
+#ifndef NZSL_AST_CLONER_HPP
+#define NZSL_AST_CLONER_HPP
 
 #include <NZSL/Config.hpp>
 #include <NZSL/Config.hpp>
-#include <NZSL/Ast/AstExpressionVisitor.hpp>
-#include <NZSL/Ast/AstStatementVisitor.hpp>
+#include <NZSL/Ast/ExpressionVisitor.hpp>
+#include <NZSL/Ast/StatementVisitor.hpp>
 #include <NZSL/Ast/ExpressionValue.hpp>
 #include <vector>
 
 namespace nzsl::Ast
 {
-	class NZSL_API AstCloner : public AstExpressionVisitor, public AstStatementVisitor
+	class NZSL_API Cloner : public ExpressionVisitor, public StatementVisitor
 	{
 		public:
-			AstCloner() = default;
-			AstCloner(const AstCloner&) = delete;
-			AstCloner(AstCloner&&) = delete;
-			~AstCloner() = default;
+			Cloner() = default;
+			Cloner(const Cloner&) = delete;
+			Cloner(Cloner&&) = delete;
+			~Cloner() = default;
 
 			template<typename T> ExpressionValue<T> Clone(const ExpressionValue<T>& expressionValue);
 			inline ExpressionValue<ExpressionType> Clone(const ExpressionValue<ExpressionType>& expressionValue);
 			ExpressionPtr Clone(Expression& statement);
 			StatementPtr Clone(Statement& statement);
 
-			AstCloner& operator=(const AstCloner&) = delete;
-			AstCloner& operator=(AstCloner&&) = delete;
+			Cloner& operator=(const Cloner&) = delete;
+			Cloner& operator=(Cloner&&) = delete;
 
 		protected:
 			inline ExpressionPtr CloneExpression(const ExpressionPtr& expr);
@@ -82,7 +82,7 @@ namespace nzsl::Ast
 			virtual StatementPtr Clone(WhileStatement& node);
 
 #define NZSL_SHADERAST_NODE(NodeType) void Visit(NodeType& node) override;
-#include <NZSL/Ast/AstNodeList.hpp>
+#include <NZSL/Ast/NodeList.hpp>
 
 			void PushExpression(ExpressionPtr expression);
 			void PushStatement(StatementPtr statement);
@@ -100,6 +100,6 @@ namespace nzsl::Ast
 	inline StatementPtr Clone(Statement& node);
 }
 
-#include <NZSL/Ast/AstCloner.inl>
+#include <NZSL/Ast/Cloner.inl>
 
-#endif // NZSL_AST_ASTCLONER_HPP
+#endif // NZSL_AST_CLONER_HPP

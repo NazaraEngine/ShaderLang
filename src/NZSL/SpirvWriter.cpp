@@ -11,9 +11,9 @@
 #include <NZSL/SpirvConstantCache.hpp>
 #include <NZSL/SpirvData.hpp>
 #include <NZSL/SpirvSection.hpp>
-#include <NZSL/Ast/AstCloner.hpp>
-#include <NZSL/Ast/AstConstantPropagationVisitor.hpp>
-#include <NZSL/Ast/AstRecursiveVisitor.hpp>
+#include <NZSL/Ast/Cloner.hpp>
+#include <NZSL/Ast/ConstantPropagationVisitor.hpp>
+#include <NZSL/Ast/RecursiveVisitor.hpp>
 #include <NZSL/Ast/EliminateUnusedPassVisitor.hpp>
 #include <NZSL/Ast/SanitizeVisitor.hpp>
 #include <SpirV/GLSL.std.450.h>
@@ -43,7 +43,7 @@ namespace nzsl
 			{ Ast::BuiltinEntry::VertexPosition, { "VertexPosition",      ShaderStageType::Vertex,   SpirvBuiltIn::Position } }
 		});
 
-		class SpirvPreVisitor : public Ast::AstRecursiveVisitor
+		class SpirvPreVisitor : public Ast::RecursiveVisitor
 		{
 			public:
 				struct UniformVar
@@ -74,21 +74,21 @@ namespace nzsl
 
 				void Visit(Ast::AccessIndexExpression& node) override
 				{
-					AstRecursiveVisitor::Visit(node);
+					RecursiveVisitor::Visit(node);
 
 					m_constantCache.Register(*m_constantCache.BuildType(node.cachedExpressionType.value()));
 				}
 
 				void Visit(Ast::BinaryExpression& node) override
 				{
-					AstRecursiveVisitor::Visit(node);
+					RecursiveVisitor::Visit(node);
 
 					m_constantCache.Register(*m_constantCache.BuildType(node.cachedExpressionType.value()));
 				}
 
 				void Visit(Ast::CallFunctionExpression& node) override
 				{
-					AstRecursiveVisitor::Visit(node);
+					RecursiveVisitor::Visit(node);
 
 					assert(m_funcIndex);
 					auto& func = Nz::Retrieve(m_funcs, *m_funcIndex);
@@ -120,7 +120,7 @@ namespace nzsl
 						m_constantCache.Register(*m_constantCache.BuildConstant(arg));
 					}, node.value);
 
-					AstRecursiveVisitor::Visit(node);
+					RecursiveVisitor::Visit(node);
 				}
 
 				void Visit(Ast::DeclareExternalStatement& node) override
@@ -308,13 +308,13 @@ namespace nzsl
 					}
 
 					m_funcIndex = funcIndex;
-					AstRecursiveVisitor::Visit(node);
+					RecursiveVisitor::Visit(node);
 					m_funcIndex.reset();
 				}
 
 				void Visit(Ast::DeclareStructStatement& node) override
 				{
-					AstRecursiveVisitor::Visit(node);
+					RecursiveVisitor::Visit(node);
 
 					assert(node.structIndex);
 					std::size_t structIndex = *node.structIndex;
@@ -328,7 +328,7 @@ namespace nzsl
 
 				void Visit(Ast::DeclareVariableStatement& node) override
 				{
-					AstRecursiveVisitor::Visit(node);
+					RecursiveVisitor::Visit(node);
 
 					assert(m_funcIndex);
 					auto& func = m_funcs[*m_funcIndex];
@@ -344,12 +344,12 @@ namespace nzsl
 				{
 					m_constantCache.Register(*m_constantCache.BuildType(node.cachedExpressionType.value()));
 
-					AstRecursiveVisitor::Visit(node);
+					RecursiveVisitor::Visit(node);
 				}
 
 				void Visit(Ast::IntrinsicExpression& node) override
 				{
-					AstRecursiveVisitor::Visit(node);
+					RecursiveVisitor::Visit(node);
 
 					switch (node.intrinsic)
 					{
@@ -376,7 +376,7 @@ namespace nzsl
 
 				void Visit(Ast::SwizzleExpression& node) override
 				{
-					AstRecursiveVisitor::Visit(node);
+					RecursiveVisitor::Visit(node);
 
 					for (std::size_t i = 0; i < node.componentCount; ++i)
 					{
@@ -389,7 +389,7 @@ namespace nzsl
 
 				void Visit(Ast::UnaryExpression& node) override
 				{
-					AstRecursiveVisitor::Visit(node);
+					RecursiveVisitor::Visit(node);
 
 					m_constantCache.Register(*m_constantCache.BuildType(node.cachedExpressionType.value()));
 				}

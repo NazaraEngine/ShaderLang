@@ -4,23 +4,23 @@
 
 #pragma once
 
-#ifndef NZSL_AST_ASTEXPRESSIONVISITOREXCEPT_HPP
-#define NZSL_AST_ASTEXPRESSIONVISITOREXCEPT_HPP
+#ifndef NZSL_AST_EXPRESSIONVISITOREXCEPT_HPP
+#define NZSL_AST_EXPRESSIONVISITOREXCEPT_HPP
 
 #include <NZSL/Config.hpp>
 #include <NZSL/Config.hpp>
-#include <NZSL/Ast/AstExpressionVisitor.hpp>
+#include <NZSL/Ast/ExpressionVisitor.hpp>
 
 namespace nzsl::Ast
 {
-	class NZSL_API AstExpressionVisitorExcept : public AstExpressionVisitor
+	class NZSL_API ExpressionVisitorExcept : public ExpressionVisitor
 	{
 		public:
-			using AstExpressionVisitor::Visit;
+			using ExpressionVisitor::Visit;
 
 #define NZSL_SHADERAST_EXPRESSION(Node) void Visit(Ast::Node& node) override;
-#include <NZSL/Ast/AstNodeList.hpp>
+#include <NZSL/Ast/NodeList.hpp>
 	};
 }
 
-#endif // NZSL_AST_ASTEXPRESSIONVISITOREXCEPT_HPP
+#endif // NZSL_AST_EXPRESSIONVISITOREXCEPT_HPP

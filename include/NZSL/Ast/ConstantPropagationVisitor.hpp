@@ -4,25 +4,25 @@
 
 #pragma once
 
-#ifndef NZSL_AST_ASTCONSTANTPROPAGATIONVISITOR_HPP
-#define NZSL_AST_ASTCONSTANTPROPAGATIONVISITOR_HPP
+#ifndef NZSL_AST_CONSTANTPROPAGATIONVISITOR_HPP
+#define NZSL_AST_CONSTANTPROPAGATIONVISITOR_HPP
 
 #include <NZSL/Config.hpp>
 #include <NZSL/Config.hpp>
-#include <NZSL/Ast/AstCloner.hpp>
+#include <NZSL/Ast/Cloner.hpp>
 #include <NZSL/Ast/Module.hpp>
 
 namespace nzsl::Ast
 {
-	class NZSL_API AstConstantPropagationVisitor : public AstCloner
+	class NZSL_API ConstantPropagationVisitor : public Cloner
 	{
 		public:
 			struct Options;
 
-			AstConstantPropagationVisitor() = default;
-			AstConstantPropagationVisitor(const AstConstantPropagationVisitor&) = delete;
-			AstConstantPropagationVisitor(AstConstantPropagationVisitor&&) = delete;
-			~AstConstantPropagationVisitor() = default;
+			ConstantPropagationVisitor() = default;
+			ConstantPropagationVisitor(const ConstantPropagationVisitor&) = delete;
+			ConstantPropagationVisitor(ConstantPropagationVisitor&&) = delete;
+			~ConstantPropagationVisitor() = default;
 
 			inline ExpressionPtr Process(Expression& expression);
 			inline ExpressionPtr Process(Expression& expression, const Options& options);
@@ -31,8 +31,8 @@ namespace nzsl::Ast
 			inline StatementPtr Process(Statement& statement);
 			inline StatementPtr Process(Statement& statement, const Options& options);
 
-			AstConstantPropagationVisitor& operator=(const AstConstantPropagationVisitor&) = delete;
-			AstConstantPropagationVisitor& operator=(AstConstantPropagationVisitor&&) = delete;
+			ConstantPropagationVisitor& operator=(const ConstantPropagationVisitor&) = delete;
+			ConstantPropagationVisitor& operator=(ConstantPropagationVisitor&&) = delete;
 
 			struct Options
 			{
@@ -64,13 +64,13 @@ namespace nzsl::Ast
 	};
 
 	inline ExpressionPtr PropagateConstants(Expression& expr);
-	inline ExpressionPtr PropagateConstants(Expression& expr, const AstConstantPropagationVisitor::Options& options);
+	inline ExpressionPtr PropagateConstants(Expression& expr, const ConstantPropagationVisitor::Options& options);
 	inline ModulePtr PropagateConstants(const Module& shaderModule);
-	inline ModulePtr PropagateConstants(const Module& shaderModule, const AstConstantPropagationVisitor::Options& options);
+	inline ModulePtr PropagateConstants(const Module& shaderModule, const ConstantPropagationVisitor::Options& options);
 	inline StatementPtr PropagateConstants(Statement& ast);
-	inline StatementPtr PropagateConstants(Statement& ast, const AstConstantPropagationVisitor::Options& options);
+	inline StatementPtr PropagateConstants(Statement& ast, const ConstantPropagationVisitor::Options& options);
 }
 
-#include <NZSL/Ast/AstConstantPropagationVisitor.inl>
+#include <NZSL/Ast/ConstantPropagationVisitor.inl>
 
-#endif // NZSL_AST_ASTCONSTANTPROPAGATIONVISITOR_HPP
+#endif // NZSL_AST_CONSTANTPROPAGATIONVISITOR_HPP

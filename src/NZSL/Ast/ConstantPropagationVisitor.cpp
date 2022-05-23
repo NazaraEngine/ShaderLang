@@ -2,7 +2,7 @@
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
-#include <NZSL/Ast/AstConstantPropagationVisitor.hpp>
+#include <NZSL/Ast/ConstantPropagationVisitor.hpp>
 #include <NZSL/ShaderBuilder.hpp>
 #include <cassert>
 #include <stdexcept>
@@ -697,21 +697,21 @@ namespace nzsl::Ast
 #undef EnableOptimisation
 	}
 
-	ModulePtr AstConstantPropagationVisitor::Process(const Module& shaderModule)
+	ModulePtr ConstantPropagationVisitor::Process(const Module& shaderModule)
 	{
 		auto rootnode = Nz::StaticUniquePointerCast<MultiStatement>(Process(*shaderModule.rootNode));
 
 		return std::make_shared<Module>(shaderModule.metadata, std::move(rootnode), shaderModule.importedModules);
 	}
 
-	ModulePtr AstConstantPropagationVisitor::Process(const Module& shaderModule, const Options& options)
+	ModulePtr ConstantPropagationVisitor::Process(const Module& shaderModule, const Options& options)
 	{
 		auto rootNode = Nz::StaticUniquePointerCast<MultiStatement>(Process(*shaderModule.rootNode, options));
 
 		return std::make_shared<Module>(shaderModule.metadata, std::move(rootNode), shaderModule.importedModules);
 	}
 
-	ExpressionPtr AstConstantPropagationVisitor::Clone(BinaryExpression& node)
+	ExpressionPtr ConstantPropagationVisitor::Clone(BinaryExpression& node)
 	{
 		auto lhs = CloneExpression(node.left);
 		auto rhs = CloneExpression(node.right);
@@ -784,7 +784,7 @@ namespace nzsl::Ast
 		return binary;
 	}
 
-	ExpressionPtr AstConstantPropagationVisitor::Clone(CastExpression& node)
+	ExpressionPtr ConstantPropagationVisitor::Clone(CastExpression& node)
 	{
 		std::array<ExpressionPtr, 4> expressions;
 
@@ -905,7 +905,7 @@ namespace nzsl::Ast
 		return cast;
 	}
 
-	StatementPtr AstConstantPropagationVisitor::Clone(BranchStatement& node)
+	StatementPtr ConstantPropagationVisitor::Clone(BranchStatement& node)
 	{
 		std::vector<BranchStatement::ConditionalStatement> statements;
 		StatementPtr elseStatement;
@@ -937,7 +937,7 @@ namespace nzsl::Ast
 				if (statements.empty())
 				{
 					// First condition is true, dismiss the branch
-					return Unscope(AstCloner::Clone(*condStatement.statement));
+					return Unscope(Cloner::Clone(*condStatement.statement));
 				}
 				else
 				{
@@ -958,7 +958,7 @@ namespace nzsl::Ast
 		{
 			// All conditions have been removed, replace by else statement or no-op
 			if (node.elseStatement)
-				return Unscope(AstCloner::Clone(*node.elseStatement));
+				return Unscope(Cloner::Clone(*node.elseStatement));
 			else
 				return ShaderBuilder::NoOp();
 		}
@@ -972,7 +972,7 @@ namespace nzsl::Ast
 		return branchStatement;
 	}
 
-	ExpressionPtr AstConstantPropagationVisitor::Clone(ConditionalExpression& node)
+	ExpressionPtr ConstantPropagationVisitor::Clone(ConditionalExpression& node)
 	{
 		auto cond = CloneExpression(node.condition);
 		if (cond->GetType() != NodeType::ConstantValueExpression)
@@ -988,19 +988,19 @@ namespace nzsl::Ast
 
 		bool cValue = std::get<bool>(constant.value);
 		if (cValue)
-			return AstCloner::Clone(*node.truePath);
+			return Cloner::Clone(*node.truePath);
 		else
-			return AstCloner::Clone(*node.falsePath);
+			return Cloner::Clone(*node.falsePath);
 	}
 
-	ExpressionPtr AstConstantPropagationVisitor::Clone(ConstantExpression& node)
+	ExpressionPtr ConstantPropagationVisitor::Clone(ConstantExpression& node)
 	{
 		if (!m_options.constantQueryCallback)
-			return AstCloner::Clone(node);
+			return Cloner::Clone(node);
 
 		const ConstantValue* constantValue = m_options.constantQueryCallback(node.constantId);
 		if (!constantValue)
-			return AstCloner::Clone(node);
+			return Cloner::Clone(node);
 
 		auto constant = ShaderBuilder::Constant(*constantValue);
 		constant->cachedExpressionType = GetConstantType(constant->value);
@@ -1009,7 +1009,7 @@ namespace nzsl::Ast
 		return constant;
 	}
 
-	ExpressionPtr AstConstantPropagationVisitor::Clone(SwizzleExpression& node)
+	ExpressionPtr ConstantPropagationVisitor::Clone(SwizzleExpression& node)
 	{
 		auto expr = CloneExpression(node.expression);
 
@@ -1061,7 +1061,7 @@ namespace nzsl::Ast
 		return swizzle;
 	}
 
-	ExpressionPtr AstConstantPropagationVisitor::Clone(UnaryExpression& node)
+	ExpressionPtr ConstantPropagationVisitor::Clone(UnaryExpression& node)
 	{
 		auto expr = CloneExpression(node.expression);
 
@@ -1096,7 +1096,7 @@ namespace nzsl::Ast
 		return unary;
 	}
 
-	StatementPtr AstConstantPropagationVisitor::Clone(ConditionalStatement& node)
+	StatementPtr ConstantPropagationVisitor::Clone(ConditionalStatement& node)
 	{
 		auto cond = CloneExpression(node.condition);
 		if (cond->GetType() != NodeType::ConstantValueExpression)
@@ -1112,13 +1112,13 @@ namespace nzsl::Ast
 
 		bool cValue = std::get<bool>(constant.value);
 		if (cValue)
-			return AstCloner::Clone(node);
+			return Cloner::Clone(node);
 		else
 			return ShaderBuilder::NoOp();
 	}
 
 	template<BinaryType Type>
-	ExpressionPtr AstConstantPropagationVisitor::PropagateBinaryConstant(const ConstantValueExpression& lhs, const ConstantValueExpression& rhs)
+	ExpressionPtr ConstantPropagationVisitor::PropagateBinaryConstant(const ConstantValueExpression& lhs, const ConstantValueExpression& rhs)
 	{
 		NAZARA_USE_ANONYMOUS_NAMESPACE
 
@@ -1149,7 +1149,7 @@ namespace nzsl::Ast
 	}
 
 	template<typename TargetType>
-	ExpressionPtr AstConstantPropagationVisitor::PropagateSingleValueCast(const ConstantValueExpression& operand)
+	ExpressionPtr ConstantPropagationVisitor::PropagateSingleValueCast(const ConstantValueExpression& operand)
 	{
 		NAZARA_USE_ANONYMOUS_NAMESPACE
 
@@ -1168,7 +1168,7 @@ namespace nzsl::Ast
 	}
 
 	template<std::size_t TargetComponentCount>
-	ExpressionPtr AstConstantPropagationVisitor::PropagateConstantSwizzle(const std::array<std::uint32_t, 4>& components, const ConstantValueExpression& operand)
+	ExpressionPtr ConstantPropagationVisitor::PropagateConstantSwizzle(const std::array<std::uint32_t, 4>& components, const ConstantValueExpression& operand)
 	{
 		NAZARA_USE_ANONYMOUS_NAMESPACE
 
@@ -1190,7 +1190,7 @@ namespace nzsl::Ast
 	}
 
 	template<UnaryType Type>
-	ExpressionPtr AstConstantPropagationVisitor::PropagateUnaryConstant(const ConstantValueExpression& operand)
+	ExpressionPtr ConstantPropagationVisitor::PropagateUnaryConstant(const ConstantValueExpression& operand)
 	{
 		NAZARA_USE_ANONYMOUS_NAMESPACE
 
@@ -1215,7 +1215,7 @@ namespace nzsl::Ast
 	}
 
 	template<typename TargetType>
-	ExpressionPtr AstConstantPropagationVisitor::PropagateVec2Cast(TargetType v1, TargetType v2)
+	ExpressionPtr ConstantPropagationVisitor::PropagateVec2Cast(TargetType v1, TargetType v2)
 	{
 		NAZARA_USE_ANONYMOUS_NAMESPACE
 
@@ -1230,7 +1230,7 @@ namespace nzsl::Ast
 	}
 
 	template<typename TargetType>
-	ExpressionPtr AstConstantPropagationVisitor::PropagateVec3Cast(TargetType v1, TargetType v2, TargetType v3)
+	ExpressionPtr ConstantPropagationVisitor::PropagateVec3Cast(TargetType v1, TargetType v2, TargetType v3)
 	{
 		NAZARA_USE_ANONYMOUS_NAMESPACE
 
@@ -1245,7 +1245,7 @@ namespace nzsl::Ast
 	}
 
 	template<typename TargetType>
-	ExpressionPtr AstConstantPropagationVisitor::PropagateVec4Cast(TargetType v1, TargetType v2, TargetType v3, TargetType v4)
+	ExpressionPtr ConstantPropagationVisitor::PropagateVec4Cast(TargetType v1, TargetType v2, TargetType v3, TargetType v4)
 	{
 		NAZARA_USE_ANONYMOUS_NAMESPACE
 
@@ -1260,7 +1260,7 @@ namespace nzsl::Ast
 	}
 
 
-	StatementPtr AstConstantPropagationVisitor::Unscope(StatementPtr node)
+	StatementPtr ConstantPropagationVisitor::Unscope(StatementPtr node)
 	{
 		assert(node);
 

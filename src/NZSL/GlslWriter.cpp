@@ -8,10 +8,10 @@
 #include <Nazara/Utils/CallOnExit.hpp>
 #include <NZSL/Enums.hpp>
 #include <NZSL/ShaderBuilder.hpp>
-#include <NZSL/Ast/AstCloner.hpp>
-#include <NZSL/Ast/AstConstantPropagationVisitor.hpp>
-#include <NZSL/Ast/AstRecursiveVisitor.hpp>
-#include <NZSL/Ast/AstUtils.hpp>
+#include <NZSL/Ast/Cloner.hpp>
+#include <NZSL/Ast/ConstantPropagationVisitor.hpp>
+#include <NZSL/Ast/RecursiveVisitor.hpp>
+#include <NZSL/Ast/Utils.hpp>
 #include <NZSL/Ast/EliminateUnusedPassVisitor.hpp>
 #include <frozen/unordered_map.h>
 #include <cassert>
@@ -28,13 +28,13 @@ namespace nzsl
 		static const char* s_glslWriterOutputPrefix = "_NzOut_";
 		static const char* s_glslWriterOutputVarName = "_nzOutput";
 
-		struct GlslWriterPreVisitor : Ast::AstRecursiveVisitor
+		struct GlslWriterPreVisitor : Ast::RecursiveVisitor
 		{
-			using AstRecursiveVisitor::Visit;
+			using RecursiveVisitor::Visit;
 
 			void Visit(Ast::CallFunctionExpression& node) override
 			{
-				AstRecursiveVisitor::Visit(node);
+				RecursiveVisitor::Visit(node);
 
 				assert(currentFunction);
 				currentFunction->calledFunctions.UnboundedSet(std::get<Ast::FunctionType>(*GetExpressionType(*node.targetFunction)).funcIndex);
@@ -84,7 +84,7 @@ namespace nzsl
 
 				currentFunction = &funcData;
 
-				AstRecursiveVisitor::Visit(node);
+				RecursiveVisitor::Visit(node);
 
 				currentFunction = nullptr;
 			}

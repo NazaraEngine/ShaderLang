@@ -2,7 +2,7 @@
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
-#include <NZSL/Ast/AstCompare.hpp>
+#include <NZSL/Ast/Compare.hpp>
 #include <stdexcept>
 
 namespace nzsl::Ast
@@ -20,7 +20,7 @@ namespace nzsl::Ast
 			case NodeType::None: break;
 
 #define NZSL_SHADERAST_EXPRESSION(Node) case NodeType::Node: return Compare(static_cast<const Node&>(lhs), static_cast<const Node&>(lhs));
-#include <NZSL/Ast/AstNodeList.hpp>
+#include <NZSL/Ast/NodeList.hpp>
 
 			default: throw std::runtime_error("unexpected node type");
 		}
@@ -77,7 +77,7 @@ namespace nzsl::Ast
 			case NodeType::None: break;
 
 #define NZSL_SHADERAST_STATEMENT(Node) case NodeType::Node: return Compare(static_cast<const Node&>(lhs), static_cast<const Node&>(lhs));
-#include <NZSL/Ast/AstNodeList.hpp>
+#include <NZSL/Ast/NodeList.hpp>
 
 			default: throw std::runtime_error("unexpected node type");
 		}

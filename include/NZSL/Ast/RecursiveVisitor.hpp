@@ -4,21 +4,21 @@
 
 #pragma once
 
-#ifndef NZSL_AST_ASTRECURSIVEVISITOR_HPP
-#define NZSL_AST_ASTRECURSIVEVISITOR_HPP
+#ifndef NZSL_AST_RECURSIVEVISITOR_HPP
+#define NZSL_AST_RECURSIVEVISITOR_HPP
 
 #include <NZSL/Config.hpp>
 #include <NZSL/Config.hpp>
-#include <NZSL/Ast/AstExpressionVisitor.hpp>
-#include <NZSL/Ast/AstStatementVisitor.hpp>
+#include <NZSL/Ast/ExpressionVisitor.hpp>
+#include <NZSL/Ast/StatementVisitor.hpp>
 
 namespace nzsl::Ast
 {
-	class NZSL_API AstRecursiveVisitor : public AstExpressionVisitor, public AstStatementVisitor
+	class NZSL_API RecursiveVisitor : public ExpressionVisitor, public StatementVisitor
 	{
 		public:
-			AstRecursiveVisitor() = default;
-			~AstRecursiveVisitor() = default;
+			RecursiveVisitor() = default;
+			~RecursiveVisitor() = default;
 
 			void Visit(AccessIdentifierExpression& node) override;
 			void Visit(AccessIndexExpression& node) override;
@@ -63,6 +63,6 @@ namespace nzsl::Ast
 	};
 }
 
-#include <NZSL/Ast/AstRecursiveVisitor.inl>
+#include <NZSL/Ast/RecursiveVisitor.inl>
 
-#endif // NZSL_AST_ASTRECURSIVEVISITOR_HPP
+#endif // NZSL_AST_RECURSIVEVISITOR_HPP
