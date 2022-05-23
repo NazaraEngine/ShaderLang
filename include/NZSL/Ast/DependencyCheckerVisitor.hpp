@@ -10,11 +10,11 @@
 #include <NZSL/Config.hpp>
 #include <Nazara/Utils/Bitset.hpp>
 #include <NZSL/Config.hpp>
-#include <NZSL/Ast/AstRecursiveVisitor.hpp>
+#include <NZSL/Ast/RecursiveVisitor.hpp>
 
 namespace nzsl::Ast
 {
-	class NZSL_API DependencyCheckerVisitor : public AstRecursiveVisitor
+	class NZSL_API DependencyCheckerVisitor : public RecursiveVisitor
 	{
 		public:
 			struct Config;
@@ -56,7 +56,7 @@ namespace nzsl::Ast
 			void RegisterType(UsageSet& usageSet, const ExpressionType& exprType);
 			void Resolve(const UsageSet& usageSet, bool allowUnknownId);
 
-			using AstRecursiveVisitor::Visit;
+			using RecursiveVisitor::Visit;
 
 			void Visit(AliasValueExpression& node) override;
 			void Visit(FunctionExpression& node) override;

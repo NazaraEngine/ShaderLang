@@ -4,32 +4,32 @@
 
 #pragma once
 
-#ifndef NZSL_AST_ASTUTILS_HPP
-#define NZSL_AST_ASTUTILS_HPP
+#ifndef NZSL_AST_UTILS_HPP
+#define NZSL_AST_UTILS_HPP
 
 #include <NZSL/Config.hpp>
 #include <NZSL/Config.hpp>
-#include <NZSL/Ast/AstExpressionVisitor.hpp>
+#include <NZSL/Ast/ExpressionVisitor.hpp>
 #include <NZSL/Ast/Enums.hpp>
 #include <vector>
 
 namespace nzsl::Ast
 {
-	class NZSL_API ShaderAstValueCategory final : public AstExpressionVisitor
+	class NZSL_API ValueCategory final : public ExpressionVisitor
 	{
 		public:
-			ShaderAstValueCategory() = default;
-			ShaderAstValueCategory(const ShaderAstValueCategory&) = delete;
-			ShaderAstValueCategory(ShaderAstValueCategory&&) = delete;
-			~ShaderAstValueCategory() = default;
+			ValueCategory() = default;
+			ValueCategory(const ValueCategory&) = delete;
+			ValueCategory(ValueCategory&&) = delete;
+			~ValueCategory() = default;
 
 			ExpressionCategory GetExpressionCategory(Expression& expression);
 
-			ShaderAstValueCategory& operator=(const ShaderAstValueCategory&) = delete;
-			ShaderAstValueCategory& operator=(ShaderAstValueCategory&&) = delete;
+			ValueCategory& operator=(const ValueCategory&) = delete;
+			ValueCategory& operator=(ValueCategory&&) = delete;
 
 		private:
-			using AstExpressionVisitor::Visit;
+			using ExpressionVisitor::Visit;
 
 			void Visit(AccessIdentifierExpression& node) override;
 			void Visit(AccessIndexExpression& node) override;
@@ -58,6 +58,6 @@ namespace nzsl::Ast
 	inline ExpressionCategory GetExpressionCategory(Expression& expression);
 }
 
-#include <NZSL/Ast/AstUtils.inl>
+#include <NZSL/Ast/Utils.inl>
 
-#endif // NZSL_AST_ASTUTILS_HPP
+#endif // NZSL_AST_UTILS_HPP

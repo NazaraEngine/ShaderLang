@@ -2,18 +2,18 @@
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
-#include <NZSL/Ast/AstExportVisitor.hpp>
+#include <NZSL/Ast/ExportVisitor.hpp>
 #include <stdexcept>
 
 namespace nzsl::Ast
 {
-	void AstExportVisitor::Visit(Statement& statement, const Callbacks& callbacks)
+	void ExportVisitor::Visit(Statement& statement, const Callbacks& callbacks)
 	{
 		m_callbacks = &callbacks;
 		statement.Visit(*this);
 	}
 
-	void AstExportVisitor::Visit(DeclareFunctionStatement& node)
+	void ExportVisitor::Visit(DeclareFunctionStatement& node)
 	{
 		if (!node.isExported.HasValue() || !node.isExported.GetResultingValue())
 			return;
@@ -22,7 +22,7 @@ namespace nzsl::Ast
 			m_callbacks->onExportedFunc(node);
 	}
 
-	void AstExportVisitor::Visit(DeclareStructStatement& node)
+	void ExportVisitor::Visit(DeclareStructStatement& node)
 	{
 		if (!node.isExported.HasValue() || !node.isExported.GetResultingValue())
 			return;

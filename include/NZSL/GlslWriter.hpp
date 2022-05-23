@@ -10,8 +10,8 @@
 #include <NZSL/Config.hpp>
 #include <NZSL/Config.hpp>
 #include <NZSL/ShaderWriter.hpp>
-#include <NZSL/Ast/AstExpressionVisitorExcept.hpp>
-#include <NZSL/Ast/AstStatementVisitorExcept.hpp>
+#include <NZSL/Ast/ExpressionVisitorExcept.hpp>
+#include <NZSL/Ast/StatementVisitorExcept.hpp>
 #include <NZSL/Ast/Module.hpp>
 #include <NZSL/Ast/SanitizeVisitor.hpp>
 #include <set>
@@ -21,7 +21,7 @@
 
 namespace nzsl
 {
-	class NZSL_API GlslWriter : public ShaderWriter, public Ast::AstExpressionVisitorExcept, public Ast::AstStatementVisitorExcept
+	class NZSL_API GlslWriter : public ShaderWriter, public Ast::ExpressionVisitorExcept, public Ast::StatementVisitorExcept
 	{
 		public:
 			using BindingMapping = std::unordered_map<std::uint64_t /* set | binding */, unsigned /*glBinding*/>;

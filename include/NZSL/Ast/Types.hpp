@@ -4,8 +4,8 @@
 
 #pragma once
 
-#ifndef NZSL_AST_ASTTYPES_HPP
-#define NZSL_AST_ASTTYPES_HPP
+#ifndef NZSL_AST_TYPES_HPP
+#define NZSL_AST_TYPES_HPP
 
 #include <NZSL/ShaderLangSourceLocation.hpp>
 #include <NZSL/Ast/ConstantValue.hpp>
@@ -34,4 +34,4 @@ namespace nzsl::Ast
 
 }
 
-#endif // NZSL_AST_ASTTYPES_HPP
+#endif // NZSL_AST_TYPES_HPP

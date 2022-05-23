@@ -10,8 +10,8 @@
 #include <NZSL/Config.hpp>
 #include <NZSL/Config.hpp>
 #include <NZSL/ShaderWriter.hpp>
-#include <NZSL/Ast/AstExpressionVisitorExcept.hpp>
-#include <NZSL/Ast/AstStatementVisitorExcept.hpp>
+#include <NZSL/Ast/ExpressionVisitorExcept.hpp>
+#include <NZSL/Ast/StatementVisitorExcept.hpp>
 #include <NZSL/Ast/Module.hpp>
 #include <set>
 #include <sstream>
@@ -19,7 +19,7 @@
 
 namespace nzsl
 {
-	class NZSL_API LangWriter : public ShaderWriter, public Ast::AstExpressionVisitorExcept, public Ast::AstStatementVisitorExcept
+	class NZSL_API LangWriter : public ShaderWriter, public Ast::ExpressionVisitorExcept, public Ast::StatementVisitorExcept
 	{
 		public:
 			struct Environment;

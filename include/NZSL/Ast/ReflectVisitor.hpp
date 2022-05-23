@@ -4,31 +4,31 @@
 
 #pragma once
 
-#ifndef NZSL_AST_ASTREFLECT_HPP
-#define NZSL_AST_ASTREFLECT_HPP
+#ifndef NZSL_AST_REFLECT_HPP
+#define NZSL_AST_REFLECT_HPP
 
 #include <NZSL/Config.hpp>
 #include <NZSL/Config.hpp>
 #include <NZSL/ShaderLangSourceLocation.hpp>
-#include <NZSL/Ast/AstRecursiveVisitor.hpp>
+#include <NZSL/Ast/RecursiveVisitor.hpp>
 #include <vector>
 
 namespace nzsl::Ast
 {
-	class NZSL_API AstReflect : public AstRecursiveVisitor
+	class NZSL_API ReflectVisitor : public RecursiveVisitor
 	{
 		public:
 			struct Callbacks;
 
-			AstReflect() = default;
-			AstReflect(const AstReflect&) = delete;
-			AstReflect(AstReflect&&) = delete;
-			~AstReflect() = default;
+			ReflectVisitor() = default;
+			ReflectVisitor(const ReflectVisitor&) = delete;
+			ReflectVisitor(ReflectVisitor&&) = delete;
+			~ReflectVisitor() = default;
 
 			void Reflect(Statement& statement, const Callbacks& callbacks);
 
-			AstReflect& operator=(const AstReflect&) = delete;
-			AstReflect& operator=(AstReflect&&) = delete;
+			ReflectVisitor& operator=(const ReflectVisitor&) = delete;
+			ReflectVisitor& operator=(ReflectVisitor&&) = delete;
 
 			struct Callbacks
 			{
@@ -65,6 +65,6 @@ namespace nzsl::Ast
 	};
 }
 
-#include <NZSL/Ast/AstReflect.inl>
+#include <NZSL/Ast/ReflectVisitor.inl>
 
-#endif // NZSL_AST_ASTREFLECT_HPP
+#endif // NZSL_AST_REFLECT_HPP

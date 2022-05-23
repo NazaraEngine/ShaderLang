@@ -3,8 +3,8 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <NZSL/Ast/ExpressionType.hpp>
-#include <NZSL/Ast/AstCloner.hpp>
-#include <NZSL/Ast/AstCompare.hpp>
+#include <NZSL/Ast/Cloner.hpp>
+#include <NZSL/Ast/Compare.hpp>
 
 namespace nzsl::Ast
 {

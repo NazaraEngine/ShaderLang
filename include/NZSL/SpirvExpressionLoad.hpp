@@ -10,7 +10,7 @@
 #include <NZSL/Config.hpp>
 #include <NZSL/Config.hpp>
 #include <NZSL/SpirvData.hpp>
-#include <NZSL/Ast/AstExpressionVisitorExcept.hpp>
+#include <NZSL/Ast/ExpressionVisitorExcept.hpp>
 #include <vector>
 
 namespace nzsl
@@ -19,7 +19,7 @@ namespace nzsl
 	class SpirvBlock;
 	class SpirvWriter;
 
-	class NZSL_API SpirvExpressionLoad : public Ast::AstExpressionVisitorExcept
+	class NZSL_API SpirvExpressionLoad : public Ast::ExpressionVisitorExcept
 	{
 		public:
 			inline SpirvExpressionLoad(SpirvWriter& writer, SpirvAstVisitor& visitor, SpirvBlock& block);
@@ -29,7 +29,7 @@ namespace nzsl
 
 			std::uint32_t Evaluate(Ast::Expression& node);
 
-			using AstExpressionVisitorExcept::Visit;
+			using ExpressionVisitorExcept::Visit;
 			void Visit(Ast::AccessIndexExpression& node) override;
 			void Visit(Ast::VariableValueExpression& node) override;
 

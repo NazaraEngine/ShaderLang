@@ -4,8 +4,8 @@
 
 #pragma once
 
-#ifndef NZSL_AST_ASTSERIALIZER_HPP
-#define NZSL_AST_ASTSERIALIZER_HPP
+#ifndef NZSL_AST_SERIALIZER_HPP
+#define NZSL_AST_SERIALIZER_HPP
 
 #include <NZSL/Config.hpp>
 #include <NZSL/ShaderLangSourceLocation.hpp>
@@ -14,13 +14,13 @@
 
 namespace nzsl::Ast
 {
-	class NZSL_API AstSerializerBase
+	class NZSL_API SerializerBase
 	{
 		public:
-			AstSerializerBase() = default;
-			AstSerializerBase(const AstSerializerBase&) = delete;
-			AstSerializerBase(AstSerializerBase&&) = delete;
-			~AstSerializerBase() = default;
+			SerializerBase() = default;
+			SerializerBase(const SerializerBase&) = delete;
+			SerializerBase(SerializerBase&&) = delete;
+			~SerializerBase() = default;
 
 			void Serialize(AccessIdentifierExpression& node);
 			void Serialize(AccessIndexExpression& node);
@@ -103,7 +103,7 @@ namespace nzsl::Ast
 			inline void SizeT(std::size_t& val);
 	};
 
-	class NZSL_API ShaderAstSerializer final : public AstSerializerBase
+	class NZSL_API ShaderAstSerializer final : public SerializerBase
 	{
 		public:
 			inline ShaderAstSerializer(AbstractSerializer& stream);
@@ -112,7 +112,7 @@ namespace nzsl::Ast
 			void Serialize(ModulePtr& shader);
 
 		private:
-			using AstSerializerBase::Serialize;
+			using SerializerBase::Serialize;
 
 			bool IsWriting() const override;
 			void Node(ExpressionPtr& node) override;
@@ -139,7 +139,7 @@ namespace nzsl::Ast
 			AbstractSerializer& m_serializer;
 	};
 
-	class NZSL_API ShaderAstUnserializer final : public AstSerializerBase
+	class NZSL_API ShaderAstUnserializer final : public SerializerBase
 	{
 		public:
 			ShaderAstUnserializer(AbstractUnserializer& stream);
@@ -148,7 +148,7 @@ namespace nzsl::Ast
 			ModulePtr Unserialize();
 
 		private:
-			using AstSerializerBase::Serialize;
+			using SerializerBase::Serialize;
 
 			bool IsWriting() const override;
 			void Node(ExpressionPtr& node) override;
@@ -181,4 +181,4 @@ namespace nzsl::Ast
 
 #include <NZSL/Ast/AstSerializer.inl>
 
-#endif // NZSL_AST_ASTSERIALIZER_HPP
+#endif // NZSL_AST_SERIALIZER_HPP

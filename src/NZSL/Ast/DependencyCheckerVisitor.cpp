@@ -93,7 +93,7 @@ namespace nzsl::Ast
 
 		assert(node.aliasIndex);
 		m_currentAliasDeclIndex = *node.aliasIndex;
-		AstRecursiveVisitor::Visit(node);
+		RecursiveVisitor::Visit(node);
 		m_currentAliasDeclIndex = {};
 	}
 
@@ -113,7 +113,7 @@ namespace nzsl::Ast
 			++varIndex;
 		}
 
-		AstRecursiveVisitor::Visit(node);
+		RecursiveVisitor::Visit(node);
 	}
 
 	void DependencyCheckerVisitor::Visit(DeclareFunctionStatement& node)
@@ -152,7 +152,7 @@ namespace nzsl::Ast
 		}
 
 		m_currentFunctionIndex = node.funcIndex;
-		AstRecursiveVisitor::Visit(node);
+		RecursiveVisitor::Visit(node);
 		m_currentFunctionIndex = {};
 	}
 
@@ -168,7 +168,7 @@ namespace nzsl::Ast
 			RegisterType(usageSet, memberExprType);
 		}
 
-		AstRecursiveVisitor::Visit(node);
+		RecursiveVisitor::Visit(node);
 	}
 
 	void DependencyCheckerVisitor::Visit(DeclareVariableStatement& node)
@@ -181,7 +181,7 @@ namespace nzsl::Ast
 		RegisterType(usageSet, varType);
 
 		m_currentVariableDeclIndex = node.varIndex;
-		AstRecursiveVisitor::Visit(node);
+		RecursiveVisitor::Visit(node);
 		m_currentVariableDeclIndex = {};
 	}
 

@@ -41,7 +41,7 @@ namespace nzsl::Ast
 		if (!IsAliasUsed(*node.aliasIndex))
 			return ShaderBuilder::NoOp();
 
-		return AstCloner::Clone(node);
+		return Cloner::Clone(node);
 	}
 
 	StatementPtr EliminateUnusedPassVisitor::Clone(DeclareExternalStatement& node)
@@ -62,7 +62,7 @@ namespace nzsl::Ast
 		if (!isUsed)
 			return ShaderBuilder::NoOp();
 
-		auto clonedNode = AstCloner::Clone(node);
+		auto clonedNode = Cloner::Clone(node);
 
 		auto& externalStatement = static_cast<DeclareExternalStatement&>(*clonedNode);
 		for (auto it = externalStatement.externalVars.begin(); it != externalStatement.externalVars.end(); )
@@ -86,7 +86,7 @@ namespace nzsl::Ast
 		if (!IsFunctionUsed(*node.funcIndex))
 			return ShaderBuilder::NoOp();
 
-		return AstCloner::Clone(node);
+		return Cloner::Clone(node);
 	}
 
 	StatementPtr EliminateUnusedPassVisitor::Clone(DeclareStructStatement& node)
@@ -95,7 +95,7 @@ namespace nzsl::Ast
 		if (!IsStructUsed(*node.structIndex))
 			return ShaderBuilder::NoOp();
 
-		return AstCloner::Clone(node);
+		return Cloner::Clone(node);
 	}
 
 	StatementPtr EliminateUnusedPassVisitor::Clone(DeclareVariableStatement& node)
@@ -104,7 +104,7 @@ namespace nzsl::Ast
 		if (!IsVariableUsed(*node.varIndex))
 			return ShaderBuilder::NoOp();
 
-		return AstCloner::Clone(node);
+		return Cloner::Clone(node);
 	}
 
 	bool EliminateUnusedPassVisitor::IsAliasUsed(std::size_t aliasIndex) const

@@ -40,12 +40,12 @@ namespace nzsl::Ast
 		context.options = &options;
 		m_context = &context;
 
-		return AstCloner::Clone(statement);
+		return Cloner::Clone(statement);
 	}
 
 	StatementPtr IndexRemapperVisitor::Clone(DeclareAliasStatement& node)
 	{
-		DeclareAliasStatementPtr clone = Nz::StaticUniquePointerCast<DeclareAliasStatement>(AstCloner::Clone(node));
+		DeclareAliasStatementPtr clone = Nz::StaticUniquePointerCast<DeclareAliasStatement>(Cloner::Clone(node));
 
 		if (clone->aliasIndex)
 		{
@@ -61,7 +61,7 @@ namespace nzsl::Ast
 
 	StatementPtr IndexRemapperVisitor::Clone(DeclareConstStatement& node)
 	{
-		DeclareConstStatementPtr clone = Nz::StaticUniquePointerCast<DeclareConstStatement>(AstCloner::Clone(node));
+		DeclareConstStatementPtr clone = Nz::StaticUniquePointerCast<DeclareConstStatement>(Cloner::Clone(node));
 
 		if (clone->constIndex)
 		{
@@ -77,7 +77,7 @@ namespace nzsl::Ast
 
 	StatementPtr IndexRemapperVisitor::Clone(DeclareExternalStatement& node)
 	{
-		DeclareExternalStatementPtr clone = Nz::StaticUniquePointerCast<DeclareExternalStatement>(AstCloner::Clone(node));
+		DeclareExternalStatementPtr clone = Nz::StaticUniquePointerCast<DeclareExternalStatement>(Cloner::Clone(node));
 
 		for (auto& extVar : clone->externalVars)
 		{
@@ -96,7 +96,7 @@ namespace nzsl::Ast
 
 	StatementPtr IndexRemapperVisitor::Clone(DeclareFunctionStatement& node)
 	{
-		DeclareFunctionStatementPtr clone = Nz::StaticUniquePointerCast<DeclareFunctionStatement>(AstCloner::Clone(node));
+		DeclareFunctionStatementPtr clone = Nz::StaticUniquePointerCast<DeclareFunctionStatement>(Cloner::Clone(node));
 
 		if (clone->funcIndex)
 		{
@@ -128,7 +128,7 @@ namespace nzsl::Ast
 
 	StatementPtr IndexRemapperVisitor::Clone(DeclareStructStatement& node)
 	{
-		DeclareStructStatementPtr clone = Nz::StaticUniquePointerCast<DeclareStructStatement>(AstCloner::Clone(node));
+		DeclareStructStatementPtr clone = Nz::StaticUniquePointerCast<DeclareStructStatement>(Cloner::Clone(node));
 
 		if (clone->structIndex)
 		{
@@ -147,7 +147,7 @@ namespace nzsl::Ast
 
 	StatementPtr IndexRemapperVisitor::Clone(DeclareVariableStatement& node)
 	{
-		DeclareVariableStatementPtr clone = Nz::StaticUniquePointerCast<DeclareVariableStatement>(AstCloner::Clone(node));
+		DeclareVariableStatementPtr clone = Nz::StaticUniquePointerCast<DeclareVariableStatement>(Cloner::Clone(node));
 
 		if (clone->varIndex)
 		{
@@ -165,7 +165,7 @@ namespace nzsl::Ast
 
 	ExpressionPtr IndexRemapperVisitor::Clone(AliasValueExpression& node)
 	{
-		AliasValueExpressionPtr clone = Nz::StaticUniquePointerCast<AliasValueExpression>(AstCloner::Clone(node));
+		AliasValueExpressionPtr clone = Nz::StaticUniquePointerCast<AliasValueExpression>(Cloner::Clone(node));
 
 		if (clone->aliasId)
 			clone->aliasId = Nz::Retrieve(m_context->newAliasIndices, clone->aliasId);
@@ -177,7 +177,7 @@ namespace nzsl::Ast
 
 	ExpressionPtr IndexRemapperVisitor::Clone(ConstantExpression& node)
 	{
-		ConstantExpressionPtr clone = Nz::StaticUniquePointerCast<ConstantExpression>(AstCloner::Clone(node));
+		ConstantExpressionPtr clone = Nz::StaticUniquePointerCast<ConstantExpression>(Cloner::Clone(node));
 
 		if (clone->constantId)
 			clone->constantId = Nz::Retrieve(m_context->newConstIndices, clone->constantId);
@@ -189,7 +189,7 @@ namespace nzsl::Ast
 
 	ExpressionPtr IndexRemapperVisitor::Clone(FunctionExpression& node)
 	{
-		FunctionExpressionPtr clone = Nz::StaticUniquePointerCast<FunctionExpression>(AstCloner::Clone(node));
+		FunctionExpressionPtr clone = Nz::StaticUniquePointerCast<FunctionExpression>(Cloner::Clone(node));
 
 		if (clone->funcId)
 			clone->funcId = Nz::Retrieve(m_context->newFuncIndices, clone->funcId);
@@ -201,7 +201,7 @@ namespace nzsl::Ast
 
 	ExpressionPtr IndexRemapperVisitor::Clone(StructTypeExpression& node)
 	{
-		StructTypeExpressionPtr clone = Nz::StaticUniquePointerCast<StructTypeExpression>(AstCloner::Clone(node));
+		StructTypeExpressionPtr clone = Nz::StaticUniquePointerCast<StructTypeExpression>(Cloner::Clone(node));
 
 		if (clone->structTypeId)
 			clone->structTypeId = Nz::Retrieve(m_context->newStructIndices, clone->structTypeId);
@@ -213,7 +213,7 @@ namespace nzsl::Ast
 
 	ExpressionPtr IndexRemapperVisitor::Clone(VariableValueExpression& node)
 	{
-		VariableValueExpressionPtr clone = Nz::StaticUniquePointerCast<VariableValueExpression>(AstCloner::Clone(node));
+		VariableValueExpressionPtr clone = Nz::StaticUniquePointerCast<VariableValueExpression>(Cloner::Clone(node));
 
 		if (clone->variableId)
 			clone->variableId = Nz::Retrieve(m_context->newVarIndices, clone->variableId);

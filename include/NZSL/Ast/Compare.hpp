@@ -4,8 +4,8 @@
 
 #pragma once
 
-#ifndef NZSL_AST_ASTCOMPARE_HPP
-#define NZSL_AST_ASTCOMPARE_HPP
+#ifndef NZSL_AST_COMPARE_HPP
+#define NZSL_AST_COMPARE_HPP
 
 #include <NZSL/Config.hpp>
 #include <NZSL/Config.hpp>
@@ -78,6 +78,6 @@ namespace nzsl::Ast
 	inline bool Compare(const WhileStatement& lhs, const WhileStatement& rhs);
 }
 
-#include <NZSL/Ast/AstCompare.inl>
+#include <NZSL/Ast/Compare.inl>
 
-#endif // NZSL_AST_ASTCOMPARE_HPP
+#endif // NZSL_AST_COMPARE_HPP
