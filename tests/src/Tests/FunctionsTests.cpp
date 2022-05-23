@@ -32,7 +32,7 @@ fn main() -> FragOut
 }
 )";
 
-		nzsl::ShaderAst::ModulePtr shaderModule = nzsl::ShaderLang::Parse(nzslSource);
+		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
 		shaderModule = SanitizeModule(*shaderModule);
 
 		ExpectGLSL(*shaderModule, R"(

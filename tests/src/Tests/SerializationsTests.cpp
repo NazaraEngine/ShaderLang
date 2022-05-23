@@ -10,22 +10,22 @@
 
 void ParseSerializeUnserialize(std::string_view sourceCode, bool sanitize)
 {
-	nzsl::ShaderAst::ModulePtr shaderModule;
-	REQUIRE_NOTHROW(shaderModule = nzsl::ShaderLang::Parse(sourceCode));
+	nzsl::Ast::ModulePtr shaderModule;
+	REQUIRE_NOTHROW(shaderModule = nzsl::Parse(sourceCode));
 
 	if (sanitize)
-		REQUIRE_NOTHROW(shaderModule = nzsl::ShaderAst::Sanitize(*shaderModule));
+		REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(*shaderModule));
 
 	nzsl::Serializer serializedModule;
-	REQUIRE_NOTHROW(nzsl::ShaderAst::SerializeShader(serializedModule, shaderModule));
+	REQUIRE_NOTHROW(nzsl::Ast::SerializeShader(serializedModule, shaderModule));
 
 	const std::vector<std::uint8_t>& data = serializedModule.GetData();
 
 	nzsl::Unserializer unserializer(&data[0], data.size());
-	nzsl::ShaderAst::ModulePtr unserializedShader;
-	REQUIRE_NOTHROW(unserializedShader = nzsl::ShaderAst::UnserializeShader(unserializer));
+	nzsl::Ast::ModulePtr unserializedShader;
+	REQUIRE_NOTHROW(unserializedShader = nzsl::Ast::UnserializeShader(unserializer));
 
-	CHECK(nzsl::ShaderAst::Compare(*shaderModule, *unserializedShader));
+	CHECK(nzsl::Ast::Compare(*shaderModule, *unserializedShader));
 }
 
 void ParseSerializeUnserialize(std::string_view sourceCode)

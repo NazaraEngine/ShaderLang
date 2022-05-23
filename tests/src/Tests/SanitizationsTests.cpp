@@ -38,12 +38,12 @@ fn main()
 }
 )";
 
-		nzsl::ShaderAst::ModulePtr shaderModule = nzsl::ShaderLang::Parse(nzslSource);
+		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
 
-		nzsl::ShaderAst::SanitizeVisitor::Options options;
+		nzsl::Ast::SanitizeVisitor::Options options;
 		options.splitMultipleBranches = true;
 
-		REQUIRE_NOTHROW(shaderModule = nzsl::ShaderAst::Sanitize(*shaderModule, options));
+		REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(*shaderModule, options));
 
 		ExpectNZSL(*shaderModule, R"(
 [entry(frag)]
@@ -107,12 +107,12 @@ fn main()
 }
 )";
 
-		nzsl::ShaderAst::ModulePtr shaderModule = nzsl::ShaderLang::Parse(nzslSource);
+		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
 
-		nzsl::ShaderAst::SanitizeVisitor::Options options;
+		nzsl::Ast::SanitizeVisitor::Options options;
 		options.reduceLoopsToWhile = true;
 
-		REQUIRE_NOTHROW(shaderModule = nzsl::ShaderAst::Sanitize(*shaderModule, options));
+		REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(*shaderModule, options));
 
 		ExpectNZSL(*shaderModule, R"(
 [entry(frag)]
@@ -184,12 +184,12 @@ fn testMat4ToMat4(input: mat4[f32]) -> mat4[f32]
 }
 )";
 
-		nzsl::ShaderAst::ModulePtr shaderModule = nzsl::ShaderLang::Parse(nzslSource);
+		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
 
-		nzsl::ShaderAst::SanitizeVisitor::Options options;
+		nzsl::Ast::SanitizeVisitor::Options options;
 		options.removeMatrixCast = true;
 
-		REQUIRE_NOTHROW(shaderModule = nzsl::ShaderAst::Sanitize(*shaderModule, options));
+		REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(*shaderModule, options));
 
 		ExpectNZSL(*shaderModule, R"(
 fn testMat2ToMat2(input: mat2[f32]) -> mat2[f32]
@@ -284,12 +284,12 @@ external
 }
 )";
 
-		nzsl::ShaderAst::ModulePtr shaderModule = nzsl::ShaderLang::Parse(nzslSource);
+		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
 
-		nzsl::ShaderAst::SanitizeVisitor::Options options;
+		nzsl::Ast::SanitizeVisitor::Options options;
 		options.removeAliases = true;
 
-		REQUIRE_NOTHROW(shaderModule = nzsl::ShaderAst::Sanitize(*shaderModule, options));
+		REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(*shaderModule, options));
 
 		ExpectNZSL(*shaderModule, R"(
 struct inputStruct

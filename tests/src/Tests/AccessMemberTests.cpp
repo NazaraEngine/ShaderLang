@@ -28,7 +28,7 @@ external
 }
 )";
 
-		nzsl::ShaderAst::ModulePtr shaderModule = nzsl::ShaderLang::Parse(nzslSource);
+		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
 		shaderModule = SanitizeModule(*shaderModule);
 
 		SECTION("Nested AccessMember")
@@ -38,7 +38,7 @@ external
 			auto secondAccess = nzsl::ShaderBuilder::AccessMember(std::move(firstAccess), { "field" });
 
 			auto swizzle = nzsl::ShaderBuilder::Swizzle(std::move(secondAccess), { 2u });
-			auto varDecl = nzsl::ShaderBuilder::DeclareVariable("result", nzsl::ShaderAst::ExpressionType{ nzsl::ShaderAst::PrimitiveType::Float32 }, std::move(swizzle));
+			auto varDecl = nzsl::ShaderBuilder::DeclareVariable("result", nzsl::Ast::ExpressionType{ nzsl::Ast::PrimitiveType::Float32 }, std::move(swizzle));
 
 			shaderModule->rootNode->statements.push_back(nzsl::ShaderBuilder::DeclareFunction(nzsl::ShaderStageType::Vertex, "main", std::move(varDecl)));
 
@@ -75,7 +75,7 @@ OpFunctionEnd)");
 			auto access = nzsl::ShaderBuilder::AccessMember(std::move(ubo), { "s", "field" });
 
 			auto swizzle = nzsl::ShaderBuilder::Swizzle(std::move(access), { 2u });
-			auto varDecl = nzsl::ShaderBuilder::DeclareVariable("result", nzsl::ShaderAst::ExpressionType{ nzsl::ShaderAst::PrimitiveType::Float32 }, std::move(swizzle));
+			auto varDecl = nzsl::ShaderBuilder::DeclareVariable("result", nzsl::Ast::ExpressionType{ nzsl::Ast::PrimitiveType::Float32 }, std::move(swizzle));
 
 			shaderModule->rootNode->statements.push_back(nzsl::ShaderBuilder::DeclareFunction(nzsl::ShaderStageType::Vertex, "main", std::move(varDecl)));
 
