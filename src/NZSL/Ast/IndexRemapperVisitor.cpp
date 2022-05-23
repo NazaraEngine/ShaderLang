@@ -6,7 +6,7 @@
 #include <Nazara/Utils/Algorithm.hpp>
 #include <unordered_map>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
 	namespace
 	{

@@ -12,7 +12,7 @@
 #include <NZSL/Serializer.hpp>
 #include <NZSL/Ast/Module.hpp>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
 	class NZSL_API AstSerializerBase
 	{
@@ -64,7 +64,7 @@ namespace nzsl::ShaderAst
 			void Serialize(WhileStatement& node);
 
 			void SerializeExpressionCommon(Expression& expr);
-			void SerializeNodeCommon(ShaderAst::Node& node);
+			void SerializeNodeCommon(Ast::Node& node);
 
 		protected:
 			template<typename T> void Container(T& container);
@@ -82,7 +82,7 @@ namespace nzsl::ShaderAst
 			virtual void SerializeModule(ModulePtr& module) = 0;
 			virtual void SharedString(std::shared_ptr<const std::string>& val) = 0;
 
-			inline void SourceLoc(ShaderLang::SourceLocation& sourceLoc);
+			inline void SourceLoc(SourceLocation& sourceLoc);
 
 			virtual void Type(ExpressionType& type) = 0;
 

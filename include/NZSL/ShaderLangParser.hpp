@@ -14,7 +14,7 @@
 #include <filesystem>
 #include <optional>
 
-namespace nzsl::ShaderLang
+namespace nzsl
 {
 	class NZSL_API Parser
 	{
@@ -22,13 +22,13 @@ namespace nzsl::ShaderLang
 			inline Parser();
 			~Parser() = default;
 
-			ShaderAst::ModulePtr Parse(const std::vector<Token>& tokens);
+			Ast::ModulePtr Parse(const std::vector<Token>& tokens);
 
 		private:
 			struct Attribute
 			{
-				ShaderAst::AttributeType type;
-				ShaderAst::ExpressionPtr args;
+				Ast::AttributeType type;
+				Ast::ExpressionPtr args;
 				SourceLocation sourceLocation;
 			};
 
@@ -42,52 +42,52 @@ namespace nzsl::ShaderLang
 
 			std::vector<Attribute> ParseAttributes();
 			void ParseModuleStatement(std::vector<Attribute> attributes);
-			void ParseVariableDeclaration(std::string& name, ShaderAst::ExpressionValue<ShaderAst::ExpressionType>& type, ShaderAst::ExpressionPtr& initialValue, SourceLocation& sourceLocation);
+			void ParseVariableDeclaration(std::string& name, Ast::ExpressionValue<Ast::ExpressionType>& type, Ast::ExpressionPtr& initialValue, SourceLocation& sourceLocation);
 
-			ShaderAst::ExpressionPtr BuildIdentifierAccess(ShaderAst::ExpressionPtr lhs, ShaderAst::ExpressionPtr rhs);
-			ShaderAst::ExpressionPtr BuildIndexAccess(ShaderAst::ExpressionPtr lhs, ShaderAst::ExpressionPtr rhs);
-			ShaderAst::ExpressionPtr BuildBinary(ShaderAst::BinaryType binaryType, ShaderAst::ExpressionPtr lhs, ShaderAst::ExpressionPtr rhs);
+			Ast::ExpressionPtr BuildIdentifierAccess(Ast::ExpressionPtr lhs, Ast::ExpressionPtr rhs);
+			Ast::ExpressionPtr BuildIndexAccess(Ast::ExpressionPtr lhs, Ast::ExpressionPtr rhs);
+			Ast::ExpressionPtr BuildBinary(Ast::BinaryType binaryType, Ast::ExpressionPtr lhs, Ast::ExpressionPtr rhs);
 
 			// Statements
-			ShaderAst::StatementPtr ParseAliasDeclaration();
-			ShaderAst::StatementPtr ParseBranchStatement();
-			ShaderAst::StatementPtr ParseConstStatement();
-			ShaderAst::StatementPtr ParseDiscardStatement();
-			ShaderAst::StatementPtr ParseExternalBlock(std::vector<Attribute> attributes = {});
-			ShaderAst::StatementPtr ParseForDeclaration(std::vector<Attribute> attributes = {});
-			ShaderAst::StatementPtr ParseFunctionDeclaration(std::vector<Attribute> attributes = {});
-			ShaderAst::DeclareFunctionStatement::Parameter ParseFunctionParameter();
-			ShaderAst::StatementPtr ParseImportStatement();
-			ShaderAst::StatementPtr ParseOptionDeclaration();
-			ShaderAst::StatementPtr ParseReturnStatement();
-			ShaderAst::StatementPtr ParseRootStatement(std::vector<Attribute> attributes = {});
-			ShaderAst::StatementPtr ParseSingleStatement();
-			ShaderAst::StatementPtr ParseStatement();
-			std::vector<ShaderAst::StatementPtr> ParseStatementList(SourceLocation* sourceLocation);
-			ShaderAst::StatementPtr ParseStructDeclaration(std::vector<Attribute> attributes = {});
-			ShaderAst::StatementPtr ParseVariableDeclaration();
-			ShaderAst::StatementPtr ParseWhileStatement(std::vector<Attribute> attributes);
+			Ast::StatementPtr ParseAliasDeclaration();
+			Ast::StatementPtr ParseBranchStatement();
+			Ast::StatementPtr ParseConstStatement();
+			Ast::StatementPtr ParseDiscardStatement();
+			Ast::StatementPtr ParseExternalBlock(std::vector<Attribute> attributes = {});
+			Ast::StatementPtr ParseForDeclaration(std::vector<Attribute> attributes = {});
+			Ast::StatementPtr ParseFunctionDeclaration(std::vector<Attribute> attributes = {});
+			Ast::DeclareFunctionStatement::Parameter ParseFunctionParameter();
+			Ast::StatementPtr ParseImportStatement();
+			Ast::StatementPtr ParseOptionDeclaration();
+			Ast::StatementPtr ParseReturnStatement();
+			Ast::StatementPtr ParseRootStatement(std::vector<Attribute> attributes = {});
+			Ast::StatementPtr ParseSingleStatement();
+			Ast::StatementPtr ParseStatement();
+			std::vector<Ast::StatementPtr> ParseStatementList(SourceLocation* sourceLocation);
+			Ast::StatementPtr ParseStructDeclaration(std::vector<Attribute> attributes = {});
+			Ast::StatementPtr ParseVariableDeclaration();
+			Ast::StatementPtr ParseWhileStatement(std::vector<Attribute> attributes);
 
 			// Expressions
-			ShaderAst::ExpressionPtr ParseBinOpRhs(int exprPrecedence, ShaderAst::ExpressionPtr lhs);
-			ShaderAst::ExpressionPtr ParseConstSelectExpression();
-			ShaderAst::ExpressionPtr ParseExpression();
-			std::vector<ShaderAst::ExpressionPtr> ParseExpressionList(TokenType terminationToken, SourceLocation* terminationLocation);
-			ShaderAst::ExpressionPtr ParseFloatingPointExpression();
-			ShaderAst::ExpressionPtr ParseIdentifier();
-			ShaderAst::ExpressionPtr ParseIntegerExpression();
-			ShaderAst::ExpressionPtr ParseParenthesisExpression();
-			ShaderAst::ExpressionPtr ParsePrimaryExpression();
-			ShaderAst::ExpressionPtr ParseStringExpression();
-			ShaderAst::ExpressionPtr ParseVariableAssignation();
+			Ast::ExpressionPtr ParseBinOpRhs(int exprPrecedence, Ast::ExpressionPtr lhs);
+			Ast::ExpressionPtr ParseConstSelectExpression();
+			Ast::ExpressionPtr ParseExpression();
+			std::vector<Ast::ExpressionPtr> ParseExpressionList(TokenType terminationToken, SourceLocation* terminationLocation);
+			Ast::ExpressionPtr ParseFloatingPointExpression();
+			Ast::ExpressionPtr ParseIdentifier();
+			Ast::ExpressionPtr ParseIntegerExpression();
+			Ast::ExpressionPtr ParseParenthesisExpression();
+			Ast::ExpressionPtr ParsePrimaryExpression();
+			Ast::ExpressionPtr ParseStringExpression();
+			Ast::ExpressionPtr ParseVariableAssignation();
 
 			const std::string& ParseIdentifierAsName(SourceLocation* sourceLocation);
 			std::string ParseModuleName();
-			ShaderAst::ExpressionPtr ParseType();
+			Ast::ExpressionPtr ParseType();
 
-			template<typename T> void HandleUniqueAttribute(ShaderAst::ExpressionValue<T>& targetAttribute, Attribute&& attribute);
-			template<typename T> void HandleUniqueAttribute(ShaderAst::ExpressionValue<T>& targetAttribute, Attribute&& attribute, T defaultValue);
-			template<typename T, typename M> void HandleUniqueStringAttribute(ShaderAst::ExpressionValue<T>& targetAttribute, Attribute&& attribute, const M& map, std::optional<T> defaultValue = {});
+			template<typename T> void HandleUniqueAttribute(Ast::ExpressionValue<T>& targetAttribute, Attribute&& attribute);
+			template<typename T> void HandleUniqueAttribute(Ast::ExpressionValue<T>& targetAttribute, Attribute&& attribute, T defaultValue);
+			template<typename T, typename M> void HandleUniqueStringAttribute(Ast::ExpressionValue<T>& targetAttribute, Attribute&& attribute, const M& map, std::optional<T> defaultValue = {});
 
 			static int GetTokenPrecedence(TokenType token);
 
@@ -95,7 +95,7 @@ namespace nzsl::ShaderLang
 			{
 				std::size_t tokenCount;
 				std::size_t tokenIndex = 0;
-				ShaderAst::ModulePtr module;
+				Ast::ModulePtr module;
 				const Token* tokens;
 				bool parsingImportedModule = false;
 			};
@@ -103,9 +103,9 @@ namespace nzsl::ShaderLang
 			Context* m_context;
 	};
 
-	inline ShaderAst::ModulePtr Parse(const std::string_view& source, const std::string& filePath = std::string{});
-	inline ShaderAst::ModulePtr Parse(const std::vector<Token>& tokens);
-	NZSL_API ShaderAst::ModulePtr ParseFromFile(const std::filesystem::path& sourcePath);
+	inline Ast::ModulePtr Parse(const std::string_view& source, const std::string& filePath = std::string{});
+	inline Ast::ModulePtr Parse(const std::vector<Token>& tokens);
+	NZSL_API Ast::ModulePtr ParseFromFile(const std::filesystem::path& sourcePath);
 }
 
 #include <NZSL/ShaderLangParser.inl>

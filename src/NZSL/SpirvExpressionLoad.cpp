@@ -10,7 +10,7 @@
 
 namespace nzsl
 {
-	std::uint32_t SpirvExpressionLoad::Evaluate(ShaderAst::Expression& node)
+	std::uint32_t SpirvExpressionLoad::Evaluate(Ast::Expression& node)
 	{
 		node.Visit(*this);
 
@@ -71,11 +71,11 @@ namespace nzsl
 		}, m_value);
 	}
 
-	void SpirvExpressionLoad::Visit(ShaderAst::AccessIndexExpression& node)
+	void SpirvExpressionLoad::Visit(Ast::AccessIndexExpression& node)
 	{
 		node.expr->Visit(*this);
 
-		const ShaderAst::ExpressionType* exprType = GetExpressionType(node);
+		const Ast::ExpressionType* exprType = GetExpressionType(node);
 		assert(exprType);
 
 		std::uint32_t typeId = m_writer.GetTypeId(*exprType);
@@ -122,7 +122,7 @@ namespace nzsl
 		}, m_value);
 	}
 
-	void SpirvExpressionLoad::Visit(ShaderAst::VariableValueExpression& node)
+	void SpirvExpressionLoad::Visit(Ast::VariableValueExpression& node)
 	{
 		const auto& var = m_visitor.GetVariable(node.variableId);
 		m_value = Pointer{ var.storage, var.pointerId, var.pointedTypeId };

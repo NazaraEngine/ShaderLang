@@ -4,7 +4,7 @@
 
 #include <NZSL/Ast/AstRecursiveVisitor.hpp>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
 	void AstRecursiveVisitor::Visit(AccessIdentifierExpression& node)
 	{

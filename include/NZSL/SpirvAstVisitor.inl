@@ -17,7 +17,7 @@ namespace nzsl
 	{
 	}
 
-	void SpirvAstVisitor::RegisterExternalVariable(std::size_t varIndex, const ShaderAst::ExpressionType& type)
+	void SpirvAstVisitor::RegisterExternalVariable(std::size_t varIndex, const Ast::ExpressionType& type)
 	{
 		std::uint32_t pointerId = m_writer.GetExtVarPointerId(varIndex);
 		SpirvStorageClass storageClass = (IsSamplerType(type)) ? SpirvStorageClass::UniformConstant : SpirvStorageClass::Uniform;
@@ -25,7 +25,7 @@ namespace nzsl
 		RegisterVariable(varIndex, m_writer.GetTypeId(type), pointerId, storageClass);
 	}
 
-	inline void SpirvAstVisitor::RegisterStruct(std::size_t structIndex, ShaderAst::StructDescription* structDesc)
+	inline void SpirvAstVisitor::RegisterStruct(std::size_t structIndex, Ast::StructDescription* structDesc)
 	{
 		assert(m_structs.find(structIndex) == m_structs.end());
 		m_structs[structIndex] = structDesc;

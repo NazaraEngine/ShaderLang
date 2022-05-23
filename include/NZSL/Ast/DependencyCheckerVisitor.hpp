@@ -12,7 +12,7 @@
 #include <NZSL/Config.hpp>
 #include <NZSL/Ast/AstRecursiveVisitor.hpp>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
 	class NZSL_API DependencyCheckerVisitor : public AstRecursiveVisitor
 	{

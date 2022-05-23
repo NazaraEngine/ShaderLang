@@ -7,7 +7,7 @@
 #include <cassert>
 #include <stdexcept>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
 	namespace NAZARA_ANONYMOUS_NAMESPACE
 	{

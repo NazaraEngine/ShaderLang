@@ -5,7 +5,7 @@
 #include <NZSL/Ast/AstExportVisitor.hpp>
 #include <stdexcept>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
 	void AstExportVisitor::Visit(Statement& statement, const Callbacks& callbacks)
 	{

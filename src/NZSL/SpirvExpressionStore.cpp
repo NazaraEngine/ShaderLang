@@ -13,7 +13,7 @@
 
 namespace nzsl
 {
-	void SpirvExpressionStore::Store(ShaderAst::ExpressionPtr& node, std::uint32_t resultId)
+	void SpirvExpressionStore::Store(Ast::ExpressionPtr& node, std::uint32_t resultId)
 	{
 		node->Visit(*this);
 		
@@ -63,7 +63,7 @@ namespace nzsl
 				{
 					assert(swizzledPointer.componentCount == 1);
 
-					const ShaderAst::ExpressionType* exprType = GetExpressionType(*node);
+					const Ast::ExpressionType* exprType = GetExpressionType(*node);
 					assert(exprType);
 
 					std::uint32_t pointerType = m_writer.RegisterPointerType(*exprType, swizzledPointer.storage); //< FIXME
@@ -83,11 +83,11 @@ namespace nzsl
 		}, m_value);
 	}
 
-	void SpirvExpressionStore::Visit(ShaderAst::AccessIndexExpression& node)
+	void SpirvExpressionStore::Visit(Ast::AccessIndexExpression& node)
 	{
 		node.expr->Visit(*this);
 
-		const ShaderAst::ExpressionType* exprType = GetExpressionType(node);
+		const Ast::ExpressionType* exprType = GetExpressionType(node);
 		assert(exprType);
 
 		std::visit(Nz::Overloaded
@@ -111,7 +111,7 @@ namespace nzsl
 		}, m_value);
 	}
 
-	void SpirvExpressionStore::Visit(ShaderAst::SwizzleExpression& node)
+	void SpirvExpressionStore::Visit(Ast::SwizzleExpression& node)
 	{
 		node.expression->Visit(*this);
 
@@ -119,14 +119,14 @@ namespace nzsl
 		{
 			[&](const Pointer& pointer)
 			{
-				const ShaderAst::ExpressionType* expressionType = GetExpressionType(*node.expression);
+				const Ast::ExpressionType* expressionType = GetExpressionType(*node.expression);
 				assert(expressionType);
 				assert(IsVectorType(*expressionType));
 
 				SwizzledPointer swizzledPointer;
 				swizzledPointer.pointerId = pointer.pointerId;
 				swizzledPointer.storage = pointer.storage;
-				swizzledPointer.swizzledType = std::get<ShaderAst::VectorType>(*expressionType);
+				swizzledPointer.swizzledType = std::get<Ast::VectorType>(*expressionType);
 				swizzledPointer.componentCount = node.componentCount;
 				swizzledPointer.swizzleIndices = node.components;
 
@@ -154,7 +154,7 @@ namespace nzsl
 		}, m_value);
 	}
 
-	void SpirvExpressionStore::Visit(ShaderAst::VariableValueExpression& node)
+	void SpirvExpressionStore::Visit(Ast::VariableValueExpression& node)
 	{
 		const auto& var = m_visitor.GetVariable(node.variableId);
 		m_value = Pointer{ var.storage, var.pointerId };

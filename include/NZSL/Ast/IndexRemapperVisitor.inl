@@ -4,7 +4,7 @@
 
 #include <NZSL/Ast/IndexRemapperVisitor.hpp>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
 	StatementPtr RemapIndices(Statement& statement, const IndexRemapperVisitor::Options& options)
 	{

@@ -20,7 +20,7 @@ namespace nzsl
 		return m_writer.AllocateResultId();
 	}
 
-	std::uint32_t SpirvAstVisitor::EvaluateExpression(ShaderAst::ExpressionPtr& expr)
+	std::uint32_t SpirvAstVisitor::EvaluateExpression(Ast::ExpressionPtr& expr)
 	{
 		expr->Visit(*this);
 
@@ -33,15 +33,15 @@ namespace nzsl
 		return Nz::Retrieve(m_variables, varIndex);
 	}
 
-	void SpirvAstVisitor::Visit(ShaderAst::AccessIndexExpression& node)
+	void SpirvAstVisitor::Visit(Ast::AccessIndexExpression& node)
 	{
 		SpirvExpressionLoad accessMemberVisitor(m_writer, *this, *m_currentBlock);
 		PushResultId(accessMemberVisitor.Evaluate(node));
 	}
 
-	void SpirvAstVisitor::Visit(ShaderAst::AssignExpression& node)
+	void SpirvAstVisitor::Visit(Ast::AssignExpression& node)
 	{
-		if (node.op != ShaderAst::AssignType::Simple)
+		if (node.op != Ast::AssignType::Simple)
 			throw std::runtime_error("unexpected assign expression (should have been removed by sanitization)");
 
 		std::uint32_t resultId = EvaluateExpression(node.right);
@@ -52,26 +52,26 @@ namespace nzsl
 		PushResultId(resultId);
 	}
 
-	void SpirvAstVisitor::Visit(ShaderAst::BinaryExpression& node)
+	void SpirvAstVisitor::Visit(Ast::BinaryExpression& node)
 	{
-		auto RetrieveBaseType = [](const ShaderAst::ExpressionType& exprType)
+		auto RetrieveBaseType = [](const Ast::ExpressionType& exprType)
 		{
 			if (IsPrimitiveType(exprType))
-				return std::get<ShaderAst::PrimitiveType>(exprType);
+				return std::get<Ast::PrimitiveType>(exprType);
 			else if (IsVectorType(exprType))
-				return std::get<ShaderAst::VectorType>(exprType).type;
+				return std::get<Ast::VectorType>(exprType).type;
 			else if (IsMatrixType(exprType))
-				return std::get<ShaderAst::MatrixType>(exprType).type;
+				return std::get<Ast::MatrixType>(exprType).type;
 			else
 				throw std::runtime_error("unexpected type");
 		};
 
-		const ShaderAst::ExpressionType& resultType = *GetExpressionType(node);
-		const ShaderAst::ExpressionType& leftType = *GetExpressionType(*node.left);
-		const ShaderAst::ExpressionType& rightType = *GetExpressionType(*node.right);
+		const Ast::ExpressionType& resultType = *GetExpressionType(node);
+		const Ast::ExpressionType& leftType = *GetExpressionType(*node.left);
+		const Ast::ExpressionType& rightType = *GetExpressionType(*node.right);
 
-		ShaderAst::PrimitiveType leftTypeBase = RetrieveBaseType(leftType);
-		//ShaderAst::PrimitiveType rightTypeBase = RetrieveBaseType(rightType);
+		Ast::PrimitiveType leftTypeBase = RetrieveBaseType(leftType);
+		//Ast::PrimitiveType rightTypeBase = RetrieveBaseType(rightType);
 
 
 		std::uint32_t leftOperand = EvaluateExpression(node.left);
@@ -84,70 +84,70 @@ namespace nzsl
 		{
 			switch (node.op)
 			{
-				case ShaderAst::BinaryType::Add:
+				case Ast::BinaryType::Add:
 				{
 					switch (leftTypeBase)
 					{
-						case ShaderAst::PrimitiveType::Float32:
+						case Ast::PrimitiveType::Float32:
 							return SpirvOp::OpFAdd;
 
-						case ShaderAst::PrimitiveType::Int32:
-						case ShaderAst::PrimitiveType::UInt32:
+						case Ast::PrimitiveType::Int32:
+						case Ast::PrimitiveType::UInt32:
 							return SpirvOp::OpIAdd;
 
-						case ShaderAst::PrimitiveType::Boolean:
-						case ShaderAst::PrimitiveType::String:
+						case Ast::PrimitiveType::Boolean:
+						case Ast::PrimitiveType::String:
 							break;
 					}
 
 					break;
 				}
 
-				case ShaderAst::BinaryType::Subtract:
+				case Ast::BinaryType::Subtract:
 				{
 					switch (leftTypeBase)
 					{
-						case ShaderAst::PrimitiveType::Float32:
+						case Ast::PrimitiveType::Float32:
 							return SpirvOp::OpFSub;
 
-						case ShaderAst::PrimitiveType::Int32:
-						case ShaderAst::PrimitiveType::UInt32:
+						case Ast::PrimitiveType::Int32:
+						case Ast::PrimitiveType::UInt32:
 							return SpirvOp::OpISub;
 
-						case ShaderAst::PrimitiveType::Boolean:
-						case ShaderAst::PrimitiveType::String:
+						case Ast::PrimitiveType::Boolean:
+						case Ast::PrimitiveType::String:
 							break;
 					}
 
 					break;
 				}
 
-				case ShaderAst::BinaryType::Divide:
+				case Ast::BinaryType::Divide:
 				{
 					switch (leftTypeBase)
 					{
-						case ShaderAst::PrimitiveType::Float32:
+						case Ast::PrimitiveType::Float32:
 							return SpirvOp::OpFDiv;
 
-						case ShaderAst::PrimitiveType::Int32:
+						case Ast::PrimitiveType::Int32:
 							return SpirvOp::OpSDiv;
 
-						case ShaderAst::PrimitiveType::UInt32:
+						case Ast::PrimitiveType::UInt32:
 							return SpirvOp::OpUDiv;
 
-						case ShaderAst::PrimitiveType::Boolean:
-						case ShaderAst::PrimitiveType::String:
+						case Ast::PrimitiveType::Boolean:
+						case Ast::PrimitiveType::String:
 							break;
 					}
 
 					break;
 				}
 
-				case ShaderAst::BinaryType::Multiply:
+				case Ast::BinaryType::Multiply:
 				{
 					switch (leftTypeBase)
 					{
-						case ShaderAst::PrimitiveType::Float32:
+						case Ast::PrimitiveType::Float32:
 						{
 							if (IsPrimitiveType(leftType))
 							{
@@ -186,148 +186,148 @@ namespace nzsl
 							return SpirvOp::OpFMul;
 						}
 
-						case ShaderAst::PrimitiveType::Int32:
-						case ShaderAst::PrimitiveType::UInt32:
+						case Ast::PrimitiveType::Int32:
+						case Ast::PrimitiveType::UInt32:
 							return SpirvOp::OpIMul;
 
-						case ShaderAst::PrimitiveType::Boolean:
-						case ShaderAst::PrimitiveType::String:
+						case Ast::PrimitiveType::Boolean:
+						case Ast::PrimitiveType::String:
 							break;
 					}
 
 					break;
 				}
 
-				case ShaderAst::BinaryType::CompEq:
+				case Ast::BinaryType::CompEq:
 				{
 					switch (leftTypeBase)
 					{
-						case ShaderAst::PrimitiveType::Boolean:
+						case Ast::PrimitiveType::Boolean:
 							return SpirvOp::OpLogicalEqual;
 
-						case ShaderAst::PrimitiveType::Float32:
+						case Ast::PrimitiveType::Float32:
 							return SpirvOp::OpFOrdEqual;
 
-						case ShaderAst::PrimitiveType::Int32:
-						case ShaderAst::PrimitiveType::UInt32:
+						case Ast::PrimitiveType::Int32:
+						case Ast::PrimitiveType::UInt32:
 							return SpirvOp::OpIEqual;
 
-						case ShaderAst::PrimitiveType::String:
+						case Ast::PrimitiveType::String:
 							break;
 					}
 
 					break;
 				}
 				
-				case ShaderAst::BinaryType::CompGe:
+				case Ast::BinaryType::CompGe:
 				{
 					switch (leftTypeBase)
 					{
-						case ShaderAst::PrimitiveType::Float32:
+						case Ast::PrimitiveType::Float32:
 							return SpirvOp::OpFOrdGreaterThan;
 
-						case ShaderAst::PrimitiveType::Int32:
+						case Ast::PrimitiveType::Int32:
 							return SpirvOp::OpSGreaterThan;
 
-						case ShaderAst::PrimitiveType::UInt32:
+						case Ast::PrimitiveType::UInt32:
 							return SpirvOp::OpUGreaterThan;
 
-						case ShaderAst::PrimitiveType::Boolean:
-						case ShaderAst::PrimitiveType::String:
+						case Ast::PrimitiveType::Boolean:
+						case Ast::PrimitiveType::String:
 							break;
 					}
 
 					break;
 				}
 				
-				case ShaderAst::BinaryType::CompGt:
+				case Ast::BinaryType::CompGt:
 				{
 					switch (leftTypeBase)
 					{
-						case ShaderAst::PrimitiveType::Float32:
+						case Ast::PrimitiveType::Float32:
 							return SpirvOp::OpFOrdGreaterThanEqual;
 
-						case ShaderAst::PrimitiveType::Int32:
+						case Ast::PrimitiveType::Int32:
 							return SpirvOp::OpSGreaterThanEqual;
 
-						case ShaderAst::PrimitiveType::UInt32:
+						case Ast::PrimitiveType::UInt32:
 							return SpirvOp::OpUGreaterThanEqual;
 
-						case ShaderAst::PrimitiveType::Boolean:
-						case ShaderAst::PrimitiveType::String:
+						case Ast::PrimitiveType::Boolean:
+						case Ast::PrimitiveType::String:
 							break;
 					}
 
 					break;
 				}
 				
-				case ShaderAst::BinaryType::CompLe:
+				case Ast::BinaryType::CompLe:
 				{
 					switch (leftTypeBase)
 					{
-						case ShaderAst::PrimitiveType::Float32:
+						case Ast::PrimitiveType::Float32:
 							return SpirvOp::OpFOrdLessThanEqual;
 
-						case ShaderAst::PrimitiveType::Int32:
+						case Ast::PrimitiveType::Int32:
 							return SpirvOp::OpSLessThanEqual;
 
-						case ShaderAst::PrimitiveType::UInt32:
+						case Ast::PrimitiveType::UInt32:
 							return SpirvOp::OpULessThanEqual;
 
-						case ShaderAst::PrimitiveType::Boolean:
-						case ShaderAst::PrimitiveType::String:
+						case Ast::PrimitiveType::Boolean:
+						case Ast::PrimitiveType::String:
 							break;
 					}
 
 					break;
 				}
 				
-				case ShaderAst::BinaryType::CompLt:
+				case Ast::BinaryType::CompLt:
 				{
 					switch (leftTypeBase)
 					{
-						case ShaderAst::PrimitiveType::Float32:
+						case Ast::PrimitiveType::Float32:
 							return SpirvOp::OpFOrdLessThan;
 
-						case ShaderAst::PrimitiveType::Int32:
+						case Ast::PrimitiveType::Int32:
 							return SpirvOp::OpSLessThan;
 
-						case ShaderAst::PrimitiveType::UInt32:
+						case Ast::PrimitiveType::UInt32:
 							return SpirvOp::OpULessThan;
 
-						case ShaderAst::PrimitiveType::Boolean:
-						case ShaderAst::PrimitiveType::String:
+						case Ast::PrimitiveType::Boolean:
+						case Ast::PrimitiveType::String:
 							break;
 					}
 
 					break;
 				}
 				
-				case ShaderAst::BinaryType::CompNe:
+				case Ast::BinaryType::CompNe:
 				{
 					switch (leftTypeBase)
 					{
-						case ShaderAst::PrimitiveType::Boolean:
+						case Ast::PrimitiveType::Boolean:
 							return SpirvOp::OpLogicalNotEqual;
 
-						case ShaderAst::PrimitiveType::Float32:
+						case Ast::PrimitiveType::Float32:
 							return SpirvOp::OpFOrdNotEqual;
 
-						case ShaderAst::PrimitiveType::Int32:
-						case ShaderAst::PrimitiveType::UInt32:
+						case Ast::PrimitiveType::Int32:
+						case Ast::PrimitiveType::UInt32:
 							return SpirvOp::OpINotEqual;
 
-						case ShaderAst::PrimitiveType::String:
+						case Ast::PrimitiveType::String:
 							break;
 					}
 
 					break;
 				}
 
-				case ShaderAst::BinaryType::LogicalAnd:
+				case Ast::BinaryType::LogicalAnd:
 					return SpirvOp::OpLogicalAnd;
 
-				case ShaderAst::BinaryType::LogicalOr:
+				case Ast::BinaryType::LogicalOr:
 					return SpirvOp::OpLogicalOr;
 			}
 
@@ -338,12 +338,12 @@ namespace nzsl
 		if (swapOperands)
 			std::swap(leftOperand, rightOperand);
 
-		if (node.op == ShaderAst::BinaryType::Divide)
+		if (node.op == Ast::BinaryType::Divide)
 		{
 			//TODO: Handle other cases
 			if (IsVectorType(leftType) && IsPrimitiveType(rightType))
 			{
-				const ShaderAst::VectorType& leftVec = std::get<ShaderAst::VectorType>(leftType);
+				const Ast::VectorType& leftVec = std::get<Ast::VectorType>(leftType);
 
 				std::uint32_t vecType = m_writer.GetTypeId(leftType);
 
@@ -367,7 +367,7 @@ namespace nzsl
 		PushResultId(resultId);
 	}
 
-	void SpirvAstVisitor::Visit(ShaderAst::BranchStatement& node)
+	void SpirvAstVisitor::Visit(Ast::BranchStatement& node)
 	{
 		assert(node.condStatements.size() == 1); //< sanitization splits multiple branches
 		auto& condStatement = node.condStatements.front();
@@ -402,9 +402,9 @@ namespace nzsl
 		m_currentBlock = m_functionBlocks.back().get();
 	}
 
-	void SpirvAstVisitor::Visit(ShaderAst::CallFunctionExpression& node)
+	void SpirvAstVisitor::Visit(Ast::CallFunctionExpression& node)
 	{
-		std::size_t functionIndex = std::get<ShaderAst::FunctionType>(*GetExpressionType(*node.targetFunction)).funcIndex;
+		std::size_t functionIndex = std::get<Ast::FunctionType>(*GetExpressionType(*node.targetFunction)).funcIndex;
 
 		std::uint32_t funcId = 0;
 		for (const auto& [funcIndex, func] : m_funcData)
@@ -433,7 +433,7 @@ namespace nzsl
 		std::uint32_t resultId = AllocateResultId();
 		m_currentBlock->AppendVariadic(SpirvOp::OpFunctionCall, [&](auto&& appender)
 		{
-			appender(m_writer.GetTypeId(*ShaderAst::GetExpressionType(node)));
+			appender(m_writer.GetTypeId(*Ast::GetExpressionType(node)));
 			appender(resultId);
 			appender(funcId);
 
@@ -444,20 +444,20 @@ namespace nzsl
 		PushResultId(resultId);
 	}
 
-	void SpirvAstVisitor::Visit(ShaderAst::CastExpression& node)
+	void SpirvAstVisitor::Visit(Ast::CastExpression& node)
 	{
-		const ShaderAst::ExpressionType& targetExprType = node.targetType.GetResultingValue();
+		const Ast::ExpressionType& targetExprType = node.targetType.GetResultingValue();
 		if (IsPrimitiveType(targetExprType))
 		{
-			ShaderAst::PrimitiveType targetType = std::get<ShaderAst::PrimitiveType>(targetExprType);
+			Ast::PrimitiveType targetType = std::get<Ast::PrimitiveType>(targetExprType);
 
 			assert(node.expressions[0] && !node.expressions[1]);
-			ShaderAst::ExpressionPtr& expression = node.expressions[0];
+			Ast::ExpressionPtr& expression = node.expressions[0];
 
 			assert(expression->cachedExpressionType.has_value());
-			const ShaderAst::ExpressionType& exprType = expression->cachedExpressionType.value();
+			const Ast::ExpressionType& exprType = expression->cachedExpressionType.value();
 			assert(IsPrimitiveType(exprType));
-			ShaderAst::PrimitiveType fromType = std::get<ShaderAst::PrimitiveType>(exprType);
+			Ast::PrimitiveType fromType = std::get<Ast::PrimitiveType>(exprType);
 
 			std::uint32_t fromId = EvaluateExpression(expression);
 			if (targetType == fromType)
@@ -466,81 +466,81 @@ namespace nzsl
 			std::optional<SpirvOp> castOp;
 			switch (targetType)
 			{
-				case ShaderAst::PrimitiveType::Boolean:
+				case Ast::PrimitiveType::Boolean:
 					throw std::runtime_error("unsupported cast to boolean");
 
-				case ShaderAst::PrimitiveType::Float32:
+				case Ast::PrimitiveType::Float32:
 				{
 					switch (fromType)
 					{
-						case ShaderAst::PrimitiveType::Boolean:
+						case Ast::PrimitiveType::Boolean:
 							throw std::runtime_error("unsupported cast from boolean");
 
-						case ShaderAst::PrimitiveType::Float32:
+						case Ast::PrimitiveType::Float32:
 							break; //< Already handled
 
-						case ShaderAst::PrimitiveType::Int32:
+						case Ast::PrimitiveType::Int32:
 							castOp = SpirvOp::OpConvertSToF;
 							break;
 
-						case ShaderAst::PrimitiveType::UInt32:
+						case Ast::PrimitiveType::UInt32:
 							castOp = SpirvOp::OpConvertUToF;
 							break;
 
-						case ShaderAst::PrimitiveType::String:
+						case Ast::PrimitiveType::String:
 							throw std::runtime_error("unexpected string type");
 					}
 					break;
 				}
 
-				case ShaderAst::PrimitiveType::Int32:
+				case Ast::PrimitiveType::Int32:
 				{
 					switch (fromType)
 					{
-						case ShaderAst::PrimitiveType::Boolean:
+						case Ast::PrimitiveType::Boolean:
 							throw std::runtime_error("unsupported cast from boolean");
 
-						case ShaderAst::PrimitiveType::Float32:
+						case Ast::PrimitiveType::Float32:
 							castOp = SpirvOp::OpConvertFToS;
 							break;
 
-						case ShaderAst::PrimitiveType::Int32:
+						case Ast::PrimitiveType::Int32:
 							break; //< Already handled
 
-						case ShaderAst::PrimitiveType::UInt32:
+						case Ast::PrimitiveType::UInt32:
 							throw std::runtime_error("unsupported cast from int32");
 
-						case ShaderAst::PrimitiveType::String:
+						case Ast::PrimitiveType::String:
 							throw std::runtime_error("unexpected string type");
 					}
 					break;
 				}
 
-				case ShaderAst::PrimitiveType::UInt32:
+				case Ast::PrimitiveType::UInt32:
 				{
 					switch (fromType)
 					{
-						case ShaderAst::PrimitiveType::Boolean:
+						case Ast::PrimitiveType::Boolean:
 							throw std::runtime_error("unsupported cast from boolean");
 
-						case ShaderAst::PrimitiveType::Float32:
+						case Ast::PrimitiveType::Float32:
 							castOp = SpirvOp::OpConvertFToU;
 							break;
 
-						case ShaderAst::PrimitiveType::Int32:
+						case Ast::PrimitiveType::Int32:
 							castOp = SpirvOp::OpBitcast;
 							break;
 
-						case ShaderAst::PrimitiveType::UInt32:
+						case Ast::PrimitiveType::UInt32:
 							break; //< Already handled
 
-						case ShaderAst::PrimitiveType::String:
+						case Ast::PrimitiveType::String:
 							throw std::runtime_error("unexpected string type");
 					}
 					break;
 				}
 
-				case ShaderAst::PrimitiveType::String:
+				case Ast::PrimitiveType::String:
 					throw std::runtime_error("unexpected string type");
 			}
 
@@ -579,7 +579,7 @@ namespace nzsl
 		}
 	}
 
-	void SpirvAstVisitor::Visit(ShaderAst::ConstantValueExpression& node)
+	void SpirvAstVisitor::Visit(Ast::ConstantValueExpression& node)
 	{
 		std::visit([&] (const auto& value)
 		{
@@ -587,7 +587,7 @@ namespace nzsl
 		}, node.value);
 	}
 
-	void SpirvAstVisitor::Visit(ShaderAst::DeclareExternalStatement& node)
+	void SpirvAstVisitor::Visit(Ast::DeclareExternalStatement& node)
 	{
 		for (auto&& extVar : node.externalVars)
 		{
@@ -596,7 +596,7 @@ namespace nzsl
 		}
 	}
 
-	void SpirvAstVisitor::Visit(ShaderAst::DeclareFunctionStatement& node)
+	void SpirvAstVisitor::Visit(Ast::DeclareFunctionStatement& node)
 	{
 		assert(node.funcIndex);
 		m_funcIndex = *node.funcIndex;
@@ -665,18 +665,18 @@ namespace nzsl
 		m_instructions.Append(SpirvOp::OpFunctionEnd);
 	}
 
-	void SpirvAstVisitor::Visit(ShaderAst::DeclareOptionStatement& /*node*/)
+	void SpirvAstVisitor::Visit(Ast::DeclareOptionStatement& /*node*/)
 	{
 		/* nothing to do */
 	}
 
-	void SpirvAstVisitor::Visit(ShaderAst::DeclareStructStatement& node)
+	void SpirvAstVisitor::Visit(Ast::DeclareStructStatement& node)
 	{
 		assert(node.structIndex);
 		RegisterStruct(*node.structIndex, &node.description);
 	}
 
-	void SpirvAstVisitor::Visit(ShaderAst::DeclareVariableStatement& node)
+	void SpirvAstVisitor::Visit(Ast::DeclareVariableStatement& node)
 	{
 		const auto& func = m_funcData[m_funcIndex];
 
@@ -695,27 +695,27 @@ namespace nzsl
 		}
 	}
 
-	void SpirvAstVisitor::Visit(ShaderAst::DiscardStatement& /*node*/)
+	void SpirvAstVisitor::Visit(Ast::DiscardStatement& /*node*/)
 	{
 		m_currentBlock->Append(SpirvOp::OpKill);
 	}
 
-	void SpirvAstVisitor::Visit(ShaderAst::ExpressionStatement& node)
+	void SpirvAstVisitor::Visit(Ast::ExpressionStatement& node)
 	{
 		node.expression->Visit(*this);
 
 		PopResultId();
 	}
 
-	void SpirvAstVisitor::Visit(ShaderAst::IntrinsicExpression& node)
+	void SpirvAstVisitor::Visit(Ast::IntrinsicExpression& node)
 	{
 		switch (node.intrinsic)
 		{
-			case ShaderAst::IntrinsicType::CrossProduct:
+			case Ast::IntrinsicType::CrossProduct:
 			{
 				std::uint32_t glslInstructionSet = m_writer.GetExtendedInstructionSet("GLSL.std.450");
 
-				const ShaderAst::ExpressionType* parameterType = GetExpressionType(*node.parameters[0]);
+				const Ast::ExpressionType* parameterType = GetExpressionType(*node.parameters[0]);
 				assert(parameterType);
 				assert(IsVectorType(*parameterType));
 
@@ -730,13 +730,13 @@ namespace nzsl
 				break;
 			}
 
-			case ShaderAst::IntrinsicType::DotProduct:
+			case Ast::IntrinsicType::DotProduct:
 			{
-				const ShaderAst::ExpressionType* vecExprType = GetExpressionType(*node.parameters[0]);
+				const Ast::ExpressionType* vecExprType = GetExpressionType(*node.parameters[0]);
 				assert(vecExprType);
 				assert(IsVectorType(*vecExprType));
 
-				const ShaderAst::VectorType& vecType = std::get<ShaderAst::VectorType>(*vecExprType);
+				const Ast::VectorType& vecType = std::get<Ast::VectorType>(*vecExprType);
 
 				std::uint32_t typeId = m_writer.GetTypeId(vecType.type);
 
@@ -750,11 +750,11 @@ namespace nzsl
 				break;
 			}
 
-			case ShaderAst::IntrinsicType::Exp:
+			case Ast::IntrinsicType::Exp:
 			{
 				std::uint32_t glslInstructionSet = m_writer.GetExtendedInstructionSet("GLSL.std.450");
 
-				const ShaderAst::ExpressionType* parameterType = GetExpressionType(*node.parameters[0]);
+				const Ast::ExpressionType* parameterType = GetExpressionType(*node.parameters[0]);
 				assert(parameterType);
 				assert(IsPrimitiveType(*parameterType) || IsVectorType(*parameterType));
 				std::uint32_t typeId = m_writer.GetTypeId(*parameterType);
@@ -767,15 +767,15 @@ namespace nzsl
 				break;
 			}
 
-			case ShaderAst::IntrinsicType::Length:
+			case Ast::IntrinsicType::Length:
 			{
 				std::uint32_t glslInstructionSet = m_writer.GetExtendedInstructionSet("GLSL.std.450");
 
-				const ShaderAst::ExpressionType* vecExprType = GetExpressionType(*node.parameters[0]);
+				const Ast::ExpressionType* vecExprType = GetExpressionType(*node.parameters[0]);
 				assert(vecExprType);
 				assert(IsVectorType(*vecExprType));
 
-				const ShaderAst::VectorType& vecType = std::get<ShaderAst::VectorType>(*vecExprType);
+				const Ast::VectorType& vecType = std::get<Ast::VectorType>(*vecExprType);
 				std::uint32_t typeId = m_writer.GetTypeId(vecType.type);
 
 				std::uint32_t vec = EvaluateExpression(node.parameters[0]);
@@ -787,43 +787,43 @@ namespace nzsl
 				break;
 			}
 
-			case ShaderAst::IntrinsicType::Max:
-			case ShaderAst::IntrinsicType::Min:
+			case Ast::IntrinsicType::Max:
+			case Ast::IntrinsicType::Min:
 			{
 				std::uint32_t glslInstructionSet = m_writer.GetExtendedInstructionSet("GLSL.std.450");
 
-				const ShaderAst::ExpressionType* parameterType = GetExpressionType(*node.parameters[0]);
+				const Ast::ExpressionType* parameterType = GetExpressionType(*node.parameters[0]);
 				assert(parameterType);
 				assert(IsPrimitiveType(*parameterType) || IsVectorType(*parameterType));
 				std::uint32_t typeId = m_writer.GetTypeId(*parameterType);
 
-				ShaderAst::PrimitiveType basicType;
+				Ast::PrimitiveType basicType;
 				if (IsPrimitiveType(*parameterType))
-					basicType = std::get<ShaderAst::PrimitiveType>(*parameterType);
+					basicType = std::get<Ast::PrimitiveType>(*parameterType);
 				else if (IsVectorType(*parameterType))
-					basicType = std::get<ShaderAst::VectorType>(*parameterType).type;
+					basicType = std::get<Ast::VectorType>(*parameterType).type;
 				else
 					throw std::runtime_error("unexpected expression type");
 
 				GLSLstd450 op;
 				switch (basicType)
 				{
-					case ShaderAst::PrimitiveType::Boolean:
+					case Ast::PrimitiveType::Boolean:
 						throw std::runtime_error("unexpected boolean for max/min intrinsic");
 
-					case ShaderAst::PrimitiveType::Float32:
-						op = (node.intrinsic == ShaderAst::IntrinsicType::Max) ? GLSLstd450FMax : GLSLstd450FMin;
+					case Ast::PrimitiveType::Float32:
+						op = (node.intrinsic == Ast::IntrinsicType::Max) ? GLSLstd450FMax : GLSLstd450FMin;
 						break;
 
-					case ShaderAst::PrimitiveType::Int32:
-						op = (node.intrinsic == ShaderAst::IntrinsicType::Max) ? GLSLstd450SMax : GLSLstd450SMin;
+					case Ast::PrimitiveType::Int32:
+						op = (node.intrinsic == Ast::IntrinsicType::Max) ? GLSLstd450SMax : GLSLstd450SMin;
 						break;
 
-					case ShaderAst::PrimitiveType::UInt32:
-						op = (node.intrinsic == ShaderAst::IntrinsicType::Max) ? GLSLstd450UMax : GLSLstd450UMin;
+					case Ast::PrimitiveType::UInt32:
+						op = (node.intrinsic == Ast::IntrinsicType::Max) ? GLSLstd450UMax : GLSLstd450UMin;
 						break;
 
-					case ShaderAst::PrimitiveType::String:
+					case Ast::PrimitiveType::String:
 						throw std::runtime_error("unexpected string type");
 				}
 
@@ -836,15 +836,15 @@ namespace nzsl
 				break;
 			}
 
-			case ShaderAst::IntrinsicType::Normalize:
+			case Ast::IntrinsicType::Normalize:
 			{
 				std::uint32_t glslInstructionSet = m_writer.GetExtendedInstructionSet("GLSL.std.450");
 
-				const ShaderAst::ExpressionType* vecExprType = GetExpressionType(*node.parameters[0]);
+				const Ast::ExpressionType* vecExprType = GetExpressionType(*node.parameters[0]);
 				assert(vecExprType);
 				assert(IsVectorType(*vecExprType));
 
-				const ShaderAst::VectorType& vecType = std::get<ShaderAst::VectorType>(*vecExprType);
+				const Ast::VectorType& vecType = std::get<Ast::VectorType>(*vecExprType);
 				std::uint32_t typeId = m_writer.GetTypeId(vecType);
 
 				std::uint32_t vec = EvaluateExpression(node.parameters[0]);
@@ -856,11 +856,11 @@ namespace nzsl
 				break;
 			}
 
-			case ShaderAst::IntrinsicType::Pow:
+			case Ast::IntrinsicType::Pow:
 			{
 				std::uint32_t glslInstructionSet = m_writer.GetExtendedInstructionSet("GLSL.std.450");
 
-				const ShaderAst::ExpressionType* parameterType = GetExpressionType(*node.parameters[0]);
+				const Ast::ExpressionType* parameterType = GetExpressionType(*node.parameters[0]);
 				assert(parameterType);
 				assert(IsPrimitiveType(*parameterType) || IsVectorType(*parameterType));
 				std::uint32_t typeId = m_writer.GetTypeId(*parameterType);
@@ -874,11 +874,11 @@ namespace nzsl
 				break;
 			}
 
-			case ShaderAst::IntrinsicType::Reflect:
+			case Ast::IntrinsicType::Reflect:
 			{
 				std::uint32_t glslInstructionSet = m_writer.GetExtendedInstructionSet("GLSL.std.450");
 
-				const ShaderAst::ExpressionType* parameterType = GetExpressionType(*node.parameters[0]);
+				const Ast::ExpressionType* parameterType = GetExpressionType(*node.parameters[0]);
 				assert(parameterType);
 				assert(IsVectorType(*parameterType));
 				std::uint32_t typeId = m_writer.GetTypeId(*parameterType);
@@ -892,9 +892,9 @@ namespace nzsl
 				break;
 			}
 
-			case ShaderAst::IntrinsicType::SampleTexture:
+			case Ast::IntrinsicType::SampleTexture:
 			{
-				std::uint32_t typeId = m_writer.GetTypeId(ShaderAst::VectorType{4, ShaderAst::PrimitiveType::Float32});
+				std::uint32_t typeId = m_writer.GetTypeId(Ast::VectorType{4, Ast::PrimitiveType::Float32});
 
 				std::uint32_t samplerId = EvaluateExpression(node.parameters[0]);
 				std::uint32_t coordinatesId = EvaluateExpression(node.parameters[1]);
@@ -910,17 +910,17 @@ namespace nzsl
 		}
 	}
 
-	void SpirvAstVisitor::Visit(ShaderAst::NoOpStatement& /*node*/)
+	void SpirvAstVisitor::Visit(Ast::NoOpStatement& /*node*/)
 	{
 		// nothing to do
 	}
 
-	void SpirvAstVisitor::Visit(ShaderAst::MultiStatement& node)
+	void SpirvAstVisitor::Visit(Ast::MultiStatement& node)
 	{
 		HandleStatementList(node.statements);
 	}
 
-	void SpirvAstVisitor::Visit(ShaderAst::ReturnStatement& node)
+	void SpirvAstVisitor::Visit(Ast::ReturnStatement& node)
 	{
 		if (node.returnExpr)
 		{
@@ -949,26 +949,26 @@ namespace nzsl
 			m_currentBlock->Append(SpirvOp::OpReturn);
 	}
 
-	void SpirvAstVisitor::Visit(ShaderAst::ScopedStatement& node)
+	void SpirvAstVisitor::Visit(Ast::ScopedStatement& node)
 	{
 		node.statement->Visit(*this);
 	}
 
-	void SpirvAstVisitor::Visit(ShaderAst::SwizzleExpression& node)
+	void SpirvAstVisitor::Visit(Ast::SwizzleExpression& node)
 	{
-		const ShaderAst::ExpressionType* swizzledExpressionType = GetExpressionType(*node.expression);
+		const Ast::ExpressionType* swizzledExpressionType = GetExpressionType(*node.expression);
 		assert(swizzledExpressionType);
 
 		std::uint32_t exprResultId = EvaluateExpression(node.expression);
 
-		const ShaderAst::ExpressionType* targetExprType = GetExpressionType(node);
+		const Ast::ExpressionType* targetExprType = GetExpressionType(node);
 		assert(targetExprType);
 
 		if (node.componentCount > 1)
 		{
 			assert(IsVectorType(*targetExprType));
 
-			const ShaderAst::VectorType& targetType = std::get<ShaderAst::VectorType>(*targetExprType);
+			const Ast::VectorType& targetType = std::get<Ast::VectorType>(*targetExprType);
 
 			std::uint32_t resultId = m_writer.AllocateResultId();
 			if (IsVectorType(*swizzledExpressionType))
@@ -1005,7 +1005,7 @@ namespace nzsl
 		else if (IsVectorType(*swizzledExpressionType))
 		{
 			assert(IsPrimitiveType(*targetExprType));
-			ShaderAst::PrimitiveType targetType = std::get<ShaderAst::PrimitiveType>(*targetExprType);
+			Ast::PrimitiveType targetType = std::get<Ast::PrimitiveType>(*targetExprType);
 
 			// Extract a single component from the vector
 			assert(node.componentCount == 1);
@@ -1027,12 +1027,12 @@ namespace nzsl
 		}
 	}
 
-	void SpirvAstVisitor::Visit(ShaderAst::UnaryExpression& node)
+	void SpirvAstVisitor::Visit(Ast::UnaryExpression& node)
 	{
-		const ShaderAst::ExpressionType* resultType = GetExpressionType(node);
+		const Ast::ExpressionType* resultType = GetExpressionType(node);
 		assert(resultType);
 
-		const ShaderAst::ExpressionType* exprType = GetExpressionType(*node.expression);
+		const Ast::ExpressionType* exprType = GetExpressionType(*node.expression);
 		assert(exprType);
 
 		std::uint32_t operand = EvaluateExpression(node.expression);
@@ -1041,10 +1041,10 @@ namespace nzsl
 		{
 			switch (node.op)
 			{
-				case ShaderAst::UnaryType::LogicalNot:
+				case Ast::UnaryType::LogicalNot:
 				{
 					assert(IsPrimitiveType(*exprType));
-					assert(std::get<ShaderAst::PrimitiveType>(*resultType) == ShaderAst::PrimitiveType::Boolean);
+					assert(std::get<Ast::PrimitiveType>(*resultType) == Ast::PrimitiveType::Boolean);
 
 					std::uint32_t resultId = m_writer.AllocateResultId();
 					m_currentBlock->Append(SpirvOp::OpLogicalNot, m_writer.GetTypeId(*resultType), resultId, operand);
@@ -1052,13 +1052,13 @@ namespace nzsl
 					return resultId;
 				}
 
-				case ShaderAst::UnaryType::Minus:
+				case Ast::UnaryType::Minus:
 				{
-					ShaderAst::PrimitiveType basicType;
+					Ast::PrimitiveType basicType;
 					if (IsPrimitiveType(*exprType))
-						basicType = std::get<ShaderAst::PrimitiveType>(*exprType);
+						basicType = std::get<Ast::PrimitiveType>(*exprType);
 					else if (IsVectorType(*exprType))
-						basicType = std::get<ShaderAst::VectorType>(*exprType).type;
+						basicType = std::get<Ast::VectorType>(*exprType).type;
 					else
 						throw std::runtime_error("unexpected expression type");
 
@@ -1066,12 +1066,12 @@ namespace nzsl
 
 					switch (basicType)
 					{
-						case ShaderAst::PrimitiveType::Float32:
+						case Ast::PrimitiveType::Float32:
 							m_currentBlock->Append(SpirvOp::OpFNegate, m_writer.GetTypeId(*resultType), resultId, operand);
 							return resultId;
 
-						case ShaderAst::PrimitiveType::Int32:
-						case ShaderAst::PrimitiveType::UInt32:
+						case Ast::PrimitiveType::Int32:
+						case Ast::PrimitiveType::UInt32:
 							m_currentBlock->Append(SpirvOp::OpSNegate, m_writer.GetTypeId(*resultType), resultId, operand);
 							return resultId;
 
@@ -1081,7 +1081,7 @@ namespace nzsl
 					break;
 				}
 
-				case ShaderAst::UnaryType::Plus:
+				case Ast::UnaryType::Plus:
 					PushResultId(operand); //< No-op
 					break;
 			}
@@ -1092,13 +1092,13 @@ namespace nzsl
 		PushResultId(resultId);
 	}
 
-	void SpirvAstVisitor::Visit(ShaderAst::VariableValueExpression& node)
+	void SpirvAstVisitor::Visit(Ast::VariableValueExpression& node)
 	{
 		SpirvExpressionLoad loadVisitor(m_writer, *this, *m_currentBlock);
 		PushResultId(loadVisitor.Evaluate(node));
 	}
 
-	void SpirvAstVisitor::Visit(ShaderAst::WhileStatement& node)
+	void SpirvAstVisitor::Visit(Ast::WhileStatement& node)
 	{
 		assert(node.condition);
 		assert(node.body);
@@ -1117,15 +1117,15 @@ namespace nzsl
 		{
 			switch (node.unroll.GetResultingValue())
 			{
-				case ShaderAst::LoopUnroll::Always:
+				case Ast::LoopUnroll::Always:
 					// it shouldn't be possible to have this attribute as the loop gets unrolled in the sanitizer
 					throw std::runtime_error("unexpected unroll attribute");
 
-				case ShaderAst::LoopUnroll::Hint:
+				case Ast::LoopUnroll::Hint:
 					loopControl = SpirvLoopControl::Unroll;
 					break;
 
-				case ShaderAst::LoopUnroll::Never:
+				case Ast::LoopUnroll::Never:
 					loopControl = SpirvLoopControl::DontUnroll;
 					break;
 			}
@@ -1151,15 +1151,15 @@ namespace nzsl
 		m_currentBlock = m_functionBlocks.back().get();
 	}
 
-	void SpirvAstVisitor::HandleStatementList(const std::vector<ShaderAst::StatementPtr>& statements)
+	void SpirvAstVisitor::HandleStatementList(const std::vector<Ast::StatementPtr>& statements)
 	{
 		for (auto& statement : statements)
 		{
 			// Handle termination statements
 			switch (statement->GetType())
 			{
-				case ShaderAst::NodeType::DiscardStatement:
-				case ShaderAst::NodeType::ReturnStatement:
+				case Ast::NodeType::DiscardStatement:
+				case Ast::NodeType::ReturnStatement:
 					statement->Visit(*this);
 					return; //< stop processing statements after this one
 

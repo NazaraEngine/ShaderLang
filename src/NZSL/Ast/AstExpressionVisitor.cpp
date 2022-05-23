@@ -4,7 +4,7 @@
 
 #include <NZSL/Ast/AstExpressionVisitor.hpp>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
 	AstExpressionVisitor::~AstExpressionVisitor() = default;
 }

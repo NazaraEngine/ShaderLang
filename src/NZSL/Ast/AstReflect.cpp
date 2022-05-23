@@ -5,7 +5,7 @@
 #include <NZSL/Ast/AstReflect.hpp>
 #include <stdexcept>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
 	void AstReflect::Reflect(Statement& statement, const Callbacks& callbacks)
 	{

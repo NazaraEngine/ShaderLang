@@ -4,7 +4,7 @@
 
 #include <NZSL/Ast/AstStatementVisitor.hpp>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
 	AstStatementVisitor::~AstStatementVisitor() = default;
 }

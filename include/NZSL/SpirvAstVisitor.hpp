@@ -20,7 +20,7 @@ namespace nzsl
 {
 	class SpirvWriter;
 
-	class NZSL_API SpirvAstVisitor : public ShaderAst::AstExpressionVisitorExcept, public ShaderAst::AstStatementVisitorExcept
+	class NZSL_API SpirvAstVisitor : public Ast::AstExpressionVisitorExcept, public Ast::AstStatementVisitorExcept
 	{
 		public:
 			struct EntryPoint;
@@ -34,36 +34,36 @@ namespace nzsl
 
 			std::uint32_t AllocateResultId();
 
-			std::uint32_t EvaluateExpression(ShaderAst::ExpressionPtr& expr);
+			std::uint32_t EvaluateExpression(Ast::ExpressionPtr& expr);
 
 			const Variable& GetVariable(std::size_t varIndex) const;
 
 			using AstExpressionVisitorExcept::Visit;
 			using AstStatementVisitorExcept::Visit;
 
-			void Visit(ShaderAst::AccessIndexExpression& node) override;
-			void Visit(ShaderAst::AssignExpression& node) override;
-			void Visit(ShaderAst::BinaryExpression& node) override;
-			void Visit(ShaderAst::BranchStatement& node) override;
-			void Visit(ShaderAst::CallFunctionExpression& node) override;
-			void Visit(ShaderAst::CastExpression& node) override;
-			void Visit(ShaderAst::ConstantValueExpression& node) override;
-			void Visit(ShaderAst::DeclareExternalStatement& node) override;
-			void Visit(ShaderAst::DeclareFunctionStatement& node) override;
-			void Visit(ShaderAst::DeclareOptionStatement& node) override;
-			void Visit(ShaderAst::DeclareStructStatement& node) override;
-			void Visit(ShaderAst::DeclareVariableStatement& node) override;
-			void Visit(ShaderAst::DiscardStatement& node) override;
-			void Visit(ShaderAst::ExpressionStatement& node) override;
-			void Visit(ShaderAst::IntrinsicExpression& node) override;
-			void Visit(ShaderAst::MultiStatement& node) override;
-			void Visit(ShaderAst::NoOpStatement& node) override;
-			void Visit(ShaderAst::ReturnStatement& node) override;
-			void Visit(ShaderAst::ScopedStatement& node) override;
-			void Visit(ShaderAst::SwizzleExpression& node) override;
-			void Visit(ShaderAst::UnaryExpression& node) override;
-			void Visit(ShaderAst::VariableValueExpression& node) override;
-			void Visit(ShaderAst::WhileStatement& node) override;
+			void Visit(Ast::AccessIndexExpression& node) override;
+			void Visit(Ast::AssignExpression& node) override;
+			void Visit(Ast::BinaryExpression& node) override;
+			void Visit(Ast::BranchStatement& node) override;
+			void Visit(Ast::CallFunctionExpression& node) override;
+			void Visit(Ast::CastExpression& node) override;
+			void Visit(Ast::ConstantValueExpression& node) override;
+			void Visit(Ast::DeclareExternalStatement& node) override;
+			void Visit(Ast::DeclareFunctionStatement& node) override;
+			void Visit(Ast::DeclareOptionStatement& node) override;
+			void Visit(Ast::DeclareStructStatement& node) override;
+			void Visit(Ast::DeclareVariableStatement& node) override;
+			void Visit(Ast::DiscardStatement& node) override;
+			void Visit(Ast::ExpressionStatement& node) override;
+			void Visit(Ast::IntrinsicExpression& node) override;
+			void Visit(Ast::MultiStatement& node) override;
+			void Visit(Ast::NoOpStatement& node) override;
+			void Visit(Ast::ReturnStatement& node) override;
+			void Visit(Ast::ScopedStatement& node) override;
+			void Visit(Ast::SwizzleExpression& node) override;
+			void Visit(Ast::UnaryExpression& node) override;
+			void Visit(Ast::VariableValueExpression& node) override;
+			void Visit(Ast::WhileStatement& node) override;
 
 			SpirvAstVisitor& operator=(const SpirvAstVisitor&) = delete;
 			SpirvAstVisitor& operator=(SpirvAstVisitor&&) = delete;
@@ -138,20 +138,20 @@ namespace nzsl
 			};
 
 		private:
-			void HandleStatementList(const std::vector<ShaderAst::StatementPtr>& statements);
+			void HandleStatementList(const std::vector<Ast::StatementPtr>& statements);
 
 			void PushResultId(std::uint32_t value);
 			std::uint32_t PopResultId();
 
-			inline void RegisterExternalVariable(std::size_t varIndex, const ShaderAst::ExpressionType& type);
-			inline void RegisterStruct(std::size_t structIndex, ShaderAst::StructDescription* structDesc);
+			inline void RegisterExternalVariable(std::size_t varIndex, const Ast::ExpressionType& type);
+			inline void RegisterStruct(std::size_t structIndex, Ast::StructDescription* structDesc);
 			inline void RegisterVariable(std::size_t varIndex, std::uint32_t typeId, std::uint32_t pointerId, SpirvStorageClass storageClass);
 
 			std::size_t m_extVarIndex;
 			std::size_t m_funcCallIndex;
 			std::size_t m_funcIndex;
 			std::unordered_map<std::size_t, FuncData>& m_funcData;
-			std::unordered_map<std::size_t, ShaderAst::StructDescription*> m_structs;
+			std::unordered_map<std::size_t, Ast::StructDescription*> m_structs;
 			std::unordered_map<std::size_t, Variable> m_variables;
 			std::vector<std::size_t> m_scopeSizes;
 			std::vector<std::unique_ptr<SpirvBlock>> m_functionBlocks;

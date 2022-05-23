@@ -7,9 +7,9 @@
 
 namespace nzsl::ShaderBuilder
 {
-	inline ShaderAst::AccessIdentifierExpressionPtr Impl::AccessMember::operator()(ShaderAst::ExpressionPtr expr, std::vector<std::string> memberIdentifiers) const
+	inline Ast::AccessIdentifierExpressionPtr Impl::AccessMember::operator()(Ast::ExpressionPtr expr, std::vector<std::string> memberIdentifiers) const
 	{
-		auto accessMemberNode = std::make_unique<ShaderAst::AccessIdentifierExpression>();
+		auto accessMemberNode = std::make_unique<Ast::AccessIdentifierExpression>();
 		accessMemberNode->expr = std::move(expr);
 		accessMemberNode->identifiers.reserve(memberIdentifiers.size());
 		for (std::string& identifier : memberIdentifiers)
@@ -21,18 +21,18 @@ namespace nzsl::ShaderBuilder
 		return accessMemberNode;
 	}
 
-	inline ShaderAst::AccessIndexExpressionPtr Impl::AccessIndex::operator()(ShaderAst::ExpressionPtr expr, std::int32_t index) const
+	inline Ast::AccessIndexExpressionPtr Impl::AccessIndex::operator()(Ast::ExpressionPtr expr, std::int32_t index) const
 	{
-		auto accessMemberNode = std::make_unique<ShaderAst::AccessIndexExpression>();
+		auto accessMemberNode = std::make_unique<Ast::AccessIndexExpression>();
 		accessMemberNode->expr = std::move(expr);
 		accessMemberNode->indices.push_back(ShaderBuilder::Constant(index));
 
 		return accessMemberNode;
 	}
 
-	inline ShaderAst::AccessIndexExpressionPtr Impl::AccessIndex::operator()(ShaderAst::ExpressionPtr expr, const std::vector<std::int32_t>& indexConstants) const
+	inline Ast::AccessIndexExpressionPtr Impl::AccessIndex::operator()(Ast::ExpressionPtr expr, const std::vector<std::int32_t>& indexConstants) const
 	{
-		auto accessMemberNode = std::make_unique<ShaderAst::AccessIndexExpression>();
+		auto accessMemberNode = std::make_unique<Ast::AccessIndexExpression>();
 		accessMemberNode->expr = std::move(expr);
 
 		accessMemberNode->indices.reserve(indexConstants.size());
@@ -42,27 +42,27 @@ namespace nzsl::ShaderBuilder
 		return accessMemberNode;
 	}
 
-	inline ShaderAst::AccessIndexExpressionPtr Impl::AccessIndex::operator()(ShaderAst::ExpressionPtr expr, ShaderAst::ExpressionPtr indexExpression) const
+	inline Ast::AccessIndexExpressionPtr Impl::AccessIndex::operator()(Ast::ExpressionPtr expr, Ast::ExpressionPtr indexExpression) const
 	{
-		auto accessMemberNode = std::make_unique<ShaderAst::AccessIndexExpression>();
+		auto accessMemberNode = std::make_unique<Ast::AccessIndexExpression>();
 		accessMemberNode->expr = std::move(expr);
 		accessMemberNode->indices.push_back(std::move(indexExpression));
 
 		return accessMemberNode;
 	}
 
-	inline ShaderAst::AccessIndexExpressionPtr Impl::AccessIndex::operator()(ShaderAst::ExpressionPtr expr, std::vector<ShaderAst::ExpressionPtr> indexExpressions) const
+	inline Ast::AccessIndexExpressionPtr Impl::AccessIndex::operator()(Ast::ExpressionPtr expr, std::vector<Ast::ExpressionPtr> indexExpressions) const
 	{
-		auto accessMemberNode = std::make_unique<ShaderAst::AccessIndexExpression>();
+		auto accessMemberNode = std::make_unique<Ast::AccessIndexExpression>();
 		accessMemberNode->expr = std::move(expr);
 		accessMemberNode->indices = std::move(indexExpressions);
 
 		return accessMemberNode;
 	}
 
-	inline ShaderAst::AssignExpressionPtr Impl::Assign::operator()(ShaderAst::AssignType op, ShaderAst::ExpressionPtr left, ShaderAst::ExpressionPtr right) const
+	inline Ast::AssignExpressionPtr Impl::Assign::operator()(Ast::AssignType op, Ast::ExpressionPtr left, Ast::ExpressionPtr right) const
 	{
-		auto assignNode = std::make_unique<ShaderAst::AssignExpression>();
+		auto assignNode = std::make_unique<Ast::AssignExpression>();
 		assignNode->op = op;
 		assignNode->left = std::move(left);
 		assignNode->right = std::move(right);
@@ -70,9 +70,9 @@ namespace nzsl::ShaderBuilder
 		return assignNode;
 	}
 
-	inline ShaderAst::BinaryExpressionPtr Impl::Binary::operator()(ShaderAst::BinaryType op, ShaderAst::ExpressionPtr left, ShaderAst::ExpressionPtr right) const
+	inline Ast::BinaryExpressionPtr Impl::Binary::operator()(Ast::BinaryType op, Ast::ExpressionPtr left, Ast::ExpressionPtr right) const
 	{
-		auto binaryNode = std::make_unique<ShaderAst::BinaryExpression>();
+		auto binaryNode = std::make_unique<Ast::BinaryExpression>();
 		binaryNode->op = op;
 		binaryNode->left = std::move(left);
 		binaryNode->right = std::move(right);
@@ -81,9 +81,9 @@ namespace nzsl::ShaderBuilder
 	}
 
 	template<bool Const>
-	ShaderAst::BranchStatementPtr Impl::Branch<Const>::operator()(ShaderAst::ExpressionPtr condition, ShaderAst::StatementPtr truePath, ShaderAst::StatementPtr falsePath) const
+	Ast::BranchStatementPtr Impl::Branch<Const>::operator()(Ast::ExpressionPtr condition, Ast::StatementPtr truePath, Ast::StatementPtr falsePath) const
 	{
-		auto branchNode = std::make_unique<ShaderAst::BranchStatement>();
+		auto branchNode = std::make_unique<Ast::BranchStatement>();
 
 		auto& condStatement = branchNode->condStatements.emplace_back();
 		condStatement.condition = std::move(condition);
@@ -96,9 +96,9 @@ namespace nzsl::ShaderBuilder
 	}
 
 	template<bool Const>
-	ShaderAst::BranchStatementPtr Impl::Branch<Const>::operator()(std::vector<ShaderAst::BranchStatement::ConditionalStatement> condStatements, ShaderAst::StatementPtr elseStatement) const
+	Ast::BranchStatementPtr Impl::Branch<Const>::operator()(std::vector<Ast::BranchStatement::ConditionalStatement> condStatements, Ast::StatementPtr elseStatement) const
 	{
-		auto branchNode = std::make_unique<ShaderAst::BranchStatement>();
+		auto branchNode = std::make_unique<Ast::BranchStatement>();
 		branchNode->condStatements = std::move(condStatements);
 		branchNode->elseStatement = std::move(elseStatement);
 		branchNode->isConst = Const;
@@ -106,45 +106,45 @@ namespace nzsl::ShaderBuilder
 		return branchNode;
 	}
 
-	inline ShaderAst::CallFunctionExpressionPtr Impl::CallFunction::operator()(std::string functionName, std::vector<ShaderAst::ExpressionPtr> parameters) const
+	inline Ast::CallFunctionExpressionPtr Impl::CallFunction::operator()(std::string functionName, std::vector<Ast::ExpressionPtr> parameters) const
 	{
-		auto callFunctionExpression = std::make_unique<ShaderAst::CallFunctionExpression>();
+		auto callFunctionExpression = std::make_unique<Ast::CallFunctionExpression>();
 		callFunctionExpression->targetFunction = ShaderBuilder::Identifier(std::move(functionName));
 		callFunctionExpression->parameters = std::move(parameters);
 
 		return callFunctionExpression;
 	}
 
-	inline ShaderAst::CallFunctionExpressionPtr Impl::CallFunction::operator()(ShaderAst::ExpressionPtr functionExpr, std::vector<ShaderAst::ExpressionPtr> parameters) const
+	inline Ast::CallFunctionExpressionPtr Impl::CallFunction::operator()(Ast::ExpressionPtr functionExpr, std::vector<Ast::ExpressionPtr> parameters) const
 	{
-		auto callFunctionExpression = std::make_unique<ShaderAst::CallFunctionExpression>();
+		auto callFunctionExpression = std::make_unique<Ast::CallFunctionExpression>();
 		callFunctionExpression->targetFunction = std::move(functionExpr);
 		callFunctionExpression->parameters = std::move(parameters);
 
 		return callFunctionExpression;
 	}
 
-	inline ShaderAst::CastExpressionPtr Impl::Cast::operator()(ShaderAst::ExpressionValue<ShaderAst::ExpressionType> targetType, ShaderAst::ExpressionPtr expression) const
+	inline Ast::CastExpressionPtr Impl::Cast::operator()(Ast::ExpressionValue<Ast::ExpressionType> targetType, Ast::ExpressionPtr expression) const
 	{
-		auto castNode = std::make_unique<ShaderAst::CastExpression>();
+		auto castNode = std::make_unique<Ast::CastExpression>();
 		castNode->targetType = std::move(targetType);
 		castNode->expressions[0] = std::move(expression);
 
 		return castNode;
 	}
 
-	inline ShaderAst::CastExpressionPtr Impl::Cast::operator()(ShaderAst::ExpressionValue<ShaderAst::ExpressionType> targetType, std::array<ShaderAst::ExpressionPtr, 4> expressions) const
+	inline Ast::CastExpressionPtr Impl::Cast::operator()(Ast::ExpressionValue<Ast::ExpressionType> targetType, std::array<Ast::ExpressionPtr, 4> expressions) const
 	{
-		auto castNode = std::make_unique<ShaderAst::CastExpression>();
+		auto castNode = std::make_unique<Ast::CastExpression>();
 		castNode->expressions = std::move(expressions);
 		castNode->targetType = std::move(targetType);
 
 		return castNode;
 	}
 
-	inline ShaderAst::CastExpressionPtr Impl::Cast::operator()(ShaderAst::ExpressionValue<ShaderAst::ExpressionType> targetType, std::vector<ShaderAst::ExpressionPtr> expressions) const
+	inline Ast::CastExpressionPtr Impl::Cast::operator()(Ast::ExpressionValue<Ast::ExpressionType> targetType, std::vector<Ast::ExpressionPtr> expressions) const
 	{
-		auto castNode = std::make_unique<ShaderAst::CastExpression>();
+		auto castNode = std::make_unique<Ast::CastExpression>();
 		castNode->targetType = std::move(targetType);
 
 		assert(expressions.size() <= castNode->expressions.size());
@@ -154,9 +154,9 @@ namespace nzsl::ShaderBuilder
 		return castNode;
 	}
 
-	inline ShaderAst::ConditionalExpressionPtr Impl::ConditionalExpression::operator()(ShaderAst::ExpressionPtr condition, ShaderAst::ExpressionPtr truePath, ShaderAst::ExpressionPtr falsePath) const
+	inline Ast::ConditionalExpressionPtr Impl::ConditionalExpression::operator()(Ast::ExpressionPtr condition, Ast::ExpressionPtr truePath, Ast::ExpressionPtr falsePath) const
 	{
-		auto condExprNode = std::make_unique<ShaderAst::ConditionalExpression>();
+		auto condExprNode = std::make_unique<Ast::ConditionalExpression>();
 		condExprNode->condition = std::move(condition);
 		condExprNode->falsePath = std::move(falsePath);
 		condExprNode->truePath = std::move(truePath);
@@ -164,62 +164,62 @@ namespace nzsl::ShaderBuilder
 		return condExprNode;
 	}
 
-	inline ShaderAst::ConditionalStatementPtr Impl::ConditionalStatement::operator()(ShaderAst::ExpressionPtr condition, ShaderAst::StatementPtr statement) const
+	inline Ast::ConditionalStatementPtr Impl::ConditionalStatement::operator()(Ast::ExpressionPtr condition, Ast::StatementPtr statement) const
 	{
-		auto condStatementNode = std::make_unique<ShaderAst::ConditionalStatement>();
+		auto condStatementNode = std::make_unique<Ast::ConditionalStatement>();
 		condStatementNode->condition = std::move(condition);
 		condStatementNode->statement = std::move(statement);
 
 		return condStatementNode;
 	}
 
-	inline ShaderAst::ConstantValueExpressionPtr Impl::Constant::operator()(ShaderAst::ConstantValue value) const
+	inline Ast::ConstantValueExpressionPtr Impl::Constant::operator()(Ast::ConstantValue value) const
 	{
-		auto constantNode = std::make_unique<ShaderAst::ConstantValueExpression>();
+		auto constantNode = std::make_unique<Ast::ConstantValueExpression>();
 		constantNode->value = std::move(value);
-		constantNode->cachedExpressionType = ShaderAst::GetConstantType(constantNode->value);
+		constantNode->cachedExpressionType = Ast::GetConstantType(constantNode->value);
 
 		return constantNode;
 	}
 
 	template<typename T>
-	ShaderAst::ConstantValueExpressionPtr Impl::Constant::operator()(ShaderAst::ExpressionType type, T value) const
+	Ast::ConstantValueExpressionPtr Impl::Constant::operator()(Ast::ExpressionType type, T value) const
 	{
 		assert(IsPrimitiveType(type));
 
-		switch (std::get<ShaderAst::PrimitiveType>(type))
+		switch (std::get<Ast::PrimitiveType>(type))
 		{
-			case ShaderAst::PrimitiveType::Boolean: return ShaderBuilder::Constant(value != T(0));
-			case ShaderAst::PrimitiveType::Float32: return ShaderBuilder::Constant(Nz::SafeCast<float>(value));
-			case ShaderAst::PrimitiveType::Int32:   return ShaderBuilder::Constant(Nz::SafeCast<std::int32_t>(value));
-			case ShaderAst::PrimitiveType::UInt32:  return ShaderBuilder::Constant(Nz::SafeCast<std::uint32_t>(value));
-			case ShaderAst::PrimitiveType::String:  return ShaderBuilder::Constant(value);
+			case Ast::PrimitiveType::Boolean: return ShaderBuilder::Constant(value != T(0));
+			case Ast::PrimitiveType::Float32: return ShaderBuilder::Constant(Nz::SafeCast<float>(value));
+			case Ast::PrimitiveType::Int32:   return ShaderBuilder::Constant(Nz::SafeCast<std::int32_t>(value));
+			case Ast::PrimitiveType::UInt32:  return ShaderBuilder::Constant(Nz::SafeCast<std::uint32_t>(value));
+			case Ast::PrimitiveType::String:  return ShaderBuilder::Constant(value);
 		}
 
 		throw std::runtime_error("unexpected primitive type");
 	}
 
-	inline ShaderAst::DeclareAliasStatementPtr Impl::DeclareAlias::operator()(std::string name, ShaderAst::ExpressionPtr expression) const
+	inline Ast::DeclareAliasStatementPtr Impl::DeclareAlias::operator()(std::string name, Ast::ExpressionPtr expression) const
 	{
-		auto declareAliasNode = std::make_unique<ShaderAst::DeclareAliasStatement>();
+		auto declareAliasNode = std::make_unique<Ast::DeclareAliasStatement>();
 		declareAliasNode->name = std::move(name);
 		declareAliasNode->expression = std::move(expression);
 
 		return declareAliasNode;
 	}
 
-	inline ShaderAst::DeclareConstStatementPtr Impl::DeclareConst::operator()(std::string name, ShaderAst::ExpressionPtr initialValue) const
+	inline Ast::DeclareConstStatementPtr Impl::DeclareConst::operator()(std::string name, Ast::ExpressionPtr initialValue) const
 	{
-		auto declareConstNode = std::make_unique<ShaderAst::DeclareConstStatement>();
+		auto declareConstNode = std::make_unique<Ast::DeclareConstStatement>();
 		declareConstNode->name = std::move(name);
 		declareConstNode->expression = std::move(initialValue);
 
 		return declareConstNode;
 	}
 
-	inline ShaderAst::DeclareConstStatementPtr Impl::DeclareConst::operator()(std::string name, ShaderAst::ExpressionValue<ShaderAst::ExpressionType> type, ShaderAst::ExpressionPtr initialValue) const
+	inline Ast::DeclareConstStatementPtr Impl::DeclareConst::operator()(std::string name, Ast::ExpressionValue<Ast::ExpressionType> type, Ast::ExpressionPtr initialValue) const
 	{
-		auto declareConstNode = std::make_unique<ShaderAst::DeclareConstStatement>();
+		auto declareConstNode = std::make_unique<Ast::DeclareConstStatement>();
 		declareConstNode->name = std::move(name);
 		declareConstNode->type = std::move(type);
 		declareConstNode->expression = std::move(initialValue);
@@ -227,18 +227,18 @@ namespace nzsl::ShaderBuilder
 		return declareConstNode;
 	}
 
-	inline ShaderAst::DeclareFunctionStatementPtr Impl::DeclareFunction::operator()(std::string name, ShaderAst::StatementPtr statement) const
+	inline Ast::DeclareFunctionStatementPtr Impl::DeclareFunction::operator()(std::string name, Ast::StatementPtr statement) const
 	{
-		auto declareFunctionNode = std::make_unique<ShaderAst::DeclareFunctionStatement>();
+		auto declareFunctionNode = std::make_unique<Ast::DeclareFunctionStatement>();
 		declareFunctionNode->name = std::move(name);
 		declareFunctionNode->statements.push_back(std::move(statement));
 
 		return declareFunctionNode;
 	}
 
-	inline ShaderAst::DeclareFunctionStatementPtr Impl::DeclareFunction::operator()(std::string name, std::vector<ShaderAst::DeclareFunctionStatement::Parameter> parameters, std::vector<ShaderAst::StatementPtr> statements, ShaderAst::ExpressionValue<ShaderAst::ExpressionType> returnType) const
+	inline Ast::DeclareFunctionStatementPtr Impl::DeclareFunction::operator()(std::string name, std::vector<Ast::DeclareFunctionStatement::Parameter> parameters, std::vector<Ast::StatementPtr> statements, Ast::ExpressionValue<Ast::ExpressionType> returnType) const
 	{
-		auto declareFunctionNode = std::make_unique<ShaderAst::DeclareFunctionStatement>();
+		auto declareFunctionNode = std::make_unique<Ast::DeclareFunctionStatement>();
 		declareFunctionNode->name = std::move(name);
 		declareFunctionNode->parameters = std::move(parameters);
 		declareFunctionNode->returnType = std::move(returnType);
@@ -247,9 +247,9 @@ namespace nzsl::ShaderBuilder
 		return declareFunctionNode;
 	}
 
-	inline ShaderAst::DeclareFunctionStatementPtr Impl::DeclareFunction::operator()(std::optional<ShaderStageType> entryStage, std::string name, ShaderAst::StatementPtr statement) const
+	inline Ast::DeclareFunctionStatementPtr Impl::DeclareFunction::operator()(std::optional<ShaderStageType> entryStage, std::string name, Ast::StatementPtr statement) const
 	{
-		auto declareFunctionNode = std::make_unique<ShaderAst::DeclareFunctionStatement>();
+		auto declareFunctionNode = std::make_unique<Ast::DeclareFunctionStatement>();
 		declareFunctionNode->name = std::move(name);
 		declareFunctionNode->statements.push_back(std::move(statement));
 
@@ -259,9 +259,9 @@ namespace nzsl::ShaderBuilder
 		return declareFunctionNode;
 	}
 
-	inline ShaderAst::DeclareFunctionStatementPtr Impl::DeclareFunction::operator()(std::optional<ShaderStageType> entryStage, std::string name, std::vector<ShaderAst::DeclareFunctionStatement::Parameter> parameters, std::vector<ShaderAst::StatementPtr> statements, ShaderAst::ExpressionValue<ShaderAst::ExpressionType> returnType) const
+	inline Ast::DeclareFunctionStatementPtr Impl::DeclareFunction::operator()(std::optional<ShaderStageType> entryStage, std::string name, std::vector<Ast::DeclareFunctionStatement::Parameter> parameters, std::vector<Ast::StatementPtr> statements, Ast::ExpressionValue<Ast::ExpressionType> returnType) const
 	{
-		auto declareFunctionNode = std::make_unique<ShaderAst::DeclareFunctionStatement>();
+		auto declareFunctionNode = std::make_unique<Ast::DeclareFunctionStatement>();
 		declareFunctionNode->name = std::move(name);
 		declareFunctionNode->parameters = std::move(parameters);
 		declareFunctionNode->returnType = std::move(returnType);
@@ -273,9 +273,9 @@ namespace nzsl::ShaderBuilder
 		return declareFunctionNode;
 	}
 
-	inline ShaderAst::DeclareOptionStatementPtr Impl::DeclareOption::operator()(std::string name, ShaderAst::ExpressionValue<ShaderAst::ExpressionType> type, ShaderAst::ExpressionPtr initialValue) const
+	inline Ast::DeclareOptionStatementPtr Impl::DeclareOption::operator()(std::string name, Ast::ExpressionValue<Ast::ExpressionType> type, Ast::ExpressionPtr initialValue) const
 	{
-		auto declareOptionNode = std::make_unique<ShaderAst::DeclareOptionStatement>();
+		auto declareOptionNode = std::make_unique<Ast::DeclareOptionStatement>();
 		declareOptionNode->optName = std::move(name);
 		declareOptionNode->optType = std::move(type);
 		declareOptionNode->defaultValue = std::move(initialValue);
@@ -283,27 +283,27 @@ namespace nzsl::ShaderBuilder
 		return declareOptionNode;
 	}
 
-	inline ShaderAst::DeclareStructStatementPtr Impl::DeclareStruct::operator()(ShaderAst::StructDescription description, ShaderAst::ExpressionValue<bool> isExported) const
+	inline Ast::DeclareStructStatementPtr Impl::DeclareStruct::operator()(Ast::StructDescription description, Ast::ExpressionValue<bool> isExported) const
 	{
-		auto declareStructNode = std::make_unique<ShaderAst::DeclareStructStatement>();
+		auto declareStructNode = std::make_unique<Ast::DeclareStructStatement>();
 		declareStructNode->description = std::move(description);
 		declareStructNode->isExported = std::move(isExported);
 
 		return declareStructNode;
 	}
 
-	inline ShaderAst::DeclareVariableStatementPtr Impl::DeclareVariable::operator()(std::string name, ShaderAst::ExpressionPtr initialValue) const
+	inline Ast::DeclareVariableStatementPtr Impl::DeclareVariable::operator()(std::string name, Ast::ExpressionPtr initialValue) const
 	{
-		auto declareVariableNode = std::make_unique<ShaderAst::DeclareVariableStatement>();
+		auto declareVariableNode = std::make_unique<Ast::DeclareVariableStatement>();
 		declareVariableNode->varName = std::move(name);
 		declareVariableNode->initialExpression = std::move(initialValue);
 
 		return declareVariableNode;
 	}
 
-	inline ShaderAst::DeclareVariableStatementPtr Impl::DeclareVariable::operator()(std::string name, ShaderAst::ExpressionValue<ShaderAst::ExpressionType> type, ShaderAst::ExpressionPtr initialValue) const
+	inline Ast::DeclareVariableStatementPtr Impl::DeclareVariable::operator()(std::string name, Ast::ExpressionValue<Ast::ExpressionType> type, Ast::ExpressionPtr initialValue) const
 	{
-		auto declareVariableNode = std::make_unique<ShaderAst::DeclareVariableStatement>();
+		auto declareVariableNode = std::make_unique<Ast::DeclareVariableStatement>();
 		declareVariableNode->varName = std::move(name);
 		declareVariableNode->varType = std::move(type);
 		declareVariableNode->initialExpression = std::move(initialValue);
@@ -311,18 +311,18 @@ namespace nzsl::ShaderBuilder
 		return declareVariableNode;
 	}
 
-	inline ShaderAst::ExpressionStatementPtr Impl::ExpressionStatement::operator()(ShaderAst::ExpressionPtr expression) const
+	inline Ast::ExpressionStatementPtr Impl::ExpressionStatement::operator()(Ast::ExpressionPtr expression) const
 	{
-		auto expressionStatementNode = std::make_unique<ShaderAst::ExpressionStatement>();
+		auto expressionStatementNode = std::make_unique<Ast::ExpressionStatement>();
 		expressionStatementNode->sourceLocation = expression->sourceLocation;
 		expressionStatementNode->expression = std::move(expression);
 
 		return expressionStatementNode;
 	}
 
-	inline ShaderAst::ForStatementPtr Impl::For::operator()(std::string varName, ShaderAst::ExpressionPtr fromExpression, ShaderAst::ExpressionPtr toExpression, ShaderAst::StatementPtr statement) const
+	inline Ast::ForStatementPtr Impl::For::operator()(std::string varName, Ast::ExpressionPtr fromExpression, Ast::ExpressionPtr toExpression, Ast::StatementPtr statement) const
 	{
-		auto forNode = std::make_unique<ShaderAst::ForStatement>();
+		auto forNode = std::make_unique<Ast::ForStatement>();
 		forNode->fromExpr = std::move(fromExpression);
 		forNode->statement = std::move(statement);
 		forNode->toExpr = std::move(toExpression);
@@ -331,9 +331,9 @@ namespace nzsl::ShaderBuilder
 		return forNode;
 	}
 
-	inline ShaderAst::ForStatementPtr Impl::For::operator()(std::string varName, ShaderAst::ExpressionPtr fromExpression, ShaderAst::ExpressionPtr toExpression, ShaderAst::ExpressionPtr stepExpression, ShaderAst::StatementPtr statement) const
+	inline Ast::ForStatementPtr Impl::For::operator()(std::string varName, Ast::ExpressionPtr fromExpression, Ast::ExpressionPtr toExpression, Ast::ExpressionPtr stepExpression, Ast::StatementPtr statement) const
 	{
-		auto forNode = std::make_unique<ShaderAst::ForStatement>();
+		auto forNode = std::make_unique<Ast::ForStatement>();
 		forNode->fromExpr = std::move(fromExpression);
 		forNode->statement = std::move(statement);
 		forNode->stepExpr = std::move(stepExpression);
@@ -343,9 +343,9 @@ namespace nzsl::ShaderBuilder
 		return forNode;
 	}
 
-	ShaderAst::ForEachStatementPtr Impl::ForEach::operator()(std::string varName, ShaderAst::ExpressionPtr expression, ShaderAst::StatementPtr statement) const
+	Ast::ForEachStatementPtr Impl::ForEach::operator()(std::string varName, Ast::ExpressionPtr expression, Ast::StatementPtr statement) const
 	{
-		auto forEachNode = std::make_unique<ShaderAst::ForEachStatement>();
+		auto forEachNode = std::make_unique<Ast::ForEachStatement>();
 		forEachNode->expression = std::move(expression);
 		forEachNode->statement = std::move(statement);
 		forEachNode->varName = std::move(varName);
@@ -353,52 +353,52 @@ namespace nzsl::ShaderBuilder
 		return forEachNode;
 	}
 
-	inline ShaderAst::FunctionExpressionPtr Impl::Function::operator()(std::size_t funcId) const
+	inline Ast::FunctionExpressionPtr Impl::Function::operator()(std::size_t funcId) const
 	{
-		auto intrinsicTypeExpr = std::make_unique<ShaderAst::FunctionExpression>();
-		intrinsicTypeExpr->cachedExpressionType = ShaderAst::FunctionType{ funcId };
+		auto intrinsicTypeExpr = std::make_unique<Ast::FunctionExpression>();
+		intrinsicTypeExpr->cachedExpressionType = Ast::FunctionType{ funcId };
 		intrinsicTypeExpr->funcId = funcId;
 
 		return intrinsicTypeExpr;
 	}
 
-	inline ShaderAst::IdentifierExpressionPtr Impl::Identifier::operator()(std::string name) const
+	inline Ast::IdentifierExpressionPtr Impl::Identifier::operator()(std::string name) const
 	{
-		auto identifierNode = std::make_unique<ShaderAst::IdentifierExpression>();
+		auto identifierNode = std::make_unique<Ast::IdentifierExpression>();
 		identifierNode->identifier = std::move(name);
 
 		return identifierNode;
 	}
 
-	inline ShaderAst::ImportStatementPtr Impl::Import::operator()(std::string moduleName) const
+	inline Ast::ImportStatementPtr Impl::Import::operator()(std::string moduleName) const
 	{
-		auto importNode = std::make_unique<ShaderAst::ImportStatement>();
+		auto importNode = std::make_unique<Ast::ImportStatement>();
 		importNode->moduleName = std::move(moduleName);
 
 		return importNode;
 	}
 
-	inline ShaderAst::IntrinsicExpressionPtr Impl::Intrinsic::operator()(ShaderAst::IntrinsicType intrinsicType, std::vector<ShaderAst::ExpressionPtr> parameters) const
+	inline Ast::IntrinsicExpressionPtr Impl::Intrinsic::operator()(Ast::IntrinsicType intrinsicType, std::vector<Ast::ExpressionPtr> parameters) const
 	{
-		auto intrinsicExpression = std::make_unique<ShaderAst::IntrinsicExpression>();
+		auto intrinsicExpression = std::make_unique<Ast::IntrinsicExpression>();
 		intrinsicExpression->intrinsic = intrinsicType;
 		intrinsicExpression->parameters = std::move(parameters);
 
 		return intrinsicExpression;
 	}
 
-	inline ShaderAst::IntrinsicFunctionExpressionPtr Impl::IntrinsicFunction::operator()(std::size_t intrinsicFunctionId, ShaderAst::IntrinsicType intrinsicType) const
+	inline Ast::IntrinsicFunctionExpressionPtr Impl::IntrinsicFunction::operator()(std::size_t intrinsicFunctionId, Ast::IntrinsicType intrinsicType) const
 	{
-		auto intrinsicTypeExpr = std::make_unique<ShaderAst::IntrinsicFunctionExpression>();
-		intrinsicTypeExpr->cachedExpressionType = ShaderAst::IntrinsicFunctionType{ intrinsicType };
+		auto intrinsicTypeExpr = std::make_unique<Ast::IntrinsicFunctionExpression>();
+		intrinsicTypeExpr->cachedExpressionType = Ast::IntrinsicFunctionType{ intrinsicType };
 		intrinsicTypeExpr->intrinsicId = intrinsicFunctionId;
 
 		return intrinsicTypeExpr;
 	}
 
-	inline ShaderAst::MultiStatementPtr Impl::Multi::operator()(std::vector<ShaderAst::StatementPtr> statements) const
+	inline Ast::MultiStatementPtr Impl::Multi::operator()(std::vector<Ast::StatementPtr> statements) const
 	{
-		auto multiStatement = std::make_unique<ShaderAst::MultiStatement>();
+		auto multiStatement = std::make_unique<Ast::MultiStatement>();
 		multiStatement->statements = std::move(statements);
 
 		return multiStatement;
@@ -410,38 +410,38 @@ namespace nzsl::ShaderBuilder
 		return std::make_unique<T>();
 	}
 
-	inline ShaderAst::ReturnStatementPtr Impl::Return::operator()(ShaderAst::ExpressionPtr expr) const
+	inline Ast::ReturnStatementPtr Impl::Return::operator()(Ast::ExpressionPtr expr) const
 	{
-		auto returnNode = std::make_unique<ShaderAst::ReturnStatement>();
+		auto returnNode = std::make_unique<Ast::ReturnStatement>();
 		returnNode->returnExpr = std::move(expr);
 
 		return returnNode;
 	}
 
-	inline ShaderAst::ScopedStatementPtr Impl::Scoped::operator()(ShaderAst::StatementPtr statement) const
+	inline Ast::ScopedStatementPtr Impl::Scoped::operator()(Ast::StatementPtr statement) const
 	{
-		auto scopedNode = std::make_unique<ShaderAst::ScopedStatement>();
+		auto scopedNode = std::make_unique<Ast::ScopedStatement>();
 		scopedNode->sourceLocation = statement->sourceLocation;
 		scopedNode->statement = std::move(statement);
 
 		return scopedNode;
 	}
 
-	inline ShaderAst::StructTypeExpressionPtr Impl::StructType::operator()(std::size_t structTypeId) const
+	inline Ast::StructTypeExpressionPtr Impl::StructType::operator()(std::size_t structTypeId) const
 	{
-		auto structTypeExpr = std::make_unique<ShaderAst::StructTypeExpression>();
-		structTypeExpr->cachedExpressionType = ShaderAst::StructType{ structTypeId };
+		auto structTypeExpr = std::make_unique<Ast::StructTypeExpression>();
+		structTypeExpr->cachedExpressionType = Ast::StructType{ structTypeId };
 		structTypeExpr->structTypeId = structTypeId;
 
 		return structTypeExpr;
 	}
 
-	inline ShaderAst::SwizzleExpressionPtr Impl::Swizzle::operator()(ShaderAst::ExpressionPtr expression, std::array<std::uint32_t, 4> swizzleComponents, std::size_t componentCount) const
+	inline Ast::SwizzleExpressionPtr Impl::Swizzle::operator()(Ast::ExpressionPtr expression, std::array<std::uint32_t, 4> swizzleComponents, std::size_t componentCount) const
 	{
 		assert(componentCount > 0);
 		assert(componentCount <= 4);
 
-		auto swizzleNode = std::make_unique<ShaderAst::SwizzleExpression>();
+		auto swizzleNode = std::make_unique<Ast::SwizzleExpression>();
 		swizzleNode->expression = std::move(expression);
 		swizzleNode->componentCount = componentCount;
 		swizzleNode->components = swizzleComponents;
@@ -449,9 +449,9 @@ namespace nzsl::ShaderBuilder
 		return swizzleNode;
 	}
 
-	inline ShaderAst::SwizzleExpressionPtr Impl::Swizzle::operator()(ShaderAst::ExpressionPtr expression, std::vector<std::uint32_t> swizzleComponents) const
+	inline Ast::SwizzleExpressionPtr Impl::Swizzle::operator()(Ast::ExpressionPtr expression, std::vector<std::uint32_t> swizzleComponents) const
 	{
-		auto swizzleNode = std::make_unique<ShaderAst::SwizzleExpression>();
+		auto swizzleNode = std::make_unique<Ast::SwizzleExpression>();
 		swizzleNode->expression = std::move(expression);
 
 		assert(swizzleComponents.size() <= swizzleNode->components.size());
@@ -465,27 +465,27 @@ namespace nzsl::ShaderBuilder
 		return swizzleNode;
 	}
 
-	inline ShaderAst::UnaryExpressionPtr Impl::Unary::operator()(ShaderAst::UnaryType op, ShaderAst::ExpressionPtr expression) const
+	inline Ast::UnaryExpressionPtr Impl::Unary::operator()(Ast::UnaryType op, Ast::ExpressionPtr expression) const
 	{
-		auto unaryNode = std::make_unique<ShaderAst::UnaryExpression>();
+		auto unaryNode = std::make_unique<Ast::UnaryExpression>();
 		unaryNode->expression = std::move(expression);
 		unaryNode->op = op;
 
 		return unaryNode;
 	}
 
-	inline ShaderAst::VariableValueExpressionPtr Impl::Variable::operator()(std::size_t variableId, ShaderAst::ExpressionType expressionType) const
+	inline Ast::VariableValueExpressionPtr Impl::Variable::operator()(std::size_t variableId, Ast::ExpressionType expressionType) const
 	{
-		auto varNode = std::make_unique<ShaderAst::VariableValueExpression>();
+		auto varNode = std::make_unique<Ast::VariableValueExpression>();
 		varNode->variableId = variableId;
 		varNode->cachedExpressionType = std::move(expressionType);
 
 		return varNode;
 	}
 
-	inline ShaderAst::WhileStatementPtr Impl::While::operator()(ShaderAst::ExpressionPtr condition, ShaderAst::StatementPtr body) const
+	inline Ast::WhileStatementPtr Impl::While::operator()(Ast::ExpressionPtr condition, Ast::StatementPtr body) const
 	{
-		auto whileNode = std::make_unique<ShaderAst::WhileStatement>();
+		auto whileNode = std::make_unique<Ast::WhileStatement>();
 		whileNode->condition = std::move(condition);
 		whileNode->body = std::move(body);
 

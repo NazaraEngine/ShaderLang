@@ -4,7 +4,7 @@
 
 #include <NZSL/Ast/DependencyCheckerVisitor.hpp>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
 	inline auto DependencyCheckerVisitor::GetUsage() const -> const UsageSet&
 	{

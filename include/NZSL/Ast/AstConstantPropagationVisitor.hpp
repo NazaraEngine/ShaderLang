@@ -12,7 +12,7 @@
 #include <NZSL/Ast/AstCloner.hpp>
 #include <NZSL/Ast/Module.hpp>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
 	class NZSL_API AstConstantPropagationVisitor : public AstCloner
 	{

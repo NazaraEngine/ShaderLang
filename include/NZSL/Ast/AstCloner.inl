@@ -4,7 +4,7 @@
 
 #include <NZSL/Ast/AstCloner.hpp>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
 	template<typename T>
 	ExpressionValue<T> AstCloner::Clone(const ExpressionValue<T>& expressionValue)

@@ -4,7 +4,7 @@
 
 #include <NZSL/Ast/SanitizeVisitor.hpp>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
 	inline ModulePtr SanitizeVisitor::Sanitize(const Module& module, std::string* error)
 	{

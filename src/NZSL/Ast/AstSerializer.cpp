@@ -7,7 +7,7 @@
 #include <NZSL/Ast/AstExpressionVisitor.hpp>
 #include <NZSL/Ast/AstStatementVisitor.hpp>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
 	namespace
 	{
@@ -385,7 +385,7 @@ namespace nzsl::ShaderAst
 		OptType(expr.cachedExpressionType);
 	}
 
-	void AstSerializerBase::SerializeNodeCommon(ShaderAst::Node& node)
+	void AstSerializerBase::SerializeNodeCommon(Ast::Node& node)
 	{
 		SourceLoc(node.sourceLocation);
 	}
@@ -512,28 +512,28 @@ namespace nzsl::ShaderAst
 				Value(arg.length);
 				Type(arg.containedType->type);
 			}
-			else if constexpr (std::is_same_v<T, ShaderAst::Type>)
+			else if constexpr (std::is_same_v<T, Ast::Type>)
 			{
 				m_serializer.Serialize(std::uint8_t(9));
 				SizeT(arg.typeIndex);
 			}
-			else if constexpr (std::is_same_v<T, ShaderAst::FunctionType>)
+			else if constexpr (std::is_same_v<T, Ast::FunctionType>)
 			{
 				m_serializer.Serialize(std::uint8_t(10));
 				SizeT(arg.funcIndex);
 			}
-			else if constexpr (std::is_same_v<T, ShaderAst::IntrinsicFunctionType>)
+			else if constexpr (std::is_same_v<T, Ast::IntrinsicFunctionType>)
 			{
 				m_serializer.Serialize(std::uint8_t(11));
 				Enum(arg.intrinsic);
 			}
-			else if constexpr (std::is_same_v<T, ShaderAst::MethodType>)
+			else if constexpr (std::is_same_v<T, Ast::MethodType>)
 			{
 				m_serializer.Serialize(std::uint8_t(12));
 				Type(arg.objectType->type);
 				SizeT(arg.methodIndex);
 			}
-			else if constexpr (std::is_same_v<T, ShaderAst::AliasType>)
+			else if constexpr (std::is_same_v<T, Ast::AliasType>)
 			{
 				m_serializer.Serialize(std::uint8_t(13));
 				SizeT(arg.aliasIndex);
@@ -861,7 +861,7 @@ namespace nzsl::ShaderAst
 				std::size_t containedTypeIndex;
 				SizeT(containedTypeIndex);
 
-				type = ShaderAst::Type{
+				type = Ast::Type{
 					containedTypeIndex
 				};
 				break;

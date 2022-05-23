@@ -6,7 +6,7 @@
 #include <Nazara/Utils/CallOnExit.hpp>
 #include <NZSL/ShaderBuilder.hpp>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
 	struct EliminateUnusedPassVisitor::Context
 	{

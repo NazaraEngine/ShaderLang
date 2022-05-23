@@ -19,35 +19,35 @@ namespace nzsl
 {
 	struct LangWriter::BindingAttribute
 	{
-		const ShaderAst::ExpressionValue<std::uint32_t>& bindingIndex;
+		const Ast::ExpressionValue<std::uint32_t>& bindingIndex;
 
 		bool HasValue() const { return bindingIndex.HasValue(); }
 	};
 
 	struct LangWriter::BuiltinAttribute
 	{
-		const ShaderAst::ExpressionValue<ShaderAst::BuiltinEntry>& builtin;
+		const Ast::ExpressionValue<Ast::BuiltinEntry>& builtin;
 
 		bool HasValue() const { return builtin.HasValue(); }
 	};
 
 	struct LangWriter::DepthWriteAttribute
 	{
-		const ShaderAst::ExpressionValue<ShaderAst::DepthWriteMode>& writeMode;
+		const Ast::ExpressionValue<Ast::DepthWriteMode>& writeMode;
 
 		bool HasValue() const { return writeMode.HasValue(); }
 	};
 
 	struct LangWriter::EarlyFragmentTestsAttribute
 	{
-		const ShaderAst::ExpressionValue<bool>& earlyFragmentTests;
+		const Ast::ExpressionValue<bool>& earlyFragmentTests;
 
 		bool HasValue() const { return earlyFragmentTests.HasValue(); }
 	};
 
 	struct LangWriter::EntryAttribute
 	{
-		const ShaderAst::ExpressionValue<ShaderStageType>& stageType;
+		const Ast::ExpressionValue<ShaderStageType>& stageType;
 
 		bool HasValue() const { return stageType.HasValue(); }
 	};
@@ -61,28 +61,28 @@ namespace nzsl
 
 	struct LangWriter::LayoutAttribute
 	{
-		const ShaderAst::ExpressionValue<StructLayout>& layout;
+		const Ast::ExpressionValue<StructLayout>& layout;
 
 		bool HasValue() const { return layout.HasValue(); }
 	};
 
 	struct LangWriter::LocationAttribute
 	{
-		const ShaderAst::ExpressionValue<std::uint32_t>& locationIndex;
+		const Ast::ExpressionValue<std::uint32_t>& locationIndex;
 
 		bool HasValue() const { return locationIndex.HasValue(); }
 	};
 	
 	struct LangWriter::SetAttribute
 	{
-		const ShaderAst::ExpressionValue<std::uint32_t>& setIndex;
+		const Ast::ExpressionValue<std::uint32_t>& setIndex;
 
 		bool HasValue() const { return setIndex.HasValue(); }
 	};
 
 	struct LangWriter::UnrollAttribute
 	{
-		const ShaderAst::ExpressionValue<ShaderAst::LoopUnroll>& unroll;
+		const Ast::ExpressionValue<Ast::LoopUnroll>& unroll;
 
 		bool HasValue() const { return unroll.HasValue(); }
 	};
@@ -96,7 +96,7 @@ namespace nzsl
 		};
 
 		const States* states = nullptr;
-		const ShaderAst::Module* module;
+		const Ast::Module* module;
 		std::size_t currentModuleIndex;
 		std::stringstream stream;
 		std::unordered_map<std::size_t, Identifier> aliases;
@@ -109,7 +109,7 @@ namespace nzsl
 		unsigned int indentLevel = 0;
 	};
 
-	std::string LangWriter::Generate(const ShaderAst::Module& module, const States& /*states*/)
+	std::string LangWriter::Generate(const Ast::Module& module, const States& /*states*/)
 	{
 		State state;
 		m_currentState = &state;
@@ -147,17 +147,17 @@ namespace nzsl
 		m_environment = std::move(environment);
 	}
 
-	void LangWriter::Append(const ShaderAst::AliasType& type)
+	void LangWriter::Append(const Ast::AliasType& type)
 	{
 		AppendIdentifier(m_currentState->aliases, type.aliasIndex);
 	}
 
-	void LangWriter::Append(const ShaderAst::ArrayType& type)
+	void LangWriter::Append(const Ast::ArrayType& type)
 	{
 		Append("array[", type.containedType->type, ", ", type.length, "]");
 	}
 
-	void LangWriter::Append(const ShaderAst::ExpressionType& type)
+	void LangWriter::Append(const Ast::ExpressionType& type)
 	{
 		std::visit([&](auto&& arg)
 		{
@@ -165,7 +165,7 @@ namespace nzsl
 		}, type);
 	}
 
-	void LangWriter::Append(const ShaderAst::ExpressionValue<ShaderAst::ExpressionType>& type)
+	void LangWriter::Append(const Ast::ExpressionValue<Ast::ExpressionType>& type)
 	{
 		assert(type.HasValue());
 		if (type.IsResultingValue())
@@ -174,17 +174,17 @@ namespace nzsl
 			type.GetExpression()->Visit(*this);
 	}
 
-	void LangWriter::Append(const ShaderAst::FunctionType& /*functionType*/)
+	void LangWriter::Append(const Ast::FunctionType& /*functionType*/)
 	{
 		throw std::runtime_error("unexpected function type");
 	}
 
-	void LangWriter::Append(const ShaderAst::IntrinsicFunctionType& /*functionType*/)
+	void LangWriter::Append(const Ast::IntrinsicFunctionType& /*functionType*/)
 	{
 		throw std::runtime_error("unexpected intrinsic function type");
 	}
 
-	void LangWriter::Append(const ShaderAst::MatrixType& matrixType)
+	void LangWriter::Append(const Ast::MatrixType& matrixType)
 	{
 		if (matrixType.columnCount == matrixType.rowCount)
 		{
@@ -202,24 +202,24 @@ namespace nzsl
 		Append("[", matrixType.type, "]");
 	}
 
-	void LangWriter::Append(const ShaderAst::MethodType& /*functionType*/)
+	void LangWriter::Append(const Ast::MethodType& /*functionType*/)
 	{
 		throw std::runtime_error("unexpected method type");
 	}
 
-	void LangWriter::Append(ShaderAst::PrimitiveType type)
+	void LangWriter::Append(Ast::PrimitiveType type)
 	{
 		switch (type)
 		{
-			case ShaderAst::PrimitiveType::Boolean: return Append("bool");
-			case ShaderAst::PrimitiveType::Float32: return Append("f32");
-			case ShaderAst::PrimitiveType::Int32:   return Append("i32");
-			case ShaderAst::PrimitiveType::UInt32:  return Append("u32");
-			case ShaderAst::PrimitiveType::String:  return Append("string");
+			case Ast::PrimitiveType::Boolean: return Append("bool");
+			case Ast::PrimitiveType::Float32: return Append("f32");
+			case Ast::PrimitiveType::Int32:   return Append("i32");
+			case Ast::PrimitiveType::UInt32:  return Append("u32");
+			case Ast::PrimitiveType::String:  return Append("string");
 		}
 	}
 
-	void LangWriter::Append(const ShaderAst::SamplerType& samplerType)
+	void LangWriter::Append(const Ast::SamplerType& samplerType)
 	{
 		Append("sampler");
 
@@ -236,27 +236,27 @@ namespace nzsl
 		Append("[", samplerType.sampledType, "]");
 	}
 
-	void LangWriter::Append(const ShaderAst::StructType& structType)
+	void LangWriter::Append(const Ast::StructType& structType)
 	{
 		AppendIdentifier(m_currentState->structs, structType.structIndex);
 	}
 
-	void LangWriter::Append(const ShaderAst::Type& /*type*/)
+	void LangWriter::Append(const Ast::Type& /*type*/)
 	{
 		throw std::runtime_error("unexpected type?");
 	}
 
-	void LangWriter::Append(const ShaderAst::UniformType& uniformType)
+	void LangWriter::Append(const Ast::UniformType& uniformType)
 	{
 		Append("uniform[", uniformType.containedType, "]");
 	}
 
-	void LangWriter::Append(const ShaderAst::VectorType& vecType)
+	void LangWriter::Append(const Ast::VectorType& vecType)
 	{
 		Append("vec", vecType.componentCount, "[", vecType.type, "]");
 	}
 
-	void LangWriter::Append(ShaderAst::NoType)
+	void LangWriter::Append(Ast::NoType)
 	{
 		return Append("()");
 	}
@@ -342,15 +342,15 @@ namespace nzsl
 		{
 			switch (attribute.builtin.GetResultingValue())
 			{
-				case ShaderAst::BuiltinEntry::FragCoord:
+				case Ast::BuiltinEntry::FragCoord:
 					Append("fragcoord");
 					break;
 
-				case ShaderAst::BuiltinEntry::FragDepth:
+				case Ast::BuiltinEntry::FragDepth:
 					Append("fragdepth");
 					break;
 
-				case ShaderAst::BuiltinEntry::VertexPosition:
+				case Ast::BuiltinEntry::VertexPosition:
 					Append("position");
 					break;
 			}
@@ -372,19 +372,19 @@ namespace nzsl
 		{
 			switch (attribute.writeMode.GetResultingValue())
 			{
-				case ShaderAst::DepthWriteMode::Greater:
+				case Ast::DepthWriteMode::Greater:
 					Append("greater");
 					break;
 
-				case ShaderAst::DepthWriteMode::Less:
+				case Ast::DepthWriteMode::Less:
 					Append("less");
 					break;
 
-				case ShaderAst::DepthWriteMode::Replace:
+				case Ast::DepthWriteMode::Replace:
 					Append("replace");
 					break;
 
-				case ShaderAst::DepthWriteMode::Unchanged:
+				case Ast::DepthWriteMode::Unchanged:
 					Append("unchanged");
 					break;
 			}
@@ -525,15 +525,15 @@ namespace nzsl
 		{
 			switch (attribute.unroll.GetResultingValue())
 			{
-				case ShaderAst::LoopUnroll::Always:
+				case Ast::LoopUnroll::Always:
 					Append("always");
 					break;
 
-				case ShaderAst::LoopUnroll::Hint:
+				case Ast::LoopUnroll::Hint:
 					Append("hint");
 					break;
 
-				case ShaderAst::LoopUnroll::Never:
+				case Ast::LoopUnroll::Never:
 					Append("never");
 					break;
 
@@ -601,12 +601,12 @@ namespace nzsl
 		AppendLine();
 	}
 
-	void LangWriter::AppendStatementList(std::vector<ShaderAst::StatementPtr>& statements)
+	void LangWriter::AppendStatementList(std::vector<Ast::StatementPtr>& statements)
 	{
 		bool first = true;
-		for (const ShaderAst::StatementPtr& statement : statements)
+		for (const Ast::StatementPtr& statement : statements)
 		{
-			if (statement->GetType() == ShaderAst::NodeType::NoOpStatement)
+			if (statement->GetType() == Ast::NodeType::NoOpStatement)
 				continue;
 
 			if (!first)
@@ -689,9 +689,9 @@ namespace nzsl
 		m_currentState->variables.emplace(varIndex, std::move(identifier));
 	}
 
-	void LangWriter::ScopeVisit(ShaderAst::Statement& node)
+	void LangWriter::ScopeVisit(Ast::Statement& node)
 	{
-		if (node.GetType() != ShaderAst::NodeType::ScopedStatement)
+		if (node.GetType() != Ast::NodeType::ScopedStatement)
 		{
 			EnterScope();
 			node.Visit(*this);
@@ -701,9 +701,9 @@ namespace nzsl
 			node.Visit(*this);
 	}
 
-	void LangWriter::Visit(ShaderAst::ExpressionPtr& expr, bool encloseIfRequired)
+	void LangWriter::Visit(Ast::ExpressionPtr& expr, bool encloseIfRequired)
 	{
-		bool enclose = encloseIfRequired && (GetExpressionCategory(*expr) != ShaderAst::ExpressionCategory::LValue);
+		bool enclose = encloseIfRequired && (GetExpressionCategory(*expr) != Ast::ExpressionCategory::LValue);
 
 		if (enclose)
 			Append("(");
@@ -714,7 +714,7 @@ namespace nzsl
 			Append(")");
 	}
 
-	void LangWriter::Visit(ShaderAst::AccessIdentifierExpression& node)
+	void LangWriter::Visit(Ast::AccessIdentifierExpression& node)
 	{
 		Visit(node.expr, true);
 
@@ -722,7 +722,7 @@ namespace nzsl
 			Append(".", identifierEntry.identifier);
 	}
 
-	void LangWriter::Visit(ShaderAst::AccessIndexExpression& node)
+	void LangWriter::Visit(Ast::AccessIndexExpression& node)
 	{
 		Visit(node.expr, true);
 
@@ -730,7 +730,7 @@ namespace nzsl
 		Append("[");
 
 		bool first = true;
-		for (ShaderAst::ExpressionPtr& expr : node.indices)
+		for (Ast::ExpressionPtr& expr : node.indices)
 		{
 			if (!first)
 				Append(", ");
@@ -742,30 +742,30 @@ namespace nzsl
 		Append("]");
 	}
 
-	void LangWriter::Visit(ShaderAst::AliasValueExpression& node)
+	void LangWriter::Visit(Ast::AliasValueExpression& node)
 	{
 		AppendIdentifier(m_currentState->aliases, node.aliasId);
 	}
 
-	void LangWriter::Visit(ShaderAst::AssignExpression& node)
+	void LangWriter::Visit(Ast::AssignExpression& node)
 	{
 		node.left->Visit(*this);
 
 		switch (node.op)
 		{
-			case ShaderAst::AssignType::Simple: Append(" = "); break;
-			case ShaderAst::AssignType::CompoundAdd: Append(" += "); break;
-			case ShaderAst::AssignType::CompoundDivide: Append(" /= "); break;
-			case ShaderAst::AssignType::CompoundMultiply: Append(" *= "); break;
-			case ShaderAst::AssignType::CompoundLogicalAnd: Append(" &&= "); break;
-			case ShaderAst::AssignType::CompoundLogicalOr: Append(" ||= "); break;
-			case ShaderAst::AssignType::CompoundSubtract: Append(" -= "); break;
+			case Ast::AssignType::Simple: Append(" = "); break;
+			case Ast::AssignType::CompoundAdd: Append(" += "); break;
+			case Ast::AssignType::CompoundDivide: Append(" /= "); break;
+			case Ast::AssignType::CompoundMultiply: Append(" *= "); break;
+			case Ast::AssignType::CompoundLogicalAnd: Append(" &&= "); break;
+			case Ast::AssignType::CompoundLogicalOr: Append(" ||= "); break;
+			case Ast::AssignType::CompoundSubtract: Append(" -= "); break;
 		}
 
 		node.right->Visit(*this);
 	}
 
-	void LangWriter::Visit(ShaderAst::BranchStatement& node)
+	void LangWriter::Visit(Ast::BranchStatement& node)
 	{
 		bool first = true;
 		for (const auto& statement : node.condStatements)
@@ -795,32 +795,32 @@ namespace nzsl
 		}
 	}
 
-	void LangWriter::Visit(ShaderAst::BinaryExpression& node)
+	void LangWriter::Visit(Ast::BinaryExpression& node)
 	{
 		Visit(node.left, true);
 
 		switch (node.op)
 		{
-			case ShaderAst::BinaryType::Add:        Append(" + "); break;
-			case ShaderAst::BinaryType::Subtract:   Append(" - "); break;
-			case ShaderAst::BinaryType::Multiply:   Append(" * "); break;
-			case ShaderAst::BinaryType::Divide:     Append(" / "); break;
+			case Ast::BinaryType::Add:        Append(" + "); break;
+			case Ast::BinaryType::Subtract:   Append(" - "); break;
+			case Ast::BinaryType::Multiply:   Append(" * "); break;
+			case Ast::BinaryType::Divide:     Append(" / "); break;
 
-			case ShaderAst::BinaryType::CompEq:     Append(" == "); break;
-			case ShaderAst::BinaryType::CompGe:     Append(" >= "); break;
-			case ShaderAst::BinaryType::CompGt:     Append(" > ");  break;
-			case ShaderAst::BinaryType::CompLe:     Append(" <= "); break;
-			case ShaderAst::BinaryType::CompLt:     Append(" < ");  break;
-			case ShaderAst::BinaryType::CompNe:     Append(" != "); break;
+			case Ast::BinaryType::CompEq:     Append(" == "); break;
+			case Ast::BinaryType::CompGe:     Append(" >= "); break;
+			case Ast::BinaryType::CompGt:     Append(" > ");  break;
+			case Ast::BinaryType::CompLe:     Append(" <= "); break;
+			case Ast::BinaryType::CompLt:     Append(" < ");  break;
+			case Ast::BinaryType::CompNe:     Append(" != "); break;
 
-			case ShaderAst::BinaryType::LogicalAnd: Append(" && "); break;
-			case ShaderAst::BinaryType::LogicalOr:  Append(" || "); break;
+			case Ast::BinaryType::LogicalAnd: Append(" && "); break;
+			case Ast::BinaryType::LogicalOr:  Append(" || "); break;
 		}
 
 		Visit(node.right, true);
 	}
 
-	void LangWriter::Visit(ShaderAst::CallFunctionExpression& node)
+	void LangWriter::Visit(Ast::CallFunctionExpression& node)
 	{
 		node.targetFunction->Visit(*this);
 
@@ -835,7 +835,7 @@ namespace nzsl
 		Append(")");
 	}
 
-	void LangWriter::Visit(ShaderAst::CastExpression& node)
+	void LangWriter::Visit(Ast::CastExpression& node)
 	{
 		Append(node.targetType);
 		Append("(");
@@ -856,7 +856,7 @@ namespace nzsl
 		Append(")");
 	}
 
-	void LangWriter::Visit(ShaderAst::ConditionalExpression& node)
+	void LangWriter::Visit(Ast::ConditionalExpression& node)
 	{
 		Append("const_select(");
 		node.condition->Visit(*this);
@@ -867,7 +867,7 @@ namespace nzsl
 		Append(")");
 	}
 
-	void LangWriter::Visit(ShaderAst::ConditionalStatement& node)
+	void LangWriter::Visit(Ast::ConditionalStatement& node)
 	{
 		Append("[cond(");
 		node.condition->Visit(*this);
@@ -875,7 +875,7 @@ namespace nzsl
 		node.statement->Visit(*this);
 	}
 
-	void LangWriter::Visit(ShaderAst::DeclareAliasStatement& node)
+	void LangWriter::Visit(Ast::DeclareAliasStatement& node)
 	{
 		if (node.aliasIndex)
 			RegisterAlias(*node.aliasIndex, node.name);
@@ -886,7 +886,7 @@ namespace nzsl
 		AppendLine(";");
 	}
 
-	void LangWriter::Visit(ShaderAst::DeclareConstStatement& node)
+	void LangWriter::Visit(Ast::DeclareConstStatement& node)
 	{
 		if (node.constIndex)
 			RegisterConstant(*node.constIndex, node.name);
@@ -904,13 +904,13 @@ namespace nzsl
 		AppendLine(";");
 	}
 
-	void LangWriter::Visit(ShaderAst::ConstantValueExpression& node)
+	void LangWriter::Visit(Ast::ConstantValueExpression& node)
 	{
 		std::visit([&](auto&& arg)
 		{
 			using T = std::decay_t<decltype(arg)>;
 
-			if constexpr (std::is_same_v<T, ShaderAst::NoValue>)
+			if constexpr (std::is_same_v<T, Ast::NoValue>)
 				throw std::runtime_error("invalid type (value expected)");
 			else if constexpr (std::is_same_v<T, bool>)
 				Append((arg) ? "true" : "false");
@@ -935,22 +935,22 @@ namespace nzsl
 		}, node.value);
 	}
 
-	void LangWriter::Visit(ShaderAst::ConstantExpression& node)
+	void LangWriter::Visit(Ast::ConstantExpression& node)
 	{
 		AppendIdentifier(m_currentState->constants, node.constantId);
 	}
 
-	void LangWriter::Visit(ShaderAst::FunctionExpression& node)
+	void LangWriter::Visit(Ast::FunctionExpression& node)
 	{
 		AppendIdentifier(m_currentState->functions, node.funcId);
 	}
 
-	void LangWriter::Visit(ShaderAst::IdentifierExpression& node)
+	void LangWriter::Visit(Ast::IdentifierExpression& node)
 	{
 		Append(node.identifier);
 	}
 
-	void LangWriter::Visit(ShaderAst::DeclareExternalStatement& node)
+	void LangWriter::Visit(Ast::DeclareExternalStatement& node)
 	{
 		AppendLine("external");
 		EnterScope();
@@ -973,7 +973,7 @@ namespace nzsl
 		LeaveScope();
 	}
 
-	void LangWriter::Visit(ShaderAst::DeclareFunctionStatement& node)
+	void LangWriter::Visit(Ast::DeclareFunctionStatement& node)
 	{
 		assert(m_currentState && "This function should only be called while processing an AST");
 
@@ -1011,7 +1011,7 @@ namespace nzsl
 		LeaveScope();
 	}
 
-	void LangWriter::Visit(ShaderAst::DeclareOptionStatement& node)
+	void LangWriter::Visit(Ast::DeclareOptionStatement& node)
 	{
 		if (node.optIndex)
 			RegisterConstant(*node.optIndex, node.optName);
@@ -1029,7 +1029,7 @@ namespace nzsl
 		Append(";");
 	}
 
-	void LangWriter::Visit(ShaderAst::DeclareStructStatement& node)
+	void LangWriter::Visit(Ast::DeclareStructStatement& node)
 	{
 		if (node.structIndex)
 			RegisterStruct(*node.structIndex, node.description.name);
@@ -1054,7 +1054,7 @@ namespace nzsl
 		LeaveScope();
 	}
 
-	void LangWriter::Visit(ShaderAst::DeclareVariableStatement& node)
+	void LangWriter::Visit(Ast::DeclareVariableStatement& node)
 	{
 		if (node.varIndex)
 			RegisterVariable(*node.varIndex, node.varName);
@@ -1072,18 +1072,18 @@ namespace nzsl
 		Append(";");
 	}
 
-	void LangWriter::Visit(ShaderAst::DiscardStatement& /*node*/)
+	void LangWriter::Visit(Ast::DiscardStatement& /*node*/)
 	{
 		Append("discard;");
 	}
 
-	void LangWriter::Visit(ShaderAst::ExpressionStatement& node)
+	void LangWriter::Visit(Ast::ExpressionStatement& node)
 	{
 		node.expression->Visit(*this);
 		Append(";");
 	}
 
-	void LangWriter::Visit(ShaderAst::ForStatement& node)
+	void LangWriter::Visit(Ast::ForStatement& node)
 	{
 		if (node.varIndex)
 			RegisterVariable(*node.varIndex, node.varName);
@@ -1105,7 +1105,7 @@ namespace nzsl
 		ScopeVisit(*node.statement);
 	}
 
-	void LangWriter::Visit(ShaderAst::ForEachStatement& node)
+	void LangWriter::Visit(Ast::ForEachStatement& node)
 	{
 		if (node.varIndex)
 			RegisterVariable(*node.varIndex, node.varName);
@@ -1118,53 +1118,53 @@ namespace nzsl
 		ScopeVisit(*node.statement);
 	}
 
-	void LangWriter::Visit(ShaderAst::ImportStatement& node)
+	void LangWriter::Visit(Ast::ImportStatement& node)
 	{
 		Append("import ", node.moduleName, ";");
 	}
 
-	void LangWriter::Visit(ShaderAst::IntrinsicExpression& node)
+	void LangWriter::Visit(Ast::IntrinsicExpression& node)
 	{
 		bool method = false;
 		switch (node.intrinsic)
 		{
-			case ShaderAst::IntrinsicType::CrossProduct:
+			case Ast::IntrinsicType::CrossProduct:
 				Append("cross");
 				break;
 
-			case ShaderAst::IntrinsicType::DotProduct:
+			case Ast::IntrinsicType::DotProduct:
 				Append("dot");
 				break;
 
-			case ShaderAst::IntrinsicType::Exp:
+			case Ast::IntrinsicType::Exp:
 				Append("exp");
 				break;
 
-			case ShaderAst::IntrinsicType::Length:
+			case Ast::IntrinsicType::Length:
 				Append("length");
 				break;
 
-			case ShaderAst::IntrinsicType::Max:
+			case Ast::IntrinsicType::Max:
 				Append("max");
 				break;
 
-			case ShaderAst::IntrinsicType::Min:
+			case Ast::IntrinsicType::Min:
 				Append("min");
 				break;
 
-			case ShaderAst::IntrinsicType::Normalize:
+			case Ast::IntrinsicType::Normalize:
 				Append("normalize");
 				break;
 
-			case ShaderAst::IntrinsicType::Pow:
+			case Ast::IntrinsicType::Pow:
 				Append("pow");
 				break;
 
-			case ShaderAst::IntrinsicType::Reflect:
+			case Ast::IntrinsicType::Reflect:
 				Append("reflect");
 				break;
 
-			case ShaderAst::IntrinsicType::SampleTexture:
+			case Ast::IntrinsicType::SampleTexture:
 				assert(!node.parameters.empty());
 				Visit(node.parameters.front(), true);
 				Append(".Sample");
@@ -1186,22 +1186,22 @@ namespace nzsl
 		Append(")");
 	}
 
-	void LangWriter::Visit(ShaderAst::StructTypeExpression& node)
+	void LangWriter::Visit(Ast::StructTypeExpression& node)
 	{
 		AppendIdentifier(m_currentState->structs, node.structTypeId);
 	}
 
-	void LangWriter::Visit(ShaderAst::MultiStatement& node)
+	void LangWriter::Visit(Ast::MultiStatement& node)
 	{
 		AppendStatementList(node.statements);
 	}
 
-	void LangWriter::Visit(ShaderAst::NoOpStatement& /*node*/)
+	void LangWriter::Visit(Ast::NoOpStatement& /*node*/)
 	{
 		/* nothing to do */
 	}
 
-	void LangWriter::Visit(ShaderAst::ReturnStatement& node)
+	void LangWriter::Visit(Ast::ReturnStatement& node)
 	{
 		if (node.returnExpr)
 		{
@@ -1213,14 +1213,14 @@ namespace nzsl
 			Append("return;");
 	}
 
-	void LangWriter::Visit(ShaderAst::ScopedStatement& node)
+	void LangWriter::Visit(Ast::ScopedStatement& node)
 	{
 		EnterScope();
 		node.statement->Visit(*this);
 		LeaveScope();
 	}
 
-	void LangWriter::Visit(ShaderAst::SwizzleExpression& node)
+	void LangWriter::Visit(Ast::SwizzleExpression& node)
 	{
 		Visit(node.expression, true);
 		Append(".");
@@ -1230,24 +1230,24 @@ namespace nzsl
 			Append(componentStr[node.components[i]]);
 	}
 
-	void LangWriter::Visit(ShaderAst::VariableValueExpression& node)
+	void LangWriter::Visit(Ast::VariableValueExpression& node)
 	{
 		AppendIdentifier(m_currentState->variables, node.variableId);
 	}
 
-	void LangWriter::Visit(ShaderAst::UnaryExpression& node)
+	void LangWriter::Visit(Ast::UnaryExpression& node)
 	{
 		switch (node.op)
 		{
-			case ShaderAst::UnaryType::LogicalNot:
+			case Ast::UnaryType::LogicalNot:
 				Append("!");
 				break;
 
-			case ShaderAst::UnaryType::Minus:
+			case Ast::UnaryType::Minus:
 				Append("-");
 				break;
 
-			case ShaderAst::UnaryType::Plus:
+			case Ast::UnaryType::Plus:
 				Append("+");
 				break;
 		}
@@ -1255,7 +1255,7 @@ namespace nzsl
 		node.expression->Visit(*this);
 	}
 
-	void LangWriter::Visit(ShaderAst::WhileStatement& node)
+	void LangWriter::Visit(Ast::WhileStatement& node)
 	{
 		Append("while (");
 		node.condition->Visit(*this);

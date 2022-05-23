@@ -5,7 +5,7 @@
 #include <NZSL/Ast/ExpressionType.hpp>
 #include <Nazara/Utils/Algorithm.hpp>
 
-namespace nzsl::ShaderAst
+namespace nzsl::Ast
 {
 	inline bool AliasType::operator!=(const AliasType& rhs) const
 	{
