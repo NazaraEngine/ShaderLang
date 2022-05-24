@@ -48,53 +48,45 @@ std::string ReadSourceFileContent(const std::filesystem::path& filePath)
 	return std::string(reinterpret_cast<const char*>(&content[0]), content.size());
 }
 
-std::vector<std::uint8_t> CompileToNZSL(const nzsl::Ast::Module &module)
-{
-	nzsl::LangWriter nzslWriter;
-	std::string nzsl = nzslWriter.Generate(module, {});
-
-	std::vector<std::uint8_t> out;
-	out.resize(nzsl.size());
-	std::transform(nzsl.begin(), nzsl.end(), std::back_inserter(out),
-				   [](const char c){ return static_cast<std::uint8_t>(c); } );
-
-	return out;
-}
-std::vector<std::uint8_t> CompileToNZSLB(const nzsl::Ast::Module &module, bool allowPartial)
+nzsl::Ast::ModulePtr Sanitize(const nzsl::Ast::Module& module, bool allowPartial)
 {
 	nzsl::Ast::SanitizeVisitor::Options sanitizeOptions;
 	sanitizeOptions.allowPartialSanitization = allowPartial;
 
-	nzsl::Ast::ModulePtr shaderModule = nzsl::Ast::Sanitize(module, sanitizeOptions);
+	return nzsl::Ast::Sanitize(module, sanitizeOptions);
+}
 
-	nzsl::Serializer serializer;
-	nzsl::Ast::SerializeShader(serializer, shaderModule);
+std::vector<std::uint8_t> CompileToNZSL(const nzsl::Ast::Module& module)
+{
+	nzsl::LangWriter nzslWriter;
+	std::string nzsl = nzslWriter.Generate(module, {});
 
-	const std::vector<std::uint8_t>& shaderData = serializer.GetData();
-
-	std::vector<std::uint8_t> out;
-	out.reserve(shaderData.size());
-	std::copy(shaderData.begin(), shaderData.end(), std::back_inserter(out));
+	std::vector<std::uint8_t> out(nzsl.size());
+	std::memcpy(&out[0], &nzsl[0], nzsl.size());
 
 	return out;
 }
 
-std::vector<std::uint8_t> CompileToSPV(const nzsl::Ast::Module &module)
+std::vector<std::uint8_t> CompileToNZSLB(nzsl::Ast::ModulePtr& module)
+{
+	nzsl::Serializer serializer;
+	nzsl::Ast::SerializeShader(serializer, module);
+
+	return serializer.GetData();
+}
+
+std::vector<std::uint8_t> CompileToSPV(const nzsl::Ast::Module& module)
 {
 	nzsl::SpirvWriter::Environment env;
 
 	nzsl::SpirvWriter writer;
 	writer.SetEnv(env);
 
-	std::vector<std::uint32_t> code = writer.Generate(module, {});
-	const std::size_t size = code.size() * sizeof(std::uint32_t);
-	auto begin = reinterpret_cast<const char *>(code.data());
-	auto end = reinterpret_cast<const char *>(code.data()) + size;
+	std::vector<std::uint32_t> spirv = writer.Generate(module, {});
+	std::size_t size = spirv.size() * sizeof(std::uint32_t);
 
-	std::vector<std::uint8_t> out;
-	out.reserve(size);
-	std::transform(begin, end, std::back_inserter(out),
-				   [](const char c){ return static_cast<std::uint8_t>(c); } );
+	std::vector<std::uint8_t> out(size);
+	std::memcpy(&out[0], &spirv[0], size);
 
 	return out;
 }
@@ -113,7 +105,7 @@ int main(int argc, char* argv[])
 {
 	cxxopts::Options options("nzslc", "Tool for validating and compiling NZSL shaders");
 	options.add_options()
-		("c,compile", "Compile input shader", cxxopts::value<std::vector<std::string>>()->default_value({ std::string{ "nzslb" } }))
+		("c,compile", "Compile input shader", cxxopts::value<std::vector<std::string>>()->implicit_value("nzslb"))
 		("output-nzsl", "Output shader as NZSL to stdout")
 		("header-file", "Generate an includable header file")
 		("log-format", "Set log format (classic, vs)", cxxopts::value<std::string>())
@@ -169,18 +161,22 @@ int main(int argc, char* argv[])
 			return EXIT_FAILURE;
 		}
 
-		std::filesystem::path outputPath = result["output"].as<std::string>();
-
-		if(!std::filesystem::exists(outputPath))
+		std::filesystem::path outputPath;
+		if (result.count("output") > 0)
 		{
-			fmt::print(stderr, "{} does not exist\n", outputPath.generic_u8string());
-			return EXIT_FAILURE;
-		}
+			outputPath = result["output"].as<std::string>();
 
-		if (!std::filesystem::is_directory(outputPath))
-		{
-			fmt::print(stderr, "{} is not a directory\n", outputPath.generic_u8string());
-			return EXIT_FAILURE;
+			if (!std::filesystem::exists(outputPath))
+			{
+				fmt::print(stderr, "{} does not exist\n", outputPath.generic_u8string());
+				return EXIT_FAILURE;
+			}
+
+			if (!std::filesystem::is_directory(outputPath))
+			{
+				fmt::print(stderr, "{} is not a directory\n", outputPath.generic_u8string());
+				return EXIT_FAILURE;
+			}
 		}
 
 		try
@@ -207,68 +203,74 @@ int main(int argc, char* argv[])
 				return EXIT_FAILURE;
 			}
 
-			const bool allowPartial = result.count("partial") > 0;
-			for(const std::string &outputType : result["compile"].as<std::vector<std::string>>()) {
-				std::vector<std::uint8_t> outputData;
+			// Validate shader
+			bool allowPartial = result.count("partial") > 0;
 
-				if(outputType == "nzsl")
-				{
-					outputData = CompileToNZSL(*shaderModule);
-				}
-				else if(outputType == "nzslb")
-				{
-					outputData = CompileToNZSLB(*shaderModule, allowPartial);
-				}
-				else if(outputType == "spv")
-				{
-					outputData = CompileToSPV(*shaderModule);
-				}
-				else if(outputType == "glsl")
-				{
-					//outputData = CompileToGLSL();
-					fmt::print("GLSL is not currently supported, ignoring");
-				}
-				else
-				{
-					fmt::print("Unhanlded format {}, ignoring");
-					continue;
-				}
+			nzsl::Ast::ModulePtr sanitizedModule = Sanitize(*shaderModule, allowPartial);
 
-				if (result.count("output-nzsl") > 0)
+			if (result.count("compile") > 0)
+			{
+				for (const std::string& outputType : result["compile"].as<std::vector<std::string>>())
 				{
-					nzsl::LangWriter nzslWriter;
-					fmt::print("{}", nzslWriter.Generate(*shaderModule));
-				}
+					std::vector<std::uint8_t> outputData;
 
-				std::filesystem::path outputFilePath = outputPath / inputFilePath.filename();
-				if (result.count("header-file") > 0)
-				{
-					  outputFilePath.replace_extension(inputFilePath.extension().string() + ".h");
+					if (outputType == "nzsl")
+						outputData = CompileToNZSL(*sanitizedModule);
+					else if (outputType == "nzslb")
+						outputData = CompileToNZSLB(sanitizedModule);
+					else if (outputType == "spv")
+						outputData = CompileToSPV(*sanitizedModule);
+					else if (outputType == "glsl")
+					{
+						//outputData = CompileToGLSL();
+						fmt::print("GLSL is not currently supported, ignoring");
+						continue
+					}
+					else
+					{
+						fmt::print("Unknown format {}, ignoring");
+						continue;
+					}
 
-					  std::stringstream ss;
+					// if no output path has been provided, output in the same folder as the input file
+					if (!outputPath.empty())
+						outputPath = inputFilePath.parent_path();
 
-					  bool first = true;
-					  for (std::size_t i = 0; i < outputData.size(); ++i)
-					  {
-						  if (!first)
-							  ss << ',';
+					std::filesystem::path outputFilePath = outputPath / inputFilePath.filename();
+					if (result.count("header-file") > 0)
+					{
+						outputFilePath.replace_extension(outputType + ".h");
 
-						  ss << +outputData[i];
+						std::stringstream ss;
 
-						  first = false;
-					  }
+						bool first = true;
+						for (std::size_t i = 0; i < outputData.size(); ++i)
+						{
+							if (!first)
+								ss << ',';
 
-					  std::string headerFile = std::move(ss).str();
-					  WriteFileContent(outputFilePath, headerFile.data(), headerFile.size());
-				}
-				else
-				{
-					outputFilePath.replace_extension(inputFilePath.extension().string() + "." + outputType);
-					WriteFileContent(outputFilePath, outputData.data(), outputData.size());
+							ss << +outputData[i];
+
+							first = false;
+						}
+
+						std::string headerFile = std::move(ss).str();
+						WriteFileContent(outputFilePath, headerFile.data(), headerFile.size());
+					}
+					else
+					{
+						outputFilePath.replace_extension(outputType);
+						WriteFileContent(outputFilePath, outputData.data(), outputData.size());
+					}
 				}
 			}
 
-
+			if (result.count("output-nzsl") > 0)
+			{
+				nzsl::LangWriter nzslWriter;
+				fmt::print("{}", nzslWriter.Generate(*sanitizedModule));
+			}
+			
 			return EXIT_SUCCESS;
 		}
 		catch (const nzsl::Error& error)
