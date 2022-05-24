@@ -224,7 +224,7 @@ int main(int argc, char* argv[])
 					{
 						//outputData = CompileToGLSL();
 						fmt::print("GLSL is not currently supported, ignoring");
-						continue
+						continue;
 					}
 					else
 					{
