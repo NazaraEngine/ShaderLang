@@ -233,7 +233,7 @@ int main(int argc, char* argv[])
 					}
 
 					// if no output path has been provided, output in the same folder as the input file
-					if (!outputPath.empty())
+					if (outputPath.empty())
 						outputPath = inputFilePath.parent_path();
 
 					std::filesystem::path outputFilePath = outputPath / inputFilePath.filename();
