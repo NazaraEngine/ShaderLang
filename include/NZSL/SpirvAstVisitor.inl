@@ -8,7 +8,6 @@
 namespace nzsl
 {
 	inline SpirvAstVisitor::SpirvAstVisitor(SpirvWriter& writer, SpirvSection& instructions, std::unordered_map<std::size_t, FuncData>& funcData) :
-	m_extVarIndex(0),
 	m_funcIndex(0),
 	m_funcData(funcData),
 	m_currentBlock(nullptr),
