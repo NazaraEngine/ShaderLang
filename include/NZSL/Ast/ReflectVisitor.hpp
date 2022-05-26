@@ -10,6 +10,7 @@
 #include <NZSL/Config.hpp>
 #include <NZSL/Config.hpp>
 #include <NZSL/ShaderLangSourceLocation.hpp>
+#include <NZSL/Ast/Module.hpp>
 #include <NZSL/Ast/RecursiveVisitor.hpp>
 #include <vector>
 
@@ -25,6 +26,7 @@ namespace nzsl::Ast
 			ReflectVisitor(ReflectVisitor&&) = delete;
 			~ReflectVisitor() = default;
 
+			void Reflect(const Module& shaderModule, const Callbacks& callbacks);
 			void Reflect(Statement& statement, const Callbacks& callbacks);
 
 			ReflectVisitor& operator=(const ReflectVisitor&) = delete;
