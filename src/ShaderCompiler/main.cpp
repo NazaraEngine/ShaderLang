@@ -17,6 +17,10 @@
 #include <cstdint>
 #include <algorithm>
 
+constexpr std::uint32_t MajorVersion = 0;
+constexpr std::uint32_t MinorVersion = 1;
+constexpr std::uint32_t PatchVersion = 0;
+
 enum class LogFormat
 {
 	Classic,
@@ -114,6 +118,7 @@ int main(int argc, char* argv[])
 		("p,partial", "Allow partial compilation")
 		("s,show", "Show informations about the shader (default)")
 		("h,help", "Print usage")
+		("version", "Print version")
 	;
 
 	options.parse_positional("input");
@@ -122,6 +127,14 @@ int main(int argc, char* argv[])
 	try
 	{
 		auto result = options.parse(argc, argv);
+		if (result.count("version") > 0)
+		{
+			fmt::print("nzslc version {}.{}.{} using nzsl {}.{}.{}\n", 
+				MajorVersion, MinorVersion, PatchVersion, 
+				NZSL_VERSION_MAJOR, NZSL_VERSION_MINOR, NZSL_VERSION_PATCH);
+			return EXIT_SUCCESS;
+		}
+
 		if (result.count("help") > 0)
 		{
 			fmt::print("{}\n", options.help());
