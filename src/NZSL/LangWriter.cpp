@@ -952,6 +952,7 @@ namespace nzsl
 
 	void LangWriter::Visit(Ast::DeclareExternalStatement& node)
 	{
+		AppendAttributes(true, SetAttribute{ node.bindingSet });
 		AppendLine("external");
 		EnterScope();
 
