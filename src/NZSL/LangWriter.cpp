@@ -1268,7 +1268,10 @@ namespace nzsl
 	void LangWriter::AppendHeader()
 	{
 		AppendAttributes(true, LangVersionAttribute{ m_currentState->module->metadata->shaderLangVersion });
-		AppendLine("module;");
+		if (!m_currentState->module->metadata->moduleName.empty() && m_currentState->module->metadata->moduleName[0] != '_')
+			AppendLine("module ", m_currentState->module->metadata->moduleName, ";");
+		else
+			AppendLine("module;");
 		AppendLine();
 	}
 }
