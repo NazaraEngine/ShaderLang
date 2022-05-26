@@ -3,6 +3,7 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <NZSL/SpirvSectionBase.hpp>
+#include <Nazara/Utils/Endianness.hpp>
 
 namespace nzsl
 {
@@ -34,7 +35,14 @@ namespace nzsl
 		};
 		callback(appendFunctor);
 
-		m_bytecode[offset] = BuildOpcode(opcode, wordCount);
+		std::uint32_t bytecode = BuildOpcode(opcode, wordCount);
+
+#ifdef NAZARA_BIG_ENDIAN
+		// SPIRV is little endian
+		bytecode = Nz::SwapBytes(bytecode);
+#endif
+
+		m_bytecode[offset] = bytecode;
 
 		return offset;
 	}
@@ -72,6 +80,11 @@ namespace nzsl
 
 	inline std::size_t SpirvSectionBase::AppendRaw(std::uint32_t value)
 	{
+#ifdef NAZARA_BIG_ENDIAN
+		// SPIRV is little endian
+		value = Nz::SwapBytes(value);
+#endif
+
 		std::size_t offset = GetOutputOffset();
 		m_bytecode.push_back(value);
 
