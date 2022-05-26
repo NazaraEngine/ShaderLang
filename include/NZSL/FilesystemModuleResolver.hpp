@@ -29,7 +29,7 @@ namespace nzsl
 			void RegisterModule(const std::filesystem::path& realPath);
 			void RegisterModule(std::string_view moduleSource);
 			void RegisterModule(Ast::ModulePtr module);
-			void RegisterModuleDirectory(const std::filesystem::path& realPath, bool watchDirectory = true);
+			void RegisterModuleDirectory(const std::filesystem::path& realPath, bool watchDirectory = false);
 
 			Ast::ModulePtr Resolve(const std::string& moduleName) override;
 
