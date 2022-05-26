@@ -8,10 +8,10 @@
 #ifdef NZSL_EFSW
 #include <efsw/efsw.h>
 #endif
+#include <fmt/format.h>
 #include <cassert>
 #include <cctype>
 #include <fstream>
-#include <iostream>
 
 namespace nzsl
 {
@@ -63,8 +63,7 @@ namespace nzsl
 		}
 		catch (const std::exception& e)
 		{
-			std::cerr << "failed to register module from file " << realPath.generic_u8string() << ": " << e.what() << std::endl;
-			return;
+			throw std::runtime_error(fmt::format("failed to register module {}: {}", realPath.generic_u8string(), e.what()));
 		}
 
 		if (!module)
@@ -153,7 +152,7 @@ namespace nzsl
 				}
 				catch (const std::exception& e)
 				{
-					std::cerr << "failed to register module " << entry.path().generic_u8string() << ": " << e.what() << std::endl;
+					throw std::runtime_error(fmt::format("failed to register module {}: {}", entry.path().generic_u8string(), e.what()));
 				}
 			}
 		}
