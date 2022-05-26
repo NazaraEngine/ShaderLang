@@ -29,7 +29,7 @@ add_requires("nazarautils", "frozen", "ordered_map")
 add_requires("fmt", { configs = { header_only = true }})
 
 if has_config("fs_watcher") then
-	add_requires("efsw")
+	add_requires("efsw", "nlohmann_json")
 end
 
 if has_config("with_nzslc") then
@@ -100,7 +100,7 @@ if has_config("with_nzslc") then
 		add_headerfiles("include/(ShaderCompiler/**.inl)")
 		add_files("src/ShaderCompiler/**.cpp")
 		add_deps("nzsl")
-		add_packages("cxxopts", "fmt")
+		add_packages("cxxopts", "fmt", "nlohmann_json")
 end
 
 includes("tests/xmake.lua")
