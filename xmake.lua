@@ -29,11 +29,11 @@ add_requires("nazarautils", "frozen", "ordered_map")
 add_requires("fmt", { configs = { header_only = true }})
 
 if has_config("fs_watcher") then
-	add_requires("efsw", "nlohmann_json")
+	add_requires("efsw")
 end
 
 if has_config("with_nzslc") then
-	add_requires("cxxopts")
+	add_requires("cxxopts", "nlohmann_json")
 end
 
 add_includedirs("include", "thirdparty/include")
