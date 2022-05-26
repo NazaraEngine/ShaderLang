@@ -147,7 +147,6 @@ namespace nzsl
 			inline void RegisterStruct(std::size_t structIndex, Ast::StructDescription* structDesc);
 			inline void RegisterVariable(std::size_t varIndex, std::uint32_t typeId, std::uint32_t pointerId, SpirvStorageClass storageClass);
 
-			std::size_t m_extVarIndex;
 			std::size_t m_funcCallIndex;
 			std::size_t m_funcIndex;
 			std::unordered_map<std::size_t, FuncData>& m_funcData;
