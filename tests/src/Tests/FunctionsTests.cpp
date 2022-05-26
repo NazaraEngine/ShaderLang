@@ -42,14 +42,14 @@ float GetValue()
 }
 
 /*************** Outputs ***************/
-layout(location = 0) out float _NzOut_value;
+layout(location = 0) out float _nzslOut_value;
 
 void main()
 {
 	FragOut output_;
 	output_.value = -GetValue();
 	
-	_NzOut_value = output_.value;
+	_nzslOut_value = output_.value;
 	return;
 }
 )");
