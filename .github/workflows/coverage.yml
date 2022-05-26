@@ -85,7 +85,7 @@ jobs:
 
     # Setup compilation mode and install project dependencies
     - name: Configure xmake and install dependencies
-      run: xmake config --tests=y --unitybuild=y --arch=${{ matrix.config.arch }} --kind=shared --mode=coverage --yes
+      run: xmake config --ccache=n --tests=y --unitybuild=y --arch=${{ matrix.config.arch }} --kind=shared --mode=coverage --yes
 
     # Build library and tests
     - name: Build library
