@@ -5,7 +5,9 @@
 #include <NZSL/FilesystemModuleResolver.hpp>
 #include <NZSL/ShaderLangParser.hpp>
 #include <NZSL/Ast/AstSerializer.hpp>
+#ifdef NZSL_EFSW
 #include <efsw/efsw.h>
+#endif
 #include <cassert>
 #include <cctype>
 #include <fstream>
@@ -15,14 +17,18 @@ namespace nzsl
 {
 	FilesystemModuleResolver::FilesystemModuleResolver()
 	{
+#ifdef NZSL_EFSW
 		m_fileWatcher = efsw_create(0);
 		efsw_watch(m_fileWatcher);
+#endif
 	}
 
 	FilesystemModuleResolver::~FilesystemModuleResolver()
 	{
+#ifdef NZSL_EFSW
 		if (m_fileWatcher)
 			efsw_release(m_fileWatcher);
+#endif
 	}
 
 	void FilesystemModuleResolver::RegisterModule(const std::filesystem::path& realPath)
@@ -104,12 +110,15 @@ namespace nzsl
 		if (!std::filesystem::is_directory(realPath))
 			return;
 
-		auto FileSystemCallback = [](efsw_watcher /*watcher*/, efsw_watchid /*watchid*/, const char* dir, const char* filename, efsw_action action, const char* oldFileName, void* param)
+		if (watchDirectory)
 		{
-			FilesystemModuleResolver* resolver = static_cast<FilesystemModuleResolver*>(param);
-
-			switch (action)
+#ifdef NZSL_EFSW
+			auto FileSystemCallback = [](efsw_watcher /*watcher*/, efsw_watchid /*watchid*/, const char* dir, const char* filename, efsw_action action, const char* oldFileName, void* param)
 			{
+				FilesystemModuleResolver* resolver = static_cast<FilesystemModuleResolver*>(param);
+
+				switch (action)
+				{
 				case EFSW_ADD:
 					resolver->OnFileAdded(dir, filename);
 					break;
@@ -125,11 +134,14 @@ namespace nzsl
 				case EFSW_MOVED:
 					resolver->OnFileMoved(dir, filename, (oldFileName) ? oldFileName : std::string_view());
 					break;
-			}
-		};
-
-		if (watchDirectory)
+				}
+			};
+		
 			efsw_addwatch(m_fileWatcher, realPath.generic_u8string().c_str(), FileSystemCallback, 1, this);
+#else
+			throw std::runtime_error("nzsl was built without filesystem watch feature");
+#endif
+		}
 
 		for (const auto& entry : std::filesystem::recursive_directory_iterator(realPath))
 		{

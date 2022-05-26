@@ -1,9 +1,21 @@
 set_project("NZSL")
 
+option("fs_watcher")
+	set_default(true)
+	set_showmenu(true)
+	set_description("Compiles with filesystem watch support (requires efsw)")
+option_end()
+
 option("unitybuild")
 	set_default(false)
 	set_showmenu(true)
 	set_description("Build the library using unity build")
+option_end()
+
+option("with_nzslc")
+	set_default(true)
+	set_showmenu(true)
+	set_description("Builds the standalone command-line compiler (nzslc)")
 option_end()
 
 add_rules("mode.asan", "mode.coverage", "mode.debug", "mode.releasedbg", "mode.release")
@@ -13,7 +25,17 @@ includes("xmake/**.lua")
 
 add_repositories("nazara-engine-repo https://github.com/NazaraEngine/xmake-repo")
 
-add_requires("nazarautils", "cxxopts", "fmt", "efsw", "frozen", "ordered_map")
+add_requires("nazarautils", "frozen", "ordered_map")
+add_requires("fmt", { configs = { header_only = true }})
+
+if has_config("fs_watcher") then
+	add_requires("efsw")
+end
+
+if has_config("with_nzslc") then
+	add_requires("cxxopts")
+end
+
 add_includedirs("include", "thirdparty/include")
 set_languages("c89", "c++17")
 set_rundir("./bin/$(plat)_$(arch)_$(mode)")
@@ -57,7 +79,12 @@ target("nzsl")
 	add_headerfiles("include/(NZSL/**.inl)")
 	add_files("src/NZSL/**.cpp")
 	add_packages("nazarautils", { public = true })
-	add_packages("fmt", "efsw", "frozen", "ordered_map")
+	add_packages("fmt", "frozen", "ordered_map")
+
+	if has_config("fs_watcher") then
+		add_packages("efsw")
+		add_defines("NZSL_EFSW")
+	end
 
 	on_load(function (target)
 		if target:kind() == "static" then
@@ -65,13 +92,15 @@ target("nzsl")
 		end
 	end)
 
-target("nzslc")
-	set_kind("binary")
-	set_group("Executables")
-	add_headerfiles("include/(ShaderCompiler/**.hpp)")
-	add_headerfiles("include/(ShaderCompiler/**.inl)")
-	add_files("src/ShaderCompiler/**.cpp")
-	add_deps("nzsl")
-	add_packages("cxxopts", "fmt")
+if has_config("with_nzslc") then
+	target("nzslc")
+		set_kind("binary")
+		set_group("Executables")
+		add_headerfiles("include/(ShaderCompiler/**.hpp)")
+		add_headerfiles("include/(ShaderCompiler/**.inl)")
+		add_files("src/ShaderCompiler/**.cpp")
+		add_deps("nzsl")
+		add_packages("cxxopts", "fmt")
+end
 
 includes("tests/xmake.lua")
