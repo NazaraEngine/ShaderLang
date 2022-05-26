@@ -7,6 +7,15 @@
 
 namespace nzsl::Ast
 {
+	void ReflectVisitor::Reflect(const Module& shaderModule, const Callbacks& callbacks)
+	{
+		m_callbacks = &callbacks;
+		for (const auto& importedModule : shaderModule.importedModules)
+			importedModule.module->rootNode->Visit(*this);
+
+		shaderModule.rootNode->Visit(*this);
+	}
+
 	void ReflectVisitor::Reflect(Statement& statement, const Callbacks& callbacks)
 	{
 		m_callbacks = &callbacks;
