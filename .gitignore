@@ -1,6 +1,8 @@
 # XMake
 .xmake
-bin
+bin/*
+!bin/resources
+!bin/resources/*
 build
 vs*
 vsxmake*
