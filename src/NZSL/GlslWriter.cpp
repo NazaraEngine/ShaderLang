@@ -23,10 +23,10 @@ namespace nzsl
 {
 	namespace
 	{
-		static const char* s_glslWriterFlipYUniformName = "_NzFlipYValue";
-		static const char* s_glslWriterInputPrefix = "_NzIn_";
-		static const char* s_glslWriterOutputPrefix = "_NzOut_";
-		static const char* s_glslWriterOutputVarName = "_nzOutput";
+		static const char* s_glslWriterFlipYUniformName = "_nzslFlipYValue";
+		static const char* s_glslWriterInputPrefix = "_nzslIn_";
+		static const char* s_glslWriterOutputPrefix = "_nzslOut_";
+		static const char* s_glslWriterOutputVarName = "_nzslOutput";
 
 		struct GlslWriterPreVisitor : Ast::RecursiveVisitor
 		{
@@ -1149,7 +1149,7 @@ namespace nzsl
 
 			if (IsUniformType(externalVar.type.GetResultingValue()))
 			{
-				Append("_NzBinding_");
+				Append("_nzslBinding_");
 				AppendLine(varName);
 
 				EnterScope();

@@ -55,12 +55,12 @@ fn main(input: In) -> FragOut
 void main()
 {
 	Input input_;
-	input_.value = _NzIn_value;
+	input_.value = _nzslIn_value;
 	
 	Output output_;
 	output_.value = extData.value * input_.value;
 	
-	_NzOut_value = output_.value;
+	_nzslOut_value = output_.value;
 	return;
 }
 )");

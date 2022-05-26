@@ -110,27 +110,27 @@ struct OutputData_SimpleModule
 // Main file
 
 
-layout(std140) uniform _NzBinding_block
+layout(std140) uniform _nzslBinding_block
 {
 	Data_SimpleModule data;
 } block;
 
 
 /**************** Inputs ****************/
-in float _NzIn_value;
+in float _nzslIn_value;
 
 /*************** Outputs ***************/
-out float _NzOut_value;
+out float _nzslOut_value;
 
 void main()
 {
 	InputData_SimpleModule input_;
-	input_.value = _NzIn_value;
+	input_.value = _nzslIn_value;
 	
 	OutputData_SimpleModule output_;
 	output_.value = (GetDataValue_SimpleModule(block.data)) * input_.value;
 	
-	_NzOut_value = output_.value;
+	_nzslOut_value = output_.value;
 	return;
 }
 )");
@@ -333,27 +333,27 @@ struct OutputData_Modules_InputOutput
 
 
 
-layout(std140) uniform _NzBinding_block
+layout(std140) uniform _nzslBinding_block
 {
 	Data_Modules_Data data;
 } block;
 
 
 /**************** Inputs ****************/
-in float _NzIn_value;
+in float _nzslIn_value;
 
 /*************** Outputs ***************/
-out float _NzOut_value;
+out float _nzslOut_value;
 
 void main()
 {
 	InputData_Modules_InputOutput input_;
-	input_.value = _NzIn_value;
+	input_.value = _nzslIn_value;
 	
 	OutputData_Modules_InputOutput output_;
 	output_.value = block.data.value * input_.value;
 	
-	_NzOut_value = output_.value;
+	_nzslOut_value = output_.value;
 	return;
 }
 )");
