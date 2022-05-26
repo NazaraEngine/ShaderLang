@@ -1,0 +1,30 @@
+[nzsl_version("1.0")]
+module Shader;
+
+import Color;
+import DataStruct;
+import OutputStruct;
+
+[set(0)]
+external
+{
+    [binding(0)] tex1: sampler2D[f32]
+}
+
+[set(1)]
+external
+{
+    [binding(0)] tex2: sampler2D[f32]
+}
+
+[entry(frag)]
+fn main() -> Output
+{
+    let data: Data;
+    data.color = GetColor();
+
+    let output: Output;
+    output.color = GetColorFromData(data);
+
+    return output;
+}
