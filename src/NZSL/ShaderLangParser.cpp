@@ -1536,7 +1536,7 @@ namespace nzsl
 
 	Ast::ModulePtr ParseFromFile(const std::filesystem::path& sourcePath)
 	{
-		std::ifstream inputFile(sourcePath, std::ios::in);
+		std::ifstream inputFile(sourcePath, std::ios::in | std::ios::binary);
 		if (!inputFile)
 			throw std::runtime_error("failed to open " + sourcePath.generic_u8string());
 
