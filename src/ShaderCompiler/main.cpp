@@ -145,7 +145,7 @@ void CompileToGLSL(const cxxopts::ParseResult& options, std::filesystem::path ou
 	}
 
 	nzsl::GlslWriter::BindingMapping bindingMapping;
-	if (options.count("gl-uniformbinding") > 0)
+	if (options.count("gl-bindingmap") > 0)
 	{
 		unsigned int glslBinding = 0;
 		nlohmann::json bindingArray;
@@ -305,7 +305,7 @@ int main(int argc, char* argv[])
 		("gl-entry", "Shader entry point (required for files having multiple entry points)", cxxopts::value<std::string>(), "[frag|vert]")
 		("gl-flipy", "Add code to conditionally flip gl_Position Y value")
 		("gl-remapz", "Add code to remap gl_Position Z value from [0;1] to [-1;1]")
-		("gl-uniformbinding", "Add binding support (generates a .binding.json mapping file)");
+		("gl-bindingmap", "Add binding support (generates a .binding.json mapping file)");
 
 	cmdOptions.add_options("spirv output")
 		("spv-version", "SPIRV version (110 being 1.1)", cxxopts::value<std::uint32_t>(), "version");
