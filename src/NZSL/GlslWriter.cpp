@@ -764,7 +764,7 @@ namespace nzsl
 
 		if (m_currentState->stage == ShaderStageType::Vertex && m_environment.flipYPosition)
 		{
-			AppendLine("uniform float ", s_glslWriterFlipYUniformName, ";");
+			AppendLine("uniform float ", s_glslWriterFlipYUniformName, " = -1.0;");
 			AppendLine();
 		}
 
