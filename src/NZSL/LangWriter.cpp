@@ -342,17 +342,14 @@ namespace nzsl
 		{
 			switch (attribute.builtin.GetResultingValue())
 			{
-				case Ast::BuiltinEntry::FragCoord:
-					Append("fragcoord");
-					break;
-
-				case Ast::BuiltinEntry::FragDepth:
-					Append("fragdepth");
-					break;
-
-				case Ast::BuiltinEntry::VertexPosition:
-					Append("position");
-					break;
+				case Ast::BuiltinEntry::BaseInstance: Append("baseinstance"); break;
+				case Ast::BuiltinEntry::BaseVertex: Append("basevertex"); break;
+				case Ast::BuiltinEntry::DrawIndex: Append("drawindex"); break;
+				case Ast::BuiltinEntry::InstanceIndex: Append("instanceindex"); break;
+				case Ast::BuiltinEntry::FragCoord: Append("fragcoord"); break;
+				case Ast::BuiltinEntry::FragDepth: Append("fragdepth"); break;
+				case Ast::BuiltinEntry::VertexIndex: Append("vertexindex"); break;
+				case Ast::BuiltinEntry::VertexPosition: Append("position"); break;
 			}
 		}
 		else

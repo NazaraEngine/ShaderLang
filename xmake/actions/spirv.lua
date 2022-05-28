@@ -96,11 +96,16 @@ namespace nzsl
 	local revision = assert(math.tointeger(result.revision), "expected integer revision number")
 
 	headerFile:write([[
+	constexpr std::uint32_t MakeSpirvVersion(std::uint32_t major, std::uint32_t minor)
+	{
+		return (major << 16) | (minor << 8);
+	}
+
 	constexpr std::uint32_t SpirvMagicNumber = ]] .. magicNumber .. [[;
 	constexpr std::uint32_t SpirvMajorVersion = ]] .. majorVersion .. [[;
 	constexpr std::uint32_t SpirvMinorVersion = ]] .. minorVersion .. [[;
 	constexpr std::uint32_t SpirvRevision = ]] .. revision .. [[;
-	constexpr std::uint32_t SpirvVersion = (SpirvMajorVersion << 16) | (SpirvMinorVersion << 8);
+	constexpr std::uint32_t SpirvVersion = MakeSpirvVersion(SpirvMajorVersion, SpirvMinorVersion);
 
 ]])
 

@@ -45,9 +45,14 @@ namespace nzsl
 		});
 
 		constexpr auto s_builtinMapping = frozen::make_unordered_map<frozen::string, Ast::BuiltinEntry>({
-			{ "fragcoord", Ast::BuiltinEntry::FragCoord },
-			{ "fragdepth", Ast::BuiltinEntry::FragDepth },
-			{ "position", Ast::BuiltinEntry::VertexPosition }
+			{ "baseinstance",  Ast::BuiltinEntry::BaseInstance },
+			{ "basevertex",    Ast::BuiltinEntry::BaseVertex },
+			{ "drawindex",     Ast::BuiltinEntry::DrawIndex },
+			{ "fragcoord",     Ast::BuiltinEntry::FragCoord },
+			{ "fragdepth",     Ast::BuiltinEntry::FragDepth },
+			{ "instanceindex", Ast::BuiltinEntry::InstanceIndex },
+			{ "vertexindex",   Ast::BuiltinEntry::VertexIndex },
+			{ "position",      Ast::BuiltinEntry::VertexPosition }
 		});
 
 		constexpr auto s_layoutMapping = frozen::make_unordered_map<frozen::string, StructLayout>({

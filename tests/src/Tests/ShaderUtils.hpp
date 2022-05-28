@@ -3,11 +3,12 @@
 #ifndef NAZARA_UNITTESTS_SHADER_SHADERUTILS_HPP
 #define NAZARA_UNITTESTS_SHADER_SHADERUTILS_HPP
 
+#include <NZSL/GlslWriter.hpp>
 #include <NZSL/Ast/Module.hpp>
 #include <NZSL/Ast/SanitizeVisitor.hpp>
 #include <string>
 
-void ExpectGLSL(const nzsl::Ast::Module& shader, std::string_view expectedOutput);
+void ExpectGLSL(const nzsl::Ast::Module& shader, std::string_view expectedOutput, const nzsl::GlslWriter::Environment& env = {});
 void ExpectNZSL(const nzsl::Ast::Module& shader, std::string_view expectedOutput);
 void ExpectSPIRV(const nzsl::Ast::Module& shader, std::string_view expectedOutput, bool outputParameter = false);
 

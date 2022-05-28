@@ -14,6 +14,7 @@
 #include <NZSL/Ast/Utils.hpp>
 #include <NZSL/Ast/EliminateUnusedPassVisitor.hpp>
 #include <frozen/unordered_map.h>
+#include <tsl/ordered_set.h>
 #include <cassert>
 #include <optional>
 #include <set>
@@ -24,9 +25,38 @@ namespace nzsl
 	namespace
 	{
 		static const char* s_glslWriterFlipYUniformName = "_nzslFlipYValue";
+		static const char* s_glslWriterShaderDrawParametersBaseInstanceName = "_nzslBaseInstance";
+		static const char* s_glslWriterShaderDrawParametersBaseVertexName = "_nzslBaseVertex";
+		static const char* s_glslWriterShaderDrawParametersDrawIdName = "_nzslDrawID";
+		static const char* s_glslWriterShaderDrawIdName = "_nzslFlipYValue";
 		static const char* s_glslWriterInputPrefix = "_nzslIn_";
 		static const char* s_glslWriterOutputPrefix = "_nzslOut_";
 		static const char* s_glslWriterOutputVarName = "_nzslOutput";
+
+		enum class GlslCapability
+		{
+			None = -1,
+
+			ShaderDrawParameters, // GLSL 4.6 or GL_ARB_shader_draw_parameters
+		};
+		
+		struct GlslBuiltin
+		{
+			std::string_view identifier;
+			ShaderStageTypeFlags stageFlags;
+			GlslCapability requiredCapability;
+		};
+
+		constexpr auto s_glslBuiltinMapping = frozen::make_unordered_map<Ast::BuiltinEntry, GlslBuiltin>({
+			{ Ast::BuiltinEntry::BaseInstance,   { "gl_BaseInstance", ShaderStageType::Vertex,   GlslCapability::ShaderDrawParameters } },
+			{ Ast::BuiltinEntry::BaseVertex,     { "gl_BaseVertex",   ShaderStageType::Vertex,   GlslCapability::ShaderDrawParameters } },
+			{ Ast::BuiltinEntry::DrawIndex,      { "gl_DrawID",       ShaderStageType::Vertex,   GlslCapability::ShaderDrawParameters } },
+			{ Ast::BuiltinEntry::FragCoord,      { "gl_FragCoord",    ShaderStageType::Fragment, GlslCapability::None } },
+			{ Ast::BuiltinEntry::FragDepth,      { "gl_FragDepth",    ShaderStageType::Fragment, GlslCapability::None } },
+			{ Ast::BuiltinEntry::InstanceIndex,  { "gl_InstanceID",   ShaderStageType::Vertex,   GlslCapability::None } },
+			{ Ast::BuiltinEntry::VertexIndex,    { "gl_VertexID",     ShaderStageType::Vertex,   GlslCapability::None } },
+			{ Ast::BuiltinEntry::VertexPosition, { "gl_Position",     ShaderStageType::Vertex,   GlslCapability::None } }
+		});
 
 		struct GlslWriterPreVisitor : Ast::RecursiveVisitor
 		{
@@ -74,6 +104,33 @@ namespace nzsl
 
 						entryPoint = &node;
 					}
+
+					if (!node.parameters.empty())
+					{
+						assert(node.parameters.size() == 1);
+						auto& parameter = node.parameters.front();
+						const auto& parameterType = parameter.type.GetResultingValue();
+
+						assert(std::holds_alternative<Ast::StructType>(parameterType));
+
+						std::size_t structIndex = std::get<Ast::StructType>(parameterType).structIndex;
+						const Ast::StructDescription* structDesc = structs[structIndex];
+
+						for (const auto& member : structDesc->members)
+						{
+							if (member.cond.HasValue() && !member.cond.GetResultingValue())
+								continue;
+
+							if (member.builtin.HasValue())
+							{
+								auto it = s_glslBuiltinMapping.find(member.builtin.GetResultingValue());
+								assert(it != s_glslBuiltinMapping.end());
+
+								const GlslBuiltin& builtin = it->second;
+								capabilities.insert(builtin.requiredCapability);
+							}
+						}
+					}
 				}
 
 				assert(node.funcIndex);
@@ -89,6 +146,13 @@ namespace nzsl
 				currentFunction = nullptr;
 			}
 
+			void Visit(Ast::DeclareStructStatement& node) override
+			{
+				structs[node.structIndex.value()] = &node.description;
+
+				RecursiveVisitor::Visit(node);
+			}
+
 			struct FunctionData
 			{
 				std::string name;
@@ -98,23 +162,13 @@ namespace nzsl
 
 			FunctionData* currentFunction = nullptr;
 
+			tsl::ordered_set<GlslCapability> capabilities;
 			std::optional<ShaderStageType> selectedStage;
 			std::string moduleSuffix;
 			std::unordered_map<std::size_t, FunctionData> functions;
+			std::unordered_map<std::size_t, Ast::StructDescription*> structs;
 			Ast::DeclareFunctionStatement* entryPoint = nullptr;
 		};
-
-		struct GlslBuiltin
-		{
-			std::string_view identifier;
-			ShaderStageTypeFlags stageFlags;
-		};
-
-		constexpr auto s_glslBuiltinMapping = frozen::make_unordered_map<Ast::BuiltinEntry, GlslBuiltin>({
-			{ Ast::BuiltinEntry::FragCoord,      { "gl_FragCoord", ShaderStageType::Fragment } },
-			{ Ast::BuiltinEntry::FragDepth,      { "gl_FragDepth", ShaderStageType::Fragment } },
-			{ Ast::BuiltinEntry::VertexPosition, { "gl_Position", ShaderStageType::Vertex } }
-		});
 	}
 
 
@@ -128,7 +182,7 @@ namespace nzsl
 		struct InOutField
 		{
 			std::string memberName;
-			std::string targetName;
+			std::variant<Ast::BuiltinEntry, std::string> targetName;
 		};
 
 		struct StructData
@@ -149,6 +203,7 @@ namespace nzsl
 		GlslWriterPreVisitor previsitor;
 		const States* states = nullptr;
 		bool isInEntryPoint = false;
+		bool hasDrawParametersUniforms = false;
 		unsigned int indentLevel = 0;
 	};
 
@@ -279,19 +334,55 @@ namespace nzsl
 
 	void GlslWriter::Append(Ast::BuiltinEntry builtin)
 	{
+		unsigned int glVersion = m_environment.glMajorVersion * 100 + m_environment.glMinorVersion * 10;
+
 		switch (builtin)
 		{
-		case Ast::BuiltinEntry::FragCoord:
-			Append("gl_FragCoord");
-			break;
+			case Ast::BuiltinEntry::BaseInstance:
+			{
+				if (m_currentState->hasDrawParametersUniforms)
+					Append(s_glslWriterShaderDrawParametersBaseInstanceName);
+				else if (!m_environment.glES && glVersion >= 460)
+					Append("gl_BaseInstance");
+				else
+					Append("gl_BaseInstanceARB");
+				break;
+			}
 
-		case Ast::BuiltinEntry::FragDepth:
-			Append("gl_FragDepth");
-			break;
+			case Ast::BuiltinEntry::BaseVertex:
+			{
+				if (m_currentState->hasDrawParametersUniforms)
+					Append(s_glslWriterShaderDrawParametersBaseVertexName);
+				else if (!m_environment.glES && glVersion >= 460)
+					Append("gl_BaseVertex");
+				else
+					Append("gl_BaseVertexARB");
+				break;
+			}
 
-		case Ast::BuiltinEntry::VertexPosition:
-			Append("gl_Position");
-			break;
+			case Ast::BuiltinEntry::DrawIndex:
+			{
+				if (m_currentState->hasDrawParametersUniforms)
+					Append(s_glslWriterShaderDrawParametersDrawIdName);
+				else if (!m_environment.glES && glVersion >= 460)
+					Append("gl_DrawID");
+				else
+					Append("gl_DrawIDARB");
+				break;
+			}
+
+			case Ast::BuiltinEntry::InstanceIndex:
+			{
+				Append("(", Ast::BuiltinEntry::BaseInstance, " + gl_InstanceID)");
+				break;
+			}
+
+			default:
+			{
+				auto it = s_glslBuiltinMapping.find(builtin);
+				assert(it != s_glslBuiltinMapping.end());
+				Append(it->second.identifier);
+			}
 		}
 	}
 
@@ -439,6 +530,15 @@ namespace nzsl
 		Append(secondParam, std::forward<Args>(params)...);
 	}
 
+	template<typename ...Args>
+	void GlslWriter::Append(const std::variant<Args...>& param)
+	{
+		std::visit([&](auto&& arg)
+		{
+			Append(arg);
+		}, param);
+	}
+
 	void GlslWriter::AppendComment(const std::string& section)
 	{
 		std::size_t lineFeed = section.find('\n');
@@ -542,7 +642,34 @@ namespace nzsl
 
 		// Extensions
 
-		std::vector<std::string> requiredExtensions;
+		std::vector<std::string_view> requiredExtensions;
+		
+		for (GlslCapability capability : m_currentState->previsitor.capabilities)
+		{
+			switch (capability)
+			{
+				case GlslCapability::None:
+					break;
+
+				case GlslCapability::ShaderDrawParameters:
+				{
+					if (m_environment.glES)
+						m_currentState->hasDrawParametersUniforms = true;
+					else if (glslVersion < 460)
+					{
+						if (m_environment.extCallback("GL_ARB_shader_draw_parameters"))
+							requiredExtensions.push_back("GL_ARB_shader_draw_parameters");
+						else
+							m_currentState->hasDrawParametersUniforms = true;
+					}
+				
+					break;
+				}
+			}
+		}
+
+		if (m_currentState->hasDrawParametersUniforms && !m_environment.allowDrawParametersUniformsFallback)
+			throw std::runtime_error("Draw parameters are used but not supported and fallback uniforms are disabled, cannot continue");
 
 		if (!m_environment.glES && m_environment.extCallback)
 		{
@@ -550,21 +677,21 @@ namespace nzsl
 			if (glslVersion < 420)
 			{
 				if (m_environment.extCallback("GL_ARB_shading_language_420pack"))
-					requiredExtensions.emplace_back("GL_ARB_shading_language_420pack");
+					requiredExtensions.push_back("GL_ARB_shading_language_420pack");
 			}
 
 			// GL_ARB_separate_shader_objects (required for layout(location = X))
 			if (glslVersion < 410)
 			{
 				if (m_environment.extCallback("GL_ARB_separate_shader_objects"))
-					requiredExtensions.emplace_back("GL_ARB_separate_shader_objects");
+					requiredExtensions.push_back("GL_ARB_separate_shader_objects");
 			}
 		}
 
 		if (!requiredExtensions.empty())
 		{
-			for (const std::string& ext : requiredExtensions)
-				AppendLine("#extension " + ext + " : require");
+			for (std::string_view ext : requiredExtensions)
+				AppendLine("#extension ", ext, " : require");
 
 			AppendLine();
 		}
@@ -577,6 +704,13 @@ namespace nzsl
 			AppendLine("precision mediump float;");
 			AppendLine("#endif");
 			AppendLine();
+		}
+
+		if (m_currentState->hasDrawParametersUniforms)
+		{
+			AppendLine("uniform int ", s_glslWriterShaderDrawParametersBaseInstanceName, "; ");
+			AppendLine("uniform int ", s_glslWriterShaderDrawParametersBaseVertexName, "; ");
+			AppendLine("uniform int ", s_glslWriterShaderDrawParametersDrawIdName, "; ");
 		}
 	}
 
@@ -722,7 +856,7 @@ namespace nzsl
 
 					fields.push_back({
 						member.name,
-						std::string(builtin.identifier)
+						it->first
 					});
 				}
 				else
@@ -764,7 +898,7 @@ namespace nzsl
 
 		if (m_currentState->stage == ShaderStageType::Vertex && m_environment.flipYPosition)
 		{
-			AppendLine("uniform float ", s_glslWriterFlipYUniformName, " = -1.0;");
+			AppendLine("uniform float ", s_glslWriterFlipYUniformName, ";");
 			AppendLine();
 		}
 
@@ -1345,19 +1479,19 @@ namespace nzsl
 
 			AppendLine();
 
-			for (const auto& [name, targetName] : m_currentState->outputFields)
+			for (const auto& [name, target] : m_currentState->outputFields)
 			{
-				bool isOutputPosition = (m_currentState->stage == ShaderStageType::Vertex && targetName == "gl_Position");
+				bool isOutputPosition = (m_currentState->stage == ShaderStageType::Vertex && std::holds_alternative<Ast::BuiltinEntry>(target) && std::get<Ast::BuiltinEntry>(target) == Ast::BuiltinEntry::VertexPosition);
 
-				AppendLine(targetName, " = ", outputStructVarName, ".", name, ";");
+				AppendLine(target, " = ", outputStructVarName, ".", name, ";");
 				if (isOutputPosition)
 				{
 					// https://veldrid.dev/articles/backend-differences.html
 					if (m_environment.flipYPosition)
-						AppendLine(targetName, ".y *= ", s_glslWriterFlipYUniformName, ";");
+						AppendLine(target, ".y *= ", s_glslWriterFlipYUniformName, ";");
 
 					if (m_environment.remapZPosition)
-						AppendLine(targetName, ".z = ", targetName, ".z * 2.0 - ", targetName, ".w; ");
+						AppendLine(target, ".z = ", target, ".z * 2.0 - ", target, ".w;");
 				}
 			}
 

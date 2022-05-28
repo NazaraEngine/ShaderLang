@@ -14,11 +14,16 @@
 
 namespace nzsl
 {
+	constexpr std::uint32_t MakeSpirvVersion(std::uint32_t major, std::uint32_t minor)
+	{
+		return (major << 16) | (minor << 8);
+	}
+
 	constexpr std::uint32_t SpirvMagicNumber = 0x07230203;
 	constexpr std::uint32_t SpirvMajorVersion = 1;
 	constexpr std::uint32_t SpirvMinorVersion = 6;
 	constexpr std::uint32_t SpirvRevision = 1;
-	constexpr std::uint32_t SpirvVersion = (SpirvMajorVersion << 16) | (SpirvMinorVersion << 8);
+	constexpr std::uint32_t SpirvVersion = MakeSpirvVersion(SpirvMajorVersion, SpirvMinorVersion);
 
 	enum class SpirvOp
 	{

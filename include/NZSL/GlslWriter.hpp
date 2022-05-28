@@ -17,6 +17,7 @@
 #include <set>
 #include <sstream>
 #include <string>
+#include <variant>
 #include <vector>
 
 namespace nzsl
@@ -46,6 +47,7 @@ namespace nzsl
 				bool glES = true;
 				bool flipYPosition = false;
 				bool remapZPosition = false;
+				bool allowDrawParametersUniformsFallback = false;
 			};
 
 			static const char* GetFlipYUniformName();
@@ -71,6 +73,7 @@ namespace nzsl
 			void Append(const Ast::VectorType& vecType);
 			template<typename T> void Append(const T& param);
 			template<typename T1, typename T2, typename... Args> void Append(const T1& firstParam, const T2& secondParam, Args&&... params);
+			template<typename... Args> void Append(const std::variant<Args...>& param);
 			void AppendComment(const std::string& section);
 			void AppendCommentSection(const std::string& section);
 			void AppendFunctionDeclaration(const Ast::DeclareFunctionStatement& node, const std::string& nameOverride, bool forward = false);
