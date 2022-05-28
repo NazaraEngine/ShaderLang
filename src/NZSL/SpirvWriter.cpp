@@ -35,12 +35,19 @@ namespace nzsl
 			const char* debugName;
 			ShaderStageTypeFlags compatibleStages;
 			SpirvBuiltIn decoration;
+			SpirvCapability capability;
+			std::uint32_t requiredVersion;
 		};
 
 		constexpr auto s_spirvBuiltinMapping = frozen::make_unordered_map<Ast::BuiltinEntry, SpirvBuiltin>({
-			{ Ast::BuiltinEntry::FragCoord,      { "FragmentCoordinates", ShaderStageType::Fragment, SpirvBuiltIn::FragCoord } },
-			{ Ast::BuiltinEntry::FragDepth,      { "FragmentDepth",       ShaderStageType::Fragment, SpirvBuiltIn::FragDepth } },
-			{ Ast::BuiltinEntry::VertexPosition, { "VertexPosition",      ShaderStageType::Vertex,   SpirvBuiltIn::Position } }
+			{ Ast::BuiltinEntry::BaseInstance,   { "BaseInstance",        ShaderStageType::Vertex,   SpirvBuiltIn::BaseInstance,  SpirvCapability::DrawParameters, MakeSpirvVersion(1, 3) } },
+			{ Ast::BuiltinEntry::BaseVertex,     { "BaseVertex",          ShaderStageType::Vertex,   SpirvBuiltIn::BaseVertex,    SpirvCapability::DrawParameters, MakeSpirvVersion(1, 3) } },
+			{ Ast::BuiltinEntry::DrawIndex,      { "DrawIndex",           ShaderStageType::Vertex,   SpirvBuiltIn::DrawIndex,     SpirvCapability::DrawParameters, MakeSpirvVersion(1, 3) } },
+			{ Ast::BuiltinEntry::FragCoord,      { "FragmentCoordinates", ShaderStageType::Fragment, SpirvBuiltIn::FragCoord,     SpirvCapability::Shader,         MakeSpirvVersion(1, 0) } },
+			{ Ast::BuiltinEntry::FragDepth,      { "FragmentDepth",       ShaderStageType::Fragment, SpirvBuiltIn::FragDepth,     SpirvCapability::Shader,         MakeSpirvVersion(1, 0) } },
+			{ Ast::BuiltinEntry::InstanceIndex,  { "InstanceIndex",       ShaderStageType::Vertex,   SpirvBuiltIn::InstanceIndex, SpirvCapability::Shader,         MakeSpirvVersion(1, 0) } },
+			{ Ast::BuiltinEntry::VertexIndex,    { "VertexIndex",         ShaderStageType::Vertex,   SpirvBuiltIn::VertexIndex,   SpirvCapability::Shader,         MakeSpirvVersion(1, 0) } },
+			{ Ast::BuiltinEntry::VertexPosition, { "VertexPosition",      ShaderStageType::Vertex,   SpirvBuiltIn::Position,      SpirvCapability::Shader,         MakeSpirvVersion(1, 0) } }
 		});
 
 		class SpirvPreVisitor : public Ast::RecursiveVisitor
@@ -53,23 +60,26 @@ namespace nzsl
 					std::uint32_t pointerId;
 				};
 
-				using BuiltinDecoration = std::map<std::uint32_t, SpirvBuiltIn>;
-				using LocationDecoration = std::map<std::uint32_t, std::uint32_t>;
-				using ExtInstList = std::unordered_set<std::string>;
+				using BuiltinDecoration = tsl::ordered_map<std::uint32_t, SpirvBuiltIn>;
+				using LocationDecoration = tsl::ordered_map<std::uint32_t, std::uint32_t>;
+				using ExtInstList = tsl::ordered_set<std::string>;
 				using ExtVarContainer = std::unordered_map<std::size_t /*varIndex*/, UniformVar>;
-				using LocalContainer = std::unordered_set<Ast::ExpressionType>;
+				using LocalContainer = tsl::ordered_set<Ast::ExpressionType>;
 				using FunctionContainer = std::vector<std::reference_wrapper<Ast::DeclareFunctionStatement>>;
 				using StructContainer = std::vector<Ast::StructDescription*>;
 
 				SpirvPreVisitor(SpirvConstantCache& constantCache, std::unordered_map<std::size_t, SpirvAstVisitor::FuncData>& funcs) :
 				m_constantCache(constantCache),
-				m_funcs(funcs)
+				m_funcs(funcs),
+				spirvVersion(MakeSpirvVersion(1, 0))
 				{
 					m_constantCache.SetStructCallback([this](std::size_t structIndex) -> const Ast::StructDescription&
 					{
 						assert(structIndex < declaredStructs.size());
 						return *declaredStructs[structIndex];
 					});
+
+					spirvCapabilities.insert(SpirvCapability::Shader);
 				}
 
 				void Visit(Ast::AccessIndexExpression& node) override
@@ -405,6 +415,9 @@ namespace nzsl
 						if ((builtin.compatibleStages & entryPointType) == 0)
 							return 0;
 
+						spirvCapabilities.insert(builtin.capability);
+						spirvVersion = std::max(spirvVersion, builtin.requiredVersion);
+
 						SpirvBuiltIn builtinDecoration = builtin.decoration;
 
 						SpirvConstantCache::Variable variable;
@@ -440,6 +453,8 @@ namespace nzsl
 				ExtVarContainer extVars;
 				LocationDecoration locationDecorations;
 				StructContainer declaredStructs;
+				tsl::ordered_set<SpirvCapability> spirvCapabilities;
+				std::uint32_t spirvVersion;
 
 			private:
 				SpirvConstantCache& m_constantCache;
@@ -594,14 +609,16 @@ namespace nzsl
 	{
 		m_currentState->header.AppendRaw(SpirvMagicNumber); //< Spir-V magic number
 
-		std::uint32_t version = (m_environment.spvMajorVersion << 16) | m_environment.spvMinorVersion << 8;
-		m_currentState->header.AppendRaw(version); //< Spir-V version number (1.0 for compatibility)
+		std::uint32_t version = std::max(MakeSpirvVersion(m_environment.spvMajorVersion, m_environment.spvMinorVersion), m_currentState->previsitor->spirvVersion);
+
+		m_currentState->header.AppendRaw(version); //< Spir-V version number
 		m_currentState->header.AppendRaw(0); //< Generator identifier (TODO: Register generator to Khronos)
 
 		m_currentState->header.AppendRaw(m_currentState->nextVarIndex); //< Bound (ID count)
 		m_currentState->header.AppendRaw(0); //< Instruction schema (required to be 0 for now)
 
-		m_currentState->header.Append(SpirvOp::OpCapability, SpirvCapability::Shader);
+		for (SpirvCapability capability : m_currentState->previsitor->spirvCapabilities)
+			m_currentState->header.Append(SpirvOp::OpCapability, capability);
 
 		for (const auto& [extInst, resultId] : m_currentState->extensionInstructionSet)
 			m_currentState->header.Append(SpirvOp::OpExtInstImport, resultId, extInst);

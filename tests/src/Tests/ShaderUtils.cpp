@@ -132,7 +132,7 @@ namespace
 	}
 }
 
-void ExpectGLSL(const nzsl::Ast::Module& shaderModule, std::string_view expectedOutput)
+void ExpectGLSL(const nzsl::Ast::Module& shaderModule, std::string_view expectedOutput, const nzsl::GlslWriter::Environment& env)
 {
 	expectedOutput = Trim(expectedOutput);
 
@@ -166,6 +166,8 @@ void ExpectGLSL(const nzsl::Ast::Module& shaderModule, std::string_view expected
 		}
 
 		nzsl::GlslWriter writer;
+		writer.SetEnv(env);
+
 		std::string output = writer.Generate(entryShaderStage, targetModule);
 
 		WHEN("Validating expected code")
@@ -193,6 +195,7 @@ void ExpectGLSL(const nzsl::Ast::Module& shaderModule, std::string_view expected
 			glslangShader.setEnvClient(glslang::EShClientOpenGL, glslang::EShTargetOpenGL_450);
 			glslangShader.setEnvTarget(glslang::EShTargetNone, static_cast<glslang::EShTargetLanguageVersion>(0));
 			glslangShader.setEntryPoint("main");
+			glslangShader.setAutoMapLocations(true);
 
 			const char* source = output.c_str();
 			glslangShader.setStrings(&source, 1);
