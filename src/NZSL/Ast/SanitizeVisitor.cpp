@@ -18,6 +18,7 @@
 #include <NZSL/Ast/EliminateUnusedPassVisitor.hpp>
 #include <NZSL/Ast/ExpressionType.hpp>
 #include <NZSL/Ast/IndexRemapperVisitor.hpp>
+#include <frozen/unordered_map.h>
 #include <numeric>
 #include <sstream>
 #include <stdexcept>
@@ -25,6 +26,26 @@
 
 namespace nzsl::Ast
 {
+	namespace
+	{
+		struct BuiltinData
+		{
+			ShaderStageTypeFlags compatibleStages;
+			std::variant<PrimitiveType, VectorType> type; //< Can't use ExpressionType because it's not constexpr
+		};
+
+		constexpr auto s_builtinData = frozen::make_unordered_map<Ast::BuiltinEntry, BuiltinData>({
+			{ Ast::BuiltinEntry::BaseInstance,   { ShaderStageType::Vertex,   PrimitiveType::Int32 } },
+			{ Ast::BuiltinEntry::BaseVertex,     { ShaderStageType::Vertex,   PrimitiveType::Int32 } },
+			{ Ast::BuiltinEntry::DrawIndex,      { ShaderStageType::Vertex,   PrimitiveType::Int32 } },
+			{ Ast::BuiltinEntry::FragCoord,      { ShaderStageType::Fragment, VectorType { 4, PrimitiveType::Float32 } } },
+			{ Ast::BuiltinEntry::FragDepth,      { ShaderStageType::Fragment, PrimitiveType::Float32 } },
+			{ Ast::BuiltinEntry::InstanceIndex,  { ShaderStageType::Vertex,   PrimitiveType::Int32 } },
+			{ Ast::BuiltinEntry::VertexIndex,    { ShaderStageType::Vertex,   PrimitiveType::Int32 } },
+			{ Ast::BuiltinEntry::VertexPosition, { ShaderStageType::Vertex,   VectorType { 4, PrimitiveType::Float32 } } }
+		});
+	}
+
 	struct SanitizeVisitor::CurrentFunctionData
 	{
 		std::optional<ShaderStageType> stageType;
@@ -1159,16 +1180,39 @@ namespace nzsl::Ast
 				m_context->entryFunctions[Nz::UnderlyingCast(stageType)] = &node;
 			}
 
-			if (node.parameters.size() > 1)
-				throw CompilerEntryFunctionParameterError{ node.parameters[1].sourceLocation };
+			if (clone->parameters.size() > 1)
+				throw CompilerEntryFunctionParameterError{ clone->parameters[1].sourceLocation };
 
-			if (!node.parameters.empty())
+			if (!clone->parameters.empty())
 			{
-				auto& parameter = node.parameters.front();
+				auto& parameter = clone->parameters.front();
 				if (parameter.type.IsResultingValue())
 				{
-					if (!IsStructType(ResolveAlias(parameter.type.GetResultingValue())))
+					const ExpressionType& paramType = ResolveAlias(parameter.type.GetResultingValue());
+					if (!IsStructType(paramType))
 						throw CompilerEntryFunctionParameterError{ parameter.sourceLocation };
+
+					const StructDescription* structDesc = m_context->structs.Retrieve(std::get<StructType>(paramType).structIndex, parameter.sourceLocation);
+					for (const auto& member : structDesc->members)
+					{
+						if (member.cond.HasValue())
+						{
+							if (!member.cond.IsResultingValue() || !member.cond.GetResultingValue())
+								continue;
+						}
+
+						if (!member.builtin.HasValue())
+							continue;
+
+						BuiltinEntry builtin = member.builtin.GetResultingValue();
+						auto it = s_builtinData.find(builtin);
+						if (it == s_builtinData.end())
+							throw AstInternalError{ member.sourceLocation, "missing builtin data" };
+
+						const BuiltinData& builtinData = it->second;
+						if (!builtinData.compatibleStages.Test(stageType))
+							throw CompilerBuiltinUnsupportedStageError{ parameter.sourceLocation, builtin, stageType };
+					}
 				}
 			}
 
@@ -1310,7 +1354,7 @@ namespace nzsl::Ast
 				continue;
 			}
 
-			ExpressionType resolvedType = member.type.GetResultingValue();
+			const ExpressionType& memberType = member.type.GetResultingValue();
 			if (clone->description.layout.IsResultingValue() && clone->description.layout.GetResultingValue() == StructLayout::Std140)
 			{
 				const ExpressionType& targetType = ResolveAlias(member.type.GetResultingValue());
@@ -1324,6 +1368,22 @@ namespace nzsl::Ast
 					if (!desc->layout.HasValue() || desc->layout.GetResultingValue() != clone->description.layout.GetResultingValue())
 						throw CompilerStructLayoutInnerMismatchError{ member.sourceLocation, "std140", "<TODO>" };
 				}
+			}
+
+			if (member.builtin.IsResultingValue())
+			{
+				BuiltinEntry builtin = member.builtin.GetResultingValue();
+				auto it = s_builtinData.find(builtin);
+				if (it == s_builtinData.end())
+					throw AstInternalError{ member.sourceLocation, "missing builtin data" };
+
+				const BuiltinData& builtinData = it->second;
+				std::visit([&](auto&& arg)
+				{
+					using T = std::decay_t<decltype(arg)>;
+					if (!std::holds_alternative<T>(memberType) || std::get<T>(memberType) != arg)
+						throw CompilerBuiltinUnexpectedTypeError{ member.sourceLocation, builtin, ToString(arg, member.sourceLocation), ToString(memberType, member.sourceLocation) };
+				}, builtinData.type);
 			}
 		}
 
@@ -1499,7 +1559,7 @@ namespace nzsl::Ast
 						break;
 
 					default:
-						throw AstInternalError{ node.sourceLocation, "unexpected counter type <TODO>" };
+						throw AstInternalError{ node.sourceLocation, "unexpected counter type " + ToString(counterType, fromExpr->sourceLocation) };
 				}
 
 				return multi;

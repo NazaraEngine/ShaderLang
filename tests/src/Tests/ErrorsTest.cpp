@@ -1,5 +1,6 @@
 #include <Tests/ShaderUtils.hpp>
 #include <NZSL/ShaderLangParser.hpp>
+#include <NZSL/Ast/SanitizeVisitor.hpp>
 #include <catch2/catch.hpp>
 
 TEST_CASE("errors", "[Shader]")
@@ -19,5 +20,36 @@ TEST_CASE("errors", "[Shader]")
 		CHECK_THROWS_WITH(nzsl::Parse("module;"), "(1,1 -> 6): PMissingAttribute error: missing attribute nzsl_version");
 		CHECK_THROWS_WITH(nzsl::Parse("[nzsl_version] module;"), "(1,2 -> 13): PAttributeMissingParameter error: attribute nzsl_version requires a parameter");
 		CHECK_THROWS_WITH(nzsl::Parse("[nzsl_version(\"1.0\"), nzsl_version(\"1.0\")] module;"), "(1,23 -> 41): PAttributeMultipleUnique error: attribute nzsl_version can only be present once");
+	}
+
+	SECTION("Checking compiler errors")
+	{
+		auto Compile = [](std::string_view sourceCode)
+		{
+			nzsl::Ast::Sanitize(*nzsl::Parse(sourceCode));
+		};
+
+		CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+struct Input
+{
+	[builtin(position)] pos: f32
+}
+		)"), "(7,22 -> 24): CBuiltinUnexpectedType error: builtin position expected type vec4[f32], got type f32");
+
+		CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+struct Input
+{
+	[builtin(position)] pos: vec4[f32]
+}
+
+[entry(frag)]
+fn main(input: Input) {}
+		)"), "(11,9 -> 20): CBuiltinUnsupportedStage error: builtin position is not available in fragment stage");
 	}
 }
