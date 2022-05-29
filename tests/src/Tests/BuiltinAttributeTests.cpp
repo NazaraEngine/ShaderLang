@@ -6,7 +6,331 @@
 
 TEST_CASE("builtin attributes", "[Shader]")
 {
-	SECTION("vertex shader")
+	SECTION("vertex draw parameters")
+	{
+		std::string_view nzslSource = R"(
+[nzsl_version("1.0")]
+module;
+
+struct Input
+{
+	[builtin(baseinstance)] base_instance: i32,
+	[builtin(basevertex)] base_vertex: i32,
+	[builtin(drawindex)] draw_index: i32,
+	[builtin(instanceindex)] instance_index: i32,
+	[builtin(vertexindex)] vertex_index: i32,
+}
+
+struct Output
+{
+	[builtin(position)] position: vec4[f32]
+}
+
+[entry(vert)]
+fn main(input: Input) -> Output
+{
+	let bi = input.base_instance;
+	let bv = input.base_vertex;
+	let di = input.draw_index;
+	let ii = input.instance_index;
+	let vi = input.vertex_index;
+
+	let color = f32(bi + bv + di + ii + vi);
+
+	let output: Output;
+	output.position = color.xxxx;
+	return output;
+}
+)";
+
+		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
+		shaderModule = SanitizeModule(*shaderModule);
+
+		nzsl::GlslWriter::Environment glslEnv;
+
+		WHEN("generating without draw parameters support")
+		{
+			nzsl::GlslWriter writer;
+			CHECK_THROWS_WITH(writer.Generate(*shaderModule), "Draw parameters are used but not supported and fallback uniforms are disabled, cannot continue");
+		}
+
+		WHEN("generating with draw parameters support as an extension")
+		{
+			glslEnv.glES = false;
+			glslEnv.extCallback = [](const std::string_view& extName) { return extName == "GL_ARB_shader_draw_parameters"; };
+
+			ExpectGLSL(*shaderModule, R"(
+#extension GL_ARB_shader_draw_parameters : require
+
+struct Input
+{
+	int base_instance;
+	int base_vertex;
+	int draw_index;
+	int instance_index;
+	int vertex_index;
+};
+
+struct Output
+{
+	vec4 position;
+};
+
+/**************** Inputs ****************/
+
+/*************** Outputs ***************/
+
+void main()
+{
+	Input input_;
+	input_.base_instance = gl_BaseInstanceARB;
+	input_.base_vertex = gl_BaseVertexARB;
+	input_.draw_index = gl_DrawIDARB;
+	input_.instance_index = (gl_BaseInstanceARB + gl_InstanceID);
+	input_.vertex_index = gl_VertexID;
+	
+	int bi = input_.base_instance;
+	int bv = input_.base_vertex;
+	int di = input_.draw_index;
+	int ii = input_.instance_index;
+	int vi = input_.vertex_index;
+	float color = float((((bi + bv) + di) + ii) + vi);
+	Output output_;
+	output_.position = vec4(color, color, color, color);
+	
+	gl_Position = output_.position;
+	return;
+}
+)", glslEnv, false); //< glslang doesn't seem to support GL_ARB_shader_draw_parameters
+		}
+		
+		WHEN("generating with native draw parameters support")
+		{
+			glslEnv.glES = false;
+			glslEnv.glMajorVersion = 4;
+			glslEnv.glMinorVersion = 6;
+
+			ExpectGLSL(*shaderModule, R"(
+struct Input
+{
+	int base_instance;
+	int base_vertex;
+	int draw_index;
+	int instance_index;
+	int vertex_index;
+};
+
+struct Output
+{
+	vec4 position;
+};
+
+/**************** Inputs ****************/
+
+/*************** Outputs ***************/
+
+void main()
+{
+	Input input_;
+	input_.base_instance = gl_BaseInstance;
+	input_.base_vertex = gl_BaseVertex;
+	input_.draw_index = gl_DrawID;
+	input_.instance_index = (gl_BaseInstance + gl_InstanceID);
+	input_.vertex_index = gl_VertexID;
+	
+	int bi = input_.base_instance;
+	int bv = input_.base_vertex;
+	int di = input_.draw_index;
+	int ii = input_.instance_index;
+	int vi = input_.vertex_index;
+	float color = float((((bi + bv) + di) + ii) + vi);
+	Output output_;
+	output_.position = vec4(color, color, color, color);
+	
+	gl_Position = output_.position;
+	return;
+}
+)", glslEnv);
+		}
+		
+		WHEN("generating with fallback draw parameters support")
+		{
+			glslEnv.allowDrawParametersUniformsFallback = true;
+
+			ExpectGLSL(*shaderModule, R"(
+uniform int _nzslBaseInstance;
+uniform int _nzslBaseVertex;
+uniform int _nzslDrawID;
+
+struct Input
+{
+	int base_instance;
+	int base_vertex;
+	int draw_index;
+	int instance_index;
+	int vertex_index;
+};
+
+struct Output
+{
+	vec4 position;
+};
+
+/**************** Inputs ****************/
+
+/*************** Outputs ***************/
+
+void main()
+{
+	Input input_;
+	input_.base_instance = _nzslBaseInstance;
+	input_.base_vertex = _nzslBaseVertex;
+	input_.draw_index = _nzslDrawID;
+	input_.instance_index = (_nzslBaseInstance + gl_InstanceID);
+	input_.vertex_index = gl_VertexID;
+	
+	int bi = input_.base_instance;
+	int bv = input_.base_vertex;
+	int di = input_.draw_index;
+	int ii = input_.instance_index;
+	int vi = input_.vertex_index;
+	float color = float((((bi + bv) + di) + ii) + vi);
+	Output output_;
+	output_.position = vec4(color, color, color, color);
+	
+	gl_Position = output_.position;
+	return;
+}
+)", glslEnv);
+		}
+
+		ExpectNZSL(*shaderModule, R"(
+struct Input
+{
+	[builtin(baseinstance)] base_instance: i32,
+	[builtin(basevertex)] base_vertex: i32,
+	[builtin(drawindex)] draw_index: i32,
+	[builtin(instanceindex)] instance_index: i32,
+	[builtin(vertexindex)] vertex_index: i32
+}
+
+struct Output
+{
+	[builtin(position)] position: vec4[f32]
+}
+
+[entry(vert)]
+fn main(input: Input) -> Output
+{
+	let bi: i32 = input.base_instance;
+	let bv: i32 = input.base_vertex;
+	let di: i32 = input.draw_index;
+	let ii: i32 = input.instance_index;
+	let vi: i32 = input.vertex_index;
+	let color: f32 = f32((((bi + bv) + di) + ii) + vi);
+	let output: Output;
+	output.position = color.xxxx;
+	return output;
+}
+)");
+
+		nzsl::SpirvWriter::Environment spirvEnv;
+		spirvEnv.spvMajorVersion = 1;
+		spirvEnv.spvMinorVersion = 3;
+
+		ExpectSPIRV(*shaderModule, R"(
+      OpDecorate %9 Decoration(BuiltIn) BuiltIn(BaseInstance)
+      OpDecorate %12 Decoration(BuiltIn) BuiltIn(BaseVertex)
+      OpDecorate %14 Decoration(BuiltIn) BuiltIn(DrawIndex)
+      OpDecorate %16 Decoration(BuiltIn) BuiltIn(InstanceIndex)
+      OpDecorate %18 Decoration(BuiltIn) BuiltIn(VertexIndex)
+      OpDecorate %22 Decoration(BuiltIn) BuiltIn(Position))", spirvEnv, true);
+	}
+	
+	SECTION("vertex index")
+	{
+		std::string_view nzslSource = R"(
+[nzsl_version("1.0")]
+module;
+
+struct Input
+{
+	[builtin(vertexindex)] vert_index: i32
+}
+
+struct Output
+{
+	[builtin(position)] position: vec4[f32]
+}
+
+[entry(vert)]
+fn main(input: Input) -> Output
+{
+	let color = f32(input.vert_index);
+
+	let output: Output;
+	output.position = color.xxxx;
+	return output;
+}
+)";
+
+		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
+		shaderModule = SanitizeModule(*shaderModule);
+
+		ExpectGLSL(*shaderModule, R"(
+struct Input
+{
+	int vert_index;
+};
+
+struct Output
+{
+	vec4 position;
+};
+
+/**************** Inputs ****************/
+
+/*************** Outputs ***************/
+
+void main()
+{
+	Input input_;
+	input_.vert_index = gl_VertexID;
+	
+	float color = float(input_.vert_index);
+	Output output_;
+	output_.position = vec4(color, color, color, color);
+	
+	gl_Position = output_.position;
+	return;
+}
+)");
+
+		ExpectNZSL(*shaderModule, R"(
+struct Input
+{
+	[builtin(vertexindex)] vert_index: i32
+}
+
+struct Output
+{
+	[builtin(position)] position: vec4[f32]
+}
+
+[entry(vert)]
+fn main(input: Input) -> Output
+{
+	let color: f32 = f32(input.vert_index);
+	let output: Output;
+	output.position = color.xxxx;
+	return output;
+}
+)");
+
+		ExpectSPIRV(*shaderModule, R"(OpDecorate %9 Decoration(BuiltIn) BuiltIn(VertexIndex))", {}, true);
+	}
+
+	SECTION("vertex position")
 	{
 		std::string_view nzslSource = R"(
 [nzsl_version("1.0")]
@@ -112,17 +436,6 @@ fn main() -> Output
 }
 )");
 
-		ExpectSPIRV(*shaderModule, R"(
-OpFunction
-OpLabel
-OpVariable
-OpCompositeConstruct
-OpAccessChain
-OpStore
-OpLoad
-OpCompositeExtract
-OpStore
-OpReturn
-OpFunctionEnd)");
+		ExpectSPIRV(*shaderModule, R"(OpDecorate %7 Decoration(BuiltIn) BuiltIn(Position))", {}, true);
 	}
 }
