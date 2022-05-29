@@ -132,7 +132,7 @@ namespace
 	}
 }
 
-void ExpectGLSL(const nzsl::Ast::Module& shaderModule, std::string_view expectedOutput, const nzsl::GlslWriter::Environment& env)
+void ExpectGLSL(const nzsl::Ast::Module& shaderModule, std::string_view expectedOutput, const nzsl::GlslWriter::Environment& env, bool testShaderCompilation)
 {
 	expectedOutput = Trim(expectedOutput);
 
@@ -176,6 +176,9 @@ void ExpectGLSL(const nzsl::Ast::Module& shaderModule, std::string_view expected
 			REQUIRE(output.find(expectedOutput) != std::string::npos);
 		}
 
+		if (!testShaderCompilation)
+			return;
+
 		WHEN("Validating full GLSL code (using glslang)")
 		{
 			EShLanguage stage = EShLangVertex;
@@ -200,7 +203,7 @@ void ExpectGLSL(const nzsl::Ast::Module& shaderModule, std::string_view expected
 			const char* source = output.c_str();
 			glslangShader.setStrings(&source, 1);
 
-			if (!glslangShader.parse(&s_minResources, 100, false, static_cast<EShMessages>(EShMsgDefault | EShMsgKeepUncalled)))
+			if (!glslangShader.parse(&s_minResources, 300, false, static_cast<EShMessages>(EShMsgDefault | EShMsgKeepUncalled)))
 			{
 				INFO("full GLSL output:\n" << output << "\nerror:\n" << glslangShader.getInfoLog());
 				REQUIRE(false);
@@ -239,7 +242,7 @@ void ExpectNZSL(const nzsl::Ast::Module& shaderModule, std::string_view expected
 	}
 }
 
-void ExpectSPIRV(const nzsl::Ast::Module& shaderModule, std::string_view expectedOutput, bool outputParameter)
+void ExpectSPIRV(const nzsl::Ast::Module& shaderModule, std::string_view expectedOutput, const nzsl::SpirvWriter::Environment& env, bool outputParameter)
 {
 	expectedOutput = Trim(expectedOutput);
 
@@ -253,6 +256,8 @@ void ExpectSPIRV(const nzsl::Ast::Module& shaderModule, std::string_view expecte
 		const nzsl::Ast::Module& targetModule = (sanitizedModule) ? *sanitizedModule : shaderModule;
 
 		nzsl::SpirvWriter writer;
+		writer.SetEnv(env);
+
 		nzsl::SpirvPrinter printer;
 
 		nzsl::SpirvPrinter::Settings settings;
@@ -270,8 +275,22 @@ void ExpectSPIRV(const nzsl::Ast::Module& shaderModule, std::string_view expecte
 
 		WHEN("Validating full SPIRV code (using libspirv)")
 		{
+			std::uint32_t spvVersion = env.spvMajorVersion * 100 + env.spvMinorVersion * 10;
+
+			spv_target_env targetEnv;
+			if (spvVersion >= 160)
+				targetEnv = spv_target_env::SPV_ENV_VULKAN_1_3;
+			else if (spvVersion >= 150)
+				targetEnv = spv_target_env::SPV_ENV_VULKAN_1_2;
+			else if (spvVersion >= 140)
+				targetEnv = spv_target_env::SPV_ENV_VULKAN_1_1_SPIRV_1_4;
+			else if (spvVersion >= 130)
+				targetEnv = spv_target_env::SPV_ENV_VULKAN_1_1;
+			else
+				targetEnv = spv_target_env::SPV_ENV_VULKAN_1_0;
+
 			// validate SPIRV with libspirv
-			spvtools::SpirvTools spirvTools(spv_target_env::SPV_ENV_VULKAN_1_0);
+			spvtools::SpirvTools spirvTools(targetEnv);
 			spirvTools.SetMessageConsumer([&](spv_message_level_t /*level*/, const char* /*source*/, const spv_position_t& /*position*/, const char* message)
 			{
 				std::string fullSpirv;

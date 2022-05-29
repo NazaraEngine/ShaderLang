@@ -708,9 +708,10 @@ namespace nzsl
 
 		if (m_currentState->hasDrawParametersUniforms)
 		{
-			AppendLine("uniform int ", s_glslWriterShaderDrawParametersBaseInstanceName, "; ");
-			AppendLine("uniform int ", s_glslWriterShaderDrawParametersBaseVertexName, "; ");
-			AppendLine("uniform int ", s_glslWriterShaderDrawParametersDrawIdName, "; ");
+			AppendLine("uniform int ", s_glslWriterShaderDrawParametersBaseInstanceName, ";");
+			AppendLine("uniform int ", s_glslWriterShaderDrawParametersBaseVertexName, ";");
+			AppendLine("uniform int ", s_glslWriterShaderDrawParametersDrawIdName, ";");
+			AppendLine();
 		}
 	}
 
