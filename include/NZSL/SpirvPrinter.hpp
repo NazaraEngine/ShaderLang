@@ -10,6 +10,7 @@
 #include <NZSL/Config.hpp>
 #include <NZSL/Config.hpp>
 #include <NZSL/SpirvDecoder.hpp>
+#include <iosfwd>
 #include <string>
 #include <vector>
 
@@ -42,6 +43,7 @@ namespace nzsl
 		private:
 			bool HandleHeader(const SpirvHeader& header) override;
 			bool HandleOpcode(const SpirvInstruction& instruction, std::uint32_t wordCount) override;
+			void PrintOperand(std::ostream& instructionStream, const SpirvInstruction::Operand* operand);
 
 			struct State;
 

@@ -74,123 +74,7 @@ namespace nzsl
 
 				if (operand->kind != SpirvOperandKind::IdResult)
 				{
-					switch (operand->kind)
-					{
-						case SpirvOperandKind::IdRef:
-						case SpirvOperandKind::IdResultType:
-						case SpirvOperandKind::IdMemorySemantics:
-						case SpirvOperandKind::IdScope:
-						{
-							std::uint32_t value = ReadWord();
-							instructionStream << " %" << value;
-							break;
-						}
-
-						case SpirvOperandKind::ImageOperands:
-						case SpirvOperandKind::FPFastMathMode:
-						case SpirvOperandKind::SelectionControl:
-						case SpirvOperandKind::LoopControl:
-						case SpirvOperandKind::FunctionControl:
-						case SpirvOperandKind::MemorySemantics:
-						case SpirvOperandKind::MemoryAccess:
-						case SpirvOperandKind::KernelProfilingInfo:
-						case SpirvOperandKind::RayFlags:
-						case SpirvOperandKind::SourceLanguage:
-						case SpirvOperandKind::ExecutionModel:
-						case SpirvOperandKind::AddressingModel:
-						case SpirvOperandKind::MemoryModel:
-						case SpirvOperandKind::ExecutionMode:
-						case SpirvOperandKind::StorageClass:
-						case SpirvOperandKind::Dim:
-						case SpirvOperandKind::SamplerAddressingMode:
-						case SpirvOperandKind::SamplerFilterMode:
-						case SpirvOperandKind::ImageFormat:
-						case SpirvOperandKind::ImageChannelOrder:
-						case SpirvOperandKind::ImageChannelDataType:
-						case SpirvOperandKind::FPRoundingMode:
-						case SpirvOperandKind::LinkageType:
-						case SpirvOperandKind::AccessQualifier:
-						case SpirvOperandKind::FunctionParameterAttribute:
-						case SpirvOperandKind::Decoration:
-						case SpirvOperandKind::BuiltIn:
-						case SpirvOperandKind::Scope:
-						case SpirvOperandKind::GroupOperation:
-						case SpirvOperandKind::KernelEnqueueFlags:
-						case SpirvOperandKind::Capability:
-						case SpirvOperandKind::RayQueryIntersection:
-						case SpirvOperandKind::RayQueryCommittedIntersectionType:
-						case SpirvOperandKind::RayQueryCandidateIntersectionType:
-						case SpirvOperandKind::LiteralExtInstInteger:
-						case SpirvOperandKind::LiteralSpecConstantOpInteger:
-						case SpirvOperandKind::LiteralContextDependentNumber: //< FIXME
-						{
-							std::uint32_t value = ReadWord();
-							instructionStream << " " << operand->name << "(" << value << ")";
-							break;
-						}
-
-						case SpirvOperandKind::LiteralInteger:
-						{
-							std::uint32_t value = ReadWord();
-							instructionStream << " " << value;
-							break;
-						}
-
-						case SpirvOperandKind::LiteralString:
-						{
-							std::string str = ReadString();
-							instructionStream << " \"" << str << "\"";
-
-							/*
-							std::size_t offset = GetOutputOffset();
-
-							std::size_t size4 = CountWord(str);
-							for (std::size_t i = 0; i < size4; ++i)
-							{
-								std::uint32_t codepoint = 0;
-								for (std::size_t j = 0; j < 4; ++j)
-								{
-									std::size_t pos = i * 4 + j;
-									if (pos < str.size())
-										codepoint |= std::uint32_t(str[pos]) << (j * 8);
-								}
-
-								Append(codepoint);
-							}
-							*/
-							break;
-						}
-
-
-						case SpirvOperandKind::PairLiteralIntegerIdRef:
-						{
-							ReadWord();
-							ReadWord();
-							break;
-						}
-
-						case SpirvOperandKind::PairIdRefLiteralInteger:
-						{
-							ReadWord();
-							ReadWord();
-							break;
-						}
-
-						case SpirvOperandKind::PairIdRefIdRef:
-						{
-							ReadWord();
-							ReadWord();
-							break;
-						}
-
-						/*case SpirvOperandKind::LiteralContextDependentNumber:
-						{
-							throw std::runtime_error("not yet implemented");
-						}*/
-
-						default:
-							break;
-					}
+					PrintOperand(instructionStream, operand);
 				}
 				else
 					resultId = ReadWord();
@@ -217,5 +101,147 @@ namespace nzsl
 		m_currentState->stream << "\n";
 
 		return true;
+	}
+	
+	void SpirvPrinter::PrintOperand(std::ostream& instructionStream, const SpirvInstruction::Operand* operand)
+	{
+		switch (operand->kind)
+		{
+			case SpirvOperandKind::IdRef:
+			case SpirvOperandKind::IdResultType:
+			case SpirvOperandKind::IdMemorySemantics:
+			case SpirvOperandKind::IdScope:
+			{
+				std::uint32_t value = ReadWord();
+				instructionStream << " %" << value;
+				break;
+			}
+
+#define NZSL_HandleOperandKind(Kind) \
+			case SpirvOperandKind:: Kind : \
+			{ \
+				Spirv##Kind value = static_cast<Spirv##Kind>(ReadWord()); \
+				instructionStream << " " #Kind "(" << ToString(value) << ")"; \
+\
+				/* handle extra operands */ \
+				auto [operandPtr, operandCount] = GetSpirvExtraOperands(value); \
+				for (std::size_t i = 0; i < operandCount; ++i) \
+					PrintOperand(instructionStream, operandPtr + i); \
+\
+				break; \
+			} \
+
+			NZSL_HandleOperandKind(AccessQualifier)
+			NZSL_HandleOperandKind(AddressingModel)
+			NZSL_HandleOperandKind(BuiltIn)
+			NZSL_HandleOperandKind(Capability)
+			NZSL_HandleOperandKind(Decoration)
+			NZSL_HandleOperandKind(Dim)
+			NZSL_HandleOperandKind(ExecutionMode)
+			NZSL_HandleOperandKind(ExecutionModel)
+			NZSL_HandleOperandKind(FPDenormMode)
+			NZSL_HandleOperandKind(FPOperationMode)
+			NZSL_HandleOperandKind(FPRoundingMode)
+			NZSL_HandleOperandKind(FunctionParameterAttribute)
+			NZSL_HandleOperandKind(GroupOperation)
+			NZSL_HandleOperandKind(ImageChannelDataType)
+			NZSL_HandleOperandKind(ImageChannelOrder)
+			NZSL_HandleOperandKind(ImageFormat)
+			NZSL_HandleOperandKind(KernelEnqueueFlags)
+			NZSL_HandleOperandKind(LinkageType)
+			NZSL_HandleOperandKind(MemoryModel)
+			NZSL_HandleOperandKind(OverflowModes)
+			NZSL_HandleOperandKind(PackedVectorFormat)
+			NZSL_HandleOperandKind(QuantizationModes)
+			NZSL_HandleOperandKind(RayQueryCandidateIntersectionType)
+			NZSL_HandleOperandKind(RayQueryCommittedIntersectionType)
+			NZSL_HandleOperandKind(RayQueryIntersection)
+			NZSL_HandleOperandKind(SamplerAddressingMode)
+			NZSL_HandleOperandKind(SamplerFilterMode)
+			NZSL_HandleOperandKind(Scope)
+			NZSL_HandleOperandKind(SourceLanguage)
+			NZSL_HandleOperandKind(StorageClass)
+#undef NZSL_HandleOperandKind
+
+			case SpirvOperandKind::ImageOperands:
+			case SpirvOperandKind::FPFastMathMode:
+			case SpirvOperandKind::SelectionControl:
+			case SpirvOperandKind::LoopControl:
+			case SpirvOperandKind::FunctionControl:
+			case SpirvOperandKind::MemorySemantics:
+			case SpirvOperandKind::MemoryAccess:
+			case SpirvOperandKind::KernelProfilingInfo:
+			case SpirvOperandKind::RayFlags:
+			case SpirvOperandKind::LiteralExtInstInteger:
+			case SpirvOperandKind::LiteralSpecConstantOpInteger:
+			case SpirvOperandKind::LiteralContextDependentNumber: //< FIXME
+			{
+				std::uint32_t value = ReadWord();
+				instructionStream << " " << operand->name << "(" << value << ")";
+				break;
+			}
+
+			case SpirvOperandKind::LiteralInteger:
+			{
+				std::uint32_t value = ReadWord();
+				instructionStream << " " << value;
+				break;
+			}
+
+			case SpirvOperandKind::LiteralString:
+			{
+				std::string str = ReadString();
+				instructionStream << " \"" << str << "\"";
+
+				/*
+				std::size_t offset = GetOutputOffset();
+
+				std::size_t size4 = CountWord(str);
+				for (std::size_t i = 0; i < size4; ++i)
+				{
+					std::uint32_t codepoint = 0;
+					for (std::size_t j = 0; j < 4; ++j)
+					{
+						std::size_t pos = i * 4 + j;
+						if (pos < str.size())
+							codepoint |= std::uint32_t(str[pos]) << (j * 8);
+					}
+
+					Append(codepoint);
+				}
+				*/
+				break;
+			}
+
+
+			case SpirvOperandKind::PairLiteralIntegerIdRef:
+			{
+				ReadWord();
+				ReadWord();
+				break;
+			}
+
+			case SpirvOperandKind::PairIdRefLiteralInteger:
+			{
+				ReadWord();
+				ReadWord();
+				break;
+			}
+
+			case SpirvOperandKind::PairIdRefIdRef:
+			{
+				ReadWord();
+				ReadWord();
+				break;
+			}
+
+			/*case SpirvOperandKind::LiteralContextDependentNumber:
+			{
+				throw std::runtime_error("not yet implemented");
+			}*/
+
+			default:
+				break;
+		}
 	}
 }

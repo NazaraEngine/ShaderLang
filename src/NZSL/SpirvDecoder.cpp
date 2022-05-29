@@ -44,7 +44,7 @@ namespace nzsl
 			std::uint16_t wordCount = static_cast<std::uint16_t>((firstWord >> 16) & 0xFFFF);
 			std::uint16_t opcode = static_cast<std::uint16_t>(firstWord & 0xFFFF);
 
-			const SpirvInstruction* inst = GetInstructionData(opcode);
+			const SpirvInstruction* inst = GetSpirvInstruction(opcode);
 			if (!inst)
 				throw std::runtime_error("invalid instruction");
 
