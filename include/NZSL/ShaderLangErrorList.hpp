@@ -57,6 +57,8 @@ NZSL_SHADERLANG_COMPILER_ERROR(AttributeUnexpectedExpression, "unexpected expres
 NZSL_SHADERLANG_COMPILER_ERROR(AttributeUnexpectedType, "unexpected attribute type")
 NZSL_SHADERLANG_COMPILER_ERROR(BinaryIncompatibleTypes, "incompatibles types ({} and {})", std::string, std::string)
 NZSL_SHADERLANG_COMPILER_ERROR(BinaryUnsupported, "{} type ({}) does not support this binary operation", std::string, std::string)
+NZSL_SHADERLANG_COMPILER_ERROR(BuiltinUnexpectedType, "builtin {} expected type {}, got type {}", Ast::BuiltinEntry, std::string, std::string)
+NZSL_SHADERLANG_COMPILER_ERROR(BuiltinUnsupportedStage, "builtin {} is not available in {} stage", Ast::BuiltinEntry, ShaderStageType)
 NZSL_SHADERLANG_COMPILER_ERROR(BranchOutsideOfFunction, "non-const branching statements can only exist inside a function")
 NZSL_SHADERLANG_COMPILER_ERROR(CastComponentMismatch, "component count ({}) doesn't match required component count ({})", std::uint32_t, std::uint32_t)
 NZSL_SHADERLANG_COMPILER_ERROR(CastIncompatibleBaseTypes, "incompatibles base types (expected {}, got {})", std::string, std::string)

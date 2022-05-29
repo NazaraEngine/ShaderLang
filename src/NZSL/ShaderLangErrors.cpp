@@ -37,6 +37,30 @@ struct fmt::formatter<nzsl::Ast::AttributeType> : formatter<string_view>
 };
 
 template <>
+struct fmt::formatter<nzsl::Ast::BuiltinEntry> : formatter<string_view>
+{
+	template <typename FormatContext>
+	auto format(const nzsl::Ast::BuiltinEntry& p, FormatContext& ctx) -> decltype(ctx.out())
+	{
+		// TODO: Add ToString
+		std::string_view name = "<unhandled builtin>";
+		switch (p)
+		{
+			case nzsl::Ast::BuiltinEntry::BaseInstance:   name = "baseinstance"; break;
+			case nzsl::Ast::BuiltinEntry::BaseVertex:     name = "basevertex"; break;
+			case nzsl::Ast::BuiltinEntry::DrawIndex:      name = "drawindex"; break;
+			case nzsl::Ast::BuiltinEntry::FragCoord:      name = "fragcoord"; break;
+			case nzsl::Ast::BuiltinEntry::FragDepth:      name = "fragdepth"; break;
+			case nzsl::Ast::BuiltinEntry::InstanceIndex:  name = "instanceindex"; break;
+			case nzsl::Ast::BuiltinEntry::VertexIndex :   name = "vertexindex"; break;
+			case nzsl::Ast::BuiltinEntry::VertexPosition: name = "position"; break;
+		}
+
+		return formatter<string_view>::format(name, ctx);
+	}
+};
+
+template <>
 struct fmt::formatter<nzsl::ErrorCategory> : formatter<string_view>
 {
 	template <typename FormatContext>
