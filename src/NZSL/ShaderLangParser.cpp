@@ -481,10 +481,10 @@ namespace nzsl
 	Ast::StatementPtr Parser::ParseDiscardStatement()
 	{
 		const Token& discardToken = Expect(Advance(), TokenType::Discard);
-		const Token& endToken = Expect(Advance(), TokenType::Semicolon);
+		Expect(Advance(), TokenType::Semicolon);
 
 		auto discardStatement = ShaderBuilder::Discard();
-		discardStatement->sourceLocation = SourceLocation::BuildFromTo(discardToken.location, endToken.location);
+		discardStatement->sourceLocation = discardToken.location;
 
 		return discardStatement;
 	}
