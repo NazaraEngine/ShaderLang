@@ -73,13 +73,13 @@ namespace nzsl
 			Ast::ExpressionPtr ParseConstSelectExpression();
 			Ast::ExpressionPtr ParseExpression();
 			std::vector<Ast::ExpressionPtr> ParseExpressionList(TokenType terminationToken, SourceLocation* terminationLocation);
+			Ast::ExpressionPtr ParseExpressionStatement();
 			Ast::ExpressionPtr ParseFloatingPointExpression();
 			Ast::ExpressionPtr ParseIdentifier();
 			Ast::ExpressionPtr ParseIntegerExpression();
 			Ast::ExpressionPtr ParseParenthesisExpression();
 			Ast::ExpressionPtr ParsePrimaryExpression();
 			Ast::ExpressionPtr ParseStringExpression();
-			Ast::ExpressionPtr ParseVariableAssignation();
 
 			const std::string& ParseIdentifierAsName(SourceLocation* sourceLocation);
 			std::string ParseModuleName();

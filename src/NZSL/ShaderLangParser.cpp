@@ -900,12 +900,14 @@ namespace nzsl
 					break;
 
 				case TokenType::Identifier:
+				{
 					if (!attributes.empty())
 						throw ParserUnexpectedTokenError{ token.location, token.type };
 
-					statement = ShaderBuilder::ExpressionStatement(ParseVariableAssignation());
+					statement = ShaderBuilder::ExpressionStatement(ParseExpressionStatement());
 					Expect(Advance(), TokenType::Semicolon);
 					break;
+				}
 
 				case TokenType::If:
 					if (!attributes.empty())
@@ -1075,40 +1077,6 @@ namespace nzsl
 		}
 		else
 			return structDeclStatement;
-	}
-
-	Ast::ExpressionPtr Parser::ParseVariableAssignation()
-	{
-		// Variable expression
-		Ast::ExpressionPtr left = ParseExpression();
-
-		// Assignation type 
-		Ast::AssignType assignType;
-
-		const Token& token = Peek();
-		switch (token.type)
-		{
-			case TokenType::Assign: assignType = Ast::AssignType::Simple; break;
-			case TokenType::DivideAssign: assignType = Ast::AssignType::CompoundDivide; break;
-			case TokenType::LogicalAndAssign: assignType = Ast::AssignType::CompoundLogicalAnd; break;
-			case TokenType::LogicalOrAssign: assignType = Ast::AssignType::CompoundLogicalOr; break;
-			case TokenType::MultiplyAssign: assignType = Ast::AssignType::CompoundMultiply; break;
-			case TokenType::MinusAssign: assignType = Ast::AssignType::CompoundSubtract; break;
-			case TokenType::PlusAssign: assignType = Ast::AssignType::CompoundAdd; break;
-
-			default:
-				throw ParserUnexpectedTokenError{ token.location, token.type };
-		}
-
-		Consume();
-
-		// Value expression
-		Ast::ExpressionPtr right = ParseExpression();
-
-		auto assignExpr = ShaderBuilder::Assign(assignType, std::move(left), std::move(right));
-		assignExpr->sourceLocation = SourceLocation::BuildFromTo(assignExpr->left->sourceLocation, assignExpr->right->sourceLocation);
-
-		return assignExpr;
 	}
 
 	Ast::StatementPtr Parser::ParseVariableDeclaration()
@@ -1284,6 +1252,43 @@ namespace nzsl
 			*terminationLocation = endToken.location;
 
 		return parameters;
+	}
+	
+	Ast::ExpressionPtr Parser::ParseExpressionStatement()
+	{
+		// Variable expression
+		Ast::ExpressionPtr left = ParseExpression();
+
+		// Assignation type 
+		Ast::AssignType assignType;
+
+		const Token& token = Peek();
+		switch (token.type)
+		{
+			case TokenType::Assign:           assignType = Ast::AssignType::Simple; break;
+			case TokenType::DivideAssign:     assignType = Ast::AssignType::CompoundDivide; break;
+			case TokenType::LogicalAndAssign: assignType = Ast::AssignType::CompoundLogicalAnd; break;
+			case TokenType::LogicalOrAssign:  assignType = Ast::AssignType::CompoundLogicalOr; break;
+			case TokenType::MultiplyAssign:   assignType = Ast::AssignType::CompoundMultiply; break;
+			case TokenType::MinusAssign:      assignType = Ast::AssignType::CompoundSubtract; break;
+			case TokenType::PlusAssign:       assignType = Ast::AssignType::CompoundAdd; break;
+
+			case TokenType::Semicolon:
+				return left; // discarded expression (ex: function call with no return)
+
+			default:
+				throw ParserUnexpectedTokenError{ token.location, token.type };
+		}
+
+		Consume();
+
+		// Value expression
+		Ast::ExpressionPtr right = ParseExpression();
+
+		auto assignExpr = ShaderBuilder::Assign(assignType, std::move(left), std::move(right));
+		assignExpr->sourceLocation = SourceLocation::BuildFromTo(assignExpr->left->sourceLocation, assignExpr->right->sourceLocation);
+
+		return assignExpr;
 	}
 
 	Ast::ExpressionPtr Parser::ParseFloatingPointExpression()
