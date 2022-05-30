@@ -22,7 +22,6 @@
 #include <numeric>
 #include <sstream>
 #include <stdexcept>
-#include <unordered_set>
 
 namespace nzsl::Ast
 {
@@ -45,14 +44,6 @@ namespace nzsl::Ast
 			{ Ast::BuiltinEntry::VertexPosition, { ShaderStageType::Vertex,   VectorType { 4, PrimitiveType::Float32 } } }
 		});
 	}
-
-	struct SanitizeVisitor::CurrentFunctionData
-	{
-		std::optional<ShaderStageType> stageType;
-		Nz::Bitset<> calledFunctions;
-		DeclareFunctionStatement* statement;
-		FunctionFlags flags;
-	};
 
 	template<typename T>
 	struct SanitizeVisitor::IdentifierList
@@ -157,6 +148,16 @@ namespace nzsl::Ast
 		std::vector<Scope> scopes;
 	};
 
+	struct SanitizeVisitor::FunctionData
+	{
+		std::unordered_multimap<BuiltinEntry, SourceLocation> usedBuiltins;
+		std::unordered_multimap<ShaderStageType, SourceLocation> requiredShaderStage;
+		ShaderStageTypeFlags calledByStages;
+		Nz::Bitset<> calledFunctions;
+		Nz::Bitset<> calledByFunctions;
+		DeclareFunctionStatement* node;
+	};
+
 	struct SanitizeVisitor::NamedPartialType
 	{
 		std::string name;
@@ -205,7 +206,7 @@ namespace nzsl::Ast
 		IdentifierList<ExpressionType> variableTypes;
 		ModulePtr currentModule;
 		Options options;
-		CurrentFunctionData* currentFunction = nullptr;
+		FunctionData* currentFunction = nullptr;
 		bool allowUnknownIdentifiers = false;
 		bool inConditionalStatement = false;
 	};
@@ -381,6 +382,12 @@ namespace nzsl::Ast
 						return Cloner::Clone(node); //< unresolved
 
 					throw CompilerUnknownFieldError{ indexedExpr->sourceLocation, identifierEntry.identifier };
+				}
+
+				if (fieldPtr->builtin.HasValue() && fieldPtr->builtin.IsResultingValue())
+				{
+					BuiltinEntry builtin = fieldPtr->builtin.GetResultingValue();
+					m_context->currentFunction->usedBuiltins.emplace(builtin, node.sourceLocation);
 				}
 
 				if (m_context->options.useIdentifierAccessesForStructs)
@@ -1191,28 +1198,6 @@ namespace nzsl::Ast
 					const ExpressionType& paramType = ResolveAlias(parameter.type.GetResultingValue());
 					if (!IsStructType(paramType))
 						throw CompilerEntryFunctionParameterError{ parameter.sourceLocation };
-
-					const StructDescription* structDesc = m_context->structs.Retrieve(std::get<StructType>(paramType).structIndex, parameter.sourceLocation);
-					for (const auto& member : structDesc->members)
-					{
-						if (member.cond.HasValue())
-						{
-							if (!member.cond.IsResultingValue() || !member.cond.GetResultingValue())
-								continue;
-						}
-
-						if (!member.builtin.HasValue())
-							continue;
-
-						BuiltinEntry builtin = member.builtin.GetResultingValue();
-						auto it = s_builtinData.find(builtin);
-						if (it == s_builtinData.end())
-							throw AstInternalError{ member.sourceLocation, "missing builtin data" };
-
-						const BuiltinData& builtinData = it->second;
-						if (!builtinData.compatibleStages.Test(stageType))
-							throw CompilerBuiltinUnsupportedStageError{ parameter.sourceLocation, builtin, stageType };
-					}
 				}
 			}
 
@@ -1412,7 +1397,7 @@ namespace nzsl::Ast
 		if (!m_context->currentFunction)
 			throw CompilerDiscardOutsideOfFunctionError{ node.sourceLocation };
 
-		m_context->currentFunction->flags |= FunctionFlag::DoesDiscard;
+		m_context->currentFunction->requiredShaderStage.emplace(ShaderStageType::Fragment, node.sourceLocation);
 
 		return Cloner::Clone(node);
 	}
@@ -2316,13 +2301,19 @@ namespace nzsl::Ast
 		reflectVisitor.Reflect(*module.rootNode, registerCallbacks);
 	}
 
-	void SanitizeVisitor::PropagateFunctionFlags(std::size_t funcIndex, FunctionFlags flags, Nz::Bitset<>& seen)
+	void SanitizeVisitor::PropagateFunctionRequirements(FunctionData& callingFunction, std::size_t funcIndex, Nz::Bitset<>& seen)
 	{
+		// Prevent infinite recursion
+		if (seen.UnboundedTest(funcIndex))
+			return;
+
+		seen.UnboundedSet(funcIndex);
+
 		auto& funcData = m_context->functions.Retrieve(funcIndex, {});
-		funcData.flags |= flags;
+		callingFunction.calledByStages |= funcData.calledByStages;
 
 		for (std::size_t i = funcData.calledByFunctions.FindFirst(); i != funcData.calledByFunctions.npos; i = funcData.calledByFunctions.FindNext(i))
-			PropagateFunctionFlags(i, funcData.flags, seen);
+			PropagateFunctionRequirements(callingFunction, i, seen);
 	}
 	
 	void SanitizeVisitor::RegisterBuiltin()
@@ -2798,11 +2789,13 @@ namespace nzsl::Ast
 					RegisterUnresolved(parameter.name);
 			}
 
-			CurrentFunctionData tempFuncData;
-			if (pendingFunc.cloneNode->entryStage.HasValue())
-				tempFuncData.stageType = pendingFunc.cloneNode->entryStage.GetResultingValue();
+			std::size_t funcIndex = *pendingFunc.cloneNode->funcIndex;
 
-			m_context->currentFunction = &tempFuncData;
+			FunctionData& funcData = m_context->functions.Retrieve(funcIndex, pendingFunc.cloneNode->sourceLocation);
+			if (pendingFunc.cloneNode->entryStage.HasValue())
+				funcData.calledByStages = pendingFunc.cloneNode->entryStage.GetResultingValue();
+
+			m_context->currentFunction = &funcData;
 
 			std::vector<StatementPtr>* previousList = m_context->currentStatementList;
 			m_context->currentStatementList = &pendingFunc.cloneNode->statements;
@@ -2814,8 +2807,7 @@ namespace nzsl::Ast
 			m_context->currentStatementList = previousList;
 			m_context->currentFunction = nullptr;
 
-			std::size_t funcIndex = *pendingFunc.cloneNode->funcIndex;
-			for (std::size_t i = tempFuncData.calledFunctions.FindFirst(); i != tempFuncData.calledFunctions.npos; i = tempFuncData.calledFunctions.FindNext(i))
+			for (std::size_t i = funcData.calledFunctions.FindFirst(); i != funcData.calledFunctions.npos; i = funcData.calledFunctions.FindNext(i))
 			{
 				auto& targetFunc = m_context->functions.Retrieve(i, pendingFunc.cloneNode->sourceLocation);
 				targetFunc.calledByFunctions.UnboundedSet(funcIndex);
@@ -2826,16 +2818,39 @@ namespace nzsl::Ast
 		m_context->pendingFunctions.clear();
 
 		Nz::Bitset<> seen;
-		for (const auto& [funcIndex, funcData] : m_context->functions.values)
+		for (auto& [funcIndex, funcData] : m_context->functions.values)
 		{
-			PropagateFunctionFlags(funcIndex, funcData.flags, seen);
 			seen.Clear();
-		}
+			seen.UnboundedSet(funcIndex);
 
-		for (const auto& [funcIndex, funcData] : m_context->functions.values)
-		{
-			if (funcData.flags.Test(FunctionFlag::DoesDiscard) && funcData.node->entryStage.HasValue() && funcData.node->entryStage.GetResultingValue() != ShaderStageType::Fragment)
-				throw CompilerDiscardOutsideOfFragmentStageError{ funcData.node->sourceLocation, funcData.node->entryStage.GetResultingValue() };
+			for (std::size_t i = funcData.calledByFunctions.FindFirst(); i != funcData.calledByFunctions.npos; i = funcData.calledByFunctions.FindNext(i))
+				PropagateFunctionRequirements(funcData, i, seen);
+
+			for (std::size_t flagIndex = 0; flagIndex <= static_cast<std::size_t>(ShaderStageType::Max); ++flagIndex)
+			{
+				ShaderStageType stageType = static_cast<ShaderStageType>(flagIndex);
+				if (!funcData.calledByStages.Test(stageType))
+					continue;
+
+				// Check builtin usage
+				for (auto&& [builtin, sourceLocation] : funcData.usedBuiltins)
+				{
+					auto it = s_builtinData.find(builtin);
+					if (it == s_builtinData.end())
+						throw AstInternalError{ sourceLocation, "missing builtin data" };
+
+					const BuiltinData& builtinData = it->second;
+					if (!builtinData.compatibleStages.Test(stageType))
+						throw CompilerBuiltinUnsupportedStageError{ sourceLocation, builtin, stageType };
+				}
+
+				// Check other stage dependencies (such as discard)
+				for (auto&& [requiredStageType, sourceLocation] : funcData.requiredShaderStage)
+				{
+					if (requiredStageType != stageType)
+						throw CompilerInvalidStageDependencyError{ sourceLocation, requiredStageType, stageType };
+				}
+			}
 		}
 	}
 

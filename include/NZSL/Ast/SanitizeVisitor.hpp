@@ -59,7 +59,6 @@ namespace nzsl::Ast
 		private:
 			enum class IdentifierCategory;
 			enum class ValidationResult;
-			struct CurrentFunctionData;
 			struct Environment;
 			struct FunctionData;
 			struct Identifier;
@@ -126,7 +125,7 @@ namespace nzsl::Ast
 			template<typename T> std::unique_ptr<T> PropagateConstants(T& node) const;
 
 			void PreregisterIndices(const Module& module);
-			void PropagateFunctionFlags(std::size_t funcIndex, FunctionFlags flags, Nz::Bitset<>& seen);
+			void PropagateFunctionRequirements(FunctionData& callingFunction, std::size_t calledFuncIndex, Nz::Bitset<>& seen);
 
 			void RegisterBuiltin();
 
@@ -204,13 +203,6 @@ namespace nzsl::Ast
 			{
 				Validated,
 				Unresolved
-			};
-
-			struct FunctionData
-			{
-				Nz::Bitset<> calledByFunctions;
-				DeclareFunctionStatement* node;
-				FunctionFlags flags;
 			};
 
 			struct IdentifierData

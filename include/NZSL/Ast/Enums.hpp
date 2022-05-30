@@ -81,14 +81,6 @@ namespace nzsl::Ast
 		RValue
 	};
 
-	enum class FunctionFlag
-	{
-		DoesDiscard,
-		DoesWriteFragDepth,
-
-		Max = DoesWriteFragDepth
-	};
-
 	enum class IntrinsicType
 	{
 		CrossProduct = 0,
@@ -139,20 +131,6 @@ namespace nzsl::Ast
 		Minus,      //< -v
 		Plus,       //< +v
 	};
-}
-
-namespace Nz
-{
-	template<>
-	struct EnumAsFlags<nzsl::Ast::FunctionFlag>
-	{
-		static constexpr nzsl::Ast::FunctionFlag max = nzsl::Ast::FunctionFlag::Max;
-	};
-}
-
-namespace nzsl
-{
-	using FunctionFlags = Nz::Flags<Ast::FunctionFlag>;
 }
 
 #endif // NZSL_AST_ENUMS_HPP

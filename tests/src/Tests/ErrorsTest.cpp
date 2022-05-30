@@ -39,6 +39,47 @@ struct Input
 }
 		)"), "(7,22 -> 24): CBuiltinUnexpectedType error: builtin position expected type vec4[f32], got type f32");
 
+		// If the member is not used, no error should happen
+		CHECK_NOTHROW(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+struct Input
+{
+	[builtin(position)] pos: vec4[f32]
+}
+
+fn test(input: Input)
+{
+}
+
+[entry(frag)]
+fn main(input: Input) 
+{
+	test(input);
+})"));
+
+		CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+struct Input
+{
+	[location(0)] data: f32
+}
+
+fn clip(v: f32)
+{
+	if (v < 0.0)
+		discard;
+}
+
+[entry(vert)]
+fn main(input: Input) 
+{
+	clip(input.data);
+})"), "(13,3 -> 9): CInvalidStageDependency error: this is only valid in the fragment stage but this functions gets called in the vertex stage");
+
 		CHECK_THROWS_WITH(Compile(R"(
 [nzsl_version("1.0")]
 module;
@@ -48,8 +89,15 @@ struct Input
 	[builtin(position)] pos: vec4[f32]
 }
 
+fn test(input: Input) -> vec4[f32]
+{
+	return input.pos;
+}
+
 [entry(frag)]
-fn main(input: Input) {}
-		)"), "(11,9 -> 20): CBuiltinUnsupportedStage error: builtin position is not available in fragment stage");
+fn main(input: Input) 
+{
+	test(input);
+})"), "(12,9 -> 17): CBuiltinUnsupportedStage error: builtin position is not available in fragment stage");
 	}
 }
