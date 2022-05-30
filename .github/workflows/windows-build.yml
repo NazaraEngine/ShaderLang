@@ -30,6 +30,9 @@ jobs:
       id: pkg_key
       run: echo "::set-output name=key::$(date +'%W')"
 
+    - name: Avoid line ending issues on Windows
+      run: git config --global core.autocrlf false
+
     - name: Checkout repository
       uses: actions/checkout@v3
 
