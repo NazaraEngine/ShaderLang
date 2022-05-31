@@ -13,6 +13,7 @@
 #include <NZSL/SpirvSection.hpp>
 #include <NZSL/Ast/Cloner.hpp>
 #include <NZSL/Ast/ConstantPropagationVisitor.hpp>
+#include <NZSL/Ast/LangData.hpp>
 #include <NZSL/Ast/RecursiveVisitor.hpp>
 #include <NZSL/Ast/EliminateUnusedPassVisitor.hpp>
 #include <NZSL/Ast/SanitizeVisitor.hpp>
@@ -32,22 +33,20 @@ namespace nzsl
 	{
 		struct SpirvBuiltin
 		{
-			const char* debugName;
-			ShaderStageTypeFlags compatibleStages;
 			SpirvBuiltIn decoration;
 			SpirvCapability capability;
 			std::uint32_t requiredVersion;
 		};
 
 		constexpr auto s_spirvBuiltinMapping = frozen::make_unordered_map<Ast::BuiltinEntry, SpirvBuiltin>({
-			{ Ast::BuiltinEntry::BaseInstance,   { "BaseInstance",        ShaderStageType::Vertex,   SpirvBuiltIn::BaseInstance,  SpirvCapability::DrawParameters, MakeSpirvVersion(1, 3) } },
-			{ Ast::BuiltinEntry::BaseVertex,     { "BaseVertex",          ShaderStageType::Vertex,   SpirvBuiltIn::BaseVertex,    SpirvCapability::DrawParameters, MakeSpirvVersion(1, 3) } },
-			{ Ast::BuiltinEntry::DrawIndex,      { "DrawIndex",           ShaderStageType::Vertex,   SpirvBuiltIn::DrawIndex,     SpirvCapability::DrawParameters, MakeSpirvVersion(1, 3) } },
-			{ Ast::BuiltinEntry::FragCoord,      { "FragmentCoordinates", ShaderStageType::Fragment, SpirvBuiltIn::FragCoord,     SpirvCapability::Shader,         MakeSpirvVersion(1, 0) } },
-			{ Ast::BuiltinEntry::FragDepth,      { "FragmentDepth",       ShaderStageType::Fragment, SpirvBuiltIn::FragDepth,     SpirvCapability::Shader,         MakeSpirvVersion(1, 0) } },
-			{ Ast::BuiltinEntry::InstanceIndex,  { "InstanceIndex",       ShaderStageType::Vertex,   SpirvBuiltIn::InstanceIndex, SpirvCapability::Shader,         MakeSpirvVersion(1, 0) } },
-			{ Ast::BuiltinEntry::VertexIndex,    { "VertexIndex",         ShaderStageType::Vertex,   SpirvBuiltIn::VertexIndex,   SpirvCapability::Shader,         MakeSpirvVersion(1, 0) } },
-			{ Ast::BuiltinEntry::VertexPosition, { "VertexPosition",      ShaderStageType::Vertex,   SpirvBuiltIn::Position,      SpirvCapability::Shader,         MakeSpirvVersion(1, 0) } }
+			{ Ast::BuiltinEntry::BaseInstance,   { SpirvBuiltIn::BaseInstance,  SpirvCapability::DrawParameters, MakeSpirvVersion(1, 3) } },
+			{ Ast::BuiltinEntry::BaseVertex,     { SpirvBuiltIn::BaseVertex,    SpirvCapability::DrawParameters, MakeSpirvVersion(1, 3) } },
+			{ Ast::BuiltinEntry::DrawIndex,      { SpirvBuiltIn::DrawIndex,     SpirvCapability::DrawParameters, MakeSpirvVersion(1, 3) } },
+			{ Ast::BuiltinEntry::FragCoord,      { SpirvBuiltIn::FragCoord,     SpirvCapability::Shader,         MakeSpirvVersion(1, 0) } },
+			{ Ast::BuiltinEntry::FragDepth,      { SpirvBuiltIn::FragDepth,     SpirvCapability::Shader,         MakeSpirvVersion(1, 0) } },
+			{ Ast::BuiltinEntry::InstanceIndex,  { SpirvBuiltIn::InstanceIndex, SpirvCapability::Shader,         MakeSpirvVersion(1, 0) } },
+			{ Ast::BuiltinEntry::VertexIndex,    { SpirvBuiltIn::VertexIndex,   SpirvCapability::Shader,         MakeSpirvVersion(1, 0) } },
+			{ Ast::BuiltinEntry::VertexPosition, { SpirvBuiltIn::Position,      SpirvCapability::Shader,         MakeSpirvVersion(1, 0) } }
 		});
 
 		class SpirvPreVisitor : public Ast::RecursiveVisitor
@@ -408,20 +407,27 @@ namespace nzsl
 				{
 					if (member.builtin.HasValue())
 					{
-						auto it = s_spirvBuiltinMapping.find(member.builtin.GetResultingValue());
-						assert(it != s_spirvBuiltinMapping.end());
+						auto builtinIt = Ast::s_builtinData.find(member.builtin.GetResultingValue());
+						assert(builtinIt != Ast::s_builtinData.end());
 
-						const SpirvBuiltin& builtin = it->second;
-						if ((builtin.compatibleStages & entryPointType) == 0)
+						const Ast::BuiltinData& builtinData = builtinIt->second;
+
+						if ((builtinData.compatibleStages & entryPointType) == 0)
 							return 0;
 
-						spirvCapabilities.insert(builtin.capability);
-						spirvVersion = std::max(spirvVersion, builtin.requiredVersion);
+						auto spvIt = s_spirvBuiltinMapping.find(member.builtin.GetResultingValue());
+						if (spvIt == s_spirvBuiltinMapping.end())
+							throw std::runtime_error("unknown builtin value " + std::to_string(static_cast<std::size_t>(member.builtin.GetResultingValue())));
 
-						SpirvBuiltIn builtinDecoration = builtin.decoration;
+						const SpirvBuiltin& spirvBuiltin = spvIt->second;
+
+						spirvCapabilities.insert(spirvBuiltin.capability);
+						spirvVersion = std::max(spirvVersion, spirvBuiltin.requiredVersion);
+
+						SpirvBuiltIn builtinDecoration = spirvBuiltin.decoration;
 
 						SpirvConstantCache::Variable variable;
-						variable.debugName = builtin.debugName;
+						variable.debugName = builtinData.identifier;
 						variable.funcId = funcIndex;
 						variable.storageClass = storageClass;
 						variable.type = m_constantCache.BuildPointerType(member.type.GetResultingValue(), storageClass);

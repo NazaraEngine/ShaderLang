@@ -11,6 +11,7 @@
 #include <NZSL/ShaderLangErrors.hpp>
 #include <NZSL/Ast/ConstantPropagationVisitor.hpp>
 #include <NZSL/Ast/ExportVisitor.hpp>
+#include <NZSL/Ast/LangData.hpp>
 #include <NZSL/Ast/RecursiveVisitor.hpp>
 #include <NZSL/Ast/ReflectVisitor.hpp>
 #include <NZSL/Ast/Utils.hpp>
@@ -25,26 +26,6 @@
 
 namespace nzsl::Ast
 {
-	namespace
-	{
-		struct BuiltinData
-		{
-			ShaderStageTypeFlags compatibleStages;
-			std::variant<PrimitiveType, VectorType> type; //< Can't use ExpressionType because it's not constexpr
-		};
-
-		constexpr auto s_builtinData = frozen::make_unordered_map<Ast::BuiltinEntry, BuiltinData>({
-			{ Ast::BuiltinEntry::BaseInstance,   { ShaderStageType::Vertex,   PrimitiveType::Int32 } },
-			{ Ast::BuiltinEntry::BaseVertex,     { ShaderStageType::Vertex,   PrimitiveType::Int32 } },
-			{ Ast::BuiltinEntry::DrawIndex,      { ShaderStageType::Vertex,   PrimitiveType::Int32 } },
-			{ Ast::BuiltinEntry::FragCoord,      { ShaderStageType::Fragment, VectorType { 4, PrimitiveType::Float32 } } },
-			{ Ast::BuiltinEntry::FragDepth,      { ShaderStageType::Fragment, PrimitiveType::Float32 } },
-			{ Ast::BuiltinEntry::InstanceIndex,  { ShaderStageType::Vertex,   PrimitiveType::Int32 } },
-			{ Ast::BuiltinEntry::VertexIndex,    { ShaderStageType::Vertex,   PrimitiveType::Int32 } },
-			{ Ast::BuiltinEntry::VertexPosition, { ShaderStageType::Vertex,   VectorType { 4, PrimitiveType::Float32 } } }
-		});
-	}
-
 	template<typename T>
 	struct SanitizeVisitor::IdentifierList
 	{
@@ -1358,11 +1339,11 @@ namespace nzsl::Ast
 			if (member.builtin.IsResultingValue())
 			{
 				BuiltinEntry builtin = member.builtin.GetResultingValue();
-				auto it = s_builtinData.find(builtin);
-				if (it == s_builtinData.end())
+				auto it = Ast::s_builtinData.find(builtin);
+				if (it == Ast::s_builtinData.end())
 					throw AstInternalError{ member.sourceLocation, "missing builtin data" };
 
-				const BuiltinData& builtinData = it->second;
+				const Ast::BuiltinData& builtinData = it->second;
 				std::visit([&](auto&& arg)
 				{
 					using T = std::decay_t<decltype(arg)>;
@@ -2835,11 +2816,11 @@ namespace nzsl::Ast
 				// Check builtin usage
 				for (auto&& [builtin, sourceLocation] : funcData.usedBuiltins)
 				{
-					auto it = s_builtinData.find(builtin);
-					if (it == s_builtinData.end())
+					auto it = Ast::s_builtinData.find(builtin);
+					if (it == Ast::s_builtinData.end())
 						throw AstInternalError{ sourceLocation, "missing builtin data" };
 
-					const BuiltinData& builtinData = it->second;
+					const Ast::BuiltinData& builtinData = it->second;
 					if (!builtinData.compatibleStages.Test(stageType))
 						throw CompilerBuiltinUnsupportedStageError{ sourceLocation, builtin, stageType };
 				}

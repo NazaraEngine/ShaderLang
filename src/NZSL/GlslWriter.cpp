@@ -10,6 +10,7 @@
 #include <NZSL/ShaderBuilder.hpp>
 #include <NZSL/Ast/Cloner.hpp>
 #include <NZSL/Ast/ConstantPropagationVisitor.hpp>
+#include <NZSL/Ast/LangData.hpp>
 #include <NZSL/Ast/RecursiveVisitor.hpp>
 #include <NZSL/Ast/Utils.hpp>
 #include <NZSL/Ast/EliminateUnusedPassVisitor.hpp>
@@ -43,19 +44,18 @@ namespace nzsl
 		struct GlslBuiltin
 		{
 			std::string_view identifier;
-			ShaderStageTypeFlags stageFlags;
 			GlslCapability requiredCapability;
 		};
 
 		constexpr auto s_glslBuiltinMapping = frozen::make_unordered_map<Ast::BuiltinEntry, GlslBuiltin>({
-			{ Ast::BuiltinEntry::BaseInstance,   { "gl_BaseInstance", ShaderStageType::Vertex,   GlslCapability::ShaderDrawParameters } },
-			{ Ast::BuiltinEntry::BaseVertex,     { "gl_BaseVertex",   ShaderStageType::Vertex,   GlslCapability::ShaderDrawParameters } },
-			{ Ast::BuiltinEntry::DrawIndex,      { "gl_DrawID",       ShaderStageType::Vertex,   GlslCapability::ShaderDrawParameters } },
-			{ Ast::BuiltinEntry::FragCoord,      { "gl_FragCoord",    ShaderStageType::Fragment, GlslCapability::None } },
-			{ Ast::BuiltinEntry::FragDepth,      { "gl_FragDepth",    ShaderStageType::Fragment, GlslCapability::None } },
-			{ Ast::BuiltinEntry::InstanceIndex,  { "gl_InstanceID",   ShaderStageType::Vertex,   GlslCapability::None } },
-			{ Ast::BuiltinEntry::VertexIndex,    { "gl_VertexID",     ShaderStageType::Vertex,   GlslCapability::None } },
-			{ Ast::BuiltinEntry::VertexPosition, { "gl_Position",     ShaderStageType::Vertex,   GlslCapability::None } }
+			{ Ast::BuiltinEntry::BaseInstance,   { "gl_BaseInstance", GlslCapability::ShaderDrawParameters } },
+			{ Ast::BuiltinEntry::BaseVertex,     { "gl_BaseVertex",   GlslCapability::ShaderDrawParameters } },
+			{ Ast::BuiltinEntry::DrawIndex,      { "gl_DrawID",       GlslCapability::ShaderDrawParameters } },
+			{ Ast::BuiltinEntry::FragCoord,      { "gl_FragCoord",    GlslCapability::None } },
+			{ Ast::BuiltinEntry::FragDepth,      { "gl_FragDepth",    GlslCapability::None } },
+			{ Ast::BuiltinEntry::InstanceIndex,  { "gl_InstanceID",   GlslCapability::None } },
+			{ Ast::BuiltinEntry::VertexIndex,    { "gl_VertexID",     GlslCapability::None } },
+			{ Ast::BuiltinEntry::VertexPosition, { "gl_Position",     GlslCapability::None } }
 		});
 
 		struct GlslWriterPreVisitor : Ast::RecursiveVisitor
@@ -848,11 +848,11 @@ namespace nzsl
 
 				if (member.builtin.HasValue())
 				{
-					auto it = s_glslBuiltinMapping.find(member.builtin.GetResultingValue());
-					assert(it != s_glslBuiltinMapping.end());
+					auto it = Ast::s_builtinData.find(member.builtin.GetResultingValue());
+					assert(it != Ast::s_builtinData.end());
 
-					const GlslBuiltin& builtin = it->second;
-					if (m_currentState->stage && !builtin.stageFlags.Test(*m_currentState->stage))
+					const Ast::BuiltinData& builtin = it->second;
+					if (m_currentState->stage && !builtin.compatibleStages.Test(*m_currentState->stage))
 						continue; //< This builtin is not active in this stage, skip it
 
 					fields.push_back({

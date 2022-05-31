@@ -6,12 +6,31 @@
 #include <Nazara/Utils/Algorithm.hpp>
 #include <NZSL/ShaderBuilder.hpp>
 #include <NZSL/ShaderLangErrors.hpp>
+#include <NZSL/Ast/LangData.hpp>
+#include <array>
 #include <fstream>
 #include <frozen/string.h>
 #include <frozen/unordered_map.h>
 #include <cassert>
 #include <random>
 #include <regex>
+
+namespace frozen
+{
+	template <>
+	struct elsa<std::string_view> : elsa<frozen::string>
+	{
+		constexpr std::size_t operator()(std::string_view value) const
+		{
+			return hash_string(frozen::string(value));
+		}
+
+		constexpr std::size_t operator()(std::string_view value, std::size_t seed) const
+		{
+			return hash_string(frozen::string(value), seed);
+		}
+	};
+}
 
 namespace nzsl
 {
@@ -44,16 +63,23 @@ namespace nzsl
 			{ "vert", ShaderStageType::Vertex },
 		});
 
-		constexpr auto s_builtinMapping = frozen::make_unordered_map<frozen::string, Ast::BuiltinEntry>({
-			{ "baseinstance",  Ast::BuiltinEntry::BaseInstance },
-			{ "basevertex",    Ast::BuiltinEntry::BaseVertex },
-			{ "drawindex",     Ast::BuiltinEntry::DrawIndex },
-			{ "fragcoord",     Ast::BuiltinEntry::FragCoord },
-			{ "fragdepth",     Ast::BuiltinEntry::FragDepth },
-			{ "instanceindex", Ast::BuiltinEntry::InstanceIndex },
-			{ "vertexindex",   Ast::BuiltinEntry::VertexIndex },
-			{ "position",      Ast::BuiltinEntry::VertexPosition }
-		});
+		constexpr auto BuildIdentifierMapping()
+		{
+			std::array<std::pair<std::string_view, Ast::BuiltinEntry>, Ast::s_builtinData.size()> identifierToBuiltin;
+
+			std::size_t index = 0;
+			for (const auto& [builtinEntry, builtinData] : Ast::s_builtinData)
+			{
+				identifierToBuiltin[index].first = builtinData.identifier;
+				identifierToBuiltin[index].second = builtinEntry;
+
+				++index;
+			}
+			
+			return frozen::make_unordered_map(identifierToBuiltin);
+		}
+
+		constexpr auto s_builtinMapping = BuildIdentifierMapping();
 
 		constexpr auto s_layoutMapping = frozen::make_unordered_map<frozen::string, StructLayout>({
 			{ "std140", StructLayout::Std140 }

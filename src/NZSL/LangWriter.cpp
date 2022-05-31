@@ -8,6 +8,7 @@
 #include <NZSL/Enums.hpp>
 #include <NZSL/ShaderBuilder.hpp>
 #include <NZSL/Ast/Cloner.hpp>
+#include <NZSL/Ast/LangData.hpp>
 #include <NZSL/Ast/RecursiveVisitor.hpp>
 #include <NZSL/Ast/Utils.hpp>
 #include <NZSL/Ast/SanitizeVisitor.hpp>
@@ -340,17 +341,10 @@ namespace nzsl
 
 		if (attribute.builtin.IsResultingValue())
 		{
-			switch (attribute.builtin.GetResultingValue())
-			{
-				case Ast::BuiltinEntry::BaseInstance: Append("baseinstance"); break;
-				case Ast::BuiltinEntry::BaseVertex: Append("basevertex"); break;
-				case Ast::BuiltinEntry::DrawIndex: Append("drawindex"); break;
-				case Ast::BuiltinEntry::InstanceIndex: Append("instanceindex"); break;
-				case Ast::BuiltinEntry::FragCoord: Append("fragcoord"); break;
-				case Ast::BuiltinEntry::FragDepth: Append("fragdepth"); break;
-				case Ast::BuiltinEntry::VertexIndex: Append("vertexindex"); break;
-				case Ast::BuiltinEntry::VertexPosition: Append("position"); break;
-			}
+			auto it = Ast::s_builtinData.find(attribute.builtin.GetResultingValue());
+			assert(it != Ast::s_builtinData.end());
+
+			Append(it->second.identifier);
 		}
 		else
 			attribute.builtin.GetExpression()->Visit(*this);

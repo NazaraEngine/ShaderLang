@@ -14,11 +14,11 @@ module;
 
 struct Input
 {
-	[builtin(baseinstance)] base_instance: i32,
-	[builtin(basevertex)] base_vertex: i32,
-	[builtin(drawindex)] draw_index: i32,
-	[builtin(instanceindex)] instance_index: i32,
-	[builtin(vertexindex)] vertex_index: i32,
+	[builtin(base_instance)] base_instance: i32,
+	[builtin(base_vertex)] base_vertex: i32,
+	[builtin(draw_index)] draw_index: i32,
+	[builtin(instance_index)] instance_index: i32,
+	[builtin(vertex_index)] vertex_index: i32,
 }
 
 struct Output
@@ -207,11 +207,11 @@ void main()
 		ExpectNZSL(*shaderModule, R"(
 struct Input
 {
-	[builtin(baseinstance)] base_instance: i32,
-	[builtin(basevertex)] base_vertex: i32,
-	[builtin(drawindex)] draw_index: i32,
-	[builtin(instanceindex)] instance_index: i32,
-	[builtin(vertexindex)] vertex_index: i32
+	[builtin(base_instance)] base_instance: i32,
+	[builtin(base_vertex)] base_vertex: i32,
+	[builtin(draw_index)] draw_index: i32,
+	[builtin(instance_index)] instance_index: i32,
+	[builtin(vertex_index)] vertex_index: i32
 }
 
 struct Output
@@ -255,7 +255,7 @@ module;
 
 struct Input
 {
-	[builtin(vertexindex)] vert_index: i32
+	[builtin(vertex_index)] vert_index: i32
 }
 
 struct Output
@@ -309,7 +309,7 @@ void main()
 		ExpectNZSL(*shaderModule, R"(
 struct Input
 {
-	[builtin(vertexindex)] vert_index: i32
+	[builtin(vertex_index)] vert_index: i32
 }
 
 struct Output
