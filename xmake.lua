@@ -36,7 +36,7 @@ if has_config("with_nzslc") then
 	add_requires("cxxopts", "nlohmann_json")
 end
 
-add_includedirs("include", "thirdparty/include")
+add_includedirs("include", "thirdparty/include", "src")
 set_languages("c89", "c++17")
 set_rundir("./bin/$(plat)_$(arch)_$(mode)")
 set_targetdir("./bin/$(plat)_$(arch)_$(mode)")
@@ -77,6 +77,8 @@ target("nzsl")
 	add_defines("NZSL_BUILD")
 	add_headerfiles("include/(NZSL/**.hpp)")
 	add_headerfiles("include/(NZSL/**.inl)")
+	add_headerfiles("src/NZSL/**.hpp", { prefixdir = "private" })
+	add_headerfiles("src/NZSL/**.inl", { prefixdir = "private" })
 	add_files("src/NZSL/**.cpp")
 	add_packages("nazarautils", { public = true })
 	add_packages("fmt", "frozen", "ordered_map")

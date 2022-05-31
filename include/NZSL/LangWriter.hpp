@@ -8,7 +8,6 @@
 #define NZSL_LANGWRITER_HPP
 
 #include <NZSL/Config.hpp>
-#include <NZSL/Config.hpp>
 #include <NZSL/ShaderWriter.hpp>
 #include <NZSL/Ast/ExpressionVisitorExcept.hpp>
 #include <NZSL/Ast/StatementVisitorExcept.hpp>
