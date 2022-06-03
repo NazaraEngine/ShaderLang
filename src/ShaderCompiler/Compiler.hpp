@@ -69,10 +69,9 @@ namespace nzslc
 
 			struct StepTime
 			{
-				std::size_t iterationCount = 0;
-				std::size_t childrenCount = 0;
+				std::size_t childrenCount;
 				std::string name;
-				long long time = 0;
+				long long time;
 			};
 
 			std::filesystem::path m_inputFilePath;
