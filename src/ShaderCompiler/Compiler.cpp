@@ -399,6 +399,8 @@ namespace nzslc
 
 	void Compiler::PrintTime()
 	{
+		long long fullTime = std::max(m_steps[0].time, 1LL); //< prevent a divison by zero
+
 		struct StepParent
 		{
 			std::size_t parentStep;
@@ -419,12 +421,20 @@ namespace nzslc
 			}
 
 			auto& step = m_steps[i];
-			fmt::print("{}- {}: {}", std::string(parents.size() * 2, ' '), step.name, fmt::format(fg(fmt::color::dark_golden_rod), "{}us", step.time / step.iterationCount), 0);
+			fmt::print("{}- {}: {}", std::string(parents.size() * 2, ' '), step.name, fmt::format(fg(fmt::color::dark_golden_rod), "{}us", step.time / m_iterationCount), 0);
 			if (!parents.empty())
 			{
 				std::size_t parentIndex = parents.back().parentStep;
-				long long parentTime = std::max(m_steps[parents.back().parentStep].time, 1ll); //< prevent a divison by zero
-				fmt::print(" ({}%)", 100 * step.time / parentTime);
+
+				long long globalTime = std::min(100 * step.time / fullTime, 100LL);
+				if (parentIndex != 0)
+				{
+					long long parentTime = std::max(m_steps[parentIndex].time, 1LL); //< prevent a divison by zero
+					long long localTime = std::min(100 * step.time / parentTime, 100LL);
+					fmt::print(" (global: {}% - local: {}%)", globalTime, localTime);
+				}
+				else
+					fmt::print(" (global: {}%)", globalTime);
 			}
 			fmt::print("\n");
 
@@ -538,30 +548,28 @@ namespace nzslc
 			return func();
 
 		std::size_t stepIndex = m_steps.size();
-		auto& step = m_steps.emplace_back();
-		step.name = stepName;
-
-		std::chrono::steady_clock::time_point start;
-
-		Nz::CallOnExit onExit([&]
-		{
-			auto end = std::chrono::steady_clock::now();
-
-			auto& step = m_steps[stepIndex];
-			step.iterationCount += m_iterationCount;
-			step.time += std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
-
-			step.childrenCount = m_steps.size() - stepIndex - 1;
-		});
 
 		m_measureTime = false;
+		{
+			auto& step = m_steps.emplace_back();
+			step.name = stepName;
 
-		start = std::chrono::steady_clock::now();
+			auto start = std::chrono::steady_clock::now();
 
-		for (unsigned int i = 0; i < m_iterationCount - 1; ++i)
-			func();
+			for (unsigned int i = 0; i < m_iterationCount; ++i)
+				func();
 
+			auto end = std::chrono::steady_clock::now();
+
+			step.time = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+		}
 		m_measureTime = true;
+		
+		Nz::CallOnExit onExit([&]
+		{
+			auto& step = m_steps[stepIndex];
+			step.childrenCount = m_steps.size() - stepIndex - 1;
+		});
 
 		return func();
 	}
