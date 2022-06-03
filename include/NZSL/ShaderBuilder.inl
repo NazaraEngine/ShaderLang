@@ -370,10 +370,11 @@ namespace nzsl::ShaderBuilder
 		return identifierNode;
 	}
 
-	inline Ast::ImportStatementPtr Impl::Import::operator()(std::string moduleName) const
+	inline Ast::ImportStatementPtr Impl::Import::operator()(std::string moduleName, std::vector<Ast::ImportStatement::Identifier> identifiers) const
 	{
 		auto importNode = std::make_unique<Ast::ImportStatement>();
 		importNode->moduleName = std::move(moduleName);
+		importNode->identifiers = std::move(identifiers);
 
 		return importNode;
 	}

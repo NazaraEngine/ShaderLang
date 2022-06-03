@@ -53,7 +53,7 @@ struct OutputData
 [nzsl_version("1.0")]
 module;
 
-import SimpleModule;
+import * from SimpleModule;
 
 external
 {
@@ -239,7 +239,7 @@ struct Data
 [nzsl_version("1.0")]
 module Modules.Block;
 
-import Modules.Data;
+import * from Modules.Data;
 
 [export]
 [layout(std140)]
@@ -272,8 +272,8 @@ struct OutputData
 [nzsl_version("1.0")]
 module;
 
-import Modules.Block;
-import Modules.InputOutput;
+import * from Modules.Block;
+import * from Modules.InputOutput;
 
 external
 {

@@ -1,9 +1,9 @@
 [nzsl_version("1.0")]
 module Shader;
 
-import Color;
-import DataStruct;
-import OutputStruct;
+import GetColor as Color from Color;
+import * from DataStruct;
+import * from OutputStruct;
 
 [set(0)]
 external
@@ -21,7 +21,7 @@ external
 fn main() -> Output
 {
     let data: Data;
-    data.color = GetColor();
+    data.color = Color();
 
     let output: Output;
     output.color = GetColorFromData(data);

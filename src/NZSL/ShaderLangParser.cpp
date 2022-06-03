@@ -779,11 +779,40 @@ namespace nzsl
 	{
 		const Token& importToken = Expect(Advance(), TokenType::Import);
 
+		std::vector<Ast::ImportStatement::Identifier> identifiers;
+		do
+		{
+			if (!identifiers.empty())
+				Expect(Advance(), TokenType::Comma);
+
+			auto& identifier = identifiers.emplace_back();
+
+			const Token& token = Peek();
+			if (token.type == TokenType::Multiply) //< * = import everything
+			{
+				Consume(); //< *
+
+				identifier.identifierLoc = token.location;
+			}
+			else
+				identifier.identifier = ParseIdentifierAsName(&identifier.identifierLoc);
+
+			if (Peek().type == TokenType::As)
+			{
+				Consume(); //< As
+
+				identifier.renamedIdentifier = ParseIdentifierAsName(&identifier.renamedIdentifierLoc);
+			}
+		}
+		while (Peek().type != TokenType::From);
+
+		Consume(); //< From
+
 		std::string moduleName = ParseModuleName();
 
 		const Token& endtoken = Expect(Advance(), TokenType::Semicolon);
 
-		auto importStatement = ShaderBuilder::Import(std::move(moduleName));
+		auto importStatement = ShaderBuilder::Import(std::move(moduleName), std::move(identifiers));
 		importStatement->sourceLocation = SourceLocation::BuildFromTo(importToken.location, endtoken.location);
 
 		return importStatement;

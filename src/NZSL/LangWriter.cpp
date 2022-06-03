@@ -1112,7 +1112,27 @@ namespace nzsl
 
 	void LangWriter::Visit(Ast::ImportStatement& node)
 	{
-		Append("import ", node.moduleName, ";");
+		Append("import ");
+		
+		bool first = true;
+		for (const auto& entry : node.identifiers)
+		{
+			if (!first)
+				Append(", ");
+
+			first = false;
+
+			if (!entry.identifier.empty())
+			{
+				Append(entry.identifier);
+				if (!entry.renamedIdentifier.empty())
+					Append(" as ", entry.renamedIdentifier);
+			}
+			else
+				Append("*");
+		}
+
+		AppendLine(" from ", node.moduleName, ";");
 	}
 
 	void LangWriter::Visit(Ast::IntrinsicExpression& node)
