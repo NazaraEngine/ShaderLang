@@ -6,8 +6,19 @@ fn GenerateColor() -> vec4[f32]
     return vec4[f32](0.0, 0.0, 1.0, 1.0);
 }
 
+fn GenerateAnotherColor() -> vec4[f32]
+{
+    return vec4[f32](1.0, 0.0, 0.0, 1.0);
+}
+
 [export]
 fn GetColor() -> vec4[f32]
 {
     return GenerateColor();
+}
+
+[export]
+fn GetAnotherColor() -> vec4[f32]
+{
+    return GenerateAnotherColor();
 }

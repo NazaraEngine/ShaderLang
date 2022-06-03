@@ -349,6 +349,14 @@ namespace nzsl::Ast
 	void SerializerBase::Serialize(ImportStatement& node)
 	{
 		Value(node.moduleName);
+		Container(node.identifiers);
+		for (auto& identifierEntry : node.identifiers)
+		{
+			Value(identifierEntry.identifier);
+			Value(identifierEntry.renamedIdentifier);
+			SourceLoc(identifierEntry.identifierLoc);
+			SourceLoc(identifierEntry.renamedIdentifierLoc);
+		}
 	}
 
 	void SerializerBase::Serialize(MultiStatement& node)

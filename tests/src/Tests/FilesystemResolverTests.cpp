@@ -137,7 +137,7 @@ module _OutputStruct
 	}
 	
 }
-alias GetColor = _Color.GetColor;
+alias Color = _Color.GetColor;
 
 alias Data = _DataStruct.Data;
 
@@ -161,7 +161,7 @@ external
 fn main() -> Output
 {
 	let data: Data;
-	data.color = GetColor();
+	data.color = Color();
 	let output: Output;
 	output.color = GetColorFromData(data);
 	return output;

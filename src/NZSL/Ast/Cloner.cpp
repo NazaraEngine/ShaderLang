@@ -263,6 +263,7 @@ namespace nzsl::Ast
 	{
 		auto clone = std::make_unique<ImportStatement>();
 		clone->moduleName = node.moduleName;
+		clone->identifiers = node.identifiers;
 
 		clone->sourceLocation = node.sourceLocation;
 
