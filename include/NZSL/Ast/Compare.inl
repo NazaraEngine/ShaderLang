@@ -221,8 +221,25 @@ namespace nzsl::Ast
 
 		return true;
 	}
+	
+	inline bool Compare(const ImportStatement::Identifier& lhs, const ImportStatement::Identifier& rhs)
+	{
+		if (!Compare(lhs.identifier, rhs.identifier))
+			return false;
 
-	bool Compare(const SourceLocation& lhs, const SourceLocation& rhs)
+		if (!Compare(lhs.identifierLoc, rhs.identifierLoc))
+			return false;
+
+		if (!Compare(lhs.renamedIdentifier, rhs.renamedIdentifier))
+			return false;
+
+		if (!Compare(lhs.renamedIdentifierLoc, rhs.renamedIdentifierLoc))
+			return false;
+		
+		return true;
+	}
+
+	inline bool Compare(const SourceLocation& lhs, const SourceLocation& rhs)
 	{
 		if (!Compare(lhs.endColumn, rhs.endColumn))
 			return false;
@@ -669,6 +686,9 @@ namespace nzsl::Ast
 	bool Compare(const ImportStatement& lhs, const ImportStatement& rhs)
 	{
 		if (!Compare(lhs.moduleName, rhs.moduleName))
+			return false;
+
+		if (!Compare(lhs.identifiers, rhs.identifiers))
 			return false;
 
 		return true;

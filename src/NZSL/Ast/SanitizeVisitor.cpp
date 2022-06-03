@@ -20,6 +20,7 @@
 #include <NZSL/Ast/ExpressionType.hpp>
 #include <NZSL/Ast/IndexRemapperVisitor.hpp>
 #include <frozen/unordered_map.h>
+#include <tsl/hopscotch_map.h>
 #include <numeric>
 #include <sstream>
 #include <stdexcept>
@@ -1762,13 +1763,50 @@ namespace nzsl::Ast
 
 	StatementPtr SanitizeVisitor::Clone(ImportStatement& node)
 	{
+		if (node.identifiers.empty())
+			throw AstEmptyImportError{ node.sourceLocation };
+
+		tsl::hopscotch_map<std::string, std::string> importedSymbols;
+		bool importEverythingElse = false;
+		for (const auto& entry : node.identifiers)
+		{
+			if (entry.identifier.empty())
+			{
+				// Wildcard
+
+				if (importEverythingElse)
+					throw CompilerImportMultipleWildcardError{ entry.identifierLoc };
+
+				if (!entry.renamedIdentifier.empty())
+					throw CompilerImportWildcardRenameError{ SourceLocation::BuildFromTo(entry.identifierLoc, entry.renamedIdentifierLoc) };
+
+				importEverythingElse = true;
+			}
+			else
+			{
+				// Named import
+
+				auto it = importedSymbols.find(entry.identifier);
+				if (it != importedSymbols.end())
+					throw CompilerImportIdentifierAlreadyPresentError{ entry.identifierLoc, entry.identifier };
+
+				importedSymbols.emplace(entry.identifier, entry.renamedIdentifier);
+			}
+		}
+
 		if (!m_context->options.moduleResolver)
 		{
 			if (!m_context->options.allowPartialSanitization)
 				throw CompilerNoModuleResolverError{ node.sourceLocation };
 
 			// when partially sanitizing, importing a whole module could register any identifier, so at this point we can't see unknown identifiers as errors
-			m_context->allowUnknownIdentifiers = true;
+			if (importEverythingElse)
+				m_context->allowUnknownIdentifiers = true;
+			else
+			{
+				for (const auto& [identifier, renamedAs] : importedSymbols)
+					RegisterUnresolved((renamedAs.empty()) ? identifier : renamedAs);
+			}
 
 			return Nz::StaticUniquePointerCast<ImportStatement>(Cloner::Clone(node));
 		}
@@ -1861,10 +1899,28 @@ namespace nzsl::Ast
 		// Extract exported nodes and their dependencies
 		std::vector<DeclareAliasStatementPtr> aliasStatements;
 
+		auto CheckImport = [&](const std::string& identifier) -> const std::string*
+		{
+			auto it = importedSymbols.find(identifier);
+			if (it == importedSymbols.end())
+			{
+				if (!importEverythingElse)
+					return nullptr;
+			}
+			else if (!it->second.empty())
+				return &it->second;
+
+			return &identifier;
+		};
+
 		ExportVisitor::Callbacks callbacks;
 		callbacks.onExportedFunc = [&](DeclareFunctionStatement& node)
 		{
 			assert(node.funcIndex);
+
+			const std::string* aliasName = CheckImport(node.name);
+			if (!aliasName)
+				return;
 
 			if (moduleData.dependenciesVisitor)
 				moduleData.dependenciesVisitor->MarkFunctionAsUsed(*node.funcIndex);
@@ -1872,7 +1928,7 @@ namespace nzsl::Ast
 			if (!exportedSet.usedFunctions.UnboundedTest(*node.funcIndex))
 			{
 				exportedSet.usedFunctions.UnboundedSet(*node.funcIndex);
-				aliasStatements.emplace_back(ShaderBuilder::DeclareAlias(node.name, ShaderBuilder::Function(*node.funcIndex)));
+				aliasStatements.emplace_back(ShaderBuilder::DeclareAlias(*aliasName, ShaderBuilder::Function(*node.funcIndex)));
 			}
 		};
 
@@ -1880,13 +1936,17 @@ namespace nzsl::Ast
 		{
 			assert(node.structIndex);
 
+			const std::string* aliasName = CheckImport(node.description.name);
+			if (!aliasName)
+				return;
+
 			if (moduleData.dependenciesVisitor)
 				moduleData.dependenciesVisitor->MarkStructAsUsed(*node.structIndex);
 
 			if (!exportedSet.usedStructs.UnboundedTest(*node.structIndex))
 			{
 				exportedSet.usedStructs.UnboundedSet(*node.structIndex);
-				aliasStatements.emplace_back(ShaderBuilder::DeclareAlias(node.description.name, ShaderBuilder::StructType(*node.structIndex)));
+				aliasStatements.emplace_back(ShaderBuilder::DeclareAlias(*aliasName, ShaderBuilder::StructType(*node.structIndex)));
 			}
 		};
 
@@ -1908,7 +1968,8 @@ namespace nzsl::Ast
 		for (auto& aliasPtr : aliasStatements)
 			aliasBlock->statements.push_back(std::move(aliasPtr));
 
-		m_context->allowUnknownIdentifiers = true; //< if module uses a unresolved and non-exported symbol, we need to allow unknown identifiers
+		//m_context->allowUnknownIdentifiers = true; //< if module uses a unresolved and non-exported symbol, we need to allow unknown identifiers
+		// ^ wtf?
 
 		return aliasBlock;
 	}

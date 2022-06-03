@@ -32,6 +32,7 @@ namespace nzsl::Ast
 	inline bool Compare(const BranchStatement::ConditionalStatement& lhs, const BranchStatement::ConditionalStatement& rhs);
 	inline bool Compare(const DeclareExternalStatement::ExternalVar& lhs, const DeclareExternalStatement::ExternalVar& rhs);
 	inline bool Compare(const DeclareFunctionStatement::Parameter& lhs, const DeclareFunctionStatement::Parameter& rhs);
+	inline bool Compare(const ImportStatement::Identifier& lhs, const ImportStatement::Identifier& rhs);
 	inline bool Compare(const SourceLocation& lhs, const SourceLocation& rhs);
 	inline bool Compare(const StructDescription& lhs, const StructDescription& rhs);
 	inline bool Compare(const StructDescription::StructMember& lhs, const StructDescription::StructMember& rhs);

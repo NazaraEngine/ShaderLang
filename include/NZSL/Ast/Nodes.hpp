@@ -430,7 +430,16 @@ namespace nzsl::Ast
 		NodeType GetType() const override;
 		void Visit(StatementVisitor& visitor) override;
 
+		struct Identifier
+		{
+			std::string identifier;
+			std::string renamedIdentifier;
+			SourceLocation identifierLoc;
+			SourceLocation renamedIdentifierLoc;
+		};
+
 		std::string moduleName;
+		std::vector<Identifier> identifiers;
 	};
 
 	struct NZSL_API MultiStatement : Statement

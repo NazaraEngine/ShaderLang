@@ -139,7 +139,7 @@ namespace nzsl::ShaderBuilder
 
 		struct Import
 		{
-			inline Ast::ImportStatementPtr operator()(std::string modulePath) const;
+			inline Ast::ImportStatementPtr operator()(std::string modulePath, std::vector<Ast::ImportStatement::Identifier> identifiers) const;
 		};
 
 		struct Intrinsic
