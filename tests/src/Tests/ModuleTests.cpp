@@ -266,14 +266,21 @@ struct OutputData
 {
 	value: f32
 }
+
+[export]
+struct UnusedStruct {}
+
+[export]
+fn UnusedFunction() {}
 )";
 
 		std::string_view shaderSource = R"(
 [nzsl_version("1.0")]
 module;
 
+import Block from Modules.Block;
 import * from Modules.Block;
-import * from Modules.InputOutput;
+import InputData as Input, OutputData from Modules.InputOutput;
 
 external
 {
@@ -281,7 +288,7 @@ external
 }
 
 [entry(frag)]
-fn main(input: InputData) -> OutputData
+fn main(input: Input) -> OutputData
 {
 	let output: OutputData;
 	output.value = block.data.value * input.value;
@@ -400,7 +407,7 @@ module _Modules_InputOutput
 }
 alias Block = _Modules_Block.Block;
 
-alias InputData = _Modules_InputOutput.InputData;
+alias Input = _Modules_InputOutput.InputData;
 
 alias OutputData = _Modules_InputOutput.OutputData;
 
@@ -410,7 +417,7 @@ external
 }
 
 [entry(frag)]
-fn main(input: InputData) -> OutputData
+fn main(input: Input) -> OutputData
 {
 	let output: OutputData;
 	output.value = block.data.value * input.value;
