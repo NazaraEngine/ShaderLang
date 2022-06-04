@@ -1899,18 +1899,18 @@ namespace nzsl::Ast
 		// Extract exported nodes and their dependencies
 		std::vector<DeclareAliasStatementPtr> aliasStatements;
 
-		auto CheckImport = [&](const std::string& identifier) -> const std::string*
+		auto CheckImport = [&](const std::string& identifier) -> std::pair<bool, const std::string*>
 		{
 			auto it = importedSymbols.find(identifier);
 			if (it == importedSymbols.end())
 			{
 				if (!importEverythingElse)
-					return nullptr;
+					return { false, nullptr };
 			}
 			else if (!it->second.empty())
-				return &it->second;
+				return { true, &it->second };
 
-			return &identifier;
+			return { true, nullptr };
 		};
 
 		ExportVisitor::Callbacks callbacks;
@@ -1918,36 +1918,46 @@ namespace nzsl::Ast
 		{
 			assert(node.funcIndex);
 
-			const std::string* aliasName = CheckImport(node.name);
-			if (!aliasName)
+			auto [imported, aliasName] = CheckImport(node.name);
+			if (!imported)
 				return;
 
 			if (moduleData.dependenciesVisitor)
 				moduleData.dependenciesVisitor->MarkFunctionAsUsed(*node.funcIndex);
 
-			if (!exportedSet.usedFunctions.UnboundedTest(*node.funcIndex))
+			if (!aliasName)
 			{
-				exportedSet.usedFunctions.UnboundedSet(*node.funcIndex);
-				aliasStatements.emplace_back(ShaderBuilder::DeclareAlias(*aliasName, ShaderBuilder::Function(*node.funcIndex)));
+				// symbol not renamed, export it once
+				if (exportedSet.usedStructs.UnboundedTest(*node.funcIndex))
+					return;
+
+				exportedSet.usedStructs.UnboundedSet(*node.funcIndex);
 			}
+			
+			aliasStatements.emplace_back(ShaderBuilder::DeclareAlias((aliasName) ? *aliasName : node.name, ShaderBuilder::Function(*node.funcIndex)));
 		};
 
 		callbacks.onExportedStruct = [&](DeclareStructStatement& node)
 		{
 			assert(node.structIndex);
 
-			const std::string* aliasName = CheckImport(node.description.name);
-			if (!aliasName)
+			auto [imported, aliasName] = CheckImport(node.description.name);
+			if (!imported)
 				return;
 
 			if (moduleData.dependenciesVisitor)
 				moduleData.dependenciesVisitor->MarkStructAsUsed(*node.structIndex);
 
-			if (!exportedSet.usedStructs.UnboundedTest(*node.structIndex))
+			if (!aliasName)
 			{
+				// symbol not renamed, export it once
+				if (exportedSet.usedStructs.UnboundedTest(*node.structIndex))
+					return;
+
 				exportedSet.usedStructs.UnboundedSet(*node.structIndex);
-				aliasStatements.emplace_back(ShaderBuilder::DeclareAlias(*aliasName, ShaderBuilder::StructType(*node.structIndex)));
 			}
+			
+			aliasStatements.emplace_back(ShaderBuilder::DeclareAlias((aliasName) ? *aliasName : node.description.name, ShaderBuilder::StructType(*node.structIndex)));
 		};
 
 		ExportVisitor exportVisitor;
