@@ -29,7 +29,9 @@ TEST_CASE("errors", "[Shader]")
 			nzsl::Ast::Sanitize(*nzsl::Parse(sourceCode));
 		};
 
-		CHECK_THROWS_WITH(Compile(R"(
+		SECTION("Builtins")
+		{
+			CHECK_THROWS_WITH(Compile(R"(
 [nzsl_version("1.0")]
 module;
 
@@ -39,8 +41,8 @@ struct Input
 }
 		)"), "(7,22 -> 24): CBuiltinUnexpectedType error: builtin position expected type vec4[f32], got type f32");
 
-		// If the member is not used, no error should happen
-		CHECK_NOTHROW(Compile(R"(
+			// If the member is not used, no error should happen
+			CHECK_NOTHROW(Compile(R"(
 [nzsl_version("1.0")]
 module;
 
@@ -59,7 +61,7 @@ fn main(input: Input)
 	test(input);
 })"));
 
-		CHECK_THROWS_WITH(Compile(R"(
+			CHECK_THROWS_WITH(Compile(R"(
 [nzsl_version("1.0")]
 module;
 
@@ -80,7 +82,7 @@ fn main(input: Input)
 	clip(input.data);
 })"), "(13,3 -> 9): CInvalidStageDependency error: this is only valid in the fragment stage but this functions gets called in the vertex stage");
 
-		CHECK_THROWS_WITH(Compile(R"(
+			CHECK_THROWS_WITH(Compile(R"(
 [nzsl_version("1.0")]
 module;
 
@@ -99,5 +101,25 @@ fn main(input: Input)
 {
 	test(input);
 })"), "(12,9 -> 17): CBuiltinUnsupportedStage error: builtin position is not available in fragment stage");
+		}
+
+		SECTION("Import")
+		{
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+import * as Y from Module;
+
+)"), "(5,8 -> 13): CImportWildcardRename error: wildcard cannot be renamed");
+
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+import X, X as Y from Module;
+
+)"), "(5, 11): CImportIdentifierAlreadyPresent error: X identifier was already imported");
+		}
 	}
 }
