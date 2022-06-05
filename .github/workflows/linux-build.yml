@@ -20,7 +20,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         arch: [x86_64]
-        mode: [asan, tsan, debug, release]
+        mode: [asan, tsan, ubsan, debug, release]
         kind: [static, shared]
 
     runs-on: ${{ matrix.os }}
