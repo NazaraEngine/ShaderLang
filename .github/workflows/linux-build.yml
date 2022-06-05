@@ -72,10 +72,12 @@ jobs:
 
     # Install the result files
     - name: Install Nazara
+      if: ${{ matrix.mode }} == 'debug' || ${{ matrix.mode }} == 'release'
       run: xmake install -vo package
 
     # Upload artifacts
     - uses: actions/upload-artifact@v2
+      if: ${{ matrix.mode }} == 'debug' || ${{ matrix.mode }} == 'release'
       with:
         name: ${{ matrix.os }}-${{ matrix.arch }}-${{ matrix.mode }}
         path: package
