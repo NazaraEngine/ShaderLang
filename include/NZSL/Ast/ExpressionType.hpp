@@ -165,7 +165,7 @@ namespace nzsl::Ast
 		ExpressionValue<StructLayout> layout;
 		std::string name;
 		std::vector<StructMember> members;
-		bool isConditional;
+		bool isConditional = false;
 	};
 
 	inline bool IsAliasType(const ExpressionType& type);
