@@ -57,11 +57,6 @@ if is_mode("debug") then
 	add_rules("debug_suffix")
 elseif is_mode("asan", "tsan", "ubsan") then
 	set_optimize("none") -- by default xmake will optimize asan builds
-	if is_mode("ubsan") and not is_plat("windows") then
-		-- ubsan enables vptr sanitizer which won't work here because some dependencies (like glslang) are compiled with -fno-rtti
-		-- https://stackoverflow.com/questions/37358573/why-does-fsanitize-undefined-cause-undefined-reference-to-typeinfo
-		add_ldflags("-fno-sanitize=vptr")
-	end
 elseif is_mode("coverage") then
 	if not is_plat("windows") then
 		add_links("gcov")
