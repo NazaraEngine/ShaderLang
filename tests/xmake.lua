@@ -24,10 +24,4 @@ if has_config("tests") then
 
 		add_deps("nzsl")
 		add_packages("catch2", "glslang", "spirv-tools")
-
-		if is_mode("ubsan") and not is_plat("windows") then
-			-- ubsan enables vptr sanitizer which won't work here because glslang is compiled with -fno-rtti
-			-- https://stackoverflow.com/questions/37358573/why-does-fsanitize-undefined-cause-undefined-reference-to-typeinfo
-			add_ldflags("-fno-sanitize=vptr")
-		end
 end
