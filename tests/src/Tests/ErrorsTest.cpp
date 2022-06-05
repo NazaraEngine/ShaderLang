@@ -109,6 +109,14 @@ fn main(input: Input)
 [nzsl_version("1.0")]
 module;
 
+import *, * from Module;
+
+)"), "(5, 11): CImportMultipleWildcard error: only one wildcard can be present in an import directive");
+
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
 import * as Y from Module;
 
 )"), "(5,8 -> 13): CImportWildcardRename error: wildcard cannot be renamed");
@@ -117,7 +125,7 @@ import * as Y from Module;
 [nzsl_version("1.0")]
 module;
 
-import X, X as Y from Module;
+import X, X from Module;
 
 )"), "(5, 11): CImportIdentifierAlreadyPresent error: X identifier was already imported");
 		}

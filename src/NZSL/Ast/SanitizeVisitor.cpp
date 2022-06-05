@@ -1766,7 +1766,7 @@ namespace nzsl::Ast
 		if (node.identifiers.empty())
 			throw AstEmptyImportError{ node.sourceLocation };
 
-		tsl::hopscotch_map<std::string, std::string> importedSymbols;
+		tsl::hopscotch_map<std::string, std::vector<std::string>> importedSymbols;
 		bool importEverythingElse = false;
 		for (const auto& entry : node.identifiers)
 		{
@@ -1787,10 +1787,19 @@ namespace nzsl::Ast
 				// Named import
 
 				auto it = importedSymbols.find(entry.identifier);
-				if (it != importedSymbols.end())
-					throw CompilerImportIdentifierAlreadyPresentError{ entry.identifierLoc, entry.identifier };
+				if (it == importedSymbols.end())
+					it = importedSymbols.emplace(entry.identifier, std::vector<std::string>{}).first;
 
-				importedSymbols.emplace(entry.identifier, entry.renamedIdentifier);
+				std::vector<std::string>& symbols = it.value();
+
+				// Non-renamed symbols can be present only once
+				if (entry.renamedIdentifier.empty())
+				{
+					if (std::find(symbols.begin(), symbols.end(), std::string{}) != symbols.end())
+						throw CompilerImportIdentifierAlreadyPresentError{ entry.identifierLoc, entry.identifier };
+				}
+
+				symbols.push_back(entry.renamedIdentifier);
 			}
 		}
 
@@ -1804,8 +1813,16 @@ namespace nzsl::Ast
 				m_context->allowUnknownIdentifiers = true;
 			else
 			{
-				for (const auto& [identifier, renamedAs] : importedSymbols)
-					RegisterUnresolved((renamedAs.empty()) ? identifier : renamedAs);
+				for (const auto& [identifier, aliases] : importedSymbols)
+				{
+					for (const std::string& alias : aliases)
+					{
+						if (alias.empty())
+							RegisterUnresolved(identifier);
+						else
+							RegisterUnresolved(alias);
+					}
+				}
 			}
 
 			return Nz::StaticUniquePointerCast<ImportStatement>(Cloner::Clone(node));
@@ -1899,18 +1916,20 @@ namespace nzsl::Ast
 		// Extract exported nodes and their dependencies
 		std::vector<DeclareAliasStatementPtr> aliasStatements;
 
-		auto CheckImport = [&](const std::string& identifier) -> std::pair<bool, const std::string*>
+		std::vector<std::string> wildcardImport{ std::string{} };
+
+		auto CheckImport = [&](const std::string& identifier) -> std::pair<bool, const std::vector<std::string>*>
 		{
 			auto it = importedSymbols.find(identifier);
 			if (it == importedSymbols.end())
 			{
 				if (!importEverythingElse)
 					return { false, nullptr };
-			}
-			else if (!it->second.empty())
-				return { true, &it->second };
 
-			return { true, nullptr };
+				return { true, &wildcardImport };
+			}
+			else
+				return { true, &it->second };
 		};
 
 		ExportVisitor::Callbacks callbacks;
@@ -1918,46 +1937,54 @@ namespace nzsl::Ast
 		{
 			assert(node.funcIndex);
 
-			auto [imported, aliasName] = CheckImport(node.name);
+			auto [imported, aliasesName] = CheckImport(node.name);
 			if (!imported)
 				return;
 
 			if (moduleData.dependenciesVisitor)
 				moduleData.dependenciesVisitor->MarkFunctionAsUsed(*node.funcIndex);
 
-			if (!aliasName)
+			for (const std::string& aliasName : *aliasesName)
 			{
-				// symbol not renamed, export it once
-				if (exportedSet.usedStructs.UnboundedTest(*node.funcIndex))
-					return;
+				if (aliasName.empty())
+				{
+					// symbol not renamed, export it once
+					if (exportedSet.usedStructs.UnboundedTest(*node.funcIndex))
+						return;
 
-				exportedSet.usedStructs.UnboundedSet(*node.funcIndex);
+					exportedSet.usedStructs.UnboundedSet(*node.funcIndex);
+					aliasStatements.emplace_back(ShaderBuilder::DeclareAlias(node.name, ShaderBuilder::Function(*node.funcIndex)));
+				}
+				else
+					aliasStatements.emplace_back(ShaderBuilder::DeclareAlias(aliasName, ShaderBuilder::Function(*node.funcIndex)));
 			}
-			
-			aliasStatements.emplace_back(ShaderBuilder::DeclareAlias((aliasName) ? *aliasName : node.name, ShaderBuilder::Function(*node.funcIndex)));
 		};
 
 		callbacks.onExportedStruct = [&](DeclareStructStatement& node)
 		{
 			assert(node.structIndex);
 
-			auto [imported, aliasName] = CheckImport(node.description.name);
+			auto [imported, aliasesName] = CheckImport(node.description.name);
 			if (!imported)
 				return;
 
 			if (moduleData.dependenciesVisitor)
 				moduleData.dependenciesVisitor->MarkStructAsUsed(*node.structIndex);
 
-			if (!aliasName)
+			for (const std::string& aliasName : *aliasesName)
 			{
-				// symbol not renamed, export it once
-				if (exportedSet.usedStructs.UnboundedTest(*node.structIndex))
-					return;
+				if (aliasName.empty())
+				{
+					// symbol not renamed, export it once
+					if (exportedSet.usedStructs.UnboundedTest(*node.structIndex))
+						return;
 
-				exportedSet.usedStructs.UnboundedSet(*node.structIndex);
+					exportedSet.usedStructs.UnboundedSet(*node.structIndex);
+					aliasStatements.emplace_back(ShaderBuilder::DeclareAlias(node.description.name, ShaderBuilder::StructType(*node.structIndex)));
+				}
+				else
+					aliasStatements.emplace_back(ShaderBuilder::DeclareAlias(aliasName, ShaderBuilder::StructType(*node.structIndex)));
 			}
-			
-			aliasStatements.emplace_back(ShaderBuilder::DeclareAlias((aliasName) ? *aliasName : node.description.name, ShaderBuilder::StructType(*node.structIndex)));
 		};
 
 		ExportVisitor exportVisitor;

@@ -278,9 +278,9 @@ fn UnusedFunction() {}
 [nzsl_version("1.0")]
 module;
 
-import Block from Modules.Block;
+import Block, * from Modules.Block;
 import * from Modules.Block;
-import InputData as Input, OutputData from Modules.InputOutput;
+import InputData as Input, OutputData, OutputData as OutputDataAlias from Modules.InputOutput;
 
 external
 {
@@ -290,7 +290,7 @@ external
 [entry(frag)]
 fn main(input: Input) -> OutputData
 {
-	let output: OutputData;
+	let output: OutputDataAlias;
 	output.value = block.data.value * input.value;
 	return output;
 }
@@ -411,6 +411,8 @@ alias Input = _Modules_InputOutput.InputData;
 
 alias OutputData = _Modules_InputOutput.OutputData;
 
+alias OutputDataAlias = _Modules_InputOutput.OutputData;
+
 external
 {
 	[set(0), binding(0)] block: uniform[_Modules_Block.Block]
@@ -419,7 +421,7 @@ external
 [entry(frag)]
 fn main(input: Input) -> OutputData
 {
-	let output: OutputData;
+	let output: OutputDataAlias;
 	output.value = block.data.value * input.value;
 	return output;
 }
