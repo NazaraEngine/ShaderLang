@@ -199,4 +199,21 @@ fn main()
 }
 )");
 	}
+
+	WHEN("serializing and unserializing imports")
+	{
+		ParseSerializeUnserialize(R"(
+[nzsl_version("1.0")]
+module;
+
+import * from FirstModule;
+import A, B from SecondModule;
+import A as X, B as Y, * from ThirdModule;
+
+[entry(frag)]
+fn main()
+{
+}
+)", false);
+	}
 }
