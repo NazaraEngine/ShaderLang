@@ -16,10 +16,11 @@ on:
 jobs:
   build:
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest]
         arch: [x86_64]
-        mode: [asan, debug, release]
+        mode: [asan, tsan, debug, release]
         kind: [static, shared]
 
     runs-on: ${{ matrix.os }}
