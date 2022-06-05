@@ -18,7 +18,7 @@ option("with_nzslc")
 	set_description("Builds the standalone command-line compiler (nzslc)")
 option_end()
 
-add_rules("mode.asan", "mode.tsan", "mode.coverage", "mode.debug", "mode.releasedbg", "mode.release")
+add_rules("mode.asan", "mode.tsan", "mode.ubsan", "mode.coverage", "mode.debug", "mode.releasedbg", "mode.release")
 add_rules("plugin.vsxmake.autoupdate")
 
 includes("xmake/**.lua")
@@ -55,7 +55,7 @@ end
 
 if is_mode("debug") then
 	add_rules("debug_suffix")
-elseif is_mode("asan", "tsan") then
+elseif is_mode("asan", "tsan", "ubsan") then
 	set_optimize("none") -- by default xmake will optimize asan builds
 elseif is_mode("coverage") then
 	if not is_plat("windows") then
