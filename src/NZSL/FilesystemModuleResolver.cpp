@@ -15,14 +15,6 @@
 
 namespace nzsl
 {
-	FilesystemModuleResolver::FilesystemModuleResolver()
-	{
-#ifdef NZSL_EFSW
-		m_fileWatcher = efsw_create(0);
-		efsw_watch(m_fileWatcher);
-#endif
-	}
-
 	FilesystemModuleResolver::~FilesystemModuleResolver()
 	{
 #ifdef NZSL_EFSW
@@ -112,6 +104,12 @@ namespace nzsl
 		if (watchDirectory)
 		{
 #ifdef NZSL_EFSW
+			if (!m_fileWatcher)
+			{
+				m_fileWatcher = efsw_create(0);
+				efsw_watch(m_fileWatcher);
+			}
+
 			auto FileSystemCallback = [](efsw_watcher /*watcher*/, efsw_watchid /*watchid*/, const char* dir, const char* filename, efsw_action action, const char* oldFileName, void* param)
 			{
 				FilesystemModuleResolver* resolver = static_cast<FilesystemModuleResolver*>(param);

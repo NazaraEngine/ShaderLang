@@ -21,7 +21,7 @@ namespace nzsl
 	class NZSL_API FilesystemModuleResolver : public ShaderModuleResolver
 	{
 		public:
-			FilesystemModuleResolver();
+			FilesystemModuleResolver() = default;
 			FilesystemModuleResolver(const FilesystemModuleResolver&) = delete;
 			FilesystemModuleResolver(FilesystemModuleResolver&&) noexcept = delete;
 			~FilesystemModuleResolver();
