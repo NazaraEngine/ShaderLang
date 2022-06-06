@@ -81,6 +81,7 @@ namespace nzslc
 			nzsl::Ast::ModulePtr m_shaderModule;
 			cxxopts::ParseResult& m_options;
 			bool m_measureTime;
+			bool m_verbose;
 			unsigned int m_iterationCount;
 	};
 }
