@@ -61,6 +61,7 @@ namespace nzsl
 
 			inline const std::vector<std::uint8_t>& GetData() const;
 
+			using AbstractSerializer::Serialize;
 			void Serialize(std::uint8_t value) override;
 			void Serialize(std::uint16_t value) override;
 			void Serialize(std::uint32_t value) override;
@@ -81,6 +82,7 @@ namespace nzsl
 			Unserializer(Unserializer&&) noexcept = default;
 			~Unserializer() = default;
 
+			using AbstractUnserializer::Unserialize;
 			void Unserialize(std::uint8_t& value) override;
 			void Unserialize(std::uint16_t& value) override;
 			void Unserialize(std::uint32_t& value) override;
