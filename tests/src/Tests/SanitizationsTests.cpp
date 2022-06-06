@@ -308,4 +308,36 @@ external
 )");
 
 	}
+
+	WHEN("removing scalar swizzle")
+	{
+		std::string_view nzslSource = R"(
+[nzsl_version("1.0")]
+module;
+
+fn main()
+{
+	let value = 42.0;
+	let y = value.r;
+	let z = value.xxxx;
+}
+)";
+
+		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
+
+		nzsl::Ast::SanitizeVisitor::Options options;
+		options.removeScalarSwizzling = true;
+
+		REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(*shaderModule, options));
+
+		ExpectNZSL(*shaderModule, R"(
+fn main()
+{
+	let value: f32 = 42.000000;
+	let y: f32 = value;
+	let z: vec4[f32] = vec4[f32](value, value, value, value);
+}
+)");
+
+	}
 }
