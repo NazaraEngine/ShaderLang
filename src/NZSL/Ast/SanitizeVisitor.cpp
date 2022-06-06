@@ -20,7 +20,6 @@
 #include <NZSL/Ast/ExpressionType.hpp>
 #include <NZSL/Ast/IndexRemapperVisitor.hpp>
 #include <frozen/unordered_map.h>
-#include <tsl/hopscotch_map.h>
 #include <numeric>
 #include <sstream>
 #include <stdexcept>
@@ -1776,7 +1775,7 @@ namespace nzsl::Ast
 		if (node.identifiers.empty())
 			throw AstEmptyImportError{ node.sourceLocation };
 
-		tsl::hopscotch_map<std::string, std::vector<std::string>> importedSymbols;
+		std::unordered_map<std::string, std::vector<std::string>> importedSymbols;
 		bool importEverythingElse = false;
 		for (const auto& entry : node.identifiers)
 		{
@@ -1800,7 +1799,7 @@ namespace nzsl::Ast
 				if (it == importedSymbols.end())
 					it = importedSymbols.emplace(entry.identifier, std::vector<std::string>{}).first;
 
-				std::vector<std::string>& symbols = it.value();
+				std::vector<std::string>& symbols = it->second;
 
 				// Non-renamed symbols can be present only once
 				if (entry.renamedIdentifier.empty())
