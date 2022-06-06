@@ -195,7 +195,7 @@ namespace nzsl::Ast
 
 	ModulePtr SanitizeVisitor::Sanitize(const Module& module, const Options& options, std::string* error)
 	{
-		ModulePtr clone = std::make_shared<Module>(module.metadata, module.importedModules);
+		ModulePtr clone = std::make_shared<Module>(module.metadata);
 
 		Context currentContext;
 		currentContext.options = options;
@@ -215,25 +215,35 @@ namespace nzsl::Ast
 		m_context->moduleEnv->moduleId = clone->metadata->moduleName;
 		m_context->moduleEnv->parentEnv = m_context->globalEnv;
 
-		for (std::size_t moduleId = 0; moduleId < clone->importedModules.size(); ++moduleId)
+		for (std::size_t moduleId = 0; moduleId < module.importedModules.size(); ++moduleId)
 		{
+			const auto& importedModule = module.importedModules[moduleId];
+			if (!importedModule.module)
+				throw std::runtime_error("unexpected invalid imported module");
+
+			if (!importedModule.module->importedModules.empty())
+				throw std::runtime_error("imported modules cannot have imported modules themselves");
+
+			auto& cloneImportedModule = clone->importedModules.emplace_back();
+			cloneImportedModule.identifier = importedModule.identifier;
+			cloneImportedModule.module = std::make_shared<Module>(importedModule.module->metadata);
+
 			auto importedModuleEnv = std::make_shared<Environment>();
-			importedModuleEnv->moduleId = clone->importedModules[moduleId].module->metadata->moduleName;
+			importedModuleEnv->moduleId = cloneImportedModule.module->metadata->moduleName;
 			importedModuleEnv->parentEnv = m_context->globalEnv;
 
 			m_context->currentEnv = importedModuleEnv;
 
-			auto& importedModule = clone->importedModules[moduleId];
-			importedModule.module->rootNode = SanitizeInternal(*importedModule.module->rootNode, error);
-			if (!importedModule.module->rootNode)
+			cloneImportedModule.module->rootNode = SanitizeInternal(*importedModule.module->rootNode, error);
+			if (!cloneImportedModule.module->rootNode)
 				return {};
 
-			m_context->moduleByName[importedModule.module->metadata->moduleName] = moduleId;
+			m_context->moduleByName[cloneImportedModule.module->metadata->moduleName] = moduleId;
 			auto& moduleData = m_context->modules.emplace_back();
 			moduleData.environment = std::move(importedModuleEnv);
 
 			m_context->currentEnv = m_context->globalEnv;
-			RegisterModule(importedModule.identifier, moduleId);
+			RegisterModule(cloneImportedModule.identifier, moduleId);
 		}
 
 		m_context->currentEnv = m_context->moduleEnv;
