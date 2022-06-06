@@ -69,6 +69,8 @@ namespace nzslc
 
 		if (m_options.count("measure") > 0)
 			m_measureTime = m_options["measure"].as<bool>();
+
+		m_verbose = m_options.count("verbose") > 0;
 	}
 	
 	void Compiler::PrintError(const nzsl::Error& error) const
@@ -473,6 +475,9 @@ namespace nzslc
 		}
 		else
 			WriteFileContent(filePath, data, size);
+
+		if (m_verbose)
+			fmt::print("Generated file {}\n", std::filesystem::absolute(filePath).generic_u8string());
 	}
 
 	void Compiler::ReadInput()
@@ -549,7 +554,11 @@ namespace nzslc
 
 		std::size_t stepIndex = m_steps.size();
 
+		bool wasVerbose = m_verbose;
+
+		// Disable substeps benchmarking (and verbose messages) when benchmarking a step
 		m_measureTime = false;
+		m_verbose = false;
 		{
 			auto& step = m_steps.emplace_back();
 			step.name = stepName;
@@ -564,6 +573,7 @@ namespace nzslc
 			step.time = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
 		}
 		m_measureTime = true;
+		m_verbose = wasVerbose;
 		
 		Nz::CallOnExit onExit([&]
 		{
