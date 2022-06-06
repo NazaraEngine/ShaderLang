@@ -240,6 +240,8 @@ namespace nzsl
 			Ast::DependencyCheckerVisitor::Config dependencyConfig;
 			if (shaderStage)
 				dependencyConfig.usedShaderStages = *shaderStage;
+			else
+				dependencyConfig.usedShaderStages = ShaderStageType_All; //< only one should exist anyway
 
 			optimizedModule = Ast::PropagateConstants(*targetModule);
 			optimizedModule = Ast::EliminateUnusedPass(*optimizedModule, dependencyConfig);
