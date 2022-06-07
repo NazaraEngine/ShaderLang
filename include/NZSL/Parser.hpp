@@ -4,12 +4,12 @@
 
 #pragma once
 
-#ifndef NZSL_SHADERLANGPARSER_HPP
-#define NZSL_SHADERLANGPARSER_HPP
+#ifndef NZSL_PARSER_HPP
+#define NZSL_PARSER_HPP
 
 #include <NZSL/Config.hpp>
 #include <NZSL/Enums.hpp>
-#include <NZSL/ShaderLangLexer.hpp>
+#include <NZSL/Lexer.hpp>
 #include <NZSL/Ast/Module.hpp>
 #include <filesystem>
 #include <optional>
@@ -108,6 +108,6 @@ namespace nzsl
 	NZSL_API Ast::ModulePtr ParseFromFile(const std::filesystem::path& sourcePath);
 }
 
-#include <NZSL/ShaderLangParser.inl>
+#include <NZSL/Parser.inl>
 
-#endif // NZSL_SHADERLANGPARSER_HPP
+#endif // NZSL_PARSER_HPP

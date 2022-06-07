@@ -1,7 +1,7 @@
 #include <Tests/ShaderUtils.hpp>
 #include <NZSL/GlslWriter.hpp>
 #include <NZSL/LangWriter.hpp>
-#include <NZSL/ShaderLangParser.hpp>
+#include <NZSL/Parser.hpp>
 #include <NZSL/SpirvPrinter.hpp>
 #include <NZSL/SpirvWriter.hpp>
 #include <NZSL/Ast/ReflectVisitor.hpp>

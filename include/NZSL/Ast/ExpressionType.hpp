@@ -9,7 +9,7 @@
 
 #include <NZSL/Config.hpp>
 #include <NZSL/Enums.hpp>
-#include <NZSL/ShaderLangSourceLocation.hpp>
+#include <NZSL/SourceLocation.hpp>
 #include <NZSL/Ast/Enums.hpp>
 #include <NZSL/Ast/ExpressionValue.hpp>
 #include <optional>

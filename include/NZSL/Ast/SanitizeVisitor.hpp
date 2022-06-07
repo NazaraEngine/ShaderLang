@@ -9,7 +9,7 @@
 
 #include <Nazara/Utils/Bitset.hpp>
 #include <NZSL/Config.hpp>
-#include <NZSL/ShaderModuleResolver.hpp>
+#include <NZSL/ModuleResolver.hpp>
 #include <NZSL/Ast/Cloner.hpp>
 #include <NZSL/Ast/Types.hpp>
 #include <NZSL/Ast/Module.hpp>
@@ -40,7 +40,7 @@ namespace nzsl::Ast
 
 			struct Options
 			{
-				std::shared_ptr<ShaderModuleResolver> moduleResolver;
+				std::shared_ptr<ModuleResolver> moduleResolver;
 				std::unordered_set<std::string> reservedIdentifiers;
 				std::unordered_map<std::uint32_t, ConstantValue> optionValues;
 				bool allowPartialSanitization = false;

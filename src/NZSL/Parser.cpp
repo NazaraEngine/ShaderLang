@@ -2,10 +2,10 @@
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
-#include <NZSL/ShaderLangParser.hpp>
+#include <NZSL/Parser.hpp>
 #include <Nazara/Utils/Algorithm.hpp>
 #include <NZSL/ShaderBuilder.hpp>
-#include <NZSL/ShaderLangErrors.hpp>
+#include <NZSL/Errors.hpp>
 #include <NZSL/Ast/LangData.hpp>
 #include <array>
 #include <fstream>

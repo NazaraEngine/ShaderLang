@@ -7,9 +7,9 @@
 #include <NZSL/FilesystemModuleResolver.hpp>
 #include <NZSL/GlslWriter.hpp>
 #include <NZSL/LangWriter.hpp>
-#include <NZSL/ShaderLangErrors.hpp>
-#include <NZSL/ShaderLangLexer.hpp>
-#include <NZSL/ShaderLangParser.hpp>
+#include <NZSL/Errors.hpp>
+#include <NZSL/Lexer.hpp>
+#include <NZSL/Parser.hpp>
 #include <NZSL/SpirvWriter.hpp>
 #include <NZSL/Serializer.hpp>
 #include <NZSL/Ast/AstSerializer.hpp>

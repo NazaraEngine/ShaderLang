@@ -4,11 +4,11 @@
 
 #pragma once
 
-#ifndef NZSL_SHADERLANGLEXER_HPP
-#define NZSL_SHADERLANGLEXER_HPP
+#ifndef NZSL_LEXER_HPP
+#define NZSL_LEXER_HPP
 
 #include <NZSL/Config.hpp>
-#include <NZSL/ShaderLangSourceLocation.hpp>
+#include <NZSL/SourceLocation.hpp>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -21,7 +21,7 @@ namespace nzsl
 	{
 #define NZSL_SHADERLANG_TOKEN(X) X,
 
-#include <NZSL/ShaderLangTokenList.hpp>
+#include <NZSL/TokenList.hpp>
 	};
 
 	struct Token
@@ -36,6 +36,6 @@ namespace nzsl
 	NZSL_API std::string ToString(const std::vector<Token>& tokens, bool pretty = true);
 }
 
-#include <NZSL/ShaderLangLexer.inl>
+#include <NZSL/Lexer.inl>
 
-#endif // NZSL_SHADERLANGLEXER_HPP
+#endif // NZSL_LEXER_HPP

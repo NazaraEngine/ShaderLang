@@ -8,7 +8,7 @@
 #define NZSL_AST_SERIALIZER_HPP
 
 #include <NZSL/Config.hpp>
-#include <NZSL/ShaderLangSourceLocation.hpp>
+#include <NZSL/SourceLocation.hpp>
 #include <NZSL/Serializer.hpp>
 #include <NZSL/Ast/Module.hpp>
 

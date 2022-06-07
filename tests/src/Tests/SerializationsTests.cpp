@@ -1,7 +1,7 @@
 #include <Tests/ShaderUtils.hpp>
 #include <NZSL/Serializer.hpp>
 #include <NZSL/ShaderBuilder.hpp>
-#include <NZSL/ShaderLangParser.hpp>
+#include <NZSL/Parser.hpp>
 #include <NZSL/Ast/AstSerializer.hpp>
 #include <NZSL/Ast/Compare.hpp>
 #include <NZSL/Ast/SanitizeVisitor.hpp>

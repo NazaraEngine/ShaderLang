@@ -16,7 +16,7 @@
 
 namespace nzsl
 {
-	class ShaderModuleResolver;
+	class ModuleResolver;
 
 	class NZSL_API ShaderWriter
 	{
@@ -30,7 +30,7 @@ namespace nzsl
 
 			struct States
 			{
-				std::shared_ptr<ShaderModuleResolver> shaderModuleResolver;
+				std::shared_ptr<ModuleResolver> shaderModuleResolver;
 				std::unordered_map<std::uint32_t, Ast::ConstantValue> optionValues;
 				bool optimize = false;
 				bool sanitized = false;

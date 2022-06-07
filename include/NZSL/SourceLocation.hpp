@@ -4,8 +4,8 @@
 
 #pragma once
 
-#ifndef NZSL_SHADERLANGSOURCELOCATION_HPP
-#define NZSL_SHADERLANGSOURCELOCATION_HPP
+#ifndef NZSL_SOURCELOCATION_HPP
+#define NZSL_SOURCELOCATION_HPP
 
 #include <NZSL/Config.hpp>
 #include <memory>
@@ -35,6 +35,6 @@ namespace nzsl
 	};
 }
 
-#include <NZSL/ShaderLangSourceLocation.inl>
+#include <NZSL/SourceLocation.inl>
 
-#endif // NZSL_SHADERLANGSOURCELOCATION_HPP
+#endif // NZSL_SOURCELOCATION_HPP
