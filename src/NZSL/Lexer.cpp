@@ -2,8 +2,8 @@
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
-#include <NZSL/ShaderLangLexer.hpp>
-#include <NZSL/ShaderLangErrors.hpp>
+#include <NZSL/Lexer.hpp>
+#include <NZSL/Errors.hpp>
 #include <Nazara/Utils/Algorithm.hpp>
 #include <frozen/string.h>
 #include <frozen/unordered_map.h>
@@ -505,7 +505,7 @@ namespace nzsl
 		{
 #define NZSL_SHADERLANG_TOKEN(X) case TokenType:: X: return #X;
 
-#include <NZSL/ShaderLangTokenList.hpp>
+#include <NZSL/TokenList.hpp>
 		}
 
 		return "<Error>";

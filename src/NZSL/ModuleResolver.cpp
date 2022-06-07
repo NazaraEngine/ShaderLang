@@ -2,9 +2,9 @@
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
-#include <NZSL/ShaderModuleResolver.hpp>
+#include <NZSL/ModuleResolver.hpp>
 
 namespace nzsl
 {
-	ShaderModuleResolver::~ShaderModuleResolver() = default;
+	ModuleResolver::~ModuleResolver() = default;
 }

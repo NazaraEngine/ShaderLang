@@ -8,8 +8,8 @@
 #define NZSL_SHADERLANGERRORS_HPP
 
 #include <NZSL/Config.hpp>
-#include <NZSL/ShaderLangParser.hpp>
-#include <NZSL/ShaderLangSourceLocation.hpp>
+#include <NZSL/Parser.hpp>
+#include <NZSL/SourceLocation.hpp>
 #include <NZSL/Ast/Enums.hpp>
 #include <exception>
 #include <memory>
@@ -32,7 +32,7 @@ namespace nzsl
 	{
 #define NZSL_SHADERLANG_ERROR(ErrorPrefix, ErrorName, ...) ErrorPrefix ## ErrorName,
 
-#include <NZSL/ShaderLangErrorList.hpp>
+#include <NZSL/ErrorList.hpp>
 	};
 
 	NZSL_API std::string_view ToString(ErrorCategory errorCategory);
@@ -113,11 +113,11 @@ namespace nzsl
 #define NZSL_SHADERLANG_PARSER_ERROR(ErrorName, ErrorString, ...) NZSL_SHADERLANG_NEWERRORTYPE(Parser, ParsingError, P, ErrorName, ErrorString, __VA_ARGS__)
 #define NZSL_SHADERLANG_COMPILER_ERROR(ErrorName, ErrorString, ...) NZSL_SHADERLANG_NEWERRORTYPE(Compiler, CompilationError, C, ErrorName, ErrorString, __VA_ARGS__)
 
-#include <NZSL/ShaderLangErrorList.hpp>
+#include <NZSL/ErrorList.hpp>
 
 #undef NZSL_SHADERLANG_NEWERRORTYPE
 }
 
-#include <NZSL/ShaderLangErrors.inl>
+#include <NZSL/Errors.inl>
 
 #endif // NZSL_SHADERLANGERRORS_HPP

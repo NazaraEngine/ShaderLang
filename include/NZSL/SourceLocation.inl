@@ -2,7 +2,7 @@
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
-#include <NZSL/ShaderLangSourceLocation.hpp>
+#include <NZSL/SourceLocation.hpp>
 #include <cassert>
 
 namespace nzsl

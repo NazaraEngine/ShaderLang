@@ -10,7 +10,7 @@
 #include <NZSL/Config.hpp>
 #include <Nazara/Utils/MovablePtr.hpp>
 #include <NZSL/Config.hpp>
-#include <NZSL/ShaderModuleResolver.hpp>
+#include <NZSL/ModuleResolver.hpp>
 #include <filesystem>
 #include <memory>
 #include <string>
@@ -18,7 +18,7 @@
 
 namespace nzsl
 {
-	class NZSL_API FilesystemModuleResolver : public ShaderModuleResolver
+	class NZSL_API FilesystemModuleResolver : public ModuleResolver
 	{
 		public:
 			FilesystemModuleResolver() = default;

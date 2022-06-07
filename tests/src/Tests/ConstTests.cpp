@@ -1,6 +1,6 @@
 #include <Tests/ShaderUtils.hpp>
 #include <NZSL/ShaderBuilder.hpp>
-#include <NZSL/ShaderLangParser.hpp>
+#include <NZSL/Parser.hpp>
 #include <NZSL/Ast/ConstantPropagationVisitor.hpp>
 #include <NZSL/Ast/SanitizeVisitor.hpp>
 #include <catch2/catch.hpp>

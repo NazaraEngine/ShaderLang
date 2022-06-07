@@ -2,7 +2,7 @@
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
-#include <NZSL/ShaderLangErrors.hpp>
+#include <NZSL/Errors.hpp>
 #include <fmt/format.h>
 #include <string>
 #include <utility>
@@ -129,7 +129,7 @@ namespace nzsl
 		{
 #define NZSL_SHADERLANG_ERROR(ErrorPrefix, ErrorName, ...) case ErrorType:: ErrorPrefix ## ErrorName: return #ErrorPrefix #ErrorName;
 
-#include <NZSL/ShaderLangErrorList.hpp>
+#include <NZSL/ErrorList.hpp>
 		}
 
 		return "<unhandled error type>";
@@ -183,7 +183,7 @@ namespace nzsl
 #define NZSL_SHADERLANG_PARSER_ERROR(ErrorName, ErrorString, ...) NZSL_SHADERLANG_NEWERRORTYPE(Parser, P, ErrorName, ErrorString, __VA_ARGS__)
 #define NZSL_SHADERLANG_COMPILER_ERROR(ErrorName, ErrorString, ...) NZSL_SHADERLANG_NEWERRORTYPE(Compiler, C, ErrorName, ErrorString, __VA_ARGS__)
 
-#include <NZSL/ShaderLangErrorList.hpp>
+#include <NZSL/ErrorList.hpp>
 
 #undef NZSL_SHADERLANG_NEWERRORTYPE
 }

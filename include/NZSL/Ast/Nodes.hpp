@@ -8,7 +8,7 @@
 #define NZSL_AST_NODES_HPP
 
 #include <NZSL/Config.hpp>
-#include <NZSL/ShaderLangSourceLocation.hpp>
+#include <NZSL/SourceLocation.hpp>
 #include <NZSL/Ast/ConstantValue.hpp>
 #include <NZSL/Ast/Enums.hpp>
 #include <NZSL/Ast/ExpressionType.hpp>
