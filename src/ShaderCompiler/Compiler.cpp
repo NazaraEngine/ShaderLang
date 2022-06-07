@@ -342,10 +342,10 @@ namespace nzslc
 				throw std::runtime_error("unrecognized gl-entry " + entryName);
 		}
 
-		std::string glsl = writer.Generate(entryType, module, bindingMapping, states);
+		nzsl::GlslWriter::Output output = writer.Generate(entryType, module, bindingMapping, states);
 
 		outputPath.replace_extension("glsl");
-		OutputFile(std::move(outputPath), glsl.data(), glsl.size());
+		OutputFile(std::move(outputPath), output.code.data(), output.code.size());
 	}
 
 	void Compiler::CompileToNZSL(std::filesystem::path outputPath, const nzsl::Ast::Module& module)

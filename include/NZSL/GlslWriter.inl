@@ -11,7 +11,7 @@ namespace nzsl
 	{
 	}
 
-	inline std::string GlslWriter::Generate(const Ast::Module& shader, const BindingMapping& bindingMapping, const States& states)
+	inline auto GlslWriter::Generate(const Ast::Module& shader, const BindingMapping& bindingMapping, const States& states) -> GlslWriter::Output
 	{
 		return Generate(std::nullopt, shader, bindingMapping, states);
 	}
