@@ -18,27 +18,29 @@
 #include <tsl/ordered_set.h>
 #include <cassert>
 #include <optional>
-#include <set>
+#include <sstream>
 #include <stdexcept>
 
 namespace nzsl
 {
 	namespace
 	{
-		static const char* s_glslWriterFlipYUniformName = "_nzslFlipYValue";
-		static const char* s_glslWriterShaderDrawParametersBaseInstanceName = "_nzslBaseInstance";
-		static const char* s_glslWriterShaderDrawParametersBaseVertexName = "_nzslBaseVertex";
-		static const char* s_glslWriterShaderDrawParametersDrawIdName = "_nzslDrawID";
-		static const char* s_glslWriterShaderDrawIdName = "_nzslFlipYValue";
-		static const char* s_glslWriterInputPrefix = "_nzslIn_";
-		static const char* s_glslWriterOutputPrefix = "_nzslOut_";
-		static const char* s_glslWriterOutputVarName = "_nzslOutput";
+		constexpr std::string_view s_glslWriterFlipYUniformName = "_nzslFlipYValue";
+		constexpr std::string_view s_glslWriterShaderDrawParametersBaseInstanceName = "_nzslBaseInstance";
+		constexpr std::string_view s_glslWriterShaderDrawParametersBaseVertexName = "_nzslBaseVertex";
+		constexpr std::string_view s_glslWriterShaderDrawParametersDrawIndexName = "_nzslDrawID";
+		constexpr std::string_view s_glslWriterShaderDrawIdName = "_nzslFlipYValue";
+		constexpr std::string_view s_glslWriterInputPrefix = "_nzslIn_";
+		constexpr std::string_view s_glslWriterOutputPrefix = "_nzslOut_";
+		constexpr std::string_view s_glslWriterOutputVarName = "_nzslOutput";
 
 		enum class GlslCapability
 		{
 			None = -1,
 
-			ShaderDrawParameters, // GLSL 4.6 or GL_ARB_shader_draw_parameters
+			ShaderDrawParameters_BaseInstance, // GLSL 4.6 or GL_ARB_shader_draw_parameters
+			ShaderDrawParameters_BaseVertex, // GLSL 4.6 or GL_ARB_shader_draw_parameters
+			ShaderDrawParameters_DrawIndex, // GLSL 4.6 or GL_ARB_shader_draw_parameters
 		};
 		
 		struct GlslBuiltin
@@ -48,12 +50,12 @@ namespace nzsl
 		};
 
 		constexpr auto s_glslBuiltinMapping = frozen::make_unordered_map<Ast::BuiltinEntry, GlslBuiltin>({
-			{ Ast::BuiltinEntry::BaseInstance,   { "gl_BaseInstance", GlslCapability::ShaderDrawParameters } },
-			{ Ast::BuiltinEntry::BaseVertex,     { "gl_BaseVertex",   GlslCapability::ShaderDrawParameters } },
-			{ Ast::BuiltinEntry::DrawIndex,      { "gl_DrawID",       GlslCapability::ShaderDrawParameters } },
+			{ Ast::BuiltinEntry::BaseInstance,   { "gl_BaseInstance", GlslCapability::ShaderDrawParameters_BaseInstance } },
+			{ Ast::BuiltinEntry::BaseVertex,     { "gl_BaseVertex",   GlslCapability::ShaderDrawParameters_BaseVertex } },
+			{ Ast::BuiltinEntry::DrawIndex,      { "gl_DrawID",       GlslCapability::ShaderDrawParameters_DrawIndex } },
 			{ Ast::BuiltinEntry::FragCoord,      { "gl_FragCoord",    GlslCapability::None } },
 			{ Ast::BuiltinEntry::FragDepth,      { "gl_FragDepth",    GlslCapability::None } },
-			{ Ast::BuiltinEntry::InstanceIndex,  { "gl_InstanceID",   GlslCapability::None } },
+			{ Ast::BuiltinEntry::InstanceIndex,  { "gl_InstanceID",   GlslCapability::ShaderDrawParameters_BaseInstance } },
 			{ Ast::BuiltinEntry::VertexIndex,    { "gl_VertexID",     GlslCapability::None } },
 			{ Ast::BuiltinEntry::VertexPosition, { "gl_Position",     GlslCapability::None } }
 		});
@@ -194,20 +196,25 @@ namespace nzsl
 		std::optional<ShaderStageType> stage;
 		std::string moduleSuffix;
 		std::stringstream stream;
-		std::unordered_map<std::size_t, StructData> structs;
-		std::unordered_map<std::size_t, std::string> variableNames;
 		std::vector<InOutField> inputFields;
 		std::vector<InOutField> outputFields;
+		std::unordered_map<std::size_t, StructData> structs;
+		std::unordered_map<std::size_t, std::string> variableNames;
+		std::unordered_map<std::string, unsigned int> explicitUniformBlockBinding;
 		Nz::Bitset<> declaredFunctions;
 		const GlslWriter::BindingMapping& bindingMapping;
 		GlslWriterPreVisitor previsitor;
 		const States* states = nullptr;
+		bool requiresExplicitUniformBinding = false;
+		bool supportsVaryingLocations = true;
 		bool isInEntryPoint = false;
-		bool hasDrawParametersUniforms = false;
+		bool hasDrawParametersBaseInstanceUniform = false;
+		bool hasDrawParametersBaseVertexUniform = false;
+		bool hasDrawParametersDrawIndexUniform = false;
 		unsigned int indentLevel = 0;
 	};
 
-	std::string GlslWriter::Generate(std::optional<ShaderStageType> shaderStage, const Ast::Module& module, const BindingMapping& bindingMapping, const States& states)
+	auto GlslWriter::Generate(std::optional<ShaderStageType> shaderStage, const Ast::Module& module, const BindingMapping& bindingMapping, const States& states) -> GlslWriter::Output
 	{
 		State state(bindingMapping);
 		state.stage = shaderStage;
@@ -290,7 +297,14 @@ namespace nzsl
 		m_currentState->moduleSuffix = {};
 		targetModule->rootNode->Visit(*this);
 
-		return state.stream.str();
+		Output output;
+		output.code = std::move(state.stream).str();
+		output.explicitUniformBlockBinding = std::move(state.explicitUniformBlockBinding);
+		output.usesDrawParameterBaseInstanceUniform = m_currentState->hasDrawParametersBaseInstanceUniform;
+		output.usesDrawParameterBaseVertexUniform = m_currentState->hasDrawParametersBaseVertexUniform;
+		output.usesDrawParameterDrawIndexUniform = m_currentState->hasDrawParametersDrawIndexUniform;
+
+		return output;
 	}
 
 	void GlslWriter::SetEnv(Environment environment)
@@ -298,7 +312,22 @@ namespace nzsl
 		m_environment = std::move(environment);
 	}
 
-	const char* GlslWriter::GetFlipYUniformName()
+	std::string_view GlslWriter::GetDrawParameterBaseInstanceUniformName()
+	{
+		return s_glslWriterShaderDrawParametersBaseInstanceName;
+	}
+
+	std::string_view GlslWriter::GetDrawParameterBaseVertexUniformName()
+	{
+		return s_glslWriterShaderDrawParametersBaseVertexName;
+	}
+
+	std::string_view GlslWriter::GetDrawParameterDrawIndexUniformName()
+	{
+		return s_glslWriterShaderDrawParametersDrawIndexName;
+	}
+
+	std::string_view GlslWriter::GetFlipYUniformName()
 	{
 		return s_glslWriterFlipYUniformName;
 	}
@@ -342,7 +371,7 @@ namespace nzsl
 		{
 			case Ast::BuiltinEntry::BaseInstance:
 			{
-				if (m_currentState->hasDrawParametersUniforms)
+				if (m_currentState->hasDrawParametersBaseInstanceUniform)
 					Append(s_glslWriterShaderDrawParametersBaseInstanceName);
 				else if (!m_environment.glES && glVersion >= 460)
 					Append("gl_BaseInstance");
@@ -353,7 +382,7 @@ namespace nzsl
 
 			case Ast::BuiltinEntry::BaseVertex:
 			{
-				if (m_currentState->hasDrawParametersUniforms)
+				if (m_currentState->hasDrawParametersBaseVertexUniform)
 					Append(s_glslWriterShaderDrawParametersBaseVertexName);
 				else if (!m_environment.glES && glVersion >= 460)
 					Append("gl_BaseVertex");
@@ -364,8 +393,8 @@ namespace nzsl
 
 			case Ast::BuiltinEntry::DrawIndex:
 			{
-				if (m_currentState->hasDrawParametersUniforms)
-					Append(s_glslWriterShaderDrawParametersDrawIdName);
+				if (m_currentState->hasDrawParametersDrawIndexUniform)
+					Append(s_glslWriterShaderDrawParametersDrawIndexName);
 				else if (!m_environment.glES && glVersion >= 460)
 					Append("gl_DrawID");
 				else
@@ -644,7 +673,7 @@ namespace nzsl
 
 		// Extensions
 
-		std::vector<std::string_view> requiredExtensions;
+		tsl::ordered_set<std::string> requiredExtensions;
 		
 		for (GlslCapability capability : m_currentState->previsitor.capabilities)
 		{
@@ -653,40 +682,80 @@ namespace nzsl
 				case GlslCapability::None:
 					break;
 
-				case GlslCapability::ShaderDrawParameters:
+				case GlslCapability::ShaderDrawParameters_BaseInstance:
 				{
 					if (m_environment.glES)
-						m_currentState->hasDrawParametersUniforms = true;
+						m_currentState->hasDrawParametersBaseInstanceUniform = true;
 					else if (glslVersion < 460)
 					{
-						if (m_environment.extCallback("GL_ARB_shader_draw_parameters"))
-							requiredExtensions.push_back("GL_ARB_shader_draw_parameters");
+						if (m_environment.extCallback && m_environment.extCallback("GL_ARB_shader_draw_parameters"))
+							requiredExtensions.emplace("GL_ARB_shader_draw_parameters");
 						else
-							m_currentState->hasDrawParametersUniforms = true;
+							m_currentState->hasDrawParametersBaseInstanceUniform = true;
 					}
-				
+
+					break;
+				}
+
+				case GlslCapability::ShaderDrawParameters_BaseVertex:
+				{
+					if (m_environment.glES)
+						m_currentState->hasDrawParametersBaseVertexUniform = true;
+					else if (glslVersion < 460)
+					{
+						if (m_environment.extCallback && m_environment.extCallback("GL_ARB_shader_draw_parameters"))
+							requiredExtensions.emplace("GL_ARB_shader_draw_parameters");
+						else
+							m_currentState->hasDrawParametersBaseVertexUniform = true;
+					}
+
+					break;
+				}
+
+				case GlslCapability::ShaderDrawParameters_DrawIndex:
+				{
+					if (m_environment.glES)
+						m_currentState->hasDrawParametersDrawIndexUniform = true;
+					else if (glslVersion < 460)
+					{
+						if (m_environment.extCallback && m_environment.extCallback("GL_ARB_shader_draw_parameters"))
+							requiredExtensions.emplace("GL_ARB_shader_draw_parameters");
+						else
+							m_currentState->hasDrawParametersDrawIndexUniform = true;
+					}
+
 					break;
 				}
 			}
 		}
 
-		if (m_currentState->hasDrawParametersUniforms && !m_environment.allowDrawParametersUniformsFallback)
+		if ((m_currentState->hasDrawParametersBaseInstanceUniform || m_currentState->hasDrawParametersBaseVertexUniform || m_currentState->hasDrawParametersDrawIndexUniform) && !m_environment.allowDrawParametersUniformsFallback)
 			throw std::runtime_error("Draw parameters are used but not supported and fallback uniforms are disabled, cannot continue");
 
-		if (!m_environment.glES && m_environment.extCallback)
+		if (m_environment.glES)
+		{
+			// GL_ARB_separate_shader_objects (required for layout(location = X))
+			if (glslVersion < 310)
+				m_currentState->supportsVaryingLocations = false;
+		}
+		else
 		{
 			// GL_ARB_shading_language_420pack (required for layout(binding = X))
 			if (glslVersion < 420)
 			{
-				if (m_environment.extCallback("GL_ARB_shading_language_420pack"))
-					requiredExtensions.push_back("GL_ARB_shading_language_420pack");
+				if (m_environment.extCallback && m_environment.extCallback("GL_ARB_shading_language_420pack"))
+					requiredExtensions.emplace("GL_ARB_shading_language_420pack");
+				else
+					m_currentState->requiresExplicitUniformBinding = true;
 			}
 
 			// GL_ARB_separate_shader_objects (required for layout(location = X))
 			if (glslVersion < 410)
 			{
-				if (m_environment.extCallback("GL_ARB_separate_shader_objects"))
-					requiredExtensions.push_back("GL_ARB_separate_shader_objects");
+				if (m_environment.extCallback && m_environment.extCallback("GL_ARB_separate_shader_objects"))
+					requiredExtensions.emplace("GL_ARB_separate_shader_objects");
+				else
+					m_currentState->supportsVaryingLocations = false;
 			}
 		}
 
@@ -708,11 +777,17 @@ namespace nzsl
 			AppendLine();
 		}
 
-		if (m_currentState->hasDrawParametersUniforms)
+		if (m_currentState->hasDrawParametersBaseInstanceUniform || m_currentState->hasDrawParametersBaseVertexUniform || m_currentState->hasDrawParametersDrawIndexUniform)
 		{
-			AppendLine("uniform int ", s_glslWriterShaderDrawParametersBaseInstanceName, ";");
-			AppendLine("uniform int ", s_glslWriterShaderDrawParametersBaseVertexName, ";");
-			AppendLine("uniform int ", s_glslWriterShaderDrawParametersDrawIdName, ";");
+			if (m_currentState->hasDrawParametersBaseInstanceUniform)
+				AppendLine("uniform int ", s_glslWriterShaderDrawParametersBaseInstanceName, ";");
+
+			if (m_currentState->hasDrawParametersBaseVertexUniform)
+				AppendLine("uniform int ", s_glslWriterShaderDrawParametersBaseVertexName, ";");
+
+			if (m_currentState->hasDrawParametersDrawIndexUniform)
+				AppendLine("uniform int ", s_glslWriterShaderDrawParametersDrawIndexName, ";");
+
 			AppendLine();
 		}
 	}
@@ -841,12 +916,19 @@ namespace nzsl
 
 	void GlslWriter::HandleInOut()
 	{
-		auto AppendInOut = [this](const State::StructData& structData, std::vector<State::InOutField>& fields, const char* keyword, const char* targetPrefix)
+		auto AppendInOut = [this](bool in, const State::StructData& structData, std::vector<State::InOutField>& fields, std::string_view targetPrefix)
 		{
+			bool first = true;
+
 			for (const auto& member : structData.desc->members)
 			{
 				if (member.cond.HasValue() && !member.cond.GetResultingValue())
 					continue;
+
+				if (first)
+					AppendCommentSection((in) ? "Inputs" : "Outputs");
+
+				first = false;
 
 				if (member.builtin.HasValue())
 				{
@@ -864,20 +946,42 @@ namespace nzsl
 				}
 				else
 				{
+					std::string varName = std::string(targetPrefix) + member.name;
+
+					auto OutputVariable = [&](auto&&... arg)
+					{
+						Append((in) ? "in" : "out", " ");
+						AppendVariableDeclaration(member.type.GetResultingValue(), varName);
+						AppendLine(";", arg...);
+					};
+
 					if (member.locationIndex.HasValue())
 					{
-						Append("layout(location = ");
-						Append(member.locationIndex.GetResultingValue());
-						Append(") ");
+						bool isSupported = m_currentState->supportsVaryingLocations
+						                || (in && m_currentState->stage == nzsl::ShaderStageType::Vertex)
+						                || (!in && m_currentState->stage == nzsl::ShaderStageType::Fragment);
+
+						if (isSupported)
+						{
+							Append("layout(location = ");
+							Append(member.locationIndex.GetResultingValue());
+							Append(") ");
+
+							OutputVariable();
+						}
+						else
+						{
+							std::string originalName = std::move(varName);
+							varName = "_nzslVarying_" + std::to_string(member.locationIndex.GetResultingValue());
+							OutputVariable(" // ", originalName);
+						}
 					}
-
-					Append(keyword, " ");
-					AppendVariableDeclaration(member.type.GetResultingValue(), targetPrefix + member.name);
-					AppendLine(";");
-
+					else
+						OutputVariable();
+					
 					fields.push_back({
 						member.name,
-						targetPrefix + member.name
+						varName
 					});
 				}
 			}
@@ -891,12 +995,10 @@ namespace nzsl
 			assert(node.parameters.size() == 1);
 			auto& parameter = node.parameters.front();
 			assert(std::holds_alternative<Ast::StructType>(parameter.type.GetResultingValue()));
-
 			std::size_t inputStructIndex = std::get<Ast::StructType>(parameter.type.GetResultingValue()).structIndex;
+			
 			const auto& inputStruct = Nz::Retrieve(m_currentState->structs, inputStructIndex);
-
-			AppendCommentSection("Inputs");
-			AppendInOut(inputStruct, m_currentState->inputFields, "in", s_glslWriterInputPrefix);
+			AppendInOut(true, inputStruct, m_currentState->inputFields, s_glslWriterInputPrefix);
 		}
 
 		if (m_currentState->stage == ShaderStageType::Vertex && m_environment.flipYPosition)
@@ -909,11 +1011,9 @@ namespace nzsl
 		{
 			assert(std::holds_alternative<Ast::StructType>(node.returnType.GetResultingValue()));
 			std::size_t outputStructIndex = std::get<Ast::StructType>(node.returnType.GetResultingValue()).structIndex;
-
 			const auto& outputStruct = Nz::Retrieve(m_currentState->structs, outputStructIndex);
-
-			AppendCommentSection("Outputs");
-			AppendInOut(outputStruct, m_currentState->outputFields, "out", s_glslWriterOutputPrefix);
+			
+			AppendInOut(false, outputStruct, m_currentState->outputFields, s_glslWriterOutputPrefix);
 		}
 	}
 
@@ -1271,9 +1371,14 @@ namespace nzsl
 				if (bindingIt == m_currentState->bindingMapping.end())
 					throw std::runtime_error("no binding found for (set=" + std::to_string(bindingSet) + ", binding=" + std::to_string(bindingIndex) + ")");
 
-				Append("binding = ", bindingIt->second);
-				if (isStd140)
-					Append(", ");
+				if (!m_currentState->requiresExplicitUniformBinding)
+				{
+					Append("binding = ", bindingIt->second);
+					if (isStd140)
+						Append(", ");
+				}
+				else
+					m_currentState->explicitUniformBlockBinding.emplace(varName, bindingIt->second);
 			}
 
 			if (isStd140)
@@ -1527,33 +1632,5 @@ namespace nzsl
 		AppendLine(")");
 
 		ScopeVisit(*node.body);
-	}
-
-	bool GlslWriter::HasExplicitBinding(Ast::StatementPtr& shader)
-	{
-		/*for (const auto& uniform : shader.GetUniforms())
-		{
-			if (uniform.bindingIndex.has_value())
-				return true;
-		}*/
-
-		return false;
-	}
-
-	bool GlslWriter::HasExplicitLocation(Ast::StatementPtr& shader)
-	{
-		/*for (const auto& input : shader.GetInputs())
-		{
-			if (input.locationIndex.has_value())
-				return true;
-		}
-
-		for (const auto& output : shader.GetOutputs())
-		{
-			if (output.locationIndex.has_value())
-				return true;
-		}*/
-
-		return false;
 	}
 }

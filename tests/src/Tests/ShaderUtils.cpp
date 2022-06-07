@@ -168,12 +168,12 @@ void ExpectGLSL(const nzsl::Ast::Module& shaderModule, std::string_view expected
 		nzsl::GlslWriter writer;
 		writer.SetEnv(env);
 
-		std::string output = writer.Generate(entryShaderStage, targetModule);
+		nzsl::GlslWriter::Output output = writer.Generate(entryShaderStage, targetModule);
 
 		WHEN("Validating expected code")
 		{
-			INFO("full GLSL output:\n" << output << "\nexcepted output:\n" << expectedOutput);
-			REQUIRE(output.find(expectedOutput) != std::string::npos);
+			INFO("full GLSL output:\n" << output.code << "\nexcepted output:\n" << expectedOutput);
+			REQUIRE(output.code.find(expectedOutput) != std::string::npos);
 		}
 
 		if (!testShaderCompilation)
@@ -200,12 +200,12 @@ void ExpectGLSL(const nzsl::Ast::Module& shaderModule, std::string_view expected
 			glslangShader.setEntryPoint("main");
 			glslangShader.setAutoMapLocations(true);
 
-			const char* source = output.c_str();
+			const char* source = output.code.c_str();
 			glslangShader.setStrings(&source, 1);
 
 			if (!glslangShader.parse(&s_minResources, 300, false, static_cast<EShMessages>(EShMsgDefault | EShMsgKeepUncalled)))
 			{
-				INFO("full GLSL output:\n" << output << "\nerror:\n" << glslangShader.getInfoLog());
+				INFO("full GLSL output:\n" << output.code << "\nerror:\n" << glslangShader.getInfoLog());
 				REQUIRE(false);
 			}
 		}

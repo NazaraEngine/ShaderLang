@@ -14,11 +14,10 @@
 #include <NZSL/Ast/StatementVisitorExcept.hpp>
 #include <NZSL/Ast/Module.hpp>
 #include <NZSL/Ast/SanitizeVisitor.hpp>
-#include <set>
-#include <sstream>
 #include <string>
 #include <variant>
 #include <vector>
+#include <unordered_map>
 
 namespace nzsl
 {
@@ -26,16 +25,17 @@ namespace nzsl
 	{
 		public:
 			using BindingMapping = std::unordered_map<std::uint64_t /* set | binding */, unsigned /*glBinding*/>;
-			struct Environment;
 			using ExtSupportCallback = std::function<bool(const std::string_view& name)>;
+			struct Environment;
+			struct Output;
 
 			inline GlslWriter();
 			GlslWriter(const GlslWriter&) = delete;
 			GlslWriter(GlslWriter&&) = delete;
 			~GlslWriter() = default;
 
-			inline std::string Generate(const Ast::Module& module, const BindingMapping& bindingMapping = {}, const States& states = {});
-			std::string Generate(std::optional<ShaderStageType> shaderStage, const Ast::Module& module, const BindingMapping& bindingMapping = {}, const States& states = {});
+			inline Output Generate(const Ast::Module& module, const BindingMapping& bindingMapping = {}, const States& states = {});
+			Output Generate(std::optional<ShaderStageType> shaderStage, const Ast::Module& module, const BindingMapping& bindingMapping = {}, const States& states = {});
 
 			void SetEnv(Environment environment);
 
@@ -50,7 +50,19 @@ namespace nzsl
 				bool allowDrawParametersUniformsFallback = false;
 			};
 
-			static const char* GetFlipYUniformName();
+			struct Output
+			{
+				std::string code;
+				std::unordered_map<std::string, unsigned int> explicitUniformBlockBinding;
+				bool usesDrawParameterBaseInstanceUniform;
+				bool usesDrawParameterBaseVertexUniform;
+				bool usesDrawParameterDrawIndexUniform;
+			};
+
+			static std::string_view GetDrawParameterBaseInstanceUniformName();
+			static std::string_view GetDrawParameterBaseVertexUniformName();
+			static std::string_view GetDrawParameterDrawIndexUniformName();
+			static std::string_view GetFlipYUniformName();
 			static Ast::SanitizeVisitor::Options GetSanitizeOptions();
 
 		private:
@@ -126,9 +138,6 @@ namespace nzsl
 			void Visit(Ast::ReturnStatement& node) override;
 			void Visit(Ast::ScopedStatement& node) override;
 			void Visit(Ast::WhileStatement& node) override;
-
-			static bool HasExplicitBinding(Ast::StatementPtr& shader);
-			static bool HasExplicitLocation(Ast::StatementPtr& shader);
 
 			struct State;
 
