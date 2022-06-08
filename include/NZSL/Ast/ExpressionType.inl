@@ -77,8 +77,7 @@ namespace nzsl::Ast
 	{
 		return !operator==(rhs);
 	}
-
-
+	
 	inline bool StructType::operator==(const StructType& rhs) const
 	{
 		return structIndex == rhs.structIndex;
@@ -100,18 +99,6 @@ namespace nzsl::Ast
 		return !operator==(rhs);
 	}
 
-
-	inline bool UniformType::operator==(const UniformType& rhs) const
-	{
-		return containedType == rhs.containedType;
-	}
-
-	inline bool UniformType::operator!=(const UniformType& rhs) const
-	{
-		return !operator==(rhs);
-	}
-
-
 	inline bool VectorType::operator==(const VectorType& rhs) const
 	{
 		return componentCount == rhs.componentCount && type == rhs.type;
@@ -123,6 +110,28 @@ namespace nzsl::Ast
 	}
 
 
+	inline bool StorageType::operator==(const StorageType& rhs) const
+	{
+		return containedType == rhs.containedType;
+	}
+
+	inline bool StorageType::operator!=(const StorageType& rhs) const
+	{
+		return !operator==(rhs);
+	}
+
+
+	inline bool UniformType::operator==(const UniformType& rhs) const
+	{
+		return containedType == rhs.containedType;
+	}
+
+	inline bool UniformType::operator!=(const UniformType& rhs) const
+	{
+		return !operator==(rhs);
+	}
+
+	
 	inline bool IsAliasType(const ExpressionType& type)
 	{
 		return std::holds_alternative<AliasType>(type);
@@ -166,6 +175,11 @@ namespace nzsl::Ast
 	inline bool IsSamplerType(const ExpressionType& type)
 	{
 		return std::holds_alternative<SamplerType>(type);
+	}
+
+	bool IsStorageType(const ExpressionType& type)
+	{
+		return std::holds_alternative<StorageType>(type);
 	}
 
 	bool IsStructType(const ExpressionType& type)

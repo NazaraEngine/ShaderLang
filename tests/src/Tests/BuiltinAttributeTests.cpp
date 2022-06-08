@@ -51,7 +51,7 @@ fn main(input: Input) -> Output
 		WHEN("generating without draw parameters support")
 		{
 			nzsl::GlslWriter writer;
-			CHECK_THROWS_WITH(writer.Generate(*shaderModule), "Draw parameters are used but not supported and fallback uniforms are disabled, cannot continue");
+			CHECK_THROWS_WITH(writer.Generate(*shaderModule), "draw parameters are used but not supported and fallback uniforms are disabled, cannot continue");
 		}
 
 		WHEN("generating with draw parameters support as an extension")

@@ -392,8 +392,8 @@ namespace nzsl
 
 		void Register(const std::vector<TypePtr>& lhs)
 		{
-			for (std::size_t i = 0; i < lhs.size(); ++i)
-				cache.Register(*lhs[i]);
+			for (const auto& typePtr : lhs)
+				cache.Register(*typePtr);
 		}
 
 		template<typename T>
@@ -621,7 +621,7 @@ namespace nzsl
 	auto SpirvConstantCache::BuildPointerType(const Ast::ExpressionType& type, SpirvStorageClass storageClass) const -> TypePtr
 	{
 		bool wasInblockStruct = m_internal->isInBlockStruct;
-		if (storageClass == SpirvStorageClass::Uniform)
+		if (storageClass == SpirvStorageClass::Uniform || storageClass == SpirvStorageClass::StorageBuffer)
 			m_internal->isInBlockStruct = true;
 
 		auto typePtr = std::make_shared<Type>(Pointer{
@@ -637,7 +637,7 @@ namespace nzsl
 	auto SpirvConstantCache::BuildPointerType(const TypePtr& type, SpirvStorageClass storageClass) const -> TypePtr
 	{
 		bool wasInblockStruct = m_internal->isInBlockStruct;
-		if (storageClass == SpirvStorageClass::Uniform)
+		if (storageClass == SpirvStorageClass::Uniform || storageClass == SpirvStorageClass::StorageBuffer)
 			m_internal->isInBlockStruct = true;
 
 		auto typePtr = std::make_shared<Type>(Pointer{
@@ -653,7 +653,7 @@ namespace nzsl
 	auto SpirvConstantCache::BuildPointerType(const Ast::PrimitiveType& type, SpirvStorageClass storageClass) const -> TypePtr
 	{
 		bool wasInblockStruct = m_internal->isInBlockStruct;
-		if (storageClass == SpirvStorageClass::Uniform)
+		if (storageClass == SpirvStorageClass::Uniform || storageClass == SpirvStorageClass::StorageBuffer)
 			m_internal->isInBlockStruct = true;
 
 		auto typePtr = std::make_shared<Type>(Pointer{
@@ -779,6 +779,11 @@ namespace nzsl
 		return std::make_shared<Type>(SampledImage{ std::make_shared<Type>(imageType) });
 	}
 
+	auto SpirvConstantCache::BuildType(const Ast::StorageType& type) const -> TypePtr
+	{
+		return BuildType(type.containedType);
+	}
+
 	auto SpirvConstantCache::BuildType(const Ast::StructType& type) const -> TypePtr
 	{
 		assert(m_internal->structCallback);
@@ -793,7 +798,10 @@ namespace nzsl
 
 		bool wasInBlock = m_internal->isInBlockStruct;
 		if (!wasInBlock)
-			m_internal->isInBlockStruct = std::find(sType.decorations.begin(), sType.decorations.end(), SpirvDecoration::Block) != sType.decorations.end();
+		{
+			m_internal->isInBlockStruct = std::find(sType.decorations.begin(), sType.decorations.end(), SpirvDecoration::Block) != sType.decorations.end()
+			                           || std::find(sType.decorations.begin(), sType.decorations.end(), SpirvDecoration::BufferBlock) != sType.decorations.end();
+		}
 
 		for (const auto& member : structDesc.members)
 		{
