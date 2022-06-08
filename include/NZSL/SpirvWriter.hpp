@@ -27,6 +27,8 @@ namespace nzsl
 		friend class SpirvBlock;
 		friend class SpirvExpressionLoad;
 		friend class SpirvExpressionStore;
+		class PreVisitor;
+		friend PreVisitor;
 
 		public:
 			struct Environment;
@@ -62,6 +64,8 @@ namespace nzsl
 			std::uint32_t GetFunctionTypeId(const Ast::DeclareFunctionStatement& functionNode);
 			std::uint32_t GetPointerTypeId(const Ast::ExpressionType& type, SpirvStorageClass storageClass) const;
 			std::uint32_t GetTypeId(const Ast::ExpressionType& type) const;
+
+			bool IsVersionGreaterOrEqual(std::uint32_t spvMajor, std::uint32_t spvMinor) const;
 
 			std::uint32_t RegisterConstant(const Ast::ConstantValue& value);
 			std::uint32_t RegisterFunctionType(const Ast::DeclareFunctionStatement& functionNode);

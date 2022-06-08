@@ -1115,7 +1115,9 @@ namespace nzsl::Ast
 			const ExpressionType& targetType = ResolveAlias(*resolvedType);
 
 			ExpressionType varType;
-			if (IsUniformType(targetType))
+			if (IsStorageType(targetType))
+				varType = std::get<StorageType>(targetType).containedType;
+			else if (IsUniformType(targetType))
 				varType = std::get<UniformType>(targetType).containedType;
 			else if (IsSamplerType(targetType))
 				varType = targetType;
@@ -2538,6 +2540,24 @@ namespace nzsl::Ast
 			}, std::nullopt, {});
 		}
 
+		// storage
+		RegisterType("storage", PartialType {
+			{ TypeParameterCategory::StructType },
+			[=](const TypeParameter* parameters, std::size_t parameterCount, const SourceLocation& /*sourceLocation*/) -> ExpressionType
+			{
+				assert(parameterCount == 1);
+				assert(std::holds_alternative<ExpressionType>(*parameters));
+
+				const ExpressionType& exprType = std::get<ExpressionType>(*parameters);
+				assert(IsStructType(exprType));
+
+				StructType structType = std::get<StructType>(exprType);
+				return StorageType {
+					structType
+				};
+			}
+		}, std::nullopt, {});
+		
 		// uniform
 		RegisterType("uniform", PartialType {
 			{ TypeParameterCategory::StructType },
@@ -2953,7 +2973,7 @@ namespace nzsl::Ast
 		{
 			using T = std::decay_t<decltype(arg)>;
 
-			if constexpr (std::is_same_v<T, StructType> || std::is_same_v<T, UniformType> || std::is_same_v<T, AliasType>)
+			if constexpr (std::is_same_v<T, StorageType> || std::is_same_v<T, StructType> || std::is_same_v<T, UniformType> || std::is_same_v<T, AliasType>)
 				return ResolveStruct(arg, sourceLocation);
 			else if constexpr (std::is_same_v<T, NoType> ||
 			                   std::is_same_v<T, ArrayType> ||
@@ -2971,6 +2991,11 @@ namespace nzsl::Ast
 			else
 				static_assert(Nz::AlwaysFalse<T>::value, "non-exhaustive visitor");
 		}, exprType);
+	}
+
+	std::size_t SanitizeVisitor::ResolveStruct(const StorageType& structType, const SourceLocation& /*sourceLocation*/)
+	{
+		return structType.containedType.structIndex;;
 	}
 
 	std::size_t SanitizeVisitor::ResolveStruct(const StructType& structType, const SourceLocation& /*sourceLocation*/)

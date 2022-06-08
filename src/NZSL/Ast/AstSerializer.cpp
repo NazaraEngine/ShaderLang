@@ -547,6 +547,11 @@ namespace nzsl::Ast
 				SizeT(arg.aliasIndex);
 				Type(arg.targetType->type);
 			}
+			else if constexpr (std::is_same_v<T, Ast::StorageType>)
+			{
+				m_serializer.Serialize(std::uint8_t(14));
+				SizeT(arg.containedType.structIndex);
+			}
 			else
 				static_assert(Nz::AlwaysFalse<T>::value, "non-exhaustive visitor");
 		}, type);
@@ -927,6 +932,19 @@ namespace nzsl::Ast
 				aliasType.targetType->type = std::move(containedType);
 
 				type = std::move(aliasType);
+				break;
+			}
+			
+			case 14: //< StorageType
+			{
+				std::size_t structIndex;
+				SizeT(structIndex);
+
+				type = StorageType{
+					StructType {
+						structIndex
+					}
+				};
 				break;
 			}
 

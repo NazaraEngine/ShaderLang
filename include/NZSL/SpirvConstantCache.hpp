@@ -185,6 +185,7 @@ namespace nzsl
 			TypePtr BuildType(const Ast::NoType& type) const;
 			TypePtr BuildType(const Ast::PrimitiveType& type) const;
 			TypePtr BuildType(const Ast::SamplerType& type) const;
+			TypePtr BuildType(const Ast::StorageType& type) const;
 			TypePtr BuildType(const Ast::StructType& type) const;
 			TypePtr BuildType(const Ast::StructDescription& structDesc, std::vector<SpirvDecoration> decorations = {}) const;
 			TypePtr BuildType(const Ast::VectorType& type) const;

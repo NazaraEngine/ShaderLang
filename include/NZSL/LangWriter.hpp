@@ -59,6 +59,7 @@ namespace nzsl
 			void Append(Ast::NoType);
 			void Append(Ast::PrimitiveType type);
 			void Append(const Ast::SamplerType& samplerType);
+			void Append(const Ast::StorageType& storageType);
 			void Append(const Ast::StructType& structType);
 			void Append(const Ast::Type& type);
 			void Append(const Ast::UniformType& uniformType);

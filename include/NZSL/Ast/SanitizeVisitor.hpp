@@ -144,6 +144,7 @@ namespace nzsl::Ast
 			void ResolveFunctions();
 			std::size_t ResolveStruct(const AliasType& aliasType, const SourceLocation& sourceLocation);
 			std::size_t ResolveStruct(const ExpressionType& exprType, const SourceLocation& sourceLocation);
+			std::size_t ResolveStruct(const StorageType& structType, const SourceLocation& sourceLocation);
 			std::size_t ResolveStruct(const StructType& structType, const SourceLocation& sourceLocation);
 			std::size_t ResolveStruct(const UniformType& uniformType, const SourceLocation& sourceLocation);
 			ExpressionType ResolveType(const ExpressionType& exprType, bool resolveAlias, const SourceLocation& sourceLocation);

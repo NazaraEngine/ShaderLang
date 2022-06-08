@@ -41,6 +41,7 @@ namespace nzsl
 			ShaderDrawParameters_BaseInstance, // GLSL 4.6 or GL_ARB_shader_draw_parameters
 			ShaderDrawParameters_BaseVertex, // GLSL 4.6 or GL_ARB_shader_draw_parameters
 			ShaderDrawParameters_DrawIndex, // GLSL 4.6 or GL_ARB_shader_draw_parameters
+			SSBO, // GLSL 4.3 or GLSL ES 3.1 or GL_ARB_shader_storage_buffer_object
 		};
 		
 		struct GlslBuiltin
@@ -80,6 +81,18 @@ namespace nzsl
 			void Visit(Ast::ConditionalStatement& /*node*/) override
 			{
 				throw std::runtime_error("unexpected conditional statement, is shader sanitized?");
+			}
+
+			void Visit(Ast::DeclareExternalStatement& node) override
+			{
+				for (const auto& extVar : node.externalVars)
+				{
+					const Ast::ExpressionType& type = extVar.type.GetResultingValue();
+					if (IsStorageType(type))
+						capabilities.insert(GlslCapability::SSBO);
+				}
+
+				RecursiveVisitor::Visit(node);
 			}
 
 			void Visit(Ast::DeclareFunctionStatement& node) override
@@ -500,6 +513,11 @@ namespace nzsl
 		}
 	}
 
+	void GlslWriter::Append(const Ast::StorageType& /*storageType*/)
+	{
+		throw std::runtime_error("unexpected StorageType");
+	}
+
 	void GlslWriter::Append(const Ast::StructType& structType)
 	{
 		const auto& structData = Nz::Retrieve(m_currentState->structs, structType.structIndex);
@@ -726,11 +744,29 @@ namespace nzsl
 
 					break;
 				}
+
+				case GlslCapability::SSBO:
+				{
+					if (m_environment.glES)
+					{
+						if (glslVersion < 310)
+							throw std::runtime_error("this version of OpenGL ES does not support SSBO");
+					}
+					else if (glslVersion < 430)
+					{
+						if (m_environment.extCallback && m_environment.extCallback("GL_ARB_shader_storage_buffer_object"))
+							requiredExtensions.emplace("GL_ARB_shader_storage_buffer_object");
+						else
+							throw std::runtime_error("this version of OpenGL does not support SSBO");
+					}
+					
+					break;
+				}
 			}
 		}
 
 		if ((m_currentState->hasDrawParametersBaseInstanceUniform || m_currentState->hasDrawParametersBaseVertexUniform || m_currentState->hasDrawParametersDrawIndexUniform) && !m_environment.allowDrawParametersUniformsFallback)
-			throw std::runtime_error("Draw parameters are used but not supported and fallback uniforms are disabled, cannot continue");
+			throw std::runtime_error("draw parameters are used but not supported and fallback uniforms are disabled, cannot continue");
 
 		if (m_environment.glES)
 		{
@@ -1342,11 +1378,22 @@ namespace nzsl
 	{
 		for (const auto& externalVar : node.externalVars)
 		{
+			const Ast::ExpressionType& exprType = externalVar.type.GetResultingValue();
+			
+			bool isUniformOrStorage = IsStorageType(exprType) || IsUniformType(exprType);
+
 			bool isStd140 = false;
-			if (IsUniformType(externalVar.type.GetResultingValue()))
+			if (isUniformOrStorage)
 			{
-				auto& uniform = std::get<Ast::UniformType>(externalVar.type.GetResultingValue());
-				const auto& structInfo = Nz::Retrieve(m_currentState->structs, uniform.containedType.structIndex);
+				std::size_t structIndex;
+				if (IsStorageType(exprType))
+					structIndex = std::get<Ast::StorageType>(exprType).containedType.structIndex;
+				else if (IsUniformType(exprType))
+					structIndex = std::get<Ast::UniformType>(exprType).containedType.structIndex;
+				else
+					throw std::runtime_error("unexpected type");
+				
+				const auto& structInfo = Nz::Retrieve(m_currentState->structs, structIndex);
 				if (structInfo.desc->layout.HasValue())
 					isStd140 = structInfo.desc->layout.GetResultingValue() == StructLayout::Std140;
 			}
@@ -1387,17 +1434,22 @@ namespace nzsl
 			if (!m_currentState->bindingMapping.empty() || isStd140)
 				Append(") ");
 
-			Append("uniform ");
+			if (IsStorageType(exprType))
+				Append("buffer ");
+			else if (IsSamplerType(exprType) || IsUniformType(exprType))
+				Append("uniform ");
+			else
+				throw std::runtime_error("unexpected type");
 
-			if (IsUniformType(externalVar.type.GetResultingValue()))
+			if (isUniformOrStorage)
 			{
 				Append("_nzslBinding_");
 				AppendLine(varName);
 
 				EnterScope();
 				{
-					const auto& uniform = std::get<Ast::UniformType>(externalVar.type.GetResultingValue());
-					const auto& structData = Nz::Retrieve(m_currentState->structs, uniform.containedType.structIndex);
+					std::size_t structIndex = (IsStorageType(exprType)) ? std::get<Ast::StorageType>(exprType).containedType.structIndex : std::get<Ast::UniformType>(exprType).containedType.structIndex;
+					const auto& structData = Nz::Retrieve(m_currentState->structs, structIndex);
 
 					bool first = true;
 					for (const auto& member : structData.desc->members)
@@ -1424,7 +1476,7 @@ namespace nzsl
 
 			AppendLine(";");
 
-			if (IsUniformType(externalVar.type.GetResultingValue()))
+			if (isUniformOrStorage)
 				AppendLine();
 
 			assert(externalVar.varIndex);

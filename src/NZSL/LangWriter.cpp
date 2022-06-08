@@ -237,6 +237,11 @@ namespace nzsl
 		Append("[", samplerType.sampledType, "]");
 	}
 
+	void LangWriter::Append(const Ast::StorageType& storageType)
+	{
+		Append("storage[", storageType.containedType, "]");
+	}
+
 	void LangWriter::Append(const Ast::StructType& structType)
 	{
 		AppendIdentifier(m_currentState->structs, structType.structIndex);

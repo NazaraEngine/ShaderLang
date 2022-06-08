@@ -205,6 +205,15 @@ namespace nzsl::Ast
 		return str;
 	}
 
+	std::string ToString(const StorageType& type, const Stringifier& stringifier)
+	{
+		std::string str = "storage[";
+		str += ToString(type.containedType, stringifier);
+		str += "]";
+
+		return str;
+	}
+
 	std::string ToString(const StructType& type, const Stringifier& stringifier)
 	{
 		if (stringifier.structStringifier)

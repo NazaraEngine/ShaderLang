@@ -126,14 +126,6 @@ namespace nzsl::Ast
 		inline bool operator!=(const Type& rhs) const;
 	};
 
-	struct UniformType
-	{
-		StructType containedType;
-
-		inline bool operator==(const UniformType& rhs) const;
-		inline bool operator!=(const UniformType& rhs) const;
-	};
-
 	struct VectorType
 	{
 		std::size_t componentCount;
@@ -143,7 +135,24 @@ namespace nzsl::Ast
 		inline bool operator!=(const VectorType& rhs) const;
 	};
 
-	using ExpressionType = std::variant<NoType, AliasType, ArrayType, FunctionType, IntrinsicFunctionType, MatrixType, MethodType, PrimitiveType, SamplerType, StructType, Type, UniformType, VectorType>;
+
+	struct StorageType
+	{
+		StructType containedType;
+
+		inline bool operator==(const StorageType& rhs) const;
+		inline bool operator!=(const StorageType& rhs) const;
+	};
+
+	struct UniformType
+	{
+		StructType containedType;
+
+		inline bool operator==(const UniformType& rhs) const;
+		inline bool operator!=(const UniformType& rhs) const;
+	};
+
+	using ExpressionType = std::variant<NoType, AliasType, ArrayType, FunctionType, IntrinsicFunctionType, MatrixType, MethodType, PrimitiveType, SamplerType, StorageType, StructType, Type, UniformType, VectorType>;
 
 	struct ContainedType
 	{
@@ -177,6 +186,7 @@ namespace nzsl::Ast
 	inline bool IsNoType(const ExpressionType& type);
 	inline bool IsPrimitiveType(const ExpressionType& type);
 	inline bool IsSamplerType(const ExpressionType& type);
+	inline bool IsStorageType(const ExpressionType& type);
 	inline bool IsStructType(const ExpressionType& type);
 	inline bool IsTypeExpression(const ExpressionType& type);
 	inline bool IsUniformType(const ExpressionType& type);
@@ -199,6 +209,7 @@ namespace nzsl::Ast
 	std::string ToString(NoType type, const Stringifier& stringifier = {});
 	std::string ToString(PrimitiveType type, const Stringifier& stringifier = {});
 	std::string ToString(const SamplerType& type, const Stringifier& stringifier = {});
+	std::string ToString(const StorageType& type, const Stringifier& stringifier = {});
 	std::string ToString(const StructType& type, const Stringifier& stringifier = {});
 	std::string ToString(const Type& type, const Stringifier& stringifier = {});
 	std::string ToString(const UniformType& type, const Stringifier& stringifier = {});
