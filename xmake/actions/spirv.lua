@@ -65,7 +65,7 @@ on_run(function()
 					end
 				end
 
-				return i
+				return i - 1
 			end
 
 			::continue::
