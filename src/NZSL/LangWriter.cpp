@@ -756,36 +756,6 @@ namespace nzsl
 		node.right->Visit(*this);
 	}
 
-	void LangWriter::Visit(Ast::BranchStatement& node)
-	{
-		bool first = true;
-		for (const auto& statement : node.condStatements)
-		{
-			if (first)
-			{
-				if (node.isConst)
-					Append("const ");
-			}
-			else
-				Append("else ");
-
-			Append("if (");
-			statement.condition->Visit(*this);
-			AppendLine(")");
-
-			ScopeVisit(*statement.statement);
-
-			first = false;
-		}
-
-		if (node.elseStatement)
-		{
-			AppendLine("else");
-
-			ScopeVisit(*node.elseStatement);
-		}
-	}
-
 	void LangWriter::Visit(Ast::BinaryExpression& node)
 	{
 		Visit(node.left, true);
@@ -858,43 +828,6 @@ namespace nzsl
 		Append(")");
 	}
 
-	void LangWriter::Visit(Ast::ConditionalStatement& node)
-	{
-		Append("[cond(");
-		node.condition->Visit(*this);
-		AppendLine(")]");
-		node.statement->Visit(*this);
-	}
-
-	void LangWriter::Visit(Ast::DeclareAliasStatement& node)
-	{
-		if (node.aliasIndex)
-			RegisterAlias(*node.aliasIndex, node.name);
-
-		Append("alias ", node.name, " = ");
-		assert(node.expression);
-		node.expression->Visit(*this);
-		AppendLine(";");
-	}
-
-	void LangWriter::Visit(Ast::DeclareConstStatement& node)
-	{
-		if (node.constIndex)
-			RegisterConstant(*node.constIndex, node.name);
-
-		Append("const ", node.name);
-		if (node.type.HasValue())
-			Append(": ", node.type);
-
-		if (node.expression)
-		{
-			Append(" = ");
-			node.expression->Visit(*this);
-		}
-
-		AppendLine(";");
-	}
-
 	void LangWriter::Visit(Ast::ConstantValueExpression& node)
 	{
 		std::visit([&](auto&& arg)
@@ -939,6 +872,176 @@ namespace nzsl
 	void LangWriter::Visit(Ast::IdentifierExpression& node)
 	{
 		Append(node.identifier);
+	}
+	
+	void LangWriter::Visit(Ast::IntrinsicExpression& node)
+	{
+		bool method = false;
+		switch (node.intrinsic)
+		{
+			case Ast::IntrinsicType::CrossProduct:
+				Append("cross");
+				break;
+
+			case Ast::IntrinsicType::DotProduct:
+				Append("dot");
+				break;
+
+			case Ast::IntrinsicType::Exp:
+				Append("exp");
+				break;
+
+			case Ast::IntrinsicType::Length:
+				Append("length");
+				break;
+
+			case Ast::IntrinsicType::Max:
+				Append("max");
+				break;
+
+			case Ast::IntrinsicType::Min:
+				Append("min");
+				break;
+
+			case Ast::IntrinsicType::Normalize:
+				Append("normalize");
+				break;
+
+			case Ast::IntrinsicType::Pow:
+				Append("pow");
+				break;
+
+			case Ast::IntrinsicType::Reflect:
+				Append("reflect");
+				break;
+
+			case Ast::IntrinsicType::SampleTexture:
+				assert(!node.parameters.empty());
+				Visit(node.parameters.front(), true);
+				Append(".Sample");
+				method = true;
+				break;
+		}
+
+		Append("(");
+		bool first = true;
+		for (std::size_t i = (method) ? 1 : 0; i < node.parameters.size(); ++i)
+		{
+			if (!first)
+				Append(", ");
+
+			first = false;
+
+			node.parameters[i]->Visit(*this);
+		}
+		Append(")");
+	}
+
+	void LangWriter::Visit(Ast::StructTypeExpression& node)
+	{
+		AppendIdentifier(m_currentState->structs, node.structTypeId);
+	}
+
+	void LangWriter::Visit(Ast::SwizzleExpression& node)
+	{
+		Visit(node.expression, true);
+		Append(".");
+
+		const char* componentStr = "xyzw";
+		for (std::size_t i = 0; i < node.componentCount; ++i)
+			Append(componentStr[node.components[i]]);
+	}
+
+	void LangWriter::Visit(Ast::VariableValueExpression& node)
+	{
+		AppendIdentifier(m_currentState->variables, node.variableId);
+	}
+
+	void LangWriter::Visit(Ast::UnaryExpression& node)
+	{
+		switch (node.op)
+		{
+		case Ast::UnaryType::LogicalNot:
+			Append("!");
+			break;
+
+		case Ast::UnaryType::Minus:
+			Append("-");
+			break;
+
+		case Ast::UnaryType::Plus:
+			Append("+");
+			break;
+		}
+
+		node.expression->Visit(*this);
+	}
+
+	void LangWriter::Visit(Ast::BranchStatement& node)
+	{
+		bool first = true;
+		for (const auto& statement : node.condStatements)
+		{
+			if (first)
+			{
+				if (node.isConst)
+					Append("const ");
+			}
+			else
+				Append("else ");
+
+			Append("if (");
+			statement.condition->Visit(*this);
+			AppendLine(")");
+
+			ScopeVisit(*statement.statement);
+
+			first = false;
+		}
+
+		if (node.elseStatement)
+		{
+			AppendLine("else");
+
+			ScopeVisit(*node.elseStatement);
+		}
+	}
+
+	void LangWriter::Visit(Ast::ConditionalStatement& node)
+	{
+		Append("[cond(");
+		node.condition->Visit(*this);
+		AppendLine(")]");
+		node.statement->Visit(*this);
+	}
+
+	void LangWriter::Visit(Ast::DeclareAliasStatement& node)
+	{
+		if (node.aliasIndex)
+			RegisterAlias(*node.aliasIndex, node.name);
+
+		Append("alias ", node.name, " = ");
+		assert(node.expression);
+		node.expression->Visit(*this);
+		AppendLine(";");
+	}
+
+	void LangWriter::Visit(Ast::DeclareConstStatement& node)
+	{
+		if (node.constIndex)
+			RegisterConstant(*node.constIndex, node.name);
+
+		Append("const ", node.name);
+		if (node.type.HasValue())
+			Append(": ", node.type);
+
+		if (node.expression)
+		{
+			Append(" = ");
+			node.expression->Visit(*this);
+		}
+
+		AppendLine(";");
 	}
 
 	void LangWriter::Visit(Ast::DeclareExternalStatement& node)
@@ -1135,74 +1238,6 @@ namespace nzsl
 		AppendLine(" from ", node.moduleName, ";");
 	}
 
-	void LangWriter::Visit(Ast::IntrinsicExpression& node)
-	{
-		bool method = false;
-		switch (node.intrinsic)
-		{
-			case Ast::IntrinsicType::CrossProduct:
-				Append("cross");
-				break;
-
-			case Ast::IntrinsicType::DotProduct:
-				Append("dot");
-				break;
-
-			case Ast::IntrinsicType::Exp:
-				Append("exp");
-				break;
-
-			case Ast::IntrinsicType::Length:
-				Append("length");
-				break;
-
-			case Ast::IntrinsicType::Max:
-				Append("max");
-				break;
-
-			case Ast::IntrinsicType::Min:
-				Append("min");
-				break;
-
-			case Ast::IntrinsicType::Normalize:
-				Append("normalize");
-				break;
-
-			case Ast::IntrinsicType::Pow:
-				Append("pow");
-				break;
-
-			case Ast::IntrinsicType::Reflect:
-				Append("reflect");
-				break;
-
-			case Ast::IntrinsicType::SampleTexture:
-				assert(!node.parameters.empty());
-				Visit(node.parameters.front(), true);
-				Append(".Sample");
-				method = true;
-				break;
-		}
-
-		Append("(");
-		bool first = true;
-		for (std::size_t i = (method) ? 1 : 0; i < node.parameters.size(); ++i)
-		{
-			if (!first)
-				Append(", ");
-
-			first = false;
-
-			node.parameters[i]->Visit(*this);
-		}
-		Append(")");
-	}
-
-	void LangWriter::Visit(Ast::StructTypeExpression& node)
-	{
-		AppendIdentifier(m_currentState->structs, node.structTypeId);
-	}
-
 	void LangWriter::Visit(Ast::MultiStatement& node)
 	{
 		AppendStatementList(node.statements);
@@ -1230,41 +1265,6 @@ namespace nzsl
 		EnterScope();
 		node.statement->Visit(*this);
 		LeaveScope();
-	}
-
-	void LangWriter::Visit(Ast::SwizzleExpression& node)
-	{
-		Visit(node.expression, true);
-		Append(".");
-
-		const char* componentStr = "xyzw";
-		for (std::size_t i = 0; i < node.componentCount; ++i)
-			Append(componentStr[node.components[i]]);
-	}
-
-	void LangWriter::Visit(Ast::VariableValueExpression& node)
-	{
-		AppendIdentifier(m_currentState->variables, node.variableId);
-	}
-
-	void LangWriter::Visit(Ast::UnaryExpression& node)
-	{
-		switch (node.op)
-		{
-			case Ast::UnaryType::LogicalNot:
-				Append("!");
-				break;
-
-			case Ast::UnaryType::Minus:
-				Append("-");
-				break;
-
-			case Ast::UnaryType::Plus:
-				Append("+");
-				break;
-		}
-
-		node.expression->Visit(*this);
 	}
 
 	void LangWriter::Visit(Ast::WhileStatement& node)
