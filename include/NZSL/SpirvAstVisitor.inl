@@ -23,7 +23,7 @@ namespace nzsl
 		if (IsSamplerType(type))
 			storageClass = SpirvStorageClass::UniformConstant;
 		else if (IsStorageType(type) && m_writer.IsVersionGreaterOrEqual(1, 3))
-			// Starting from SPIRV 1.3, Storage Buffer have their own separate storage class
+			// Starting from SPIR-V 1.3, Storage Buffer have their own separate storage class
 			storageClass = SpirvStorageClass::StorageBuffer;
 		else
 			storageClass = SpirvStorageClass::Uniform;

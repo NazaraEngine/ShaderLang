@@ -202,7 +202,7 @@ namespace nzslc
 			("gl-bindingmap", "Add binding support (generates a .binding.json mapping file)");
 
 		options.add_options("spirv output")
-			("spv-version", "SPIRV version (110 being 1.1)", cxxopts::value<std::uint32_t>(), "version");
+			("spv-version", "SPIR-V version (110 being 1.1)", cxxopts::value<std::uint32_t>(), "version");
 
 		options.parse_positional("input");
 		options.positional_help("shader path");
@@ -228,7 +228,7 @@ namespace nzslc
 			else if (outputType == "nzslb")
 				Step("Compile to NZSLB", &Compiler::CompileToNZSLB, outputFilePath, m_shaderModule);
 			else if (outputType == "spv")
-				Step("Compile to SPIRV", &Compiler::CompileToSPV, outputFilePath, *m_shaderModule);
+				Step("Compile to SPIR-V", &Compiler::CompileToSPV, outputFilePath, *m_shaderModule);
 			else if (outputType == "glsl")
 				Step("Compile to GLSL", &Compiler::CompileToGLSL, outputFilePath, *m_shaderModule);
 			else
@@ -383,7 +383,7 @@ namespace nzslc
 
 			std::uint32_t version = m_options["spv-version"].as<std::uint32_t>();
 			if (version < 100 || version > maxVersion)
-				throw std::runtime_error(fmt::format("invalid SPIRV version (must be between 100 and {})", maxVersion));
+				throw std::runtime_error(fmt::format("invalid SPIR-V version (must be between 100 and {})", maxVersion));
 
 			env.spvMajorVersion = version / 100;
 			env.spvMinorVersion = (version % 100) / 10;

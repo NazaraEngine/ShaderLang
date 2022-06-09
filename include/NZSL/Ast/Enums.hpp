@@ -57,9 +57,9 @@ namespace nzsl::Ast
 
 	enum class BuiltinEntry
 	{
-		BaseInstance   = 3, // gl_BaseInstance (GLSL 450) / BaseInstance (SPIRV 1.3)
-		BaseVertex     = 4, // gl_BaseVertex (GLSL 450) / BaseVertex (SPIRV 1.3)
-		DrawIndex      = 5, // gl_DrawID (GLSL 450) / DrawIndex (SPIRV 1.3)
+		BaseInstance   = 3, // gl_BaseInstance (GLSL 450) / BaseInstance (SPIR-V 1.3)
+		BaseVertex     = 4, // gl_BaseVertex (GLSL 450) / BaseVertex (SPIR-V 1.3)
+		DrawIndex      = 5, // gl_DrawID (GLSL 450) / DrawIndex (SPIR-V 1.3)
 		FragCoord      = 1, // gl_FragCoord / FragCoord
 		FragDepth      = 2, // gl_FragDepth / FragDepth
 		InstanceIndex  = 6, // gl_InstanceIndex (or gl_BaseInstance + gl_InstanceID) / InstanceId
