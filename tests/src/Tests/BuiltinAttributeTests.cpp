@@ -234,17 +234,25 @@ fn main(input: Input) -> Output
 }
 )");
 
-		nzsl::SpirvWriter::Environment spirvEnv;
-		spirvEnv.spvMajorVersion = 1;
-		spirvEnv.spvMinorVersion = 3;
+		WHEN("Generating SPIR-V 1.0 (without draw parameter support")
+		{
+			nzsl::SpirvWriter spirvWriter;
+			CHECK_THROWS_WITH(spirvWriter.Generate(*shaderModule), "using builtin base_instance requires SPIR-V 1.3");
+		}
+		AND_WHEN("Generating SPIR-V 1.3")
+		{
+			nzsl::SpirvWriter::Environment spirvEnv;
+			spirvEnv.spvMajorVersion = 1;
+			spirvEnv.spvMinorVersion = 3;
 
-		ExpectSPIRV(*shaderModule, R"(
+			ExpectSPIRV(*shaderModule, R"(
       OpDecorate %9 Decoration(BuiltIn) BuiltIn(BaseInstance)
       OpDecorate %12 Decoration(BuiltIn) BuiltIn(BaseVertex)
       OpDecorate %14 Decoration(BuiltIn) BuiltIn(DrawIndex)
       OpDecorate %16 Decoration(BuiltIn) BuiltIn(InstanceIndex)
       OpDecorate %18 Decoration(BuiltIn) BuiltIn(VertexIndex)
       OpDecorate %22 Decoration(BuiltIn) BuiltIn(Position))", spirvEnv, true);
+		}
 	}
 	
 	SECTION("vertex index")
