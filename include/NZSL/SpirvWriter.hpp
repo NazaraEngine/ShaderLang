@@ -48,6 +48,8 @@ namespace nzsl
 				std::uint32_t spvMinorVersion = 0;
 			};
 
+			static std::pair<std::uint32_t, std::uint32_t> GetMaximumSupportedVersion(std::uint32_t vkMajorVersion, std::uint32_t vkMinorVersion);
+
 		private:
 			struct FunctionParameter;
 			struct OnlyCache {};
