@@ -246,7 +246,7 @@ void ExpectSPIRV(const nzsl::Ast::Module& shaderModule, std::string_view expecte
 {
 	expectedOutput = Trim(expectedOutput);
 
-	SECTION("Generating SPIRV")
+	SECTION("Generating SPIR-V")
 	{
 		nzsl::Ast::ModulePtr sanitizedModule;
 		WHEN("Sanitizing a second time")
@@ -269,11 +269,11 @@ void ExpectSPIRV(const nzsl::Ast::Module& shaderModule, std::string_view expecte
 
 		WHEN("Validating expected code")
 		{
-			INFO("full SPIRV output:\n" << output << "\nexcepted output:\n" << expectedOutput);
+			INFO("full SPIR-V output:\n" << output << "\nexcepted output:\n" << expectedOutput);
 			REQUIRE(output.find(expectedOutput) != std::string::npos);
 		}
 
-		WHEN("Validating full SPIRV code (using libspirv)")
+		WHEN("Validating full SPIR-V code (using libspirv)")
 		{
 			std::uint32_t spvVersion = env.spvMajorVersion * 100 + env.spvMinorVersion * 10;
 
@@ -289,13 +289,13 @@ void ExpectSPIRV(const nzsl::Ast::Module& shaderModule, std::string_view expecte
 			else
 				targetEnv = spv_target_env::SPV_ENV_VULKAN_1_0;
 
-			// validate SPIRV with libspirv
+			// validate SPIR-V with libspirv
 			spvtools::SpirvTools spirvTools(targetEnv);
 			spirvTools.SetMessageConsumer([&](spv_message_level_t /*level*/, const char* /*source*/, const spv_position_t& /*position*/, const char* message)
 			{
 				std::string fullSpirv;
 				if (!spirvTools.Disassemble(spirv, &fullSpirv))
-					fullSpirv = "<failed to disassemble SPIRV>";
+					fullSpirv = "<failed to disassemble SPIR-V>";
 
 				UNSCOPED_INFO(fullSpirv + "\n" + message);
 			});

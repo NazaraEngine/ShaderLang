@@ -38,7 +38,7 @@ namespace nzsl
 		std::uint32_t bytecode = BuildOpcode(opcode, wordCount);
 
 #ifdef NAZARA_BIG_ENDIAN
-		// SPIRV is little endian
+		// SPIR-V is little endian
 		bytecode = Nz::SwapBytes(bytecode);
 #endif
 
@@ -81,7 +81,7 @@ namespace nzsl
 	inline std::size_t SpirvSectionBase::AppendRaw(std::uint32_t value)
 	{
 #ifdef NAZARA_BIG_ENDIAN
-		// SPIRV is little endian
+		// SPIR-V is little endian
 		value = Nz::SwapBytes(value);
 #endif
 

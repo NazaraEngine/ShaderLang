@@ -220,7 +220,7 @@ fn main()
 	let value: f32 = data.values[42];
 })");
 
-		WHEN("Generating SPIRV 1.0")
+		WHEN("Generating SPIR-V 1.0")
 		{
 			nzsl::SpirvWriter::Environment spirvEnv;
 			ExpectSPIRV(*shaderModule, R"(
@@ -256,7 +256,7 @@ fn main()
       OpFunctionEnd)", spirvEnv, true);
 		}
 
-		WHEN("Generating SPIRV 1.3")
+		WHEN("Generating SPIR-V 1.3")
 		{
 			nzsl::SpirvWriter::Environment spirvEnv;
 			spirvEnv.spvMajorVersion = 1;
