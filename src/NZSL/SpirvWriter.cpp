@@ -30,7 +30,7 @@
 
 namespace nzsl
 {
-	namespace
+	namespace NAZARA_ANONYMOUS_NAMESPACE
 	{
 		struct SpirvVersion
 		{
@@ -448,6 +448,8 @@ namespace nzsl
 
 			std::uint32_t HandleEntryInOutType(ShaderStageType entryPointType, std::size_t funcIndex, const Ast::StructDescription::StructMember& member, SpirvStorageClass storageClass)
 			{
+				NAZARA_USE_ANONYMOUS_NAMESPACE
+
 				if (member.builtin.HasValue())
 				{
 					auto builtinIt = Ast::s_builtinData.find(member.builtin.GetResultingValue());
