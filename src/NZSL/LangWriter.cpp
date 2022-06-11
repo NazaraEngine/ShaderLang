@@ -155,7 +155,10 @@ namespace nzsl
 
 	void LangWriter::Append(const Ast::ArrayType& type)
 	{
-		Append("array[", type.containedType->type, ", ", type.length, "]");
+		if (type.length > 0)
+			Append("array[", type.containedType->type, ", ", type.length, "]");
+		else
+			Append("dyn_array[", type.containedType->type, "]");
 	}
 
 	void LangWriter::Append(const Ast::ExpressionType& type)

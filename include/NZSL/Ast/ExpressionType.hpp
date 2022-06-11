@@ -46,7 +46,7 @@ namespace nzsl::Ast
 		ArrayType& operator=(const ArrayType& array);
 		ArrayType& operator=(ArrayType&&) noexcept = default;
 
-		std::uint32_t length;
+		std::uint32_t length; //< 0 = variable length
 		std::unique_ptr<ContainedType> containedType;
 
 		bool operator==(const ArrayType& rhs) const;

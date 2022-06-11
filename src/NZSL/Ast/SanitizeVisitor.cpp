@@ -2455,6 +2455,25 @@ namespace nzsl::Ast
 			}
 		}, std::nullopt, {});
 
+		// Dynamic array
+		RegisterType("dyn_array", PartialType {
+			{ TypeParameterCategory::FullType },
+			[=](const TypeParameter* parameters, std::size_t parameterCount, const SourceLocation& /*sourceLocation*/) -> ExpressionType
+			{
+				assert(parameterCount == 1);
+				assert(std::holds_alternative<ExpressionType>(parameters[0]));
+
+				const ExpressionType& exprType = std::get<ExpressionType>(parameters[0]);
+
+				ArrayType arrayType;
+				arrayType.containedType = std::make_unique<ContainedType>();
+				arrayType.containedType->type = exprType;
+				arrayType.length = 0;
+
+				return arrayType;
+			}
+		}, std::nullopt, {});
+
 		// matX
 		for (std::size_t componentCount = 2; componentCount <= 4; ++componentCount)
 		{

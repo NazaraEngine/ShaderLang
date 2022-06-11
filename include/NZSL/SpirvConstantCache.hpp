@@ -43,7 +43,7 @@ namespace nzsl
 			struct Array
 			{
 				TypePtr elementType;
-				ConstantPtr length;
+				ConstantPtr length; //< nullptr = RuntimeArray
 				std::optional<std::uint32_t> stride;
 			};
 

@@ -5,6 +5,7 @@
 #include <NZSL/Ast/ExpressionType.hpp>
 #include <NZSL/Ast/Cloner.hpp>
 #include <NZSL/Ast/Compare.hpp>
+#include <fmt/format.h>
 
 namespace nzsl::Ast
 {
@@ -99,28 +100,17 @@ namespace nzsl::Ast
 	{
 		std::string str = "alias ";
 		if (stringifier.aliasStringifier)
-			str += stringifier.aliasStringifier(type.aliasIndex);
+			return fmt::format("alias {} -> {}", stringifier.aliasStringifier(type.aliasIndex), ToString(type.targetType->type));
 		else
-		{
-			str += "#";
-			str += std::to_string(type.aliasIndex);
-		}
-
-		str += " -> ";
-		str += ToString(type.targetType->type);
-
-		return str;
+			return fmt::format("alias #{} -> {}", type.aliasIndex, ToString(type.targetType->type));
 	}
 
 	std::string ToString(const ArrayType& type, const Stringifier& stringifier)
 	{
-		std::string str = "array[";
-		str += ToString(type.containedType->type, stringifier);
-		str += ", ";
-		str += std::to_string(type.length);
-		str += "]";
-
-		return str;
+		if (type.length > 0)
+			return fmt::format("array[{}, {}]", ToString(type.containedType->type, stringifier), type.length);
+		else
+			return fmt::format("dyn_array[{}]", ToString(type.containedType->type, stringifier));
 	}
 
 	std::string ToString(const ExpressionType& type, const Stringifier& stringifier)
@@ -143,21 +133,10 @@ namespace nzsl::Ast
 
 	std::string ToString(const MatrixType& type, const Stringifier& /*stringifier*/)
 	{
-		std::string str = "mat";
 		if (type.columnCount == type.rowCount)
-			str += std::to_string(type.columnCount);
+			return fmt::format("mat{}[{}]", type.columnCount, ToString(type.type));
 		else
-		{
-			str += std::to_string(type.columnCount);
-			str += "x";
-			str += std::to_string(type.rowCount);
-		}
-
-		str += "[";
-		str += ToString(type.type);
-		str += "]";
-
-		return str;
+			return fmt::format("mat{}x{}[{}]", type.columnCount, type.rowCount, ToString(type.type));
 	}
 
 	std::string ToString(const MethodType& type, const Stringifier& /*stringifier*/)
@@ -186,32 +165,23 @@ namespace nzsl::Ast
 
 	std::string ToString(const SamplerType& type, const Stringifier& /*stringifier*/)
 	{
-		std::string str = "sampler";
-
+		std::string_view dimensionStr;
 		switch (type.dim)
 		{
-			case ImageType::E1D:       str += "1D";      break;
-			case ImageType::E1D_Array: str += "1DArray"; break;
-			case ImageType::E2D:       str += "2D";      break;
-			case ImageType::E2D_Array: str += "2DArray"; break;
-			case ImageType::E3D:       str += "3D";      break;
-			case ImageType::Cubemap:   str += "Cube";    break;
+			case ImageType::E1D:       dimensionStr = "1D";      break;
+			case ImageType::E1D_Array: dimensionStr = "1DArray"; break;
+			case ImageType::E2D:       dimensionStr = "2D";      break;
+			case ImageType::E2D_Array: dimensionStr = "2DArray"; break;
+			case ImageType::E3D:       dimensionStr = "3D";      break;
+			case ImageType::Cubemap:   dimensionStr = "Cube";    break;
 		}
 
-		str += "[";
-		str += ToString(type.sampledType);
-		str += "]";
-
-		return str;
+		return fmt::format("sampler{}[{}]", dimensionStr, ToString(type.sampledType));
 	}
 
 	std::string ToString(const StorageType& type, const Stringifier& stringifier)
 	{
-		std::string str = "storage[";
-		str += ToString(type.containedType, stringifier);
-		str += "]";
-
-		return str;
+		return fmt::format("storage[{}]", ToString(type.containedType, stringifier));
 	}
 
 	std::string ToString(const StructType& type, const Stringifier& stringifier)
@@ -232,21 +202,11 @@ namespace nzsl::Ast
 
 	std::string ToString(const UniformType& type, const Stringifier& stringifier)
 	{
-		std::string str = "uniform[";
-		str += ToString(type.containedType, stringifier);
-		str += "]";
-
-		return str;
+		return fmt::format("uniform[{}]", ToString(type.containedType, stringifier));
 	}
 
 	std::string ToString(const VectorType& type, const Stringifier& /*stringifier*/)
 	{
-		std::string str = "vec";
-		str += std::to_string(type.componentCount);
-		str += "[";
-		str += ToString(type.type);
-		str += "]";
-
-		return str;
+		return fmt::format("vec{}[{}]", type.componentCount, ToString(type.type));
 	}
 }
