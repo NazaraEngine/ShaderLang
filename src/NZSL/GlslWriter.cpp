@@ -63,6 +63,13 @@ namespace nzsl
 
 		struct GlslWriterPreVisitor : Ast::RecursiveVisitor
 		{
+			void Resolve()
+			{
+				usedStructs.Resize(bufferStructs.GetSize());
+				usedStructs.PerformsNOT(usedStructs); //< ~
+				bufferStructs &= usedStructs;
+			}
+
 			using RecursiveVisitor::Visit;
 
 			void Visit(Ast::CallFunctionExpression& node) override
@@ -89,7 +96,12 @@ namespace nzsl
 				{
 					const Ast::ExpressionType& type = extVar.type.GetResultingValue();
 					if (IsStorageType(type))
+					{
 						capabilities.insert(GlslCapability::SSBO);
+						bufferStructs.UnboundedSet(std::get<Ast::StorageType>(type).containedType.structIndex);
+					}
+					else if (IsUniformType(type))
+						bufferStructs.UnboundedSet(std::get<Ast::UniformType>(type).containedType.structIndex);
 				}
 
 				RecursiveVisitor::Visit(node);
@@ -129,7 +141,7 @@ namespace nzsl
 						assert(std::holds_alternative<Ast::StructType>(parameterType));
 
 						std::size_t structIndex = std::get<Ast::StructType>(parameterType).structIndex;
-						const Ast::StructDescription* structDesc = structs[structIndex];
+						const Ast::StructDescription* structDesc = Nz::Retrieve(structs, structIndex);
 
 						for (const auto& member : structDesc->members)
 						{
@@ -165,6 +177,26 @@ namespace nzsl
 			{
 				structs[node.structIndex.value()] = &node.description;
 
+				for (const auto& member : node.description.members)
+				{
+					const Ast::ExpressionType& type = member.type.GetResultingValue();
+					if (IsStorageType(type))
+						usedStructs.UnboundedSet(std::get<Ast::StorageType>(type).containedType.structIndex);
+					else if (IsUniformType(type))
+						usedStructs.UnboundedSet(std::get<Ast::UniformType>(type).containedType.structIndex);
+				}
+
+				RecursiveVisitor::Visit(node);
+			}
+
+			void Visit(Ast::DeclareVariableStatement& node) override
+			{
+				const Ast::ExpressionType& type = node.varType.GetResultingValue();
+				if (IsStorageType(type))
+					usedStructs.UnboundedSet(std::get<Ast::StorageType>(type).containedType.structIndex);
+				else if (IsUniformType(type))
+					usedStructs.UnboundedSet(std::get<Ast::UniformType>(type).containedType.structIndex);
+
 				RecursiveVisitor::Visit(node);
 			}
 
@@ -182,6 +214,8 @@ namespace nzsl
 			std::string moduleSuffix;
 			std::unordered_map<std::size_t, FunctionData> functions;
 			std::unordered_map<std::size_t, Ast::StructDescription*> structs;
+			Nz::Bitset<> bufferStructs; //< structs used only in UBO/SSBO that shouldn't be declared as such in GLSL
+			Nz::Bitset<> usedStructs; //< & with bufferStructs, to handle case where a UBO/SSBO struct is declared as a variable (which is allowed) or member of a struct
 			Ast::DeclareFunctionStatement* entryPoint = nullptr;
 		};
 	}
@@ -206,7 +240,6 @@ namespace nzsl
 			const Ast::StructDescription* desc;
 		};
 
-		std::optional<ShaderStageType> stage;
 		std::string moduleSuffix;
 		std::stringstream stream;
 		std::vector<InOutField> inputFields;
@@ -217,6 +250,7 @@ namespace nzsl
 		Nz::Bitset<> declaredFunctions;
 		const GlslWriter::BindingMapping& bindingMapping;
 		GlslWriterPreVisitor previsitor;
+		ShaderStageType stage;
 		const States* states = nullptr;
 		bool requiresExplicitUniformBinding = false;
 		bool supportsVaryingLocations = true;
@@ -230,7 +264,6 @@ namespace nzsl
 	auto GlslWriter::Generate(std::optional<ShaderStageType> shaderStage, const Ast::Module& module, const BindingMapping& bindingMapping, const States& states) -> GlslWriter::Output
 	{
 		State state(bindingMapping);
-		state.stage = shaderStage;
 
 		m_currentState = &state;
 		Nz::CallOnExit onExit([this]()
@@ -280,6 +313,8 @@ namespace nzsl
 
 		state.previsitor.moduleSuffix = {};
 		targetModule->rootNode->Visit(state.previsitor);
+
+		state.previsitor.Resolve();
 
 		if (!state.previsitor.entryPoint)
 			throw std::runtime_error("no entry point found");
@@ -677,8 +712,7 @@ namespace nzsl
 		// Comments
 		std::string fileTitle;
 
-		assert(m_currentState->stage);
-		switch (*m_currentState->stage)
+		switch (m_currentState->stage)
 		{
 			case ShaderStageType::Fragment: fileTitle += "fragment shader - "; break;
 			case ShaderStageType::Vertex: fileTitle += "vertex shader - "; break;
@@ -878,7 +912,11 @@ namespace nzsl
 			Append(*exprType, " ", varName);
 
 			for (std::uint32_t lengthAttribute : lengths)
-				Append("[", lengthAttribute, "]");
+			{
+				Append("[");
+				if (lengthAttribute > 0) Append(lengthAttribute);
+				Append("]");
+			}
 		}
 		else
 			Append(varType, " ", varName);
@@ -972,7 +1010,7 @@ namespace nzsl
 					assert(it != Ast::s_builtinData.end());
 
 					const Ast::BuiltinData& builtin = it->second;
-					if (m_currentState->stage && !builtin.compatibleStages.Test(*m_currentState->stage))
+					if (!builtin.compatibleStages.Test(m_currentState->stage))
 						continue; //< This builtin is not active in this stage, skip it
 
 					fields.push_back({
@@ -1543,6 +1581,13 @@ namespace nzsl
 
 		assert(node.structIndex);
 		RegisterStruct(*node.structIndex, &node.description, structName);
+
+		// Don't output structs used for UBO/SSBO description
+		if (m_currentState->previsitor.bufferStructs.UnboundedTest(*node.structIndex))
+		{
+			AppendComment("struct " + structName + " omitted (used as UBO/SSBO)");
+			return;
+		}
 
 		Append("struct ");
 		AppendLine(structName);

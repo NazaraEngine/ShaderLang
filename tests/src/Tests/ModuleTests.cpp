@@ -87,10 +87,7 @@ struct Data_SimpleModule
 	float value;
 };
 
-struct Block_SimpleModule
-{
-	Data_SimpleModule data;
-};
+// struct Block_SimpleModule omitted (used as UBO/SSBO)
 
 float GetDataValue_SimpleModule(Data_SimpleModule data)
 {
@@ -319,10 +316,7 @@ struct Data_Modules_Data
 // Module Modules.Block
 
 
-struct Block_Modules_Block
-{
-	Data_Modules_Data data;
-};
+// struct Block_Modules_Block omitted (used as UBO/SSBO)
 
 // Module Modules.InputOutput
 

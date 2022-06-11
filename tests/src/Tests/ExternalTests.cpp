@@ -159,10 +159,12 @@ fn main()
       OpReturn
       OpFunctionEnd)", {}, true);
 	}
-	
+
 	SECTION("Storage buffers")
 	{
-		std::string_view nzslSource = R"(
+		SECTION("With fixed-size array")
+		{
+			std::string_view nzslSource = R"(
 [nzsl_version("1.0")]
 module;
 
@@ -183,14 +185,14 @@ fn main()
 }
 )";
 
-		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
-		shaderModule = SanitizeModule(*shaderModule);
+			nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
+			shaderModule = SanitizeModule(*shaderModule);
 
-		nzsl::GlslWriter::Environment glslEnv;
-		glslEnv.glMajorVersion = 3;
-		glslEnv.glMinorVersion = 1;
+			nzsl::GlslWriter::Environment glslEnv;
+			glslEnv.glMajorVersion = 3;
+			glslEnv.glMinorVersion = 1;
 
-		ExpectGLSL(*shaderModule, R"(
+			ExpectGLSL(*shaderModule, R"(
 buffer _nzslBinding_data
 {
 	float values[47];
@@ -203,7 +205,7 @@ void main()
 }
 )", glslEnv);
 
-		ExpectNZSL(*shaderModule, R"(
+			ExpectNZSL(*shaderModule, R"(
 struct Data
 {
 	values: array[f32, 47]
@@ -220,10 +222,10 @@ fn main()
 	let value: f32 = data.values[42];
 })");
 
-		WHEN("Generating SPIR-V 1.0")
-		{
-			nzsl::SpirvWriter::Environment spirvEnv;
-			ExpectSPIRV(*shaderModule, R"(
+			WHEN("Generating SPIR-V 1.0")
+			{
+				nzsl::SpirvWriter::Environment spirvEnv;
+				ExpectSPIRV(*shaderModule, R"(
       OpDecorate %9 Decoration(Binding) 0
       OpDecorate %9 Decoration(DescriptorSet) 0
       OpMemberDecorate %5 0 Decoration(Offset) 0
@@ -254,15 +256,15 @@ fn main()
       OpStore %18 %21
       OpReturn
       OpFunctionEnd)", spirvEnv, true);
-		}
+			}
 
-		WHEN("Generating SPIR-V 1.3")
-		{
-			nzsl::SpirvWriter::Environment spirvEnv;
-			spirvEnv.spvMajorVersion = 1;
-			spirvEnv.spvMinorVersion = 3;
+			WHEN("Generating SPIR-V 1.3")
+			{
+				nzsl::SpirvWriter::Environment spirvEnv;
+				spirvEnv.spvMajorVersion = 1;
+				spirvEnv.spvMinorVersion = 3;
 
-			ExpectSPIRV(*shaderModule, R"(
+				ExpectSPIRV(*shaderModule, R"(
       OpDecorate %9 Decoration(Binding) 0
       OpDecorate %9 Decoration(DescriptorSet) 0
       OpMemberDecorate %5 0 Decoration(Offset) 0
@@ -293,6 +295,152 @@ fn main()
       OpStore %18 %21
       OpReturn
       OpFunctionEnd)", spirvEnv, true);
+			}
+		}
+		
+		SECTION("With dynamically sized arrays")
+		{
+			std::string_view nzslSource = R"(
+[nzsl_version("1.0")]
+module;
+
+struct Data
+{
+	size: u32,
+	values: dyn_array[f32]
+}
+
+external
+{
+	[binding(0)] data: storage[Data]
+}
+
+[entry(frag)]
+fn main()
+{
+	let value = data.values[42];
+}
+)";
+
+			nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
+			shaderModule = SanitizeModule(*shaderModule);
+
+			nzsl::GlslWriter::Environment glslEnv;
+			glslEnv.glMajorVersion = 3;
+			glslEnv.glMinorVersion = 1;
+
+			ExpectGLSL(*shaderModule, R"(
+buffer _nzslBinding_data
+{
+	uint size;
+	float values[];
+} data;
+
+
+void main()
+{
+	float value = data.values[42];
+}
+)", glslEnv);
+
+			ExpectNZSL(*shaderModule, R"(
+struct Data
+{
+	size: u32,
+	values: dyn_array[f32]
+}
+
+external
+{
+	[set(0), binding(0)] data: storage[Data]
+}
+
+[entry(frag)]
+fn main()
+{
+	let value: f32 = data.values[42];
+})");
+
+			WHEN("Generating SPIR-V 1.0")
+			{
+				nzsl::SpirvWriter::Environment spirvEnv;
+
+				// Notice how runtime array is actually present twice
+				// this is because the struct is registered by its declaration before being redeclared as a storage buffer
+				// this could be fixed in a way similar to GLSL
+				ExpectSPIRV(*shaderModule, R"(
+      OpDecorate %8 Decoration(Binding) 0
+      OpDecorate %8 Decoration(DescriptorSet) 0
+      OpMemberDecorate %4 0 Decoration(Offset) 0
+      OpMemberDecorate %4 1 Decoration(Offset) 16
+      OpDecorate %5 Decoration(ArrayStride) 16
+      OpDecorate %6 Decoration(BufferBlock)
+      OpMemberDecorate %6 0 Decoration(Offset) 0
+      OpMemberDecorate %6 1 Decoration(Offset) 16
+ %1 = OpTypeInt 32 0
+ %2 = OpTypeFloat 32
+ %3 = OpTypeRuntimeArray %2
+ %4 = OpTypeStruct %1 %3
+ %5 = OpTypeRuntimeArray %2
+ %6 = OpTypeStruct %1 %5
+ %7 = OpTypePointer StorageClass(Uniform) %6
+ %9 = OpTypeVoid
+%10 = OpTypeFunction %9
+%11 = OpTypeInt 32 1
+%12 = OpConstant %11 'Value'(1)
+%13 = OpConstant %11 'Value'(42)
+%14 = OpTypePointer StorageClass(Function) %2
+%18 = OpTypePointer StorageClass(Uniform) %2
+ %8 = OpVariable %7 StorageClass(Uniform)
+%15 = OpFunction %9 FunctionControl(0) %10
+%16 = OpLabel
+%17 = OpVariable %14 StorageClass(Function)
+%19 = OpAccessChain %18 %8 %12 %13
+%20 = OpLoad %2 %19
+      OpStore %17 %20
+      OpReturn
+      OpFunctionEnd)", spirvEnv, true);
+			}
+
+			WHEN("Generating SPIR-V 1.3")
+			{
+				nzsl::SpirvWriter::Environment spirvEnv;
+				spirvEnv.spvMajorVersion = 1;
+				spirvEnv.spvMinorVersion = 3;
+
+				ExpectSPIRV(*shaderModule, R"(
+      OpDecorate %8 Decoration(Binding) 0
+      OpDecorate %8 Decoration(DescriptorSet) 0
+      OpMemberDecorate %4 0 Decoration(Offset) 0
+      OpMemberDecorate %4 1 Decoration(Offset) 16
+      OpDecorate %5 Decoration(ArrayStride) 16
+      OpDecorate %6 Decoration(Block)
+      OpMemberDecorate %6 0 Decoration(Offset) 0
+      OpMemberDecorate %6 1 Decoration(Offset) 16
+ %1 = OpTypeInt 32 0
+ %2 = OpTypeFloat 32
+ %3 = OpTypeRuntimeArray %2
+ %4 = OpTypeStruct %1 %3
+ %5 = OpTypeRuntimeArray %2
+ %6 = OpTypeStruct %1 %5
+ %7 = OpTypePointer StorageClass(StorageBuffer) %6
+ %9 = OpTypeVoid
+%10 = OpTypeFunction %9
+%11 = OpTypeInt 32 1
+%12 = OpConstant %11 'Value'(1)
+%13 = OpConstant %11 'Value'(42)
+%14 = OpTypePointer StorageClass(Function) %2
+%18 = OpTypePointer StorageClass(StorageBuffer) %2
+ %8 = OpVariable %7 StorageClass(StorageBuffer)
+%15 = OpFunction %9 FunctionControl(0) %10
+%16 = OpLabel
+%17 = OpVariable %14 StorageClass(Function)
+%19 = OpAccessChain %18 %8 %12 %13
+%20 = OpLoad %2 %19
+      OpStore %17 %20
+      OpReturn
+      OpFunctionEnd)", spirvEnv, true);
+			}
 		}
 	}
 }

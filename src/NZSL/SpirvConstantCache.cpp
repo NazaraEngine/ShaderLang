@@ -253,8 +253,9 @@ namespace nzsl
 		{
 			assert(array.elementType);
 			cache.Register(*array.elementType);
-			assert(array.length);
-			cache.Register(*array.length);
+			
+			if (array.length)
+				cache.Register(*array.length);
 		}
 
 		void Register(const Bool&) {}
@@ -516,10 +517,16 @@ namespace nzsl
 
 				if constexpr (std::is_same_v<T, Array>)
 				{
-					assert(std::holds_alternative<ConstantScalar>(arg.length->constant));
-					const auto& scalar = std::get<ConstantScalar>(arg.length->constant);
-					assert(std::holds_alternative<std::uint32_t>(scalar.value));
-					std::size_t length = std::get<std::uint32_t>(scalar.value);
+					std::size_t length;
+					if (arg.length)
+					{
+						assert(std::holds_alternative<ConstantScalar>(arg.length->constant));
+						const auto& scalar = std::get<ConstantScalar>(arg.length->constant);
+						assert(std::holds_alternative<std::uint32_t>(scalar.value));
+						length = std::get<std::uint32_t>(scalar.value);
+					}
+					else
+						length = 1; //< 0 length array is not allowed by FieldOffsets
 
 					return RegisterArrayField(structOffsets, arg.elementType->type, length);
 				}
@@ -690,7 +697,7 @@ namespace nzsl
 
 		return std::make_shared<Type>(Array{
 			builtContainedType,
-			BuildConstant(type.length),
+			(type.length > 0) ? BuildConstant(type.length) : nullptr,
 			arrayStride
 		});
 	}
@@ -910,7 +917,7 @@ namespace nzsl
 	std::size_t SpirvConstantCache::RegisterArrayField(FieldOffsets& fieldOffsets, const Array& type, std::size_t arrayLength) const
 	{
 		FieldOffsets dummyStruct(fieldOffsets.GetLayout());
-		RegisterArrayField(dummyStruct, type.elementType->type, std::get<std::uint32_t>(std::get<ConstantScalar>(type.length->constant).value));
+		RegisterArrayField(dummyStruct, type.elementType->type, (type.length) ? std::get<std::uint32_t>(std::get<ConstantScalar>(type.length->constant).value) : 1);
 
 		return fieldOffsets.AddStructArray(dummyStruct, arrayLength);
 	}
@@ -1082,7 +1089,11 @@ namespace nzsl
 
 			if constexpr (std::is_same_v<T, Array>)
 			{
-				constants.Append(SpirvOp::OpTypeArray, resultId, GetId(*arg.elementType), GetId(*arg.length));
+				if (arg.length)
+					constants.Append(SpirvOp::OpTypeArray, resultId, GetId(*arg.elementType), GetId(*arg.length));
+				else
+					constants.Append(SpirvOp::OpTypeRuntimeArray, resultId, GetId(*arg.elementType));
+
 				if (arg.stride)
 					annotations.Append(SpirvOp::OpDecorate, resultId, SpirvDecoration::ArrayStride, *arg.stride);
 			}
