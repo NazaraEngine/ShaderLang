@@ -285,21 +285,16 @@ namespace nzsl
 		else
 			targetModule = &module;
 
-		Ast::ModulePtr optimizedModule;
 		if (states.optimize)
 		{
-			Ast::StatementPtr tempAst;
+			sanitizedModule = Ast::PropagateConstants(*targetModule);
 
 			Ast::DependencyCheckerVisitor::Config dependencyConfig;
-			if (shaderStage)
-				dependencyConfig.usedShaderStages = *shaderStage;
-			else
-				dependencyConfig.usedShaderStages = ShaderStageType_All; //< only one should exist anyway
+			dependencyConfig.usedShaderStages = (shaderStage) ? *shaderStage : ShaderStageType_All; //< only one should exist anyway
 
-			optimizedModule = Ast::PropagateConstants(*targetModule);
-			optimizedModule = Ast::EliminateUnusedPass(*optimizedModule, dependencyConfig);
+			sanitizedModule = Ast::EliminateUnusedPass(*sanitizedModule, dependencyConfig);
 
-			targetModule = optimizedModule.get();
+			targetModule = sanitizedModule.get();
 		}
 
 		// Previsitor
