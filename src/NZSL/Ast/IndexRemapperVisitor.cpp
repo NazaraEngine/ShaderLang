@@ -272,6 +272,12 @@ namespace nzsl::Ast
 
 			return remappedMethodType;
 		}
+		else if (IsStorageType(exprType))
+		{
+			StorageType storageType;
+			storageType.containedType.structIndex = Nz::Retrieve(m_context->newStructIndices, std::get<StorageType>(exprType).containedType.structIndex);
+			return storageType;
+		}
 		else if (IsStructType(exprType))
 		{
 			std::size_t newStructIndex = Nz::Retrieve(m_context->newStructIndices, std::get<StructType>(exprType).structIndex);
