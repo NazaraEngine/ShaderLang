@@ -401,9 +401,30 @@ namespace nzsl
 		throw std::runtime_error("unexpected AliasType");
 	}
 
-	void GlslWriter::Append(const Ast::ArrayType& /*type*/)
+	void GlslWriter::Append(const Ast::ArrayType& type)
 	{
-		throw std::runtime_error("unexpected ArrayType");
+		std::vector<std::uint32_t> lengths;
+		lengths.push_back(type.length);
+
+		const Ast::ExpressionType* exprType = &type.containedType->type;
+		while (Ast::IsArrayType(*exprType))
+		{
+			const auto& arrayType = std::get<Ast::ArrayType>(*exprType);
+			lengths.push_back(arrayType.length);
+
+			exprType = &arrayType.containedType->type;
+		}
+
+		assert(!Ast::IsArrayType(*exprType));
+		Append(*exprType);
+
+		for (std::uint32_t lengthAttribute : lengths)
+		{
+			Append("[");
+			if (lengthAttribute > 0)
+				Append(lengthAttribute);
+			Append("]");
+		}
 	}
 
 	void GlslWriter::Append(Ast::BuiltinEntry builtin)
@@ -909,7 +930,8 @@ namespace nzsl
 			for (std::uint32_t lengthAttribute : lengths)
 			{
 				Append("[");
-				if (lengthAttribute > 0) Append(lengthAttribute);
+				if (lengthAttribute > 0) 
+					Append(lengthAttribute);
 				Append("]");
 			}
 		}
