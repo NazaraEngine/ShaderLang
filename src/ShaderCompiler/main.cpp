@@ -30,9 +30,6 @@ int main(int argc, char* argv[])
 			compiler.HandleParameters();
 			compiler.Process();
 
-			if (options.count("output-nzsl") > 0)
-				compiler.PrintSource();
-
 			return EXIT_SUCCESS;
 		}
 		catch (const nzsl::Error& error)

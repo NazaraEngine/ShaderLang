@@ -32,7 +32,6 @@ namespace nzslc
 			void HandleParameters();
 
 			void PrintError(const nzsl::Error& error) const;
-			void PrintSource() const;
 
 			void Process();
 
@@ -52,9 +51,10 @@ namespace nzslc
 			void CompileToGLSL(std::filesystem::path outputPath, const nzsl::Ast::Module& module);
 			void CompileToNZSL(std::filesystem::path outputPath, const nzsl::Ast::Module& module);
 			void CompileToNZSLB(std::filesystem::path outputPath, nzsl::Ast::ModulePtr& module);
-			void CompileToSPV(std::filesystem::path outputPath, const nzsl::Ast::Module& module);
+			void CompileToSPV(std::filesystem::path outputPath, const nzsl::Ast::Module& module, bool textual);
 			void PrintTime();
 			void OutputFile(std::filesystem::path filePath, const void* data, std::size_t size);
+			void OutputToStdout(std::string_view str);
 			void ReadInput();
 			void Sanitize();
 			template<typename F, typename... Args> auto Step(std::enable_if_t<!std::is_member_function_pointer_v<F>, std::string_view> stepName, F&& func, Args&&... args) -> decltype(std::invoke(func, std::forward<Args>(args)...));
@@ -65,6 +65,7 @@ namespace nzslc
 			static nzsl::Ast::ModulePtr Parse(std::string_view sourceContent, const std::string& filePath);
 			static std::vector<std::uint8_t> ReadFileContent(const std::filesystem::path& filePath);
 			static std::string ReadSourceFileContent(const std::filesystem::path& filePath);
+			static std::string ToHeader(const void* data, std::size_t size);
 			static void WriteFileContent(const std::filesystem::path& filePath, const void* data, std::size_t size);
 
 			struct StepTime
@@ -80,7 +81,9 @@ namespace nzslc
 			LogFormat m_logFormat;
 			nzsl::Ast::ModulePtr m_shaderModule;
 			cxxopts::ParseResult& m_options;
-			bool m_measureTime;
+			bool m_profiling;
+			bool m_outputHeader;
+			bool m_outputToStdout;
 			bool m_verbose;
 			unsigned int m_iterationCount;
 	};

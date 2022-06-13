@@ -10,6 +10,7 @@
 #include <NZSL/Errors.hpp>
 #include <NZSL/Lexer.hpp>
 #include <NZSL/Parser.hpp>
+#include <NZSL/SpirvPrinter.hpp>
 #include <NZSL/SpirvWriter.hpp>
 #include <NZSL/Serializer.hpp>
 #include <NZSL/Ast/AstSerializer.hpp>
@@ -25,10 +26,23 @@
 
 namespace nzslc
 {
+	namespace
+	{
+		inline bool EndsWith(const std::string_view& str, const std::string_view& s)
+		{
+			if (s.size() > str.size())
+				return false;
+
+			return str.compare(str.size() - s.size(), s.size(), s.data()) == 0;
+		}
+	}
+	
 	Compiler::Compiler(cxxopts::ParseResult& options) :
 	m_options(options),
 	m_logFormat(LogFormat::Classic),
-	m_measureTime(false),
+	m_profiling(false),
+	m_outputToStdout(false),
+	m_verbose(false),
 	m_iterationCount(1)
 	{
 	}
@@ -53,22 +67,29 @@ namespace nzslc
 
 		if (m_options.count("output") > 0)
 		{
-			m_outputPath = m_options["output"].as<std::string>();
+			const std::string& outputPath = m_options["output"].as<std::string>();
 
-			if (!std::filesystem::is_directory(m_outputPath) && !std::filesystem::create_directories(m_outputPath))
-				throw std::runtime_error(fmt::format("failed to create {} directory", m_outputPath.generic_u8string()));
+			if (outputPath == "@stdout")
+				m_outputToStdout = true;
+			else
+			{
+				m_outputPath = m_options["output"].as<std::string>();
+
+				if (!std::filesystem::is_directory(m_outputPath) && !std::filesystem::create_directories(m_outputPath))
+					throw std::runtime_error(fmt::format("failed to create {} directory", m_outputPath.generic_u8string()));
+			}
 		}
 
 		if (m_options.count("benchmark-iteration") > 0)
 		{
-			m_measureTime = true;
+			m_profiling = true;
 			m_iterationCount = m_options["benchmark-iteration"].as<unsigned int>();
 			if (m_iterationCount == 0)
 				throw cxxopts::OptionException("iteration count must be over zero");
 		}
 
 		if (m_options.count("measure") > 0)
-			m_measureTime = m_options["measure"].as<bool>();
+			m_profiling = m_options["measure"].as<bool>();
 
 		m_verbose = m_options.count("verbose") > 0;
 	}
@@ -147,12 +168,6 @@ namespace nzslc
 			fmt::print(stderr, (fmt::emphasis::bold | fg(fmt::color::red)), "{}\n", error.what());
 	}
 
-	void Compiler::PrintSource() const
-	{
-		nzsl::LangWriter nzslWriter;
-		fmt::print("{}", nzslWriter.Generate(*m_shaderModule));
-	}
-
 	void Compiler::Process()
 	{
 		using namespace std::literals;
@@ -166,7 +181,7 @@ namespace nzslc
 				Step("Compiling"sv, &Compiler::Compile);
 		});
 
-		if (m_measureTime)
+		if (m_profiling)
 			PrintTime();
 	}
 
@@ -176,25 +191,32 @@ namespace nzslc
 
 		options.add_options()
 			("benchmark-iteration", "Benchmark each step of the compilation repeat over a huge number of time, implies --measure", cxxopts::value<unsigned int>()->implicit_value("1000"))
-			("c,compile", "Compile input shader", cxxopts::value<std::vector<std::string>>()->implicit_value("nzslb"))
-			("output-nzsl", "Output shader as NZSL to stdout")
-			("header-file", "Generate an includable header file")
 			("measure", "Measure time taken for every step of the compilation process", cxxopts::value<bool>()->default_value("false"))
 			("log-format", "Set log format (classic, vs)", cxxopts::value<std::string>())
 			("i,input", "Input file(s)", cxxopts::value<std::string>())
-			("o,output", "Output path", cxxopts::value<std::string>()->default_value("."), "path")
+			("o,output", "Output path (use @stdout to output on stdout)", cxxopts::value<std::string>()->default_value("."), "path")
 			("s,show", "Show informations about the shader (default)")
 			("v,verbose", "Verbose output", cxxopts::value<bool>()->default_value("false"))
 			("h,help", "Print usage")
 			("version", "Print version");
 
 		options.add_options("compilation")
+			("c,compile", R"(Compile input shader to the following format. Possible values are:
+- glsl : GLSL (GLSL ES if --gl-es is set)
+- nzsl : textual NZSL
+- nzslb : binary NZSL
+- spv : binary SPIR-V
+- spv-dis : textual SPIR-V
+
+Multiple values can be specified using commas (ex: --compile=glsl,nzslb).
+You can also specify -header as a suffix (ex: --compile=glsl-header) to generate an includable header file.
+)", cxxopts::value<std::vector<std::string>>()->implicit_value("nzslb"))
 			("m,module", "Module file or directory", cxxopts::value<std::vector<std::string>>())
 			("optimize", "Optimize shader code")
 			("p,partial", "Allow partial compilation");
 
 		options.add_options("glsl output")
-			("gl-es", "Generate GLSL ES instead of GLSL", cxxopts::value<bool>())
+			("gl-es", "Generate GLSL ES instead of GLSL", cxxopts::value<bool>()->default_value("false"))
 			("gl-version", "OpenGL version (310 being 3.1)", cxxopts::value<std::uint32_t>(), "version")
 			("gl-entry", "Shader entry point (required for files having multiple entry points)", cxxopts::value<std::string>(), "[frag|vert]")
 			("gl-flipy", "Add code to conditionally flip gl_Position Y value")
@@ -221,19 +243,34 @@ namespace nzslc
 
 		outputFilePath /= m_inputFilePath.filename();
 
-		for (const std::string& outputType : m_options["compile"].as<std::vector<std::string>>())
+		bool first = true;
+
+		const std::vector<std::string>& options = m_options["compile"].as<std::vector<std::string>>();
+		for (std::string_view outputType : options)
 		{
+			// TODO: Don't compile multiple times unnecessary (ex: glsl and glsl-header)
+			if (m_outputToStdout && options.size() > 1)
+				fmt::print("-- {}\n", outputType);
+
+			first = false;
+
+			m_outputHeader = EndsWith(outputType, "-header");
+			if (m_outputHeader)
+				outputType.remove_suffix(7);
+
 			if (outputType == "nzsl")
 				Step("Compile to NZSL", &Compiler::CompileToNZSL, outputFilePath, *m_shaderModule);
 			else if (outputType == "nzslb")
 				Step("Compile to NZSLB", &Compiler::CompileToNZSLB, outputFilePath, m_shaderModule);
 			else if (outputType == "spv")
-				Step("Compile to SPIR-V", &Compiler::CompileToSPV, outputFilePath, *m_shaderModule);
+				Step("Compile to SPIR-V", &Compiler::CompileToSPV, outputFilePath, *m_shaderModule, false);
+			else if (outputType == "spv-dis")
+				Step("Compile to textual SPIR-V", &Compiler::CompileToSPV, outputFilePath, *m_shaderModule, true);
 			else if (outputType == "glsl")
 				Step("Compile to GLSL", &Compiler::CompileToGLSL, outputFilePath, *m_shaderModule);
 			else
 			{
-				fmt::print("Unknown format {}, ignoring\n");
+				fmt::print("Unknown format {}, ignoring\n", outputType);
 				continue;
 			}
 		}
@@ -344,6 +381,12 @@ namespace nzslc
 
 		nzsl::GlslWriter::Output output = writer.Generate(entryType, module, bindingMapping, states);
 
+		if (m_outputToStdout)
+		{
+			OutputToStdout(output.code);
+			return;
+		}
+
 		outputPath.replace_extension("glsl");
 		OutputFile(std::move(outputPath), output.code.data(), output.code.size());
 	}
@@ -356,6 +399,12 @@ namespace nzslc
 		nzsl::LangWriter nzslWriter;
 		std::string nzsl = nzslWriter.Generate(module, states);
 
+		if (m_outputToStdout)
+		{
+			OutputToStdout(nzsl);
+			return;
+		}
+
 		outputPath.replace_extension("nzsl");
 		OutputFile(std::move(outputPath), nzsl.data(), nzsl.size());
 	}
@@ -367,11 +416,21 @@ namespace nzslc
 
 		const std::vector<std::uint8_t>& data = serializer.GetData();
 
+		if (m_outputToStdout)
+		{
+			if (m_outputHeader)
+				OutputToStdout(std::string_view(reinterpret_cast<const char*>(&data[0]), data.size()));
+			else
+				fmt::print("NZSLB is a binary format and cannot be printed to stdout\n");
+
+			return;
+		}
+
 		outputPath.replace_extension("nzslb");
 		OutputFile(std::move(outputPath), data.data(), data.size());
 	}
 
-	void Compiler::CompileToSPV(std::filesystem::path outputPath, const nzsl::Ast::Module& module)
+	void Compiler::CompileToSPV(std::filesystem::path outputPath, const nzsl::Ast::Module& module, bool textual)
 	{
 		nzsl::ShaderWriter::States states;
 		states.optimize = (m_options.count("optimize") > 0);
@@ -395,8 +454,35 @@ namespace nzslc
 		std::vector<std::uint32_t> spirv = writer.Generate(module, states);
 		std::size_t size = spirv.size() * sizeof(std::uint32_t);
 
-		outputPath.replace_extension("spv");
-		OutputFile(std::move(outputPath), spirv.data(), size);
+		if (textual)
+		{
+			nzsl::SpirvPrinter printer;
+			std::string spirvTxt = printer.Print(spirv);
+
+			if (m_outputToStdout)
+			{
+				OutputToStdout(spirvTxt);
+				return;
+			}
+
+			outputPath.replace_extension("spv.txt");
+			OutputFile(std::move(outputPath), spirvTxt.data(), spirvTxt.size());
+		}
+		else
+		{
+			if (m_outputToStdout)
+			{
+				if (m_outputHeader)
+					OutputToStdout(std::string_view(reinterpret_cast<const char*>(&spirv[0]), spirv.size() * sizeof(std::uint32_t)));
+				else
+					fmt::print("SPIR-V is a binary format and cannot be printed to stdout\n");
+
+				return;
+			}
+
+			outputPath.replace_extension("spv");
+			OutputFile(std::move(outputPath), spirv.data(), size);
+		}
 	}
 
 	void Compiler::PrintTime()
@@ -449,28 +535,21 @@ namespace nzslc
 		}
 	}
 
+	void Compiler::OutputToStdout(std::string_view str)
+	{
+		if (m_outputHeader)
+			fmt::print("{}", ToHeader(str.data(), str.size()));
+		else
+			fmt::print("{}", str);
+	}
+
 	void Compiler::OutputFile(std::filesystem::path filePath, const void* data, std::size_t size)
 	{
-		if (m_options.count("header-file") > 0)
+		if (m_outputHeader)
 		{
+			std::string headerFile = ToHeader(data, size);
+
 			filePath.replace_extension(filePath.extension().generic_u8string() + ".h");
-
-			const std::uint8_t* ptr = static_cast<const std::uint8_t*>(data);
-
-			std::stringstream ss;
-
-			bool first = true;
-			for (std::size_t i = 0; i < size; ++i)
-			{
-				if (!first)
-					ss << ',';
-
-				ss << +ptr[i];
-
-				first = false;
-			}
-
-			std::string headerFile = std::move(ss).str();
 			WriteFileContent(filePath, headerFile.data(), headerFile.size());
 		}
 		else
@@ -549,7 +628,7 @@ namespace nzslc
 	template<typename F>
 	auto Compiler::StepInternal(std::string_view stepName, F&& func) -> decltype(func())
 	{
-		if (!m_measureTime)
+		if (!m_profiling)
 			return func();
 
 		std::size_t stepIndex = m_steps.size();
@@ -557,7 +636,7 @@ namespace nzslc
 		bool wasVerbose = m_verbose;
 
 		// Disable substeps benchmarking (and verbose messages) when benchmarking a step
-		m_measureTime = false;
+		m_profiling = false;
 		m_verbose = false;
 		{
 			auto& step = m_steps.emplace_back();
@@ -572,7 +651,7 @@ namespace nzslc
 
 			step.time = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
 		}
-		m_measureTime = true;
+		m_profiling = true;
 		m_verbose = wasVerbose;
 		
 		Nz::CallOnExit onExit([&]
@@ -619,6 +698,32 @@ namespace nzslc
 	{
 		std::vector<std::uint8_t> content = ReadFileContent(filePath);
 		return std::string(reinterpret_cast<const char*>(&content[0]), content.size());
+	}
+
+	std::string Compiler::ToHeader(const void* data, std::size_t size)
+	{
+		const std::uint8_t* ptr = static_cast<const std::uint8_t*>(data);
+
+		std::stringstream ss;
+
+		bool first = true;
+		for (std::size_t i = 0; i < size; ++i)
+		{
+			if (!first)
+			{
+				ss << ',';
+				if (i % 30 == 0)
+					ss << '\n';
+			}
+
+			first = false;
+
+			ss << +ptr[i];
+		}
+		
+		ss << '\n';
+
+		return std::move(ss).str();
 	}
 
 	void Compiler::WriteFileContent(const std::filesystem::path& filePath, const void* data, std::size_t size)
