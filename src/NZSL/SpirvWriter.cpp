@@ -55,6 +55,12 @@ namespace nzsl
 			{ Ast::BuiltinEntry::VertexIndex,    { SpirvBuiltIn::VertexIndex,   SpirvCapability::Shader,         SpirvVersion{ 1, 0 } } },
 			{ Ast::BuiltinEntry::VertexPosition, { SpirvBuiltIn::Position,      SpirvCapability::Shader,         SpirvVersion{ 1, 0 } } }
 		});
+
+		template<typename T>
+		struct IsVector : std::bool_constant<false> {};
+
+		template<typename T>
+		struct IsVector<std::vector<T>> : std::bool_constant<true> {};
 	}
 
 	class SpirvWriter::PreVisitor : public Ast::RecursiveVisitor
@@ -68,6 +74,7 @@ namespace nzsl
 			};
 
 			using BuiltinDecoration = tsl::ordered_map<std::uint32_t, SpirvBuiltIn>;
+			using ConstantVariables = std::unordered_map<std::size_t /*constIndex*/, SpirvVariable /*variable*/>;
 			using LocationDecoration = tsl::ordered_map<std::uint32_t, std::uint32_t>;
 			using ExtInstList = tsl::ordered_set<std::string>;
 			using ExtVarContainer = std::unordered_map<std::size_t /*varIndex*/, UniformVar>;
@@ -137,14 +144,56 @@ namespace nzsl
 				throw std::runtime_error("unexpected conditional expression, did you forget to sanitize the shader?");
 			}
 
-			void Visit(Ast::ConstantValueExpression& node) override
+			void Visit(Ast::ConstantArrayValueExpression& node) override
 			{
-				std::visit([&](auto&& arg)
-				{
-					m_constantCache.Register(*m_constantCache.BuildConstant(arg));
-				}, node.value);
+				m_constantCache.Register(*m_constantCache.BuildArrayConstant(node.values));
 
 				RecursiveVisitor::Visit(node);
+			}
+
+			void Visit(Ast::ConstantValueExpression& node) override
+			{
+				m_constantCache.Register(*m_constantCache.BuildConstant(node.value));
+
+				RecursiveVisitor::Visit(node);
+			}
+
+			void Visit(Ast::DeclareConstStatement& node) override
+			{
+				assert(node.constIndex);
+				assert(constantVariables.find(*node.constIndex) == constantVariables.end());
+
+				SpirvStorageClass storageClass = SpirvStorageClass::Private;
+
+				SpirvConstantCache::Variable constantVariable;
+				constantVariable.debugName = node.name;
+				constantVariable.storageClass = storageClass;
+				constantVariable.type = m_constantCache.BuildPointerType(m_constantCache.BuildType(*GetExpressionType(*node.expression)), constantVariable.storageClass);
+
+				switch (node.expression->GetType())
+				{
+					case Ast::NodeType::ConstantValueExpression:
+					{
+						auto& constExpr = static_cast<Ast::ConstantValueExpression&>(*node.expression);
+						constantVariable.initializer = m_constantCache.BuildConstant(constExpr.value);
+						break;
+					}
+
+					case Ast::NodeType::ConstantArrayValueExpression:
+					{
+						auto& constExpr = static_cast<Ast::ConstantArrayValueExpression&>(*node.expression);
+						constantVariable.initializer = m_constantCache.BuildArrayConstant(constExpr.values);
+						break;
+					}
+
+					default:
+						throw std::runtime_error("unexpected non-constant expression, is shader sanitized?");
+				}
+
+				std::uint32_t pointerTypeId = m_constantCache.Register(*constantVariable.type);
+				std::uint32_t variableId = m_constantCache.Register(std::move(constantVariable));
+				
+				constantVariables.emplace(*node.constIndex, SpirvVariable{ variableId, pointerTypeId, storageClass });
 			}
 
 			void Visit(Ast::DeclareExternalStatement& node) override
@@ -501,6 +550,7 @@ namespace nzsl
 			}
 
 			BuiltinDecoration builtinDecorations;
+			ConstantVariables constantVariables;
 			ExtInstList extInsts;
 			ExtVarContainer extVars;
 			LocationDecoration locationDecorations;
@@ -561,9 +611,9 @@ namespace nzsl
 			options.reduceLoopsToWhile = true;
 			options.removeAliases = true;
 			options.removeCompoundAssignments = true;
-			options.removeConstDeclaration = true;
 			options.removeMatrixCast = true;
 			options.removeOptionDeclaration = true;
+			options.removeSingleConstDeclaration = true;
 			options.splitMultipleBranches = true;
 			options.useIdentifierAccessesForStructs = false;
 
@@ -642,6 +692,11 @@ namespace nzsl
 		MergeSections(ret, state.instructions);
 
 		return ret;
+	}
+
+	const SpirvVariable& SpirvWriter::GetConstantVariable(std::size_t constIndex) const
+	{
+		return Nz::Retrieve(m_currentState->previsitor->constantVariables, constIndex);
 	}
 
 	void SpirvWriter::SetEnv(Environment environment)
@@ -753,8 +808,13 @@ namespace nzsl
 		else
 			return m_currentState->constantTypeCache.BuildFunctionType(Ast::NoType{}, parameterTypes);
 	}
+	
+	std::uint32_t SpirvWriter::GetArrayConstantId(const Ast::ConstantArrayValue& values) const
+	{
+		return m_currentState->constantTypeCache.GetId(*m_currentState->constantTypeCache.BuildArrayConstant(values));
+	}
 
-	std::uint32_t SpirvWriter::GetConstantId(const Ast::ConstantValue& value) const
+	std::uint32_t SpirvWriter::GetSingleConstantId(const Ast::ConstantSingleValue& value) const
 	{
 		return m_currentState->constantTypeCache.GetId(*m_currentState->constantTypeCache.BuildConstant(value));
 	}
@@ -800,7 +860,12 @@ namespace nzsl
 			return false;
 	}
 	
-	std::uint32_t SpirvWriter::RegisterConstant(const Ast::ConstantValue& value)
+	std::uint32_t SpirvWriter::RegisterArrayConstant(const Ast::ConstantArrayValue& value)
+	{
+		return m_currentState->constantTypeCache.Register(*m_currentState->constantTypeCache.BuildArrayConstant(value));
+	}
+
+	std::uint32_t SpirvWriter::RegisterSingleConstant(const Ast::ConstantSingleValue& value)
 	{
 		return m_currentState->constantTypeCache.Register(*m_currentState->constantTypeCache.BuildConstant(value));
 	}

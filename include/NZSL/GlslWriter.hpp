@@ -69,6 +69,7 @@ namespace nzsl
 			void Append(const Ast::AliasType& aliasType);
 			void Append(const Ast::ArrayType& type);
 			void Append(Ast::BuiltinEntry builtin);
+			void Append(const Ast::DynArrayType& type);
 			void Append(const Ast::ExpressionType& type);
 			void Append(const Ast::ExpressionValue<Ast::ExpressionType>& type);
 			void Append(const Ast::FunctionType& functionType);
@@ -87,6 +88,7 @@ namespace nzsl
 			template<typename T> void Append(const T& param);
 			template<typename T1, typename T2, typename... Args> void Append(const T1& firstParam, const T2& secondParam, Args&&... params);
 			template<typename... Args> void Append(const std::variant<Args...>& param);
+			void AppendArray(const Ast::ExpressionType& varType, const std::string& varName = {});
 			void AppendComment(const std::string& section);
 			void AppendCommentSection(const std::string& section);
 			void AppendFunctionDeclaration(const Ast::DeclareFunctionStatement& node, const std::string& nameOverride, bool forward = false);
@@ -94,6 +96,7 @@ namespace nzsl
 			void AppendLine(const std::string& txt = {});
 			template<typename... Args> void AppendLine(Args&&... params);
 			void AppendStatementList(std::vector<Ast::StatementPtr>& statements);
+			template<typename T> void AppendValue(const T& value);
 			void AppendVariableDeclaration(const Ast::ExpressionType& varType, const std::string& varName);
 
 			void EnterScope();
@@ -102,6 +105,7 @@ namespace nzsl
 			void HandleEntryPoint(Ast::DeclareFunctionStatement& node);
 			void HandleInOut();
 
+			void RegisterConstant(std::size_t constIndex, std::string constName);
 			void RegisterStruct(std::size_t structIndex, Ast::StructDescription* desc, std::string structName);
 			void RegisterVariable(std::size_t varIndex, std::string varName);
 
@@ -109,6 +113,7 @@ namespace nzsl
 
 			void Visit(Ast::ExpressionPtr& expr, bool encloseIfRequired = false);
 
+			using ExpressionVisitorExcept::Visit;
 			void Visit(Ast::AccessIdentifierExpression& node) override;
 			void Visit(Ast::AccessIndexExpression& node) override;
 			void Visit(Ast::AliasValueExpression& node) override;
@@ -116,6 +121,8 @@ namespace nzsl
 			void Visit(Ast::BinaryExpression& node) override;
 			void Visit(Ast::CallFunctionExpression& node) override;
 			void Visit(Ast::CastExpression& node) override;
+			void Visit(Ast::ConstantExpression& node) override;
+			void Visit(Ast::ConstantArrayValueExpression& node) override;
 			void Visit(Ast::ConstantValueExpression& node) override;
 			void Visit(Ast::FunctionExpression& node) override;
 			void Visit(Ast::IntrinsicExpression& node) override;
@@ -123,6 +130,7 @@ namespace nzsl
 			void Visit(Ast::VariableValueExpression& node) override;
 			void Visit(Ast::UnaryExpression& node) override;
 
+			using StatementVisitorExcept::Visit;
 			void Visit(Ast::BranchStatement& node) override;
 			void Visit(Ast::DeclareAliasStatement& node) override;
 			void Visit(Ast::DeclareConstStatement& node) override;

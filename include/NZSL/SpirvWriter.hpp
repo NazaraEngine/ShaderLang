@@ -11,6 +11,7 @@
 #include <NZSL/Config.hpp>
 #include <NZSL/ShaderWriter.hpp>
 #include <NZSL/SpirvConstantCache.hpp>
+#include <NZSL/SpirvVariable.hpp>
 #include <NZSL/Ast/ConstantValue.hpp>
 #include <NZSL/Ast/Module.hpp>
 #include <string>
@@ -40,6 +41,8 @@ namespace nzsl
 
 			std::vector<std::uint32_t> Generate(const Ast::Module& module, const States& states = {});
 
+			const SpirvVariable& GetConstantVariable(std::size_t constIndex) const;
+
 			void SetEnv(Environment environment);
 
 			struct Environment
@@ -47,7 +50,7 @@ namespace nzsl
 				std::uint32_t spvMajorVersion = 1;
 				std::uint32_t spvMinorVersion = 0;
 			};
-
+			
 			static std::pair<std::uint32_t, std::uint32_t> GetMaximumSupportedVersion(std::uint32_t vkMajorVersion, std::uint32_t vkMinorVersion);
 
 		private:
@@ -60,7 +63,8 @@ namespace nzsl
 
 			SpirvConstantCache::TypePtr BuildFunctionType(const Ast::DeclareFunctionStatement& functionNode);
 
-			std::uint32_t GetConstantId(const Ast::ConstantValue& value) const;
+			std::uint32_t GetArrayConstantId(const Ast::ConstantArrayValue& values) const;
+			std::uint32_t GetSingleConstantId(const Ast::ConstantSingleValue& value) const;
 			std::uint32_t GetExtendedInstructionSet(const std::string& instructionSetName) const;
 			std::uint32_t GetExtVarPointerId(std::size_t varIndex) const;
 			std::uint32_t GetFunctionTypeId(const Ast::DeclareFunctionStatement& functionNode);
@@ -69,7 +73,8 @@ namespace nzsl
 
 			bool IsVersionGreaterOrEqual(std::uint32_t spvMajor, std::uint32_t spvMinor) const;
 
-			std::uint32_t RegisterConstant(const Ast::ConstantValue& value);
+			std::uint32_t RegisterArrayConstant(const Ast::ConstantArrayValue& value);
+			std::uint32_t RegisterSingleConstant(const Ast::ConstantSingleValue& value);
 			std::uint32_t RegisterFunctionType(const Ast::DeclareFunctionStatement& functionNode);
 			std::uint32_t RegisterPointerType(Ast::ExpressionType type, SpirvStorageClass storageClass);
 			std::uint32_t RegisterType(Ast::ExpressionType type);

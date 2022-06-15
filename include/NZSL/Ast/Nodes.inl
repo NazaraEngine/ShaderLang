@@ -31,7 +31,7 @@ namespace nzsl::Ast
 	{
 		switch (nodeType)
 		{
-#define NZSL_SHADERAST_EXPRESSION(Node) case NodeType::Node: return true;
+#define NZSL_SHADERAST_EXPRESSION(Node) case NodeType::Node##Expression: return true;
 #include <NZSL/Ast/NodeList.hpp>
 
 		default:
@@ -43,7 +43,7 @@ namespace nzsl::Ast
 	{
 		switch (nodeType)
 		{
-#define NZSL_SHADERAST_STATEMENT(Node) case NodeType::Node: return true;
+#define NZSL_SHADERAST_STATEMENT(Node) case NodeType::Node##Statement: return true;
 #include <NZSL/Ast/NodeList.hpp>
 
 		default:

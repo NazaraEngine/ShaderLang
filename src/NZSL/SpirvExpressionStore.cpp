@@ -69,7 +69,7 @@ namespace nzsl
 					std::uint32_t pointerType = m_writer.RegisterPointerType(*exprType, swizzledPointer.storage); //< FIXME
 
 					// Access chain
-					std::uint32_t indexId = m_writer.GetConstantId(Nz::SafeCast<std::int32_t>(swizzledPointer.swizzleIndices[0]));
+					std::uint32_t indexId = m_writer.GetSingleConstantId(Nz::SafeCast<std::int32_t>(swizzledPointer.swizzleIndices[0]));
 
 					std::uint32_t pointerId = m_visitor.AllocateResultId();
 					m_block.Append(SpirvOp::OpAccessChain, pointerType, pointerId, swizzledPointer.pointerId, indexId);
@@ -98,7 +98,7 @@ namespace nzsl
 				std::uint32_t pointerType = m_writer.RegisterPointerType(*exprType, pointer.storage); //< FIXME
 
 				assert(node.indices.size() == 1);
-				std::uint32_t indexId = m_visitor.EvaluateExpression(node.indices.front());
+				std::uint32_t indexId = m_visitor.EvaluateExpression(*node.indices.front());
 
 				m_block.Append(SpirvOp::OpAccessChain, pointerType, resultId, pointer.pointerId, indexId); 
 
@@ -157,6 +157,6 @@ namespace nzsl
 	void SpirvExpressionStore::Visit(Ast::VariableValueExpression& node)
 	{
 		const auto& var = m_visitor.GetVariable(node.variableId);
-		m_value = Pointer{ var.storage, var.pointerId };
+		m_value = Pointer{ var.storageClass, var.pointerId };
 	}
 }

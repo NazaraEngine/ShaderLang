@@ -139,7 +139,7 @@ namespace nzsl::Ast
 		NodeType GetType() const override;
 		void Visit(ExpressionVisitor& visitor) override;
 
-		std::array<ExpressionPtr, 4> expressions;
+		std::vector<ExpressionPtr> expressions;
 		ExpressionValue<ExpressionType> targetType;
 	};
 
@@ -161,12 +161,20 @@ namespace nzsl::Ast
 		std::size_t constantId;
 	};
 
+	struct NZSL_API ConstantArrayValueExpression : Expression
+	{
+		NodeType GetType() const override;
+		void Visit(ExpressionVisitor& visitor) override;
+
+		ConstantArrayValue values;
+	};
+
 	struct NZSL_API ConstantValueExpression : Expression
 	{
 		NodeType GetType() const override;
 		void Visit(ExpressionVisitor& visitor) override;
 
-		ConstantValue value;
+		ConstantSingleValue value;
 	};
 
 	struct NZSL_API FunctionExpression : Expression
@@ -482,7 +490,7 @@ namespace nzsl::Ast
 		StatementPtr body;
 	};
 
-#define NZSL_SHADERAST_NODE(X) using X##Ptr = std::unique_ptr<X>;
+#define NZSL_SHADERAST_NODE(X, C) using X##C##Ptr = std::unique_ptr<X##C>;
 
 #include <NZSL/Ast/NodeList.hpp>
 

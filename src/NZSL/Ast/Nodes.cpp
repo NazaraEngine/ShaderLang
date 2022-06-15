@@ -11,18 +11,13 @@ namespace nzsl::Ast
 {
 	Node::~Node() = default;
 
-#define NZSL_SHADERAST_NODE(Node) NodeType Node::GetType() const \
+#define NZSL_SHADERAST_NODE(Node, Category) NodeType Node##Category::GetType() const \
 	{ \
-		return NodeType:: Node; \
+		return NodeType:: Node##Category; \
 	}
 #include <NZSL/Ast/NodeList.hpp>
 
-#define NZSL_SHADERAST_EXPRESSION(Node) void Node::Visit(ExpressionVisitor& visitor) \
-	{\
-		visitor.Visit(*this); \
-	}
-
-#define NZSL_SHADERAST_STATEMENT(Node) void Node::Visit(StatementVisitor& visitor) \
+#define NZSL_SHADERAST_NODE(Node, Category) void Node##Category::Visit(Category##Visitor& visitor) \
 	{\
 		visitor.Visit(*this); \
 	}

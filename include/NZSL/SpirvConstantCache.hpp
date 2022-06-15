@@ -172,7 +172,8 @@ namespace nzsl
 				AnyType type;
 			};
 
-			ConstantPtr BuildConstant(const Ast::ConstantValue& value) const;
+			ConstantPtr BuildArrayConstant(const Ast::ConstantArrayValue& value) const;
+			ConstantPtr BuildConstant(const Ast::ConstantSingleValue& value) const;
 			FieldOffsets BuildFieldOffsets(const Structure& structData) const;
 			TypePtr BuildFunctionType(const Ast::ExpressionType& retType, const std::vector<Ast::ExpressionType>& parameters) const;
 			TypePtr BuildPointerType(const Ast::PrimitiveType& type, SpirvStorageClass storageClass) const;
@@ -180,6 +181,7 @@ namespace nzsl
 			TypePtr BuildPointerType(const TypePtr& type, SpirvStorageClass storageClass) const;
 			TypePtr BuildType(const Ast::AliasType& type) const;
 			TypePtr BuildType(const Ast::ArrayType& type) const;
+			TypePtr BuildType(const Ast::DynArrayType& type) const;
 			TypePtr BuildType(const Ast::ExpressionType& type) const;
 			TypePtr BuildType(const Ast::MatrixType& type) const;
 			TypePtr BuildType(const Ast::NoType& type) const;
@@ -224,6 +226,9 @@ namespace nzsl
 			struct DepRegisterer;
 			struct Eq;
 			struct Internal;
+			template<typename T, typename Enable = void> struct TypeBuilder;
+
+			template<typename T> static Type BuildSingleType();
 
 			void Write(const AnyConstant& constant, std::uint32_t resultId, SpirvSection& constants);
 			void Write(const AnyType& type, std::uint32_t resultId, SpirvSection& annotations, SpirvSection& constants, SpirvSection& debugInfos);

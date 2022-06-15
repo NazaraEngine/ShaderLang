@@ -6,9 +6,9 @@
 
 namespace nzsl::Ast
 {
-#define NZSL_SHADERAST_STATEMENT(Node) void StatementVisitorExcept::Visit(Ast::Node& /*node*/) \
+#define NZSL_SHADERAST_STATEMENT(Node) void StatementVisitorExcept::Visit(Ast::Node##Statement& /*node*/) \
 	{ \
-		throw std::runtime_error("unexpected " #Node " node"); \
+		throw std::runtime_error("unexpected " #Node " statement"); \
 	}
 #include <NZSL/Ast/NodeList.hpp>
 }

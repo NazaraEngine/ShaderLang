@@ -20,15 +20,15 @@ namespace nzsl
 		return m_writer.AllocateResultId();
 	}
 
-	std::uint32_t SpirvAstVisitor::EvaluateExpression(Ast::ExpressionPtr& expr)
+	std::uint32_t SpirvAstVisitor::EvaluateExpression(Ast::Expression& expr)
 	{
-		expr->Visit(*this);
+		expr.Visit(*this);
 
 		assert(m_resultIds.size() == 1);
 		return PopResultId();
 	}
 
-	auto SpirvAstVisitor::GetVariable(std::size_t varIndex) const -> const Variable&
+	auto SpirvAstVisitor::GetVariable(std::size_t varIndex) const -> const SpirvVariable&
 	{
 		return Nz::Retrieve(m_variables, varIndex);
 	}
@@ -44,7 +44,7 @@ namespace nzsl
 		if (node.op != Ast::AssignType::Simple)
 			throw std::runtime_error("unexpected assign expression (should have been removed by sanitization)");
 
-		std::uint32_t resultId = EvaluateExpression(node.right);
+		std::uint32_t resultId = EvaluateExpression(*node.right);
 
 		SpirvExpressionStore storeVisitor(m_writer, *this, *m_currentBlock);
 		storeVisitor.Store(node.left, resultId);
@@ -74,8 +74,8 @@ namespace nzsl
 		//Ast::PrimitiveType rightTypeBase = RetrieveBaseType(rightType);
 
 
-		std::uint32_t leftOperand = EvaluateExpression(node.left);
-		std::uint32_t rightOperand = EvaluateExpression(node.right);
+		std::uint32_t leftOperand = EvaluateExpression(*node.left);
+		std::uint32_t rightOperand = EvaluateExpression(*node.right);
 		std::uint32_t resultId = m_writer.AllocateResultId();
 
 		bool swapOperands = false;
@@ -376,7 +376,7 @@ namespace nzsl
 		auto contentBlock = std::make_unique<SpirvBlock>(m_writer);
 		auto elseBlock = std::make_unique<SpirvBlock>(m_writer);
 
-		std::uint32_t conditionId = EvaluateExpression(condStatement.condition);
+		std::uint32_t conditionId = EvaluateExpression(*condStatement.condition);
 		m_currentBlock->Append(SpirvOp::OpSelectionMerge, mergeBlock->GetLabelId(), SpirvSelectionControl::None);
 		// FIXME: Can we use merge block directly in OpBranchConditional if no else statement?
 		m_currentBlock->Append(SpirvOp::OpBranchConditional, conditionId, contentBlock->GetLabelId(), elseBlock->GetLabelId());
@@ -423,7 +423,7 @@ namespace nzsl
 		Nz::StackArray<std::uint32_t> parameterIds = NazaraStackArrayNoInit(std::uint32_t, node.parameters.size());
 		for (std::size_t i = 0; i < node.parameters.size(); ++i)
 		{
-			std::uint32_t resultId = EvaluateExpression(node.parameters[i]);
+			std::uint32_t resultId = EvaluateExpression(*node.parameters[i]);
 			std::uint32_t varId = funcData.variables[funcCall.firstVarIndex + i].varId;
 			m_currentBlock->Append(SpirvOp::OpStore, varId, resultId);
 
@@ -451,7 +451,7 @@ namespace nzsl
 		{
 			Ast::PrimitiveType targetType = std::get<Ast::PrimitiveType>(targetExprType);
 
-			assert(node.expressions[0] && !node.expressions[1]);
+			assert(node.expressions.size() == 1);
 			Ast::ExpressionPtr& expression = node.expressions[0];
 
 			assert(expression->cachedExpressionType.has_value());
@@ -459,7 +459,7 @@ namespace nzsl
 			assert(IsPrimitiveType(exprType));
 			Ast::PrimitiveType fromType = std::get<Ast::PrimitiveType>(exprType);
 
-			std::uint32_t fromId = EvaluateExpression(expression);
+			std::uint32_t fromId = EvaluateExpression(*expression);
 			if (targetType == fromType)
 				return PushResultId(fromId);
 
@@ -557,12 +557,7 @@ namespace nzsl
 			Nz::StackVector<std::uint32_t> exprResults = NazaraStackVector(std::uint32_t, node.expressions.size());
 
 			for (auto& exprPtr : node.expressions)
-			{
-				if (!exprPtr)
-					break;
-
-				exprResults.push_back(EvaluateExpression(exprPtr));
-			}
+				exprResults.push_back(EvaluateExpression(*exprPtr));
 
 			std::uint32_t resultId = m_writer.AllocateResultId();
 
@@ -579,12 +574,20 @@ namespace nzsl
 		}
 	}
 
+	void SpirvAstVisitor::Visit(Ast::ConstantExpression& node)
+	{
+		SpirvExpressionLoad accessMemberVisitor(m_writer, *this, *m_currentBlock);
+		PushResultId(accessMemberVisitor.Evaluate(node));
+	}
+
 	void SpirvAstVisitor::Visit(Ast::ConstantValueExpression& node)
 	{
-		std::visit([&] (const auto& value)
-		{
-			PushResultId(m_writer.GetConstantId(value));
-		}, node.value);
+		PushResultId(m_writer.GetSingleConstantId(node.value));
+	}
+
+	void SpirvAstVisitor::Visit(Ast::DeclareConstStatement& /*node*/)
+	{
+		/* Handled by the previsitor - nothing to do */
 	}
 
 	void SpirvAstVisitor::Visit(Ast::DeclareExternalStatement& node)
@@ -690,7 +693,7 @@ namespace nzsl
 
 		if (node.initialExpression)
 		{
-			std::uint32_t value = EvaluateExpression(node.initialExpression);
+			std::uint32_t value = EvaluateExpression(*node.initialExpression);
 			m_currentBlock->Append(SpirvOp::OpStore, varId, value);
 		}
 	}
@@ -721,8 +724,8 @@ namespace nzsl
 
 				std::uint32_t typeId = m_writer.GetTypeId(*parameterType);
 
-				std::uint32_t firstParam = EvaluateExpression(node.parameters[0]);
-				std::uint32_t secondParam = EvaluateExpression(node.parameters[1]);
+				std::uint32_t firstParam = EvaluateExpression(*node.parameters[0]);
+				std::uint32_t secondParam = EvaluateExpression(*node.parameters[1]);
 				std::uint32_t resultId = m_writer.AllocateResultId();
 
 				m_currentBlock->Append(SpirvOp::OpExtInst, typeId, resultId, glslInstructionSet, GLSLstd450Cross, firstParam, secondParam);
@@ -740,8 +743,8 @@ namespace nzsl
 
 				std::uint32_t typeId = m_writer.GetTypeId(vecType.type);
 
-				std::uint32_t vec1 = EvaluateExpression(node.parameters[0]);
-				std::uint32_t vec2 = EvaluateExpression(node.parameters[1]);
+				std::uint32_t vec1 = EvaluateExpression(*node.parameters[0]);
+				std::uint32_t vec2 = EvaluateExpression(*node.parameters[1]);
 
 				std::uint32_t resultId = m_writer.AllocateResultId();
 
@@ -759,7 +762,7 @@ namespace nzsl
 				assert(IsPrimitiveType(*parameterType) || IsVectorType(*parameterType));
 				std::uint32_t typeId = m_writer.GetTypeId(*parameterType);
 
-				std::uint32_t param = EvaluateExpression(node.parameters[0]);
+				std::uint32_t param = EvaluateExpression(*node.parameters[0]);
 				std::uint32_t resultId = m_writer.AllocateResultId();
 
 				m_currentBlock->Append(SpirvOp::OpExtInst, typeId, resultId, glslInstructionSet, GLSLstd450Exp, param);
@@ -778,7 +781,7 @@ namespace nzsl
 				const Ast::VectorType& vecType = std::get<Ast::VectorType>(*vecExprType);
 				std::uint32_t typeId = m_writer.GetTypeId(vecType.type);
 
-				std::uint32_t vec = EvaluateExpression(node.parameters[0]);
+				std::uint32_t vec = EvaluateExpression(*node.parameters[0]);
 
 				std::uint32_t resultId = m_writer.AllocateResultId();
 
@@ -827,8 +830,8 @@ namespace nzsl
 						throw std::runtime_error("unexpected string type");
 				}
 
-				std::uint32_t firstParam = EvaluateExpression(node.parameters[0]);
-				std::uint32_t secondParam = EvaluateExpression(node.parameters[1]);
+				std::uint32_t firstParam = EvaluateExpression(*node.parameters[0]);
+				std::uint32_t secondParam = EvaluateExpression(*node.parameters[1]);
 				std::uint32_t resultId = m_writer.AllocateResultId();
 
 				m_currentBlock->Append(SpirvOp::OpExtInst, typeId, resultId, glslInstructionSet, op, firstParam, secondParam);
@@ -847,7 +850,7 @@ namespace nzsl
 				const Ast::VectorType& vecType = std::get<Ast::VectorType>(*vecExprType);
 				std::uint32_t typeId = m_writer.GetTypeId(vecType);
 
-				std::uint32_t vec = EvaluateExpression(node.parameters[0]);
+				std::uint32_t vec = EvaluateExpression(*node.parameters[0]);
 
 				std::uint32_t resultId = m_writer.AllocateResultId();
 
@@ -865,8 +868,8 @@ namespace nzsl
 				assert(IsPrimitiveType(*parameterType) || IsVectorType(*parameterType));
 				std::uint32_t typeId = m_writer.GetTypeId(*parameterType);
 
-				std::uint32_t firstParam = EvaluateExpression(node.parameters[0]);
-				std::uint32_t secondParam = EvaluateExpression(node.parameters[1]);
+				std::uint32_t firstParam = EvaluateExpression(*node.parameters[0]);
+				std::uint32_t secondParam = EvaluateExpression(*node.parameters[1]);
 				std::uint32_t resultId = m_writer.AllocateResultId();
 
 				m_currentBlock->Append(SpirvOp::OpExtInst, typeId, resultId, glslInstructionSet, GLSLstd450Pow, firstParam, secondParam);
@@ -883,8 +886,8 @@ namespace nzsl
 				assert(IsVectorType(*parameterType));
 				std::uint32_t typeId = m_writer.GetTypeId(*parameterType);
 
-				std::uint32_t firstParam = EvaluateExpression(node.parameters[0]);
-				std::uint32_t secondParam = EvaluateExpression(node.parameters[1]);
+				std::uint32_t firstParam = EvaluateExpression(*node.parameters[0]);
+				std::uint32_t secondParam = EvaluateExpression(*node.parameters[1]);
 				std::uint32_t resultId = m_writer.AllocateResultId();
 
 				m_currentBlock->Append(SpirvOp::OpExtInst, typeId, resultId, glslInstructionSet, GLSLstd450Reflect, firstParam, secondParam);
@@ -896,8 +899,8 @@ namespace nzsl
 			{
 				std::uint32_t typeId = m_writer.GetTypeId(Ast::VectorType{4, Ast::PrimitiveType::Float32});
 
-				std::uint32_t samplerId = EvaluateExpression(node.parameters[0]);
-				std::uint32_t coordinatesId = EvaluateExpression(node.parameters[1]);
+				std::uint32_t samplerId = EvaluateExpression(*node.parameters[0]);
+				std::uint32_t coordinatesId = EvaluateExpression(*node.parameters[1]);
 				std::uint32_t resultId = m_writer.AllocateResultId();
 
 				m_currentBlock->Append(SpirvOp::OpImageSampleImplicitLod, typeId, resultId, samplerId, coordinatesId);
@@ -931,7 +934,7 @@ namespace nzsl
 				auto& entryPointData = *func.entryPointData;
 				if (entryPointData.outputStructTypeId)
 				{
-					std::uint32_t paramId = EvaluateExpression(node.returnExpr);
+					std::uint32_t paramId = EvaluateExpression(*node.returnExpr);
 					for (const auto& output : entryPointData.outputs)
 					{
 						std::uint32_t resultId = m_writer.AllocateResultId();
@@ -943,7 +946,7 @@ namespace nzsl
 				m_currentBlock->Append(SpirvOp::OpReturn);
 			}
 			else
-				m_currentBlock->Append(SpirvOp::OpReturnValue, EvaluateExpression(node.returnExpr));
+				m_currentBlock->Append(SpirvOp::OpReturnValue, EvaluateExpression(*node.returnExpr));
 		}
 		else
 			m_currentBlock->Append(SpirvOp::OpReturn);
@@ -959,7 +962,7 @@ namespace nzsl
 		const Ast::ExpressionType* swizzledExpressionType = GetExpressionType(*node.expression);
 		assert(swizzledExpressionType);
 
-		std::uint32_t exprResultId = EvaluateExpression(node.expression);
+		std::uint32_t exprResultId = EvaluateExpression(*node.expression);
 
 		const Ast::ExpressionType* targetExprType = GetExpressionType(node);
 		assert(targetExprType);
@@ -1035,7 +1038,7 @@ namespace nzsl
 		const Ast::ExpressionType* exprType = GetExpressionType(*node.expression);
 		assert(exprType);
 
-		std::uint32_t operand = EvaluateExpression(node.expression);
+		std::uint32_t operand = EvaluateExpression(*node.expression);
 
 		std::uint32_t resultId = [&]
 		{
@@ -1110,7 +1113,7 @@ namespace nzsl
 		m_currentBlock->Append(SpirvOp::OpBranch, headerBlock->GetLabelId());
 		m_currentBlock = headerBlock.get();
 
-		std::uint32_t expressionId = EvaluateExpression(node.condition);
+		std::uint32_t expressionId = EvaluateExpression(*node.condition);
 
 		SpirvLoopControl loopControl;
 		if (node.unroll.HasValue())

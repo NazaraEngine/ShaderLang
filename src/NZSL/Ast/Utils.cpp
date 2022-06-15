@@ -67,14 +67,19 @@ namespace nzsl::Ast
 			m_expressionCategory = ExpressionCategory::LValue;
 	}
 
-	void ValueCategory::Visit(ConstantValueExpression& /*node*/)
-	{
-		m_expressionCategory = ExpressionCategory::RValue;
-	}
-
 	void ValueCategory::Visit(ConstantExpression& /*node*/)
 	{
 		m_expressionCategory = ExpressionCategory::LValue;
+	}
+
+	void ValueCategory::Visit(ConstantArrayValueExpression& /*node*/)
+	{
+		m_expressionCategory = ExpressionCategory::LValue;
+	}
+
+	void ValueCategory::Visit(ConstantValueExpression& /*node*/)
+	{
+		m_expressionCategory = ExpressionCategory::RValue;
 	}
 
 	void ValueCategory::Visit(FunctionExpression& /*node*/)

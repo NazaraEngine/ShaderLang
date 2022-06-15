@@ -21,7 +21,7 @@ namespace nzsl::Ast
 			ExpressionVisitor(ExpressionVisitor&&) = delete;
 			virtual ~ExpressionVisitor();
 
-#define NZSL_SHADERAST_EXPRESSION(Node) virtual void Visit(Node& node) = 0;
+#define NZSL_SHADERAST_EXPRESSION(Node) virtual void Visit(Node##Expression& node) = 0;
 #include <NZSL/Ast/NodeList.hpp>
 
 			ExpressionVisitor& operator=(const ExpressionVisitor&) = delete;

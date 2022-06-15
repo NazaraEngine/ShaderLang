@@ -7,12 +7,39 @@
 
 namespace nzsl::Ast
 {
+	inline bool BaseArrayType::operator!=(const BaseArrayType& rhs) const
+	{
+		return !operator==(rhs);
+	}
+
 	inline bool AliasType::operator!=(const AliasType& rhs) const
 	{
 		return !operator==(rhs);
 	}
 
+	inline bool ArrayType::operator==(const ArrayType& rhs) const
+	{
+		if (length != rhs.length)
+			return false;
+
+		if (!BaseArrayType::operator==(rhs))
+			return false;
+
+		return true;
+	}
+
 	inline bool ArrayType::operator!=(const ArrayType& rhs) const
+	{
+		return !operator==(rhs);
+	}
+
+
+	inline bool DynArrayType::operator==(const DynArrayType& rhs) const
+	{
+		return BaseArrayType::operator==(rhs);
+	}
+
+	inline bool DynArrayType::operator!=(const DynArrayType& rhs) const
 	{
 		return !operator==(rhs);
 	}
@@ -140,6 +167,11 @@ namespace nzsl::Ast
 	inline bool IsArrayType(const ExpressionType& type)
 	{
 		return std::holds_alternative<ArrayType>(type);
+	}
+
+	inline bool IsDynArrayType(const ExpressionType& type)
+	{
+		return std::holds_alternative<DynArrayType>(type);
 	}
 
 	inline bool IsFunctionType(const ExpressionType& type)

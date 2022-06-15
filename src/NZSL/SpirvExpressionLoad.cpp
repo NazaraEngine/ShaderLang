@@ -16,6 +16,22 @@ namespace nzsl
 
 		return std::visit(Nz::Overloaded
 		{
+			[this](const CompositeExtraction& extractedValue) -> std::uint32_t
+			{
+				std::uint32_t resultId = m_visitor.AllocateResultId();
+
+				m_block.AppendVariadic(SpirvOp::OpCompositeExtract, [&](const auto& appender)
+				{
+					appender(extractedValue.typeId);
+					appender(resultId);
+					appender(extractedValue.valueId);
+
+					for (std::uint32_t id : extractedValue.indices)
+						appender(id);
+				});
+
+				return resultId;
+			},
 			[this](const Pointer& pointer) -> std::uint32_t
 			{
 				std::uint32_t resultId = m_visitor.AllocateResultId();
@@ -35,7 +51,7 @@ namespace nzsl
 					appender(pointerId);
 					appender(pointerChainAccess.pointerId);
 
-					for (std::uint32_t id : pointerChainAccess.indices)
+					for (std::uint32_t id : pointerChainAccess.indicesId)
 						appender(id);
 				});
 
@@ -47,22 +63,6 @@ namespace nzsl
 			[](const Value& value) -> std::uint32_t
 			{
 				return value.valueId;
-			},
-			[this](const ValueExtraction& extractedValue) -> std::uint32_t
-			{
-				std::uint32_t resultId = m_visitor.AllocateResultId();
-
-				m_block.AppendVariadic(SpirvOp::OpCompositeExtract, [&](const auto& appender)
-				{
-					appender(extractedValue.typeId);
-					appender(resultId);
-					appender(extractedValue.valueId);
-
-					for (std::uint32_t id : extractedValue.indices)
-						appender(id);
-				});
-
-				return resultId;
 			},
 			[](std::monostate) -> std::uint32_t
 			{
@@ -81,50 +81,118 @@ namespace nzsl
 		std::uint32_t typeId = m_writer.GetTypeId(*exprType);
 
 		assert(node.indices.size() == 1);
-		std::uint32_t indexId = m_visitor.EvaluateExpression(node.indices.front());
+		auto& indexExpr = node.indices.front();
 
-		std::visit(Nz::Overloaded
+		if (indexExpr->GetType() == Ast::NodeType::ConstantValueExpression)
 		{
-			[&](const Pointer& pointer)
-			{
-				PointerChainAccess pointerChainAccess;
-				pointerChainAccess.exprType = exprType;
-				pointerChainAccess.indices = { indexId };
-				pointerChainAccess.pointedTypeId = pointer.pointedTypeId;
-				pointerChainAccess.pointerId = pointer.pointerId;
-				pointerChainAccess.storage = pointer.storage;
+			// TODO: Use uint32_t
+			std::int32_t compositeIndex;
 
-				m_value = std::move(pointerChainAccess);
-			},
-			[&](PointerChainAccess& pointerChainAccess)
+			const auto& valueExpr = static_cast<Ast::ConstantValueExpression&>(*indexExpr);
+			if (std::holds_alternative<std::int32_t>(valueExpr.value))
 			{
-				pointerChainAccess.exprType = exprType;
-				pointerChainAccess.indices.push_back(indexId);
-			},
-			[&](const Value& value)
-			{
-				ValueExtraction extractedValue;
-				extractedValue.indices = { indexId };
-				extractedValue.typeId = typeId;
-				extractedValue.valueId = value.valueId;
-
-				m_value = std::move(extractedValue);
-			},
-			[&](ValueExtraction& extractedValue)
-			{
-				extractedValue.indices.push_back(indexId);
-				extractedValue.typeId = typeId;
-			},
-			[](std::monostate)
-			{
-				throw std::runtime_error("an internal error occurred");
+				std::int32_t index = std::get<std::int32_t>(valueExpr.value);
+				if (index < 0)
+					throw std::runtime_error("invalid negative index into composite");
+				
+				compositeIndex = index;
 			}
-		}, m_value);
+			else if (std::holds_alternative<std::uint32_t>(valueExpr.value))
+				compositeIndex = Nz::SafeCast<std::int32_t>(std::get<std::uint32_t>(valueExpr.value));
+			else
+				throw std::runtime_error("invalid index type into composite");
+
+			std::visit(Nz::Overloaded
+			{
+				[&](CompositeExtraction& extractedValue)
+				{
+					extractedValue.indices.push_back(compositeIndex);
+					extractedValue.typeId = typeId;
+				},
+				[&](const Pointer& pointer)
+				{
+					// FIXME: Preregister this constant as well
+					std::uint32_t constantId = m_writer.RegisterSingleConstant(compositeIndex);
+
+					PointerChainAccess pointerChainAccess;
+					pointerChainAccess.exprType = exprType;
+					pointerChainAccess.indicesId = { constantId };
+					pointerChainAccess.pointedTypeId = pointer.pointedTypeId;
+					pointerChainAccess.pointerId = pointer.pointerId;
+					pointerChainAccess.storage = pointer.storage;
+
+					m_value = std::move(pointerChainAccess);
+				},
+				[&](PointerChainAccess& pointerChainAccess)
+				{
+					// FIXME: Preregister this constant as well
+					std::uint32_t constantId = m_writer.RegisterSingleConstant(compositeIndex);
+
+					pointerChainAccess.exprType = exprType;
+					pointerChainAccess.indicesId.push_back(constantId);
+				},
+				[&](const Value& value)
+				{
+					CompositeExtraction extractedValue;
+					extractedValue.indices = { compositeIndex };
+					extractedValue.typeId = typeId;
+					extractedValue.valueId = value.valueId;
+
+					m_value = std::move(extractedValue);
+				},
+				[](std::monostate)
+				{
+					throw std::runtime_error("an internal error occurred");
+				}
+			}, m_value);
+		}
+		else
+		{
+			std::uint32_t indexId = m_visitor.EvaluateExpression(*indexExpr);
+
+			std::visit(Nz::Overloaded
+			{
+				[&](CompositeExtraction& /*extractedValue*/)
+				{
+					throw std::runtime_error("unexpected unknown index of value");
+				},
+				[&](const Pointer& pointer)
+				{
+					PointerChainAccess pointerChainAccess;
+					pointerChainAccess.exprType = exprType;
+					pointerChainAccess.indicesId = { indexId };
+					pointerChainAccess.pointedTypeId = pointer.pointedTypeId;
+					pointerChainAccess.pointerId = pointer.pointerId;
+					pointerChainAccess.storage = pointer.storage;
+
+					m_value = std::move(pointerChainAccess);
+				},
+				[&](PointerChainAccess& pointerChainAccess)
+				{
+					pointerChainAccess.exprType = exprType;
+					pointerChainAccess.indicesId.push_back(indexId);
+				},
+				[&](const Value& /*value*/)
+				{
+					throw std::runtime_error("unexpected unknown index of value");
+				},
+				[](std::monostate)
+				{
+					throw std::runtime_error("an internal error occurred");
+				}
+			}, m_value);
+		}
+	}
+
+	void SpirvExpressionLoad::Visit(Ast::ConstantExpression& node)
+	{
+		const auto& var = m_writer.GetConstantVariable(node.constantId);
+		m_value = Pointer{ var.storageClass, var.pointerId, var.pointerTypeId };
 	}
 
 	void SpirvExpressionLoad::Visit(Ast::VariableValueExpression& node)
 	{
 		const auto& var = m_visitor.GetVariable(node.variableId);
-		m_value = Pointer{ var.storage, var.pointerId, var.pointedTypeId };
+		m_value = Pointer{ var.storageClass, var.pointerId, var.pointerTypeId };
 	}
 }

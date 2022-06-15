@@ -244,6 +244,7 @@ namespace nzsl
 		std::stringstream stream;
 		std::vector<InOutField> inputFields;
 		std::vector<InOutField> outputFields;
+		std::unordered_map<std::size_t, std::string> constantNames;
 		std::unordered_map<std::size_t, StructData> structs;
 		std::unordered_map<std::size_t, std::string> variableNames;
 		std::unordered_map<std::string, unsigned int> explicitUniformBlockBinding;
@@ -383,9 +384,9 @@ namespace nzsl
 		options.reduceLoopsToWhile = true;
 		options.removeAliases = true;
 		options.removeCompoundAssignments = false;
-		options.removeConstDeclaration = true;
 		options.removeOptionDeclaration = true;
 		options.removeScalarSwizzling = true;
+		options.removeSingleConstDeclaration = true;
 		options.reservedIdentifiers = {
 			// All reserved GLSL keywords as of GLSL ES 3.2
 			"active", "asm", "atomic_uint", "attribute", "bool", "break", "buffer", "bvec2", "bvec3", "bvec4", "case", "cast", "centroid", "class", "coherent", "common", "const", "continue", "default", "discard", "dmat2", "dmat2x2", "dmat2x3", "dmat2x4", "dmat3", "dmat3x2", "dmat3x3", "dmat3x4", "dmat4", "dmat4x2", "dmat4x3", "dmat4x4", "do", "double", "dvec2", "dvec3", "dvec4", "else", "enum", "extern", "external", "false", "filter", "fixed", "flat", "float", "for", "fvec2", "fvec3", "fvec4", "goto", "half", "highp", "hvec2", "hvec3", "hvec4", "if", "iimage1D", "iimage1DArray", "iimage2D", "iimage2DArray", "iimage2DMS", "iimage2DMSArray", "iimage2DRect", "iimage3D", "iimageBuffer", "iimageCube", "iimageCubeArray", "image1D", "image1DArray", "image2D", "image2DArray", "image2DMS", "image2DMSArray", "image2DRect", "image3D", "imageBuffer", "imageCube", "imageCubeArray", "in", "inline", "inout", "input", "int", "interface", "invariant", "isampler1D", "isampler1DArray", "isampler2D", "isampler2DArray", "isampler2DMS", "isampler2DMSArray", "isampler2DRect", "isampler3D", "isamplerBuffer", "isamplerCube", "isamplerCubeArray", "isubpassInput", "isubpassInputMS", "itexture2D", "itexture2DArray", "itexture2DMS", "itexture2DMSArray", "itexture3D", "itextureBuffer", "itextureCube", "itextureCubeArray", "ivec2", "ivec3", "ivec4", "layout", "long", "lowp", "mat2", "mat2x2", "mat2x3", "mat2x4", "mat3", "mat3x2", "mat3x3", "mat3x4", "mat4", "mat4x2", "mat4x3", "mat4x4", "mediump", "namespace", "noinline", "noperspective", "out", "output", "partition", "patch", "precise", "precision", "public", "readonly", "resource", "restrict", "return", "sample", "sampler", "sampler1D", "sampler1DArray", "sampler1DArrayShadow", "sampler1DShadow", "sampler2D", "sampler2DArray", "sampler2DArrayShadow", "sampler2DMS", "sampler2DMSArray", "sampler2DRect", "sampler2DRectShadow", "sampler2DShadow", "sampler3D", "sampler3DRect", "samplerBuffer", "samplerCube", "samplerCubeArray", "samplerCubeArrayShadow", "samplerCubeShadow", "samplerShadow", "shared", "short", "sizeof", "smooth", "static", "struct", "subpassInput", "subpassInputMS", "subroutine", "superp", "switch", "template", "texture2D", "texture2DArray", "texture2DMS", "texture2DMSArray", "texture3D", "textureBuffer", "textureCube", "textureCubeArray", "this", "true", "typedef", "uimage1D", "uimage1DArray", "uimage2D", "uimage2DArray", "uimage2DMS", "uimage2DMSArray", "uimage2DRect", "uimage3D", "uimageBuffer", "uimageCube", "uimageCubeArray", "uint", "uniform", "union", "unsigned", "usampler1D", "usampler1DArray", "usampler2D", "usampler2DArray", "usampler2DMS", "usampler2DMSArray", "usampler2DRect", "usampler3D", "usamplerBuffer", "usamplerCube", "usamplerCubeArray", "using", "usubpassInput", "usubpassInputMS", "utexture2D", "utexture2DArray", "utexture2DMS", "utexture2DMSArray", "utexture3D", "utextureBuffer", "utextureCube", "utextureCubeArray", "uvec2", "uvec3", "uvec4", "varying", "vec2", "vec3", "vec4", "void", "volatile", "while", "writeonly"
@@ -403,28 +404,7 @@ namespace nzsl
 
 	void GlslWriter::Append(const Ast::ArrayType& type)
 	{
-		std::vector<std::uint32_t> lengths;
-		lengths.push_back(type.length);
-
-		const Ast::ExpressionType* exprType = &type.containedType->type;
-		while (Ast::IsArrayType(*exprType))
-		{
-			const auto& arrayType = std::get<Ast::ArrayType>(*exprType);
-			lengths.push_back(arrayType.length);
-
-			exprType = &arrayType.containedType->type;
-		}
-
-		assert(!Ast::IsArrayType(*exprType));
-		Append(*exprType);
-
-		for (std::uint32_t lengthAttribute : lengths)
-		{
-			Append("[");
-			if (lengthAttribute > 0)
-				Append(lengthAttribute);
-			Append("]");
-		}
+		AppendArray(type);
 	}
 
 	void GlslWriter::Append(Ast::BuiltinEntry builtin)
@@ -479,6 +459,11 @@ namespace nzsl
 				Append(it->second.identifier);
 			}
 		}
+	}
+
+	void GlslWriter::Append(const Ast::DynArrayType& type)
+	{
+		AppendArray(type);
 	}
 
 	void GlslWriter::Append(const Ast::ExpressionType& type)
@@ -637,6 +622,46 @@ namespace nzsl
 		{
 			Append(arg);
 		}, param);
+	}
+
+	void GlslWriter::AppendArray(const Ast::ExpressionType& type, const std::string& varName)
+	{
+		std::vector<std::uint32_t> lengths;
+
+		const Ast::ExpressionType* exprType = &type;
+		for (;;)
+		{
+			if (Ast::IsArrayType(*exprType))
+			{
+				const auto& arrayType = std::get<Ast::ArrayType>(*exprType);
+				lengths.push_back(arrayType.length);
+
+				exprType = &arrayType.containedType->type;
+			}
+			else if (Ast::IsDynArrayType(*exprType))
+			{
+				const auto& arrayType = std::get<Ast::DynArrayType>(*exprType);
+				lengths.push_back(0);
+
+				exprType = &arrayType.containedType->type;
+			}
+			else
+				break;
+		}
+
+		assert(!Ast::IsArrayType(*exprType) && !Ast::IsDynArrayType(*exprType));
+		Append(*exprType);
+
+		if (!varName.empty())
+			Append(" ", varName);
+
+		for (std::uint32_t lengthAttribute : lengths)
+		{
+			Append("[");
+			if (lengthAttribute > 0)
+				Append(lengthAttribute);
+			Append("]");
+		}
 	}
 
 	void GlslWriter::AppendComment(const std::string& section)
@@ -892,6 +917,32 @@ namespace nzsl
 		AppendLine();
 	}
 
+	template<typename T>
+	void GlslWriter::AppendValue(const T& value)
+	{
+		if constexpr (std::is_same_v<T, Vector2i32> || std::is_same_v<T, Vector3i32> || std::is_same_v<T, Vector4i32>)
+			Append("i"); //< for ivec
+
+		if constexpr (std::is_same_v<T, Ast::NoValue>)
+			throw std::runtime_error("invalid type (value expected)");
+		else if constexpr (std::is_same_v<T, std::string>)
+			throw std::runtime_error("unexpected string litteral");
+		else if constexpr (std::is_same_v<T, bool> || std::is_same_v<T, std::vector<bool>::reference>)
+			Append((value) ? "true" : "false");
+		else if constexpr (std::is_same_v<T, float> || std::is_same_v<T, std::int32_t>)
+			Append(std::to_string(value));
+		else if constexpr (std::is_same_v<T, std::uint32_t>)
+			Append(std::to_string(value), "u");
+		else if constexpr (std::is_same_v<T, Vector2f> || std::is_same_v<T, Vector2i32>)
+			Append("vec2(" + std::to_string(value.x()) + ", " + std::to_string(value.y()) + ")");
+		else if constexpr (std::is_same_v<T, Vector3f> || std::is_same_v<T, Vector3i32>)
+			Append("vec3(" + std::to_string(value.x()) + ", " + std::to_string(value.y()) + ", " + std::to_string(value.z()) + ")");
+		else if constexpr (std::is_same_v<T, Vector4f> || std::is_same_v<T, Vector4i32>)
+			Append("vec4(" + std::to_string(value.x()) + ", " + std::to_string(value.y()) + ", " + std::to_string(value.z()) + ", " + std::to_string(value.w()) + ")");
+		else
+			static_assert(Nz::AlwaysFalse<T>(), "non-exhaustive visitor");
+	}
+
 	void GlslWriter::AppendStatementList(std::vector<Ast::StatementPtr>& statements)
 	{
 		bool first = true;
@@ -911,30 +962,8 @@ namespace nzsl
 
 	void GlslWriter::AppendVariableDeclaration(const Ast::ExpressionType& varType, const std::string& varName)
 	{
-		if (Ast::IsArrayType(varType))
-		{
-			std::vector<std::uint32_t> lengths;
-
-			const Ast::ExpressionType* exprType = &varType;
-			while (Ast::IsArrayType(*exprType))
-			{
-				const auto& arrayType = std::get<Ast::ArrayType>(*exprType);
-				lengths.push_back(arrayType.length);
-
-				exprType = &arrayType.containedType->type;
-			}
-
-			assert(!Ast::IsArrayType(*exprType));
-			Append(*exprType, " ", varName);
-
-			for (std::uint32_t lengthAttribute : lengths)
-			{
-				Append("[");
-				if (lengthAttribute > 0) 
-					Append(lengthAttribute);
-				Append("]");
-			}
-		}
+		if (Ast::IsArrayType(varType) || Ast::IsDynArrayType(varType))
+			AppendArray(varType, varName);
 		else
 			Append(varType, " ", varName);
 	}
@@ -1009,17 +1038,12 @@ namespace nzsl
 	{
 		auto AppendInOut = [this](bool in, const State::StructData& structData, std::vector<State::InOutField>& fields, std::string_view targetPrefix)
 		{
-			bool first = true;
+			bool empty = true;
 
 			for (const auto& member : structData.desc->members)
 			{
 				if (member.cond.HasValue() && !member.cond.GetResultingValue())
 					continue;
-
-				if (first)
-					AppendCommentSection((in) ? "Inputs" : "Outputs");
-
-				first = false;
 
 				if (member.builtin.HasValue())
 				{
@@ -1037,6 +1061,9 @@ namespace nzsl
 				}
 				else
 				{
+					if (empty)
+						AppendCommentSection((in) ? "Inputs" : "Outputs");
+
 					std::string varName = std::string(targetPrefix) + member.name;
 
 					auto OutputVariable = [&](auto&&... arg)
@@ -1074,9 +1101,13 @@ namespace nzsl
 						member.name,
 						varName
 					});
+
+					empty = false;
 				}
 			}
-			AppendLine();
+
+			if (!empty)
+				AppendLine();
 		};
 
 		const Ast::DeclareFunctionStatement& node = *m_currentState->previsitor.entryPoint;
@@ -1106,6 +1137,12 @@ namespace nzsl
 			
 			AppendInOut(false, outputStruct, m_currentState->outputFields, s_glslWriterOutputPrefix);
 		}
+	}
+
+	void GlslWriter::RegisterConstant(std::size_t constIndex, std::string constName)
+	{
+		assert(m_currentState->constantNames.find(constIndex) == m_currentState->constantNames.end());
+		m_currentState->constantNames.emplace(constIndex, std::move(constName));
 	}
 
 	void GlslWriter::RegisterStruct(std::size_t structIndex, Ast::StructDescription* desc, std::string structName)
@@ -1154,6 +1191,7 @@ namespace nzsl
 		Visit(node.expr, true);
 
 		const Ast::ExpressionType* exprType = GetExpressionType(*node.expr);
+		NazaraUnused(exprType);
 		assert(exprType);
 		assert(IsStructType(*exprType));
 
@@ -1166,6 +1204,7 @@ namespace nzsl
 		Visit(node.expr, true);
 
 		const Ast::ExpressionType* exprType = GetExpressionType(*node.expr);
+		NazaraUnused(exprType);
 		assert(exprType);
 		assert(!IsStructType(*exprType));
 
@@ -1248,16 +1287,47 @@ namespace nzsl
 		bool first = true;
 		for (const auto& exprPtr : node.expressions)
 		{
-			if (!exprPtr)
-				break;
-
 			if (!first)
 				m_currentState->stream << ", ";
 
-			exprPtr->Visit(*this);
 			first = false;
+
+			exprPtr->Visit(*this);
 		}
 
+		Append(")");
+	}
+
+	void GlslWriter::Visit(Ast::ConstantExpression& node)
+	{
+		const std::string& constName = Nz::Retrieve(m_currentState->constantNames, node.constantId);
+		Append(constName);
+	}
+
+	void GlslWriter::Visit(Ast::ConstantArrayValueExpression& node)
+	{
+		AppendArray(*node.cachedExpressionType);
+		m_currentState->indentLevel++;
+		AppendLine("(");
+		std::visit([&](auto&& vec)
+		{
+			using T = std::decay_t<decltype(vec)>;
+			
+			if constexpr (std::is_same_v<T, Ast::NoValue>)
+				throw std::runtime_error("unexpected array of NoValue");
+			else
+			{
+				for (std::size_t i = 0; i < vec.size(); ++i)
+				{
+					if (i != 0)
+						AppendLine(",");
+
+					AppendValue(vec[i]);
+				}
+			}
+		}, node.values);
+		m_currentState->indentLevel--;
+		AppendLine();
 		Append(")");
 	}
 
@@ -1265,29 +1335,7 @@ namespace nzsl
 	{
 		std::visit([&](auto&& arg)
 		{
-			using T = std::decay_t<decltype(arg)>;
-
-			if constexpr (std::is_same_v<T, Vector2i32> || std::is_same_v<T, Vector3i32> || std::is_same_v<T, Vector4i32>)
-				Append("i"); //< for ivec
-
-			if constexpr (std::is_same_v<T, Ast::NoValue>)
-				throw std::runtime_error("invalid type (value expected)");
-			else if constexpr (std::is_same_v<T, std::string>)
-				throw std::runtime_error("unexpected string litteral");
-			else if constexpr (std::is_same_v<T, bool>)
-				Append((arg) ? "true" : "false");
-			else if constexpr (std::is_same_v<T, float> || std::is_same_v<T, std::int32_t>)
-				Append(std::to_string(arg));
-			else if constexpr (std::is_same_v<T, std::uint32_t>)
-				Append(std::to_string(arg), "u");
-			else if constexpr (std::is_same_v<T, Vector2f> || std::is_same_v<T, Vector2i32>)
-				Append("vec2(" + std::to_string(arg.x()) + ", " + std::to_string(arg.y()) + ")");
-			else if constexpr (std::is_same_v<T, Vector3f> || std::is_same_v<T, Vector3i32>)
-				Append("vec3(" + std::to_string(arg.x()) + ", " + std::to_string(arg.y()) + ", " + std::to_string(arg.z()) + ")");
-			else if constexpr (std::is_same_v<T, Vector4f> || std::is_same_v<T, Vector4i32>)
-				Append("vec4(" + std::to_string(arg.x()) + ", " + std::to_string(arg.y()) + ", " + std::to_string(arg.z()) + ", " + std::to_string(arg.w()) + ")");
-			else
-				static_assert(Nz::AlwaysFalse<T>::value, "non-exhaustive visitor");
+			AppendValue(arg);
 		}, node.value);
 	}
 
@@ -1423,10 +1471,16 @@ namespace nzsl
 		throw std::runtime_error("unexpected alias declaration, is shader sanitized?");
 	}
 
-	void GlslWriter::Visit(Ast::DeclareConstStatement& /*node*/)
+	void GlslWriter::Visit(Ast::DeclareConstStatement& node)
 	{
-		// all consts should have been handled by sanitizer
-		throw std::runtime_error("unexpected const declaration, is shader sanitized?");
+		assert(node.constIndex);
+		RegisterConstant(*node.constIndex, node.name);
+
+		AppendVariableDeclaration(node.type.GetResultingValue(), node.name);
+		
+		Append(" = ");
+		node.expression->Visit(*this);
+		Append(";");
 	}
 
 	void GlslWriter::Visit(Ast::DeclareExternalStatement& node)

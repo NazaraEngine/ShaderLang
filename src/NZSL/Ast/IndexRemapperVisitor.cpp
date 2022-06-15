@@ -256,6 +256,16 @@ namespace nzsl::Ast
 
 			return remappedArrayType;
 		}
+		else if (IsDynArrayType(exprType))
+		{
+			const DynArrayType& arrayType = std::get<DynArrayType>(exprType);
+
+			ArrayType remappedArrayType;
+			remappedArrayType.containedType = std::make_unique<ContainedType>();
+			remappedArrayType.containedType->type = RemapType(arrayType.containedType->type);
+
+			return remappedArrayType;
+		}
 		else if (IsFunctionType(exprType))
 		{
 			std::size_t newFuncIndex = Nz::Retrieve(m_context->newFuncIndices, std::get<FunctionType>(exprType).funcIndex);

@@ -50,6 +50,7 @@ namespace nzsl
 
 			void Append(const Ast::AliasType& type);
 			void Append(const Ast::ArrayType& type);
+			void Append(const Ast::DynArrayType& type);
 			void Append(const Ast::ExpressionType& type);
 			void Append(const Ast::ExpressionValue<Ast::ExpressionType>& type);
 			void Append(const Ast::FunctionType& functionType);
@@ -86,6 +87,7 @@ namespace nzsl
 			void AppendLine(const std::string& txt = {});
 			template<typename... Args> void AppendLine(Args&&... params);
 			void AppendStatementList(std::vector<Ast::StatementPtr>& statements);
+			template<typename T> void AppendValue(const T& value);
 
 			void EnterScope();
 			void LeaveScope(bool skipLine = true);
@@ -108,6 +110,7 @@ namespace nzsl
 			void Visit(Ast::CallFunctionExpression& node) override;
 			void Visit(Ast::CastExpression& node) override;
 			void Visit(Ast::ConditionalExpression& node) override;
+			void Visit(Ast::ConstantArrayValueExpression& node) override;
 			void Visit(Ast::ConstantValueExpression& node) override;
 			void Visit(Ast::ConstantExpression& node) override;
 			void Visit(Ast::FunctionExpression& node) override;

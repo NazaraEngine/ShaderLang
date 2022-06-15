@@ -128,16 +128,7 @@ namespace nzsl::ShaderBuilder
 	{
 		auto castNode = std::make_unique<Ast::CastExpression>();
 		castNode->targetType = std::move(targetType);
-		castNode->expressions[0] = std::move(expression);
-
-		return castNode;
-	}
-
-	inline Ast::CastExpressionPtr Impl::Cast::operator()(Ast::ExpressionValue<Ast::ExpressionType> targetType, std::array<Ast::ExpressionPtr, 4> expressions) const
-	{
-		auto castNode = std::make_unique<Ast::CastExpression>();
-		castNode->expressions = std::move(expressions);
-		castNode->targetType = std::move(targetType);
+		castNode->expressions.push_back(std::move(expression));
 
 		return castNode;
 	}
@@ -146,6 +137,7 @@ namespace nzsl::ShaderBuilder
 	{
 		auto castNode = std::make_unique<Ast::CastExpression>();
 		castNode->targetType = std::move(targetType);
+		castNode->expressions = std::move(expressions);
 
 		assert(expressions.size() <= castNode->expressions.size());
 		for (std::size_t i = 0; i < expressions.size(); ++i)
@@ -173,7 +165,7 @@ namespace nzsl::ShaderBuilder
 		return condStatementNode;
 	}
 
-	inline Ast::ConstantValueExpressionPtr Impl::Constant::operator()(Ast::ConstantValue value) const
+	inline Ast::ConstantValueExpressionPtr Impl::Constant::operator()(Ast::ConstantSingleValue value) const
 	{
 		auto constantNode = std::make_unique<Ast::ConstantValueExpression>();
 		constantNode->value = std::move(value);
@@ -197,6 +189,15 @@ namespace nzsl::ShaderBuilder
 		}
 
 		throw std::runtime_error("unexpected primitive type");
+	}
+
+	inline Ast::ConstantArrayValueExpressionPtr Impl::ConstantArray::operator()(Ast::ConstantArrayValue values) const
+	{
+		auto constantNode = std::make_unique<Ast::ConstantArrayValueExpression>();
+		constantNode->values = std::move(values);
+		constantNode->cachedExpressionType = Ast::GetConstantType(constantNode->values);
+
+		return constantNode;
 	}
 
 	inline Ast::DeclareAliasStatementPtr Impl::DeclareAlias::operator()(std::string name, Ast::ExpressionPtr expression) const

@@ -18,7 +18,7 @@ namespace nzsl::Ast
 		public:
 			using ExpressionVisitor::Visit;
 
-#define NZSL_SHADERAST_EXPRESSION(Node) void Visit(Ast::Node& node) override;
+#define NZSL_SHADERAST_EXPRESSION(Node) void Visit(Ast::Node##Expression& node) override;
 #include <NZSL/Ast/NodeList.hpp>
 	};
 }

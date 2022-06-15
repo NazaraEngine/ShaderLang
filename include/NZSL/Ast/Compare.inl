@@ -19,7 +19,7 @@ namespace nzsl::Ast
 		{
 			case NodeType::None: break;
 
-#define NZSL_SHADERAST_EXPRESSION(Node) case NodeType::Node: return Compare(static_cast<const Node&>(lhs), static_cast<const Node&>(lhs));
+#define NZSL_SHADERAST_EXPRESSION(Node) case NodeType::Node##Expression: return Compare(static_cast<const Node##Expression&>(lhs), static_cast<const Node##Expression&>(lhs));
 #include <NZSL/Ast/NodeList.hpp>
 
 			default: throw std::runtime_error("unexpected node type");
@@ -76,7 +76,7 @@ namespace nzsl::Ast
 		{
 			case NodeType::None: break;
 
-#define NZSL_SHADERAST_STATEMENT(Node) case NodeType::Node: return Compare(static_cast<const Node&>(lhs), static_cast<const Node&>(lhs));
+#define NZSL_SHADERAST_STATEMENT(Node) case NodeType::Node##Statement: return Compare(static_cast<const Node##Statement&>(lhs), static_cast<const Node##Statement&>(lhs));
 #include <NZSL/Ast/NodeList.hpp>
 
 			default: throw std::runtime_error("unexpected node type");
@@ -407,6 +407,14 @@ namespace nzsl::Ast
 	inline bool Compare(const ConstantExpression& lhs, const ConstantExpression& rhs)
 	{
 		if (!Compare(lhs.constantId, rhs.constantId))
+			return false;
+
+		return true;
+	}
+	
+	bool Compare(const ConstantArrayValueExpression& lhs, const ConstantArrayValueExpression& rhs)
+	{
+		if (!Compare(lhs.values, rhs.values))
 			return false;
 
 		return true;
