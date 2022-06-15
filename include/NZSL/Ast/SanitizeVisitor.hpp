@@ -47,11 +47,11 @@ namespace nzsl::Ast
 				bool makeVariableNameUnique = false;
 				bool reduceLoopsToWhile = false;
 				bool removeAliases = false;
-				bool removeConstDeclaration = false;
 				bool removeCompoundAssignments = false;
 				bool removeMatrixCast = false;
 				bool removeOptionDeclaration = false;
 				bool removeScalarSwizzling = false;
+				bool removeSingleConstDeclaration = false;
 				bool splitMultipleBranches = false;
 				bool useIdentifierAccessesForStructs = true;
 			};
@@ -78,8 +78,9 @@ namespace nzsl::Ast
 			ExpressionPtr Clone(CallFunctionExpression& node) override;
 			ExpressionPtr Clone(CastExpression& node) override;
 			ExpressionPtr Clone(ConditionalExpression& node) override;
-			ExpressionPtr Clone(ConstantValueExpression& node) override;
 			ExpressionPtr Clone(ConstantExpression& node) override;
+			ExpressionPtr Clone(ConstantArrayValueExpression& node) override;
+			ExpressionPtr Clone(ConstantValueExpression& node) override;
 			ExpressionPtr Clone(IdentifierExpression& node) override;
 			ExpressionPtr Clone(IntrinsicExpression& node) override;
 			ExpressionPtr Clone(SwizzleExpression& node) override;
@@ -174,6 +175,7 @@ namespace nzsl::Ast
 			ValidationResult Validate(UnaryExpression& node);
 			ValidationResult Validate(VariableValueExpression& node);
 			ExpressionType ValidateBinaryOp(BinaryType op, const ExpressionType& leftExprType, const ExpressionType& rightExprType, const SourceLocation& sourceLocation);
+			void ValidateConcreteType(const ExpressionType& exprType, const SourceLocation& sourceLocation);
 
 			template<std::size_t N> ValidationResult ValidateIntrinsicParamCount(IntrinsicExpression& node);
 			ValidationResult ValidateIntrinsicParamMatchingType(IntrinsicExpression& node);

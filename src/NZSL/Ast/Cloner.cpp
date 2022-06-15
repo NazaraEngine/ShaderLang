@@ -424,14 +424,9 @@ namespace nzsl::Ast
 		auto clone = std::make_unique<CastExpression>();
 		clone->targetType = Clone(node.targetType);
 
-		for (std::size_t expressionIndex = 0; expressionIndex < node.expressions.size(); ++expressionIndex)
-		{
-			auto& expr = node.expressions[expressionIndex];
-			if (!expr)
-				break;
-
-			clone->expressions[expressionIndex] = CloneExpression(expr);
-		}
+		clone->expressions.reserve(node.expressions.size());
+		for (const auto& exprPtr : node.expressions)
+			clone->expressions.push_back(CloneExpression(exprPtr));
 
 		clone->cachedExpressionType = node.cachedExpressionType;
 		clone->sourceLocation = node.sourceLocation;
@@ -456,6 +451,17 @@ namespace nzsl::Ast
 	{
 		auto clone = std::make_unique<ConstantExpression>();
 		clone->constantId = node.constantId;
+
+		clone->cachedExpressionType = node.cachedExpressionType;
+		clone->sourceLocation = node.sourceLocation;
+
+		return clone;
+	}
+
+	ExpressionPtr Cloner::Clone(ConstantArrayValueExpression& node)
+	{
+		auto clone = std::make_unique<ConstantArrayValueExpression>();
+		clone->values = node.values;
 
 		clone->cachedExpressionType = node.cachedExpressionType;
 		clone->sourceLocation = node.sourceLocation;
@@ -580,14 +586,9 @@ namespace nzsl::Ast
 		return clone;
 	}
 
-#define NZSL_SHADERAST_EXPRESSION(NodeType) void Cloner::Visit(NodeType& node) \
+#define NZSL_SHADERAST_NODE(NodeType, Category) void Cloner::Visit(NodeType##Category& node) \
 	{ \
-		PushExpression(Clone(node)); \
-	}
-
-#define NZSL_SHADERAST_STATEMENT(NodeType) void Cloner::Visit(NodeType& node) \
-	{ \
-		PushStatement(Clone(node)); \
+		Push##Category(Clone(node)); \
 	}
 
 #include <NZSL/Ast/NodeList.hpp>

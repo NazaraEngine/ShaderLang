@@ -26,6 +26,25 @@
 
 namespace nzsl::Ast
 {
+	namespace NAZARA_ANONYMOUS_NAMESPACE
+	{
+		template<typename T>
+		struct GetVectorInnerType
+		{
+			static constexpr bool IsVector = false;
+
+			using type = T; //< fallback
+		};
+
+		template<typename T>
+		struct GetVectorInnerType<std::vector<T>>
+		{
+			static constexpr bool IsVector = true;
+
+			using type = T;
+		};
+	}
+
 	template<typename T>
 	struct SanitizeVisitor::IdentifierList
 	{
@@ -447,8 +466,10 @@ namespace nzsl::Ast
 
 					auto cast = std::make_unique<CastExpression>();
 					cast->targetType = ExpressionType{ VectorType{ swizzleComponentCount, baseType } };
+
+					cast->expressions.reserve(swizzleComponentCount);
 					for (std::size_t j = 0; j < swizzleComponentCount; ++j)
-						cast->expressions[j] = CloneExpression(indexedExpr);
+						cast->expressions.push_back(CloneExpression(indexedExpr));
 
 					Validate(*cast);
 
@@ -618,11 +639,9 @@ namespace nzsl::Ast
 			clone->sourceLocation = node.sourceLocation;
 			clone->targetType = *targetExprType;
 
-			if (node.parameters.size() > clone->expressions.size())
-				throw CompilerCastComponentMismatchError{ node.sourceLocation };
-
+			clone->expressions.reserve(node.parameters.size());
 			for (std::size_t i = 0; i < node.parameters.size(); ++i)
-				clone->expressions[i] = CloneExpression(node.parameters[i]);
+				clone->expressions.push_back(CloneExpression(node.parameters[i]));
 
 			Validate(*clone);
 
@@ -692,10 +711,10 @@ namespace nzsl::Ast
 					CastExpressionPtr vecCast;
 					if (vectorComponentCount < targetMatrixType.rowCount)
 					{
-						std::array<ExpressionPtr, 4> expressions;
-						expressions[0] = std::move(vectorExpr);
+						std::vector<ExpressionPtr> expressions;
+						expressions.push_back(std::move(vectorExpr));
 						for (std::size_t j = 0; j < targetMatrixType.rowCount - vectorComponentCount; ++j)
-							expressions[j + 1] = ShaderBuilder::Constant(ExpressionType{ targetMatrixType.type }, (i == j + vectorComponentCount) ? 1 : 0); //< set 1 to diagonal
+							expressions.push_back(ShaderBuilder::Constant(ExpressionType{ targetMatrixType.type }, (i == j + vectorComponentCount) ? 1 : 0)); //< set 1 to diagonal
 
 						vecCast = ShaderBuilder::Cast(ExpressionType{ VectorType{ targetMatrixType.rowCount, targetMatrixType.type } }, std::move(expressions));
 						vecCast->sourceLocation = node.sourceLocation;
@@ -758,6 +777,56 @@ namespace nzsl::Ast
 			return Cloner::Clone(*node.falsePath);
 	}
 
+	ExpressionPtr SanitizeVisitor::Clone(ConstantExpression& node)
+	{
+		NAZARA_USE_ANONYMOUS_NAMESPACE
+
+		const ConstantValue* value = m_context->constantValues.TryRetrieve(node.constantId, node.sourceLocation);
+		if (!value)
+		{
+			if (!m_context->options.allowPartialSanitization)
+				throw AstInvalidConstantIndexError{ node.sourceLocation, node.constantId };
+
+			return Cloner::Clone(node); //< unresolved
+		}
+
+		// Replace by constant value if required
+		return std::visit([&](auto&& arg) -> ExpressionPtr
+		{
+			using T = std::decay_t<decltype(arg)>;
+
+			using VectorInner = GetVectorInnerType<T>;
+			using Type = typename VectorInner::type;
+
+			if constexpr (VectorInner::IsVector)
+			{
+				// Array are never replaced by a constant value
+				auto constantExpr = Cloner::Clone(node);
+				constantExpr->cachedExpressionType = GetConstantType(*value);
+
+				return constantExpr;
+			}
+			else
+			{
+				if (m_context->options.removeSingleConstDeclaration)
+				{
+					auto constantValue = ShaderBuilder::Constant(arg);
+					constantValue->cachedExpressionType = GetConstantType(constantValue->value);
+					constantValue->sourceLocation = node.sourceLocation;
+
+					return constantValue;
+				}
+				else
+				{
+					auto constantExpr = Cloner::Clone(node);
+					constantExpr->cachedExpressionType = GetConstantType(*value);
+
+					return constantExpr;
+				}
+			}
+		}, *value);
+	}
+
 	ExpressionPtr SanitizeVisitor::Clone(ConstantValueExpression& node)
 	{
 		if (std::holds_alternative<NoValue>(node.value))
@@ -769,23 +838,15 @@ namespace nzsl::Ast
 		return clone;
 	}
 
-	ExpressionPtr SanitizeVisitor::Clone(ConstantExpression& node)
+	ExpressionPtr SanitizeVisitor::Clone(ConstantArrayValueExpression& node)
 	{
-		const ConstantValue* value = m_context->constantValues.TryRetrieve(node.constantId, node.sourceLocation);
-		if (!value)
-		{
-			if (!m_context->options.allowPartialSanitization)
-				throw AstInvalidConstantIndexError{ node.sourceLocation, node.constantId };
+		if (std::holds_alternative<NoValue>(node.values))
+			throw CompilerConstantExpectedValueError{ node.sourceLocation };
 
-			return Cloner::Clone(node); //< unresolved
-		}
+		auto clone = Nz::StaticUniquePointerCast<ConstantArrayValueExpression>(Cloner::Clone(node));
+		clone->cachedExpressionType = GetConstantType(clone->values);
 
-		// Replace by constant value
-		auto constant = ShaderBuilder::Constant(*value);
-		constant->cachedExpressionType = GetConstantType(constant->value);
-		constant->sourceLocation = node.sourceLocation;
-
-		return constant;
+		return clone;
 	}
 
 	ExpressionPtr SanitizeVisitor::Clone(IdentifierExpression& node)
@@ -854,8 +915,10 @@ namespace nzsl::Ast
 			auto cast = std::make_unique<CastExpression>();
 			cast->sourceLocation = node.sourceLocation;
 			cast->targetType = ExpressionType{ VectorType{ node.componentCount, baseType } };
+
+			cast->expressions.reserve(node.componentCount);
 			for (std::size_t j = 0; j < node.componentCount; ++j)
-				cast->expressions[j] = CloneExpression(expression);
+				cast->expressions.push_back(CloneExpression(expression));
 
 			Validate(*cast);
 
@@ -1024,8 +1087,10 @@ namespace nzsl::Ast
 			throw CompilerConstMissingExpressionError{ node.sourceLocation };
 
 		clone->expression = PropagateConstants(*clone->expression);
-		if (clone->expression->GetType() != NodeType::ConstantValueExpression)
+		NodeType constantType = clone->expression->GetType();
+		if (constantType != NodeType::ConstantValueExpression && constantType != NodeType::ConstantArrayValueExpression)
 		{
+			// Constant propagation failed
 			if (!m_context->options.allowPartialSanitization)
 				throw CompilerConstantExpressionRequiredError{ clone->expression->sourceLocation };
 
@@ -1033,9 +1098,21 @@ namespace nzsl::Ast
 			return clone;
 		}
 
-		const ConstantValue& value = static_cast<ConstantValueExpression&>(*clone->expression).value;
+		ExpressionType expressionType;
+		if (constantType == NodeType::ConstantValueExpression)
+		{
+			const auto& constant = static_cast<ConstantValueExpression&>(*clone->expression);
+			expressionType = GetConstantType(constant.value);
 
-		ExpressionType expressionType = GetConstantType(value);
+			clone->constIndex = RegisterConstant(clone->name, ToConstantValue(constant.value), clone->constIndex, node.sourceLocation);
+		}
+		else if (constantType == NodeType::ConstantArrayValueExpression)
+		{
+			const auto& constant = static_cast<ConstantArrayValueExpression&>(*clone->expression);
+			expressionType = GetConstantType(constant.values);
+
+			clone->constIndex = RegisterConstant(clone->name, ToConstantValue(constant.values), clone->constIndex, node.sourceLocation);
+		}
 
 		std::optional<ExpressionType> constType = ResolveTypeExpr(clone->type, true, node.sourceLocation);
 
@@ -1044,9 +1121,7 @@ namespace nzsl::Ast
 
 		clone->type = expressionType;
 
-		clone->constIndex = RegisterConstant(clone->name, value, clone->constIndex, node.sourceLocation);
-
-		if (m_context->options.removeConstDeclaration)
+		if (m_context->options.removeSingleConstDeclaration && !IsArrayType(expressionType))
 			return ShaderBuilder::NoOp();
 
 		return clone;
@@ -1124,6 +1199,8 @@ namespace nzsl::Ast
 			else
 				throw CompilerExtTypeNotAllowedError{ extVar.sourceLocation, extVar.name, ToString(*resolvedType, extVar.sourceLocation) };
 
+			ValidateConcreteType(varType, extVar.sourceLocation);
+
 			extVar.type = std::move(resolvedType).value();
 			extVar.varIndex = RegisterVariable(extVar.name, std::move(varType), extVar.varIndex, extVar.sourceLocation);
 
@@ -1149,10 +1226,18 @@ namespace nzsl::Ast
 			cloneParam.type = CloneType(parameter.type);
 			cloneParam.varIndex = parameter.varIndex;
 			cloneParam.sourceLocation = parameter.sourceLocation;
+
+			if (cloneParam.type.IsResultingValue())
+				ValidateConcreteType(cloneParam.type.GetResultingValue(), cloneParam.sourceLocation);
 		}
 
 		if (node.returnType.HasValue())
+		{
 			clone->returnType = CloneType(node.returnType);
+
+			if (clone->returnType.IsResultingValue())
+				ValidateConcreteType(clone->returnType.GetResultingValue(), clone->sourceLocation);
+		}
 		else
 			clone->returnType = ExpressionType{ NoType{} };
 
@@ -2266,15 +2351,27 @@ namespace nzsl::Ast
 	{
 		// Run optimizer on constant value to hopefully retrieve a single constant value
 		ExpressionPtr optimizedExpr = PropagateConstants(expr);
-		if (optimizedExpr->GetType() != NodeType::ConstantValueExpression)
+		if (optimizedExpr->GetType() == NodeType::ConstantValueExpression)
+		{
+			return std::visit([&](auto&& value) -> ConstantValue
+			{
+				return value;
+			}, static_cast<ConstantValueExpression&>(*optimizedExpr).value);
+		}
+		else if (optimizedExpr->GetType() == NodeType::ConstantArrayValueExpression)
+		{
+			return std::visit([&](auto&& values) -> ConstantValue
+			{
+				return values;
+			}, static_cast<ConstantArrayValueExpression&>(*optimizedExpr).values);
+		}
+		else
 		{
 			if (!m_context->options.allowPartialSanitization)
 				throw CompilerConstantExpressionRequiredError{ expr.sourceLocation };
 
 			return std::nullopt;
 		}
-
-		return static_cast<ConstantValueExpression&>(*optimizedExpr).value;
 	}
 
 	template<typename T>
@@ -2418,34 +2515,40 @@ namespace nzsl::Ast
 
 		// Array
 		RegisterType("array", PartialType {
-			{ TypeParameterCategory::FullType, TypeParameterCategory::ConstantValue },
+			{ TypeParameterCategory::FullType }, { TypeParameterCategory::ConstantValue },
 			[=](const TypeParameter* parameters, std::size_t parameterCount, const SourceLocation& sourceLocation) -> ExpressionType
 			{
-				assert(parameterCount == 2);
+				assert(parameterCount >= 1 && parameterCount <= 2);
+				
 				assert(std::holds_alternative<ExpressionType>(parameters[0]));
-				assert(std::holds_alternative<ConstantValue>(parameters[1]));
-
 				const ExpressionType& exprType = std::get<ExpressionType>(parameters[0]);
-				const ConstantValue& length = std::get<ConstantValue>(parameters[1]);
 
 				std::uint32_t lengthValue;
-				if (std::holds_alternative<std::int32_t>(length))
+				if (parameterCount >= 2)
 				{
-					std::int32_t value = std::get<std::int32_t>(length);
-					if (value <= 0)
-						throw CompilerArrayLengthError{ sourceLocation, std::to_string(value) };
+					assert(std::holds_alternative<ConstantValue>(parameters[1]));
+					const ConstantValue& length = std::get<ConstantValue>(parameters[1]);
 
-					lengthValue = Nz::SafeCast<std::uint32_t>(value);
-				}
-				else if (std::holds_alternative<std::uint32_t>(length))
-				{
-					lengthValue = std::get<std::uint32_t>(length);
-					if (lengthValue == 0)
-						throw CompilerArrayLengthError{ sourceLocation, std::to_string(lengthValue) };
+					if (std::holds_alternative<std::int32_t>(length))
+					{
+						std::int32_t value = std::get<std::int32_t>(length);
+						if (value <= 0)
+							throw CompilerArrayLengthError{ sourceLocation, std::to_string(value) };
+
+						lengthValue = Nz::SafeCast<std::uint32_t>(value);
+					}
+					else if (std::holds_alternative<std::uint32_t>(length))
+					{
+						lengthValue = std::get<std::uint32_t>(length);
+						if (lengthValue == 0)
+							throw CompilerArrayLengthError{ sourceLocation, std::to_string(lengthValue) };
+					}
+					else
+						throw CompilerArrayLengthError{ sourceLocation, ToString(GetConstantType(length), sourceLocation) };
 				}
 				else
-					throw CompilerArrayLengthError{ sourceLocation, ToString(GetConstantType(length), sourceLocation) };
-
+					lengthValue = 0;
+				
 				ArrayType arrayType;
 				arrayType.containedType = std::make_unique<ContainedType>();
 				arrayType.containedType->type = exprType;
@@ -2457,7 +2560,7 @@ namespace nzsl::Ast
 
 		// Dynamic array
 		RegisterType("dyn_array", PartialType {
-			{ TypeParameterCategory::FullType },
+			{ TypeParameterCategory::FullType }, {},
 			[=](const TypeParameter* parameters, std::size_t parameterCount, const SourceLocation& /*sourceLocation*/) -> ExpressionType
 			{
 				assert(parameterCount == 1);
@@ -2465,10 +2568,9 @@ namespace nzsl::Ast
 
 				const ExpressionType& exprType = std::get<ExpressionType>(parameters[0]);
 
-				ArrayType arrayType;
+				DynArrayType arrayType;
 				arrayType.containedType = std::make_unique<ContainedType>();
 				arrayType.containedType->type = exprType;
-				arrayType.length = 0;
 
 				return arrayType;
 			}
@@ -2478,7 +2580,7 @@ namespace nzsl::Ast
 		for (std::size_t componentCount = 2; componentCount <= 4; ++componentCount)
 		{
 			RegisterType("mat" + std::to_string(componentCount), PartialType {
-				{ TypeParameterCategory::PrimitiveType },
+				{ TypeParameterCategory::PrimitiveType }, {},
 				[=](const TypeParameter* parameters, std::size_t parameterCount, const SourceLocation& /*sourceLocation*/) -> ExpressionType
 				{
 					assert(parameterCount == 1);
@@ -2498,7 +2600,7 @@ namespace nzsl::Ast
 		for (std::size_t componentCount = 2; componentCount <= 4; ++componentCount)
 		{
 			RegisterType("vec" + std::to_string(componentCount), PartialType {
-				{ TypeParameterCategory::PrimitiveType },
+				{ TypeParameterCategory::PrimitiveType }, {},
 				[=](const TypeParameter* parameters, std::size_t parameterCount, const SourceLocation& /*sourceLocation*/) -> ExpressionType
 				{
 					assert(parameterCount == 1);
@@ -2537,7 +2639,7 @@ namespace nzsl::Ast
 		for (SamplerInfo& sampler : samplerInfos)
 		{
 			RegisterType(std::move(sampler.typeName), PartialType {
-				{ TypeParameterCategory::PrimitiveType },
+				{ TypeParameterCategory::PrimitiveType }, {},
 				[=](const TypeParameter* parameters, std::size_t parameterCount, const SourceLocation& sourceLocation) -> ExpressionType
 				{
 					assert(parameterCount == 1);
@@ -2561,7 +2663,7 @@ namespace nzsl::Ast
 
 		// storage
 		RegisterType("storage", PartialType {
-			{ TypeParameterCategory::StructType },
+			{ TypeParameterCategory::StructType }, {},
 			[=](const TypeParameter* parameters, std::size_t parameterCount, const SourceLocation& /*sourceLocation*/) -> ExpressionType
 			{
 				assert(parameterCount == 1);
@@ -2579,7 +2681,7 @@ namespace nzsl::Ast
 		
 		// uniform
 		RegisterType("uniform", PartialType {
-			{ TypeParameterCategory::StructType },
+			{ TypeParameterCategory::StructType }, {},
 			[=](const TypeParameter* parameters, std::size_t parameterCount, const SourceLocation& /*sourceLocation*/) -> ExpressionType
 			{
 				assert(parameterCount == 1);
@@ -2996,6 +3098,7 @@ namespace nzsl::Ast
 				return ResolveStruct(arg, sourceLocation);
 			else if constexpr (std::is_same_v<T, NoType> ||
 			                   std::is_same_v<T, ArrayType> ||
+			                   std::is_same_v<T, DynArrayType> ||
 			                   std::is_same_v<T, FunctionType> ||
 			                   std::is_same_v<T, IntrinsicFunctionType> ||
 			                   std::is_same_v<T, PrimitiveType> ||
@@ -3222,14 +3325,23 @@ namespace nzsl::Ast
 				throw CompilerExpectedPartialTypeError{ node.sourceLocation, ToString(std::get<ExpressionType>(type), node.sourceLocation) };
 
 			const auto& partialType = std::get<NamedPartialType>(type);
-			if (partialType.type.parameters.size() != node.indices.size())
-				throw CompilerPartialTypeParameterCountMismatchError{ node.sourceLocation, Nz::SafeCast<std::uint32_t>(partialType.type.parameters.size()), Nz::SafeCast<std::uint32_t>(node.indices.size()) };
+			std::size_t requiredParameterCount = partialType.type.parameters.size();
+			std::size_t optionalParameterCount = partialType.type.optParameters.size();
+			std::size_t totalParameterCount = requiredParameterCount + optionalParameterCount;
 
-			Nz::StackVector<TypeParameter> parameters = NazaraStackVector(TypeParameter, partialType.type.parameters.size());
-			for (std::size_t i = 0; i < partialType.type.parameters.size(); ++i)
+			if (node.indices.size() < requiredParameterCount)
+				throw CompilerPartialTypeTooFewParametersError{ node.sourceLocation, Nz::SafeCast<std::uint32_t>(requiredParameterCount), Nz::SafeCast<std::uint32_t>(node.indices.size()) };
+
+			if (node.indices.size() > totalParameterCount)
+				throw CompilerPartialTypeTooManyParametersError{ node.sourceLocation, Nz::SafeCast<std::uint32_t>(totalParameterCount), Nz::SafeCast<std::uint32_t>(node.indices.size()) };
+
+			Nz::StackVector<TypeParameter> parameters = NazaraStackVector(TypeParameter, node.indices.size());
+			for (std::size_t i = 0; i < node.indices.size(); ++i)
 			{
 				const ExpressionPtr& indexExpr = node.indices[i];
-				switch (partialType.type.parameters[i])
+
+				TypeParameterCategory typeCategory = (i < requiredParameterCount) ? partialType.type.parameters[i] : partialType.type.optParameters[i - requiredParameterCount];
+				switch (typeCategory)
 				{
 					case TypeParameterCategory::ConstantValue:
 					{
@@ -3279,7 +3391,7 @@ namespace nzsl::Ast
 				}
 			}
 
-			assert(parameters.size() == partialType.type.parameters.size());
+			assert(parameters.size() >= requiredParameterCount && parameters.size() <= totalParameterCount);
 			node.cachedExpressionType = partialType.type.buildFunc(parameters.data(), parameters.size(), node.sourceLocation);
 		}
 		else
@@ -3303,6 +3415,12 @@ namespace nzsl::Ast
 				if (IsArrayType(resolvedExprType))
 				{
 					const ArrayType& arrayType = std::get<ArrayType>(resolvedExprType);
+					ExpressionType containedType = arrayType.containedType->type; //< Don't overwrite exprType directly since it contains arrayType
+					resolvedExprType = std::move(containedType);
+				}
+				else if (IsDynArrayType(resolvedExprType))
+				{
+					const DynArrayType& arrayType = std::get<DynArrayType>(resolvedExprType);
 					ExpressionType containedType = arrayType.containedType->type; //< Don't overwrite exprType directly since it contains arrayType
 					resolvedExprType = std::move(containedType);
 				}
@@ -3458,16 +3576,11 @@ namespace nzsl::Ast
 		if (!targetTypeOpt)
 			return ValidationResult::Unresolved;
 
-		const ExpressionType& targetType = ResolveAlias(*targetTypeOpt);
+		ExpressionType targetType = ResolveAlias(*targetTypeOpt);
 
 		auto& firstExprPtr = MandatoryExpr(node.expressions.front(), node.sourceLocation);
 
-		std::size_t expressionCount = 0;
-		for (; expressionCount < node.expressions.size(); ++expressionCount)
-		{
-			if (!node.expressions[expressionCount])
-				break;
-		}
+		std::size_t expressionCount = node.expressions.size();
 
 		if (IsMatrixType(targetType))
 		{
@@ -3611,9 +3724,6 @@ namespace nzsl::Ast
 
 			for (auto& exprPtr : node.expressions)
 			{
-				if (!exprPtr)
-					break;
-
 				const ExpressionType* exprType = GetExpressionType(*exprPtr);
 				if (!exprType)
 					return ValidationResult::Unresolved;
@@ -3640,11 +3750,36 @@ namespace nzsl::Ast
 			if (componentCount != requiredComponents)
 				throw CompilerCastComponentMismatchError{ node.sourceLocation, Nz::SafeCast<std::uint32_t>(componentCount), Nz::SafeCast<std::uint32_t>(requiredComponents) };
 		}
+		else if (IsArrayType(targetType))
+		{
+			ArrayType& targetArrayType = std::get<ArrayType>(targetType);
+			if (targetArrayType.length > 0)
+			{
+				if (targetArrayType.length != node.expressions.size())
+					throw CompilerCastComponentMismatchError{ node.sourceLocation, targetArrayType.length, Nz::SafeCast<std::uint32_t>(node.expressions.size()) };
+			}
+			else
+				targetArrayType.length = Nz::SafeCast<std::uint32_t>(node.expressions.size());
+
+			const ExpressionType& innerType = targetArrayType.containedType->type;
+			for (std::size_t i = 0; i < node.expressions.size(); ++i)
+			{
+				const auto& exprPtr = node.expressions[i];
+				assert(exprPtr);
+
+				const ExpressionType* exprType = GetExpressionType(*exprPtr);
+				if (!exprType)
+					return ValidationResult::Unresolved;
+
+				if (innerType != *exprType)
+					throw CompilerCastIncompatibleTypesError{ exprPtr->sourceLocation, ToString(innerType, node.sourceLocation), ToString(*exprType, exprPtr->sourceLocation) };
+			}
+		}
 		else
 			throw CompilerInvalidCastError{ node.sourceLocation, ToString(targetType, node.sourceLocation) };
 
 		node.cachedExpressionType = targetType;
-		node.targetType = targetType;
+		node.targetType = std::move(targetType);
 
 		return ValidationResult::Validated;
 	}
@@ -3688,6 +3823,8 @@ namespace nzsl::Ast
 				TypeMustMatch(resolvedType, *initialExprType, node.sourceLocation);
 			}
 		}
+
+		ValidateConcreteType(resolvedType, node.sourceLocation);
 
 		node.varIndex = RegisterVariable(node.varName, resolvedType, node.varIndex, node.sourceLocation);
 		node.varType = std::move(resolvedType);
@@ -4142,6 +4279,16 @@ namespace nzsl::Ast
 		}
 
 		throw AstInternalError{ sourceLocation, "unchecked operation" };
+	}
+
+	void SanitizeVisitor::ValidateConcreteType(const ExpressionType& exprType, const SourceLocation& sourceLocation)
+	{
+		if (IsArrayType(exprType))
+		{
+			const ArrayType& arrayType = std::get<ArrayType>(exprType);
+			if (arrayType.length)
+				throw CompilerArrayLengthError{ sourceLocation, std::to_string(arrayType.length) };
+		}
 	}
 
 	

@@ -30,8 +30,9 @@ namespace nzsl::Ast
 			void Serialize(CallFunctionExpression& node);
 			void Serialize(CallMethodExpression& node);
 			void Serialize(CastExpression& node);
-			void Serialize(ConstantExpression& node);
 			void Serialize(ConditionalExpression& node);
+			void Serialize(ConstantExpression& node);
+			void Serialize(ConstantArrayValueExpression& node);
 			void Serialize(ConstantValueExpression& node);
 			void Serialize(FunctionExpression& node);
 			void Serialize(IdentifierExpression& node);
@@ -65,6 +66,7 @@ namespace nzsl::Ast
 
 			void SerializeExpressionCommon(Expression& expr);
 			void SerializeNodeCommon(Ast::Node& node);
+			void SerializeStatementCommon(Statement& stmt);
 
 		protected:
 			template<typename T> void Container(T& container);

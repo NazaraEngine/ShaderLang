@@ -111,8 +111,8 @@ namespace nzsl::Ast
 	{
 		None = -1,
 
-#define NZSL_SHADERAST_NODE(Node) Node,
-#define NZSL_SHADERAST_STATEMENT_LAST(Node) Node, Max = Node
+#define NZSL_SHADERAST_NODE(Node, Category) Node##Category,
+#define NZSL_SHADERAST_STATEMENT_LAST(Node) Node##Statement, Max = Node##Statement
 #include <NZSL/Ast/NodeList.hpp>
 	};
 

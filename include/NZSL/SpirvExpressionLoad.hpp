@@ -31,15 +31,23 @@ namespace nzsl
 
 			using ExpressionVisitorExcept::Visit;
 			void Visit(Ast::AccessIndexExpression& node) override;
+			void Visit(Ast::ConstantExpression& node) override;
 			void Visit(Ast::VariableValueExpression& node) override;
 
 			SpirvExpressionLoad& operator=(const SpirvExpressionLoad&) = delete;
 			SpirvExpressionLoad& operator=(SpirvExpressionLoad&&) = delete;
 
 		private:
+			struct CompositeExtraction
+			{
+				std::vector<std::int32_t> indices;
+				std::uint32_t typeId;
+				std::uint32_t valueId;
+			};
+
 			struct PointerChainAccess
 			{
-				std::vector<std::uint32_t> indices;
+				std::vector<std::uint32_t> indicesId;
 				const Ast::ExpressionType* exprType;
 				SpirvStorageClass storage;
 				std::uint32_t pointerId;
@@ -58,17 +66,10 @@ namespace nzsl
 				std::uint32_t valueId;
 			};
 
-			struct ValueExtraction
-			{
-				std::vector<std::uint32_t> indices;
-				std::uint32_t typeId;
-				std::uint32_t valueId;
-			};
-
 			SpirvAstVisitor& m_visitor;
 			SpirvBlock& m_block;
 			SpirvWriter& m_writer;
-			std::variant<std::monostate, ValueExtraction, Pointer, PointerChainAccess, Value> m_value;
+			std::variant<std::monostate, CompositeExtraction, Pointer, PointerChainAccess, Value> m_value;
 	};
 }
 

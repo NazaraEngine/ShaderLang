@@ -170,7 +170,7 @@ void ExpectGLSL(const nzsl::Ast::Module& shaderModule, std::string_view expected
 
 		nzsl::GlslWriter::Output output = writer.Generate(entryShaderStage, targetModule);
 
-		WHEN("Validating expected code")
+		SECTION("Validating expected code")
 		{
 			INFO("full GLSL output:\n" << output.code << "\nexcepted output:\n" << expectedOutput);
 			REQUIRE(output.code.find(expectedOutput) != std::string::npos);
@@ -179,7 +179,7 @@ void ExpectGLSL(const nzsl::Ast::Module& shaderModule, std::string_view expected
 		if (!testShaderCompilation)
 			return;
 
-		WHEN("Validating full GLSL code (using glslang)")
+		SECTION("Validating full GLSL code (using glslang)")
 		{
 			EShLanguage stage = EShLangVertex;
 			switch (*entryShaderStage)
@@ -228,7 +228,7 @@ void ExpectNZSL(const nzsl::Ast::Module& shaderModule, std::string_view expected
 		nzsl::LangWriter writer;
 		std::string output = writer.Generate(targetModule);
 
-		WHEN("Validating expected code")
+		SECTION("Validating expected code")
 		{
 			INFO("full NZSL output:\n" << output << "\nexcepted output:\n" << expectedOutput);
 			REQUIRE(output.find(expectedOutput) != std::string::npos);
@@ -267,13 +267,13 @@ void ExpectSPIRV(const nzsl::Ast::Module& shaderModule, std::string_view expecte
 		auto spirv = writer.Generate(targetModule);
 		std::string output = printer.Print(spirv.data(), spirv.size(), settings);
 
-		WHEN("Validating expected code")
+		SECTION("Validating expected code")
 		{
 			INFO("full SPIR-V output:\n" << output << "\nexcepted output:\n" << expectedOutput);
 			REQUIRE(output.find(expectedOutput) != std::string::npos);
 		}
 
-		WHEN("Validating full SPIR-V code (using libspirv)")
+		SECTION("Validating full SPIR-V code (using libspirv)")
 		{
 			std::uint32_t spvVersion = env.spvMajorVersion * 100 + env.spvMinorVersion * 10;
 

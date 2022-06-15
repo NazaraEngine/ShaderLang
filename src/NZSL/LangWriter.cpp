@@ -158,7 +158,12 @@ namespace nzsl
 		if (type.length > 0)
 			Append("array[", type.containedType->type, ", ", type.length, "]");
 		else
-			Append("dyn_array[", type.containedType->type, "]");
+			Append("array[", type.containedType->type, "]");
+	}
+
+	void LangWriter::Append(const Ast::DynArrayType& type)
+	{
+		Append("dyn_array[", type.containedType->type, "]");
 	}
 
 	void LangWriter::Append(const Ast::ExpressionType& type)
@@ -600,6 +605,33 @@ namespace nzsl
 		AppendLine();
 	}
 
+	template<typename T>
+	void LangWriter::AppendValue(const T& value)
+	{
+		if constexpr (std::is_same_v<T, Ast::NoValue>)
+			throw std::runtime_error("invalid type (value expected)");
+		else if constexpr (std::is_same_v<T, bool> || std::is_same_v<T, std::vector<bool>::reference>)
+			Append((value) ? "true" : "false");
+		else if constexpr (std::is_same_v<T, float> || std::is_same_v<T, std::int32_t> || std::is_same_v<T, std::uint32_t>)
+			Append(std::to_string(value));
+		else if constexpr (std::is_same_v<T, std::string>)
+			Append('"', value, '"'); //< TODO: Escape string properly
+		else if constexpr (std::is_same_v<T, Vector2f>)
+			Append("vec2[f32](" + std::to_string(value.x()) + ", " + std::to_string(value.y()) + ")");
+		else if constexpr (std::is_same_v<T, Vector2i32>)
+			Append("vec2[i32](" + std::to_string(value.x()) + ", " + std::to_string(value.y()) + ")");
+		else if constexpr (std::is_same_v<T, Vector3f>)
+			Append("vec3[f32](" + std::to_string(value.x()) + ", " + std::to_string(value.y()) + ", " + std::to_string(value.z()) + ")");
+		else if constexpr (std::is_same_v<T, Vector3i32>)
+			Append("vec3[i32](" + std::to_string(value.x()) + ", " + std::to_string(value.y()) + ", " + std::to_string(value.z()) + ")");
+		else if constexpr (std::is_same_v<T, Vector4f>)
+			Append("vec4[f32](" + std::to_string(value.x()) + ", " + std::to_string(value.y()) + ", " + std::to_string(value.z()) + ", " + std::to_string(value.w()) + ")");
+		else if constexpr (std::is_same_v<T, Vector4i32>)
+			Append("vec4[i32](" + std::to_string(value.x()) + ", " + std::to_string(value.y()) + ", " + std::to_string(value.z()) + ", " + std::to_string(value.w()) + ")");
+		else
+			static_assert(Nz::AlwaysFalse<T>::value, "unexpected type");
+	}
+
 	void LangWriter::AppendStatementList(std::vector<Ast::StatementPtr>& statements)
 	{
 		bool first = true;
@@ -812,14 +844,12 @@ namespace nzsl
 		bool first = true;
 		for (const auto& exprPtr : node.expressions)
 		{
-			if (!exprPtr)
-				break;
-
 			if (!first)
 				m_currentState->stream << ", ";
 
-			exprPtr->Visit(*this);
 			first = false;
+
+			exprPtr->Visit(*this);
 		}
 
 		Append(")");
@@ -835,37 +865,42 @@ namespace nzsl
 		node.falsePath->Visit(*this);
 		Append(")");
 	}
+	
+	void LangWriter::Visit(Ast::ConstantArrayValueExpression& node)
+	{
+		Append(*node.cachedExpressionType);
+		m_currentState->indentLevel++;
+		AppendLine("(");
+		std::visit([&](auto&& vec)
+		{
+			using T = std::decay_t<decltype(vec)>;
+			
+			if constexpr (std::is_same_v<T, Ast::NoValue>)
+				throw std::runtime_error("unexpected array of NoValue");
+			else
+			{
+				for (std::size_t i = 0; i < vec.size(); ++i)
+				{
+					if (i != 0)
+						AppendLine(",");
+
+					AppendValue(vec[i]);
+				}
+			}
+		}, node.values);
+		m_currentState->indentLevel--;
+		AppendLine();
+		Append(")");
+	}
 
 	void LangWriter::Visit(Ast::ConstantValueExpression& node)
 	{
 		std::visit([&](auto&& arg)
 		{
-			using T = std::decay_t<decltype(arg)>;
-
-			if constexpr (std::is_same_v<T, Ast::NoValue>)
-				throw std::runtime_error("invalid type (value expected)");
-			else if constexpr (std::is_same_v<T, bool>)
-				Append((arg) ? "true" : "false");
-			else if constexpr (std::is_same_v<T, float> || std::is_same_v<T, std::int32_t> || std::is_same_v<T, std::uint32_t>)
-				Append(std::to_string(arg));
-			else if constexpr (std::is_same_v<T, std::string>)
-				Append('"', arg, '"'); //< TODO: Escape string
-			else if constexpr (std::is_same_v<T, Vector2f>)
-				Append("vec2[f32](" + std::to_string(arg.x()) + ", " + std::to_string(arg.y()) + ")");
-			else if constexpr (std::is_same_v<T, Vector2i32>)
-				Append("vec2[i32](" + std::to_string(arg.x()) + ", " + std::to_string(arg.y()) + ")");
-			else if constexpr (std::is_same_v<T, Vector3f>)
-				Append("vec3[f32](" + std::to_string(arg.x()) + ", " + std::to_string(arg.y()) + ", " + std::to_string(arg.z()) + ")");
-			else if constexpr (std::is_same_v<T, Vector3i32>)
-				Append("vec3[i32](" + std::to_string(arg.x()) + ", " + std::to_string(arg.y()) + ", " + std::to_string(arg.z()) + ")");
-			else if constexpr (std::is_same_v<T, Vector4f>)
-				Append("vec4[f32](" + std::to_string(arg.x()) + ", " + std::to_string(arg.y()) + ", " + std::to_string(arg.z()) + ", " + std::to_string(arg.w()) + ")");
-			else if constexpr (std::is_same_v<T, Vector4i32>)
-				Append("vec4[i32](" + std::to_string(arg.x()) + ", " + std::to_string(arg.y()) + ", " + std::to_string(arg.z()) + ", " + std::to_string(arg.w()) + ")");
-			else
-				static_assert(Nz::AlwaysFalse<T>::value, "non-exhaustive visitor");
+			AppendValue(arg);
 		}, node.value);
 	}
+
 
 	void LangWriter::Visit(Ast::ConstantExpression& node)
 	{

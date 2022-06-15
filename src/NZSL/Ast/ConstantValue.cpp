@@ -7,12 +7,27 @@
 
 namespace nzsl::Ast
 {
-	ExpressionType GetConstantType(const ConstantValue& constant)
+	namespace NAZARA_ANONYMOUS_NAMESPACE
 	{
-		return std::visit([&](auto&& arg) -> Ast::ExpressionType
+		template<typename T>
+		struct GetVectorInnerType
 		{
-			using T = std::decay_t<decltype(arg)>;
+			static constexpr bool IsVector = false;
 
+			using type = T; //< fallback
+		};
+
+		template<typename T>
+		struct GetVectorInnerType<std::vector<T>>
+		{
+			static constexpr bool IsVector = true;
+
+			using type = T;
+		};
+
+		template<typename T>
+		ExpressionType GetConstantExpressionType()
+		{
 			if constexpr (std::is_same_v<T, NoValue>)
 				return NoType{};
 			else if constexpr (std::is_same_v<T, bool>)
@@ -39,6 +54,63 @@ namespace nzsl::Ast
 				return VectorType{ 4, PrimitiveType::Int32 };
 			else
 				static_assert(Nz::AlwaysFalse<T>(), "non-exhaustive visitor");
+		}
+	}
+
+	ExpressionType GetConstantType(const ConstantValue& constant)
+	{
+		NAZARA_USE_ANONYMOUS_NAMESPACE
+
+		return std::visit([&](auto&& arg) -> Ast::ExpressionType
+		{
+			using T = std::decay_t<decltype(arg)>;
+			
+			using VectorInner = GetVectorInnerType<T>;
+			using Type = typename VectorInner::type;
+
+			if constexpr (VectorInner::IsVector)
+			{
+				ArrayType arrayType;
+				arrayType.containedType = std::make_unique<ContainedType>();
+				arrayType.containedType->type = GetConstantExpressionType<Type>();
+				arrayType.length = Nz::SafeCast<std::uint32_t>(arg.size());
+
+				return arrayType;
+			}
+			else
+				return GetConstantExpressionType<Type>();
+		}, constant);
+	}
+
+	ExpressionType GetConstantType(const ConstantArrayValue& constantArray)
+	{
+		NAZARA_USE_ANONYMOUS_NAMESPACE
+
+		return std::visit([&](auto&& arg) -> Ast::ExpressionType
+		{
+			using T = std::decay_t<decltype(arg)>;
+			if constexpr (std::is_same_v<T, NoValue>)
+				return NoType{};
+			else
+			{
+				using InnerType = typename GetVectorInnerType<T>::type;
+
+				ArrayType arrayType;
+				arrayType.containedType = std::make_unique<ContainedType>();
+				arrayType.containedType->type = GetConstantExpressionType<InnerType>();
+				arrayType.length = Nz::SafeCast<std::uint32_t>(arg.size());
+
+				return arrayType;
+			}
+		}, constantArray);
+	}
+
+	ExpressionType GetConstantType(const ConstantSingleValue& constant)
+	{
+		return std::visit([&](auto&& arg) -> Ast::ExpressionType
+		{
+			using T = std::decay_t<decltype(arg)>;
+			return GetConstantExpressionType<T>();
 		}, constant);
 	}
 }

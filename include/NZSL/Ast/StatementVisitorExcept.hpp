@@ -18,7 +18,7 @@ namespace nzsl::Ast
 		public:
 			using StatementVisitor::Visit;
 
-#define NZSL_SHADERAST_STATEMENT(Node) void Visit(Ast::Node& node) override;
+#define NZSL_SHADERAST_STATEMENT(Node) void Visit(Ast::Node##Statement& node) override;
 #include <NZSL/Ast/NodeList.hpp>
 	};
 }

@@ -307,6 +307,8 @@ namespace nzsl
 		{
 			assert(variable.type);
 			cache.Register(*variable.type);
+			if (variable.initializer)
+				cache.Register(*variable.initializer.value());
 		}
 
 		void Register(const Vector& vec)
@@ -326,21 +328,7 @@ namespace nzsl
 			{
 				using T = std::decay_t<decltype(arg)>;
 
-				if constexpr (std::is_same_v<T, double>)
-					cache.Register({ Float{ 64 } });
-				else if constexpr (std::is_same_v<T, float>)
-					cache.Register({ Float{ 32 } });
-				else if constexpr (std::is_same_v<T, std::int32_t>)
-					cache.Register({ Integer{ 32, true } });
-				else if constexpr (std::is_same_v<T, std::int64_t>)
-					cache.Register({ Integer{ 64, true } });
-				else if constexpr (std::is_same_v<T, std::uint32_t>)
-					cache.Register({ Integer{ 32, false } });
-				else if constexpr (std::is_same_v<T, std::uint64_t>)
-					cache.Register({ Integer{ 64, false } });
-				else
-					static_assert(Nz::AlwaysFalse<T>(), "non-exhaustive visitor");
-
+				cache.Register(BuildSingleType<T>());
 			}, scalar.value);
 		}
 
@@ -453,7 +441,39 @@ namespace nzsl
 
 	SpirvConstantCache::~SpirvConstantCache() = default;
 	
-	auto SpirvConstantCache::BuildConstant(const Ast::ConstantValue& value) const -> ConstantPtr
+	auto SpirvConstantCache::BuildArrayConstant(const Ast::ConstantArrayValue& value) const -> ConstantPtr
+	{
+		return std::make_shared<Constant>(std::visit([&](auto&& arg) -> ConstantComposite
+		{
+			using T = std::decay_t<decltype(arg)>;
+
+			if constexpr (std::is_same_v<T, Ast::NoValue>)
+				throw std::runtime_error("invalid type (value expected)");
+			else if constexpr (std::is_same_v<T, std::string>)
+				throw std::runtime_error("unexpected string literal");
+			else
+			{
+				using ValueType = typename T::value_type;
+
+				std::vector<ConstantPtr> constants;
+				for (const ValueType& element : arg) //< force type (because of std::vector<bool>)
+					constants.push_back(BuildConstant(element));
+
+				Array arrayType = {
+					std::make_shared<Type>(BuildSingleType<ValueType>()),
+					BuildConstant(Nz::SafeCast<std::uint32_t>(arg.size())),
+					std::nullopt
+				};
+
+				return ConstantComposite{
+					std::make_shared<Type>(std::move(arrayType)),
+					std::move(constants)
+				};
+			}
+		}, value));
+	}
+
+	auto SpirvConstantCache::BuildConstant(const Ast::ConstantSingleValue& value) const -> ConstantPtr
 	{
 		return std::make_shared<Constant>(std::visit([&](auto&& arg) -> SpirvConstantCache::AnyConstant
 		{
@@ -462,7 +482,7 @@ namespace nzsl
 			if constexpr (std::is_same_v<T, Ast::NoValue>)
 				throw std::runtime_error("invalid type (value expected)");
 			else if constexpr (std::is_same_v<T, std::string>)
-				throw std::runtime_error("unexpected string litteral");
+				throw std::runtime_error("unexpected string literal");
 			else if constexpr (std::is_same_v<T, bool>)
 				return ConstantBool{ arg };
 			else if constexpr (std::is_same_v<T, float> || std::is_same_v<T, std::int32_t> || std::is_same_v<T, std::uint32_t>)
@@ -470,7 +490,7 @@ namespace nzsl
 			else if constexpr (std::is_same_v<T, Vector2f> || std::is_same_v<T, Vector2i32>)
 			{
 				return ConstantComposite{
-					BuildType(Ast::VectorType{ 2, (std::is_same_v<T, Vector2f>) ? Ast::PrimitiveType::Float32 : Ast::PrimitiveType::Int32 }),
+					std::make_shared<Type>(BuildSingleType<T>()),
 					{
 						BuildConstant(arg.x()),
 						BuildConstant(arg.y())
@@ -480,7 +500,7 @@ namespace nzsl
 			else if constexpr (std::is_same_v<T, Vector3f> || std::is_same_v<T, Vector3i32>)
 			{
 				return ConstantComposite{
-					BuildType(Ast::VectorType{ 3, (std::is_same_v<T, Vector3f>) ? Ast::PrimitiveType::Float32 : Ast::PrimitiveType::Int32 }),
+					std::make_shared<Type>(BuildSingleType<T>()),
 					{
 						BuildConstant(arg.x()),
 						BuildConstant(arg.y()),
@@ -491,7 +511,7 @@ namespace nzsl
 			else if constexpr (std::is_same_v<T, Vector4f> || std::is_same_v<T, Vector4i32>)
 			{
 				return ConstantComposite{
-					BuildType(Ast::VectorType{ 4, (std::is_same_v<T, Vector4f>) ? Ast::PrimitiveType::Float32 : Ast::PrimitiveType::Int32 }),
+					std::make_shared<Type>(BuildSingleType<T>()),
 					{
 						BuildConstant(arg.x()),
 						BuildConstant(arg.y()),
@@ -650,7 +670,7 @@ namespace nzsl
 		auto typePtr = std::make_shared<Type>(Pointer{
 			type,
 			storageClass
-			});
+		});
 
 		m_internal->isInBlockStruct = wasInblockStruct;
 
@@ -695,9 +715,34 @@ namespace nzsl
 			arrayStride = Nz::SafeCast<std::uint32_t>(fieldOffset.GetAlignedSize());
 		}
 
+		assert(type.length > 0);
+
 		return std::make_shared<Type>(Array{
 			builtContainedType,
-			(type.length > 0) ? BuildConstant(type.length) : nullptr,
+			BuildConstant(type.length),
+			arrayStride
+		});
+	}
+
+	auto SpirvConstantCache::BuildType(const Ast::DynArrayType& type) const -> TypePtr
+	{
+		const auto& containedType = type.containedType->type;
+
+		TypePtr builtContainedType = BuildType(containedType);
+
+		// ArrayStride
+		std::optional<std::uint32_t> arrayStride;
+		if (m_internal->isInBlockStruct)
+		{
+			FieldOffsets fieldOffset(StructLayout::Std140);
+			RegisterArrayField(fieldOffset, builtContainedType->type, 1);
+
+			arrayStride = Nz::SafeCast<std::uint32_t>(fieldOffset.GetAlignedSize());
+		}
+
+		return std::make_shared<Type>(Array{
+			builtContainedType,
+			nullptr,
 			arrayStride
 		});
 	}
@@ -1030,6 +1075,57 @@ namespace nzsl
 	}
 
 	SpirvConstantCache& SpirvConstantCache::operator=(SpirvConstantCache&& cache) noexcept = default;
+
+	template<>
+	struct SpirvConstantCache::TypeBuilder<bool>
+	{
+		static Type Build()
+		{
+			return Type{ Bool{} };
+		}
+	};
+
+	template<typename T>
+	struct SpirvConstantCache::TypeBuilder<T, std::enable_if_t<std::is_floating_point_v<T>>>
+	{
+		static Type Build()
+		{
+			return { Float{ sizeof(T) * CHAR_BIT }};
+		}
+	};
+
+	template<typename T>
+	struct SpirvConstantCache::TypeBuilder<T, std::enable_if_t<std::is_integral_v<T>>>
+	{
+		static Type Build()
+		{
+			return { Integer{ sizeof(T) * CHAR_BIT, std::is_signed_v<T> } };
+		}
+	};
+
+	template<typename T, std::size_t N>
+	struct SpirvConstantCache::TypeBuilder<Vector<T, N>>
+	{
+		static Type Build()
+		{
+			return { Vector{ std::make_shared<Type>(BuildSingleType<T>()), Nz::SafeCast<std::uint32_t>(N) }};
+		}
+	};
+
+	template<typename T>
+	auto SpirvConstantCache::BuildSingleType() -> Type
+	{
+		NAZARA_USE_ANONYMOUS_NAMESPACE
+
+		if constexpr (std::is_same_v<T, Ast::NoValue>)
+			throw std::runtime_error("invalid type (value expected)");
+		else if constexpr (std::is_same_v<T, std::string>)
+			throw std::runtime_error("unexpected string literal");
+		else
+		{
+			return TypeBuilder<T>::Build();
+		}
+	}
 
 	void SpirvConstantCache::Write(const AnyConstant& constant, std::uint32_t resultId, SpirvSection& constants)
 	{

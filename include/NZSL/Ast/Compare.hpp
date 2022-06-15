@@ -47,6 +47,7 @@ namespace nzsl::Ast
 	inline bool Compare(const CastExpression& lhs, const CastExpression& rhs);
 	inline bool Compare(const ConditionalExpression& lhs, const ConditionalExpression& rhs);
 	inline bool Compare(const ConstantExpression& lhs, const ConstantExpression& rhs);
+	inline bool Compare(const ConstantArrayValueExpression& lhs, const ConstantArrayValueExpression& rhs);
 	inline bool Compare(const ConstantValueExpression& lhs, const ConstantValueExpression& rhs);
 	inline bool Compare(const FunctionExpression& lhs, const FunctionExpression& rhs);
 	inline bool Compare(const IdentifierExpression& lhs, const IdentifierExpression& rhs);

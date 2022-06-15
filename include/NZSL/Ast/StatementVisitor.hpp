@@ -21,7 +21,7 @@ namespace nzsl::Ast
 			StatementVisitor(StatementVisitor&&) = delete;
 			virtual ~StatementVisitor();
 
-#define NZSL_SHADERAST_STATEMENT(NodeType) virtual void Visit(Ast::NodeType& node) = 0;
+#define NZSL_SHADERAST_STATEMENT(Node) virtual void Visit(Ast::Node##Statement& node) = 0;
 #include <NZSL/Ast/NodeList.hpp>
 
 			StatementVisitor& operator=(const StatementVisitor&) = delete;

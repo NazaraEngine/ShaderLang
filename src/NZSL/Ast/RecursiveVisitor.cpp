@@ -54,12 +54,7 @@ namespace nzsl::Ast
 	void RecursiveVisitor::Visit(CastExpression& node)
 	{
 		for (auto& expr : node.expressions)
-		{
-			if (!expr)
-				break;
-
 			expr->Visit(*this);
-		}
 	}
 
 	void RecursiveVisitor::Visit(ConditionalExpression& node)
@@ -68,12 +63,17 @@ namespace nzsl::Ast
 		node.falsePath->Visit(*this);
 	}
 
-	void RecursiveVisitor::Visit(ConstantValueExpression& /*node*/)
+	void RecursiveVisitor::Visit(ConstantExpression& /*node*/)
 	{
 		/* Nothing to do */
 	}
 
-	void RecursiveVisitor::Visit(ConstantExpression& /*node*/)
+	void RecursiveVisitor::Visit(ConstantArrayValueExpression& /*node*/)
+	{
+		/* Nothing to do */
+	}
+
+	void RecursiveVisitor::Visit(ConstantValueExpression& /*node*/)
 	{
 		/* Nothing to do */
 	}

@@ -25,7 +25,6 @@ namespace nzsl
 		public:
 			struct EntryPoint;
 			struct FuncData;
-			struct Variable;
 
 			inline SpirvAstVisitor(SpirvWriter& writer, SpirvSection& instructions, std::unordered_map<std::size_t, FuncData>& funcData);
 			SpirvAstVisitor(const SpirvAstVisitor&) = delete;
@@ -34,9 +33,9 @@ namespace nzsl
 
 			std::uint32_t AllocateResultId();
 
-			std::uint32_t EvaluateExpression(Ast::ExpressionPtr& expr);
+			std::uint32_t EvaluateExpression(Ast::Expression& expr);
 
-			const Variable& GetVariable(std::size_t varIndex) const;
+			const SpirvVariable& GetVariable(std::size_t varIndex) const;
 
 			using ExpressionVisitorExcept::Visit;
 			using StatementVisitorExcept::Visit;
@@ -47,7 +46,9 @@ namespace nzsl
 			void Visit(Ast::BranchStatement& node) override;
 			void Visit(Ast::CallFunctionExpression& node) override;
 			void Visit(Ast::CastExpression& node) override;
+			void Visit(Ast::ConstantExpression& node) override;
 			void Visit(Ast::ConstantValueExpression& node) override;
+			void Visit(Ast::DeclareConstStatement& node) override;
 			void Visit(Ast::DeclareExternalStatement& node) override;
 			void Visit(Ast::DeclareFunctionStatement& node) override;
 			void Visit(Ast::DeclareOptionStatement& node) override;
@@ -130,13 +131,6 @@ namespace nzsl
 				std::uint32_t returnTypeId;
 			};
 
-			struct Variable
-			{
-				SpirvStorageClass storage;
-				std::uint32_t pointerId;
-				std::uint32_t pointedTypeId;
-			};
-
 		private:
 			void HandleStatementList(const std::vector<Ast::StatementPtr>& statements);
 
@@ -151,7 +145,7 @@ namespace nzsl
 			std::size_t m_funcIndex;
 			std::unordered_map<std::size_t, FuncData>& m_funcData;
 			std::unordered_map<std::size_t, Ast::StructDescription*> m_structs;
-			std::unordered_map<std::size_t, Variable> m_variables;
+			std::unordered_map<std::size_t, SpirvVariable> m_variables;
 			std::vector<std::size_t> m_scopeSizes;
 			std::vector<std::unique_ptr<SpirvBlock>> m_functionBlocks;
 			std::vector<std::uint32_t> m_resultIds;

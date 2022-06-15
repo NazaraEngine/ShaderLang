@@ -29,6 +29,7 @@ namespace nzsl::Ast
 	struct PartialType
 	{
 		std::vector<TypeParameterCategory> parameters;
+		std::vector<TypeParameterCategory> optParameters;
 		std::function<ExpressionType(const TypeParameter* parameters, std::size_t parameterCount, const SourceLocation& sourceLocation)> buildFunc;
 	};
 

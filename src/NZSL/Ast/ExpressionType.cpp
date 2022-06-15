@@ -39,31 +39,27 @@ namespace nzsl::Ast
 
 		return true;
 	}
-	
-	ArrayType::ArrayType(const ArrayType& array) :
-	length(array.length)
+
+
+	BaseArrayType::BaseArrayType(const BaseArrayType& array)
 	{
 		assert(array.containedType);
 		containedType = std::make_unique<ContainedType>(*array.containedType);
 	}
 
-	ArrayType& ArrayType::operator=(const ArrayType& array)
+	BaseArrayType& BaseArrayType::operator=(const BaseArrayType& array)
 	{
 		assert(array.containedType);
 
 		containedType = std::make_unique<ContainedType>(*array.containedType);
-		length = array.length;
 
 		return *this;
 	}
 
-	bool ArrayType::operator==(const ArrayType& rhs) const
+	bool BaseArrayType::operator==(const BaseArrayType& rhs) const
 	{
 		assert(containedType);
 		assert(rhs.containedType);
-
-		if (length != rhs.length)
-			return false;
 
 		if (containedType->type != rhs.containedType->type)
 			return false;
@@ -71,7 +67,7 @@ namespace nzsl::Ast
 		return true;
 	}
 
-	
+
 	MethodType::MethodType(const MethodType& methodType) :
 	methodIndex(methodType.methodIndex)
 	{
@@ -110,7 +106,12 @@ namespace nzsl::Ast
 		if (type.length > 0)
 			return fmt::format("array[{}, {}]", ToString(type.containedType->type, stringifier), type.length);
 		else
-			return fmt::format("dyn_array[{}]", ToString(type.containedType->type, stringifier));
+			return fmt::format("array[{}]", ToString(type.containedType->type, stringifier));
+	}
+
+	std::string ToString(const DynArrayType& type, const Stringifier& stringifier)
+	{
+		return fmt::format("dyn_array[{}]", ToString(type.containedType->type, stringifier));
 	}
 
 	std::string ToString(const ExpressionType& type, const Stringifier& stringifier)

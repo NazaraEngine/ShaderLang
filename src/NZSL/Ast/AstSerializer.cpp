@@ -22,18 +22,13 @@ namespace nzsl::Ast
 				{
 				}
 
-#define NZSL_SHADERAST_EXPRESSION(Node) void Visit(Node& node) override \
+#define NZSL_SHADERAST_NODE(Node, Category) void Visit(Node##Category& node) override \
 				{ \
 					m_serializer.Serialize(node); \
 					m_serializer.SerializeNodeCommon(node); \
-					m_serializer.SerializeExpressionCommon(node); \
+					m_serializer.Serialize##Category##Common(node); \
 				}
 
-#define NZSL_SHADERAST_STATEMENT(Node) void Visit(Node& node) override \
-				{ \
-					m_serializer.Serialize(node); \
-					m_serializer.SerializeNodeCommon(node); \
-				}
 #include <NZSL/Ast/NodeList.hpp>
 
 			private:
@@ -103,13 +98,10 @@ namespace nzsl::Ast
 	void SerializerBase::Serialize(CastExpression& node)
 	{
 		ExprValue(node.targetType);
+
+		Container(node.expressions);
 		for (auto& expr : node.expressions)
 			Node(expr);
-	}
-
-	void SerializerBase::Serialize(ConstantExpression& node)
-	{
-		SizeT(node.constantId);
 	}
 
 	void SerializerBase::Serialize(ConditionalExpression& node)
@@ -118,7 +110,70 @@ namespace nzsl::Ast
 		Node(node.truePath);
 		Node(node.falsePath);
 	}
-	
+
+	void SerializerBase::Serialize(ConstantExpression& node)
+	{
+		SizeT(node.constantId);
+	}
+
+	void SerializerBase::Serialize(ConstantArrayValueExpression& node)
+	{
+		std::uint32_t typeIndex;
+		if (IsWriting())
+			typeIndex = std::uint32_t(node.values.index());
+
+		Value(typeIndex);
+
+		// Waiting for template lambda in C++20
+		auto SerializeValue = [&](auto dummyType)
+		{
+			using T = std::decay_t<decltype(dummyType)>;
+
+			using VecT = std::vector<T>;
+
+			auto& values = (IsWriting()) ? std::get<VecT>(node.values) : node.values.emplace<VecT>();
+			Container(values);
+
+			// Cannot use range-for because of std::vector<bool> (fuck std::vector<bool>)
+			if (IsWriting())
+			{
+				for (std::size_t i = 0; i < values.size(); ++i)
+				{
+					const T& value = values[i];
+					Value(const_cast<T&>(value)); //< not used for writing
+				}
+			}
+			else
+			{
+				for (std::size_t i = 0; i < values.size(); ++i)
+				{
+					T value;
+					Value(value);
+					
+					values[i] = std::move(value);
+				}
+			}
+		};
+
+		static_assert(std::variant_size_v<decltype(node.values)> == 12);
+		switch (typeIndex)
+		{
+			case 0:  break;
+			case 1:  SerializeValue(bool()); break;
+			case 2:  SerializeValue(float()); break;
+			case 3:  SerializeValue(std::int32_t()); break;
+			case 4:  SerializeValue(std::uint32_t()); break;
+			case 5:  SerializeValue(Vector2f()); break;
+			case 6:  SerializeValue(Vector3f()); break;
+			case 7:  SerializeValue(Vector4f()); break;
+			case 8:  SerializeValue(Vector2i32()); break;
+			case 9:  SerializeValue(Vector3i32()); break;
+			case 10: SerializeValue(Vector4i32()); break;
+			case 11: SerializeValue(std::string()); break;
+			default: throw std::runtime_error("unexpected data type");
+		}
+	}
+
 	void SerializerBase::Serialize(ConstantValueExpression& node)
 	{
 		std::uint32_t typeIndex;
@@ -398,6 +453,10 @@ namespace nzsl::Ast
 		SourceLoc(node.sourceLocation);
 	}
 
+	void SerializerBase::SerializeStatementCommon(Statement& /*stmt*/)
+	{
+	}
+
 	void ShaderAstSerializer::Serialize(ModulePtr& module)
 	{
 		m_serializer.Serialize(s_shaderAstMagicNumber);
@@ -552,6 +611,11 @@ namespace nzsl::Ast
 				m_serializer.Serialize(std::uint8_t(14));
 				SizeT(arg.containedType.structIndex);
 			}
+			else if constexpr (std::is_same_v<T, Ast::DynArrayType>)
+			{
+				m_serializer.Serialize(std::uint8_t(15));
+				Type(arg.containedType->type);
+			}
 			else
 				static_assert(Nz::AlwaysFalse<T>::value, "non-exhaustive visitor");
 		}, type);
@@ -675,7 +739,7 @@ namespace nzsl::Ast
 		{
 			case NodeType::None: break;
 
-#define NZSL_SHADERAST_EXPRESSION(Node) case NodeType:: Node : node = std::make_unique<Node>(); break;
+#define NZSL_SHADERAST_EXPRESSION(Node) case NodeType:: Node##Expression : node = std::make_unique<Node##Expression>(); break;
 #include <NZSL/Ast/NodeList.hpp>
 
 			default: throw std::runtime_error("unexpected node type");
@@ -701,7 +765,7 @@ namespace nzsl::Ast
 		{
 			case NodeType::None: break;
 
-#define NZSL_SHADERAST_STATEMENT(Node) case NodeType:: Node : node = std::make_unique<Node>(); break;
+#define NZSL_SHADERAST_STATEMENT(Node) case NodeType:: Node##Statement : node = std::make_unique<Node##Statement>(); break;
 #include <NZSL/Ast/NodeList.hpp>
 
 			default: throw std::runtime_error("unexpected node type");
@@ -948,8 +1012,21 @@ namespace nzsl::Ast
 				break;
 			}
 
-			default:
+			case 15: //< DynArrayType
+			{
+				ExpressionType containedType;
+				Type(containedType);
+
+				DynArrayType arrayType;
+				arrayType.containedType = std::make_unique<ContainedType>();
+				arrayType.containedType->type = std::move(containedType);
+
+				type = std::move(arrayType);
 				break;
+			}
+
+			default:
+				throw std::runtime_error("unexpected type index " + std::to_string(typeIndex));
 		}
 	}
 

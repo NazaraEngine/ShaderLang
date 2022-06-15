@@ -76,10 +76,6 @@ struct Output
 	vec4 position;
 };
 
-/**************** Inputs ****************/
-
-/*************** Outputs ***************/
-
 void main()
 {
 	Input input_;
@@ -124,10 +120,6 @@ struct Output
 {
 	vec4 position;
 };
-
-/**************** Inputs ****************/
-
-/*************** Outputs ***************/
 
 void main()
 {
@@ -175,10 +167,6 @@ struct Output
 {
 	vec4 position;
 };
-
-/**************** Inputs ****************/
-
-/*************** Outputs ***************/
 
 void main()
 {
@@ -296,10 +284,6 @@ struct Output
 	vec4 position;
 };
 
-/**************** Inputs ****************/
-
-/*************** Outputs ***************/
-
 void main()
 {
 	Input input_;
@@ -371,8 +355,6 @@ struct Output
 	vec4 position;
 };
 
-/*************** Outputs ***************/
-
 void main()
 {
 	Output output_;
@@ -396,8 +378,6 @@ struct Output
 
 uniform float _nzslFlipYValue;
 
-/*************** Outputs ***************/
-
 void main()
 {
 	Output output_;
@@ -419,8 +399,6 @@ struct Output
 {
 	vec4 position;
 };
-
-/*************** Outputs ***************/
 
 void main()
 {

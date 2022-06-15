@@ -50,6 +50,7 @@ namespace nzsl::Ast
 			virtual ExpressionPtr Clone(CastExpression& node);
 			virtual ExpressionPtr Clone(ConditionalExpression& node);
 			virtual ExpressionPtr Clone(ConstantExpression& node);
+			virtual ExpressionPtr Clone(ConstantArrayValueExpression& node);
 			virtual ExpressionPtr Clone(ConstantValueExpression& node);
 			virtual ExpressionPtr Clone(FunctionExpression& node);
 			virtual ExpressionPtr Clone(IdentifierExpression& node);
@@ -81,7 +82,7 @@ namespace nzsl::Ast
 			virtual StatementPtr Clone(ScopedStatement& node);
 			virtual StatementPtr Clone(WhileStatement& node);
 
-#define NZSL_SHADERAST_NODE(NodeType) void Visit(NodeType& node) override;
+#define NZSL_SHADERAST_NODE(NodeType, Category) void Visit(NodeType##Category& node) override;
 #include <NZSL/Ast/NodeList.hpp>
 
 			void PushExpression(ExpressionPtr expression);

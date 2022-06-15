@@ -21,11 +21,28 @@ namespace nzsl::Ast
 {
 	struct ContainedType;
 
+	struct NZSL_API BaseArrayType
+	{
+		BaseArrayType() = default;
+		BaseArrayType(const BaseArrayType& array);
+		BaseArrayType(BaseArrayType&&) noexcept = default;
+		~BaseArrayType() = default;
+
+		BaseArrayType& operator=(const BaseArrayType& array);
+		BaseArrayType& operator=(BaseArrayType&&) noexcept = default;
+
+		std::unique_ptr<ContainedType> containedType;
+
+		bool operator==(const BaseArrayType& rhs) const;
+		inline bool operator!=(const BaseArrayType& rhs) const;
+	};
+
 	struct NZSL_API AliasType
 	{
 		AliasType() = default;
 		AliasType(const AliasType& alias);
 		AliasType(AliasType&&) noexcept = default;
+		~AliasType() = default;
 
 		AliasType& operator=(const AliasType& alias);
 		AliasType& operator=(AliasType&&) noexcept = default;
@@ -36,21 +53,35 @@ namespace nzsl::Ast
 		bool operator==(const AliasType& rhs) const;
 		inline bool operator!=(const AliasType& rhs) const;
 	};
-
-	struct NZSL_API ArrayType
+	
+	struct ArrayType : BaseArrayType
 	{
 		ArrayType() = default;
-		ArrayType(const ArrayType& array);
+		ArrayType(const ArrayType&) = default;
 		ArrayType(ArrayType&&) noexcept = default;
+		~ArrayType() = default;
 
-		ArrayType& operator=(const ArrayType& array);
+		ArrayType& operator=(const ArrayType&) = default;
 		ArrayType& operator=(ArrayType&&) noexcept = default;
 
-		std::uint32_t length; //< 0 = variable length
-		std::unique_ptr<ContainedType> containedType;
+		std::uint32_t length; //< 0 = variable length (used to build arrays)
 
-		bool operator==(const ArrayType& rhs) const;
+		inline bool operator==(const ArrayType& rhs) const;
 		inline bool operator!=(const ArrayType& rhs) const;
+	};
+
+	struct DynArrayType : BaseArrayType
+	{
+		DynArrayType() = default;
+		DynArrayType(const DynArrayType&) = default;
+		DynArrayType(DynArrayType&&) noexcept = default;
+		~DynArrayType() = default;
+
+		DynArrayType& operator=(const DynArrayType&) = default;
+		DynArrayType& operator=(DynArrayType&&) noexcept = default;
+
+		inline bool operator==(const DynArrayType& rhs) const;
+		inline bool operator!=(const DynArrayType& rhs) const;
 	};
 
 	struct FunctionType
@@ -152,7 +183,7 @@ namespace nzsl::Ast
 		inline bool operator!=(const UniformType& rhs) const;
 	};
 
-	using ExpressionType = std::variant<NoType, AliasType, ArrayType, FunctionType, IntrinsicFunctionType, MatrixType, MethodType, PrimitiveType, SamplerType, StorageType, StructType, Type, UniformType, VectorType>;
+	using ExpressionType = std::variant<NoType, AliasType, ArrayType, DynArrayType, FunctionType, IntrinsicFunctionType, MatrixType, MethodType, PrimitiveType, SamplerType, StorageType, StructType, Type, UniformType, VectorType>;
 
 	struct ContainedType
 	{
@@ -179,6 +210,7 @@ namespace nzsl::Ast
 
 	inline bool IsAliasType(const ExpressionType& type);
 	inline bool IsArrayType(const ExpressionType& type);
+	inline bool IsDynArrayType(const ExpressionType& type);
 	inline bool IsFunctionType(const ExpressionType& type);
 	inline bool IsIntrinsicFunctionType(const ExpressionType& type);
 	inline bool IsMatrixType(const ExpressionType& type);
@@ -201,6 +233,7 @@ namespace nzsl::Ast
 
 	std::string ToString(const AliasType& type, const Stringifier& stringifier = {});
 	std::string ToString(const ArrayType& type, const Stringifier& stringifier = {});
+	std::string ToString(const DynArrayType& type, const Stringifier& stringifier = {});
 	std::string ToString(const ExpressionType& type, const Stringifier& stringifier = {});
 	std::string ToString(const FunctionType& type, const Stringifier& stringifier = {});
 	std::string ToString(const IntrinsicFunctionType& type, const Stringifier& stringifier = {});
