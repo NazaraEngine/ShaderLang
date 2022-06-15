@@ -105,7 +105,7 @@ namespace nzsl
 	{
 		static_assert(N >= 4, "vector has no w value");
 
-		return values[2];
+		return values[3];
 	}
 
 	template<typename T, std::size_t N>
