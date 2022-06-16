@@ -714,6 +714,34 @@ namespace nzsl
 	{
 		switch (node.intrinsic)
 		{
+			case Ast::IntrinsicType::ArraySize:
+			{
+				// First parameter must be an AccessIndex from the external variable to the member index
+				std::uint32_t typeId = m_writer.GetTypeId(Ast::PrimitiveType::UInt32);
+
+				assert(node.parameters.size() == 1);
+				const Ast::ExpressionPtr& firstParameter = node.parameters.front();
+				assert(firstParameter->GetType() == Ast::NodeType::AccessIndexExpression);
+				const Ast::AccessIndexExpression& accessIndex = static_cast<const Ast::AccessIndexExpression&>(*firstParameter);
+
+				assert(accessIndex.expr->GetType() == Ast::NodeType::VariableValueExpression);
+				const Ast::VariableValueExpression& structVar = static_cast<const Ast::VariableValueExpression&>(*accessIndex.expr);
+
+				std::uint32_t structId = GetVariable(structVar.variableId).pointerId;
+
+				assert(accessIndex.indices.size() == 1);
+				assert(accessIndex.indices[0]->GetType() == Ast::NodeType::ConstantValueExpression);
+				const Ast::ConstantValueExpression& memberConstant = static_cast<const Ast::ConstantValueExpression&>(*accessIndex.indices[0]);
+				assert(std::holds_alternative<std::int32_t>(memberConstant.value));
+				std::uint32_t arrayMemberIndex = Nz::SafeCast<std::uint32_t>(std::get<std::int32_t>(memberConstant.value));
+
+				std::uint32_t resultId = m_writer.AllocateResultId();
+				m_currentBlock->Append(SpirvOp::OpArrayLength, typeId, resultId, structId, arrayMemberIndex);
+
+				PushResultId(resultId);
+				break;
+			}
+
 			case Ast::IntrinsicType::CrossProduct:
 			{
 				std::uint32_t glslInstructionSet = m_writer.GetExtendedInstructionSet("GLSL.std.450");

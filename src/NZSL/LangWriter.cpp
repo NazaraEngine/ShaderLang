@@ -922,6 +922,13 @@ namespace nzsl
 		bool method = false;
 		switch (node.intrinsic)
 		{
+			case Ast::IntrinsicType::ArraySize:
+				assert(!node.parameters.empty());
+				Visit(node.parameters.front(), true);
+				Append(".Size");
+				method = true;
+				break;
+
 			case Ast::IntrinsicType::CrossProduct:
 				Append("cross");
 				break;

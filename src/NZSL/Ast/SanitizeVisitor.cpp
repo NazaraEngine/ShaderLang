@@ -354,6 +354,26 @@ namespace nzsl::Ast
 				else
 					throw CompilerUnknownMethodError{ identifierEntry.sourceLocation };
 			}
+			else if (IsArrayType(resolvedType) || IsDynArrayType(resolvedType))
+			{
+				if (identifierEntry.identifier == "Size")
+				{
+					// TODO: Add a MethodExpression?
+					auto identifierExpr = std::make_unique<AccessIdentifierExpression>();
+					identifierExpr->expr = std::move(indexedExpr);
+					identifierExpr->identifiers.emplace_back().identifier = identifierEntry.identifier;
+
+					MethodType methodType;
+					methodType.methodIndex = 0; //< FIXME
+					methodType.objectType = std::make_unique<ContainedType>();
+					methodType.objectType->type = resolvedType;
+
+					identifierExpr->cachedExpressionType = std::move(methodType);
+					indexedExpr = std::move(identifierExpr);
+				}
+				else
+					throw CompilerUnknownMethodError{ identifierEntry.sourceLocation };
+			}
 			else if (IsStructType(resolvedType))
 			{
 				std::size_t structIndex = ResolveStruct(resolvedType, indexedExpr->sourceLocation);
@@ -613,7 +633,7 @@ namespace nzsl::Ast
 		}
 		else if (IsMethodType(resolvedType))
 		{
-			[[maybe_unused]] const MethodType& methodType = std::get<MethodType>(resolvedType);
+			const MethodType& methodType = std::get<MethodType>(resolvedType);
 
 			std::vector<ExpressionPtr> parameters;
 			parameters.reserve(node.parameters.size() + 1);
@@ -625,12 +645,39 @@ namespace nzsl::Ast
 			for (const auto& param : node.parameters)
 				parameters.push_back(CloneExpression(param));
 
-			assert(IsSamplerType(methodType.objectType->type) && methodType.methodIndex == 0);
-			auto intrinsic = ShaderBuilder::Intrinsic(IntrinsicType::SampleTexture, std::move(parameters));
-			intrinsic->sourceLocation = node.sourceLocation;
-			Validate(*intrinsic);
+			const ExpressionType& objectType = methodType.objectType->type;
+			if (IsArrayType(objectType))
+			{
+				if (methodType.methodIndex != 0)
+					throw AstInvalidMethodIndexError{ node.sourceLocation, methodType.methodIndex, ToString(objectType, node.sourceLocation) };
 
-			return intrinsic;
+				const ArrayType& arrayType = std::get<ArrayType>(objectType);
+				return ShaderBuilder::Constant(arrayType.length);
+			}
+			else if (IsDynArrayType(objectType))
+			{
+				if (methodType.methodIndex != 0)
+					throw AstInvalidMethodIndexError{ node.sourceLocation, methodType.methodIndex, ToString(objectType, node.sourceLocation) };
+
+				auto intrinsic = ShaderBuilder::Intrinsic(IntrinsicType::ArraySize, std::move(parameters));
+				intrinsic->sourceLocation = node.sourceLocation;
+				Validate(*intrinsic);
+
+				return intrinsic;
+			}
+			else if (IsSamplerType(objectType))
+			{
+				if (methodType.methodIndex != 0)
+					throw AstInvalidMethodIndexError{ node.sourceLocation, methodType.methodIndex, ToString(objectType, node.sourceLocation) };
+
+				auto intrinsic = ShaderBuilder::Intrinsic(IntrinsicType::SampleTexture, std::move(parameters));
+				intrinsic->sourceLocation = node.sourceLocation;
+				Validate(*intrinsic);
+
+				return intrinsic;
+			}
+			else
+				throw AstInvalidMethodIndexError{ node.sourceLocation, 0, ToString(objectType, node.sourceLocation) };
 		}
 		else
 		{
@@ -3912,6 +3959,14 @@ namespace nzsl::Ast
 		// Parameter validation and return type attribution
 		switch (node.intrinsic)
 		{
+			case IntrinsicType::ArraySize:
+				if (IsUnresolved(ValidateIntrinsicParamCount<1>(node))
+				 || IsUnresolved(ValidateIntrinsicParameterType<0>(node, IsDynArrayType, "dyn-array type")))
+					return ValidationResult::Unresolved;
+
+				node.cachedExpressionType = ExpressionType{ PrimitiveType::UInt32 };
+				return ValidationResult::Validated;
+
 			case IntrinsicType::CrossProduct:
 				if (IsUnresolved(ValidateIntrinsicParamCount<2>(node))
 				 || IsUnresolved(ValidateIntrinsicParamMatchingType(node))
