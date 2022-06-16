@@ -29,7 +29,6 @@ namespace nzsl
 		constexpr std::string_view s_glslWriterShaderDrawParametersBaseInstanceName = "_nzslBaseInstance";
 		constexpr std::string_view s_glslWriterShaderDrawParametersBaseVertexName = "_nzslBaseVertex";
 		constexpr std::string_view s_glslWriterShaderDrawParametersDrawIndexName = "_nzslDrawID";
-		constexpr std::string_view s_glslWriterShaderDrawIdName = "_nzslFlipYValue";
 		constexpr std::string_view s_glslWriterInputPrefix = "_nzslIn_";
 		constexpr std::string_view s_glslWriterOutputPrefix = "_nzslOut_";
 		constexpr std::string_view s_glslWriterOutputVarName = "_nzslOutput";

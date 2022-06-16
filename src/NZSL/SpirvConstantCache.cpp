@@ -1076,57 +1076,6 @@ namespace nzsl
 
 	SpirvConstantCache& SpirvConstantCache::operator=(SpirvConstantCache&& cache) noexcept = default;
 
-	template<>
-	struct SpirvConstantCache::TypeBuilder<bool>
-	{
-		static Type Build()
-		{
-			return Type{ Bool{} };
-		}
-	};
-
-	template<typename T>
-	struct SpirvConstantCache::TypeBuilder<T, std::enable_if_t<std::is_floating_point_v<T>>>
-	{
-		static Type Build()
-		{
-			return { Float{ sizeof(T) * CHAR_BIT }};
-		}
-	};
-
-	template<typename T>
-	struct SpirvConstantCache::TypeBuilder<T, std::enable_if_t<std::is_integral_v<T>>>
-	{
-		static Type Build()
-		{
-			return { Integer{ sizeof(T) * CHAR_BIT, std::is_signed_v<T> } };
-		}
-	};
-
-	template<typename T, std::size_t N>
-	struct SpirvConstantCache::TypeBuilder<Vector<T, N>>
-	{
-		static Type Build()
-		{
-			return { Vector{ std::make_shared<Type>(BuildSingleType<T>()), Nz::SafeCast<std::uint32_t>(N) }};
-		}
-	};
-
-	template<typename T>
-	auto SpirvConstantCache::BuildSingleType() -> Type
-	{
-		NAZARA_USE_ANONYMOUS_NAMESPACE
-
-		if constexpr (std::is_same_v<T, Ast::NoValue>)
-			throw std::runtime_error("invalid type (value expected)");
-		else if constexpr (std::is_same_v<T, std::string>)
-			throw std::runtime_error("unexpected string literal");
-		else
-		{
-			return TypeBuilder<T>::Build();
-		}
-	}
-
 	void SpirvConstantCache::Write(const AnyConstant& constant, std::uint32_t resultId, SpirvSection& constants)
 	{
 		std::visit([&](auto&& arg)

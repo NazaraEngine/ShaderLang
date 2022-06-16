@@ -41,6 +41,8 @@ namespace nzsl::Ast
 			};
 
 		private:
+			using Cloner::Clone;
+
 			StatementPtr Clone(DeclareAliasStatement& node) override;
 			StatementPtr Clone(DeclareConstStatement& node) override;
 			StatementPtr Clone(DeclareExternalStatement& node) override;

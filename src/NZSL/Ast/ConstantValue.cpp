@@ -107,6 +107,8 @@ namespace nzsl::Ast
 
 	ExpressionType GetConstantType(const ConstantSingleValue& constant)
 	{
+		NAZARA_USE_ANONYMOUS_NAMESPACE
+
 		return std::visit([&](auto&& arg) -> Ast::ExpressionType
 		{
 			using T = std::decay_t<decltype(arg)>;

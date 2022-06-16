@@ -1107,7 +1107,6 @@ namespace nzsl::Ast
 			using T = std::decay_t<decltype(arg)>;
 
 			using VectorInner = GetVectorInnerType<T>;
-			using Type = typename VectorInner::type;
 
 			if constexpr (VectorInner::IsVector)
 			{

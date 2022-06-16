@@ -38,8 +38,8 @@ namespace nzslc
 	}
 	
 	Compiler::Compiler(cxxopts::ParseResult& options) :
-	m_options(options),
 	m_logFormat(LogFormat::Classic),
+	m_options(options),
 	m_profiling(false),
 	m_outputToStdout(false),
 	m_verbose(false),
