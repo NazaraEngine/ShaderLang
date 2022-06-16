@@ -613,7 +613,7 @@ namespace nzsl::Ast
 		}
 		else if (IsMethodType(resolvedType))
 		{
-			const MethodType& methodType = std::get<MethodType>(resolvedType);
+			[[maybe_unused]] const MethodType& methodType = std::get<MethodType>(resolvedType);
 
 			std::vector<ExpressionPtr> parameters;
 			parameters.reserve(node.parameters.size() + 1);
@@ -796,7 +796,6 @@ namespace nzsl::Ast
 			using T = std::decay_t<decltype(arg)>;
 
 			using VectorInner = GetVectorInnerType<T>;
-			using Type = typename VectorInner::type;
 
 			if constexpr (VectorInner::IsVector)
 			{
@@ -2561,7 +2560,7 @@ namespace nzsl::Ast
 		// Dynamic array
 		RegisterType("dyn_array", PartialType {
 			{ TypeParameterCategory::FullType }, {},
-			[=](const TypeParameter* parameters, std::size_t parameterCount, const SourceLocation& /*sourceLocation*/) -> ExpressionType
+			[=](const TypeParameter* parameters, [[maybe_unused]] std::size_t parameterCount, const SourceLocation& /*sourceLocation*/) -> ExpressionType
 			{
 				assert(parameterCount == 1);
 				assert(std::holds_alternative<ExpressionType>(parameters[0]));
@@ -2581,7 +2580,7 @@ namespace nzsl::Ast
 		{
 			RegisterType("mat" + std::to_string(componentCount), PartialType {
 				{ TypeParameterCategory::PrimitiveType }, {},
-				[=](const TypeParameter* parameters, std::size_t parameterCount, const SourceLocation& /*sourceLocation*/) -> ExpressionType
+				[=](const TypeParameter* parameters, [[maybe_unused]] std::size_t parameterCount, const SourceLocation& /*sourceLocation*/) -> ExpressionType
 				{
 					assert(parameterCount == 1);
 					assert(std::holds_alternative<ExpressionType>(*parameters));
@@ -2601,7 +2600,7 @@ namespace nzsl::Ast
 		{
 			RegisterType("vec" + std::to_string(componentCount), PartialType {
 				{ TypeParameterCategory::PrimitiveType }, {},
-				[=](const TypeParameter* parameters, std::size_t parameterCount, const SourceLocation& /*sourceLocation*/) -> ExpressionType
+				[=](const TypeParameter* parameters, [[maybe_unused]] std::size_t parameterCount, const SourceLocation& /*sourceLocation*/) -> ExpressionType
 				{
 					assert(parameterCount == 1);
 					assert(std::holds_alternative<ExpressionType>(*parameters));
@@ -2640,7 +2639,7 @@ namespace nzsl::Ast
 		{
 			RegisterType(std::move(sampler.typeName), PartialType {
 				{ TypeParameterCategory::PrimitiveType }, {},
-				[=](const TypeParameter* parameters, std::size_t parameterCount, const SourceLocation& sourceLocation) -> ExpressionType
+				[=](const TypeParameter* parameters, [[maybe_unused]] std::size_t parameterCount, const SourceLocation& sourceLocation) -> ExpressionType
 				{
 					assert(parameterCount == 1);
 					assert(std::holds_alternative<ExpressionType>(*parameters));
@@ -2664,7 +2663,7 @@ namespace nzsl::Ast
 		// storage
 		RegisterType("storage", PartialType {
 			{ TypeParameterCategory::StructType }, {},
-			[=](const TypeParameter* parameters, std::size_t parameterCount, const SourceLocation& /*sourceLocation*/) -> ExpressionType
+			[=](const TypeParameter* parameters, [[maybe_unused]] std::size_t parameterCount, const SourceLocation& /*sourceLocation*/) -> ExpressionType
 			{
 				assert(parameterCount == 1);
 				assert(std::holds_alternative<ExpressionType>(*parameters));
@@ -2682,7 +2681,7 @@ namespace nzsl::Ast
 		// uniform
 		RegisterType("uniform", PartialType {
 			{ TypeParameterCategory::StructType }, {},
-			[=](const TypeParameter* parameters, std::size_t parameterCount, const SourceLocation& /*sourceLocation*/) -> ExpressionType
+			[=](const TypeParameter* parameters, [[maybe_unused]] std::size_t parameterCount, const SourceLocation& /*sourceLocation*/) -> ExpressionType
 			{
 				assert(parameterCount == 1);
 				assert(std::holds_alternative<ExpressionType>(*parameters));
@@ -2727,9 +2726,11 @@ namespace nzsl::Ast
 
 		m_context->currentEnv->identifiersInScope.push_back({
 			std::move(name),
-			aliasIndex,
-			IdentifierCategory::Alias,
-			m_context->inConditionalStatement
+			{ 
+				aliasIndex,
+				IdentifierCategory::Alias,
+				m_context->inConditionalStatement
+			}
 		});
 
 		return aliasIndex;
@@ -2753,9 +2754,11 @@ namespace nzsl::Ast
 
 		m_context->currentEnv->identifiersInScope.push_back({
 			std::move(name),
-			constantIndex,
-			IdentifierCategory::Constant,
-			m_context->inConditionalStatement
+			{
+				constantIndex,
+				IdentifierCategory::Constant,
+				m_context->inConditionalStatement
+			}
 		});
 
 		return constantIndex;
@@ -2803,9 +2806,11 @@ namespace nzsl::Ast
 
 		m_context->currentEnv->identifiersInScope.push_back({
 			std::move(name),
-			functionIndex,
-			IdentifierCategory::Function,
-			m_context->inConditionalStatement
+			{
+				functionIndex,
+				IdentifierCategory::Function,
+				m_context->inConditionalStatement
+			}
 		});
 
 		return functionIndex;
@@ -2820,9 +2825,11 @@ namespace nzsl::Ast
 
 		m_context->currentEnv->identifiersInScope.push_back({
 			std::move(name),
-			intrinsicIndex,
-			IdentifierCategory::Intrinsic,
-			m_context->inConditionalStatement
+			{
+				intrinsicIndex,
+				IdentifierCategory::Intrinsic,
+				m_context->inConditionalStatement
+			}
 		});
 
 		return intrinsicIndex;
@@ -2837,9 +2844,11 @@ namespace nzsl::Ast
 
 		m_context->currentEnv->identifiersInScope.push_back({
 			std::move(moduleIdentifier),
-			moduleIndex,
-			IdentifierCategory::Module,
-			m_context->inConditionalStatement
+			{
+				moduleIndex,
+				IdentifierCategory::Module,
+				m_context->inConditionalStatement
+			}
 		});
 
 		return moduleIndex;
@@ -2902,9 +2911,11 @@ namespace nzsl::Ast
 
 		m_context->currentEnv->identifiersInScope.push_back({
 			std::move(name),
-			typeIndex,
-			IdentifierCategory::Type,
-			m_context->inConditionalStatement
+			{
+				typeIndex,
+				IdentifierCategory::Type,
+				m_context->inConditionalStatement
+			}
 		});
 
 		return typeIndex;
@@ -2934,9 +2945,11 @@ namespace nzsl::Ast
 
 		m_context->currentEnv->identifiersInScope.push_back({
 			std::move(name),
-			typeIndex,
-			IdentifierCategory::Type,
-			m_context->inConditionalStatement
+			{
+				typeIndex,
+				IdentifierCategory::Type,
+				m_context->inConditionalStatement
+			}
 		});
 
 		return typeIndex;
@@ -2946,9 +2959,11 @@ namespace nzsl::Ast
 	{
 		m_context->currentEnv->identifiersInScope.push_back({
 			std::move(name),
-			std::numeric_limits<std::size_t>::max(),
-			IdentifierCategory::Unresolved,
-			m_context->inConditionalStatement
+			{
+				std::numeric_limits<std::size_t>::max(),
+				IdentifierCategory::Unresolved,
+				m_context->inConditionalStatement
+			}
 		});
 	}
 

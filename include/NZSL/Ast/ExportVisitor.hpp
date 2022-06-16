@@ -14,7 +14,7 @@
 
 namespace nzsl::Ast
 {
-	class NZSL_API ExportVisitor : public RecursiveVisitor
+	class NZSL_API ExportVisitor : RecursiveVisitor
 	{
 		public:
 			struct Callbacks;
@@ -36,6 +36,8 @@ namespace nzsl::Ast
 			};
 
 		private:
+			using RecursiveVisitor::Visit;
+
 			void Visit(DeclareFunctionStatement& node) override;
 			void Visit(DeclareStructStatement& node) override;
 

@@ -102,6 +102,7 @@ namespace nzsl
 
 			void Visit(Ast::ExpressionPtr& expr, bool encloseIfRequired = false);
 
+			using ExpressionVisitorExcept::Visit;
 			void Visit(Ast::AccessIdentifierExpression& node) override;
 			void Visit(Ast::AccessIndexExpression& node) override;
 			void Visit(Ast::AliasValueExpression& node) override;
@@ -121,6 +122,7 @@ namespace nzsl
 			void Visit(Ast::VariableValueExpression& node) override;
 			void Visit(Ast::UnaryExpression& node) override;
 
+			using StatementVisitorExcept::Visit;
 			void Visit(Ast::BranchStatement& node) override;
 			void Visit(Ast::ConditionalStatement& node) override;
 			void Visit(Ast::DeclareAliasStatement& node) override;
