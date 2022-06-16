@@ -306,7 +306,7 @@ module;
 
 struct Data
 {
-	size: u32,
+	data: u32,
 	values: dyn_array[f32]
 }
 
@@ -319,6 +319,7 @@ external
 fn main()
 {
 	let value = data.values[42];
+	let size = data.values.Size();
 }
 )";
 
@@ -332,7 +333,7 @@ fn main()
 			ExpectGLSL(*shaderModule, R"(
 buffer _nzslBinding_data
 {
-	uint size;
+	uint data;
 	float values[];
 } data;
 
@@ -340,13 +341,14 @@ buffer _nzslBinding_data
 void main()
 {
 	float value = data.values[42];
+	uint size = uint(data.values.length());
 }
 )", glslEnv);
 
 			ExpectNZSL(*shaderModule, R"(
 struct Data
 {
-	size: u32,
+	data: u32,
 	values: dyn_array[f32]
 }
 
@@ -359,6 +361,7 @@ external
 fn main()
 {
 	let value: f32 = data.values[42];
+	let size: u32 = data.values.Size();
 })");
 
 			WHEN("Generating SPIR-V 1.0")
@@ -390,14 +393,18 @@ fn main()
 %12 = OpConstant %11 'Value'(1)
 %13 = OpConstant %11 'Value'(42)
 %14 = OpTypePointer StorageClass(Function) %2
-%18 = OpTypePointer StorageClass(Uniform) %2
+%15 = OpTypePointer StorageClass(Function) %1
+%20 = OpTypePointer StorageClass(Uniform) %2
  %8 = OpVariable %7 StorageClass(Uniform)
-%15 = OpFunction %9 FunctionControl(0) %10
-%16 = OpLabel
-%17 = OpVariable %14 StorageClass(Function)
-%19 = OpAccessChain %18 %8 %12 %13
-%20 = OpLoad %2 %19
-      OpStore %17 %20
+%16 = OpFunction %9 FunctionControl(0) %10
+%17 = OpLabel
+%18 = OpVariable %14 StorageClass(Function)
+%19 = OpVariable %15 StorageClass(Function)
+%21 = OpAccessChain %20 %8 %12 %13
+%22 = OpLoad %2 %21
+      OpStore %18 %22
+%23 = OpArrayLength %1 %8 1
+      OpStore %19 %23
       OpReturn
       OpFunctionEnd)", spirvEnv, true);
 			}
@@ -430,14 +437,18 @@ fn main()
 %12 = OpConstant %11 'Value'(1)
 %13 = OpConstant %11 'Value'(42)
 %14 = OpTypePointer StorageClass(Function) %2
-%18 = OpTypePointer StorageClass(StorageBuffer) %2
+%15 = OpTypePointer StorageClass(Function) %1
+%20 = OpTypePointer StorageClass(StorageBuffer) %2
  %8 = OpVariable %7 StorageClass(StorageBuffer)
-%15 = OpFunction %9 FunctionControl(0) %10
-%16 = OpLabel
-%17 = OpVariable %14 StorageClass(Function)
-%19 = OpAccessChain %18 %8 %12 %13
-%20 = OpLoad %2 %19
-      OpStore %17 %20
+%16 = OpFunction %9 FunctionControl(0) %10
+%17 = OpLabel
+%18 = OpVariable %14 StorageClass(Function)
+%19 = OpVariable %15 StorageClass(Function)
+%21 = OpAccessChain %20 %8 %12 %13
+%22 = OpLoad %2 %21
+      OpStore %18 %22
+%23 = OpArrayLength %1 %8 1
+      OpStore %19 %23
       OpReturn
       OpFunctionEnd)", spirvEnv, true);
 			}

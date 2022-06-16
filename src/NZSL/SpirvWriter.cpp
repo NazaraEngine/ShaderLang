@@ -467,6 +467,7 @@ namespace nzsl
 						break;
 
 					// Part of SPIR-V core
+					case Ast::IntrinsicType::ArraySize:
 					case Ast::IntrinsicType::DotProduct:
 					case Ast::IntrinsicType::SampleTexture:
 						break;

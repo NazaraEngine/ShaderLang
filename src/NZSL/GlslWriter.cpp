@@ -1346,8 +1346,19 @@ namespace nzsl
 	
 	void GlslWriter::Visit(Ast::IntrinsicExpression& node)
 	{
+		bool cast = false;
+		bool method = false;
 		switch (node.intrinsic)
 		{
+			case Ast::IntrinsicType::ArraySize:
+				assert(!node.parameters.empty());
+				Append("uint(");
+				Visit(node.parameters.front(), true);
+				Append(".length");
+				cast = true;
+				method = true;
+				break;
+
 			case Ast::IntrinsicType::CrossProduct:
 				Append("cross");
 				break;
@@ -1390,14 +1401,19 @@ namespace nzsl
 		}
 
 		Append("(");
-		for (std::size_t i = 0; i < node.parameters.size(); ++i)
+		bool first = true;
+		for (std::size_t i = (method) ? 1 : 0; i < node.parameters.size(); ++i)
 		{
-			if (i != 0)
+			if (!first)
 				Append(", ");
+
+			first = false;
 
 			node.parameters[i]->Visit(*this);
 		}
 		Append(")");
+		if (cast)
+			Append(")");
 	}
 
 	void GlslWriter::Visit(Ast::SwizzleExpression& node)

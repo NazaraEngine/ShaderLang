@@ -139,10 +139,6 @@ namespace nzsl::ShaderBuilder
 		castNode->targetType = std::move(targetType);
 		castNode->expressions = std::move(expressions);
 
-		assert(expressions.size() <= castNode->expressions.size());
-		for (std::size_t i = 0; i < expressions.size(); ++i)
-			castNode->expressions[i] = std::move(expressions[i]);
-
 		return castNode;
 	}
 

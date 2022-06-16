@@ -83,6 +83,7 @@ namespace nzsl::Ast
 
 	enum class IntrinsicType
 	{
+		ArraySize = 10,
 		CrossProduct = 0,
 		DotProduct = 1,
 		Exp = 7,
