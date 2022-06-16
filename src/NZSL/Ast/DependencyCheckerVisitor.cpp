@@ -33,9 +33,11 @@ namespace nzsl::Ast
 
 			if constexpr (std::is_same_v<T, AliasType>)
 				usageSet.usedAliases.UnboundedSet(arg.aliasIndex);
+			else if constexpr (std::is_base_of_v<BaseArrayType, T>)
+				RegisterType(usageSet, arg.containedType->type);
 			else if constexpr (std::is_same_v<T, StructType>)
 				usageSet.usedStructs.UnboundedSet(arg.structIndex);
-			else if constexpr (std::is_same_v<T, UniformType>)
+			else if constexpr (std::is_same_v<T, StorageType> || std::is_same_v<T, UniformType>)
 				usageSet.usedStructs.UnboundedSet(arg.containedType.structIndex);
 
 		}, exprType);
