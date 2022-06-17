@@ -1109,13 +1109,7 @@ namespace nzsl::Ast
 			using VectorInner = GetVectorInnerType<T>;
 
 			if constexpr (VectorInner::IsVector)
-			{
-				auto constantArray = ShaderBuilder::ConstantArray(arg);
-				constantArray->cachedExpressionType = GetConstantType(constantArray->values);
-				constantArray->sourceLocation = node.sourceLocation;
-
-				return constantArray;
-			}
+				return Cloner::Clone(node); //< Keep arrays as constants
 			else
 			{
 				auto constant = ShaderBuilder::Constant(arg);
