@@ -3268,6 +3268,7 @@ namespace nzsl::Ast
 			try
 			{
 				output = Nz::StaticUniquePointerCast<MultiStatement>(Cloner::Clone(rootNode));
+				ResolveFunctions();
 			}
 			catch (const std::runtime_error& err)
 			{
@@ -3276,8 +3277,6 @@ namespace nzsl::Ast
 
 				*error = err.what();
 			}
-
-			ResolveFunctions();
 		}
 
 		return output;
