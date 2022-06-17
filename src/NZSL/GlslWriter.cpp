@@ -1352,6 +1352,7 @@ namespace nzsl
 		{
 			case Ast::IntrinsicType::ArraySize:
 				assert(!node.parameters.empty());
+				// array.length() outputs int in GLSL, but NZSL expects uint
 				Append("uint(");
 				Visit(node.parameters.front(), true);
 				Append(".length");
