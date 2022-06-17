@@ -352,7 +352,7 @@ namespace nzsl::Ast
 					indexedExpr = std::move(identifierExpr);
 				}
 				else
-					throw CompilerUnknownMethodError{ identifierEntry.sourceLocation };
+					throw CompilerUnknownMethodError{ identifierEntry.sourceLocation, ToString(resolvedType, indexedExpr->sourceLocation), identifierEntry.identifier };
 			}
 			else if (IsArrayType(resolvedType) || IsDynArrayType(resolvedType))
 			{
@@ -372,7 +372,7 @@ namespace nzsl::Ast
 					indexedExpr = std::move(identifierExpr);
 				}
 				else
-					throw CompilerUnknownMethodError{ identifierEntry.sourceLocation };
+					throw CompilerUnknownMethodError{ identifierEntry.sourceLocation, ToString(resolvedType, indexedExpr->sourceLocation), identifierEntry.identifier };
 			}
 			else if (IsStructType(resolvedType))
 			{
@@ -1276,6 +1276,7 @@ namespace nzsl::Ast
 
 		auto clone = std::make_unique<DeclareFunctionStatement>();
 		clone->name = node.name;
+		clone->sourceLocation = node.sourceLocation;
 
 		clone->parameters.reserve(node.parameters.size());
 		for (auto& parameter : node.parameters)
@@ -1491,6 +1492,8 @@ namespace nzsl::Ast
 						throw CompilerStructLayoutInnerMismatchError{ member.sourceLocation, "std140", "<TODO>" };
 				}
 			}
+
+			ValidateConcreteType(memberType, member.sourceLocation);
 
 			if (member.builtin.IsResultingValue())
 			{
@@ -3831,7 +3834,7 @@ namespace nzsl::Ast
 			if (targetArrayType.length > 0)
 			{
 				if (targetArrayType.length != node.expressions.size())
-					throw CompilerCastComponentMismatchError{ node.sourceLocation, targetArrayType.length, Nz::SafeCast<std::uint32_t>(node.expressions.size()) };
+					throw CompilerCastComponentMismatchError{ node.sourceLocation, Nz::SafeCast<std::uint32_t>(node.expressions.size()), targetArrayType.length };
 			}
 			else
 				targetArrayType.length = Nz::SafeCast<std::uint32_t>(node.expressions.size());
@@ -4379,7 +4382,6 @@ namespace nzsl::Ast
 		}
 	}
 
-	
 	template<std::size_t N>
 	auto SanitizeVisitor::ValidateIntrinsicParamCount(IntrinsicExpression& node) -> ValidationResult
 	{

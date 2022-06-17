@@ -29,6 +29,80 @@ TEST_CASE("errors", "[Shader]")
 			nzsl::Ast::Sanitize(*nzsl::Parse(sourceCode));
 		};
 
+		SECTION("Arrays")
+		{
+			// unsized arrays can only be used on declaration (for implicit size)
+			CHECK_NOTHROW(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+const data = array[f32](1.0, 2.0, 3.0);
+
+fn main()
+{
+	let runtimeData = array[i32](1, 2, 3, 4, 5);
+}
+)"));
+
+			// however it's an error to give a size and provide less parameters than specified
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+const data = array[f32, 4](1.0, 2.0, 3.0);
+)"), "(5,14 -> 41): CCastComponentMismatch error: component count (3) doesn't match required component count (4)");
+
+			// and more
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+const data = array[f32, 2](1.0, 2.0, 3.0);
+)"), "(5,14 -> 41): CCastComponentMismatch error: component count (3) doesn't match required component count (2)");
+
+			// it's an error to declare an unsized array outside of this case
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+fn main()
+{
+	let data: array[f32];
+}
+)"), "(7,2 -> 22): CArrayLengthRequired error: array length is required in this context");
+
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+struct Data
+{
+	data: array[bool]
+}
+)"), "(7,2 -> 5): CArrayLengthRequired error: array length is required in this context");
+
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+fn test(param: array[f32])
+{
+}
+)"), "(5,9 -> 25): CArrayLengthRequired error: array length is required in this context");
+
+			// TODO: if the error happens on the return type, the whole function gets flagged (add source location to ExpressionValue ?)
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+fn test() -> array[f32]
+{
+	let x = array[f32](1.0);
+	return x;
+}
+)"), "(5 -> 9,1 -> 1): CArrayLengthRequired error: array length is required in this context");
+		}
+
 		SECTION("Builtins")
 		{
 			CHECK_THROWS_WITH(Compile(R"(
