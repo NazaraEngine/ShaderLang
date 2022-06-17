@@ -867,13 +867,13 @@ namespace nzsl
 		{
 			case TokenType::Alias:
 				if (!attributes.empty())
-					throw ParserUnexpectedTokenError{ nextToken.location, nextToken.type };
+					throw ParserUnexpectedAttributeError{ attributes.front().sourceLocation, attributes.front().type };
 
 				return ParseAliasDeclaration();
 
 			case TokenType::Const:
 				if (!attributes.empty())
-					throw ParserUnexpectedTokenError{ nextToken.location, nextToken.type };
+					throw ParserUnexpectedAttributeError{ attributes.front().sourceLocation, attributes.front().type };
 
 				return ParseConstStatement();
 
@@ -888,7 +888,7 @@ namespace nzsl
 
 			case TokenType::Import:
 				if (!attributes.empty())
-					throw ParserUnexpectedTokenError{ nextToken.location, nextToken.type };
+					throw ParserUnexpectedAttributeError{ attributes.front().sourceLocation, attributes.front().type };
 
 				return ParseImportStatement();
 
@@ -903,7 +903,7 @@ namespace nzsl
 			case TokenType::Option:
 			{
 				if (!attributes.empty())
-					throw ParserUnexpectedTokenError{ nextToken.location, nextToken.type };
+					throw ParserUnexpectedAttributeError{ attributes.front().sourceLocation, attributes.front().type };
 
 				return ParseOptionDeclaration();
 			}
