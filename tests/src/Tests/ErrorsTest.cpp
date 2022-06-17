@@ -20,6 +20,49 @@ TEST_CASE("errors", "[Shader]")
 		CHECK_THROWS_WITH(nzsl::Parse("module;"), "(1,1 -> 6): PMissingAttribute error: missing attribute nzsl_version");
 		CHECK_THROWS_WITH(nzsl::Parse("[nzsl_version] module;"), "(1,2 -> 13): PAttributeMissingParameter error: attribute nzsl_version requires a parameter");
 		CHECK_THROWS_WITH(nzsl::Parse("[nzsl_version(\"1.0\"), nzsl_version(\"1.0\")] module;"), "(1,23 -> 41): PAttributeMultipleUnique error: attribute nzsl_version can only be present once");
+
+		CHECK_THROWS_WITH(nzsl::Parse(R"(
+[nzsl_version("1.0")]
+module;
+
+[cond(true)]
+)"), "(7, 0): PUnexpectedToken error: unexpected token EndOfStream");
+
+		// alias statements don't support attributes
+		CHECK_THROWS_WITH(nzsl::Parse(R"(
+[nzsl_version("1.0")]
+module;
+
+[cond(false)]
+alias vec3f32 = vec3[f32];
+)"), "(5,2 -> 12): PUnexpectedAttribute error: unexpected attribute cond");
+
+		// const statements don't support attributes
+		CHECK_THROWS_WITH(nzsl::Parse(R"(
+[nzsl_version("1.0")]
+module;
+
+[cond(false)]
+const enable: bool = false;
+)"), "(5,2 -> 12): PUnexpectedAttribute error: unexpected attribute cond");
+
+		// import statements don't support cond attribute
+		CHECK_THROWS_WITH(nzsl::Parse(R"(
+[nzsl_version("1.0")]
+module;
+
+[cond(true)]
+import Stuff;
+)"), "(5,2 -> 11): PUnexpectedAttribute error: unexpected attribute cond");
+
+		// option statements don't support attributes
+		CHECK_THROWS_WITH(nzsl::Parse(R"(
+[nzsl_version("1.0")]
+module;
+
+[cond(false)]
+option enable: bool;
+)"), "(5,2 -> 12): PUnexpectedAttribute error: unexpected attribute cond");
 	}
 
 	SECTION("Checking compiler errors")
