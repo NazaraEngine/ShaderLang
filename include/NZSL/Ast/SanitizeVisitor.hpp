@@ -48,6 +48,7 @@ namespace nzsl::Ast
 				bool reduceLoopsToWhile = false;
 				bool removeAliases = false;
 				bool removeCompoundAssignments = false;
+				bool removeConstArraySize = false;
 				bool removeMatrixCast = false;
 				bool removeOptionDeclaration = false;
 				bool removeScalarSwizzling = false;

@@ -612,6 +612,7 @@ namespace nzsl
 			options.reduceLoopsToWhile = true;
 			options.removeAliases = true;
 			options.removeCompoundAssignments = true;
+			options.removeConstArraySize = true;
 			options.removeMatrixCast = true;
 			options.removeOptionDeclaration = true;
 			options.removeSingleConstDeclaration = true;

@@ -646,7 +646,7 @@ namespace nzsl::Ast
 				parameters.push_back(CloneExpression(param));
 
 			const ExpressionType& objectType = methodType.objectType->type;
-			if (IsArrayType(objectType))
+			if (IsArrayType(objectType) && m_context->options.removeConstArraySize)
 			{
 				if (methodType.methodIndex != 0)
 					throw AstInvalidMethodIndexError{ node.sourceLocation, methodType.methodIndex, ToString(objectType, node.sourceLocation) };
@@ -654,7 +654,7 @@ namespace nzsl::Ast
 				const ArrayType& arrayType = std::get<ArrayType>(objectType);
 				return ShaderBuilder::Constant(arrayType.length);
 			}
-			else if (IsDynArrayType(objectType))
+			else if (IsArrayType(objectType) || IsDynArrayType(objectType))
 			{
 				if (methodType.methodIndex != 0)
 					throw AstInvalidMethodIndexError{ node.sourceLocation, methodType.methodIndex, ToString(objectType, node.sourceLocation) };
@@ -917,7 +917,20 @@ namespace nzsl::Ast
 	ExpressionPtr SanitizeVisitor::Clone(IntrinsicExpression& node)
 	{
 		auto clone = Nz::StaticUniquePointerCast<IntrinsicExpression>(Cloner::Clone(node));
-		Validate(*clone);
+		
+		if (ValidationResult result = Validate(*clone); result == ValidationResult::Validated)
+		{
+			if (clone->intrinsic == IntrinsicType::ArraySize && m_context->options.removeConstArraySize)
+			{
+				assert(!clone->parameters.empty());
+				const ExpressionType& paramType = GetExpressionTypeSecure(*clone->parameters.front());
+				if (IsArrayType(paramType))
+				{
+					const ArrayType& arrayType = std::get<ArrayType>(paramType);
+					return ShaderBuilder::Constant(arrayType.length);
+				}
+			}
+		}
 
 		return clone;
 	}
@@ -3923,6 +3936,11 @@ namespace nzsl::Ast
 
 	auto SanitizeVisitor::Validate(IntrinsicExpression& node) -> ValidationResult
 	{
+		auto IsArrayOrDynArray = [](const ExpressionType& type)
+		{
+			return IsArrayType(type) || IsDynArrayType(type);
+		};
+
 		auto IsFloatingPointVector = [](const ExpressionType& type)
 		{
 			return type == ExpressionType{ VectorType{ 3, PrimitiveType::Float32 } };
@@ -3961,7 +3979,7 @@ namespace nzsl::Ast
 		{
 			case IntrinsicType::ArraySize:
 				if (IsUnresolved(ValidateIntrinsicParamCount<1>(node))
-				 || IsUnresolved(ValidateIntrinsicParameterType<0>(node, IsDynArrayType, "dyn-array type")))
+				 || IsUnresolved(ValidateIntrinsicParameterType<0>(node, IsArrayOrDynArray, "array/dyn-array type")))
 					return ValidationResult::Unresolved;
 
 				node.cachedExpressionType = ExpressionType{ PrimitiveType::UInt32 };
