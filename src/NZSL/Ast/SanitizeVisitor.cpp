@@ -144,6 +144,7 @@ namespace nzsl::Ast
 	{
 		std::shared_ptr<Environment> parentEnv;
 		std::string moduleId;
+		std::vector<PendingFunction> pendingFunctions;
 		std::vector<Identifier> identifiersInScope;
 		std::vector<Scope> scopes;
 	};
@@ -156,6 +157,12 @@ namespace nzsl::Ast
 		Nz::Bitset<> calledFunctions;
 		Nz::Bitset<> calledByFunctions;
 		DeclareFunctionStatement* node;
+	};
+
+	struct SanitizeVisitor::PendingFunction
+	{
+		DeclareFunctionStatement* cloneNode;
+		const DeclareFunctionStatement* node;
 	};
 
 	struct SanitizeVisitor::NamedPartialType
@@ -173,12 +180,6 @@ namespace nzsl::Ast
 			std::unique_ptr<DependencyCheckerVisitor> dependenciesVisitor;
 		};
 
-		struct PendingFunction
-		{
-			DeclareFunctionStatement* cloneNode;
-			const DeclareFunctionStatement* node;
-		};
-
 		struct UsedExternalData
 		{
 			bool isConditional;
@@ -188,7 +189,6 @@ namespace nzsl::Ast
 
 		std::array<DeclareFunctionStatement*, ShaderStageTypeCount> entryFunctions = {};
 		std::vector<ModuleData> modules;
-		std::vector<PendingFunction> pendingFunctions;
 		std::vector<StatementPtr>* currentStatementList = nullptr;
 		std::unordered_map<std::string, std::size_t> moduleByName;
 		std::unordered_map<std::uint64_t, UsedExternalData> usedBindingIndexes;
@@ -1350,7 +1350,7 @@ namespace nzsl::Ast
 		}
 
 		// Function content is resolved in a second pass
-		auto& pendingFunc = m_context->pendingFunctions.emplace_back();
+		auto& pendingFunc = m_context->currentEnv->pendingFunctions.emplace_back();
 		pendingFunc.cloneNode = clone.get();
 		pendingFunc.node = &node;
 
@@ -3081,7 +3081,7 @@ namespace nzsl::Ast
 	void SanitizeVisitor::ResolveFunctions()
 	{
 		// Once every function is known, we can evaluate function content
-		for (auto& pendingFunc : m_context->pendingFunctions)
+		for (auto& pendingFunc : m_context->currentEnv->pendingFunctions)
 		{
 			PushScope();
 
@@ -3122,7 +3122,7 @@ namespace nzsl::Ast
 
 			PopScope();
 		}
-		m_context->pendingFunctions.clear();
+		m_context->currentEnv->pendingFunctions.clear();
 
 		Nz::Bitset<> seen;
 		for (auto& [funcIndex, funcData] : m_context->functions.values)
