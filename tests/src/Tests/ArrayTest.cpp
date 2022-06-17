@@ -37,6 +37,10 @@ fn main(input: VertIn) -> VertOut
 	else
 		output.pos = vec4[f32](0.0, 0.0, 0.0, 0.0);
 
+	let customData = array[i32, vertices.Size() + u32(2)](
+		1, 2, 3, 4, 5
+	);
+
 	return output;
 }
 )";
@@ -75,6 +79,7 @@ void main()
 		output_.pos = vec4(0.000000, 0.000000, 0.000000, 0.000000);
 	}
 	
+	int customData[5] = int[5](1, 2, 3, 4, 5);
 	
 	gl_Position = output_.pos;
 	return;
@@ -110,6 +115,7 @@ fn main(input: VertIn) -> VertOut
 		output.pos = vec4[f32](0.000000, 0.000000, 0.000000, 0.000000);
 	}
 	
+	let customData: array[i32, 5] = array[i32, 5](1, 2, 3, 4, 5);
 	return output;
 })");
 
@@ -147,41 +153,52 @@ fn main(input: VertIn) -> VertOut
 %34 = OpTypePointer StorageClass(Function) %24
 %35 = OpTypeBool
 %36 = OpConstant %1 'Value'(0)
-%51 = OpTypePointer StorageClass(Private) %2
-%56 = OpTypePointer StorageClass(Function) %23
+%37 = OpConstant %21 'Value'(1)
+%38 = OpConstant %21 'Value'(2)
+%39 = OpConstant %21 'Value'(3)
+%40 = OpConstant %21 'Value'(4)
+%41 = OpConstant %21 'Value'(5)
+%42 = OpConstant %3 'Value'(5)
+%43 = OpTypeArray %21 %42
+%44 = OpTypePointer StorageClass(Function) %43
+%60 = OpTypePointer StorageClass(Private) %2
+%65 = OpTypePointer StorageClass(Function) %23
 %20 = OpVariable %6 StorageClass(Private) %19
 %28 = OpVariable %27 StorageClass(Input)
 %33 = OpVariable %32 StorageClass(Output)
-%37 = OpFunction %25 FunctionControl(0) %26
-%38 = OpLabel
-%39 = OpVariable %34 StorageClass(Function)
-%40 = OpVariable %31 StorageClass(Function)
-%41 = OpAccessChain %30 %40 %29
-      OpCopyMemory %41 %28
-%45 = OpAccessChain %30 %40 %29
-%46 = OpLoad %21 %45
-%47 = OpBitcast %3 %46
-%48 = OpULessThan %35 %47 %4
-      OpSelectionMerge %42 SelectionControl(0)
-      OpBranchConditional %48 %43 %44
-%43 = OpLabel
-%49 = OpAccessChain %30 %40 %29
-%50 = OpLoad %21 %49
-%52 = OpAccessChain %51 %20 %50
-%53 = OpLoad %2 %52
-%54 = OpCompositeConstruct %23 %53 %7
-%55 = OpAccessChain %56 %39 %29
-      OpStore %55 %54
-      OpBranch %42
-%44 = OpLabel
-%57 = OpCompositeConstruct %23 %36 %36 %36 %36
-%58 = OpAccessChain %56 %39 %29
-      OpStore %58 %57
-      OpBranch %42
-%42 = OpLabel
-%59 = OpLoad %24 %39
-%60 = OpCompositeExtract %23 %59 0
-      OpStore %33 %60
+%45 = OpFunction %25 FunctionControl(0) %26
+%46 = OpLabel
+%47 = OpVariable %34 StorageClass(Function)
+%48 = OpVariable %44 StorageClass(Function)
+%49 = OpVariable %31 StorageClass(Function)
+%50 = OpAccessChain %30 %49 %29
+      OpCopyMemory %50 %28
+%54 = OpAccessChain %30 %49 %29
+%55 = OpLoad %21 %54
+%56 = OpBitcast %3 %55
+%57 = OpULessThan %35 %56 %4
+      OpSelectionMerge %51 SelectionControl(0)
+      OpBranchConditional %57 %52 %53
+%52 = OpLabel
+%58 = OpAccessChain %30 %49 %29
+%59 = OpLoad %21 %58
+%61 = OpAccessChain %60 %20 %59
+%62 = OpLoad %2 %61
+%63 = OpCompositeConstruct %23 %62 %7
+%64 = OpAccessChain %65 %47 %29
+      OpStore %64 %63
+      OpBranch %51
+%53 = OpLabel
+%66 = OpCompositeConstruct %23 %36 %36 %36 %36
+%67 = OpAccessChain %65 %47 %29
+      OpStore %67 %66
+      OpBranch %51
+%51 = OpLabel
+%68 = OpCompositeConstruct %43 %37 %38 %39 %40 %41
+      OpStore %48 %68
+%69 = OpLoad %24 %47
+%70 = OpCompositeExtract %23 %69 0
+      OpStore %33 %70
       OpReturn
       OpFunctionEnd)", {}, true);
 	}

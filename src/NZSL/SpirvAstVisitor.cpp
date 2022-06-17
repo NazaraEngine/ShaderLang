@@ -553,7 +553,7 @@ namespace nzsl
 		}
 		else
 		{
-			assert(IsVectorType(targetExprType));
+			assert(IsArrayType(targetExprType) || IsVectorType(targetExprType));
 			Nz::StackVector<std::uint32_t> exprResults = NazaraStackVector(std::uint32_t, node.expressions.size());
 
 			for (auto& exprPtr : node.expressions)

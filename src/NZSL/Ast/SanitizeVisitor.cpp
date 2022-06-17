@@ -4374,8 +4374,8 @@ namespace nzsl::Ast
 		if (IsArrayType(exprType))
 		{
 			const ArrayType& arrayType = std::get<ArrayType>(exprType);
-			if (arrayType.length)
-				throw CompilerArrayLengthError{ sourceLocation, std::to_string(arrayType.length) };
+			if (arrayType.length == 0)
+				throw CompilerArrayLengthRequiredError{ sourceLocation };
 		}
 	}
 

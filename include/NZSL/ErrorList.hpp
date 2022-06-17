@@ -52,6 +52,7 @@ NZSL_SHADERLANG_PARSER_ERROR(UnexpectedToken, "unexpected token {}", TokenType)
 // Compiler errors
 NZSL_SHADERLANG_COMPILER_ERROR(AliasUnexpectedType, "for now, only aliases, functions and structs can be aliased (got {})", std::string)
 NZSL_SHADERLANG_COMPILER_ERROR(ArrayLength, "array length must a strictly positive integer, got {}", std::string)
+NZSL_SHADERLANG_COMPILER_ERROR(ArrayLengthRequired, "array length is required in this context")
 NZSL_SHADERLANG_COMPILER_ERROR(AssignTemporary, "temporary values cannot be assigned")
 NZSL_SHADERLANG_COMPILER_ERROR(AttributeUnexpectedExpression, "unexpected expression for this type")
 NZSL_SHADERLANG_COMPILER_ERROR(AttributeUnexpectedType, "unexpected attribute type")
