@@ -36,12 +36,12 @@ namespace nzsl::Ast
 			{
 				std::function<void(ShaderStageType stageType, const std::string& functionName)> onEntryPointDeclaration;
 
-				std::function<void(const DeclareAliasStatement& aliasDecl)> onAliasDeclaration;
-				std::function<void(const DeclareConstStatement& constDecl)> onConstDeclaration;
-				std::function<void(const DeclareExternalStatement& extDecl)> onExternalDeclaration;
-				std::function<void(const DeclareFunctionStatement& funcDecl)> onFunctionDeclaration;
-				std::function<void(const DeclareOptionStatement& optionDecl)> onOptionDeclaration;
-				std::function<void(const DeclareStructStatement& structDecl)> onStructDeclaration;
+				std::function<void(const DeclareAliasStatement&    aliasDecl)>    onAliasDeclaration;
+				std::function<void(const DeclareConstStatement&    constDecl)>    onConstDeclaration;
+				std::function<void(const DeclareExternalStatement& extDecl)>      onExternalDeclaration;
+				std::function<void(const DeclareFunctionStatement& funcDecl)>     onFunctionDeclaration;
+				std::function<void(const DeclareOptionStatement&   optionDecl)>   onOptionDeclaration;
+				std::function<void(const DeclareStructStatement&   structDecl)>   onStructDeclaration;
 				std::function<void(const DeclareVariableStatement& variableDecl)> onVariableDeclaration;
 
 				std::function<void(const std::string& name, std::size_t aliasIndex,  const SourceLocation& sourceLocation)> onAliasIndex;
