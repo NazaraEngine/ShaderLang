@@ -1135,11 +1135,10 @@ namespace nzsl::Ast
 		{
 			case IntrinsicType::ArraySize:
 			{
-				if (parameters.size() == 1 && parameters[0]->GetType() == NodeType::ConstantValueExpression)
+				// Special case: we don't need the array values here, only its type (and thus length)
+				if (parameters.size() == 1)
 				{
-					auto& parameter = static_cast<ConstantValueExpression&>(*parameters[0]);
-
-					const ExpressionType* parameterType = GetExpressionType(parameter);
+					const ExpressionType* parameterType = GetExpressionType(*parameters.front());
 					if (parameterType && IsArrayType(*parameterType))
 					{
 						const ArrayType& arrayType = std::get<ArrayType>(*parameterType);
