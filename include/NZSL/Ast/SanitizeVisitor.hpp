@@ -65,6 +65,7 @@ namespace nzsl::Ast
 			struct Identifier;
 			struct IdentifierData;
 			template<typename T> struct IdentifierList;
+			struct PendingFunction;
 			struct NamedPartialType;
 			struct Scope;
 
