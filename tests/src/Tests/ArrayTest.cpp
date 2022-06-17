@@ -66,7 +66,7 @@ void main()
 	input_.vert_index = gl_VertexID;
 	
 	VertOut output_;
-	if ((uint(input_.vert_index)) < (3u))
+	if ((uint(input_.vert_index)) < (uint(vertices.length())))
 	{
 		output_.pos = vec4(vertices[input_.vert_index], 1.000000);
 	}
@@ -101,7 +101,7 @@ struct VertOut
 fn main(input: VertIn) -> VertOut
 {
 	let output: VertOut;
-	if ((u32(input.vert_index)) < (3))
+	if ((u32(input.vert_index)) < (vertices.Size()))
 	{
 		output.pos = vec4[f32](vertices[input.vert_index], 1.000000);
 	}

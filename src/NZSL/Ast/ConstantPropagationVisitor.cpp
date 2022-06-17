@@ -1127,6 +1127,62 @@ namespace nzsl::Ast
 		}, *constantValue);
 	}
 
+	ExpressionPtr ConstantPropagationVisitor::Clone(IntrinsicExpression& node)
+	{
+		std::vector<ExpressionPtr> parameters;
+
+		std::size_t parameterCount = node.parameters.size();
+		parameters.reserve(parameterCount);
+
+		for (const auto& parameter : node.parameters)
+			parameters.push_back(CloneExpression(parameter));
+
+		switch (node.intrinsic)
+		{
+			case IntrinsicType::ArraySize:
+			{
+				if (parameters.size() == 1 && parameters[0]->GetType() == NodeType::ConstantValueExpression)
+				{
+					auto& parameter = static_cast<ConstantValueExpression&>(*parameters[0]);
+
+					const ExpressionType* parameterType = GetExpressionType(parameter);
+					if (parameterType && IsArrayType(*parameterType))
+					{
+						const ArrayType& arrayType = std::get<ArrayType>(*parameterType);
+						return ShaderBuilder::Constant(arrayType.length);
+					}
+				}
+				break;
+			}
+			
+			// TODO
+			case IntrinsicType::CrossProduct:
+				break;
+			case IntrinsicType::DotProduct:
+				break;
+			case IntrinsicType::Exp:
+				break;
+			case IntrinsicType::Length:
+				break;
+			case IntrinsicType::Max:
+				break;
+			case IntrinsicType::Min:
+				break;
+			case IntrinsicType::Normalize:
+				break;
+			case IntrinsicType::Pow:
+				break;
+			case IntrinsicType::Reflect:
+				break;
+
+			// Always runtime intrinsics
+			case IntrinsicType::SampleTexture:
+				break;
+		}
+
+		return ShaderBuilder::Intrinsic(node.intrinsic, std::move(parameters));
+	}
+
 	ExpressionPtr ConstantPropagationVisitor::Clone(SwizzleExpression& node)
 	{
 		auto expr = CloneExpression(node.expression);

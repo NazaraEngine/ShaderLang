@@ -44,6 +44,7 @@ namespace nzsl::Ast
 			ExpressionPtr Clone(CastExpression& node) override;
 			ExpressionPtr Clone(ConditionalExpression& node) override;
 			ExpressionPtr Clone(ConstantExpression& node) override;
+			ExpressionPtr Clone(IntrinsicExpression& node) override;
 			ExpressionPtr Clone(SwizzleExpression& node) override;
 			ExpressionPtr Clone(UnaryExpression& node) override;
 			StatementPtr Clone(BranchStatement& node) override;
