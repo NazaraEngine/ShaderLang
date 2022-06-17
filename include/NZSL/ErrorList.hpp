@@ -131,7 +131,7 @@ NZSL_SHADERLANG_COMPILER_ERROR(UnaryUnsupported, "type ({}) does not support thi
 NZSL_SHADERLANG_COMPILER_ERROR(UnexpectedAccessedType, "unexpected type (only struct and vectors can be indexed with identifiers)")
 NZSL_SHADERLANG_COMPILER_ERROR(UnknownField, "unknown field {}", std::string)
 NZSL_SHADERLANG_COMPILER_ERROR(UnknownIdentifier, "unknown identifier {}", std::string)
-NZSL_SHADERLANG_COMPILER_ERROR(UnknownMethod, "unknown method {}", std::string)
+NZSL_SHADERLANG_COMPILER_ERROR(UnknownMethod, "type {} has no method {}", std::string, std::string)
 NZSL_SHADERLANG_COMPILER_ERROR(UnmatchingTypes, "left expression type ({}) doesn't match right expression type ({})", std::string, std::string)
 NZSL_SHADERLANG_COMPILER_ERROR(VarDeclarationMissingTypeAndValue, "variable must either have a type or an initial value")
 NZSL_SHADERLANG_COMPILER_ERROR(VarDeclarationOutsideOfFunction, "global variables outside of external blocks are forbidden")
