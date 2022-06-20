@@ -28,28 +28,32 @@ namespace nzsl
 		Ast::ModulePtr module;
 		try
 		{
+			std::uintmax_t fileSize = std::filesystem::file_size(realPath);
+
+			std::ifstream inputFile(realPath, std::ios::in | std::ios::binary);
+			if (!inputFile)
+				throw std::runtime_error("failed to open " + realPath.generic_u8string());
+
+			inputFile.seekg(0, std::ios::end);
+
+			std::streamsize length = inputFile.tellg();
+			if (length == 0)
+				return; //< ignore empty files
+
+			inputFile.seekg(0, std::ios::beg);
+
+			std::vector<char> content(length);
+			if (!inputFile.read(&content[0], length))
+				throw std::runtime_error("failed to read " + realPath.generic_u8string());
+
 			std::string ext = realPath.extension().generic_u8string();
 			if (ext == CompiledModuleExtension)
 			{
-				std::ifstream inputFile(realPath, std::ios::in | std::ios::binary);
-				if (!inputFile)
-					throw std::runtime_error("failed to open " + realPath.generic_u8string());
-
-				inputFile.seekg(0, std::ios::end);
-
-				std::streamsize length = inputFile.tellg();
-
-				inputFile.seekg(0, std::ios::beg);
-
-				std::vector<char> content(length);
-				if (length > 0 && !inputFile.read(&content[0], length))
-					throw std::runtime_error("failed to read " + realPath.generic_u8string());
-
 				Unserializer unserializer(content.data(), content.size());
 				module = Ast::UnserializeShader(unserializer);
 			}
 			else if (ext == ModuleExtension)
-				module = ParseFromFile(realPath);
+				module = Parse(std::string_view(content.data(), content.size()), realPath.generic_u8string());
 			else
 				throw std::runtime_error("unknown extension " + ext);
 		}
@@ -116,21 +120,21 @@ namespace nzsl
 
 				switch (action)
 				{
-				case EFSW_ADD:
-					resolver->OnFileAdded(dir, filename);
-					break;
+					case EFSW_ADD:
+						resolver->OnFileAdded(dir, filename);
+						break;
 
-				case EFSW_DELETE:
-					resolver->OnFileRemoved(dir, filename);
-					break;
+					case EFSW_DELETE:
+						resolver->OnFileRemoved(dir, filename);
+						break;
 
-				case EFSW_MODIFIED:
-					resolver->OnFileUpdated(dir, filename);
-					break;
+					case EFSW_MODIFIED:
+						resolver->OnFileUpdated(dir, filename);
+						break;
 
-				case EFSW_MOVED:
-					resolver->OnFileMoved(dir, filename, (oldFileName) ? oldFileName : std::string_view());
-					break;
+					case EFSW_MOVED:
+						resolver->OnFileMoved(dir, filename, (oldFileName) ? oldFileName : std::string_view());
+						break;
 				}
 			};
 		
