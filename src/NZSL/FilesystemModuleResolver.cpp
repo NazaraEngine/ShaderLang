@@ -65,6 +65,8 @@ namespace nzsl
 		if (!module)
 			return;
 
+		std::lock_guard lock(m_moduleLock);
+
 		std::string moduleName = module->metadata->moduleName;
 		RegisterModule(std::move(module));
 
@@ -88,6 +90,8 @@ namespace nzsl
 		std::string moduleName = module->metadata->moduleName;
 		if (moduleName.empty())
 			throw std::runtime_error("cannot register anonymous module");
+
+		std::lock_guard lock(m_moduleLock);
 
 		auto it = m_modules.find(moduleName);
 		if (it != m_modules.end())
@@ -191,6 +195,8 @@ namespace nzsl
 		if (!CheckExtension(filename))
 			return;
 
+		std::lock_guard lock(m_moduleLock);
+
 		std::filesystem::path canonicalPath = std::filesystem::canonical(std::filesystem::path(directory) / filename);
 
 		auto it = m_moduleByFilepath.find(canonicalPath.generic_u8string());
@@ -205,6 +211,8 @@ namespace nzsl
 	{
 		if (oldFilename.empty() || !CheckExtension(oldFilename))
 			return;
+
+		std::lock_guard lock(m_moduleLock);
 
 		std::filesystem::path canonicalPath = std::filesystem::canonical(std::filesystem::path(directory) / oldFilename);
 		auto it = m_moduleByFilepath.find(canonicalPath.generic_u8string());

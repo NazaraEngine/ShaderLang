@@ -13,6 +13,7 @@
 #include <NZSL/ModuleResolver.hpp>
 #include <filesystem>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <unordered_map>
 
@@ -50,6 +51,7 @@ namespace nzsl
 			std::unordered_map<std::string, std::string> m_moduleByFilepath;
 			std::unordered_map<std::string, Ast::ModulePtr> m_modules;
 			Nz::MovablePtr<void> m_fileWatcher;
+			std::recursive_mutex m_moduleLock;
 	};
 }
 
