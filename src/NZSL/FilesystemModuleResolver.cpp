@@ -174,7 +174,16 @@ namespace nzsl
 		if (!CheckExtension(filename))
 			return;
 
-		RegisterModule(std::filesystem::path(directory) / filename);
+		std::filesystem::path filepath = std::filesystem::path(directory) / filename;
+
+		try
+		{
+			RegisterModule(filepath);
+		}
+		catch (const std::exception& e)
+		{
+			fmt::print(stderr, "failed to register module from new file {}: {}", filepath.generic_u8string(), e.what());
+		}
 	}
 
 	void FilesystemModuleResolver::OnFileRemoved(std::string_view directory, std::string_view filename)
@@ -215,7 +224,16 @@ namespace nzsl
 		if (!CheckExtension(filename))
 			return;
 
-		RegisterModule(std::filesystem::path(directory) / filename);
+		std::filesystem::path filepath = std::filesystem::path(directory) / filename;
+
+		try
+		{
+			RegisterModule(std::filesystem::path(directory) / filename);
+		}
+		catch (const std::exception& e)
+		{
+			fmt::print(stderr, "failed to update module from {}: {}", filepath.generic_u8string(), e.what());
+		}
 	}
 	
 	bool FilesystemModuleResolver::CheckExtension(std::string_view filename)
