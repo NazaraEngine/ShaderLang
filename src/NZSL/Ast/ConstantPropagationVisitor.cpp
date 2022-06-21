@@ -1113,7 +1113,6 @@ namespace nzsl::Ast
 			else
 			{
 				auto constant = ShaderBuilder::Constant(arg);
-				constant->cachedExpressionType = GetConstantType(constant->value);
 				constant->sourceLocation = node.sourceLocation;
 
 				return constant;
@@ -1173,7 +1172,11 @@ namespace nzsl::Ast
 				break;
 		}
 
-		return ShaderBuilder::Intrinsic(node.intrinsic, std::move(parameters));
+		auto intrinsic = ShaderBuilder::Intrinsic(node.intrinsic, std::move(parameters));
+		intrinsic->cachedExpressionType = node.cachedExpressionType;
+		intrinsic->sourceLocation = node.sourceLocation;
+
+		return intrinsic;
 	}
 
 	ExpressionPtr ConstantPropagationVisitor::Clone(SwizzleExpression& node)
