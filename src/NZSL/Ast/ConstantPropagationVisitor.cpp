@@ -826,7 +826,12 @@ namespace nzsl::Ast
 			}
 
 			if (optimized)
+			{
+				optimized->cachedExpressionType = node.cachedExpressionType;
+				optimized->sourceLocation = node.sourceLocation;
+				
 				return optimized;
+			}
 		}
 
 		auto binary = ShaderBuilder::Binary(node.op, std::move(lhs), std::move(rhs));
@@ -993,7 +998,12 @@ namespace nzsl::Ast
 		}
 
 		if (optimized)
+		{
+			optimized->cachedExpressionType = node.cachedExpressionType;
+			optimized->sourceLocation = node.sourceLocation;
+
 			return optimized;
+		}
 		
 		auto cast = ShaderBuilder::Cast(node.targetType.GetResultingValue(), std::move(expressions));
 		cast->cachedExpressionType = node.cachedExpressionType;
@@ -1141,7 +1151,10 @@ namespace nzsl::Ast
 					if (parameterType && IsArrayType(*parameterType))
 					{
 						const ArrayType& arrayType = std::get<ArrayType>(*parameterType);
-						return ShaderBuilder::Constant(arrayType.length);
+						auto constant = ShaderBuilder::Constant(arrayType.length);
+						constant->sourceLocation = node.sourceLocation;
+
+						return constant;
 					}
 				}
 				break;
@@ -1208,7 +1221,10 @@ namespace nzsl::Ast
 			}
 
 			if (optimized)
+			{
+				optimized->sourceLocation = node.sourceLocation;
 				return optimized;
+			}
 		}
 		else if (expr->GetType() == NodeType::SwizzleExpression)
 		{
@@ -1256,7 +1272,10 @@ namespace nzsl::Ast
 			}
 
 			if (optimized)
+			{
+				optimized->sourceLocation = node.sourceLocation;
 				return optimized;
+			}
 		}
 
 		auto unary = ShaderBuilder::Unary(node.op, std::move(expr));
@@ -1377,9 +1396,6 @@ namespace nzsl::Ast
 					optimized = Op{}(arg);
 			}
 		}, operand.value);
-
-		if (optimized)
-			optimized->cachedExpressionType = GetConstantType(optimized->value);
 
 		return optimized;
 	}
