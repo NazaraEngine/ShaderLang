@@ -94,7 +94,6 @@ namespace nzsl::Ast
 
 	std::string ToString(const AliasType& type, const Stringifier& stringifier)
 	{
-		std::string str = "alias ";
 		if (stringifier.aliasStringifier)
 			return fmt::format("alias {} -> {}", stringifier.aliasStringifier(type.aliasIndex), ToString(type.targetType->type));
 		else

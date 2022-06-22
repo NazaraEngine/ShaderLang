@@ -28,8 +28,6 @@ namespace nzsl
 		Ast::ModulePtr module;
 		try
 		{
-			std::uintmax_t fileSize = std::filesystem::file_size(realPath);
-
 			std::ifstream inputFile(realPath, std::ios::in | std::ios::binary);
 			if (!inputFile)
 				throw std::runtime_error("failed to open " + realPath.generic_u8string());
