@@ -457,6 +457,7 @@ namespace nzsl
 					// Require GLSL.std.450
 					case Ast::IntrinsicType::CrossProduct:
 					case Ast::IntrinsicType::Exp:
+					case Ast::IntrinsicType::Inverse:
 					case Ast::IntrinsicType::Length:
 					case Ast::IntrinsicType::Max:
 					case Ast::IntrinsicType::Min:
@@ -470,6 +471,7 @@ namespace nzsl
 					case Ast::IntrinsicType::ArraySize:
 					case Ast::IntrinsicType::DotProduct:
 					case Ast::IntrinsicType::SampleTexture:
+					case Ast::IntrinsicType::Transpose:
 						break;
 				}
 

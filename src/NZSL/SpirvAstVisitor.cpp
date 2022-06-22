@@ -739,7 +739,7 @@ namespace nzsl
 				m_currentBlock->Append(SpirvOp::OpArrayLength, typeId, resultId, structId, arrayMemberIndex);
 
 				PushResultId(resultId);
-				break;
+				return;
 			}
 
 			case Ast::IntrinsicType::CrossProduct:
@@ -758,7 +758,7 @@ namespace nzsl
 
 				m_currentBlock->Append(SpirvOp::OpExtInst, typeId, resultId, glslInstructionSet, GLSLstd450Cross, firstParam, secondParam);
 				PushResultId(resultId);
-				break;
+				return;
 			}
 
 			case Ast::IntrinsicType::DotProduct:
@@ -778,7 +778,7 @@ namespace nzsl
 
 				m_currentBlock->Append(SpirvOp::OpDot, typeId, resultId, vec1, vec2);
 				PushResultId(resultId);
-				break;
+				return;
 			}
 
 			case Ast::IntrinsicType::Exp:
@@ -795,7 +795,21 @@ namespace nzsl
 
 				m_currentBlock->Append(SpirvOp::OpExtInst, typeId, resultId, glslInstructionSet, GLSLstd450Exp, param);
 				PushResultId(resultId);
-				break;
+				return;
+			}
+
+			case Ast::IntrinsicType::Inverse:
+			{
+				std::uint32_t glslInstructionSet = m_writer.GetExtendedInstructionSet("GLSL.std.450");
+
+				std::uint32_t typeId = m_writer.GetTypeId(*node.cachedExpressionType);
+
+				std::uint32_t param = EvaluateExpression(*node.parameters[0]);
+				std::uint32_t resultId = m_writer.AllocateResultId();
+
+				m_currentBlock->Append(SpirvOp::OpExtInst, typeId, resultId, glslInstructionSet, GLSLstd450MatrixInverse, param);
+				PushResultId(resultId);
+				return;
 			}
 
 			case Ast::IntrinsicType::Length:
@@ -815,7 +829,7 @@ namespace nzsl
 
 				m_currentBlock->Append(SpirvOp::OpExtInst, typeId, resultId, glslInstructionSet, GLSLstd450Length, vec);
 				PushResultId(resultId);
-				break;
+				return;
 			}
 
 			case Ast::IntrinsicType::Max:
@@ -864,7 +878,7 @@ namespace nzsl
 
 				m_currentBlock->Append(SpirvOp::OpExtInst, typeId, resultId, glslInstructionSet, op, firstParam, secondParam);
 				PushResultId(resultId);
-				break;
+				return;
 			}
 
 			case Ast::IntrinsicType::Normalize:
@@ -884,7 +898,7 @@ namespace nzsl
 
 				m_currentBlock->Append(SpirvOp::OpExtInst, typeId, resultId, glslInstructionSet, GLSLstd450Normalize, vec);
 				PushResultId(resultId);
-				break;
+				return;
 			}
 
 			case Ast::IntrinsicType::Pow:
@@ -902,7 +916,7 @@ namespace nzsl
 
 				m_currentBlock->Append(SpirvOp::OpExtInst, typeId, resultId, glslInstructionSet, GLSLstd450Pow, firstParam, secondParam);
 				PushResultId(resultId);
-				break;
+				return;
 			}
 
 			case Ast::IntrinsicType::Reflect:
@@ -920,7 +934,7 @@ namespace nzsl
 
 				m_currentBlock->Append(SpirvOp::OpExtInst, typeId, resultId, glslInstructionSet, GLSLstd450Reflect, firstParam, secondParam);
 				PushResultId(resultId);
-				break;
+				return;
 			}
 
 			case Ast::IntrinsicType::SampleTexture:
@@ -933,12 +947,23 @@ namespace nzsl
 
 				m_currentBlock->Append(SpirvOp::OpImageSampleImplicitLod, typeId, resultId, samplerId, coordinatesId);
 				PushResultId(resultId);
-				break;
+				return;
 			}
 
-			default:
-				throw std::runtime_error("not yet implemented");
+			case Ast::IntrinsicType::Transpose:
+			{
+				std::uint32_t typeId = m_writer.GetTypeId(*node.cachedExpressionType);
+
+				std::uint32_t param = EvaluateExpression(*node.parameters[0]);
+				std::uint32_t resultId = m_writer.AllocateResultId();
+
+				m_currentBlock->Append(SpirvOp::OpTranspose, typeId, resultId, param);
+				PushResultId(resultId);
+				return;
+			}
 		}
+
+		throw std::runtime_error("not yet implemented");
 	}
 
 	void SpirvAstVisitor::Visit(Ast::NoOpStatement& /*node*/)

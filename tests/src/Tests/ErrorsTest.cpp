@@ -264,5 +264,21 @@ import X, X from Module;
 
 )"), "(5, 11): CImportIdentifierAlreadyPresent error: X identifier was already imported");
 		}
+
+		/************************************************************************/
+
+		SECTION("Intrinsics")
+		{
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+fn main()
+{
+	let a = mat2x3[f32](1.0, 2.0, 3.0, 4.0, 5.0, 6.0);
+	let b = inverse(a);
+}
+)"), "(8, 18): CIntrinsicExpectedType error: expected type square matrix for parameter #0, got mat2x3[f32]");
+		}
 	}
 }

@@ -1182,6 +1182,8 @@ namespace nzsl::Ast
 				break;
 			case IntrinsicType::Exp:
 				break;
+			case IntrinsicType::Inverse:
+				break;
 			case IntrinsicType::Length:
 				break;
 			case IntrinsicType::Max:
@@ -1193,6 +1195,8 @@ namespace nzsl::Ast
 			case IntrinsicType::Pow:
 				break;
 			case IntrinsicType::Reflect:
+				break;
+			case IntrinsicType::Transpose:
 				break;
 
 			// Always runtime intrinsics

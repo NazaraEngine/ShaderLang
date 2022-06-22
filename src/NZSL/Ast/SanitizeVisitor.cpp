@@ -2794,12 +2794,14 @@ namespace nzsl::Ast
 		RegisterIntrinsic("cross", IntrinsicType::CrossProduct);
 		RegisterIntrinsic("dot", IntrinsicType::DotProduct);
 		RegisterIntrinsic("exp", IntrinsicType::Exp);
+		RegisterIntrinsic("inverse", IntrinsicType::Inverse);
 		RegisterIntrinsic("length", IntrinsicType::Length);
 		RegisterIntrinsic("max", IntrinsicType::Max);
 		RegisterIntrinsic("min", IntrinsicType::Min);
 		RegisterIntrinsic("normalize", IntrinsicType::Normalize);
 		RegisterIntrinsic("pow", IntrinsicType::Pow);
 		RegisterIntrinsic("reflect", IntrinsicType::Reflect);
+		RegisterIntrinsic("transpose", IntrinsicType::Transpose);
 	}
 
 	std::size_t SanitizeVisitor::RegisterAlias(std::string name, std::optional<Identifier> aliasData, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
@@ -4050,6 +4052,15 @@ namespace nzsl::Ast
 			return type == ExpressionType{ VectorType{ 3, PrimitiveType::Float32 } };
 		};
 
+		auto IsSquareMatrix = [](const ExpressionType& type)
+		{
+			if (!IsMatrixType(type))
+				return false;
+
+			const MatrixType& matrixType = std::get<MatrixType>(type);
+			return matrixType.columnCount == matrixType.rowCount;
+		};
+
 		auto CheckNotBoolean = [](Expression& expression, const ExpressionType& type)
 		{
 			if ((IsPrimitiveType(type) && std::get<PrimitiveType>(type) == PrimitiveType::Boolean) ||
@@ -4083,7 +4094,7 @@ namespace nzsl::Ast
 		{
 			case IntrinsicType::ArraySize:
 				if (IsUnresolved(ValidateIntrinsicParamCount<1>(node))
-				 || IsUnresolved(ValidateIntrinsicParameterType<0>(node, IsArrayOrDynArray, "array/dyn-array type")))
+				 || IsUnresolved(ValidateIntrinsicParameterType<0>(node, IsArrayOrDynArray, "array/dyn-array")))
 					return ValidationResult::Unresolved;
 
 				node.cachedExpressionType = ExpressionType{ PrimitiveType::UInt32 };
@@ -4118,6 +4129,13 @@ namespace nzsl::Ast
 					return ValidationResult::Unresolved;
 
 				return SetReturnTypeToFirstParameterInnerType();
+
+			case IntrinsicType::Inverse:
+				if (IsUnresolved(ValidateIntrinsicParamCount<1>(node))
+				 || IsUnresolved(ValidateIntrinsicParameterType<0>(node, IsSquareMatrix, "square matrix")))
+					return ValidationResult::Unresolved;
+
+				return SetReturnTypeToFirstParameterType();
 
 			case IntrinsicType::Max:
 			case IntrinsicType::Min:
@@ -4190,6 +4208,19 @@ namespace nzsl::Ast
 					return ValidationResult::Unresolved;
 
 				node.cachedExpressionType = VectorType{ 4, samplerType.sampledType };
+				return ValidationResult::Validated;
+			}
+
+			case IntrinsicType::Transpose:
+			{
+				if (IsUnresolved(ValidateIntrinsicParamCount<1>(node))
+				 || IsUnresolved(ValidateIntrinsicParameterType<0>(node, IsMatrixType, "matrix")))
+					return ValidationResult::Unresolved;
+
+				MatrixType matrixType = std::get<MatrixType>(ResolveAlias(GetExpressionTypeSecure(*node.parameters[0])));
+				std::swap(matrixType.columnCount, matrixType.rowCount);
+
+				node.cachedExpressionType = matrixType;
 				return ValidationResult::Validated;
 			}
 		}

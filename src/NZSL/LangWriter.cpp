@@ -941,6 +941,10 @@ namespace nzsl
 				Append("exp");
 				break;
 
+			case Ast::IntrinsicType::Inverse:
+				Append("inverse");
+				break;
+
 			case Ast::IntrinsicType::Length:
 				Append("length");
 				break;
@@ -970,6 +974,10 @@ namespace nzsl
 				Visit(node.parameters.front(), true);
 				Append(".Sample");
 				method = true;
+				break;
+
+			case Ast::IntrinsicType::Transpose:
+				Append("transpose");
 				break;
 		}
 
