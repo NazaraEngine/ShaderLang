@@ -37,15 +37,6 @@ module;
 alias vec3f32 = vec3[f32];
 )"), "(5,2 -> 12): PUnexpectedAttribute error: unexpected attribute cond");
 
-		// const statements don't support attributes
-		CHECK_THROWS_WITH(nzsl::Parse(R"(
-[nzsl_version("1.0")]
-module;
-
-[cond(false)]
-const enable: bool = false;
-)"), "(5,2 -> 12): PUnexpectedAttribute error: unexpected attribute cond");
-
 		// import statements don't support cond attribute
 		CHECK_THROWS_WITH(nzsl::Parse(R"(
 [nzsl_version("1.0")]

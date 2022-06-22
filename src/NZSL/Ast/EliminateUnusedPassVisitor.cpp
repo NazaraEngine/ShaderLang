@@ -44,6 +44,15 @@ namespace nzsl::Ast
 		return Cloner::Clone(node);
 	}
 
+	StatementPtr EliminateUnusedPassVisitor::Clone(DeclareConstStatement& node)
+	{
+		assert(node.constIndex);
+		if (!IsConstantUsed(*node.constIndex))
+			return ShaderBuilder::NoOp();
+
+		return Cloner::Clone(node);
+	}
+
 	StatementPtr EliminateUnusedPassVisitor::Clone(DeclareExternalStatement& node)
 	{
 		bool isUsed = false;
@@ -111,6 +120,12 @@ namespace nzsl::Ast
 	{
 		assert(m_context);
 		return m_context->usageSet.usedAliases.UnboundedTest(aliasIndex);
+	}
+
+	bool EliminateUnusedPassVisitor::IsConstantUsed(std::size_t constantIndex) const
+	{
+		assert(m_context);
+		return m_context->usageSet.usedConstants.UnboundedTest(constantIndex);
 	}
 
 	bool EliminateUnusedPassVisitor::IsFunctionUsed(std::size_t funcIndex) const

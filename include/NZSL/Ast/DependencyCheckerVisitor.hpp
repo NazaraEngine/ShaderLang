@@ -26,6 +26,7 @@ namespace nzsl::Ast
 
 			inline const UsageSet& GetUsage() const;
 
+			inline void MarkConstantAsUsed(std::size_t constIndex);
 			inline void MarkFunctionAsUsed(std::size_t funcIndex);
 			inline void MarkStructAsUsed(std::size_t structIndex);
 
@@ -45,6 +46,7 @@ namespace nzsl::Ast
 			struct UsageSet
 			{
 				Nz::Bitset<> usedAliases;
+				Nz::Bitset<> usedConstants;
 				Nz::Bitset<> usedFunctions;
 				Nz::Bitset<> usedStructs;
 				Nz::Bitset<> usedVariables;
@@ -58,20 +60,24 @@ namespace nzsl::Ast
 			using RecursiveVisitor::Visit;
 
 			void Visit(AliasValueExpression& node) override;
+			void Visit(ConstantExpression& node) override;
 			void Visit(FunctionExpression& node) override;
 			void Visit(StructTypeExpression& node) override;
 			void Visit(VariableValueExpression& node) override;
 
 			void Visit(DeclareAliasStatement& node) override;
+			void Visit(DeclareConstStatement& node) override;
 			void Visit(DeclareExternalStatement& node) override;
 			void Visit(DeclareFunctionStatement& node) override;
 			void Visit(DeclareStructStatement& node) override;
 			void Visit(DeclareVariableStatement& node) override;
 
 			std::optional<std::size_t> m_currentAliasDeclIndex;
+			std::optional<std::size_t> m_currentConstantIndex;
 			std::optional<std::size_t> m_currentFunctionIndex;
 			std::optional<std::size_t> m_currentVariableDeclIndex;
 			std::unordered_map<std::size_t, UsageSet> m_aliasUsages;
+			std::unordered_map<std::size_t, UsageSet> m_constantUsages;
 			std::unordered_map<std::size_t, UsageSet> m_functionUsages;
 			std::unordered_map<std::size_t, UsageSet> m_structUsages;
 			std::unordered_map<std::size_t, UsageSet> m_variableUsages;

@@ -16,6 +16,40 @@ void ExpectOutput(nzsl::Ast::Module& shaderModule, const nzsl::Ast::SanitizeVisi
 
 TEST_CASE("const", "[Shader]")
 {
+	WHEN("Using const for constants")
+	{
+		std::string_view sourceCode = R"(
+[nzsl_version("1.0")]
+module;
+
+const LightCount = 3;
+const LightCapacity = LightCount + 2;
+
+[layout(std140)]
+struct Light
+{
+	color: vec4[f32]
+}
+
+[layout(std140)]
+struct LightData
+{
+	lights: array[Light, LightCapacity]
+}
+)";
+
+		nzsl::Ast::ModulePtr shaderModule;
+		REQUIRE_NOTHROW(shaderModule = nzsl::Parse(sourceCode));
+
+		ExpectOutput(*shaderModule, {}, R"(
+[layout(std140)]
+struct LightData
+{
+	lights: array[Light, 5]
+}
+)");
+	}
+
 	WHEN("using const if")
 	{
 		std::string_view sourceCode = R"(

@@ -293,6 +293,7 @@ namespace nzsl::Ast
 	{
 		OptVal(node.constIndex);
 		Value(node.name);
+		ExprValue(node.isExported);
 		ExprValue(node.type);
 		Node(node.expression);
 	}

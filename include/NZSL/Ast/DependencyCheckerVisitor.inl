@@ -11,6 +11,11 @@ namespace nzsl::Ast
 		return m_resolvedUsage;
 	}
 
+	inline void DependencyCheckerVisitor::MarkConstantAsUsed(std::size_t constIndex)
+	{
+		m_globalUsage.usedConstants.UnboundedSet(constIndex);
+	}
+
 	inline void DependencyCheckerVisitor::MarkFunctionAsUsed(std::size_t funcIndex)
 	{
 		m_globalUsage.usedFunctions.UnboundedSet(funcIndex);

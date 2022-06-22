@@ -316,6 +316,7 @@ namespace nzsl::Ast
 		std::string name;
 		ExpressionPtr expression;
 		ExpressionValue<ExpressionType> type;
+		ExpressionValue<bool> isExported;
 	};
 
 	struct NZSL_API DeclareExternalStatement : Statement
