@@ -87,6 +87,7 @@ namespace nzsl::Ast
 		CrossProduct = 0,
 		DotProduct = 1,
 		Exp = 7,
+		Inverse = 11,
 		Length = 3,
 		Max = 4,
 		Min = 5,
@@ -94,6 +95,7 @@ namespace nzsl::Ast
 		Pow = 6,
 		Reflect = 8,
 		SampleTexture = 2,
+		Transpose = 12
 	};
 
 	enum class LoopUnroll
