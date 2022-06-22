@@ -64,7 +64,7 @@ NZSL_SHADERLANG_COMPILER_ERROR(BranchOutsideOfFunction, "non-const branching sta
 NZSL_SHADERLANG_COMPILER_ERROR(CastComponentMismatch, "component count ({}) doesn't match required component count ({})", std::uint32_t, std::uint32_t)
 NZSL_SHADERLANG_COMPILER_ERROR(CastIncompatibleBaseTypes, "incompatibles base types (expected {}, got {})", std::string, std::string)
 NZSL_SHADERLANG_COMPILER_ERROR(CastIncompatibleTypes, "incompatibles types ({} and {})", std::string, std::string)
-NZSL_SHADERLANG_COMPILER_ERROR(CastMatrixExpectedVector, "expected vector type, got {}", std::string)
+NZSL_SHADERLANG_COMPILER_ERROR(CastMatrixExpectedVectorOrScalar, "expected vector or scalar type, got {}", std::string)
 NZSL_SHADERLANG_COMPILER_ERROR(CastMatrixVectorComponentMismatch, "vector component count ({}) doesn't match target matrix row count ({})", std::uint32_t, std::uint32_t)
 NZSL_SHADERLANG_COMPILER_ERROR(CircularImport, "circular import detected on {}", std::string)
 NZSL_SHADERLANG_COMPILER_ERROR(ConditionExpectedBool, "expected boolean for condition, got {}", std::string)
