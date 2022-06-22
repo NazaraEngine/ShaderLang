@@ -102,6 +102,7 @@ NZSL_SHADERLANG_COMPILER_ERROR(ImportWildcardRename, "wildcard cannot be renamed
 NZSL_SHADERLANG_COMPILER_ERROR(IndexRequiresIntegerIndices, "index access requires integer indices (got {})", std::string)
 NZSL_SHADERLANG_COMPILER_ERROR(IndexStructRequiresInt32Indices, "struct indexing requires constant i32 indices (got {})", std::string)
 NZSL_SHADERLANG_COMPILER_ERROR(IndexUnexpectedType, "unexpected type: only arrays, structs, vectors and matrices can be indexed (got {})", std::string)
+NZSL_SHADERLANG_COMPILER_ERROR(IntegralDivisionByZero, "integral division by zero in expression") //< TODO: Add expression values to error message
 NZSL_SHADERLANG_COMPILER_ERROR(IntrinsicExpectedFloat, "expected scalar or vector floating-points")
 NZSL_SHADERLANG_COMPILER_ERROR(IntrinsicExpectedParameterCount, "expected {} parameter(s)", std::uint32_t)
 NZSL_SHADERLANG_COMPILER_ERROR(IntrinsicExpectedType, "expected type {1} for parameter #{0}, got {2}", std::uint32_t, std::string, std::string)

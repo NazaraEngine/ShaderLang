@@ -3,6 +3,7 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <NZSL/Ast/ConstantPropagationVisitor.hpp>
+#include <NZSL/Errors.hpp>
 #include <NZSL/ShaderBuilder.hpp>
 #include <cassert>
 #include <stdexcept>
@@ -79,7 +80,7 @@ namespace nzsl::Ast
 		template<typename T>
 		struct ArrayBuilderBase
 		{
-			std::unique_ptr<ConstantArrayValueExpression> operator()(const std::vector<ExpressionPtr>& expressions)
+			std::unique_ptr<ConstantArrayValueExpression> operator()(const std::vector<ExpressionPtr>& expressions, const SourceLocation& /*sourceLocation*/)
 			{
 				std::vector<T> values;
 				values.reserve(expressions.size());
@@ -107,7 +108,7 @@ namespace nzsl::Ast
 		template<typename T1, typename T2>
 		struct BinaryCompEqBase
 		{
-			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs)
+			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
 			{
 				return ShaderBuilder::ConstantValue(lhs == rhs);
 			}
@@ -126,7 +127,7 @@ namespace nzsl::Ast
 		template<typename T1, typename T2>
 		struct BinaryCompGeBase
 		{
-			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs)
+			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
 			{
 				return ShaderBuilder::ConstantValue(lhs >= rhs);
 			}
@@ -145,7 +146,7 @@ namespace nzsl::Ast
 		template<typename T1, typename T2>
 		struct BinaryCompGtBase
 		{
-			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs)
+			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
 			{
 				return ShaderBuilder::ConstantValue(lhs > rhs);
 			}
@@ -164,7 +165,7 @@ namespace nzsl::Ast
 		template<typename T1, typename T2>
 		struct BinaryCompLeBase
 		{
-			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs)
+			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
 			{
 				return ShaderBuilder::ConstantValue(lhs <= rhs);
 			}
@@ -183,7 +184,7 @@ namespace nzsl::Ast
 		template<typename T1, typename T2>
 		struct BinaryCompLtBase
 		{
-			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs)
+			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
 			{
 				return ShaderBuilder::ConstantValue(lhs < rhs);
 			}
@@ -202,7 +203,7 @@ namespace nzsl::Ast
 		template<typename T1, typename T2>
 		struct BinaryCompNeBase
 		{
-			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs)
+			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
 			{
 				return ShaderBuilder::ConstantValue(lhs != rhs);
 			}
@@ -221,7 +222,7 @@ namespace nzsl::Ast
 		template<typename T1, typename T2>
 		struct BinaryLogicalAndBase
 		{
-			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs)
+			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
 			{
 				return ShaderBuilder::ConstantValue(lhs && rhs);
 			}
@@ -240,7 +241,7 @@ namespace nzsl::Ast
 		template<typename T1, typename T2>
 		struct BinaryLogicalOrBase
 		{
-			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs)
+			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
 			{
 				return ShaderBuilder::ConstantValue(lhs || rhs);
 			}
@@ -259,7 +260,7 @@ namespace nzsl::Ast
 		template<typename T1, typename T2>
 		struct BinaryAdditionBase
 		{
-			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs)
+			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
 			{
 				return ShaderBuilder::ConstantValue(lhs + rhs);
 			}
@@ -278,8 +279,22 @@ namespace nzsl::Ast
 		template<typename T1, typename T2>
 		struct BinaryDivisionBase
 		{
-			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs)
+			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs, const SourceLocation& sourceLocation)
 			{
+				if constexpr (std::is_integral_v<T2>)
+				{
+					if (rhs == 0)
+						throw CompilerIntegralDivisionByZeroError{ sourceLocation };
+				}
+				else if constexpr (IsVector_v<T2>)
+				{
+					for (std::size_t i = 0; i < T2::Dimensions; ++i)
+					{
+						if (rhs[i] == 0)
+							throw CompilerIntegralDivisionByZeroError{ sourceLocation };
+					}
+				}
+
 				return ShaderBuilder::ConstantValue(lhs / rhs);
 			}
 		};
@@ -297,7 +312,7 @@ namespace nzsl::Ast
 		template<typename T1, typename T2>
 		struct BinaryMultiplicationBase
 		{
-			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs)
+			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
 			{
 				return ShaderBuilder::ConstantValue(lhs * rhs);
 			}
@@ -316,7 +331,7 @@ namespace nzsl::Ast
 		template<typename T1, typename T2>
 		struct BinarySubtractionBase
 		{
-			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs)
+			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
 			{
 				return ShaderBuilder::ConstantValue(lhs - rhs);
 			}
@@ -336,7 +351,7 @@ namespace nzsl::Ast
 		template<typename T, typename... Args>
 		struct CastConstantBase
 		{
-			std::unique_ptr<ConstantValueExpression> operator()(const Args&... args)
+			std::unique_ptr<ConstantValueExpression> operator()(const Args&... args, const SourceLocation& /*sourceLocation*/)
 			{
 				return ShaderBuilder::ConstantValue(T(args...));
 			}
@@ -360,7 +375,7 @@ namespace nzsl::Ast
 					return value[index];
 			}
 
-			std::unique_ptr<ConstantValueExpression> operator()(const std::array<std::uint32_t, 4>& components, const ValueType& value)
+			std::unique_ptr<ConstantValueExpression> operator()(const std::array<std::uint32_t, 4>& components, const ValueType& value, const SourceLocation& /*sourceLocation*/)
 			{
 				if constexpr (TargetComponentCount == 4)
 					return ShaderBuilder::ConstantValue(Vector4<T>{ Access(value, components[0]), Access(value, components[1]), Access(value, components[2]), Access(value, components[3]) });
@@ -387,7 +402,7 @@ namespace nzsl::Ast
 		template<typename T>
 		struct UnaryLogicalNotBase
 		{
-			std::unique_ptr<ConstantValueExpression> operator()(const T& arg)
+			std::unique_ptr<ConstantValueExpression> operator()(const T& arg, const SourceLocation& /*sourceLocation*/)
 			{
 				return ShaderBuilder::ConstantValue(!arg);
 			}
@@ -406,7 +421,7 @@ namespace nzsl::Ast
 		template<typename T>
 		struct UnaryMinusBase
 		{
-			std::unique_ptr<ConstantValueExpression> operator()(const T& arg)
+			std::unique_ptr<ConstantValueExpression> operator()(const T& arg, const SourceLocation& /*sourceLocation*/)
 			{
 				return ShaderBuilder::ConstantValue(-arg);
 			}
@@ -425,7 +440,7 @@ namespace nzsl::Ast
 		template<typename T>
 		struct UnaryPlusBase
 		{
-			std::unique_ptr<ConstantValueExpression> operator()(const T& arg)
+			std::unique_ptr<ConstantValueExpression> operator()(const T& arg, const SourceLocation& /*sourceLocation*/)
 			{
 				return ShaderBuilder::ConstantValue(arg);
 			}
@@ -777,51 +792,51 @@ namespace nzsl::Ast
 			switch (node.op)
 			{
 				case BinaryType::Add:
-					optimized = PropagateBinaryConstant<BinaryType::Add>(lhsConstant, rhsConstant);
+					optimized = PropagateBinaryConstant<BinaryType::Add>(lhsConstant, rhsConstant, node.sourceLocation);
 					break;
 
 				case BinaryType::Subtract:
-					optimized = PropagateBinaryConstant<BinaryType::Subtract>(lhsConstant, rhsConstant);
+					optimized = PropagateBinaryConstant<BinaryType::Subtract>(lhsConstant, rhsConstant, node.sourceLocation);
 					break;
 
 				case BinaryType::Multiply:
-					optimized = PropagateBinaryConstant<BinaryType::Multiply>(lhsConstant, rhsConstant);
+					optimized = PropagateBinaryConstant<BinaryType::Multiply>(lhsConstant, rhsConstant, node.sourceLocation);
 					break;
 
 				case BinaryType::Divide:
-					optimized = PropagateBinaryConstant<BinaryType::Divide>(lhsConstant, rhsConstant);
+					optimized = PropagateBinaryConstant<BinaryType::Divide>(lhsConstant, rhsConstant, node.sourceLocation);
 					break;
 
 				case BinaryType::CompEq:
-					optimized = PropagateBinaryConstant<BinaryType::CompEq>(lhsConstant, rhsConstant);
+					optimized = PropagateBinaryConstant<BinaryType::CompEq>(lhsConstant, rhsConstant, node.sourceLocation);
 					break;
 
 				case BinaryType::CompGe:
-					optimized = PropagateBinaryConstant<BinaryType::CompGe>(lhsConstant, rhsConstant);
+					optimized = PropagateBinaryConstant<BinaryType::CompGe>(lhsConstant, rhsConstant, node.sourceLocation);
 					break;
 
 				case BinaryType::CompGt:
-					optimized = PropagateBinaryConstant<BinaryType::CompGt>(lhsConstant, rhsConstant);
+					optimized = PropagateBinaryConstant<BinaryType::CompGt>(lhsConstant, rhsConstant, node.sourceLocation);
 					break;
 
 				case BinaryType::CompLe:
-					optimized = PropagateBinaryConstant<BinaryType::CompLe>(lhsConstant, rhsConstant);
+					optimized = PropagateBinaryConstant<BinaryType::CompLe>(lhsConstant, rhsConstant, node.sourceLocation);
 					break;
 
 				case BinaryType::CompLt:
-					optimized = PropagateBinaryConstant<BinaryType::CompLt>(lhsConstant, rhsConstant);
+					optimized = PropagateBinaryConstant<BinaryType::CompLt>(lhsConstant, rhsConstant, node.sourceLocation);
 					break;
 
 				case BinaryType::CompNe:
-					optimized = PropagateBinaryConstant<BinaryType::CompNe>(lhsConstant, rhsConstant);
+					optimized = PropagateBinaryConstant<BinaryType::CompNe>(lhsConstant, rhsConstant, node.sourceLocation);
 					break;
 
 				case BinaryType::LogicalAnd:
-					optimized = PropagateBinaryConstant<BinaryType::LogicalAnd>(lhsConstant, rhsConstant);
+					optimized = PropagateBinaryConstant<BinaryType::LogicalAnd>(lhsConstant, rhsConstant, node.sourceLocation);
 					break;
 
 				case BinaryType::LogicalOr:
-					optimized = PropagateBinaryConstant<BinaryType::LogicalOr>(lhsConstant, rhsConstant);
+					optimized = PropagateBinaryConstant<BinaryType::LogicalOr>(lhsConstant, rhsConstant, node.sourceLocation);
 					break;
 			}
 
@@ -864,10 +879,10 @@ namespace nzsl::Ast
 
 				switch (std::get<PrimitiveType>(targetType))
 				{
-					case PrimitiveType::Boolean: optimized = PropagateSingleValueCast<bool>(constantExpr); break;
-					case PrimitiveType::Float32: optimized = PropagateSingleValueCast<float>(constantExpr); break;
-					case PrimitiveType::Int32:   optimized = PropagateSingleValueCast<std::int32_t>(constantExpr); break;
-					case PrimitiveType::UInt32:  optimized = PropagateSingleValueCast<std::uint32_t>(constantExpr); break;
+					case PrimitiveType::Boolean: optimized = PropagateSingleValueCast<bool>(constantExpr, node.sourceLocation); break;
+					case PrimitiveType::Float32: optimized = PropagateSingleValueCast<float>(constantExpr, node.sourceLocation); break;
+					case PrimitiveType::Int32:   optimized = PropagateSingleValueCast<std::int32_t>(constantExpr, node.sourceLocation); break;
+					case PrimitiveType::UInt32:  optimized = PropagateSingleValueCast<std::uint32_t>(constantExpr, node.sourceLocation); break;
 					case PrimitiveType::String: break;
 				}
 			}
@@ -937,15 +952,15 @@ namespace nzsl::Ast
 					switch (vecType.componentCount)
 					{
 						case 2:
-							optimized = PropagateVec2Cast(std::get<T>(constantValues[0]), std::get<T>(constantValues[1]));
+							optimized = PropagateVec2Cast(std::get<T>(constantValues[0]), std::get<T>(constantValues[1]), node.sourceLocation);
 							break;
 
 						case 3:
-							optimized = PropagateVec3Cast(std::get<T>(constantValues[0]), std::get<T>(constantValues[1]), std::get<T>(constantValues[2]));
+							optimized = PropagateVec3Cast(std::get<T>(constantValues[0]), std::get<T>(constantValues[1]), std::get<T>(constantValues[2]), node.sourceLocation);
 							break;
 
 						case 4:
-							optimized = PropagateVec4Cast(std::get<T>(constantValues[0]), std::get<T>(constantValues[1]), std::get<T>(constantValues[2]), std::get<T>(constantValues[3]));
+							optimized = PropagateVec4Cast(std::get<T>(constantValues[0]), std::get<T>(constantValues[1]), std::get<T>(constantValues[2]), std::get<T>(constantValues[3]), node.sourceLocation);
 							break;
 					}
 				}, constantValues.front());
@@ -989,7 +1004,7 @@ namespace nzsl::Ast
 						if constexpr (is_complete_v<ArrayBuilder<T>>)
 						{
 							ArrayBuilder<T> builder;
-							optimized = builder(expressions);
+							optimized = builder(expressions, node.sourceLocation);
 						}
 
 					}, constantValExpr.value);
@@ -1204,19 +1219,19 @@ namespace nzsl::Ast
 			switch (node.componentCount)
 			{
 				case 1:
-					optimized = PropagateConstantSwizzle<1>(node.components, constantExpr);
+					optimized = PropagateConstantSwizzle<1>(node.components, constantExpr, node.sourceLocation);
 					break;
 
 				case 2:
-					optimized = PropagateConstantSwizzle<2>(node.components, constantExpr);
+					optimized = PropagateConstantSwizzle<2>(node.components, constantExpr, node.sourceLocation);
 					break;
 
 				case 3:
-					optimized = PropagateConstantSwizzle<3>(node.components, constantExpr);
+					optimized = PropagateConstantSwizzle<3>(node.components, constantExpr, node.sourceLocation);
 					break;
 
 				case 4:
-					optimized = PropagateConstantSwizzle<4>(node.components, constantExpr);
+					optimized = PropagateConstantSwizzle<4>(node.components, constantExpr, node.sourceLocation);
 					break;
 			}
 
@@ -1259,15 +1274,15 @@ namespace nzsl::Ast
 			switch (node.op)
 			{
 				case UnaryType::LogicalNot:
-					optimized = PropagateUnaryConstant<UnaryType::LogicalNot>(constantExpr);
+					optimized = PropagateUnaryConstant<UnaryType::LogicalNot>(constantExpr, node.sourceLocation);
 					break;
 
 				case UnaryType::Minus:
-					optimized = PropagateUnaryConstant<UnaryType::Minus>(constantExpr);
+					optimized = PropagateUnaryConstant<UnaryType::Minus>(constantExpr, node.sourceLocation);
 					break;
 
 				case UnaryType::Plus:
-					optimized = PropagateUnaryConstant<UnaryType::Plus>(constantExpr);
+					optimized = PropagateUnaryConstant<UnaryType::Plus>(constantExpr, node.sourceLocation);
 					break;
 			}
 
@@ -1307,7 +1322,7 @@ namespace nzsl::Ast
 	}
 
 	template<BinaryType Type>
-	ExpressionPtr ConstantPropagationVisitor::PropagateBinaryConstant(const ConstantValueExpression& lhs, const ConstantValueExpression& rhs)
+	ExpressionPtr ConstantPropagationVisitor::PropagateBinaryConstant(const ConstantValueExpression& lhs, const ConstantValueExpression& rhs, const SourceLocation& sourceLocation)
 	{
 		NAZARA_USE_ANONYMOUS_NAMESPACE
 
@@ -1325,7 +1340,7 @@ namespace nzsl::Ast
 				{
 					using Op = typename PCType::Op;
 					if constexpr (is_complete_v<Op>)
-						optimized = Op{}(arg1, arg2);
+						optimized = Op{}(arg1, arg2, sourceLocation);
 				}
 
 			}, rhs.value);
@@ -1338,7 +1353,7 @@ namespace nzsl::Ast
 	}
 
 	template<typename TargetType>
-	ExpressionPtr ConstantPropagationVisitor::PropagateSingleValueCast(const ConstantValueExpression& operand)
+	ExpressionPtr ConstantPropagationVisitor::PropagateSingleValueCast(const ConstantValueExpression& operand, const SourceLocation& sourceLocation)
 	{
 		NAZARA_USE_ANONYMOUS_NAMESPACE
 
@@ -1350,14 +1365,14 @@ namespace nzsl::Ast
 			using CCType = CastConstant<TargetType, T>;
 
 			if constexpr (is_complete_v<CCType>)
-				optimized = CCType{}(arg);
+				optimized = CCType{}(arg, sourceLocation);
 		}, operand.value);
 
 		return optimized;
 	}
 
 	template<std::size_t TargetComponentCount>
-	ExpressionPtr ConstantPropagationVisitor::PropagateConstantSwizzle(const std::array<std::uint32_t, 4>& components, const ConstantValueExpression& operand)
+	ExpressionPtr ConstantPropagationVisitor::PropagateConstantSwizzle(const std::array<std::uint32_t, 4>& components, const ConstantValueExpression& operand, const SourceLocation& sourceLocation)
 	{
 		NAZARA_USE_ANONYMOUS_NAMESPACE
 
@@ -1372,14 +1387,14 @@ namespace nzsl::Ast
 			using SPType = SwizzlePropagation<BaseType, TargetComponentCount, FromComponentCount>;
 
 			if constexpr (is_complete_v<SPType>)
-				optimized = SPType{}(components, arg);
+				optimized = SPType{}(components, arg, sourceLocation);
 		}, operand.value);
 
 		return optimized;
 	}
 
 	template<UnaryType Type>
-	ExpressionPtr ConstantPropagationVisitor::PropagateUnaryConstant(const ConstantValueExpression& operand)
+	ExpressionPtr ConstantPropagationVisitor::PropagateUnaryConstant(const ConstantValueExpression& operand, const SourceLocation& sourceLocation)
 	{
 		NAZARA_USE_ANONYMOUS_NAMESPACE
 
@@ -1393,7 +1408,7 @@ namespace nzsl::Ast
 			{
 				using Op = typename PCType::Op;
 				if constexpr (is_complete_v<Op>)
-					optimized = Op{}(arg);
+					optimized = Op{}(arg, sourceLocation);
 			}
 		}, operand.value);
 
@@ -1401,7 +1416,7 @@ namespace nzsl::Ast
 	}
 
 	template<typename TargetType>
-	ExpressionPtr ConstantPropagationVisitor::PropagateVec2Cast(TargetType v1, TargetType v2)
+	ExpressionPtr ConstantPropagationVisitor::PropagateVec2Cast(TargetType v1, TargetType v2, const SourceLocation& sourceLocation)
 	{
 		NAZARA_USE_ANONYMOUS_NAMESPACE
 
@@ -1410,13 +1425,13 @@ namespace nzsl::Ast
 		using CCType = CastConstant<Vector2<TargetType>, TargetType, TargetType>;
 
 		if constexpr (is_complete_v<CCType>)
-			optimized = CCType{}(v1, v2);
+			optimized = CCType{}(v1, v2, sourceLocation);
 
 		return optimized;
 	}
 
 	template<typename TargetType>
-	ExpressionPtr ConstantPropagationVisitor::PropagateVec3Cast(TargetType v1, TargetType v2, TargetType v3)
+	ExpressionPtr ConstantPropagationVisitor::PropagateVec3Cast(TargetType v1, TargetType v2, TargetType v3, const SourceLocation& sourceLocation)
 	{
 		NAZARA_USE_ANONYMOUS_NAMESPACE
 
@@ -1425,13 +1440,13 @@ namespace nzsl::Ast
 		using CCType = CastConstant<Vector3<TargetType>, TargetType, TargetType, TargetType>;
 
 		if constexpr (is_complete_v<CCType>)
-			optimized = CCType{}(v1, v2, v3);
+			optimized = CCType{}(v1, v2, v3, sourceLocation);
 
 		return optimized;
 	}
 
 	template<typename TargetType>
-	ExpressionPtr ConstantPropagationVisitor::PropagateVec4Cast(TargetType v1, TargetType v2, TargetType v3, TargetType v4)
+	ExpressionPtr ConstantPropagationVisitor::PropagateVec4Cast(TargetType v1, TargetType v2, TargetType v3, TargetType v4, const SourceLocation& sourceLocation)
 	{
 		NAZARA_USE_ANONYMOUS_NAMESPACE
 
@@ -1440,7 +1455,7 @@ namespace nzsl::Ast
 		using CCType = CastConstant<Vector4<TargetType>, TargetType, TargetType, TargetType, TargetType>;
 
 		if constexpr (is_complete_v<CCType>)
-			optimized = CCType{}(v1, v2, v3, v4);
+			optimized = CCType{}(v1, v2, v3, v4, sourceLocation);
 
 		return optimized;
 	}
