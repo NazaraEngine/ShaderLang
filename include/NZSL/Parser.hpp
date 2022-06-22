@@ -51,7 +51,7 @@ namespace nzsl
 			// Statements
 			Ast::StatementPtr ParseAliasDeclaration();
 			Ast::StatementPtr ParseBranchStatement();
-			Ast::StatementPtr ParseConstStatement();
+			Ast::StatementPtr ParseConstStatement(std::vector<Attribute> attributes = {});
 			Ast::StatementPtr ParseDiscardStatement();
 			Ast::StatementPtr ParseExternalBlock(std::vector<Attribute> attributes = {});
 			Ast::StatementPtr ParseForDeclaration(std::vector<Attribute> attributes = {});

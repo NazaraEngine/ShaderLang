@@ -16,6 +16,8 @@ namespace nzsl::Ast
 	{
 		if (m_currentAliasDeclIndex)
 			return Nz::Retrieve(m_aliasUsages, *m_currentAliasDeclIndex);
+		else if (m_currentConstantIndex)
+			return Nz::Retrieve(m_constantUsages, *m_currentConstantIndex);
 		else if (m_currentVariableDeclIndex)
 			return Nz::Retrieve(m_variableUsages, *m_currentVariableDeclIndex);
 		else
@@ -46,6 +48,7 @@ namespace nzsl::Ast
 	void DependencyCheckerVisitor::Resolve(const UsageSet& usageSet, bool allowUnknownId)
 	{
 		m_resolvedUsage.usedAliases |= usageSet.usedAliases;
+		m_resolvedUsage.usedConstants |= usageSet.usedConstants;
 		m_resolvedUsage.usedFunctions |= usageSet.usedFunctions;
 		m_resolvedUsage.usedStructs |= usageSet.usedStructs;
 		m_resolvedUsage.usedVariables |= usageSet.usedVariables;
@@ -57,6 +60,15 @@ namespace nzsl::Ast
 				Resolve(it->second, allowUnknownId);
 			else if (!allowUnknownId)
 				throw std::runtime_error("unknown alias #" + std::to_string(aliasIndex));
+		}
+
+		for (std::size_t constantIndex = usageSet.usedConstants.FindFirst(); constantIndex != usageSet.usedConstants.npos; constantIndex = usageSet.usedConstants.FindNext(constantIndex))
+		{
+			auto it = m_constantUsages.find(constantIndex);
+			if (it != m_constantUsages.end())
+				Resolve(it->second, allowUnknownId);
+			else if (!allowUnknownId)
+				throw std::runtime_error("unknown constant #" + std::to_string(constantIndex));
 		}
 
 		for (std::size_t funcIndex = usageSet.usedFunctions.FindFirst(); funcIndex != usageSet.usedFunctions.npos; funcIndex = usageSet.usedFunctions.FindNext(funcIndex))
@@ -93,10 +105,26 @@ namespace nzsl::Ast
 		assert(m_aliasUsages.find(*node.aliasIndex) == m_aliasUsages.end());
 		m_aliasUsages.emplace(*node.aliasIndex, UsageSet{});
 
-		assert(node.aliasIndex);
 		m_currentAliasDeclIndex = *node.aliasIndex;
 		RecursiveVisitor::Visit(node);
 		m_currentAliasDeclIndex = {};
+	}
+
+	void DependencyCheckerVisitor::Visit(DeclareConstStatement& node)
+	{
+		assert(node.constIndex);
+		assert(m_constantUsages.find(*node.constIndex) == m_constantUsages.end());
+		UsageSet& usageSet = m_constantUsages[*node.constIndex];
+
+		if (node.type.HasValue())
+		{
+			const auto& constType = node.type.GetResultingValue();
+			RegisterType(usageSet, constType);
+		}
+
+		m_currentConstantIndex = *node.constIndex;
+		RecursiveVisitor::Visit(node);
+		m_currentConstantIndex = {};
 	}
 
 	void DependencyCheckerVisitor::Visit(DeclareExternalStatement& node)
@@ -191,6 +219,12 @@ namespace nzsl::Ast
 	{
 		UsageSet& usageSet = GetContextUsageSet();
 		usageSet.usedAliases.UnboundedSet(node.aliasId);
+	}
+
+	void DependencyCheckerVisitor::Visit(ConstantExpression& node)
+	{
+		UsageSet& usageSet = GetContextUsageSet();
+		usageSet.usedConstants.UnboundedSet(node.constantId);
 	}
 
 	void DependencyCheckerVisitor::Visit(FunctionExpression& node)

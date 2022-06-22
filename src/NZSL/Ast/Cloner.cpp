@@ -96,6 +96,7 @@ namespace nzsl::Ast
 	{
 		auto clone = std::make_unique<DeclareConstStatement>();
 		clone->constIndex = node.constIndex;
+		clone->isExported = Clone(node.isExported);
 		clone->name = node.name;
 		clone->type = Clone(node.type);
 		clone->expression = CloneExpression(node.expression);

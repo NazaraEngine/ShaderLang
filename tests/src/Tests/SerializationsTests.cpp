@@ -275,6 +275,8 @@ fn main()
 [nzsl_version("1.0")]
 module;
 
+const Pi = 3.14159;
+
 option UseInt: bool = false;
 
 [cond(UseInt)]
@@ -301,11 +303,11 @@ fn main()
 
 	const if (UseInt)
 	{
-		value = f32(data.value);
+		value = f32(data.value) * Pi;
 	}
 	else
 	{
-		value = data.value;
+		value = data.value * Pi;
 	}
 }
 )");

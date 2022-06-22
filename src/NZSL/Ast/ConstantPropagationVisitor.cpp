@@ -91,7 +91,7 @@ namespace nzsl::Ast
 					values.push_back(std::get<T>(constantValueExpr.value));
 				}
 
-				return ShaderBuilder::ConstantArray(std::move(values));
+				return ShaderBuilder::ConstantArrayValue(std::move(values));
 			}
 		};
 
@@ -109,7 +109,7 @@ namespace nzsl::Ast
 		{
 			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs)
 			{
-				return ShaderBuilder::Constant(lhs == rhs);
+				return ShaderBuilder::ConstantValue(lhs == rhs);
 			}
 		};
 
@@ -128,7 +128,7 @@ namespace nzsl::Ast
 		{
 			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs)
 			{
-				return ShaderBuilder::Constant(lhs >= rhs);
+				return ShaderBuilder::ConstantValue(lhs >= rhs);
 			}
 		};
 
@@ -147,7 +147,7 @@ namespace nzsl::Ast
 		{
 			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs)
 			{
-				return ShaderBuilder::Constant(lhs > rhs);
+				return ShaderBuilder::ConstantValue(lhs > rhs);
 			}
 		};
 
@@ -166,7 +166,7 @@ namespace nzsl::Ast
 		{
 			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs)
 			{
-				return ShaderBuilder::Constant(lhs <= rhs);
+				return ShaderBuilder::ConstantValue(lhs <= rhs);
 			}
 		};
 
@@ -185,7 +185,7 @@ namespace nzsl::Ast
 		{
 			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs)
 			{
-				return ShaderBuilder::Constant(lhs < rhs);
+				return ShaderBuilder::ConstantValue(lhs < rhs);
 			}
 		};
 
@@ -204,7 +204,7 @@ namespace nzsl::Ast
 		{
 			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs)
 			{
-				return ShaderBuilder::Constant(lhs != rhs);
+				return ShaderBuilder::ConstantValue(lhs != rhs);
 			}
 		};
 
@@ -223,7 +223,7 @@ namespace nzsl::Ast
 		{
 			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs)
 			{
-				return ShaderBuilder::Constant(lhs && rhs);
+				return ShaderBuilder::ConstantValue(lhs && rhs);
 			}
 		};
 
@@ -242,7 +242,7 @@ namespace nzsl::Ast
 		{
 			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs)
 			{
-				return ShaderBuilder::Constant(lhs || rhs);
+				return ShaderBuilder::ConstantValue(lhs || rhs);
 			}
 		};
 
@@ -261,7 +261,7 @@ namespace nzsl::Ast
 		{
 			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs)
 			{
-				return ShaderBuilder::Constant(lhs + rhs);
+				return ShaderBuilder::ConstantValue(lhs + rhs);
 			}
 		};
 
@@ -280,7 +280,7 @@ namespace nzsl::Ast
 		{
 			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs)
 			{
-				return ShaderBuilder::Constant(lhs / rhs);
+				return ShaderBuilder::ConstantValue(lhs / rhs);
 			}
 		};
 
@@ -299,7 +299,7 @@ namespace nzsl::Ast
 		{
 			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs)
 			{
-				return ShaderBuilder::Constant(lhs * rhs);
+				return ShaderBuilder::ConstantValue(lhs * rhs);
 			}
 		};
 
@@ -318,7 +318,7 @@ namespace nzsl::Ast
 		{
 			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs)
 			{
-				return ShaderBuilder::Constant(lhs - rhs);
+				return ShaderBuilder::ConstantValue(lhs - rhs);
 			}
 		};
 
@@ -338,7 +338,7 @@ namespace nzsl::Ast
 		{
 			std::unique_ptr<ConstantValueExpression> operator()(const Args&... args)
 			{
-				return ShaderBuilder::Constant(T(args...));
+				return ShaderBuilder::ConstantValue(T(args...));
 			}
 		};
 
@@ -363,13 +363,13 @@ namespace nzsl::Ast
 			std::unique_ptr<ConstantValueExpression> operator()(const std::array<std::uint32_t, 4>& components, const ValueType& value)
 			{
 				if constexpr (TargetComponentCount == 4)
-					return ShaderBuilder::Constant(Vector4<T>{ Access(value, components[0]), Access(value, components[1]), Access(value, components[2]), Access(value, components[3]) });
+					return ShaderBuilder::ConstantValue(Vector4<T>{ Access(value, components[0]), Access(value, components[1]), Access(value, components[2]), Access(value, components[3]) });
 				else if constexpr (TargetComponentCount == 3)
-					return ShaderBuilder::Constant(Vector3<T>{ Access(value, components[0]), Access(value, components[1]), Access(value, components[2]) });
+					return ShaderBuilder::ConstantValue(Vector3<T>{ Access(value, components[0]), Access(value, components[1]), Access(value, components[2]) });
 				else if constexpr (TargetComponentCount == 2)
-					return ShaderBuilder::Constant(Vector2<T>{ Access(value, components[0]), Access(value, components[1]) });
+					return ShaderBuilder::ConstantValue(Vector2<T>{ Access(value, components[0]), Access(value, components[1]) });
 				else if constexpr (TargetComponentCount == 1)
-					return ShaderBuilder::Constant(Access(value, components[0]));
+					return ShaderBuilder::ConstantValue(Access(value, components[0]));
 				else
 					static_assert(Nz::AlwaysFalse<T>(), "unexpected TargetComponentCount");
 			}
@@ -389,7 +389,7 @@ namespace nzsl::Ast
 		{
 			std::unique_ptr<ConstantValueExpression> operator()(const T& arg)
 			{
-				return ShaderBuilder::Constant(!arg);
+				return ShaderBuilder::ConstantValue(!arg);
 			}
 		};
 
@@ -408,7 +408,7 @@ namespace nzsl::Ast
 		{
 			std::unique_ptr<ConstantValueExpression> operator()(const T& arg)
 			{
-				return ShaderBuilder::Constant(-arg);
+				return ShaderBuilder::ConstantValue(-arg);
 			}
 		};
 
@@ -427,7 +427,7 @@ namespace nzsl::Ast
 		{
 			std::unique_ptr<ConstantValueExpression> operator()(const T& arg)
 			{
-				return ShaderBuilder::Constant(arg);
+				return ShaderBuilder::ConstantValue(arg);
 			}
 		};
 
@@ -1122,7 +1122,7 @@ namespace nzsl::Ast
 				return Cloner::Clone(node); //< Keep arrays as constants
 			else
 			{
-				auto constant = ShaderBuilder::Constant(arg);
+				auto constant = ShaderBuilder::ConstantValue(arg);
 				constant->sourceLocation = node.sourceLocation;
 
 				return constant;
@@ -1151,7 +1151,7 @@ namespace nzsl::Ast
 					if (parameterType && IsArrayType(*parameterType))
 					{
 						const ArrayType& arrayType = std::get<ArrayType>(*parameterType);
-						auto constant = ShaderBuilder::Constant(arrayType.length);
+						auto constant = ShaderBuilder::ConstantValue(arrayType.length);
 						constant->sourceLocation = node.sourceLocation;
 
 						return constant;

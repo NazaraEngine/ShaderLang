@@ -25,7 +25,7 @@ namespace nzsl::ShaderBuilder
 	{
 		auto accessMemberNode = std::make_unique<Ast::AccessIndexExpression>();
 		accessMemberNode->expr = std::move(expr);
-		accessMemberNode->indices.push_back(ShaderBuilder::Constant(index));
+		accessMemberNode->indices.push_back(ShaderBuilder::ConstantValue(index));
 
 		return accessMemberNode;
 	}
@@ -37,7 +37,7 @@ namespace nzsl::ShaderBuilder
 
 		accessMemberNode->indices.reserve(indexConstants.size());
 		for (std::int32_t index : indexConstants)
-			accessMemberNode->indices.push_back(ShaderBuilder::Constant(index));
+			accessMemberNode->indices.push_back(ShaderBuilder::ConstantValue(index));
 
 		return accessMemberNode;
 	}
@@ -161,7 +161,16 @@ namespace nzsl::ShaderBuilder
 		return condStatementNode;
 	}
 
-	inline Ast::ConstantValueExpressionPtr Impl::Constant::operator()(Ast::ConstantSingleValue value) const
+	inline Ast::ConstantExpressionPtr Impl::Constant::operator()(std::size_t constantIndex, Ast::ExpressionType expressionType) const
+	{
+		auto constantExpr = std::make_unique<Ast::ConstantExpression>();
+		constantExpr->constantId = constantIndex;
+		constantExpr->cachedExpressionType = std::move(expressionType);
+
+		return constantExpr;
+	}
+
+	inline Ast::ConstantValueExpressionPtr Impl::ConstantValue::operator()(Ast::ConstantSingleValue value) const
 	{
 		auto constantNode = std::make_unique<Ast::ConstantValueExpression>();
 		constantNode->value = std::move(value);
@@ -171,23 +180,23 @@ namespace nzsl::ShaderBuilder
 	}
 
 	template<typename T>
-	Ast::ConstantValueExpressionPtr Impl::Constant::operator()(Ast::ExpressionType type, T value) const
+	Ast::ConstantValueExpressionPtr Impl::ConstantValue::operator()(Ast::ExpressionType type, T value) const
 	{
 		assert(IsPrimitiveType(type));
 
 		switch (std::get<Ast::PrimitiveType>(type))
 		{
-			case Ast::PrimitiveType::Boolean: return ShaderBuilder::Constant(value != T(0));
-			case Ast::PrimitiveType::Float32: return ShaderBuilder::Constant(Nz::SafeCast<float>(value));
-			case Ast::PrimitiveType::Int32:   return ShaderBuilder::Constant(Nz::SafeCast<std::int32_t>(value));
-			case Ast::PrimitiveType::UInt32:  return ShaderBuilder::Constant(Nz::SafeCast<std::uint32_t>(value));
-			case Ast::PrimitiveType::String:  return ShaderBuilder::Constant(value);
+			case Ast::PrimitiveType::Boolean: return ShaderBuilder::ConstantValue(value != T(0));
+			case Ast::PrimitiveType::Float32: return ShaderBuilder::ConstantValue(Nz::SafeCast<float>(value));
+			case Ast::PrimitiveType::Int32:   return ShaderBuilder::ConstantValue(Nz::SafeCast<std::int32_t>(value));
+			case Ast::PrimitiveType::UInt32:  return ShaderBuilder::ConstantValue(Nz::SafeCast<std::uint32_t>(value));
+			case Ast::PrimitiveType::String:  return ShaderBuilder::ConstantValue(value);
 		}
 
 		throw std::runtime_error("unexpected primitive type");
 	}
 
-	inline Ast::ConstantArrayValueExpressionPtr Impl::ConstantArray::operator()(Ast::ConstantArrayValue values) const
+	inline Ast::ConstantArrayValueExpressionPtr Impl::ConstantArrayValue::operator()(Ast::ConstantArrayValue values) const
 	{
 		auto constantNode = std::make_unique<Ast::ConstantArrayValueExpression>();
 		constantNode->values = std::move(values);

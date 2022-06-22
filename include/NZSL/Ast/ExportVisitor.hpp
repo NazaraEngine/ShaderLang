@@ -31,6 +31,7 @@ namespace nzsl::Ast
 
 			struct Callbacks
 			{
+				std::function<void(DeclareConstStatement& funcNode)> onExportedConst;
 				std::function<void(DeclareFunctionStatement& funcNode)> onExportedFunc;
 				std::function<void(DeclareStructStatement& structNode)> onExportedStruct;
 			};
@@ -38,6 +39,7 @@ namespace nzsl::Ast
 		private:
 			using RecursiveVisitor::Visit;
 
+			void Visit(DeclareConstStatement& node) override;
 			void Visit(DeclareFunctionStatement& node) override;
 			void Visit(DeclareStructStatement& node) override;
 

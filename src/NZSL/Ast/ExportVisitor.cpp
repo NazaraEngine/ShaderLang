@@ -13,6 +13,15 @@ namespace nzsl::Ast
 		statement.Visit(*this);
 	}
 
+	void ExportVisitor::Visit(DeclareConstStatement& node)
+	{
+		if (!node.isExported.HasValue() || !node.isExported.GetResultingValue())
+			return;
+
+		if (m_callbacks->onExportedConst)
+			m_callbacks->onExportedConst(node);
+	}
+
 	void ExportVisitor::Visit(DeclareFunctionStatement& node)
 	{
 		if (!node.isExported.HasValue() || !node.isExported.GetResultingValue())

@@ -467,7 +467,7 @@ namespace nzsl
 		return branch;
 	}
 
-	Ast::StatementPtr Parser::ParseConstStatement()
+	Ast::StatementPtr Parser::ParseConstStatement(std::vector<Attribute> attributes)
 	{
 		const Token& constToken = Expect(Advance(), TokenType::Const);
 
@@ -478,6 +478,26 @@ namespace nzsl
 		{
 			case TokenType::Identifier:
 			{
+				Ast::ExpressionValue<bool> condition;
+				Ast::ExpressionValue<bool> exported;
+
+				for (auto&& attribute : attributes)
+				{
+					switch (attribute.type)
+					{
+						case Ast::AttributeType::Cond:
+							HandleUniqueAttribute(condition, std::move(attribute));
+							break;
+
+						case Ast::AttributeType::Export:
+							HandleUniqueAttribute(exported, std::move(attribute), true);
+							break;
+
+						default:
+							throw ParserUnexpectedAttributeError{ attribute.sourceLocation, attribute.type };
+					}
+				}
+
 				std::string constName;
 				Ast::ExpressionValue<Ast::ExpressionType> constType;
 				Ast::ExpressionPtr initialValue;
@@ -485,9 +505,18 @@ namespace nzsl
 				ParseVariableDeclaration(constName, constType, initialValue, constLocation);
 
 				auto constDeclaration = ShaderBuilder::DeclareConst(std::move(constName), std::move(constType), std::move(initialValue));
+				constDeclaration->isExported = std::move(exported);
 				constDeclaration->sourceLocation = std::move(constLocation);
 
-				return constDeclaration;
+				if (condition.HasValue())
+				{
+					auto condStatement = ShaderBuilder::ConditionalStatement(std::move(condition).GetExpression(), std::move(constDeclaration));
+					condStatement->sourceLocation = condStatement->statement->sourceLocation;
+
+					return condStatement;
+				}
+				else
+					return constDeclaration;
 			}
 
 			case TokenType::If:
@@ -872,10 +901,7 @@ namespace nzsl
 				return ParseAliasDeclaration();
 
 			case TokenType::Const:
-				if (!attributes.empty())
-					throw ParserUnexpectedAttributeError{ attributes.front().sourceLocation, attributes.front().type };
-
-				return ParseConstStatement();
+				return ParseConstStatement(std::move(attributes));
 
 			case TokenType::EndOfStream:
 				if (!attributes.empty())
@@ -1349,7 +1375,7 @@ namespace nzsl
 	Ast::ExpressionPtr Parser::ParseFloatingPointExpression()
 	{
 		const Token& floatingPointToken = Expect(Advance(), TokenType::FloatingPointValue);
-		auto constantExpr = ShaderBuilder::Constant(float(std::get<double>(floatingPointToken.data))); //< FIXME
+		auto constantExpr = ShaderBuilder::ConstantValue(float(std::get<double>(floatingPointToken.data))); //< FIXME
 		constantExpr->sourceLocation = floatingPointToken.location;
 
 		return constantExpr;
@@ -1369,7 +1395,7 @@ namespace nzsl
 	Ast::ExpressionPtr Parser::ParseIntegerExpression()
 	{
 		const Token& integerToken = Expect(Advance(), TokenType::IntegerValue);
-		auto constantExpr = ShaderBuilder::Constant(Nz::SafeCast<std::int32_t>(std::get<long long>(integerToken.data))); //< FIXME
+		auto constantExpr = ShaderBuilder::ConstantValue(Nz::SafeCast<std::int32_t>(std::get<long long>(integerToken.data))); //< FIXME
 		constantExpr->sourceLocation = integerToken.location;
 
 		return constantExpr;
@@ -1395,13 +1421,13 @@ namespace nzsl
 		{
 			case TokenType::BoolFalse:
 				Consume();
-				primaryExpr = ShaderBuilder::Constant(false);
+				primaryExpr = ShaderBuilder::ConstantValue(false);
 				primaryExpr->sourceLocation = token.location;
 				break;
 
 			case TokenType::BoolTrue:
 				Consume();
-				primaryExpr = ShaderBuilder::Constant(true);
+				primaryExpr = ShaderBuilder::ConstantValue(true);
 				primaryExpr->sourceLocation = token.location;
 				break;
 
@@ -1477,7 +1503,7 @@ namespace nzsl
 	Ast::ExpressionPtr Parser::ParseStringExpression()
 	{
 		const Token& litteralToken = Expect(Advance(), TokenType::StringValue);
-		auto constantExpr = ShaderBuilder::Constant(std::get<std::string>(litteralToken.data));
+		auto constantExpr = ShaderBuilder::ConstantValue(std::get<std::string>(litteralToken.data));
 		constantExpr->sourceLocation = litteralToken.location;
 
 		return constantExpr;
@@ -1514,7 +1540,7 @@ namespace nzsl
 			Consume();
 			const Token& closeToken = Expect(Advance(), TokenType::ClosingParenthesis);
 
-			auto constantExpr = ShaderBuilder::Constant(Ast::NoValue{});
+			auto constantExpr = ShaderBuilder::ConstantValue(Ast::NoValue{});
 			constantExpr->sourceLocation = closeToken.location;
 
 			return constantExpr;

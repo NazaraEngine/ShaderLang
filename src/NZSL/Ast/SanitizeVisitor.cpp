@@ -451,7 +451,7 @@ namespace nzsl::Ast
 					std::unique_ptr<AccessIndexExpression> accessIndex = std::make_unique<AccessIndexExpression>();
 					accessIndex->sourceLocation = indexedExpr->sourceLocation;
 					accessIndex->expr = std::move(indexedExpr);
-					accessIndex->indices.push_back(ShaderBuilder::Constant(fieldIndex));
+					accessIndex->indices.push_back(ShaderBuilder::ConstantValue(fieldIndex));
 					accessIndex->cachedExpressionType = ResolveTypeExpr(fieldPtr->type, false, identifierEntry.sourceLocation);
 
 					indexedExpr = std::move(accessIndex);
@@ -652,7 +652,7 @@ namespace nzsl::Ast
 					throw AstInvalidMethodIndexError{ node.sourceLocation, methodType.methodIndex, ToString(objectType, node.sourceLocation) };
 
 				const ArrayType& arrayType = std::get<ArrayType>(objectType);
-				return ShaderBuilder::Constant(arrayType.length);
+				return ShaderBuilder::ConstantValue(arrayType.length);
 			}
 			else if (IsArrayType(objectType) || IsDynArrayType(objectType))
 			{
@@ -727,7 +727,7 @@ namespace nzsl::Ast
 			for (std::size_t i = 0; i < targetMatrixType.columnCount; ++i)
 			{
 				// temp[i]
-				auto columnExpr = ShaderBuilder::AccessIndex(ShaderBuilder::Variable(variableIndex, targetType), ShaderBuilder::Constant(std::uint32_t(i)));
+				auto columnExpr = ShaderBuilder::AccessIndex(ShaderBuilder::Variable(variableIndex, targetType), ShaderBuilder::ConstantValue(std::uint32_t(i)));
 				columnExpr->sourceLocation = node.sourceLocation;
 				Validate(*columnExpr);
 
@@ -737,7 +737,7 @@ namespace nzsl::Ast
 				if (isMatrixCast)
 				{
 					// fromMatrix[i]
-					auto matrixColumnExpr = ShaderBuilder::AccessIndex(CloneExpression(clone->expressions.front()), ShaderBuilder::Constant(std::uint32_t(i)));
+					auto matrixColumnExpr = ShaderBuilder::AccessIndex(CloneExpression(clone->expressions.front()), ShaderBuilder::ConstantValue(std::uint32_t(i)));
 					matrixColumnExpr->sourceLocation = node.sourceLocation;
 					Validate(*matrixColumnExpr);
 
@@ -761,7 +761,7 @@ namespace nzsl::Ast
 						std::vector<ExpressionPtr> expressions;
 						expressions.push_back(std::move(vectorExpr));
 						for (std::size_t j = 0; j < targetMatrixType.rowCount - vectorComponentCount; ++j)
-							expressions.push_back(ShaderBuilder::Constant(ExpressionType{ targetMatrixType.type }, (i == j + vectorComponentCount) ? 1 : 0)); //< set 1 to diagonal
+							expressions.push_back(ShaderBuilder::ConstantValue(ExpressionType{ targetMatrixType.type }, (i == j + vectorComponentCount) ? 1 : 0)); //< set 1 to diagonal
 
 						vecCast = ShaderBuilder::Cast(ExpressionType{ VectorType{ targetMatrixType.rowCount, targetMatrixType.type } }, std::move(expressions));
 						vecCast->sourceLocation = node.sourceLocation;
@@ -856,7 +856,7 @@ namespace nzsl::Ast
 			{
 				if (m_context->options.removeSingleConstDeclaration)
 				{
-					auto constantValue = ShaderBuilder::Constant(arg);
+					auto constantValue = ShaderBuilder::ConstantValue(arg);
 					constantValue->cachedExpressionType = GetConstantType(constantValue->value);
 					constantValue->sourceLocation = node.sourceLocation;
 
@@ -927,7 +927,7 @@ namespace nzsl::Ast
 				if (IsArrayType(paramType))
 				{
 					const ArrayType& arrayType = std::get<ArrayType>(paramType);
-					return ShaderBuilder::Constant(arrayType.length);
+					return ShaderBuilder::ConstantValue(arrayType.length);
 				}
 			}
 		}
@@ -1130,7 +1130,8 @@ namespace nzsl::Ast
 	StatementPtr SanitizeVisitor::Clone(DeclareAliasStatement& node)
 	{
 		auto clone = Nz::StaticUniquePointerCast<DeclareAliasStatement>(Cloner::Clone(node));
-		Validate(*clone);
+		if (Validate(*clone) == ValidationResult::Unresolved)
+			return clone;
 
 		if (m_context->options.removeAliases)
 			return ShaderBuilder::NoOp();
@@ -1141,46 +1142,10 @@ namespace nzsl::Ast
 	StatementPtr SanitizeVisitor::Clone(DeclareConstStatement& node)
 	{
 		auto clone = Nz::StaticUniquePointerCast<DeclareConstStatement>(Cloner::Clone(node));
-
-		if (!clone->expression)
-			throw CompilerConstMissingExpressionError{ node.sourceLocation };
-
-		clone->expression = PropagateConstants(*clone->expression);
-		NodeType constantType = clone->expression->GetType();
-		if (constantType != NodeType::ConstantValueExpression && constantType != NodeType::ConstantArrayValueExpression)
-		{
-			// Constant propagation failed
-			if (!m_context->options.allowPartialSanitization)
-				throw CompilerConstantExpressionRequiredError{ clone->expression->sourceLocation };
-
-			clone->constIndex = RegisterConstant(clone->name, std::nullopt, clone->constIndex, node.sourceLocation);
+		if (Validate(*clone) == ValidationResult::Unresolved)
 			return clone;
-		}
 
-		ExpressionType expressionType;
-		if (constantType == NodeType::ConstantValueExpression)
-		{
-			const auto& constant = static_cast<ConstantValueExpression&>(*clone->expression);
-			expressionType = GetConstantType(constant.value);
-
-			clone->constIndex = RegisterConstant(clone->name, ToConstantValue(constant.value), clone->constIndex, node.sourceLocation);
-		}
-		else if (constantType == NodeType::ConstantArrayValueExpression)
-		{
-			const auto& constant = static_cast<ConstantArrayValueExpression&>(*clone->expression);
-			expressionType = GetConstantType(constant.values);
-
-			clone->constIndex = RegisterConstant(clone->name, ToConstantValue(constant.values), clone->constIndex, node.sourceLocation);
-		}
-
-		std::optional<ExpressionType> constType = ResolveTypeExpr(clone->type, true, node.sourceLocation);
-
-		if (clone->type.HasValue() && constType.has_value() && *constType != ResolveAlias(expressionType))
-			throw CompilerVarDeclarationTypeUnmatchingError{ clone->expression->sourceLocation, ToString(expressionType, clone->expression->sourceLocation), ToString(*constType, node.sourceLocation) };
-
-		clone->type = expressionType;
-
-		if (m_context->options.removeSingleConstDeclaration && !IsArrayType(expressionType))
+		if (m_context->options.removeSingleConstDeclaration && !IsArrayType(clone->type.GetResultingValue()))
 			return ShaderBuilder::NoOp();
 
 		return clone;
@@ -1656,7 +1621,7 @@ namespace nzsl::Ast
 						auto innerMulti = std::make_unique<MultiStatement>();
 						innerMulti->sourceLocation = node.sourceLocation;
 
-						auto constant = ShaderBuilder::Constant(counter);
+						auto constant = ShaderBuilder::ConstantValue(counter);
 						constant->sourceLocation = node.sourceLocation;
 
 						auto var = ShaderBuilder::DeclareVariable(node.varName, std::move(constant));
@@ -1754,7 +1719,7 @@ namespace nzsl::Ast
 			if (stepVarIndex)
 				incrExpr = ShaderBuilder::Variable(*stepVarIndex, counterType);
 			else
-				incrExpr = (counterType == PrimitiveType::Int32) ? ShaderBuilder::Constant(1) : ShaderBuilder::Constant(1u);
+				incrExpr = (counterType == PrimitiveType::Int32) ? ShaderBuilder::ConstantValue(1) : ShaderBuilder::ConstantValue(1u);
 
 			auto incrCounter = ShaderBuilder::Assign(AssignType::CompoundAdd, ShaderBuilder::Variable(counterVarIndex, counterType), std::move(incrExpr));
 			incrCounter->sourceLocation = node.sourceLocation;
@@ -1821,7 +1786,7 @@ namespace nzsl::Ast
 						auto innerMulti = std::make_unique<MultiStatement>();
 						innerMulti->sourceLocation = node.sourceLocation;
 
-						auto accessIndex = ShaderBuilder::AccessIndex(CloneExpression(expr), ShaderBuilder::Constant(i));
+						auto accessIndex = ShaderBuilder::AccessIndex(CloneExpression(expr), ShaderBuilder::ConstantValue(i));
 						Validate(*accessIndex);
 
 						auto elementVariable = ShaderBuilder::DeclareVariable(node.varName, std::move(accessIndex));
@@ -1855,7 +1820,7 @@ namespace nzsl::Ast
 				multi->statements.reserve(2);
 
 				// Counter variable
-				auto counterVariable = ShaderBuilder::DeclareVariable("i", ShaderBuilder::Constant(0u));
+				auto counterVariable = ShaderBuilder::DeclareVariable("i", ShaderBuilder::ConstantValue(0u));
 				Validate(*counterVariable);
 
 				std::size_t counterVarIndex = counterVariable->varIndex.value();
@@ -1866,7 +1831,7 @@ namespace nzsl::Ast
 				whileStatement->unroll = std::move(unrollValue);
 
 				// While condition
-				auto condition = ShaderBuilder::Binary(BinaryType::CompLt, ShaderBuilder::Variable(counterVarIndex, PrimitiveType::UInt32), ShaderBuilder::Constant(arrayType.length));
+				auto condition = ShaderBuilder::Binary(BinaryType::CompLt, ShaderBuilder::Variable(counterVarIndex, PrimitiveType::UInt32), ShaderBuilder::ConstantValue(arrayType.length));
 				Validate(*condition);
 				whileStatement->condition = std::move(condition);
 
@@ -1884,7 +1849,7 @@ namespace nzsl::Ast
 
 				body->statements.emplace_back(Unscope(CloneStatement(node.statement)));
 
-				auto incrCounter = ShaderBuilder::Assign(AssignType::CompoundAdd, ShaderBuilder::Variable(counterVarIndex, PrimitiveType::UInt32), ShaderBuilder::Constant(1u));
+				auto incrCounter = ShaderBuilder::Assign(AssignType::CompoundAdd, ShaderBuilder::Variable(counterVarIndex, PrimitiveType::UInt32), ShaderBuilder::ConstantValue(1u));
 				Validate(*incrCounter);
 
 				body->statements.emplace_back(ShaderBuilder::ExpressionStatement(std::move(incrCounter)));
@@ -2073,6 +2038,7 @@ namespace nzsl::Ast
 
 		// Extract exported nodes and their dependencies
 		std::vector<DeclareAliasStatementPtr> aliasStatements;
+		std::vector<DeclareConstStatementPtr> constStatements;
 
 		std::vector<std::string> wildcardImport{ std::string{} };
 
@@ -2091,6 +2057,42 @@ namespace nzsl::Ast
 		};
 
 		ExportVisitor::Callbacks callbacks;
+		callbacks.onExportedConst = [&](DeclareConstStatement& node)
+		{
+			assert(node.constIndex);
+
+			auto [imported, aliasesName] = CheckImport(node.name);
+			if (!imported)
+				return;
+
+			if (moduleData.dependenciesVisitor)
+				moduleData.dependenciesVisitor->MarkConstantAsUsed(*node.constIndex);
+
+			auto BuildConstant = [&]() -> ExpressionPtr
+			{
+				const ConstantValue* value = m_context->constantValues.TryRetrieve(*node.constIndex, node.sourceLocation);
+				if (!value)
+					throw AstInvalidConstantIndexError{ node.sourceLocation, *node.constIndex };
+
+				return ShaderBuilder::Constant(*node.constIndex, GetConstantType(*value));
+			};
+
+			for (const std::string& aliasName : *aliasesName)
+			{
+				if (aliasName.empty())
+				{
+					// symbol not renamed, export it once
+					if (exportedSet.usedConstants.UnboundedTest(*node.constIndex))
+						return;
+
+					exportedSet.usedConstants.UnboundedSet(*node.constIndex);
+					constStatements.emplace_back(ShaderBuilder::DeclareConst(node.name, BuildConstant()));
+				}
+				else
+					constStatements.emplace_back(ShaderBuilder::DeclareConst(aliasName, BuildConstant()));
+			}
+		};
+
 		callbacks.onExportedFunc = [&](DeclareFunctionStatement& node)
 		{
 			assert(node.funcIndex);
@@ -2148,12 +2150,15 @@ namespace nzsl::Ast
 		ExportVisitor exportVisitor;
 		exportVisitor.Visit(*m_context->currentModule->importedModules[moduleIndex].module->rootNode, callbacks);
 
-		if (aliasStatements.empty())
+		if (aliasStatements.empty() && constStatements.empty())
 			return ShaderBuilder::NoOp();
 
 		// Register aliases
 		for (auto& aliasPtr : aliasStatements)
 			Validate(*aliasPtr);
+
+		for (auto& constPtr : constStatements)
+			Validate(*constPtr);
 
 		if (m_context->options.removeAliases)
 			return ShaderBuilder::NoOp();
@@ -2162,6 +2167,9 @@ namespace nzsl::Ast
 		MultiStatementPtr aliasBlock = std::make_unique<MultiStatement>();
 		for (auto& aliasPtr : aliasStatements)
 			aliasBlock->statements.push_back(std::move(aliasPtr));
+
+		for (auto& constPtr : constStatements)
+			aliasBlock->statements.push_back(std::move(constPtr));
 
 		//m_context->allowUnknownIdentifiers = true; //< if module uses a unresolved and non-exported symbol, we need to allow unknown identifiers
 		// ^ wtf?
@@ -3857,6 +3865,51 @@ namespace nzsl::Ast
 
 		node.cachedExpressionType = targetType;
 		node.targetType = std::move(targetType);
+
+		return ValidationResult::Validated;
+	}
+
+	auto SanitizeVisitor::Validate(DeclareConstStatement& node) -> ValidationResult
+	{
+		if (!node.expression)
+			throw CompilerConstMissingExpressionError{ node.sourceLocation };
+
+		ExpressionPtr constantExpr = PropagateConstants(*node.expression);
+
+		NodeType constantType = constantExpr->GetType();
+		if (constantType != NodeType::ConstantValueExpression && constantType != NodeType::ConstantArrayValueExpression)
+		{
+			// Constant propagation failed
+			if (!m_context->options.allowPartialSanitization)
+				throw CompilerConstantExpressionRequiredError{ node.expression->sourceLocation };
+
+			node.constIndex = RegisterConstant(node.name, std::nullopt, node.constIndex, node.sourceLocation);
+			return ValidationResult::Unresolved;
+		}
+
+		ExpressionType expressionType;
+		if (constantType == NodeType::ConstantValueExpression)
+		{
+			const auto& constant = static_cast<ConstantValueExpression&>(*constantExpr);
+			expressionType = GetConstantType(constant.value);
+
+			node.constIndex = RegisterConstant(node.name, ToConstantValue(constant.value), node.constIndex, node.sourceLocation);
+		}
+		else if (constantType == NodeType::ConstantArrayValueExpression)
+		{
+			const auto& constant = static_cast<ConstantArrayValueExpression&>(*constantExpr);
+			expressionType = GetConstantType(constant.values);
+
+			node.constIndex = RegisterConstant(node.name, ToConstantValue(constant.values), node.constIndex, node.sourceLocation);
+			node.expression = std::move(constantExpr); //< FIXME: Should const arrays be allowed?
+		}
+
+		std::optional<ExpressionType> constType = ResolveTypeExpr(node.type, true, node.sourceLocation);
+
+		if (node.type.HasValue() && constType.has_value() && *constType != ResolveAlias(expressionType))
+			throw CompilerVarDeclarationTypeUnmatchingError{ node.expression->sourceLocation, ToString(expressionType, node.expression->sourceLocation), ToString(*constType, node.sourceLocation) };
+
+		node.type = expressionType;
 
 		return ValidationResult::Validated;
 	}

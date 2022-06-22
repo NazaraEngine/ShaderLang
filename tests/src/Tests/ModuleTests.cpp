@@ -15,6 +15,9 @@ TEST_CASE("Modules", "[Shader]")
 [nzsl_version("1.0")]
 module SimpleModule;
 
+[export]
+const Pi = 3.141592;
+
 [layout(std140)]
 struct Data
 {
@@ -64,7 +67,7 @@ external
 fn main(input: InputData) -> OutputData
 {
 	let output: OutputData;
-	output.value = GetDataValue(block.data) * input.value;
+	output.value = GetDataValue(block.data) * input.value * Pi;
 	return output;
 }
 )";
@@ -125,7 +128,7 @@ void main()
 	input_.value = _nzslIn_value;
 	
 	OutputData_SimpleModule output_;
-	output_.value = (GetDataValue_SimpleModule(block.data)) * input_.value;
+	output_.value = ((GetDataValue_SimpleModule(block.data)) * input_.value) * (3.141592);
 	
 	_nzslOut_value = output_.value;
 	return;
@@ -139,6 +142,8 @@ module;
 [nzsl_version("1.0")]
 module _SimpleModule
 {
+	const Pi: f32 = 3.141592;
+	
 	[layout(std140)]
 	struct Data
 	{
@@ -175,6 +180,8 @@ alias InputData = _SimpleModule.InputData;
 
 alias OutputData = _SimpleModule.OutputData;
 
+const Pi: f32 = _SimpleModule.Pi;
+
 external
 {
 	[set(0), binding(0)] block: uniform[_SimpleModule.Block]
@@ -184,7 +191,7 @@ external
 fn main(input: InputData) -> OutputData
 {
 	let output: OutputData;
-	output.value = (GetDataValue(block.data)) * input.value;
+	output.value = ((GetDataValue(block.data)) * input.value) * Pi;
 	return output;
 }
 )");
@@ -208,6 +215,7 @@ OpStore
 OpFunctionCall
 OpAccessChain
 OpLoad
+OpFMul
 OpFMul
 OpAccessChain
 OpStore

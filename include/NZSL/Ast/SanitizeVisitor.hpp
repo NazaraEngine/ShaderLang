@@ -171,6 +171,7 @@ namespace nzsl::Ast
 			ValidationResult Validate(BinaryExpression& node);
 			ValidationResult Validate(CallFunctionExpression& node);
 			ValidationResult Validate(CastExpression& node);
+			ValidationResult Validate(DeclareConstStatement& node);
 			ValidationResult Validate(DeclareVariableStatement& node);
 			ValidationResult Validate(IntrinsicExpression& node);
 			ValidationResult Validate(SwizzleExpression& node);

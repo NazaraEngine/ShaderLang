@@ -71,11 +71,16 @@ namespace nzsl::ShaderBuilder
 
 		struct Constant
 		{
+			inline Ast::ConstantExpressionPtr operator()(std::size_t constantIndex, Ast::ExpressionType expressionType) const;
+		};
+
+		struct ConstantValue
+		{
 			inline Ast::ConstantValueExpressionPtr operator()(Ast::ConstantSingleValue value) const;
 			template<typename T> Ast::ConstantValueExpressionPtr operator()(Ast::ExpressionType type, T value) const;
 		};
 
-		struct ConstantArray
+		struct ConstantArrayValue
 		{
 			inline Ast::ConstantArrayValueExpressionPtr operator()(Ast::ConstantArrayValue values) const;
 		};
@@ -214,7 +219,8 @@ namespace nzsl::ShaderBuilder
 	constexpr Impl::ConditionalExpression ConditionalExpression;
 	constexpr Impl::ConditionalStatement ConditionalStatement;
 	constexpr Impl::Constant Constant;
-	constexpr Impl::ConstantArray ConstantArray;
+	constexpr Impl::ConstantValue ConstantValue;
+	constexpr Impl::ConstantArrayValue ConstantArrayValue;
 	constexpr Impl::Branch<true> ConstBranch;
 	constexpr Impl::DeclareAlias DeclareAlias;
 	constexpr Impl::DeclareConst DeclareConst;
