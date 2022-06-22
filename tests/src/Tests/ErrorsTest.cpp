@@ -63,6 +63,8 @@ option enable: bool;
 			nzsl::Ast::Sanitize(*nzsl::Parse(sourceCode));
 		};
 
+		/************************************************************************/
+
 		SECTION("Arrays")
 		{
 			// unsized arrays can only be used on declaration (for implicit size)
@@ -137,6 +139,8 @@ fn test() -> array[f32]
 )"), "(5 -> 9,1 -> 1): CArrayLengthRequired error: array length is required in this context");
 		}
 
+		/************************************************************************/
+
 		SECTION("Builtins")
 		{
 			CHECK_THROWS_WITH(Compile(R"(
@@ -210,6 +214,29 @@ fn main(input: Input)
 	test(input);
 })"), "(12,9 -> 17): CBuiltinUnsupportedStage error: builtin position is not available in fragment stage");
 		}
+
+		/************************************************************************/
+
+		SECTION("Constant propagation")
+		{
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+const V = 21 * 2 / (9 - 3 * 3);
+
+)"), "(5,11 -> 30): CIntegralDivisionByZero error: integral division by zero in expression");
+
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+const V = vec4[i32](7, 6, 5, 4) / vec4[i32](3, 2, 1, 0);
+
+)"), "(5,11 -> 55): CIntegralDivisionByZero error: integral division by zero in expression");
+		}
+
+		/************************************************************************/
 
 		SECTION("Import")
 		{

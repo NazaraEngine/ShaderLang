@@ -10,6 +10,7 @@
 #include <NZSL/Config.hpp>
 #include <Nazara/Utils/Algorithm.hpp>
 #include <array>
+#include <type_traits>
 
 namespace nzsl
 {
@@ -85,6 +86,11 @@ namespace nzsl
 	using Vector4i64 = Vector<std::int64_t, 4>;
 	using Vector4u32 = Vector<std::uint32_t, 4>;
 	using Vector4u64 = Vector<std::uint64_t, 4>;
+
+	template<typename T> struct IsVector : std::bool_constant<false> {};
+	template<typename T, std::size_t N> struct IsVector<Vector<T, N>> : std::bool_constant<true> {};
+
+	template<typename T> constexpr bool IsVector_v = IsVector<T>::value;
 }
 
 #include <NZSL/Vector.inl>

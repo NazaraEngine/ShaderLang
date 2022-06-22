@@ -8,7 +8,7 @@
 #define NZSL_AST_CONSTANTPROPAGATIONVISITOR_HPP
 
 #include <NZSL/Config.hpp>
-#include <NZSL/Config.hpp>
+#include <NZSL/SourceLocation.hpp>
 #include <NZSL/Ast/Cloner.hpp>
 #include <NZSL/Ast/Module.hpp>
 
@@ -50,13 +50,13 @@ namespace nzsl::Ast
 			StatementPtr Clone(BranchStatement& node) override;
 			StatementPtr Clone(ConditionalStatement& node) override;
 
-			template<BinaryType Type> ExpressionPtr PropagateBinaryConstant(const ConstantValueExpression& lhs, const ConstantValueExpression& rhs);
-			template<typename TargetType> ExpressionPtr PropagateSingleValueCast(const ConstantValueExpression& operand);
-			template<std::size_t TargetComponentCount> ExpressionPtr PropagateConstantSwizzle(const std::array<std::uint32_t, 4>& components, const ConstantValueExpression& operand);
-			template<UnaryType Type> ExpressionPtr PropagateUnaryConstant(const ConstantValueExpression& operand);
-			template<typename TargetType> ExpressionPtr PropagateVec2Cast(TargetType v1, TargetType v2);
-			template<typename TargetType> ExpressionPtr PropagateVec3Cast(TargetType v1, TargetType v2, TargetType v3);
-			template<typename TargetType> ExpressionPtr PropagateVec4Cast(TargetType v1, TargetType v2, TargetType v3, TargetType v4);
+			template<BinaryType Type> ExpressionPtr PropagateBinaryConstant(const ConstantValueExpression& lhs, const ConstantValueExpression& rhs, const SourceLocation& sourceLocation);
+			template<typename TargetType> ExpressionPtr PropagateSingleValueCast(const ConstantValueExpression& operand, const SourceLocation& sourceLocation);
+			template<std::size_t TargetComponentCount> ExpressionPtr PropagateConstantSwizzle(const std::array<std::uint32_t, 4>& components, const ConstantValueExpression& operand, const SourceLocation& sourceLocation);
+			template<UnaryType Type> ExpressionPtr PropagateUnaryConstant(const ConstantValueExpression& operand, const SourceLocation& sourceLocation);
+			template<typename TargetType> ExpressionPtr PropagateVec2Cast(TargetType v1, TargetType v2, const SourceLocation& sourceLocation);
+			template<typename TargetType> ExpressionPtr PropagateVec3Cast(TargetType v1, TargetType v2, TargetType v3, const SourceLocation& sourceLocation);
+			template<typename TargetType> ExpressionPtr PropagateVec4Cast(TargetType v1, TargetType v2, TargetType v3, TargetType v4, const SourceLocation& sourceLocation);
 
 			StatementPtr Unscope(StatementPtr node);
 
