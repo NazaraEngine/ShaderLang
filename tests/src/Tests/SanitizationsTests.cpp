@@ -142,6 +142,11 @@ fn main()
 [nzsl_version("1.0")]
 module;
 
+fn buildMat2x3(a: f32, b: f32, c: f32, d: f32, e: f32, f: f32) -> mat2x3[f32]
+{
+	return mat2x3[f32](a, b, c, d, e, f);
+}
+
 fn testMat2ToMat2(input: mat2[f32]) -> mat2[f32]
 {
 	return mat2[f32](input);
@@ -196,6 +201,14 @@ fn testMat4ToMat4(input: mat4[f32]) -> mat4[f32]
 		REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(*shaderModule, options));
 
 		ExpectNZSL(*shaderModule, R"(
+fn buildMat2x3(a: f32, b: f32, c: f32, d: f32, e: f32, f: f32) -> mat2x3[f32]
+{
+	let temp: mat2x3[f32];
+	temp[0] = vec3[f32](a, b, c);
+	temp[1] = vec3[f32](d, e, f);
+	return temp;
+}
+
 fn testMat2ToMat2(input: mat2[f32]) -> mat2[f32]
 {
 	return input;

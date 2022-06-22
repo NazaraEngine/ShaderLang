@@ -716,6 +716,8 @@ namespace nzsl::Ast
 				return std::move(clone->expressions.front());
 			}
 
+			bool isVectorCast = IsVectorType(frontExprType);
+
 			auto variableDeclaration = ShaderBuilder::DeclareVariable("temp", targetType); //< Validation will prevent name-clash if required
 			variableDeclaration->sourceLocation = node.sourceLocation;
 			Validate(*variableDeclaration);
@@ -744,11 +746,23 @@ namespace nzsl::Ast
 					vectorExpr = std::move(matrixColumnExpr);
 					vectorComponentCount = std::get<MatrixType>(frontExprType).rowCount;
 				}
-				else
+				else if (isVectorCast)
 				{
 					// parameter #i
 					vectorExpr = std::move(clone->expressions[i]);
 					vectorComponentCount = std::get<VectorType>(ResolveAlias(GetExpressionTypeSecure(*vectorExpr))).componentCount;
+				}
+				else
+				{
+					std::vector<ExpressionPtr> expressions(targetMatrixType.rowCount);
+					for (std::size_t j = 0; j < targetMatrixType.rowCount; ++j)
+						expressions[j] = std::move(clone->expressions[i * targetMatrixType.rowCount + j]);
+
+					auto buildVec = ShaderBuilder::Cast(ExpressionType{ VectorType{ targetMatrixType.rowCount, targetMatrixType.type } }, std::move(expressions));
+					Validate(*buildVec);
+
+					vectorExpr = std::move(buildVec);
+					vectorComponentCount = targetMatrixType.rowCount;
 				}
 
 				// cast expression (turn fromMatrix[i] to vec3[f32](fromMatrix[i]))
@@ -2646,24 +2660,33 @@ namespace nzsl::Ast
 			}
 		}, std::nullopt, {});
 
-		// matX
-		for (std::size_t componentCount = 2; componentCount <= 4; ++componentCount)
+		// matX | matAxB
+		for (std::size_t columnCount = 2; columnCount <= 4; ++columnCount)
 		{
-			RegisterType("mat" + std::to_string(componentCount), PartialType {
-				{ TypeParameterCategory::PrimitiveType }, {},
-				[=](const TypeParameter* parameters, [[maybe_unused]] std::size_t parameterCount, const SourceLocation& /*sourceLocation*/) -> ExpressionType
-				{
-					assert(parameterCount == 1);
-					assert(std::holds_alternative<ExpressionType>(*parameters));
+			for (std::size_t rowCount = 2; rowCount <= 4; ++rowCount)
+			{
+				std::string name;
+				if (columnCount == rowCount)
+					name = "mat" + std::to_string(columnCount);
+				else
+					name = "mat" + std::to_string(columnCount) + "x" + std::to_string(rowCount);
 
-					const ExpressionType& exprType = std::get<ExpressionType>(*parameters);
-					assert(IsPrimitiveType(exprType));
+				RegisterType(std::move(name), PartialType{
+					{ TypeParameterCategory::PrimitiveType }, {},
+					[=](const TypeParameter* parameters, [[maybe_unused]] std::size_t parameterCount, const SourceLocation& /*sourceLocation*/) -> ExpressionType
+					{
+						assert(parameterCount == 1);
+						assert(std::holds_alternative<ExpressionType>(*parameters));
 
-					return MatrixType {
-						componentCount, componentCount, std::get<PrimitiveType>(exprType)
-					};
-				}
-			}, std::nullopt, {});
+						const ExpressionType& exprType = std::get<ExpressionType>(*parameters);
+						assert(IsPrimitiveType(exprType));
+
+						return MatrixType {
+							columnCount, rowCount, std::get<PrimitiveType>(exprType)
+						};
+					}
+				}, std::nullopt, {});
+			}
 		}
 
 		// vecX
@@ -3675,14 +3698,15 @@ namespace nzsl::Ast
 			if (!firstExprType)
 				return ValidationResult::Unresolved;
 
-			if (IsMatrixType(ResolveAlias(*firstExprType)))
+			const ExpressionType& resolvedFirstExprType = ResolveAlias(*firstExprType);
+			if (IsMatrixType(resolvedFirstExprType))
 			{
 				if (expressionCount != 1)
 					throw CompilerCastComponentMismatchError{ node.sourceLocation, Nz::SafeCast<std::uint32_t>(expressionCount), 1 };
 
 				// Matrix to matrix cast: always valid
 			}
-			else
+			else if (IsVectorType(resolvedFirstExprType))
 			{
 				// Matrix builder (from vectors)
 
@@ -3692,16 +3716,15 @@ namespace nzsl::Ast
 
 				for (std::size_t i = 0; i < targetMatrixType.columnCount; ++i)
 				{
-					const auto& exprPtr = node.expressions[i];
-					assert(exprPtr);
+					auto& exprPtr = MandatoryExpr(node.expressions[i], node.sourceLocation);
 
-					const ExpressionType* exprType = GetExpressionType(*exprPtr);
+					const ExpressionType* exprType = GetExpressionType(exprPtr);
 					if (!exprType)
 						return ValidationResult::Unresolved;
 
 					const ExpressionType& resolvedExprType = ResolveAlias(*exprType);
 					if (!IsVectorType(resolvedExprType))
-						throw CompilerCastMatrixExpectedVectorError{ node.sourceLocation, ToString(resolvedExprType, node.expressions[i]->sourceLocation) };
+						throw CompilerCastMatrixExpectedVectorOrScalarError{ node.sourceLocation, ToString(resolvedExprType, node.expressions[i]->sourceLocation) };
 
 					const VectorType& vecType = std::get<VectorType>(resolvedExprType);
 					if (vecType.componentCount != targetMatrixType.rowCount)
@@ -3711,6 +3734,32 @@ namespace nzsl::Ast
 						throw CompilerCastIncompatibleBaseTypesError{ node.expressions[i]->sourceLocation, ToString(targetMatrixType.type, node.sourceLocation), ToString(vecType.type, node.sourceLocation) };
 				}
 			}
+			else if (IsPrimitiveType(resolvedFirstExprType))
+			{
+				// Matrix builder (from scalars)
+				std::size_t requiredComponentCount = targetMatrixType.columnCount * targetMatrixType.rowCount;
+				if (expressionCount != requiredComponentCount)
+					throw CompilerCastComponentMismatchError{ node.sourceLocation, Nz::SafeCast<std::uint32_t>(expressionCount), Nz::SafeCast<std::uint32_t>(requiredComponentCount) };
+
+				for (std::size_t i = 0; i < requiredComponentCount; ++i)
+				{
+					auto& exprPtr = MandatoryExpr(node.expressions[i], node.sourceLocation);
+
+					const ExpressionType* exprType = GetExpressionType(exprPtr);
+					if (!exprType)
+						return ValidationResult::Unresolved;
+
+					const ExpressionType& resolvedExprType = ResolveAlias(*exprType);
+					if (!IsPrimitiveType(resolvedExprType))
+						throw CompilerCastMatrixExpectedVectorOrScalarError{ node.sourceLocation, ToString(resolvedExprType, node.expressions[i]->sourceLocation) };
+
+					const PrimitiveType& baseType = std::get<PrimitiveType>(resolvedExprType);
+					if (baseType != targetMatrixType.type)
+						throw CompilerCastIncompatibleBaseTypesError{ node.expressions[i]->sourceLocation, ToString(targetMatrixType.type, node.sourceLocation), ToString(baseType, node.sourceLocation) };
+				}
+			}
+			else
+				throw CompilerCastMatrixExpectedVectorOrScalarError{ node.sourceLocation, ToString(resolvedFirstExprType, firstExprPtr.sourceLocation) };
 		}
 		else if (IsPrimitiveType(targetType))
 		{
