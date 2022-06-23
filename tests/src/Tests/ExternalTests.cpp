@@ -32,7 +32,7 @@ uniform sampler2D tex;
 
 void main()
 {
-	vec4 value = texture(tex, vec2(0.000000, 0.000000));
+	vec4 value = texture(tex, vec2(0.0, 0.0));
 }
 )");
 
@@ -45,7 +45,7 @@ external
 [entry(frag)]
 fn main()
 {
-	let value: vec4[f32] = tex.Sample(vec2[f32](0.000000, 0.000000));
+	let value: vec4[f32] = tex.Sample(vec2[f32](0.0, 0.0));
 })");
 
 		ExpectSPIRV(*shaderModule, R"(

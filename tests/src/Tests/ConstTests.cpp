@@ -190,7 +190,7 @@ fn main()
 [entry(frag)]
 fn main()
 {
-	let color: vec4[f32] = (0.000000).xxxx;
+	let color: vec4[f32] = (0.0).xxxx;
 	{
 		let i: i32 = 0;
 		color += data.lights[i].color;
@@ -265,7 +265,7 @@ fn main()
 [entry(frag)]
 fn main()
 {
-	let color: vec4[f32] = (0.000000).xxxx;
+	let color: vec4[f32] = (0.0).xxxx;
 	{
 		let light: Light = data.lights[0];
 		color += light.color;

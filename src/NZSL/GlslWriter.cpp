@@ -10,6 +10,7 @@
 #include <NZSL/ShaderBuilder.hpp>
 #include <NZSL/Ast/Cloner.hpp>
 #include <NZSL/Ast/ConstantPropagationVisitor.hpp>
+#include <NZSL/Ast/ConstantValue.hpp>
 #include <NZSL/Ast/LangData.hpp>
 #include <NZSL/Ast/RecursiveVisitor.hpp>
 #include <NZSL/Ast/Utils.hpp>
@@ -920,7 +921,9 @@ namespace nzsl
 	void GlslWriter::AppendValue(const T& value)
 	{
 		if constexpr (std::is_same_v<T, Vector2i32> || std::is_same_v<T, Vector3i32> || std::is_same_v<T, Vector4i32>)
-			Append("i"); //< for ivec
+			Append("i"); //< ivec
+		else if constexpr (std::is_same_v<T, Vector2u32> || std::is_same_v<T, Vector3u32> || std::is_same_v<T, Vector4u32>)
+			Append("i"); //< uvec
 
 		if constexpr (std::is_same_v<T, Ast::NoValue>)
 			throw std::runtime_error("invalid type (value expected)");
@@ -928,16 +931,18 @@ namespace nzsl
 			throw std::runtime_error("unexpected string litteral");
 		else if constexpr (std::is_same_v<T, bool> || std::is_same_v<T, std::vector<bool>::reference>)
 			Append((value) ? "true" : "false");
-		else if constexpr (std::is_same_v<T, float> || std::is_same_v<T, std::int32_t>)
-			Append(std::to_string(value));
-		else if constexpr (std::is_same_v<T, std::uint32_t>)
-			Append(std::to_string(value), "u");
+		else if constexpr (std::is_same_v<T, float> || std::is_same_v<T, std::int32_t> || std::is_same_v<T, std::uint32_t>)
+		{
+			Append(Ast::ToString(value));
+			if constexpr (std::is_same_v<T, std::uint32_t>)
+				Append("u");
+		}
 		else if constexpr (std::is_same_v<T, Vector2f> || std::is_same_v<T, Vector2i32>)
-			Append("vec2(" + std::to_string(value.x()) + ", " + std::to_string(value.y()) + ")");
+			Append("vec2(" + Ast::ToString(value.x()) + ", " + Ast::ToString(value.y()) + ")");
 		else if constexpr (std::is_same_v<T, Vector3f> || std::is_same_v<T, Vector3i32>)
-			Append("vec3(" + std::to_string(value.x()) + ", " + std::to_string(value.y()) + ", " + std::to_string(value.z()) + ")");
+			Append("vec3(" + Ast::ToString(value.x()) + ", " + Ast::ToString(value.y()) + ", " + Ast::ToString(value.z()) + ")");
 		else if constexpr (std::is_same_v<T, Vector4f> || std::is_same_v<T, Vector4i32>)
-			Append("vec4(" + std::to_string(value.x()) + ", " + std::to_string(value.y()) + ", " + std::to_string(value.z()) + ", " + std::to_string(value.w()) + ")");
+			Append("vec4(" + Ast::ToString(value.x()) + ", " + Ast::ToString(value.y()) + ", " + Ast::ToString(value.z()) + ", " + Ast::ToString(value.w()) + ")");
 		else
 			static_assert(Nz::AlwaysFalse<T>(), "non-exhaustive visitor");
 	}

@@ -31,6 +31,8 @@ namespace nzsl
 		std::variant<double, long long, std::string> data;
 	};
 
+	NZSL_API std::string EscapeString(std::string_view str, bool quote = true);
+
 	NZSL_API std::vector<Token> Tokenize(const std::string_view& str, const std::string& filePath = std::string{});
 	NZSL_API const char* ToString(TokenType tokenType);
 	NZSL_API std::string ToString(const std::vector<Token>& tokens, bool pretty = true);

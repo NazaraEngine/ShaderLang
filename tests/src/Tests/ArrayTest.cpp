@@ -50,9 +50,9 @@ fn main(input: VertIn) -> VertOut
 
 		ExpectGLSL(*shaderModule, R"(
 vec3 vertices[3] = vec3[3](
-	vec3(1.000000, 2.000000, 3.000000),
-	vec3(4.000000, 5.000000, 6.000000),
-	vec3(7.000000, 8.000000, 9.000000)
+	vec3(1.0, 2.0, 3.0),
+	vec3(4.0, 5.0, 6.0),
+	vec3(7.0, 8.0, 9.0)
 );
 struct VertIn
 {
@@ -72,11 +72,11 @@ void main()
 	VertOut output_;
 	if ((uint(input_.vert_index)) < (uint(vertices.length())))
 	{
-		output_.pos = vec4(vertices[input_.vert_index], 1.000000);
+		output_.pos = vec4(vertices[input_.vert_index], 1.0);
 	}
 	else
 	{
-		output_.pos = vec4(0.000000, 0.000000, 0.000000, 0.000000);
+		output_.pos = vec4(0.0, 0.0, 0.0, 0.0);
 	}
 	
 	int customData[5] = int[5](1, 2, 3, 4, 5);
@@ -87,9 +87,9 @@ void main()
 
 		ExpectNZSL(*shaderModule, R"(
 const vertices: array[vec3[f32], 3] = array[vec3[f32], 3](
-	vec3[f32](1.000000, 2.000000, 3.000000),
-	vec3[f32](4.000000, 5.000000, 6.000000),
-	vec3[f32](7.000000, 8.000000, 9.000000)
+	vec3[f32](1.0, 2.0, 3.0),
+	vec3[f32](4.0, 5.0, 6.0),
+	vec3[f32](7.0, 8.0, 9.0)
 );
 
 struct VertIn
@@ -108,11 +108,11 @@ fn main(input: VertIn) -> VertOut
 	let output: VertOut;
 	if ((u32(input.vert_index)) < (vertices.Size()))
 	{
-		output.pos = vec4[f32](vertices[input.vert_index], 1.000000);
+		output.pos = vec4[f32](vertices[input.vert_index], 1.0);
 	}
 	else
 	{
-		output.pos = vec4[f32](0.000000, 0.000000, 0.000000, 0.000000);
+		output.pos = vec4[f32](0.0, 0.0, 0.0, 0.0);
 	}
 	
 	let customData: array[i32, 5] = array[i32, 5](1, 2, 3, 4, 5);
