@@ -136,13 +136,13 @@ namespace nzsl::Ast
 			{
 				std::string_view vecTypeStr;
 
-				if constexpr (std::is_same_v<T::Base, bool>)
+				if constexpr (std::is_same_v<typename T::Base, bool>)
 					vecTypeStr = "bool";
-				else if constexpr (std::is_same_v<T::Base, float>)
+				else if constexpr (std::is_same_v<typename T::Base, float>)
 					vecTypeStr = "f32";
-				else if constexpr (std::is_same_v<T::Base, std::int32_t>)
+				else if constexpr (std::is_same_v<typename T::Base, std::int32_t>)
 					vecTypeStr = "i32";
-				else if constexpr (std::is_same_v<T::Base, std::uint32_t>)
+				else if constexpr (std::is_same_v<typename T::Base, std::uint32_t>)
 					vecTypeStr = "u32";
 				else
 					static_assert(Nz::AlwaysFalse<T>(), "unhandled vector base type");
