@@ -358,7 +358,7 @@ struct Output
 void main()
 {
 	Output output_;
-	output_.position = vec4(0.000000, 0.500000, 1.000000, 1.000000);
+	output_.position = vec4(0.0, 0.5, 1.0, 1.0);
 	
 	gl_Position = output_.position;
 	return;
@@ -381,7 +381,7 @@ uniform float _nzslFlipYValue;
 void main()
 {
 	Output output_;
-	output_.position = vec4(0.000000, 0.500000, 1.000000, 1.000000);
+	output_.position = vec4(0.0, 0.5, 1.0, 1.0);
 	
 	gl_Position = output_.position;
 	gl_Position.y *= _nzslFlipYValue;
@@ -403,7 +403,7 @@ struct Output
 void main()
 {
 	Output output_;
-	output_.position = vec4(0.000000, 0.500000, 1.000000, 1.000000);
+	output_.position = vec4(0.0, 0.5, 1.0, 1.0);
 	
 	gl_Position = output_.position;
 	gl_Position.z = gl_Position.z * 2.0 - gl_Position.w;
@@ -417,7 +417,7 @@ void main()
 fn main() -> Output
 {
 	let output: Output;
-	output.position = vec4[f32](0.000000, 0.500000, 1.000000, 1.000000);
+	output.position = vec4[f32](0.0, 0.5, 1.0, 1.0);
 	return output;
 }
 )");

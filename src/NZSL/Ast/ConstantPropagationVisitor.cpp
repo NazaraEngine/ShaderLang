@@ -284,14 +284,14 @@ namespace nzsl::Ast
 				if constexpr (std::is_integral_v<T2>)
 				{
 					if (rhs == 0)
-						throw CompilerIntegralDivisionByZeroError{ sourceLocation };
+						throw CompilerIntegralDivisionByZeroError{ sourceLocation, ConstantToString(lhs), ConstantToString(rhs) };
 				}
 				else if constexpr (IsVector_v<T2>)
 				{
 					for (std::size_t i = 0; i < T2::Dimensions; ++i)
 					{
 						if (rhs[i] == 0)
-							throw CompilerIntegralDivisionByZeroError{ sourceLocation };
+							throw CompilerIntegralDivisionByZeroError{ sourceLocation, ConstantToString(lhs), ConstantToString(rhs) };
 					}
 				}
 

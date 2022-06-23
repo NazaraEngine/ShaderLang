@@ -254,7 +254,7 @@ module;
 
 const V = 21 * 2 / (9 - 3 * 3);
 
-)"), "(5,11 -> 30): CIntegralDivisionByZero error: integral division by zero in expression");
+)"), "(5,11 -> 30): CIntegralDivisionByZero error: integral division by zero in expression (42 / 0)");
 
 			CHECK_THROWS_WITH(Compile(R"(
 [nzsl_version("1.0")]
@@ -262,7 +262,7 @@ module;
 
 const V = vec4[i32](7, 6, 5, 4) / vec4[i32](3, 2, 1, 0);
 
-)"), "(5,11 -> 55): CIntegralDivisionByZero error: integral division by zero in expression");
+)"), "(5,11 -> 55): CIntegralDivisionByZero error: integral division by zero in expression (vec4[i32](7, 6, 5, 4) / vec4[i32](3, 2, 1, 0))");
 		}
 
 		/************************************************************************/

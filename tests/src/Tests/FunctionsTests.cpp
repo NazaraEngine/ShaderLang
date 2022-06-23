@@ -38,7 +38,7 @@ fn main() -> FragOut
 		ExpectGLSL(*shaderModule, R"(
 float GetValue()
 {
-	return 42.000000;
+	return 42.0;
 }
 
 /*************** Outputs ***************/
@@ -57,7 +57,7 @@ void main()
 		ExpectNZSL(*shaderModule, R"(
 fn GetValue() -> f32
 {
-	return 42.000000;
+	return 42.0;
 }
 
 [entry(frag)]

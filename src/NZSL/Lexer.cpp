@@ -5,6 +5,7 @@
 #include <NZSL/Lexer.hpp>
 #include <NZSL/Errors.hpp>
 #include <Nazara/Utils/Algorithm.hpp>
+#include <fmt/format.h>
 #include <frozen/string.h>
 #include <frozen/unordered_map.h>
 #include <cctype>
@@ -59,6 +60,39 @@ namespace nzsl
 			{ "true",         TokenType::BoolTrue },
 			{ "while",        TokenType::While }
 		});
+	}
+
+	std::string EscapeString(std::string_view str, bool quote)
+	{
+		std::string result;
+		result.reserve(str.size() + 10);
+
+		if (quote)
+			result.push_back('"');
+
+		for (char c : str)
+		{
+			switch (c)
+			{
+				case '\n':
+				case '\r':
+				case '\t':
+				case '\"':
+				case '\\':
+					result.push_back('\\');
+					break;
+
+				default:
+					break;
+			}
+
+			result.push_back(c);
+		}
+
+		if (quote)
+			result.push_back('"');
+
+		return result;
 	}
 
 	std::vector<Token> Tokenize(const std::string_view& str, const std::string& filePath)

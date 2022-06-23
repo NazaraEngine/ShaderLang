@@ -3,7 +3,9 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <NZSL/Ast/ConstantValue.hpp>
+#include <NZSL/Lexer.hpp>
 #include <NZSL/Ast/Nodes.hpp>
+#include <fmt/format.h>
 
 namespace nzsl::Ast
 {
@@ -114,5 +116,92 @@ namespace nzsl::Ast
 			using T = std::decay_t<decltype(arg)>;
 			return GetConstantExpressionType<T>();
 		}, constant);
+	}
+	
+	std::string ConstantToString(const ConstantSingleValue& value)
+	{
+		return std::visit([&](auto&& arg) -> std::string
+		{
+			using T = std::decay_t<decltype(arg)>;
+
+			if constexpr (std::is_same_v<T, Ast::NoValue>)
+				throw std::runtime_error("invalid type (value expected)");
+			else if constexpr (std::is_same_v<T, bool>)
+				return (arg) ? "true" : "false";
+			else if constexpr (std::is_same_v<T, double> || std::is_same_v<T, float> || std::is_same_v<T, std::int32_t> || std::is_same_v<T, std::uint32_t>)
+				return ToString(arg);
+			else if constexpr (std::is_same_v<T, std::string>)
+				return EscapeString(arg, true);
+			else if constexpr (IsVector_v<T>)
+			{
+				std::string_view vecTypeStr;
+
+				if constexpr (std::is_same_v<T::Base, bool>)
+					vecTypeStr = "bool";
+				else if constexpr (std::is_same_v<T::Base, float>)
+					vecTypeStr = "f32";
+				else if constexpr (std::is_same_v<T::Base, std::int32_t>)
+					vecTypeStr = "i32";
+				else if constexpr (std::is_same_v<T::Base, std::uint32_t>)
+					vecTypeStr = "u32";
+				else
+					static_assert(Nz::AlwaysFalse<T>(), "unhandled vector base type");
+
+				if constexpr (T::Dimensions == 2)
+					return fmt::format("vec2[{}]({}, {})", vecTypeStr, ToString(arg.x()), ToString(arg.y()));
+				else if constexpr (T::Dimensions == 3)
+					return fmt::format("vec3[{}]({}, {}, {})", vecTypeStr, ToString(arg.x()), ToString(arg.y()), ToString(arg.z()));
+				else if constexpr (T::Dimensions == 4)
+					return fmt::format("vec4[{}]({}, {}, {}, {})", vecTypeStr, ToString(arg.x()), ToString(arg.y()), ToString(arg.z()), ToString(arg.w()));
+				else
+					static_assert(Nz::AlwaysFalse<T>(), "unhandled vector size");
+			}
+			else
+				static_assert(Nz::AlwaysFalse<T>(), "unexpected type");
+		}, value);
+	}
+
+	std::string ToString(double value)
+	{
+		std::string str = fmt::format("{:.15f}", value);
+
+		// remove trailing zeros
+		while (str.size() > 2)
+		{
+			char c = str.back();
+			if (c != '0' || str[str.size() - 2] == '.')
+				break;
+
+			str.pop_back();
+		}
+
+		return str;
+	}
+
+	std::string ToString(float value)
+	{
+		std::string str = fmt::format("{:.6f}", value);
+
+		// remove trailing zeros
+		while (str.size() > 2)
+		{
+			char c = str.back();
+			if (c != '0' || str[str.size() - 2] == '.')
+				break;
+
+			str.pop_back();
+		}
+
+		return str;
+	}
+
+	std::string ToString(std::int32_t value)
+	{
+		return fmt::format("{}", value);
+	}
+
+	std::string ToString(std::uint32_t value)
+	{
+		return fmt::format("{}", value);
 	}
 }

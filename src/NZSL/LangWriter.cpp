@@ -608,28 +608,14 @@ namespace nzsl
 	template<typename T>
 	void LangWriter::AppendValue(const T& value)
 	{
-		if constexpr (std::is_same_v<T, Ast::NoValue>)
-			throw std::runtime_error("invalid type (value expected)");
-		else if constexpr (std::is_same_v<T, bool> || std::is_same_v<T, std::vector<bool>::reference>)
-			Append((value) ? "true" : "false");
-		else if constexpr (std::is_same_v<T, float> || std::is_same_v<T, std::int32_t> || std::is_same_v<T, std::uint32_t>)
-			Append(std::to_string(value));
-		else if constexpr (std::is_same_v<T, std::string>)
-			Append('"', value, '"'); //< TODO: Escape string properly
-		else if constexpr (std::is_same_v<T, Vector2f>)
-			Append("vec2[f32](" + std::to_string(value.x()) + ", " + std::to_string(value.y()) + ")");
-		else if constexpr (std::is_same_v<T, Vector2i32>)
-			Append("vec2[i32](" + std::to_string(value.x()) + ", " + std::to_string(value.y()) + ")");
-		else if constexpr (std::is_same_v<T, Vector3f>)
-			Append("vec3[f32](" + std::to_string(value.x()) + ", " + std::to_string(value.y()) + ", " + std::to_string(value.z()) + ")");
-		else if constexpr (std::is_same_v<T, Vector3i32>)
-			Append("vec3[i32](" + std::to_string(value.x()) + ", " + std::to_string(value.y()) + ", " + std::to_string(value.z()) + ")");
-		else if constexpr (std::is_same_v<T, Vector4f>)
-			Append("vec4[f32](" + std::to_string(value.x()) + ", " + std::to_string(value.y()) + ", " + std::to_string(value.z()) + ", " + std::to_string(value.w()) + ")");
-		else if constexpr (std::is_same_v<T, Vector4i32>)
-			Append("vec4[i32](" + std::to_string(value.x()) + ", " + std::to_string(value.y()) + ", " + std::to_string(value.z()) + ", " + std::to_string(value.w()) + ")");
+		if constexpr (std::is_same_v<T, std::vector<bool>::reference>)
+		{
+			// fallback for std::vector<bool>
+			bool v = value;
+			return AppendValue(v);
+		}
 		else
-			static_assert(Nz::AlwaysFalse<T>::value, "unexpected type");
+			Append(Ast::ConstantToString(value));
 	}
 
 	void LangWriter::AppendStatementList(std::vector<Ast::StatementPtr>& statements)

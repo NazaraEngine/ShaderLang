@@ -28,7 +28,7 @@ fn main()
 			ExpectGLSL(*shaderModule, R"(
 void main()
 {
-	vec4 vec = vec4(0.000000, 1.000000, 2.000000, 3.000000);
+	vec4 vec = vec4(0.0, 1.0, 2.0, 3.0);
 	vec3 value = vec.xyz;
 }
 )");
@@ -37,7 +37,7 @@ void main()
 [entry(frag)]
 fn main()
 {
-	let vec: vec4[f32] = vec4[f32](0.000000, 1.000000, 2.000000, 3.000000);
+	let vec: vec4[f32] = vec4[f32](0.0, 1.0, 2.0, 3.0);
 	let value: vec3[f32] = vec.xyz;
 }
 )");
@@ -76,8 +76,8 @@ fn main()
 			ExpectGLSL(*shaderModule, R"(
 void main()
 {
-	vec4 vec = vec4(0.000000, 0.000000, 0.000000, 0.000000);
-	vec.yzw = vec3(1.000000, 2.000000, 3.000000);
+	vec4 vec = vec4(0.0, 0.0, 0.0, 0.0);
+	vec.yzw = vec3(1.0, 2.0, 3.0);
 }
 )");
 
@@ -85,8 +85,8 @@ void main()
 [entry(frag)]
 fn main()
 {
-	let vec: vec4[f32] = vec4[f32](0.000000, 0.000000, 0.000000, 0.000000);
-	vec.yzw = vec3[f32](1.000000, 2.000000, 3.000000);
+	let vec: vec4[f32] = vec4[f32](0.0, 0.0, 0.0, 0.0);
+	vec.yzw = vec3[f32](1.0, 2.0, 3.0);
 }
 )");
 
@@ -127,7 +127,7 @@ fn main()
 			ExpectGLSL(*shaderModule, R"(
 void main()
 {
-	float value = 42.000000;
+	float value = 42.0;
 	vec3 vec = vec3(value, value, value);
 }
 )");
@@ -136,7 +136,7 @@ void main()
 [entry(frag)]
 fn main()
 {
-	let value: f32 = 42.000000;
+	let value: f32 = 42.0;
 	let vec: vec3[f32] = value.xxx;
 }
 )");
@@ -174,9 +174,9 @@ fn main()
 			ExpectGLSL(*shaderModule, R"(
 void main()
 {
-	float cachedResult = max(2.000000, 1.000000);
+	float cachedResult = max(2.0, 1.0);
 	vec3 v = vec3(cachedResult, cachedResult, cachedResult);
-	float cachedResult_2 = min(2.000000, 1.000000);
+	float cachedResult_2 = min(2.0, 1.0);
 	vec3 v2 = vec3(cachedResult_2, cachedResult_2, cachedResult_2);
 }
 )");
@@ -185,8 +185,8 @@ void main()
 [entry(frag)]
 fn main()
 {
-	let v: vec3[f32] = (max(2.000000, 1.000000)).xxx;
-	let v2: vec3[f32] = (min(2.000000, 1.000000)).xxx;
+	let v: vec3[f32] = (max(2.0, 1.0)).xxx;
+	let v2: vec3[f32] = (min(2.0, 1.0)).xxx;
 }
 )");
 
@@ -228,7 +228,7 @@ fn main()
 			ExpectGLSL(*shaderModule, R"(
 void main()
 {
-	vec4 vec = vec4(0.000000, 1.000000, 2.000000, 3.000000);
+	vec4 vec = vec4(0.0, 1.0, 2.0, 3.0);
 	vec4 value = vec4(vec.xyz.yz.y, vec.xyz.yz.y, vec.xyz.yz.y, vec.xyz.yz.y);
 }
 )");
@@ -237,7 +237,7 @@ void main()
 [entry(frag)]
 fn main()
 {
-	let vec: vec4[f32] = vec4[f32](0.000000, 1.000000, 2.000000, 3.000000);
+	let vec: vec4[f32] = vec4[f32](0.0, 1.0, 2.0, 3.0);
 	let value: vec4[f32] = vec.xyz.yz.y.x.xxxx;
 }
 )");
@@ -280,9 +280,9 @@ fn main()
 			ExpectGLSL(*shaderModule, R"(
 void main()
 {
-	vec4 vec = vec4(0.000000, 1.000000, 2.000000, 3.000000);
-	vec.wyxz.zxw.yx.x = 0.000000;
-	vec.zyxw.wx.xy.yx = vec2(1.000000, 0.000000);
+	vec4 vec = vec4(0.0, 1.0, 2.0, 3.0);
+	vec.wyxz.zxw.yx.x = 0.0;
+	vec.zyxw.wx.xy.yx = vec2(1.0, 0.0);
 }
 )");
 
@@ -290,9 +290,9 @@ void main()
 [entry(frag)]
 fn main()
 {
-	let vec: vec4[f32] = vec4[f32](0.000000, 1.000000, 2.000000, 3.000000);
-	vec.wyxz.zxw.yx.x = 0.000000;
-	vec.zyxw.wx.xy.yx = vec2[f32](1.000000, 0.000000);
+	let vec: vec4[f32] = vec4[f32](0.0, 1.0, 2.0, 3.0);
+	vec.wyxz.zxw.yx.x = 0.0;
+	vec.zyxw.wx.xy.yx = vec2[f32](1.0, 0.0);
 }
 )");
 

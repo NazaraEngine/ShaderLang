@@ -47,7 +47,7 @@ fn main()
 [entry(frag)]
 fn main()
 {
-	let output: f32 = 42.000000;
+	let output: f32 = 42.0;
 }
 )");
 	}
@@ -67,7 +67,7 @@ fn main()
 [entry(frag)]
 fn main()
 {
-	let output: vec4[f32] = vec4[f32](48.000000, 12.000000, -42.000000, 0.000000);
+	let output: vec4[f32] = vec4[f32](48.0, 12.0, -42.0, 0.0);
 )");
 	}
 
@@ -119,8 +119,8 @@ fn main()
 [entry(frag)]
 fn main()
 {
-	let output: f32 = 0.000000;
-	output = 3.000000;
+	let output: f32 = 0.0;
+	output = 3.0;
 }
 )");
 	}
@@ -165,8 +165,8 @@ fn main()
 [entry(frag)]
 fn main()
 {
-	let output: f32 = 0.000000;
-	output = 3.000000;
+	let output: f32 = 0.0;
+	output = 3.0;
 }
 )");
 	}
@@ -186,7 +186,7 @@ fn main()
 [entry(frag)]
 fn main()
 {
-	let value: f32 = 1.000000;
+	let value: f32 = 1.0;
 }
 )");
 	}
@@ -206,7 +206,7 @@ fn main()
 [entry(frag)]
 fn main()
 {
-	let value: vec4[f32] = vec4[f32](42.000000, 42.000000, 42.000000, 42.000000);
+	let value: vec4[f32] = vec4[f32](42.0, 42.0, 42.0, 42.0);
 }
 )");
 	}
@@ -226,7 +226,7 @@ fn main()
 [entry(frag)]
 fn main()
 {
-	let value: vec4[f32] = vec4[f32](0.000000, 1.000000, 2.000000, 3.000000);
+	let value: vec4[f32] = vec4[f32](0.0, 1.0, 2.0, 3.0);
 }
 )");
 	}
@@ -246,7 +246,7 @@ fn main()
 [entry(frag)]
 fn main()
 {
-	let value: vec4[f32] = vec4[f32](1.000000, 1.000000, 3.000000, 3.000000);
+	let value: vec4[f32] = vec4[f32](1.0, 1.0, 3.0, 3.0);
 }
 )");
 	}
@@ -266,7 +266,7 @@ fn main()
 [entry(frag)]
 fn main()
 {
-	let value: vec4[f32] = vec4[f32](2.000000, 2.000000, 2.000000, 2.000000);
+	let value: vec4[f32] = vec4[f32](2.0, 2.0, 2.0, 2.0);
 }
 )");
 	}

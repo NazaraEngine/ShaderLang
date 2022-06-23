@@ -41,11 +41,11 @@ fn main()
 		ExpectGLSL(*shaderModule, R"(
 void main()
 {
-	float value = 0.000000;
+	float value = 0.0;
 	int i = 0;
 	while (i < (10))
 	{
-		value += 0.100000;
+		value += 0.1;
 		i += 1;
 	}
 	
@@ -56,11 +56,11 @@ void main()
 [entry(frag)]
 fn main()
 {
-	let value: f32 = 0.000000;
+	let value: f32 = 0.0;
 	let i: i32 = 0;
 	while (i < (10))
 	{
-		value += 0.100000;
+		value += 0.1;
 		i += 1;
 	}
 	
@@ -286,7 +286,7 @@ fn main()
 		ExpectGLSL(*shaderModule, R"(
 void main()
 {
-	float x = 0.000000;
+	float x = 0.0;
 	uint i = 0u;
 	while (i < (10u))
 	{
@@ -302,7 +302,7 @@ void main()
 [entry(frag)]
 fn main()
 {
-	let x: f32 = 0.000000;
+	let x: f32 = 0.0;
 	for v in data.value
 	{
 		x += v;

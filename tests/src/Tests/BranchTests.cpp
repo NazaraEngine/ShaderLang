@@ -40,13 +40,13 @@ fn main()
 void main()
 {
 	float value;
-	if (data.value > (0.000000))
+	if (data.value > (0.0))
 	{
-		value = 1.000000;
+		value = 1.0;
 	}
 	else
 	{
-		value = 0.000000;
+		value = 0.0;
 	}
 	
 }
@@ -57,13 +57,13 @@ void main()
 fn main()
 {
 	let value: f32;
-	if (data.value > (0.000000))
+	if (data.value > (0.0))
 	{
-		value = 1.000000;
+		value = 1.0;
 	}
 	else
 	{
-		value = 0.000000;
+		value = 0.0;
 	}
 	
 }
@@ -123,13 +123,13 @@ fn main()
 void main()
 {
 	float value;
-	if ((data.value > (42.000000)) || ((data.value <= (50.000000)) && (data.value < (0.000000))))
+	if ((data.value > (42.0)) || ((data.value <= (50.0)) && (data.value < (0.0))))
 	{
-		value = 1.000000;
+		value = 1.0;
 	}
 	else
 	{
-		value = 0.000000;
+		value = 0.0;
 	}
 	
 }
@@ -140,13 +140,13 @@ void main()
 fn main()
 {
 	let value: f32;
-	if ((data.value > (42.000000)) || ((data.value <= (50.000000)) && (data.value < (0.000000))))
+	if ((data.value > (42.0)) || ((data.value <= (50.0)) && (data.value < (0.0))))
 	{
-		value = 1.000000;
+		value = 1.0;
 	}
 	else
 	{
-		value = 0.000000;
+		value = 0.0;
 	}
 	
 }
@@ -210,7 +210,7 @@ fn main()
 		ExpectGLSL(*shaderModule, R"(
 void main()
 {
-	if (data.value > (0.000000))
+	if (data.value > (0.0))
 	{
 		discard;
 	}
@@ -222,7 +222,7 @@ void main()
 [entry(frag)]
 fn main()
 {
-	if (data.value > (0.000000))
+	if (data.value > (0.0))
 	{
 		discard;
 	}
@@ -286,21 +286,21 @@ fn main()
 void main()
 {
 	float value;
-	if (data.value > (3.000000))
+	if (data.value > (3.0))
 	{
-		value = 3.000000;
+		value = 3.0;
 	}
-	else if (data.value > (2.000000))
+	else if (data.value > (2.0))
 	{
-		value = 2.000000;
+		value = 2.0;
 	}
-	else if (data.value > (1.000000))
+	else if (data.value > (1.0))
 	{
-		value = 1.000000;
+		value = 1.0;
 	}
 	else
 	{
-		value = 0.000000;
+		value = 0.0;
 	}
 	
 }
@@ -311,21 +311,21 @@ void main()
 fn main()
 {
 	let value: f32;
-	if (data.value > (3.000000))
+	if (data.value > (3.0))
 	{
-		value = 3.000000;
+		value = 3.0;
 	}
-	else if (data.value > (2.000000))
+	else if (data.value > (2.0))
 	{
-		value = 2.000000;
+		value = 2.0;
 	}
-	else if (data.value > (1.000000))
+	else if (data.value > (1.0))
 	{
-		value = 1.000000;
+		value = 1.0;
 	}
 	else
 	{
-		value = 0.000000;
+		value = 0.0;
 	}
 	
 }

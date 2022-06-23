@@ -42,7 +42,7 @@ TEST_CASE("FilesystemModuleResolver", "[Shader]")
 
 vec4 GenerateColor_Color()
 {
-	return vec4(0.000000, 0.000000, 1.000000, 1.000000);
+	return vec4(0.0, 0.0, 1.0, 1.0);
 }
 
 vec4 GetColor_Color()
@@ -103,7 +103,7 @@ module _Color
 {
 	fn GenerateColor() -> vec4[f32]
 	{
-		return vec4[f32](0.000000, 0.000000, 1.000000, 1.000000);
+		return vec4[f32](0.0, 0.0, 1.0, 1.0);
 	}
 	
 	fn GetColor() -> vec4[f32]
