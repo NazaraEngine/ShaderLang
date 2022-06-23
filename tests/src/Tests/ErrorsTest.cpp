@@ -217,6 +217,35 @@ fn main(input: Input)
 
 		/************************************************************************/
 
+		SECTION("Casts")
+		{
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+fn main()
+{
+	let a: vec2[f32];
+	let b: vec3[f32];
+	let x = mat2[f32](a, b);
+}
+)"), "(9, 23): CCastMatrixVectorComponentMismatch error: vector component count (3) doesn't match target matrix row count (2)");
+		}
+
+		/************************************************************************/
+
+		SECTION("Constants")
+		{
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+const Pi: f32 = 3;
+
+)"), "(5, 17): CVarDeclarationTypeUnmatching error: initial expression type (i32) doesn't match specified type (f32)");
+		}
+		/************************************************************************/
+
 		SECTION("Constant propagation")
 		{
 			CHECK_THROWS_WITH(Compile(R"(
@@ -279,6 +308,33 @@ fn main()
 	let b = inverse(a);
 }
 )"), "(8, 18): CIntrinsicExpectedType error: expected type square matrix for parameter #0, got mat2x3[f32]");
+		}
+
+		/************************************************************************/
+
+		SECTION("Options")
+		{
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+option test: bool = 42;
+
+)"), "(5,1 -> 23): CVarDeclarationTypeUnmatching error: initial expression type (bool) doesn't match specified type (i32)");
+		}
+		/************************************************************************/
+
+		SECTION("Variables")
+		{
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+fn main()
+{
+	let a: i32 = 42.66;
+}
+)"), "(7,2 -> 20): CVarDeclarationTypeUnmatching error: initial expression type (i32) doesn't match specified type (f32)");
 		}
 	}
 }
