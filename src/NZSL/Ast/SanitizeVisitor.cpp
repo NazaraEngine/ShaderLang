@@ -716,8 +716,6 @@ namespace nzsl::Ast
 				return std::move(clone->expressions.front());
 			}
 
-			bool isVectorCast = IsVectorType(frontExprType);
-
 			auto variableDeclaration = ShaderBuilder::DeclareVariable("temp", targetType); //< Validation will prevent name-clash if required
 			variableDeclaration->sourceLocation = node.sourceLocation;
 			Validate(*variableDeclaration);
@@ -746,7 +744,7 @@ namespace nzsl::Ast
 					vectorExpr = std::move(matrixColumnExpr);
 					vectorComponentCount = std::get<MatrixType>(frontExprType).rowCount;
 				}
-				else if (isVectorCast)
+				else if (IsVectorType(frontExprType))
 				{
 					// parameter #i
 					vectorExpr = std::move(clone->expressions[i]);
@@ -755,10 +753,19 @@ namespace nzsl::Ast
 				else
 				{
 					std::vector<ExpressionPtr> expressions(targetMatrixType.rowCount);
+					SourceLocation location;
 					for (std::size_t j = 0; j < targetMatrixType.rowCount; ++j)
+					{
 						expressions[j] = std::move(clone->expressions[i * targetMatrixType.rowCount + j]);
+					
+						if (j == 0)
+							location = expressions[j]->sourceLocation;
+						else
+							location.ExtendToRight(expressions[j]->sourceLocation);
+					}
 
 					auto buildVec = ShaderBuilder::Cast(ExpressionType{ VectorType{ targetMatrixType.rowCount, targetMatrixType.type } }, std::move(expressions));
+					buildVec->sourceLocation = location;
 					Validate(*buildVec);
 
 					vectorExpr = std::move(buildVec);
@@ -1379,7 +1386,7 @@ namespace nzsl::Ast
 			}
 
 			if (targetType != *defaultValueType)
-				throw CompilerVarDeclarationTypeUnmatchingError{ node.sourceLocation };
+				throw CompilerVarDeclarationTypeUnmatchingError{ node.sourceLocation, ToString(targetType, node.sourceLocation), ToString(*defaultValueType, node.defaultValue->sourceLocation) };
 		}
 
 		clone->optType = std::move(resolvedType);
@@ -3958,7 +3965,7 @@ namespace nzsl::Ast
 		std::optional<ExpressionType> constType = ResolveTypeExpr(node.type, true, node.sourceLocation);
 
 		if (node.type.HasValue() && constType.has_value() && *constType != ResolveAlias(expressionType))
-			throw CompilerVarDeclarationTypeUnmatchingError{ node.expression->sourceLocation, ToString(expressionType, node.expression->sourceLocation), ToString(*constType, node.sourceLocation) };
+			throw CompilerVarDeclarationTypeUnmatchingError{ node.expression->sourceLocation, ToString(expressionType, node.sourceLocation), ToString(*constType, node.expression->sourceLocation) };
 
 		node.type = expressionType;
 
@@ -4001,7 +4008,8 @@ namespace nzsl::Ast
 					return ValidationResult::Unresolved;
 				}
 
-				TypeMustMatch(resolvedType, *initialExprType, node.sourceLocation);
+				if (resolvedType != *initialExprType)
+					throw CompilerVarDeclarationTypeUnmatchingError{ node.sourceLocation, ToString(resolvedType, node.sourceLocation), ToString(*initialExprType, node.initialExpression->sourceLocation) };
 			}
 		}
 
