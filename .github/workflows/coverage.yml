@@ -96,7 +96,7 @@ jobs:
       if: runner.os == 'Linux'
       run: |
         xmake run UnitTests
-        gcovr -x coverage.out -s -f 'include/NZSL/.*' -f 'src/NZSL/.*' -e 'src/NZSL/SpirvData.cpp' build/.objs/
+        gcovr -b -x coverage.out -s -f 'include/NZSL/.*' -f 'src/NZSL/.*' -e 'src/NZSL/SpirvData.cpp' build/.objs/
 
     - name: Run unit tests and generate coverage output (Windows)
       if: runner.os == 'Windows'
