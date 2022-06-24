@@ -25,8 +25,7 @@ includes("xmake/**.lua")
 
 add_repositories("nazara-engine-repo https://github.com/NazaraEngine/xmake-repo")
 
-add_requires("nazarautils", "fast_float", "frozen", "ordered_map")
-add_requires("fmt", { configs = { header_only = true }})
+add_requires("nazarautils", "fast_float", "fmt", "frozen", "ordered_map")
 
 if has_config("fs_watcher") then
 	add_requires("efsw")
