@@ -20,11 +20,11 @@ namespace nzsl
 
 		std::uint32_t magicNumber = ReadWord();
 		if (magicNumber != SpirvMagicNumber)
-			throw std::runtime_error("invalid Spir-V: magic number didn't match");
+			throw std::runtime_error("invalid SPIR-V: magic number didn't match");
 
 		std::uint32_t versionNumber = ReadWord();
 		if (versionNumber > SpirvVersion)
-			throw std::runtime_error("Spir-V is more recent than decoder, dismissing");
+			throw std::runtime_error("SPIR-V is more recent than decoder, dismissing");
 
 		SpirvHeader header;
 		header.generatorId = ReadWord();
