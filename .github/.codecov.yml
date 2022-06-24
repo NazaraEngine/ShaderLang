@@ -11,6 +11,7 @@ coverage:
         target: auto
         threshold: 100%
         base: auto
+        only_pulls: true
 
 parsers:
   gcov:
