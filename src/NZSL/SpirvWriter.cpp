@@ -730,11 +730,11 @@ namespace nzsl
 
 	void SpirvWriter::AppendHeader()
 	{
-		m_currentState->header.AppendRaw(SpirvMagicNumber); //< Spir-V magic number
+		m_currentState->header.AppendRaw(SpirvMagicNumber); //< SPIR-V magic number
 
 		std::uint32_t version = MakeSpirvVersion(m_environment.spvMajorVersion, m_environment.spvMinorVersion);
 
-		m_currentState->header.AppendRaw(version); //< Spir-V version number
+		m_currentState->header.AppendRaw(version); //< SPIR-V version number
 		m_currentState->header.AppendRaw(0); //< Generator identifier (TODO: Register generator to Khronos)
 
 		m_currentState->header.AppendRaw(m_currentState->nextVarIndex); //< Bound (ID count)
