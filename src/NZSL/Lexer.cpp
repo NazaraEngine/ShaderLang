@@ -5,6 +5,7 @@
 #include <NZSL/Lexer.hpp>
 #include <NZSL/Errors.hpp>
 #include <Nazara/Utils/Algorithm.hpp>
+#include <fast_float/fast_float.h>
 #include <fmt/format.h>
 #include <frozen/string.h>
 #include <frozen/unordered_map.h>
@@ -20,23 +21,6 @@ namespace nzsl
 {
 	namespace
 	{
-		class ForceCLocale
-		{
-			public:
-				ForceCLocale()
-				{
-					m_previousLocale = std::locale::global(std::locale::classic());
-				}
-
-				~ForceCLocale()
-				{
-					std::locale::global(m_previousLocale);
-				}
-
-			private:
-				std::locale m_previousLocale;
-		};
-
 		constexpr auto s_reservedKeywords = frozen::make_unordered_map<frozen::string, TokenType>({
 			{ "alias",        TokenType::Alias },
 			{ "as",           TokenType::As },
@@ -97,9 +81,6 @@ namespace nzsl
 
 	std::vector<Token> Tokenize(const std::string_view& str, const std::string& filePath)
 	{
-		// Can't use std::from_chars for double, thanks to libc++ and libstdc++ developers for being lazy, so we have to force C locale
-		ForceCLocale forceCLocale;
-
 		std::size_t currentPos = 0;
 
 		auto Peek = [&](std::size_t advance = 1) -> char
@@ -269,28 +250,26 @@ namespace nzsl
 					token.location.endColumn = Nz::SafeCast<std::uint32_t>(currentPos - lineStartPos) + 1;
 					token.location.endLine = currentLine;
 
+					// avoid std::string_view operator[] assertions (if &str[currentPos + 1] is out of the string)
+					const char* first = &str[start];
+					const char* last = first + (currentPos - start + 1);
+
 					if (floatingPoint)
 					{
 						tokenType = TokenType::FloatingPointValue;
 
-						std::string valueStr(str.substr(start, currentPos - start + 1));
-
-						const char* ptr = valueStr.c_str();
-
-						char* end;
-						double value = std::strtod(ptr, &end);
-						if (end != &ptr[valueStr.size()])
+						double value;
+						fast_float::from_chars_result r = fast_float::from_chars(first, last, value);
+						if (r.ptr == last && r.ec == std::errc{})
+							token.data = value;
+						else if (r.ec == std::errc::result_out_of_range)
+							throw LexerNumberOutOfRangeError{ token.location };
+						else
 							throw LexerBadNumberError{ token.location };
-
-						token.data = value;
 					}
 					else
 					{
 						tokenType = TokenType::IntegerValue;
-
-						// avoid std::string_view operator[] assertions (if &str[currentPos + 1] is out of the string)
-						const char* first = &str[start];
-						const char* last = first + (currentPos - start + 1);
 
 						long long value;
 						std::from_chars_result r = std::from_chars(first, last, value);

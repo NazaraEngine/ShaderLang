@@ -25,7 +25,7 @@ includes("xmake/**.lua")
 
 add_repositories("nazara-engine-repo https://github.com/NazaraEngine/xmake-repo")
 
-add_requires("nazarautils", "frozen", "ordered_map")
+add_requires("nazarautils", "fast_float", "frozen", "ordered_map")
 add_requires("fmt", { configs = { header_only = true }})
 
 if has_config("fs_watcher") then
@@ -81,7 +81,7 @@ target("nzsl")
 	add_headerfiles("src/NZSL/**.inl", { prefixdir = "private" })
 	add_files("src/NZSL/**.cpp")
 	add_packages("nazarautils", { public = true })
-	add_packages("fmt", "frozen", "ordered_map")
+	add_packages("fast_float", "fmt", "frozen", "ordered_map")
 
 	if has_config("fs_watcher") then
 		add_packages("efsw")
