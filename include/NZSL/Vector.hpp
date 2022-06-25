@@ -10,6 +10,7 @@
 #include <NZSL/Config.hpp>
 #include <Nazara/Utils/Algorithm.hpp>
 #include <array>
+#include <ostream>
 #include <type_traits>
 
 namespace nzsl
@@ -25,6 +26,10 @@ namespace nzsl
 		explicit Vector(T x, T y);
 		explicit Vector(T x, T y, T z);
 		explicit Vector(T x, T y, T z, T w);
+
+		T Length() const;
+
+		T SquaredLength() const;
 
 		T& x();
 		T x() const;
@@ -54,8 +59,20 @@ namespace nzsl
 		bool operator==(const Vector& vec) const;
 		bool operator!=(const Vector& vec) const;
 
+		static Vector CrossProduct(const Vector& lhs, const Vector& rhs);
+		static T Distance(const Vector& lhs, const Vector& rhs);
+		static T DotProduct(const Vector& lhs, const Vector& rhs);
+		static Vector Normalize(const Vector& vec);
+		static Vector Reflect(const Vector& incident, const Vector& normal);
+		static Vector Refract(const Vector& incident, const Vector& normal, T eta);
+		static T SquaredDistance(const Vector& lhs, const Vector& rhs);
+		static Vector Zero();
+
 		std::array<T, N> values;
 	};
+
+	template<typename T, std::size_t N>
+	std::ostream& operator<<(std::ostream& os, const Vector<T, N>& vec);
 
 	template<typename T, std::size_t N>
 	Vector<T, N> operator*(T lhs, const Vector<T, N>& rhs);

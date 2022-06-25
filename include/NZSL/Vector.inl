@@ -45,6 +45,20 @@ namespace nzsl
 	}
 
 	template<typename T, std::size_t N>
+	T Vector<T, N>::Length() const
+	{
+		static_assert(std::is_floating_point_v<T>, "Length is reserved for floating point vectors");
+
+		return std::sqrt(SquaredLength());
+	}
+
+	template<typename T, std::size_t N>
+	T Vector<T, N>::SquaredLength() const
+	{
+		return DotProduct(*this, *this);
+	}
+
+	template<typename T, std::size_t N>
 	T& Vector<T, N>::x()
 	{
 		static_assert(N >= 1, "vector has no x value");
@@ -207,7 +221,87 @@ namespace nzsl
 	{
 		return !operator==(vec);
 	}
-	
+
+	template<typename T, std::size_t N>
+	auto Vector<T, N>::CrossProduct(const Vector& lhs, const Vector& rhs) -> Vector
+	{
+		static_assert(N == 3, "Cross product is available only with Vector3");
+
+		return Vector(
+			lhs.y() * rhs.z() - rhs.y() * lhs.z(),
+			lhs.z() * rhs.x() - rhs.z() * lhs.x(),
+			lhs.x() * rhs.y() - rhs.x() * lhs.y()
+		);
+	}
+
+	template<typename T, std::size_t N>
+	T Vector<T, N>::Distance(const Vector& lhs, const Vector& rhs)
+	{
+		return (rhs - lhs).Length();
+	}
+
+	template<typename T, std::size_t N>
+	T Vector<T, N>::DotProduct(const Vector& lhs, const Vector& rhs)
+	{
+		return lhs.x() * rhs.x() + lhs.y() * rhs.y() + lhs.z() * rhs.z();
+	}
+
+	template<typename T, std::size_t N>
+	auto Vector<T, N>::Normalize(const Vector& vec) -> Vector
+	{
+		return vec / vec.Length();
+	}
+
+	template<typename T, std::size_t N>
+	auto Vector<T, N>::Reflect(const Vector& incident, const Vector& normal) -> Vector
+	{
+		return incident - T(2.0) * DotProduct(normal, incident) * normal;
+	}
+
+	template<typename T, std::size_t N>
+	auto Vector<T, N>::Refract(const Vector& incident, const Vector& normal, T eta) -> Vector
+	{
+		static_assert(std::is_floating_point_v<T>, "Refract is only available with floating-point types");
+
+		T k = T(1.0) - eta * eta * (T(1.0) - DotProduct(normal, incident));
+		if (k < T(0.0))
+			return Vector::Zero();
+
+		return eta * incident - (eta * DotProduct(normal, incident) + std::sqrt(k)) * normal;
+	}
+
+	template<typename T, std::size_t N>
+	T Vector<T, N>::SquaredDistance(const Vector& lhs, const Vector& rhs)
+	{
+		return (rhs - lhs).SquaredLength();
+	}
+
+	template<typename T, std::size_t N>
+	auto Vector<T, N>::Zero() -> Vector
+	{
+		Vector zeroVec;
+		for (std::size_t i = 0; i < N; ++i)
+			zeroVec[i] = T(0.0);
+
+		return zeroVec;
+	}
+
+	template<typename T, std::size_t N>
+	std::ostream& operator<<(std::ostream& os, const Vector<T, N>& vec)
+	{
+		os << "Vector" << N << "(";
+		for (std::size_t i = 0; i < N; ++i)
+		{
+			if (i != 0)
+				os << ", ";
+
+			os << vec[i];
+		}
+		os << ")";
+
+		return os;
+	}
+
 	template<typename T, std::size_t N>
 	Vector<T, N> operator*(T lhs, const Vector<T, N>& rhs)
 	{

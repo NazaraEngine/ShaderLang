@@ -1,6 +1,16 @@
 #include <NZSL/Vector.hpp>
 #include <catch2/catch.hpp>
+#include <sstream>
 #include <unordered_map>
+
+template<typename T>
+std::string ToString(const T& value)
+{
+	std::ostringstream ss;
+	ss << value;
+
+	return std::move(ss).str();
+}
 
 TEST_CASE("vector", "[Vector]")
 {
@@ -20,8 +30,11 @@ TEST_CASE("vector", "[Vector]")
 		CHECK(rhs[3] == 8);
 	}
 
-	WHEN("Performing some math operations")
+	WHEN("Performing basic operations")
 	{
+		CHECK(ToString(lhs) == "Vector4(1, 2, 3, 4)");
+		CHECK(ToString(rhs) == "Vector4(5, 6, 7, 8)");
+
 		CHECK(-rhs == nzsl::Vector4i32(-5, -6, -7, -8));
 
 		CHECK(lhs * 2 == nzsl::Vector4i32(2, 4, 6, 8));
@@ -33,6 +46,29 @@ TEST_CASE("vector", "[Vector]")
 		CHECK(lhs * rhs == nzsl::Vector4i32(5, 12, 21, 32));
 		CHECK(2 * lhs / rhs == nzsl::Vector4i32(0, 0, 0, 1));
 		CHECK(2 * lhs / rhs != nzsl::Vector4i32(0, 0, 0, 0));
+	}
+
+	WHEN("Performing more complexe math operations")
+	{
+		nzsl::Vector3f32 position1(-2.f, 3.f, 4.f);
+		nzsl::Vector3f32 position2(42.f, 74.f, -94.f);
+		nzsl::Vector3f32 up(0.f, 1.f, 0.f);
+		nzsl::Vector3f32 down(0.f, -1.f, 0.f);
+
+		CHECK(ToString(position1) == "Vector3(-2, 3, 4)");
+
+		CHECK(position1.Length() == Approx(std::sqrt(2.f * 2.f + 3.f * 3.f + 4.f * 4.f)));
+		CHECK(position1.Length() == Approx(std::sqrt(nzsl::Vector3f32::DotProduct(position1, position1))));
+		CHECK(position2.Length() == Approx(126.79117f));
+
+		CHECK(nzsl::Vector3f32::CrossProduct(position1, position2) == nzsl::Vector3f32(-578.f, -20.f, -274.f));
+		CHECK(nzsl::Vector3f32::Distance(position1, position2) == Approx(128.76723f));
+		CHECK(nzsl::Vector3f32::DotProduct(position1, position2) == Approx(position1.x() * position2.x() + position1.y() * position2.y() + position1.z() * position2.z()));
+		CHECK(nzsl::Vector3f32::Normalize(nzsl::Vector3f32(0.f, 10.f, 0.f)) == nzsl::Vector3f32(0.f, 1.f, 0.f));
+		CHECK(nzsl::Vector3f32::Normalize(position1) == nzsl::Vector3f32(-0.371390671f, 0.557086051f, 0.742781341f));
+		CHECK(nzsl::Vector3f32::Reflect(down, up) == up);
+		CHECK(nzsl::Vector3f32::Refract(down, down, 1.f) == up);
+		CHECK(nzsl::Vector3f32::Zero() == nzsl::Vector3f32(0.f, 0.f, 0.f));
 	}
 
 	WHEN("Using them as keys in hash maps")
