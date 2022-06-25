@@ -109,12 +109,10 @@ struct OutputData_SimpleModule
 
 // Main file
 
-
 layout(std140) uniform _nzslBinding_block
 {
 	Data_SimpleModule data;
 } block;
-
 
 /**************** Inputs ****************/
 in float _nzslIn_value;
@@ -126,10 +124,10 @@ void main()
 {
 	InputData_SimpleModule input_;
 	input_.value = _nzslIn_value;
-	
+
 	OutputData_SimpleModule output_;
 	output_.value = ((GetDataValue_SimpleModule(block.data)) * input_.value) * (3.141592);
-	
+
 	_nzslOut_value = output_.value;
 	return;
 }
@@ -143,34 +141,34 @@ module;
 module _SimpleModule
 {
 	const Pi: f32 = 3.141592;
-	
+
 	[layout(std140)]
 	struct Data
 	{
 		value: f32
 	}
-	
+
 	[layout(std140)]
 	struct Block
 	{
 		data: Data
 	}
-	
+
 	fn GetDataValue(data: Data) -> f32
 	{
 		return data.value;
 	}
-	
+
 	struct InputData
 	{
 		value: f32
 	}
-	
+
 	struct OutputData
 	{
 		value: f32
 	}
-	
+
 }
 alias Block = _SimpleModule.Block;
 
@@ -323,7 +321,6 @@ struct Data_Modules_Data
 
 // Module Modules.Block
 
-
 // struct Block_Modules_Block omitted (used as UBO/SSBO)
 
 // Module Modules.InputOutput
@@ -340,13 +337,10 @@ struct OutputData_Modules_InputOutput
 
 // Main file
 
-
-
 layout(std140) uniform _nzslBinding_block
 {
 	Data_Modules_Data data;
 } block;
-
 
 /**************** Inputs ****************/
 in float _nzslIn_value;
@@ -358,10 +352,10 @@ void main()
 {
 	InputData_Modules_InputOutput input_;
 	input_.value = _nzslIn_value;
-	
+
 	OutputData_Modules_InputOutput output_;
 	output_.value = block.data.value * input_.value;
-	
+
 	_nzslOut_value = output_.value;
 	return;
 }
@@ -379,19 +373,19 @@ module _Modules_Data
 	{
 		value: f32
 	}
-	
+
 }
 [nzsl_version("1.0")]
 module _Modules_Block
 {
 	alias Data = _Modules_Data.Data;
-	
+
 	[layout(std140)]
 	struct Block
 	{
 		data: Data
 	}
-	
+
 }
 [nzsl_version("1.0")]
 module _Modules_InputOutput
@@ -400,12 +394,12 @@ module _Modules_InputOutput
 	{
 		value: f32
 	}
-	
+
 	struct OutputData
 	{
 		value: f32
 	}
-	
+
 }
 alias Block = _Modules_Block.Block;
 

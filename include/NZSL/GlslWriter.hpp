@@ -89,11 +89,11 @@ namespace nzsl
 			template<typename T1, typename T2, typename... Args> void Append(const T1& firstParam, const T2& secondParam, Args&&... params);
 			template<typename... Args> void Append(const std::variant<Args...>& param);
 			void AppendArray(const Ast::ExpressionType& varType, const std::string& varName = {});
-			void AppendComment(const std::string& section);
-			void AppendCommentSection(const std::string& section);
+			void AppendComment(std::string_view section);
+			void AppendCommentSection(std::string_view section);
 			void AppendFunctionDeclaration(const Ast::DeclareFunctionStatement& node, const std::string& nameOverride, bool forward = false);
 			void AppendHeader();
-			void AppendLine(const std::string& txt = {});
+			void AppendLine(std::string_view txt = {});
 			template<typename... Args> void AppendLine(Args&&... params);
 			void AppendStatementList(std::vector<Ast::StatementPtr>& statements);
 			template<typename T> void AppendValue(const T& value);

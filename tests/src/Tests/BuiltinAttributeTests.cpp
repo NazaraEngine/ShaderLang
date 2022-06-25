@@ -84,7 +84,7 @@ void main()
 	input_.draw_index = gl_DrawIDARB;
 	input_.instance_index = (gl_BaseInstanceARB + gl_InstanceID);
 	input_.vertex_index = gl_VertexID;
-	
+
 	int bi = input_.base_instance;
 	int bv = input_.base_vertex;
 	int di = input_.draw_index;
@@ -93,7 +93,7 @@ void main()
 	float color = float((((bi + bv) + di) + ii) + vi);
 	Output output_;
 	output_.position = vec4(color, color, color, color);
-	
+
 	gl_Position = output_.position;
 	return;
 }
@@ -129,7 +129,7 @@ void main()
 	input_.draw_index = gl_DrawID;
 	input_.instance_index = (gl_BaseInstance + gl_InstanceID);
 	input_.vertex_index = gl_VertexID;
-	
+
 	int bi = input_.base_instance;
 	int bv = input_.base_vertex;
 	int di = input_.draw_index;
@@ -138,7 +138,7 @@ void main()
 	float color = float((((bi + bv) + di) + ii) + vi);
 	Output output_;
 	output_.position = vec4(color, color, color, color);
-	
+
 	gl_Position = output_.position;
 	return;
 }
@@ -176,7 +176,7 @@ void main()
 	input_.draw_index = _nzslDrawID;
 	input_.instance_index = (_nzslBaseInstance + gl_InstanceID);
 	input_.vertex_index = gl_VertexID;
-	
+
 	int bi = input_.base_instance;
 	int bv = input_.base_vertex;
 	int di = input_.draw_index;
@@ -185,7 +185,7 @@ void main()
 	float color = float((((bi + bv) + di) + ii) + vi);
 	Output output_;
 	output_.position = vec4(color, color, color, color);
-	
+
 	gl_Position = output_.position;
 	return;
 }
@@ -288,11 +288,11 @@ void main()
 {
 	Input input_;
 	input_.vert_index = gl_VertexID;
-	
+
 	float color = float(input_.vert_index);
 	Output output_;
 	output_.position = vec4(color, color, color, color);
-	
+
 	gl_Position = output_.position;
 	return;
 }
@@ -359,7 +359,7 @@ void main()
 {
 	Output output_;
 	output_.position = vec4(0.0, 0.5, 1.0, 1.0);
-	
+
 	gl_Position = output_.position;
 	return;
 }
@@ -382,7 +382,7 @@ void main()
 {
 	Output output_;
 	output_.position = vec4(0.0, 0.5, 1.0, 1.0);
-	
+
 	gl_Position = output_.position;
 	gl_Position.y *= _nzslFlipYValue;
 	return;
@@ -404,7 +404,7 @@ void main()
 {
 	Output output_;
 	output_.position = vec4(0.0, 0.5, 1.0, 1.0);
-	
+
 	gl_Position = output_.position;
 	gl_Position.z = gl_Position.z * 2.0 - gl_Position.w;
 	return;

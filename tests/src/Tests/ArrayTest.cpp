@@ -68,7 +68,7 @@ void main()
 {
 	VertIn input_;
 	input_.vert_index = gl_VertexID;
-	
+
 	VertOut output_;
 	if ((uint(input_.vert_index)) < (uint(vertices.length())))
 	{
@@ -78,9 +78,9 @@ void main()
 	{
 		output_.pos = vec4(0.0, 0.0, 0.0, 0.0);
 	}
-	
+
 	int customData[5] = int[5](1, 2, 3, 4, 5);
-	
+
 	gl_Position = output_.pos;
 	return;
 })");
@@ -114,7 +114,7 @@ fn main(input: VertIn) -> VertOut
 	{
 		output.pos = vec4[f32](0.0, 0.0, 0.0, 0.0);
 	}
-	
+
 	let customData: array[i32, 5] = array[i32, 5](1, 2, 3, 4, 5);
 	return output;
 })");

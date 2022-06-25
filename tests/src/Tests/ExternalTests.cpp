@@ -103,7 +103,6 @@ uniform _nzslBinding_data
 	float values[47];
 } data;
 
-
 void main()
 {
 	float value = data.values[42];
@@ -197,7 +196,6 @@ buffer _nzslBinding_data
 {
 	float values[47];
 } data;
-
 
 void main()
 {
@@ -336,7 +334,6 @@ buffer _nzslBinding_data
 	uint data;
 	float values[];
 } data;
-
 
 void main()
 {
