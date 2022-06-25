@@ -226,14 +226,18 @@ namespace nzsl
 					std::size_t start = currentPos;
 					char next = Peek();
 
+					bool hexadecimal = false;
 					if (next == 'x' || next == 'X')
+					{
+						hexadecimal = true;
 						currentPos++;
+					}
 
 					for (;;)
 					{
 						next = Peek();
 
-						if (!isdigit(next))
+						if (!isxdigit(next))
 						{
 							if (next != '.')
 								break;
@@ -254,6 +258,14 @@ namespace nzsl
 					const char* first = &str[start];
 					const char* last = first + (currentPos - start + 1);
 
+					if (hexadecimal)
+					{
+						if (*first != '0')
+							throw LexerBadNumberError{ token.location };
+
+						first += 2;
+					}
+
 					if (floatingPoint)
 					{
 						tokenType = TokenType::FloatingPointValue;
@@ -272,7 +284,7 @@ namespace nzsl
 						tokenType = TokenType::IntegerValue;
 
 						long long value;
-						std::from_chars_result r = std::from_chars(first, last, value);
+						std::from_chars_result r = std::from_chars(first, last, value, (hexadecimal) ? 16 : 10);
 						if (r.ptr == last && r.ec == std::errc{})
 							token.data = value;
 						else if (r.ec == std::errc::result_out_of_range)
