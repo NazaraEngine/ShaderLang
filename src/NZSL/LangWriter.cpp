@@ -107,6 +107,7 @@ namespace nzsl
 		std::unordered_map<std::size_t, Identifier> variables;
 		std::vector<std::string> moduleNames;
 		bool isInEntryPoint = false;
+		int streamEmptyLine = 1;
 		unsigned int indentLevel = 0;
 	};
 
@@ -279,6 +280,14 @@ namespace nzsl
 	void LangWriter::Append(const T& param)
 	{
 		assert(m_currentState && "This function should only be called while processing an AST");
+
+		if (m_currentState->streamEmptyLine > 0)
+		{
+			for (std::size_t i = 0; i < m_currentState->indentLevel; ++i)
+				m_currentState->stream << '\t';
+
+			m_currentState->streamEmptyLine = 0;
+		}
 
 		m_currentState->stream << param;
 	}
@@ -551,7 +560,7 @@ namespace nzsl
 		Append(")");
 	}
 
-	void LangWriter::AppendComment(const std::string& section)
+	void LangWriter::AppendComment(std::string_view section)
 	{
 		std::size_t lineFeed = section.find('\n');
 		if (lineFeed != section.npos)
@@ -572,20 +581,24 @@ namespace nzsl
 			AppendLine("// ", section);
 	}
 
-	void LangWriter::AppendCommentSection(const std::string& section)
+	void LangWriter::AppendCommentSection(std::string_view section)
 	{
 		assert(m_currentState && "This function should only be called while processing an AST");
 
 		std::string stars((section.size() < 33) ? (36 - section.size()) / 2 : 3, '*');
-		m_currentState->stream << "/*" << stars << ' ' << section << ' ' << stars << "*/";
+		Append("/*", stars, ' ', section, ' ', stars, "*/");
 		AppendLine();
 	}
 
-	void LangWriter::AppendLine(const std::string& txt)
+	void LangWriter::AppendLine(std::string_view txt)
 	{
 		assert(m_currentState && "This function should only be called while processing an AST");
 
-		m_currentState->stream << txt << '\n' << std::string(m_currentState->indentLevel, '\t');
+		if (txt.empty() && m_currentState->streamEmptyLine > 1)
+			return;
+
+		m_currentState->stream << txt << '\n';
+		m_currentState->streamEmptyLine++;
 	}
 
 	template<typename T>
@@ -639,8 +652,8 @@ namespace nzsl
 	{
 		assert(m_currentState && "This function should only be called while processing an AST");
 
-		m_currentState->indentLevel++;
 		AppendLine("{");
+		m_currentState->indentLevel++;
 	}
 
 	void LangWriter::LeaveScope(bool skipLine)
@@ -831,7 +844,7 @@ namespace nzsl
 		for (const auto& exprPtr : node.expressions)
 		{
 			if (!first)
-				m_currentState->stream << ", ";
+				Append(", ");
 
 			first = false;
 

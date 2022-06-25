@@ -59,7 +59,6 @@ struct Data_DataStruct
 
 // Module OutputStruct
 
-
 vec4 GetColorFromData_OutputStruct(Data_DataStruct data)
 {
 	return data.color;
@@ -71,9 +70,6 @@ struct Output_OutputStruct
 };
 
 // Main file
-
-
-
 
 uniform sampler2D tex1;
 
@@ -88,7 +84,7 @@ void main()
 	data.color = GetColor_Color();
 	Output_OutputStruct output_;
 	output_.color = GetColorFromData_OutputStruct(data);
-	
+
 	_nzslOut_color = output_.color;
 	return;
 }
@@ -105,12 +101,12 @@ module _Color
 	{
 		return vec4[f32](0.0, 0.0, 1.0, 1.0);
 	}
-	
+
 	fn GetColor() -> vec4[f32]
 	{
 		return GenerateColor();
 	}
-	
+
 }
 [nzsl_version("1.0")]
 module _DataStruct
@@ -119,23 +115,23 @@ module _DataStruct
 	{
 		color: vec4[f32]
 	}
-	
+
 }
 [nzsl_version("1.0")]
 module _OutputStruct
 {
 	alias Data = _DataStruct.Data;
-	
+
 	fn GetColorFromData(data: Data) -> vec4[f32]
 	{
 		return data.color;
 	}
-	
+
 	struct Output
 	{
 		[location(0)] color: vec4[f32]
 	}
-	
+
 }
 alias Color = _Color.GetColor;
 

@@ -87,7 +87,7 @@ fn main()
 [entry(frag)]
 fn main()
 {
-	
+
 }
 )");
 	}

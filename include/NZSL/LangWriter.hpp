@@ -80,11 +80,11 @@ namespace nzsl
 			void AppendAttribute(LocationAttribute attribute);
 			void AppendAttribute(SetAttribute seattributet);
 			void AppendAttribute(UnrollAttribute attribute);
-			void AppendComment(const std::string& section);
-			void AppendCommentSection(const std::string& section);
+			void AppendComment(std::string_view section);
+			void AppendCommentSection(std::string_view section);
 			void AppendHeader();
 			template<typename T> void AppendIdentifier(const T& map, std::size_t id);
-			void AppendLine(const std::string& txt = {});
+			void AppendLine(std::string_view txt = {});
 			template<typename... Args> void AppendLine(Args&&... params);
 			void AppendStatementList(std::vector<Ast::StatementPtr>& statements);
 			template<typename T> void AppendValue(const T& value);

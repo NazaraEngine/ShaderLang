@@ -56,10 +56,10 @@ void main()
 {
 	Input input_;
 	input_.value = _nzslIn_value;
-	
+
 	Output output_;
 	output_.value = extData.value * input_.value;
-	
+
 	_nzslOut_value = output_.value;
 	return;
 }

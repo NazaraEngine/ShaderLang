@@ -195,27 +195,27 @@ fn main()
 		let i: i32 = 0;
 		color += data.lights[i].color;
 	}
-	
+
 	{
 		let i: i32 = 2;
 		color += data.lights[i].color;
 	}
-	
+
 	{
 		let i: i32 = 4;
 		color += data.lights[i].color;
 	}
-	
+
 	{
 		let i: i32 = 6;
 		color += data.lights[i].color;
 	}
-	
+
 	{
 		let i: i32 = 8;
 		color += data.lights[i].color;
 	}
-	
+
 }
 )");
 	}
@@ -270,17 +270,17 @@ fn main()
 		let light: Light = data.lights[0];
 		color += light.color;
 	}
-	
+
 	{
 		let light: Light = data.lights[1];
 		color += light.color;
 	}
-	
+
 	{
 		let light: Light = data.lights[2];
 		color += light.color;
 	}
-	
+
 }
 )");
 	}

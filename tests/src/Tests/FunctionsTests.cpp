@@ -48,7 +48,7 @@ void main()
 {
 	FragOut output_;
 	output_.value = -GetValue();
-	
+
 	_nzslOut_value = output_.value;
 	return;
 }
