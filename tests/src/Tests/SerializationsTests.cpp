@@ -269,6 +269,54 @@ fn main()
 )");
 	}
 
+	WHEN("serializing and unserializing const arrays")
+	{
+		ParseSerializeUnserialize(R"(
+[nzsl_version("1.0")]
+module;
+
+const bArray = array[bool](false, true, true);
+const fArray = array[f32](1.0, -1.0, 42.0, 66., 0.000);
+const iArray = array[i32](1, -1, 42, 66, 0, 0xDEADBEEF);
+
+const v2fArray = array[vec2[f32]](
+	vec2[f32](-1.0, 1.0),
+	vec2[f32](-1.0, -3.0),
+	vec2[f32]( 3.0, 1.0)
+);
+
+const v2iArray = array[vec2[i32]](
+	vec2[i32](-1, 1),
+	vec2[i32](-1, -3),
+	vec2[i32]( 3, 1)
+);
+
+const v3fArray = array[vec3[f32]](
+	vec3[f32](1.0, 2.0, 3.0),
+	vec3[f32](4.0, 5.0, 6.0),
+	vec3[f32](7.0, 8.0, 9.0)
+);
+
+const v3iArray = array[vec3[i32]](
+	vec3[i32](1, 2, 3),
+	vec3[i32](4, 5, 6),
+	vec3[i32](7, 8, 9)
+);
+
+const v4fArray = array[vec4[f32]](
+	vec4[f32](1.0, 2.0, 3.0, -4.0),
+	vec4[f32](4.0, 5.0, 6.0, -7.0),
+	vec4[f32](7.0, 8.0, 9.0, -10.0)
+);
+
+const v4iArray = array[vec4[i32]](
+	vec4[i32](1, 2, 3, -4),
+	vec4[i32](4, 5, 6, -7),
+	vec4[i32](7, 8, 9, -10)
+);
+)");
+	}
+
 	WHEN("serializing and unserializing consts")
 	{
 		ParseSerializeUnserialize(R"(
@@ -309,7 +357,50 @@ fn main()
 	{
 		value = data.value * Pi;
 	}
+
+	if (value < 0.0)
+		discard;
 }
+)");
+	}
+
+	WHEN("serializing and unserializing function")
+	{
+		ParseSerializeUnserialize(R"(
+[nzsl_version("1.0")]
+module;
+
+fn SampleTexture(tex: sampler2D[f32], uv: vec2[f32]) -> vec4[f32]
+{
+	return tex.Sample(uv);
+}
+
+alias tex2D = SampleTexture;
+
+external
+{
+	[binding(0)] texture: sampler2D[f32]
+}
+
+struct FragIn
+{
+	[location(0)] uv: vec2[f32]
+}
+
+struct FragOut
+{
+	[location(0)] color: vec4[f32]
+}
+
+[entry(frag)]
+fn main(input: FragIn)
+{
+	let output: FragOut;
+	output.color = tex2D(texture, input.uv);
+
+	return output;
+}
+
 )");
 	}
 
