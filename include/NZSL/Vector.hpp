@@ -64,24 +64,24 @@ namespace nzsl
 	Vector<T, N> operator/(T lhs, const Vector<T, N>& rhs);
 
 	template<typename T> using Vector2 = Vector<T, 2>;
-	using Vector2d   = Vector<double, 2>;
-	using Vector2f   = Vector<float, 2>;
+	using Vector2f32 = Vector<float, 2>;
+	using Vector2f64 = Vector<double, 2>;
 	using Vector2i32 = Vector<std::int32_t, 2>;
 	using Vector2i64 = Vector<std::int64_t, 2>;
 	using Vector2u32 = Vector<std::uint32_t, 2>;
 	using Vector2u64 = Vector<std::uint64_t, 2>;
 
 	template<typename T> using Vector3 = Vector<T, 3>;
-	using Vector3d = Vector<double, 3>;
-	using Vector3f   = Vector<float, 3>;
+	using Vector3f32 = Vector<float, 3>;
+	using Vector3f64 = Vector<double, 3>;
 	using Vector3i32 = Vector<std::int32_t, 3>;
 	using Vector3i64 = Vector<std::int64_t, 3>;
 	using Vector3u32 = Vector<std::uint32_t, 3>;
 	using Vector3u64 = Vector<std::uint64_t, 3>;
 
 	template<typename T> using Vector4 = Vector<T, 4>;
-	using Vector4d = Vector<double, 4>;
-	using Vector4f   = Vector<float, 4>;
+	using Vector4f32 = Vector<float, 4>;
+	using Vector4f64 = Vector<double, 4>;
 	using Vector4i32 = Vector<std::int32_t, 4>;
 	using Vector4i64 = Vector<std::int64_t, 4>;
 	using Vector4u32 = Vector<std::uint32_t, 4>;

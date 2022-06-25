@@ -937,11 +937,11 @@ namespace nzsl
 			if constexpr (std::is_same_v<T, std::uint32_t>)
 				Append("u");
 		}
-		else if constexpr (std::is_same_v<T, Vector2f> || std::is_same_v<T, Vector2i32>)
+		else if constexpr (std::is_same_v<T, Vector2f32> || std::is_same_v<T, Vector2i32>)
 			Append("vec2(" + Ast::ToString(value.x()) + ", " + Ast::ToString(value.y()) + ")");
-		else if constexpr (std::is_same_v<T, Vector3f> || std::is_same_v<T, Vector3i32>)
+		else if constexpr (std::is_same_v<T, Vector3f32> || std::is_same_v<T, Vector3i32>)
 			Append("vec3(" + Ast::ToString(value.x()) + ", " + Ast::ToString(value.y()) + ", " + Ast::ToString(value.z()) + ")");
-		else if constexpr (std::is_same_v<T, Vector4f> || std::is_same_v<T, Vector4i32>)
+		else if constexpr (std::is_same_v<T, Vector4f32> || std::is_same_v<T, Vector4i32>)
 			Append("vec4(" + Ast::ToString(value.x()) + ", " + Ast::ToString(value.y()) + ", " + Ast::ToString(value.z()) + ", " + Ast::ToString(value.w()) + ")");
 		else
 			static_assert(Nz::AlwaysFalse<T>(), "non-exhaustive visitor");

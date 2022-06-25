@@ -42,11 +42,11 @@ namespace nzsl::Ast
 				return PrimitiveType::UInt32;
 			else if constexpr (std::is_same_v<T, std::string>)
 				return PrimitiveType::String;
-			else if constexpr (std::is_same_v<T, Vector2f>)
+			else if constexpr (std::is_same_v<T, Vector2f32>)
 				return VectorType{ 2, PrimitiveType::Float32 };
-			else if constexpr (std::is_same_v<T, Vector3f>)
+			else if constexpr (std::is_same_v<T, Vector3f32>)
 				return VectorType{ 3, PrimitiveType::Float32 };
-			else if constexpr (std::is_same_v<T, Vector4f>)
+			else if constexpr (std::is_same_v<T, Vector4f32>)
 				return VectorType{ 4, PrimitiveType::Float32 };
 			else if constexpr (std::is_same_v<T, Vector2i32>)
 				return VectorType{ 2, PrimitiveType::Int32 };

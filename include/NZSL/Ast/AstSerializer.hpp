@@ -92,9 +92,9 @@ namespace nzsl::Ast
 			virtual void Value(float& val) = 0;
 			virtual void Value(std::string& val) = 0;
 			virtual void Value(std::int32_t& val) = 0;
-			virtual void Value(Vector2f& val) = 0;
-			virtual void Value(Vector3f& val) = 0;
-			virtual void Value(Vector4f& val) = 0;
+			virtual void Value(Vector2f32& val) = 0;
+			virtual void Value(Vector3f32& val) = 0;
+			virtual void Value(Vector4f32& val) = 0;
 			virtual void Value(Vector2i32& val) = 0;
 			virtual void Value(Vector3i32& val) = 0;
 			virtual void Value(Vector4i32& val) = 0;
@@ -126,9 +126,9 @@ namespace nzsl::Ast
 			void Value(float& val) override;
 			void Value(std::string& val) override;
 			void Value(std::int32_t& val) override;
-			void Value(Vector2f& val) override;
-			void Value(Vector3f& val) override;
-			void Value(Vector4f& val) override;
+			void Value(Vector2f32& val) override;
+			void Value(Vector3f32& val) override;
+			void Value(Vector4f32& val) override;
 			void Value(Vector2i32& val) override;
 			void Value(Vector3i32& val) override;
 			void Value(Vector4i32& val) override;
@@ -162,9 +162,9 @@ namespace nzsl::Ast
 			void Value(float& val) override;
 			void Value(std::string& val) override;
 			void Value(std::int32_t& val) override;
-			void Value(Vector2f& val) override;
-			void Value(Vector3f& val) override;
-			void Value(Vector4f& val) override;
+			void Value(Vector2f32& val) override;
+			void Value(Vector3f32& val) override;
+			void Value(Vector4f32& val) override;
 			void Value(Vector2i32& val) override;
 			void Value(Vector3i32& val) override;
 			void Value(Vector4i32& val) override;
