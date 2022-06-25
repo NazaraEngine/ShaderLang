@@ -163,9 +163,9 @@ namespace nzsl::Ast
 			case 2:  SerializeValue(float()); break;
 			case 3:  SerializeValue(std::int32_t()); break;
 			case 4:  SerializeValue(std::uint32_t()); break;
-			case 5:  SerializeValue(Vector2f()); break;
-			case 6:  SerializeValue(Vector3f()); break;
-			case 7:  SerializeValue(Vector4f()); break;
+			case 5:  SerializeValue(Vector2f32()); break;
+			case 6:  SerializeValue(Vector3f32()); break;
+			case 7:  SerializeValue(Vector4f32()); break;
 			case 8:  SerializeValue(Vector2i32()); break;
 			case 9:  SerializeValue(Vector3i32()); break;
 			case 10: SerializeValue(Vector4i32()); break;
@@ -199,9 +199,9 @@ namespace nzsl::Ast
 			case 2:  SerializeValue(float()); break;
 			case 3:  SerializeValue(std::int32_t()); break;
 			case 4:  SerializeValue(std::uint32_t()); break;
-			case 5:  SerializeValue(Vector2f()); break;
-			case 6:  SerializeValue(Vector3f()); break;
-			case 7:  SerializeValue(Vector4f()); break;
+			case 5:  SerializeValue(Vector2f32()); break;
+			case 6:  SerializeValue(Vector3f32()); break;
+			case 7:  SerializeValue(Vector4f32()); break;
 			case 8:  SerializeValue(Vector2i32()); break;
 			case 9:  SerializeValue(Vector3i32()); break;
 			case 10: SerializeValue(Vector4i32()); break;
@@ -642,20 +642,20 @@ namespace nzsl::Ast
 		m_serializer.Serialize(val);
 	}
 
-	void ShaderAstSerializer::Value(Vector2f& val)
+	void ShaderAstSerializer::Value(Vector2f32& val)
 	{
 		m_serializer.Serialize(val.x());
 		m_serializer.Serialize(val.y());
 	}
 
-	void ShaderAstSerializer::Value(Vector3f& val)
+	void ShaderAstSerializer::Value(Vector3f32& val)
 	{
 		m_serializer.Serialize(val.x());
 		m_serializer.Serialize(val.y());
 		m_serializer.Serialize(val.z());
 	}
 
-	void ShaderAstSerializer::Value(Vector4f& val)
+	void ShaderAstSerializer::Value(Vector4f32& val)
 	{
 		m_serializer.Serialize(val.x());
 		m_serializer.Serialize(val.y());
@@ -1051,20 +1051,20 @@ namespace nzsl::Ast
 		m_unserializer.Unserialize(val);
 	}
 
-	void ShaderAstUnserializer::Value(Vector2f& val)
+	void ShaderAstUnserializer::Value(Vector2f32& val)
 	{
 		m_unserializer.Unserialize(val.x());
 		m_unserializer.Unserialize(val.y());
 	}
 
-	void ShaderAstUnserializer::Value(Vector3f& val)
+	void ShaderAstUnserializer::Value(Vector3f32& val)
 	{
 		m_unserializer.Unserialize(val.x());
 		m_unserializer.Unserialize(val.y());
 		m_unserializer.Unserialize(val.z());
 	}
 
-	void ShaderAstUnserializer::Value(Vector4f& val)
+	void ShaderAstUnserializer::Value(Vector4f32& val)
 	{
 		m_unserializer.Unserialize(val.x());
 		m_unserializer.Unserialize(val.y());
