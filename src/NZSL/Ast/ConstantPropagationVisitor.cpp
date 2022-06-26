@@ -1420,7 +1420,7 @@ namespace nzsl::Ast
 	}
 
 	template<typename TargetType>
-	ExpressionPtr ConstantPropagationVisitor::PropagateVec2Cast(TargetType v1, TargetType v2, const SourceLocation& sourceLocation)
+	ExpressionPtr ConstantPropagationVisitor::PropagateVec2Cast([[maybe_unused]] TargetType v1, [[maybe_unused]] TargetType v2, [[maybe_unused]] const SourceLocation& sourceLocation)
 	{
 		NAZARA_USE_ANONYMOUS_NAMESPACE
 
@@ -1435,7 +1435,7 @@ namespace nzsl::Ast
 	}
 
 	template<typename TargetType>
-	ExpressionPtr ConstantPropagationVisitor::PropagateVec3Cast(TargetType v1, TargetType v2, TargetType v3, const SourceLocation& sourceLocation)
+	ExpressionPtr ConstantPropagationVisitor::PropagateVec3Cast([[maybe_unused]] TargetType v1, [[maybe_unused]] TargetType v2, [[maybe_unused]] TargetType v3, [[maybe_unused]] const SourceLocation& sourceLocation)
 	{
 		NAZARA_USE_ANONYMOUS_NAMESPACE
 
@@ -1450,7 +1450,7 @@ namespace nzsl::Ast
 	}
 
 	template<typename TargetType>
-	ExpressionPtr ConstantPropagationVisitor::PropagateVec4Cast(TargetType v1, TargetType v2, TargetType v3, TargetType v4, const SourceLocation& sourceLocation)
+	ExpressionPtr ConstantPropagationVisitor::PropagateVec4Cast([[maybe_unused]] TargetType v1, [[maybe_unused]] TargetType v2, [[maybe_unused]] TargetType v3, [[maybe_unused]] TargetType v4, [[maybe_unused]] const SourceLocation& sourceLocation)
 	{
 		NAZARA_USE_ANONYMOUS_NAMESPACE
 

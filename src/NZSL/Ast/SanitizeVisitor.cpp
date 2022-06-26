@@ -3808,6 +3808,8 @@ namespace nzsl::Ast
 							case PrimitiveType::UInt32:
 								return true;
 						}
+
+						break;
 					}
 
 					case PrimitiveType::Int32:
@@ -3823,6 +3825,8 @@ namespace nzsl::Ast
 							case PrimitiveType::Int32:
 								return true;
 						}
+
+						break;
 					}
 
 					case PrimitiveType::UInt32:
@@ -3838,6 +3842,8 @@ namespace nzsl::Ast
 							case PrimitiveType::UInt32:
 								return true;
 						}
+
+						break;
 					}
 				}
 
