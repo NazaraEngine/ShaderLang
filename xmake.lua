@@ -52,6 +52,10 @@ else
 	set_warnings("allextra")
 end
 
+if not is_plat("windows") then
+	add_cxflags("-Wno-subobject-linkage")
+end
+
 if is_plat("windows") then
 	add_defines("_CRT_SECURE_NO_WARNINGS")
 	add_cxxflags("/bigobj", "/permissive-", "/Zc:__cplusplus", "/Zc:externConstexpr", "/Zc:inline", "/Zc:lambda", "/Zc:preprocessor", "/Zc:referenceBinding", "/Zc:strictStrings", "/Zc:throwingNew")
