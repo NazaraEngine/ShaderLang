@@ -52,7 +52,7 @@ else
 	set_warnings("allextra")
 end
 
-if not is_plat("windows") then
+if is_plat("mingw", "linux") then
 	add_cxflags("-Wno-subobject-linkage")
 end
 
