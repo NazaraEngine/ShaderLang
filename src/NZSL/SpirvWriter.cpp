@@ -17,7 +17,6 @@
 #include <NZSL/Ast/RecursiveVisitor.hpp>
 #include <NZSL/Ast/EliminateUnusedPassVisitor.hpp>
 #include <NZSL/Ast/SanitizeVisitor.hpp>
-#include <SpirV/GLSL.std.450.h>
 #include <fmt/format.h>
 #include <frozen/unordered_map.h>
 #include <tsl/ordered_map.h>

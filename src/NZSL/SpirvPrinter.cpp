@@ -103,7 +103,7 @@ namespace nzsl
 		return true;
 	}
 	
-	void SpirvPrinter::PrintOperand(std::ostream& instructionStream, const SpirvInstruction::Operand* operand)
+	void SpirvPrinter::PrintOperand(std::ostream& instructionStream, const SpirvOperand* operand)
 	{
 		switch (operand->kind)
 		{

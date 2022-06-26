@@ -387,17 +387,11 @@ namespace nzsl
 		OpIgnoreIntersectionKHR = 4448,
 		OpTerminateRayKHR = 4449,
 		OpSDot = 4450,
-		OpSDotKHR = 4450,
 		OpUDot = 4451,
-		OpUDotKHR = 4451,
 		OpSUDot = 4452,
-		OpSUDotKHR = 4452,
 		OpSDotAccSat = 4453,
-		OpSDotAccSatKHR = 4453,
 		OpUDotAccSat = 4454,
-		OpUDotAccSatKHR = 4454,
 		OpSUDotAccSat = 4455,
-		OpSUDotAccSatKHR = 4455,
 		OpTypeRayQueryKHR = 4472,
 		OpRayQueryInitializeKHR = 4473,
 		OpRayQueryTerminateKHR = 4474,
@@ -419,14 +413,12 @@ namespace nzsl
 		OpImageSampleFootprintNV = 5283,
 		OpGroupNonUniformPartitionNV = 5296,
 		OpWritePackedPrimitiveIndices4x8NV = 5299,
-		OpReportIntersectionNV = 5334,
 		OpReportIntersectionKHR = 5334,
 		OpIgnoreIntersectionNV = 5335,
 		OpTerminateRayNV = 5336,
 		OpTraceNV = 5337,
 		OpTraceMotionNV = 5338,
 		OpTraceRayMotionNV = 5339,
-		OpTypeAccelerationStructureNV = 5341,
 		OpTypeAccelerationStructureKHR = 5341,
 		OpExecuteCallableNV = 5344,
 		OpTypeCooperativeMatrixNV = 5358,
@@ -437,7 +429,6 @@ namespace nzsl
 		OpBeginInvocationInterlockEXT = 5364,
 		OpEndInvocationInterlockEXT = 5365,
 		OpDemoteToHelperInvocation = 5380,
-		OpDemoteToHelperInvocationEXT = 5380,
 		OpIsHelperInvocationEXT = 5381,
 		OpConvertUToImageNV = 5391,
 		OpConvertUToSamplerNV = 5392,
@@ -480,9 +471,7 @@ namespace nzsl
 		OpAssumeTrueKHR = 5630,
 		OpExpectKHR = 5631,
 		OpDecorateString = 5632,
-		OpDecorateStringGOOGLE = 5632,
 		OpMemberDecorateString = 5633,
-		OpMemberDecorateStringGOOGLE = 5633,
 		OpVmeImageINTEL = 5699,
 		OpTypeVmeImageINTEL = 5700,
 		OpTypeAvcImePayloadINTEL = 5701,
@@ -697,6 +686,91 @@ namespace nzsl
 		OpGroupLogicalAndKHR = 6406,
 		OpGroupLogicalOrKHR = 6407,
 		OpGroupLogicalXorKHR = 6408,
+	};
+
+	enum class SpirvGlslStd450Op
+	{
+		Round = 1,
+		RoundEven = 2,
+		Trunc = 3,
+		FAbs = 4,
+		SAbs = 5,
+		FSign = 6,
+		SSign = 7,
+		Floor = 8,
+		Ceil = 9,
+		Fract = 10,
+		Radians = 11,
+		Degrees = 12,
+		Sin = 13,
+		Cos = 14,
+		Tan = 15,
+		Asin = 16,
+		Acos = 17,
+		Atan = 18,
+		Sinh = 19,
+		Cosh = 20,
+		Tanh = 21,
+		Asinh = 22,
+		Acosh = 23,
+		Atanh = 24,
+		Atan2 = 25,
+		Pow = 26,
+		Exp = 27,
+		Log = 28,
+		Exp2 = 29,
+		Log2 = 30,
+		Sqrt = 31,
+		InverseSqrt = 32,
+		Determinant = 33,
+		MatrixInverse = 34,
+		Modf = 35,
+		ModfStruct = 36,
+		FMin = 37,
+		UMin = 38,
+		SMin = 39,
+		FMax = 40,
+		UMax = 41,
+		SMax = 42,
+		FClamp = 43,
+		UClamp = 44,
+		SClamp = 45,
+		FMix = 46,
+		IMix = 47,
+		Step = 48,
+		SmoothStep = 49,
+		Fma = 50,
+		Frexp = 51,
+		FrexpStruct = 52,
+		Ldexp = 53,
+		PackSnorm4x8 = 54,
+		PackUnorm4x8 = 55,
+		PackSnorm2x16 = 56,
+		PackUnorm2x16 = 57,
+		PackHalf2x16 = 58,
+		PackDouble2x32 = 59,
+		UnpackSnorm2x16 = 60,
+		UnpackUnorm2x16 = 61,
+		UnpackHalf2x16 = 62,
+		UnpackSnorm4x8 = 63,
+		UnpackUnorm4x8 = 64,
+		UnpackDouble2x32 = 65,
+		Length = 66,
+		Distance = 67,
+		Cross = 68,
+		Normalize = 69,
+		FaceForward = 70,
+		Reflect = 71,
+		Refract = 72,
+		FindILsb = 73,
+		FindSMsb = 74,
+		FindUMsb = 75,
+		InterpolateAtCentroid = 76,
+		InterpolateAtSample = 77,
+		InterpolateAtOffset = 78,
+		NMin = 79,
+		NMax = 80,
+		NClamp = 81,
 	};
 
 	enum class SpirvOperandKind
@@ -1775,53 +1849,63 @@ namespace nzsl
 		PackedVectorFormat4x8BitKHR = 0,
 	};
 
+	struct SpirvOperand
+	{
+		SpirvOperandKind kind;
+		const char* name;
+	};
+
 	struct SpirvInstruction
 	{
-		struct Operand
-		{
-			SpirvOperandKind kind;
-			const char* name;
-		};
-
 		SpirvOp op;
 		const char* name;
-		const Operand* operands;
-		const Operand* resultOperand;
+		const SpirvOperand* operands;
+		const SpirvOperand* resultOperand;
 		std::size_t minOperandCount;
 	};
 
-	NZSL_API std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands(SpirvAccessQualifier kind);
-	NZSL_API std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands(SpirvAddressingModel kind);
-	NZSL_API std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands(SpirvBuiltIn kind);
-	NZSL_API std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands(SpirvCapability kind);
-	NZSL_API std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands(SpirvDecoration kind);
-	NZSL_API std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands(SpirvDim kind);
-	NZSL_API std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands(SpirvExecutionMode kind);
-	NZSL_API std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands(SpirvExecutionModel kind);
-	NZSL_API std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands(SpirvFPDenormMode kind);
-	NZSL_API std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands(SpirvFPOperationMode kind);
-	NZSL_API std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands(SpirvFPRoundingMode kind);
-	NZSL_API std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands(SpirvFunctionParameterAttribute kind);
-	NZSL_API std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands(SpirvGroupOperation kind);
-	NZSL_API std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands(SpirvImageChannelDataType kind);
-	NZSL_API std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands(SpirvImageChannelOrder kind);
-	NZSL_API std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands(SpirvImageFormat kind);
-	NZSL_API std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands(SpirvKernelEnqueueFlags kind);
-	NZSL_API std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands(SpirvLinkageType kind);
-	NZSL_API std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands(SpirvMemoryModel kind);
-	NZSL_API std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands(SpirvOverflowModes kind);
-	NZSL_API std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands(SpirvPackedVectorFormat kind);
-	NZSL_API std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands(SpirvQuantizationModes kind);
-	NZSL_API std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands(SpirvRayQueryCandidateIntersectionType kind);
-	NZSL_API std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands(SpirvRayQueryCommittedIntersectionType kind);
-	NZSL_API std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands(SpirvRayQueryIntersection kind);
-	NZSL_API std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands(SpirvSamplerAddressingMode kind);
-	NZSL_API std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands(SpirvSamplerFilterMode kind);
-	NZSL_API std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands(SpirvScope kind);
-	NZSL_API std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands(SpirvSourceLanguage kind);
-	NZSL_API std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands(SpirvStorageClass kind);
+	struct SpirvGlslStd450Instruction
+	{
+		SpirvGlslStd450Op op;
+		const char* name;
+		const SpirvOperand* operands;
+		const SpirvOperand* resultOperand;
+		std::size_t minOperandCount;
+	};
+
+	NZSL_API std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands(SpirvAccessQualifier kind);
+	NZSL_API std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands(SpirvAddressingModel kind);
+	NZSL_API std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands(SpirvBuiltIn kind);
+	NZSL_API std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands(SpirvCapability kind);
+	NZSL_API std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands(SpirvDecoration kind);
+	NZSL_API std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands(SpirvDim kind);
+	NZSL_API std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands(SpirvExecutionMode kind);
+	NZSL_API std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands(SpirvExecutionModel kind);
+	NZSL_API std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands(SpirvFPDenormMode kind);
+	NZSL_API std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands(SpirvFPOperationMode kind);
+	NZSL_API std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands(SpirvFPRoundingMode kind);
+	NZSL_API std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands(SpirvFunctionParameterAttribute kind);
+	NZSL_API std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands(SpirvGroupOperation kind);
+	NZSL_API std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands(SpirvImageChannelDataType kind);
+	NZSL_API std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands(SpirvImageChannelOrder kind);
+	NZSL_API std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands(SpirvImageFormat kind);
+	NZSL_API std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands(SpirvKernelEnqueueFlags kind);
+	NZSL_API std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands(SpirvLinkageType kind);
+	NZSL_API std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands(SpirvMemoryModel kind);
+	NZSL_API std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands(SpirvOverflowModes kind);
+	NZSL_API std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands(SpirvPackedVectorFormat kind);
+	NZSL_API std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands(SpirvQuantizationModes kind);
+	NZSL_API std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands(SpirvRayQueryCandidateIntersectionType kind);
+	NZSL_API std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands(SpirvRayQueryCommittedIntersectionType kind);
+	NZSL_API std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands(SpirvRayQueryIntersection kind);
+	NZSL_API std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands(SpirvSamplerAddressingMode kind);
+	NZSL_API std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands(SpirvSamplerFilterMode kind);
+	NZSL_API std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands(SpirvScope kind);
+	NZSL_API std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands(SpirvSourceLanguage kind);
+	NZSL_API std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands(SpirvStorageClass kind);
 
 	NZSL_API const SpirvInstruction* GetSpirvInstruction(std::uint16_t op);
+	NZSL_API const SpirvGlslStd450Instruction* GetSpirvGlslStd450Instruction(std::uint16_t op);
 
 	NZSL_API std::string_view ToString(SpirvAccessQualifier value);
 	NZSL_API std::string_view ToString(SpirvAddressingModel value);
