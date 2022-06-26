@@ -8,6 +8,7 @@
 #include <Nazara/Utils/StackArray.hpp>
 #include <NZSL/SpirvData.hpp>
 #include <cassert>
+#include <cstring>
 #include <iomanip>
 #include <sstream>
 #include <stdexcept>
