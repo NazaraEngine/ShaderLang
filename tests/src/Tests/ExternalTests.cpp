@@ -55,7 +55,7 @@ fn main()
  %4 = OpTypePointer StorageClass(UniformConstant) %3
  %6 = OpTypeVoid
  %7 = OpTypeFunction %6
- %8 = OpConstant %1 'Value'(0)
+ %8 = OpConstant %1 f32(0)
  %9 = OpTypeVector %1 2
 %10 = OpTypeVector %1 4
 %11 = OpTypePointer StorageClass(Function) %10
@@ -135,7 +135,7 @@ fn main()
       OpMemberDecorate %7 0 Decoration(Offset) 0
  %1 = OpTypeFloat 32
  %2 = OpTypeInt 32 0
- %3 = OpConstant %2 'Value'(47)
+ %3 = OpConstant %2 u32(47)
  %4 = OpTypeArray %1 %3
  %5 = OpTypeStruct %4
  %6 = OpTypeArray %1 %3
@@ -144,8 +144,8 @@ fn main()
 %10 = OpTypeVoid
 %11 = OpTypeFunction %10
 %12 = OpTypeInt 32 1
-%13 = OpConstant %12 'Value'(0)
-%14 = OpConstant %12 'Value'(42)
+%13 = OpConstant %12 i32(0)
+%14 = OpConstant %12 i32(42)
 %15 = OpTypePointer StorageClass(Function) %1
 %19 = OpTypePointer StorageClass(Uniform) %1
  %9 = OpVariable %8 StorageClass(Uniform)
@@ -232,7 +232,7 @@ fn main()
       OpMemberDecorate %7 0 Decoration(Offset) 0
  %1 = OpTypeFloat 32
  %2 = OpTypeInt 32 0
- %3 = OpConstant %2 'Value'(47)
+ %3 = OpConstant %2 u32(47)
  %4 = OpTypeArray %1 %3
  %5 = OpTypeStruct %4
  %6 = OpTypeArray %1 %3
@@ -241,8 +241,8 @@ fn main()
 %10 = OpTypeVoid
 %11 = OpTypeFunction %10
 %12 = OpTypeInt 32 1
-%13 = OpConstant %12 'Value'(0)
-%14 = OpConstant %12 'Value'(42)
+%13 = OpConstant %12 i32(0)
+%14 = OpConstant %12 i32(42)
 %15 = OpTypePointer StorageClass(Function) %1
 %19 = OpTypePointer StorageClass(Uniform) %1
  %9 = OpVariable %8 StorageClass(Uniform)
@@ -271,7 +271,7 @@ fn main()
       OpMemberDecorate %7 0 Decoration(Offset) 0
  %1 = OpTypeFloat 32
  %2 = OpTypeInt 32 0
- %3 = OpConstant %2 'Value'(47)
+ %3 = OpConstant %2 u32(47)
  %4 = OpTypeArray %1 %3
  %5 = OpTypeStruct %4
  %6 = OpTypeArray %1 %3
@@ -280,8 +280,8 @@ fn main()
 %10 = OpTypeVoid
 %11 = OpTypeFunction %10
 %12 = OpTypeInt 32 1
-%13 = OpConstant %12 'Value'(0)
-%14 = OpConstant %12 'Value'(42)
+%13 = OpConstant %12 i32(0)
+%14 = OpConstant %12 i32(42)
 %15 = OpTypePointer StorageClass(Function) %1
 %19 = OpTypePointer StorageClass(StorageBuffer) %1
  %9 = OpVariable %8 StorageClass(StorageBuffer)
@@ -387,8 +387,8 @@ fn main()
  %9 = OpTypeVoid
 %10 = OpTypeFunction %9
 %11 = OpTypeInt 32 1
-%12 = OpConstant %11 'Value'(1)
-%13 = OpConstant %11 'Value'(42)
+%12 = OpConstant %11 i32(1)
+%13 = OpConstant %11 i32(42)
 %14 = OpTypePointer StorageClass(Function) %2
 %15 = OpTypePointer StorageClass(Function) %1
 %20 = OpTypePointer StorageClass(Uniform) %2
@@ -431,8 +431,8 @@ fn main()
  %9 = OpTypeVoid
 %10 = OpTypeFunction %9
 %11 = OpTypeInt 32 1
-%12 = OpConstant %11 'Value'(1)
-%13 = OpConstant %11 'Value'(42)
+%12 = OpConstant %11 i32(1)
+%13 = OpConstant %11 i32(42)
 %14 = OpTypePointer StorageClass(Function) %2
 %15 = OpTypePointer StorageClass(Function) %1
 %20 = OpTypePointer StorageClass(StorageBuffer) %2

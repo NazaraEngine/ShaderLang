@@ -43,10 +43,14 @@ namespace nzsl
 		private:
 			bool HandleHeader(const SpirvHeader& header) override;
 			bool HandleOpcode(const SpirvInstruction& instruction, std::uint32_t wordCount) override;
-			void PrintOperand(std::ostream& instructionStream, const SpirvInstruction::Operand* operand);
+			void PrintOperand(std::ostream& instructionStream, const SpirvOperand* operand);
+
+			enum class ExtensionSet
+			{
+				GLSLstd450
+			};
 
 			struct State;
-
 			State* m_currentState;
 	};
 }
