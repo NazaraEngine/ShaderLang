@@ -260,7 +260,7 @@ namespace nzsl::Ast
 		{
 			const DynArrayType& arrayType = std::get<DynArrayType>(exprType);
 
-			ArrayType remappedArrayType;
+			DynArrayType remappedArrayType;
 			remappedArrayType.containedType = std::make_unique<ContainedType>();
 			remappedArrayType.containedType->type = RemapType(arrayType.containedType->type);
 

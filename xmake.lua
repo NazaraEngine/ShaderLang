@@ -1,5 +1,11 @@
 set_project("NZSL")
 
+option("erronwarn")
+	set_default(true)
+	set_showmenu(true)
+	set_description("Fails compilation if a warning occurs")
+option_end()
+
 option("fs_watcher")
 	set_default(true)
 	set_showmenu(true)
@@ -39,7 +45,12 @@ add_includedirs("include", "src")
 set_languages("c89", "c++17")
 set_rundir("./bin/$(plat)_$(arch)_$(mode)")
 set_targetdir("./bin/$(plat)_$(arch)_$(mode)")
-set_warnings("allextra")
+
+if has_config("erronwarn") then
+	set_warnings("allextra", "error")
+else
+	set_warnings("allextra")
+end
 
 if is_plat("windows") then
 	add_defines("_CRT_SECURE_NO_WARNINGS")

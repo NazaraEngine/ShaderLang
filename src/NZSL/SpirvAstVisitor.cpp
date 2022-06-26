@@ -1167,26 +1167,28 @@ namespace nzsl
 
 		std::uint32_t expressionId = EvaluateExpression(*node.condition);
 
-		SpirvLoopControl loopControl;
-		if (node.unroll.HasValue())
+		SpirvLoopControl loopControl = [&]
 		{
-			switch (node.unroll.GetResultingValue())
+			if (node.unroll.HasValue())
 			{
-				case Ast::LoopUnroll::Always:
-					// it shouldn't be possible to have this attribute as the loop gets unrolled in the sanitizer
-					throw std::runtime_error("unexpected unroll attribute");
+				switch (node.unroll.GetResultingValue())
+				{
+					case Ast::LoopUnroll::Always:
+						// it shouldn't be possible to have this attribute as the loop gets unrolled in the sanitizer
+						break;
 
-				case Ast::LoopUnroll::Hint:
-					loopControl = SpirvLoopControl::Unroll;
-					break;
+					case Ast::LoopUnroll::Hint:
+						return SpirvLoopControl::Unroll;
 
-				case Ast::LoopUnroll::Never:
-					loopControl = SpirvLoopControl::DontUnroll;
-					break;
+					case Ast::LoopUnroll::Never:
+						return SpirvLoopControl::DontUnroll;
+				}
+
+				throw std::runtime_error("unexpected unroll attribute");
 			}
-		}
-		else
-			loopControl = SpirvLoopControl::None;
+			else
+				return SpirvLoopControl::None;
+		}();
 
 		m_currentBlock->Append(SpirvOp::OpLoopMerge, mergeBlock->GetLabelId(), bodyBlock->GetLabelId(), loopControl);
 		m_currentBlock->Append(SpirvOp::OpBranchConditional, expressionId, bodyBlock->GetLabelId(), mergeBlock->GetLabelId());

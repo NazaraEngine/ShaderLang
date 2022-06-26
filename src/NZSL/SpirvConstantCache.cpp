@@ -803,30 +803,24 @@ namespace nzsl
 		imageType.sampled = true;
 		imageType.sampledType = BuildType(type.sampledType);
 
-		switch (type.dim)
+		imageType.dim = [&]
 		{
-			case ImageType::Cubemap:
-				imageType.dim = SpirvDim::Cube;
-				break;
+			switch (type.dim)
+			{
+				case ImageType::Cubemap: return SpirvDim::Cube;
+				case ImageType::E1D_Array:
+					imageType.arrayed = true;
+					[[fallthrough]];
+				case ImageType::E1D: return SpirvDim::Dim1D;
+				case ImageType::E2D_Array:
+					imageType.arrayed = true;
+					[[fallthrough]];
+				case ImageType::E2D: return SpirvDim::Dim2D;
+				case ImageType::E3D: return SpirvDim::Dim3D;
+			}
 
-			case ImageType::E1D_Array:
-				imageType.arrayed = true;
-				[[fallthrough]];
-			case ImageType::E1D:
-				imageType.dim = SpirvDim::Dim1D;
-				break;
-
-			case ImageType::E2D_Array:
-				imageType.arrayed = true;
-				[[fallthrough]];
-			case ImageType::E2D:
-				imageType.dim = SpirvDim::Dim2D;
-				break;
-
-			case ImageType::E3D:
-				imageType.dim = SpirvDim::Dim3D;
-				break;
-		}
+			throw std::runtime_error("unhandled image dimension");
+		}();
 
 		return std::make_shared<Type>(SampledImage{ std::make_shared<Type>(imageType) });
 	}

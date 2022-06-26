@@ -243,16 +243,12 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 
 		outputFilePath /= m_inputFilePath.filename();
 
-		bool first = true;
-
 		const std::vector<std::string>& options = m_options["compile"].as<std::vector<std::string>>();
 		for (std::string_view outputType : options)
 		{
 			// TODO: Don't compile multiple times unnecessary (ex: glsl and glsl-header)
 			if (m_outputToStdout && options.size() > 1)
 				fmt::print("-- {}\n", outputType);
-
-			first = false;
 
 			m_outputHeader = EndsWith(outputType, "-header");
 			if (m_outputHeader)
