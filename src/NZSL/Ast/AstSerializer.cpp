@@ -832,6 +832,11 @@ namespace nzsl::Ast
 
 	void ShaderAstUnserializer::Type(ExpressionType& type)
 	{
+#ifdef NAZARA_COMPILER_GCC
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
+
 		std::uint8_t typeIndex;
 		Value(typeIndex);
 
@@ -1029,6 +1034,10 @@ namespace nzsl::Ast
 			default:
 				throw std::runtime_error("unexpected type index " + std::to_string(typeIndex));
 		}
+
+#ifdef NAZARA_COMPILER_GCC
+#pragma GCC diagnostic pop
+#endif
 	}
 
 	void ShaderAstUnserializer::Value(bool& val)

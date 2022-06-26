@@ -17,6 +17,11 @@
 #include <variant>
 #include <vector>
 
+#ifdef NAZARA_COMPILER_GCC
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
+
 namespace nzsl::Ast
 {
 	struct ContainedType;
@@ -248,6 +253,10 @@ namespace nzsl::Ast
 	std::string ToString(const UniformType& type, const Stringifier& stringifier = {});
 	std::string ToString(const VectorType& type, const Stringifier& stringifier = {});
 }
+
+#ifdef NAZARA_COMPILER_GCC
+#pragma GCC diagnostic pop
+#endif
 
 #include <NZSL/Ast/ExpressionType.inl>
 
