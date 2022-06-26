@@ -10,5 +10,10 @@ namespace nzsl
 	{
 		return m_currentCodepoint;
 	}
+
+	inline void SpirvDecoder::ResetPtr(const std::uint32_t* codepoint)
+	{
+		m_currentCodepoint = codepoint;
+	}
 }
 

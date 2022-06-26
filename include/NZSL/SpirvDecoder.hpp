@@ -40,6 +40,8 @@ namespace nzsl
 			std::string ReadString();
 			std::uint32_t ReadWord();
 
+			inline void ResetPtr(const std::uint32_t* codepoint);
+
 			struct SpirvHeader
 			{
 				std::uint32_t generatorId;
