@@ -35,7 +35,7 @@ if has_config("with_nzslc") then
 	add_requires("cxxopts", "nlohmann_json")
 end
 
-add_includedirs("include", "thirdparty/include", "src")
+add_includedirs("include", "src")
 set_languages("c89", "c++17")
 set_rundir("./bin/$(plat)_$(arch)_$(mode)")
 set_targetdir("./bin/$(plat)_$(arch)_$(mode)")

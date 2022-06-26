@@ -11,7 +11,6 @@
 #include <NZSL/SpirvExpressionStore.hpp>
 #include <NZSL/SpirvSection.hpp>
 #include <NZSL/SpirvWriter.hpp>
-#include <SpirV/GLSL.std.450.h>
 
 namespace nzsl
 {
@@ -756,7 +755,7 @@ namespace nzsl
 				std::uint32_t secondParam = EvaluateExpression(*node.parameters[1]);
 				std::uint32_t resultId = m_writer.AllocateResultId();
 
-				m_currentBlock->Append(SpirvOp::OpExtInst, typeId, resultId, glslInstructionSet, GLSLstd450Cross, firstParam, secondParam);
+				m_currentBlock->Append(SpirvOp::OpExtInst, typeId, resultId, glslInstructionSet, SpirvGlslStd450Op::Cross, firstParam, secondParam);
 				PushResultId(resultId);
 				return;
 			}
@@ -793,7 +792,7 @@ namespace nzsl
 				std::uint32_t param = EvaluateExpression(*node.parameters[0]);
 				std::uint32_t resultId = m_writer.AllocateResultId();
 
-				m_currentBlock->Append(SpirvOp::OpExtInst, typeId, resultId, glslInstructionSet, GLSLstd450Exp, param);
+				m_currentBlock->Append(SpirvOp::OpExtInst, typeId, resultId, glslInstructionSet, SpirvGlslStd450Op::Exp, param);
 				PushResultId(resultId);
 				return;
 			}
@@ -807,7 +806,7 @@ namespace nzsl
 				std::uint32_t param = EvaluateExpression(*node.parameters[0]);
 				std::uint32_t resultId = m_writer.AllocateResultId();
 
-				m_currentBlock->Append(SpirvOp::OpExtInst, typeId, resultId, glslInstructionSet, GLSLstd450MatrixInverse, param);
+				m_currentBlock->Append(SpirvOp::OpExtInst, typeId, resultId, glslInstructionSet, SpirvGlslStd450Op::MatrixInverse, param);
 				PushResultId(resultId);
 				return;
 			}
@@ -827,7 +826,7 @@ namespace nzsl
 
 				std::uint32_t resultId = m_writer.AllocateResultId();
 
-				m_currentBlock->Append(SpirvOp::OpExtInst, typeId, resultId, glslInstructionSet, GLSLstd450Length, vec);
+				m_currentBlock->Append(SpirvOp::OpExtInst, typeId, resultId, glslInstructionSet, SpirvGlslStd450Op::Length, vec);
 				PushResultId(resultId);
 				return;
 			}
@@ -850,22 +849,22 @@ namespace nzsl
 				else
 					throw std::runtime_error("unexpected expression type");
 
-				GLSLstd450 op;
+				SpirvGlslStd450Op op;
 				switch (basicType)
 				{
 					case Ast::PrimitiveType::Boolean:
 						throw std::runtime_error("unexpected boolean for max/min intrinsic");
 
 					case Ast::PrimitiveType::Float32:
-						op = (node.intrinsic == Ast::IntrinsicType::Max) ? GLSLstd450FMax : GLSLstd450FMin;
+						op = (node.intrinsic == Ast::IntrinsicType::Max) ? SpirvGlslStd450Op::FMax : SpirvGlslStd450Op::FMin;
 						break;
 
 					case Ast::PrimitiveType::Int32:
-						op = (node.intrinsic == Ast::IntrinsicType::Max) ? GLSLstd450SMax : GLSLstd450SMin;
+						op = (node.intrinsic == Ast::IntrinsicType::Max) ? SpirvGlslStd450Op::SMax : SpirvGlslStd450Op::SMin;
 						break;
 
 					case Ast::PrimitiveType::UInt32:
-						op = (node.intrinsic == Ast::IntrinsicType::Max) ? GLSLstd450UMax : GLSLstd450UMin;
+						op = (node.intrinsic == Ast::IntrinsicType::Max) ? SpirvGlslStd450Op::UMax : SpirvGlslStd450Op::UMin;
 						break;
 
 					case Ast::PrimitiveType::String:
@@ -896,7 +895,7 @@ namespace nzsl
 
 				std::uint32_t resultId = m_writer.AllocateResultId();
 
-				m_currentBlock->Append(SpirvOp::OpExtInst, typeId, resultId, glslInstructionSet, GLSLstd450Normalize, vec);
+				m_currentBlock->Append(SpirvOp::OpExtInst, typeId, resultId, glslInstructionSet, SpirvGlslStd450Op::Normalize, vec);
 				PushResultId(resultId);
 				return;
 			}
@@ -914,7 +913,7 @@ namespace nzsl
 				std::uint32_t secondParam = EvaluateExpression(*node.parameters[1]);
 				std::uint32_t resultId = m_writer.AllocateResultId();
 
-				m_currentBlock->Append(SpirvOp::OpExtInst, typeId, resultId, glslInstructionSet, GLSLstd450Pow, firstParam, secondParam);
+				m_currentBlock->Append(SpirvOp::OpExtInst, typeId, resultId, glslInstructionSet, SpirvGlslStd450Op::Pow, firstParam, secondParam);
 				PushResultId(resultId);
 				return;
 			}
@@ -932,7 +931,7 @@ namespace nzsl
 				std::uint32_t secondParam = EvaluateExpression(*node.parameters[1]);
 				std::uint32_t resultId = m_writer.AllocateResultId();
 
-				m_currentBlock->Append(SpirvOp::OpExtInst, typeId, resultId, glslInstructionSet, GLSLstd450Reflect, firstParam, secondParam);
+				m_currentBlock->Append(SpirvOp::OpExtInst, typeId, resultId, glslInstructionSet, SpirvGlslStd450Op::Reflect, firstParam, secondParam);
 				PushResultId(resultId);
 				return;
 			}

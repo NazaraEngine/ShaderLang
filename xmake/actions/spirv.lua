@@ -1,44 +1,97 @@
-local spirvGrammarURI = "https://raw.githubusercontent.com/KhronosGroup/SPIRV-Headers/master/include/spirv/unified1/spirv.core.grammar.json"
+local baseURL = "https://raw.githubusercontent.com/KhronosGroup/SPIRV-Headers/master/include/spirv/unified1/"
+
+local grammars = {
+	{
+		Name = "Core",
+		Filename = "spirv.core.grammar.json"
+	},
+	{
+		Name = "GlslStd450",
+		Filename = "extinst.glsl.std.450.grammar.json"
+	}
+}
+
+local extPriority = {
+	KHR = 1,
+	EXT = 2,
+	AMD = 3,
+	NV = 3,
+	GOOGLE = 3,
+	INTEL = 3
+}
 
 task("update-spirv")
 
 set_menu({
 	-- Settings menu usage
 	usage = "xmake update-spirv [options]",
-	description = "Download and parse the SpirV grammar and updates the shader module files with it"
+	description = "Download and parse the SpirV grammar and updates the shader module files with it",
+	options = {}
 })
 
 on_run(function()
 	import("core.base.json")
 	import("net.http")
 
-	io.write("Downloading Spir-V grammar... ")
-	io.flush()
-	
-	local tempGrammar = os.tmpfile() .. ".spirv.core.grammar.json"
+	for _, grammarData in pairs(grammars) do
+		io.write("Downloading " .. grammarData.Name .. "... ")
+		io.flush()
 
-	http.download(spirvGrammarURI, tempGrammar)
-	
-	print("Done")
-	io.flush()
+		local tempFile = os.tmpfile() .. "." .. grammarData.Filename
+		http.download(baseURL .. grammarData.Filename, tempFile)
+
+		print("Done")
+		io.flush()
+
+		grammarData.File = tempFile
+	end
 
 	io.write("Parsing... ")
 	io.flush()
 
-	local content = io.readfile(tempGrammar)
-
-	local result, err = json.decode(content)
-	assert(result, err)
-
+	local core
 	local instructions = {}
-	local instructionById = {}
-	for _, instruction in pairs(result.instructions) do
-		local duplicateId = instructionById[instruction.opcode]
-		if (duplicateId == nil) then
-			table.insert(instructions, instruction)
-			instructionById[instruction.opcode] = #instructions
-		else
-			instructions[duplicateId] = instruction
+	for _, grammarData in pairs(grammars) do
+		local output, err = json.decode(io.readfile(grammarData.File))
+		assert(output, err)
+
+		grammarData.Data = output
+
+		local instructionById = {}
+		grammarData.InstructionStart = #instructions
+
+		local function GetExtPriority(name)
+			for ext, priority in pairs(extPriority) do
+				if name:sub(-#ext) == ext then
+					return priority
+				end
+			end
+
+			return 0
+		end
+
+		-- Duplication occurs when extensions are promoted
+		for _, instruction in pairs(grammarData.Data.instructions) do
+			local duplicateId = instructionById[instruction.opcode]
+			if duplicateId == nil then
+				table.insert(instructions, instruction)
+				instructionById[instruction.opcode] = grammarData.InstructionStart + #instructions
+			else
+				local currentPriority = GetExtPriority(instructions[duplicateId].opname)
+				local newPriority = GetExtPriority(instruction.opname)
+
+				if newPriority <= currentPriority then
+					assert(currentPriority ~= 0)
+					instructions[duplicateId] = instruction
+				end
+			end
+		end
+
+		grammarData.InstructionCount = #instructions - grammarData.InstructionStart
+
+		if grammarData.Name == "Core" then
+			assert(core == nil)
+			core = grammarData
 		end
 	end
 
@@ -79,47 +132,57 @@ on_run(function()
 		return firstId
 	end
 
-	local operandByInstruction = {}
-	for _, instruction in pairs(instructions) do
-		if instruction.operands then
-			local resultId
-			local firstId = RegisterOperands(instruction.operands)
-			local operandCount = #instruction.operands
-			for i, operand in pairs(instruction.operands) do
-				if operand.kind == "IdResult" then
-					assert(not resultId, "unexpected operand with two IdResult")
-					resultId = i - 1
+	for _, grammarData in pairs(grammars) do
+		local operandByInstruction = {}
+		for i = 1, grammarData.InstructionCount do
+			local instruction = instructions[grammarData.InstructionStart + i]
+			if instruction.operands then
+				local resultId
+				local firstId = RegisterOperands(instruction.operands)
+				if instruction.opcode == 1 then
+					print(instruction.opname, firstId)
 				end
-			end
+				local operandCount = #instruction.operands
+				for i, operand in pairs(instruction.operands) do
+					if operand.kind == "IdResult" then
+						assert(not resultId, "unexpected operand with two IdResult")
+						resultId = i - 1
+					end
+				end
 
-			operandByInstruction[instruction.opcode] = { firstId = firstId, count = operandCount, resultId = resultId }
+				operandByInstruction[instruction.opcode] = { firstId = firstId, count = operandCount, resultId = resultId }
+			end
 		end
+
+		grammarData.OperandByInstruction = operandByInstruction
 	end
 
 	local extraOperands = {}
-	for _, operand in pairs(result.operand_kinds) do
-		if operand.category == "ValueEnum" then
-			local enumName = "Spirv" .. operand.kind
+	for _, grammarData in pairs(grammars) do
+		for _, operand in pairs(grammarData.Data.operand_kinds) do
+			if operand.category == "ValueEnum" then
+				local enumName = "Spirv" .. operand.kind
 
-			local extraParams = {}
-			local seenValues = {}
-			for _, enumerant in pairs(operand.enumerants) do
-				local eName = enumerant.enumerant:match("^%d") and operand.kind .. enumerant.enumerant or enumerant.enumerant
-				if enumerant.parameters and not seenValues[enumerant.value] then
-					local firstId = RegisterOperands(enumerant.parameters)
-					local operandCount = #enumerant.parameters
+				local extraParams = {}
+				local seenValues = {}
+				for _, enumerant in pairs(operand.enumerants) do
+					local eName = enumerant.enumerant:match("^%d") and operand.kind .. enumerant.enumerant or enumerant.enumerant
+					if enumerant.parameters and not seenValues[enumerant.value] then
+						local firstId = RegisterOperands(enumerant.parameters)
+						local operandCount = #enumerant.parameters
 
-					table.insert(extraParams, {
-						name = eName,
-						id = firstId,
-						count = operandCount
-					})
-					seenValues[enumerant.value] = true
+						table.insert(extraParams, {
+							name = eName,
+							id = firstId,
+							count = operandCount
+						})
+						seenValues[enumerant.value] = true
+					end
 				end
-			end
 
-			if #extraParams > 0 then
-				extraOperands[enumName] = extraParams
+				if #extraParams > 0 then
+					extraOperands[enumName] = extraParams
+				end
 			end
 		end
 	end
@@ -131,7 +194,7 @@ on_run(function()
 	io.flush()
 
 	local headerFile = io.open("include/NZSL/SpirvData.hpp", "w+")
-	assert(headerFile, "failed to open Spir-V header")
+	assert(headerFile, "failed to open SPIR-V header")
 
 	headerFile:write([[
 // Copyright (C) ]] .. os.date("%Y") .. [[ Jérôme "Lynix" Leclercq (lynix680@gmail.com)
@@ -154,10 +217,10 @@ namespace nzsl
 {
 ]])
 
-	local magicNumber = result.magic_number
-	local majorVersion = assert(math.tointeger(result.major_version), "expected integer major version number")
-	local minorVersion = assert(math.tointeger(result.minor_version), "expected integer minor version number")
-	local revision = assert(math.tointeger(result.revision), "expected integer revision number")
+	local magicNumber = core.Data.magic_number
+	local majorVersion = assert(math.tointeger(core.Data.major_version), "expected integer major version number")
+	local minorVersion = assert(math.tointeger(core.Data.minor_version), "expected integer minor version number")
+	local revision = assert(math.tointeger(core.Data.revision), "expected integer revision number")
 
 	headerFile:write([[
 	constexpr std::uint32_t MakeSpirvVersion(std::uint32_t major, std::uint32_t minor)
@@ -174,20 +237,30 @@ namespace nzsl
 ]])
 
 	-- SpirV operations
-	headerFile:write([[
-	enum class SpirvOp
+	for _, grammarData in pairs(grammars) do
+		if grammarData == core then
+			grammarData.Prefix = ""
+		else
+			grammarData.Prefix = grammarData.Name
+		end
+
+		headerFile:write([[
+	enum class Spirv]] .. grammarData.Prefix .. [[Op
 	{
 ]])
 
-	for _, instruction in pairs(result.instructions) do
-		local value = assert(math.tointeger(instruction.opcode), "unexpected non-integer in opcode")
-		headerFile:write("\t\t" .. instruction.opname .. " = " .. value .. ",\n")
-	end
+		for i = 1, grammarData.InstructionCount do
+			local instruction = instructions[grammarData.InstructionStart + i]
+			local value = assert(math.tointeger(instruction.opcode), "unexpected non-integer in opcode")
+			headerFile:write("\t\t" .. instruction.opname .. " = " .. value .. ",\n")
+		end
 
-headerFile:write([[
+	headerFile:write([[
 	};
 
 ]])
+
+	end
 
 	-- SpirV operands
 	headerFile:write([[
@@ -195,7 +268,7 @@ headerFile:write([[
 	{
 ]])
 	
-	for _, operand in pairs(result.operand_kinds) do
+	for _, operand in pairs(core.Data.operand_kinds) do
 		headerFile:write("\t\t" .. operand.kind .. ",\n")
 	end
 
@@ -207,7 +280,7 @@ headerFile:write([[
 	-- SpirV enums
 	local valueEnums = {}
 	local flagEnums = {}
-	for _, operand in pairs(result.operand_kinds) do
+	for _, operand in pairs(core.Data.operand_kinds) do
 		if (operand.category == "ValueEnum" or operand.category == "BitEnum") then
 			local enumName = "Spirv" .. operand.kind
 			headerFile:write([[
@@ -256,37 +329,46 @@ headerFile:write([[
 
 	table.sort(valueEnums, function (a, b) return a.name < b.name end)
 
-	-- Struct
+	-- Structs
 	headerFile:write([[
-	struct SpirvInstruction
+	struct SpirvOperand
 	{
-		struct Operand
-		{
-			SpirvOperandKind kind;
-			const char* name;
-		};
-
-		SpirvOp op;
+		SpirvOperandKind kind;
 		const char* name;
-		const Operand* operands;
-		const Operand* resultOperand;
+	};
+
+]])
+	
+	for _, grammarData in pairs(grammars) do
+		headerFile:write([[
+	struct Spirv]] .. grammarData.Prefix .. [[Instruction
+	{
+		Spirv]] .. grammarData.Prefix .. [[Op op;
+		const char* name;
+		const SpirvOperand* operands;
+		const SpirvOperand* resultOperand;
 		std::size_t minOperandCount;
 	};
 
 ]])
+	end
 
 	-- Functions signatures
 	for _, enum in ipairs(valueEnums) do
 		headerFile:write([[
-	NZSL_API std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands(]] .. enum.name .. [[ kind);
+	NZSL_API std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands(]] .. enum.name .. [[ kind);
 ]])
 	end
 
-	headerFile:write([[
+	headerFile:write('\n')
 
-	NZSL_API const SpirvInstruction* GetSpirvInstruction(std::uint16_t op);
-
+	for _, grammarData in pairs(grammars) do
+		headerFile:write([[
+	NZSL_API const Spirv]] .. grammarData.Prefix .. [[Instruction* GetSpirv]] .. grammarData.Prefix .. [[Instruction(std::uint16_t op);
 ]])
+	end
+
+	headerFile:write('\n')
 
 	for _, enum in ipairs(valueEnums) do
 		headerFile:write([[
@@ -334,7 +416,7 @@ namespace Nz
 	headerFile:close()
 
 	local sourceFile = io.open("src/NZSL/SpirvData.cpp", "w+")
-	assert(sourceFile, "failed to open Spir-V source")
+	assert(sourceFile, "failed to open SPIR-V source")
 
 	sourceFile:write([[
 // Copyright (C) ]] .. os.date("%Y") .. [[ Jérôme "Lynix" Leclercq (lynix680@gmail.com)
@@ -350,7 +432,7 @@ namespace Nz
 
 namespace nzsl
 {
-	static constexpr std::array<SpirvInstruction::Operand, ]] .. #operands .. [[> s_operands = {
+	static constexpr std::array<SpirvOperand, ]] .. #operands .. [[> s_operands = {
 		{
 ]])
 	for _, operand in pairs(operands) do
@@ -366,83 +448,93 @@ namespace nzsl
 		}
 	};
 
-	static std::array<SpirvInstruction, ]] .. #instructions .. [[> s_instructions = {
+]])
+
+	for _, grammarData in pairs(grammars) do
+		sourceFile:write([[
+	static std::array<Spirv]] .. grammarData.Prefix .. [[Instruction, ]] .. grammarData.InstructionCount .. [[> s_instructions]] .. grammarData.Prefix .. [[ = {
 		{
 ]])
 
-	for _, instruction in pairs(instructions) do
-		local opByInstruction = operandByInstruction[instruction.opcode]
-		local resultId = opByInstruction and opByInstruction.resultId or nil
+		for i = 1, grammarData.InstructionCount do
+			local instruction = instructions[grammarData.InstructionStart + i]
 
-		sourceFile:write([[
+			local opByInstruction = grammarData.OperandByInstruction[instruction.opcode]
+			local resultId = opByInstruction and opByInstruction.resultId or nil
+
+			sourceFile:write([[
 			{
-				SpirvOp::]] .. instruction.opname .. [[,
+				Spirv]] .. grammarData.Prefix .. [[Op::]] .. instruction.opname .. [[,
 				R"(]] .. instruction.opname .. [[)",
 				]] .. (opByInstruction and "&s_operands[" .. opByInstruction.firstId .. "]" or "nullptr") .. [[,
 				]] .. (resultId and "&s_operands[" .. opByInstruction.firstId + resultId .. "]" or "nullptr") .. [[,
 				]] .. (opByInstruction and opByInstruction.count or "0") .. [[,
 			},
 ]])
-	end
-
-	sourceFile:write([[
+		end
+		
+		sourceFile:write([[
 		}
 	};
 
 ]])
+	end
 
 	-- Extra operands
 	for _, enum in ipairs(valueEnums) do
 		sourceFile:write([[
 	
-		std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands(]] .. "[[maybe_unused]] "  .. enum.name .. [[ kind)
-		{
+	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands(]] .. "[[maybe_unused]] "  .. enum.name .. [[ kind)
+	{
 ]])
 
 			local extra = extraOperands[enum.name]
 			if extra then
 				sourceFile:write([[
-			switch(kind)
-			{
+		switch(kind)
+		{
 ]])
 				for _, extraparam in ipairs(extra) do
 					sourceFile:write([[
-				case ]] .. enum.name .. "::" .. extraparam.name .. [[:
-					return { &s_operands[]] .. extraparam.id .. [[], ]] .. extraparam.count .. [[ };
+			case ]] .. enum.name .. "::" .. extraparam.name .. [[:
+				return { &s_operands[]] .. extraparam.id .. [[], ]] .. extraparam.count .. [[ };
 ]])
 				end
 
 				sourceFile:write([[
-				default:
-					return { nullptr, 0 };
-			}
+			default:
+				return { nullptr, 0 };
+		}
 ]])
 			else
 				sourceFile:write([[
-			return { nullptr, 0 };
+		return { nullptr, 0 };
 ]])
 			end
 
 			sourceFile:write([[
-		}
+	}
 ]])
 	end
 
 	-- Operand to string
-	sourceFile:write([[
-	const SpirvInstruction* GetSpirvInstruction(std::uint16_t op)
+	for _, grammarData in pairs(grammars) do
+		sourceFile:write([[
+
+	const Spirv]] .. grammarData.Prefix .. [[Instruction* GetSpirv]] .. grammarData.Prefix .. [[Instruction(std::uint16_t op)
 	{
-		auto it = std::lower_bound(std::begin(s_instructions), std::end(s_instructions), op, [](const SpirvInstruction& inst, std::uint16_t op) { return std::uint16_t(inst.op) < op; });
-		if (it != std::end(s_instructions) && std::uint16_t(it->op) == op)
+		auto it = std::lower_bound(std::begin(s_instructions]] .. grammarData.Prefix .. [[), std::end(s_instructions]] .. grammarData.Prefix .. [[), op, [](const Spirv]] .. grammarData.Prefix .. [[Instruction& inst, std::uint16_t op) { return std::uint16_t(inst.op) < op; });
+		if (it != std::end(s_instructions]] .. grammarData.Prefix .. [[) && std::uint16_t(it->op) == op)
 			return &*it;
 		else
 			return nullptr;
 	}
 ]])
+	end
 
 	-- Enums to string
-for _, enum in ipairs(valueEnums) do
-	sourceFile:write([[
+	for _, enum in ipairs(valueEnums) do
+		sourceFile:write([[
 
 	std::string_view ToString(]] .. enum.name .. [[ value)
 	{
@@ -450,23 +542,23 @@ for _, enum in ipairs(valueEnums) do
 		{
 ]])
 
-	local presentValues = {}
-	for _, kv in ipairs(enum.values) do
-		if not presentValues[kv.v] then
-			sourceFile:write([[
+		local presentValues = {}
+		for _, kv in ipairs(enum.values) do
+			if not presentValues[kv.v] then
+				sourceFile:write([[
 			case ]] .. enum.name .. [[::]] .. kv.k .. [[: return R"(]] .. kv.k .. [[)";
 ]])
-			presentValues[kv.v] = true
+				presentValues[kv.v] = true
+			end
 		end
-	end
 
-	sourceFile:write([[
+		sourceFile:write([[
 		}
 
 		return "<unhandled value>";
 	}
 ]])
-end
+	end
 
 	sourceFile:write([[
 }

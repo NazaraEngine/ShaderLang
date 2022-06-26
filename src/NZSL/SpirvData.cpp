@@ -11,7 +11,7 @@
 
 namespace nzsl
 {
-	static constexpr std::array<SpirvInstruction::Operand, 1054> s_operands = {
+	static constexpr std::array<SpirvOperand, 1094> s_operands = {
 		{
 			{
 				SpirvOperandKind::IdResultType,
@@ -3942,6 +3942,166 @@ namespace nzsl
 				R"('AccessQualifier')"
 			},
 			{
+				SpirvOperandKind::IdRef,
+				R"('degrees')"
+			},
+			{
+				SpirvOperandKind::IdRef,
+				R"('radians')"
+			},
+			{
+				SpirvOperandKind::IdRef,
+				R"('y_over_x')"
+			},
+			{
+				SpirvOperandKind::IdRef,
+				R"('y')"
+			},
+			{
+				SpirvOperandKind::IdRef,
+				R"('x')"
+			},
+			{
+				SpirvOperandKind::IdRef,
+				R"('x')"
+			},
+			{
+				SpirvOperandKind::IdRef,
+				R"('i')"
+			},
+			{
+				SpirvOperandKind::IdRef,
+				R"('x')"
+			},
+			{
+				SpirvOperandKind::IdRef,
+				R"('minVal')"
+			},
+			{
+				SpirvOperandKind::IdRef,
+				R"('maxVal')"
+			},
+			{
+				SpirvOperandKind::IdRef,
+				R"('x')"
+			},
+			{
+				SpirvOperandKind::IdRef,
+				R"('y')"
+			},
+			{
+				SpirvOperandKind::IdRef,
+				R"('a')"
+			},
+			{
+				SpirvOperandKind::IdRef,
+				R"('edge')"
+			},
+			{
+				SpirvOperandKind::IdRef,
+				R"('x')"
+			},
+			{
+				SpirvOperandKind::IdRef,
+				R"('edge0')"
+			},
+			{
+				SpirvOperandKind::IdRef,
+				R"('edge1')"
+			},
+			{
+				SpirvOperandKind::IdRef,
+				R"('x')"
+			},
+			{
+				SpirvOperandKind::IdRef,
+				R"('a')"
+			},
+			{
+				SpirvOperandKind::IdRef,
+				R"('b')"
+			},
+			{
+				SpirvOperandKind::IdRef,
+				R"('c')"
+			},
+			{
+				SpirvOperandKind::IdRef,
+				R"('x')"
+			},
+			{
+				SpirvOperandKind::IdRef,
+				R"('exp')"
+			},
+			{
+				SpirvOperandKind::IdRef,
+				R"('v')"
+			},
+			{
+				SpirvOperandKind::IdRef,
+				R"('p')"
+			},
+			{
+				SpirvOperandKind::IdRef,
+				R"('p0')"
+			},
+			{
+				SpirvOperandKind::IdRef,
+				R"('p1')"
+			},
+			{
+				SpirvOperandKind::IdRef,
+				R"('N')"
+			},
+			{
+				SpirvOperandKind::IdRef,
+				R"('I')"
+			},
+			{
+				SpirvOperandKind::IdRef,
+				R"('Nref')"
+			},
+			{
+				SpirvOperandKind::IdRef,
+				R"('I')"
+			},
+			{
+				SpirvOperandKind::IdRef,
+				R"('N')"
+			},
+			{
+				SpirvOperandKind::IdRef,
+				R"('I')"
+			},
+			{
+				SpirvOperandKind::IdRef,
+				R"('N')"
+			},
+			{
+				SpirvOperandKind::IdRef,
+				R"('eta')"
+			},
+			{
+				SpirvOperandKind::IdRef,
+				R"('interpolant')"
+			},
+			{
+				SpirvOperandKind::IdRef,
+				R"('interpolant')"
+			},
+			{
+				SpirvOperandKind::IdRef,
+				R"('sample')"
+			},
+			{
+				SpirvOperandKind::IdRef,
+				R"('interpolant')"
+			},
+			{
+				SpirvOperandKind::IdRef,
+				R"('offset')"
+			},
+			{
 				SpirvOperandKind::LiteralInteger,
 				R"('Number of <<Invocation,invocations>>')"
 			},
@@ -6742,43 +6902,43 @@ namespace nzsl
 				0,
 			},
 			{
-				SpirvOp::OpSDotKHR,
-				R"(OpSDotKHR)",
+				SpirvOp::OpSDot,
+				R"(OpSDot)",
 				&s_operands[522],
 				&s_operands[523],
 				5,
 			},
 			{
-				SpirvOp::OpUDotKHR,
-				R"(OpUDotKHR)",
+				SpirvOp::OpUDot,
+				R"(OpUDot)",
 				&s_operands[522],
 				&s_operands[523],
 				5,
 			},
 			{
-				SpirvOp::OpSUDotKHR,
-				R"(OpSUDotKHR)",
+				SpirvOp::OpSUDot,
+				R"(OpSUDot)",
 				&s_operands[522],
 				&s_operands[523],
 				5,
 			},
 			{
-				SpirvOp::OpSDotAccSatKHR,
-				R"(OpSDotAccSatKHR)",
+				SpirvOp::OpSDotAccSat,
+				R"(OpSDotAccSat)",
 				&s_operands[527],
 				&s_operands[528],
 				6,
 			},
 			{
-				SpirvOp::OpUDotAccSatKHR,
-				R"(OpUDotAccSatKHR)",
+				SpirvOp::OpUDotAccSat,
+				R"(OpUDotAccSat)",
 				&s_operands[527],
 				&s_operands[528],
 				6,
 			},
 			{
-				SpirvOp::OpSUDotAccSatKHR,
-				R"(OpSUDotAccSatKHR)",
+				SpirvOp::OpSUDotAccSat,
+				R"(OpSUDotAccSat)",
 				&s_operands[527],
 				&s_operands[528],
 				6,
@@ -7036,8 +7196,8 @@ namespace nzsl
 				0,
 			},
 			{
-				SpirvOp::OpDemoteToHelperInvocationEXT,
-				R"(OpDemoteToHelperInvocationEXT)",
+				SpirvOp::OpDemoteToHelperInvocation,
+				R"(OpDemoteToHelperInvocation)",
 				nullptr,
 				nullptr,
 				0,
@@ -7330,15 +7490,15 @@ namespace nzsl
 				4,
 			},
 			{
-				SpirvOp::OpDecorateStringGOOGLE,
-				R"(OpDecorateStringGOOGLE)",
+				SpirvOp::OpDecorateString,
+				R"(OpDecorateString)",
 				&s_operands[131],
 				nullptr,
 				2,
 			},
 			{
-				SpirvOp::OpMemberDecorateStringGOOGLE,
-				R"(OpMemberDecorateStringGOOGLE)",
+				SpirvOp::OpMemberDecorateString,
+				R"(OpMemberDecorateString)",
 				&s_operands[687],
 				nullptr,
 				3,
@@ -8844,316 +9004,898 @@ namespace nzsl
 		}
 	};
 
-	
-		std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvAccessQualifier kind)
+	static std::array<SpirvGlslStd450Instruction, 81> s_instructionsGlslStd450 = {
 		{
-			return { nullptr, 0 };
-		}
-	
-		std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvAddressingModel kind)
-		{
-			return { nullptr, 0 };
-		}
-	
-		std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvBuiltIn kind)
-		{
-			return { nullptr, 0 };
-		}
-	
-		std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvCapability kind)
-		{
-			return { nullptr, 0 };
-		}
-	
-		std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvDecoration kind)
-		{
-			switch(kind)
 			{
-				case SpirvDecoration::SpecId:
-					return { &s_operands[1004], 1 };
-				case SpirvDecoration::ArrayStride:
-					return { &s_operands[1005], 1 };
-				case SpirvDecoration::MatrixStride:
-					return { &s_operands[1006], 1 };
-				case SpirvDecoration::BuiltIn:
-					return { &s_operands[1007], 1 };
-				case SpirvDecoration::UniformId:
-					return { &s_operands[277], 1 };
-				case SpirvDecoration::Stream:
-					return { &s_operands[1008], 1 };
-				case SpirvDecoration::Location:
-					return { &s_operands[1009], 1 };
-				case SpirvDecoration::Component:
-					return { &s_operands[1010], 1 };
-				case SpirvDecoration::Index:
-					return { &s_operands[1011], 1 };
-				case SpirvDecoration::Binding:
-					return { &s_operands[1012], 1 };
-				case SpirvDecoration::DescriptorSet:
-					return { &s_operands[1013], 1 };
-				case SpirvDecoration::Offset:
-					return { &s_operands[1014], 1 };
-				case SpirvDecoration::XfbBuffer:
-					return { &s_operands[1015], 1 };
-				case SpirvDecoration::XfbStride:
-					return { &s_operands[1016], 1 };
-				case SpirvDecoration::FuncParamAttr:
-					return { &s_operands[1017], 1 };
-				case SpirvDecoration::FPRoundingMode:
-					return { &s_operands[1018], 1 };
-				case SpirvDecoration::FPFastMathMode:
-					return { &s_operands[1019], 1 };
-				case SpirvDecoration::LinkageAttributes:
-					return { &s_operands[1020], 2 };
-				case SpirvDecoration::InputAttachmentIndex:
-					return { &s_operands[1022], 1 };
-				case SpirvDecoration::Alignment:
-					return { &s_operands[1023], 1 };
-				case SpirvDecoration::MaxByteOffset:
-					return { &s_operands[1024], 1 };
-				case SpirvDecoration::AlignmentId:
-					return { &s_operands[1025], 1 };
-				case SpirvDecoration::MaxByteOffsetId:
-					return { &s_operands[1026], 1 };
-				case SpirvDecoration::SecondaryViewportRelativeNV:
-					return { &s_operands[1027], 1 };
-				case SpirvDecoration::SIMTCallINTEL:
-					return { &s_operands[1028], 1 };
-				case SpirvDecoration::ClobberINTEL:
-					return { &s_operands[1029], 1 };
-				case SpirvDecoration::FuncParamIOKindINTEL:
-					return { &s_operands[1030], 1 };
-				case SpirvDecoration::GlobalVariableOffsetINTEL:
-					return { &s_operands[1027], 1 };
-				case SpirvDecoration::CounterBuffer:
-					return { &s_operands[1031], 1 };
-				case SpirvDecoration::UserSemantic:
-					return { &s_operands[1032], 1 };
-				case SpirvDecoration::UserTypeGOOGLE:
-					return { &s_operands[1033], 1 };
-				case SpirvDecoration::FunctionRoundingModeINTEL:
-					return { &s_operands[1034], 2 };
-				case SpirvDecoration::FunctionDenormModeINTEL:
-					return { &s_operands[1036], 2 };
-				case SpirvDecoration::MemoryINTEL:
-					return { &s_operands[1038], 1 };
-				case SpirvDecoration::NumbanksINTEL:
-					return { &s_operands[1039], 1 };
-				case SpirvDecoration::BankwidthINTEL:
-					return { &s_operands[1040], 1 };
-				case SpirvDecoration::MaxPrivateCopiesINTEL:
-					return { &s_operands[1041], 1 };
-				case SpirvDecoration::MaxReplicatesINTEL:
-					return { &s_operands[1042], 1 };
-				case SpirvDecoration::MergeINTEL:
-					return { &s_operands[1043], 2 };
-				case SpirvDecoration::BankBitsINTEL:
-					return { &s_operands[1045], 1 };
-				case SpirvDecoration::ForcePow2DepthINTEL:
-					return { &s_operands[1046], 1 };
-				case SpirvDecoration::CacheSizeINTEL:
-					return { &s_operands[1047], 1 };
-				case SpirvDecoration::PrefetchINTEL:
-					return { &s_operands[1048], 1 };
-				case SpirvDecoration::AliasScopeINTEL:
-					return { &s_operands[1049], 1 };
-				case SpirvDecoration::NoAliasINTEL:
-					return { &s_operands[1049], 1 };
-				case SpirvDecoration::BufferLocationINTEL:
-					return { &s_operands[1050], 1 };
-				case SpirvDecoration::IOPipeStorageINTEL:
-					return { &s_operands[1051], 1 };
-				case SpirvDecoration::FunctionFloatingPointModeINTEL:
-					return { &s_operands[1052], 2 };
-				default:
-					return { nullptr, 0 };
-			}
-		}
-	
-		std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvDim kind)
-		{
-			return { nullptr, 0 };
-		}
-	
-		std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvExecutionMode kind)
-		{
-			switch(kind)
+				SpirvGlslStd450Op::Round,
+				R"(Round)",
+				&s_operands[248],
+				nullptr,
+				1,
+			},
 			{
-				case SpirvExecutionMode::Invocations:
-					return { &s_operands[980], 1 };
-				case SpirvExecutionMode::LocalSize:
-					return { &s_operands[981], 3 };
-				case SpirvExecutionMode::LocalSizeHint:
-					return { &s_operands[981], 3 };
-				case SpirvExecutionMode::OutputVertices:
-					return { &s_operands[984], 1 };
-				case SpirvExecutionMode::VecTypeHint:
-					return { &s_operands[985], 1 };
-				case SpirvExecutionMode::SubgroupSize:
-					return { &s_operands[986], 1 };
-				case SpirvExecutionMode::SubgroupsPerWorkgroup:
-					return { &s_operands[987], 1 };
-				case SpirvExecutionMode::SubgroupsPerWorkgroupId:
-					return { &s_operands[988], 1 };
-				case SpirvExecutionMode::LocalSizeId:
-					return { &s_operands[989], 3 };
-				case SpirvExecutionMode::LocalSizeHintId:
-					return { &s_operands[992], 3 };
-				case SpirvExecutionMode::DenormPreserve:
-					return { &s_operands[995], 1 };
-				case SpirvExecutionMode::DenormFlushToZero:
-					return { &s_operands[995], 1 };
-				case SpirvExecutionMode::SignedZeroInfNanPreserve:
-					return { &s_operands[995], 1 };
-				case SpirvExecutionMode::RoundingModeRTE:
-					return { &s_operands[995], 1 };
-				case SpirvExecutionMode::RoundingModeRTZ:
-					return { &s_operands[995], 1 };
-				case SpirvExecutionMode::OutputPrimitivesNV:
-					return { &s_operands[996], 1 };
-				case SpirvExecutionMode::SharedLocalMemorySizeINTEL:
-					return { &s_operands[320], 1 };
-				case SpirvExecutionMode::RoundingModeRTPINTEL:
-					return { &s_operands[995], 1 };
-				case SpirvExecutionMode::RoundingModeRTNINTEL:
-					return { &s_operands[995], 1 };
-				case SpirvExecutionMode::FloatingPointModeALTINTEL:
-					return { &s_operands[995], 1 };
-				case SpirvExecutionMode::FloatingPointModeIEEEINTEL:
-					return { &s_operands[995], 1 };
-				case SpirvExecutionMode::MaxWorkgroupSizeINTEL:
-					return { &s_operands[997], 3 };
-				case SpirvExecutionMode::MaxWorkDimINTEL:
-					return { &s_operands[1000], 1 };
-				case SpirvExecutionMode::NumSIMDWorkitemsINTEL:
-					return { &s_operands[1001], 1 };
-				case SpirvExecutionMode::SchedulerTargetFmaxMhzINTEL:
-					return { &s_operands[1002], 1 };
-				case SpirvExecutionMode::NamedBarrierCountINTEL:
-					return { &s_operands[1003], 1 };
-				default:
-					return { nullptr, 0 };
-			}
+				SpirvGlslStd450Op::RoundEven,
+				R"(RoundEven)",
+				&s_operands[248],
+				nullptr,
+				1,
+			},
+			{
+				SpirvGlslStd450Op::Trunc,
+				R"(Trunc)",
+				&s_operands[248],
+				nullptr,
+				1,
+			},
+			{
+				SpirvGlslStd450Op::FAbs,
+				R"(FAbs)",
+				&s_operands[248],
+				nullptr,
+				1,
+			},
+			{
+				SpirvGlslStd450Op::SAbs,
+				R"(SAbs)",
+				&s_operands[248],
+				nullptr,
+				1,
+			},
+			{
+				SpirvGlslStd450Op::FSign,
+				R"(FSign)",
+				&s_operands[248],
+				nullptr,
+				1,
+			},
+			{
+				SpirvGlslStd450Op::SSign,
+				R"(SSign)",
+				&s_operands[248],
+				nullptr,
+				1,
+			},
+			{
+				SpirvGlslStd450Op::Floor,
+				R"(Floor)",
+				&s_operands[248],
+				nullptr,
+				1,
+			},
+			{
+				SpirvGlslStd450Op::Ceil,
+				R"(Ceil)",
+				&s_operands[248],
+				nullptr,
+				1,
+			},
+			{
+				SpirvGlslStd450Op::Fract,
+				R"(Fract)",
+				&s_operands[248],
+				nullptr,
+				1,
+			},
+			{
+				SpirvGlslStd450Op::Radians,
+				R"(Radians)",
+				&s_operands[980],
+				nullptr,
+				1,
+			},
+			{
+				SpirvGlslStd450Op::Degrees,
+				R"(Degrees)",
+				&s_operands[981],
+				nullptr,
+				1,
+			},
+			{
+				SpirvGlslStd450Op::Sin,
+				R"(Sin)",
+				&s_operands[248],
+				nullptr,
+				1,
+			},
+			{
+				SpirvGlslStd450Op::Cos,
+				R"(Cos)",
+				&s_operands[248],
+				nullptr,
+				1,
+			},
+			{
+				SpirvGlslStd450Op::Tan,
+				R"(Tan)",
+				&s_operands[248],
+				nullptr,
+				1,
+			},
+			{
+				SpirvGlslStd450Op::Asin,
+				R"(Asin)",
+				&s_operands[248],
+				nullptr,
+				1,
+			},
+			{
+				SpirvGlslStd450Op::Acos,
+				R"(Acos)",
+				&s_operands[248],
+				nullptr,
+				1,
+			},
+			{
+				SpirvGlslStd450Op::Atan,
+				R"(Atan)",
+				&s_operands[982],
+				nullptr,
+				1,
+			},
+			{
+				SpirvGlslStd450Op::Sinh,
+				R"(Sinh)",
+				&s_operands[248],
+				nullptr,
+				1,
+			},
+			{
+				SpirvGlslStd450Op::Cosh,
+				R"(Cosh)",
+				&s_operands[248],
+				nullptr,
+				1,
+			},
+			{
+				SpirvGlslStd450Op::Tanh,
+				R"(Tanh)",
+				&s_operands[248],
+				nullptr,
+				1,
+			},
+			{
+				SpirvGlslStd450Op::Asinh,
+				R"(Asinh)",
+				&s_operands[248],
+				nullptr,
+				1,
+			},
+			{
+				SpirvGlslStd450Op::Acosh,
+				R"(Acosh)",
+				&s_operands[248],
+				nullptr,
+				1,
+			},
+			{
+				SpirvGlslStd450Op::Atanh,
+				R"(Atanh)",
+				&s_operands[248],
+				nullptr,
+				1,
+			},
+			{
+				SpirvGlslStd450Op::Atan2,
+				R"(Atan2)",
+				&s_operands[983],
+				nullptr,
+				2,
+			},
+			{
+				SpirvGlslStd450Op::Pow,
+				R"(Pow)",
+				&s_operands[251],
+				nullptr,
+				2,
+			},
+			{
+				SpirvGlslStd450Op::Exp,
+				R"(Exp)",
+				&s_operands[248],
+				nullptr,
+				1,
+			},
+			{
+				SpirvGlslStd450Op::Log,
+				R"(Log)",
+				&s_operands[248],
+				nullptr,
+				1,
+			},
+			{
+				SpirvGlslStd450Op::Exp2,
+				R"(Exp2)",
+				&s_operands[248],
+				nullptr,
+				1,
+			},
+			{
+				SpirvGlslStd450Op::Log2,
+				R"(Log2)",
+				&s_operands[248],
+				nullptr,
+				1,
+			},
+			{
+				SpirvGlslStd450Op::Sqrt,
+				R"(Sqrt)",
+				&s_operands[248],
+				nullptr,
+				1,
+			},
+			{
+				SpirvGlslStd450Op::InverseSqrt,
+				R"(InverseSqrt)",
+				&s_operands[248],
+				nullptr,
+				1,
+			},
+			{
+				SpirvGlslStd450Op::Determinant,
+				R"(Determinant)",
+				&s_operands[248],
+				nullptr,
+				1,
+			},
+			{
+				SpirvGlslStd450Op::MatrixInverse,
+				R"(MatrixInverse)",
+				&s_operands[248],
+				nullptr,
+				1,
+			},
+			{
+				SpirvGlslStd450Op::Modf,
+				R"(Modf)",
+				&s_operands[985],
+				nullptr,
+				2,
+			},
+			{
+				SpirvGlslStd450Op::ModfStruct,
+				R"(ModfStruct)",
+				&s_operands[248],
+				nullptr,
+				1,
+			},
+			{
+				SpirvGlslStd450Op::FMin,
+				R"(FMin)",
+				&s_operands[251],
+				nullptr,
+				2,
+			},
+			{
+				SpirvGlslStd450Op::UMin,
+				R"(UMin)",
+				&s_operands[251],
+				nullptr,
+				2,
+			},
+			{
+				SpirvGlslStd450Op::SMin,
+				R"(SMin)",
+				&s_operands[251],
+				nullptr,
+				2,
+			},
+			{
+				SpirvGlslStd450Op::FMax,
+				R"(FMax)",
+				&s_operands[251],
+				nullptr,
+				2,
+			},
+			{
+				SpirvGlslStd450Op::UMax,
+				R"(UMax)",
+				&s_operands[251],
+				nullptr,
+				2,
+			},
+			{
+				SpirvGlslStd450Op::SMax,
+				R"(SMax)",
+				&s_operands[251],
+				nullptr,
+				2,
+			},
+			{
+				SpirvGlslStd450Op::FClamp,
+				R"(FClamp)",
+				&s_operands[987],
+				nullptr,
+				3,
+			},
+			{
+				SpirvGlslStd450Op::UClamp,
+				R"(UClamp)",
+				&s_operands[987],
+				nullptr,
+				3,
+			},
+			{
+				SpirvGlslStd450Op::SClamp,
+				R"(SClamp)",
+				&s_operands[987],
+				nullptr,
+				3,
+			},
+			{
+				SpirvGlslStd450Op::FMix,
+				R"(FMix)",
+				&s_operands[990],
+				nullptr,
+				3,
+			},
+			{
+				SpirvGlslStd450Op::IMix,
+				R"(IMix)",
+				&s_operands[990],
+				nullptr,
+				3,
+			},
+			{
+				SpirvGlslStd450Op::Step,
+				R"(Step)",
+				&s_operands[993],
+				nullptr,
+				2,
+			},
+			{
+				SpirvGlslStd450Op::SmoothStep,
+				R"(SmoothStep)",
+				&s_operands[995],
+				nullptr,
+				3,
+			},
+			{
+				SpirvGlslStd450Op::Fma,
+				R"(Fma)",
+				&s_operands[998],
+				nullptr,
+				3,
+			},
+			{
+				SpirvGlslStd450Op::Frexp,
+				R"(Frexp)",
+				&s_operands[1001],
+				nullptr,
+				2,
+			},
+			{
+				SpirvGlslStd450Op::FrexpStruct,
+				R"(FrexpStruct)",
+				&s_operands[248],
+				nullptr,
+				1,
+			},
+			{
+				SpirvGlslStd450Op::Ldexp,
+				R"(Ldexp)",
+				&s_operands[1001],
+				nullptr,
+				2,
+			},
+			{
+				SpirvGlslStd450Op::PackSnorm4x8,
+				R"(PackSnorm4x8)",
+				&s_operands[1003],
+				nullptr,
+				1,
+			},
+			{
+				SpirvGlslStd450Op::PackUnorm4x8,
+				R"(PackUnorm4x8)",
+				&s_operands[1003],
+				nullptr,
+				1,
+			},
+			{
+				SpirvGlslStd450Op::PackSnorm2x16,
+				R"(PackSnorm2x16)",
+				&s_operands[1003],
+				nullptr,
+				1,
+			},
+			{
+				SpirvGlslStd450Op::PackUnorm2x16,
+				R"(PackUnorm2x16)",
+				&s_operands[1003],
+				nullptr,
+				1,
+			},
+			{
+				SpirvGlslStd450Op::PackHalf2x16,
+				R"(PackHalf2x16)",
+				&s_operands[1003],
+				nullptr,
+				1,
+			},
+			{
+				SpirvGlslStd450Op::PackDouble2x32,
+				R"(PackDouble2x32)",
+				&s_operands[1003],
+				nullptr,
+				1,
+			},
+			{
+				SpirvGlslStd450Op::UnpackSnorm2x16,
+				R"(UnpackSnorm2x16)",
+				&s_operands[1004],
+				nullptr,
+				1,
+			},
+			{
+				SpirvGlslStd450Op::UnpackUnorm2x16,
+				R"(UnpackUnorm2x16)",
+				&s_operands[1004],
+				nullptr,
+				1,
+			},
+			{
+				SpirvGlslStd450Op::UnpackHalf2x16,
+				R"(UnpackHalf2x16)",
+				&s_operands[1003],
+				nullptr,
+				1,
+			},
+			{
+				SpirvGlslStd450Op::UnpackSnorm4x8,
+				R"(UnpackSnorm4x8)",
+				&s_operands[1004],
+				nullptr,
+				1,
+			},
+			{
+				SpirvGlslStd450Op::UnpackUnorm4x8,
+				R"(UnpackUnorm4x8)",
+				&s_operands[1004],
+				nullptr,
+				1,
+			},
+			{
+				SpirvGlslStd450Op::UnpackDouble2x32,
+				R"(UnpackDouble2x32)",
+				&s_operands[1003],
+				nullptr,
+				1,
+			},
+			{
+				SpirvGlslStd450Op::Length,
+				R"(Length)",
+				&s_operands[248],
+				nullptr,
+				1,
+			},
+			{
+				SpirvGlslStd450Op::Distance,
+				R"(Distance)",
+				&s_operands[1005],
+				nullptr,
+				2,
+			},
+			{
+				SpirvGlslStd450Op::Cross,
+				R"(Cross)",
+				&s_operands[251],
+				nullptr,
+				2,
+			},
+			{
+				SpirvGlslStd450Op::Normalize,
+				R"(Normalize)",
+				&s_operands[248],
+				nullptr,
+				1,
+			},
+			{
+				SpirvGlslStd450Op::FaceForward,
+				R"(FaceForward)",
+				&s_operands[1007],
+				nullptr,
+				3,
+			},
+			{
+				SpirvGlslStd450Op::Reflect,
+				R"(Reflect)",
+				&s_operands[1010],
+				nullptr,
+				2,
+			},
+			{
+				SpirvGlslStd450Op::Refract,
+				R"(Refract)",
+				&s_operands[1012],
+				nullptr,
+				3,
+			},
+			{
+				SpirvGlslStd450Op::FindILsb,
+				R"(FindILsb)",
+				&s_operands[214],
+				nullptr,
+				1,
+			},
+			{
+				SpirvGlslStd450Op::FindSMsb,
+				R"(FindSMsb)",
+				&s_operands[214],
+				nullptr,
+				1,
+			},
+			{
+				SpirvGlslStd450Op::FindUMsb,
+				R"(FindUMsb)",
+				&s_operands[214],
+				nullptr,
+				1,
+			},
+			{
+				SpirvGlslStd450Op::InterpolateAtCentroid,
+				R"(InterpolateAtCentroid)",
+				&s_operands[1015],
+				nullptr,
+				1,
+			},
+			{
+				SpirvGlslStd450Op::InterpolateAtSample,
+				R"(InterpolateAtSample)",
+				&s_operands[1016],
+				nullptr,
+				2,
+			},
+			{
+				SpirvGlslStd450Op::InterpolateAtOffset,
+				R"(InterpolateAtOffset)",
+				&s_operands[1018],
+				nullptr,
+				2,
+			},
+			{
+				SpirvGlslStd450Op::NMin,
+				R"(NMin)",
+				&s_operands[251],
+				nullptr,
+				2,
+			},
+			{
+				SpirvGlslStd450Op::NMax,
+				R"(NMax)",
+				&s_operands[251],
+				nullptr,
+				2,
+			},
+			{
+				SpirvGlslStd450Op::NClamp,
+				R"(NClamp)",
+				&s_operands[987],
+				nullptr,
+				3,
+			},
 		}
+	};
+
 	
-		std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvExecutionModel kind)
-		{
-			return { nullptr, 0 };
-		}
+	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvAccessQualifier kind)
+	{
+		return { nullptr, 0 };
+	}
 	
-		std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvFPDenormMode kind)
-		{
-			return { nullptr, 0 };
-		}
+	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvAddressingModel kind)
+	{
+		return { nullptr, 0 };
+	}
 	
-		std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvFPOperationMode kind)
-		{
-			return { nullptr, 0 };
-		}
+	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvBuiltIn kind)
+	{
+		return { nullptr, 0 };
+	}
 	
-		std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvFPRoundingMode kind)
-		{
-			return { nullptr, 0 };
-		}
+	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvCapability kind)
+	{
+		return { nullptr, 0 };
+	}
 	
-		std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvFunctionParameterAttribute kind)
+	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvDecoration kind)
+	{
+		switch(kind)
 		{
-			return { nullptr, 0 };
+			case SpirvDecoration::SpecId:
+				return { &s_operands[1044], 1 };
+			case SpirvDecoration::ArrayStride:
+				return { &s_operands[1045], 1 };
+			case SpirvDecoration::MatrixStride:
+				return { &s_operands[1046], 1 };
+			case SpirvDecoration::BuiltIn:
+				return { &s_operands[1047], 1 };
+			case SpirvDecoration::UniformId:
+				return { &s_operands[277], 1 };
+			case SpirvDecoration::Stream:
+				return { &s_operands[1048], 1 };
+			case SpirvDecoration::Location:
+				return { &s_operands[1049], 1 };
+			case SpirvDecoration::Component:
+				return { &s_operands[1050], 1 };
+			case SpirvDecoration::Index:
+				return { &s_operands[1051], 1 };
+			case SpirvDecoration::Binding:
+				return { &s_operands[1052], 1 };
+			case SpirvDecoration::DescriptorSet:
+				return { &s_operands[1053], 1 };
+			case SpirvDecoration::Offset:
+				return { &s_operands[1054], 1 };
+			case SpirvDecoration::XfbBuffer:
+				return { &s_operands[1055], 1 };
+			case SpirvDecoration::XfbStride:
+				return { &s_operands[1056], 1 };
+			case SpirvDecoration::FuncParamAttr:
+				return { &s_operands[1057], 1 };
+			case SpirvDecoration::FPRoundingMode:
+				return { &s_operands[1058], 1 };
+			case SpirvDecoration::FPFastMathMode:
+				return { &s_operands[1059], 1 };
+			case SpirvDecoration::LinkageAttributes:
+				return { &s_operands[1060], 2 };
+			case SpirvDecoration::InputAttachmentIndex:
+				return { &s_operands[1062], 1 };
+			case SpirvDecoration::Alignment:
+				return { &s_operands[1063], 1 };
+			case SpirvDecoration::MaxByteOffset:
+				return { &s_operands[1064], 1 };
+			case SpirvDecoration::AlignmentId:
+				return { &s_operands[1065], 1 };
+			case SpirvDecoration::MaxByteOffsetId:
+				return { &s_operands[1066], 1 };
+			case SpirvDecoration::SecondaryViewportRelativeNV:
+				return { &s_operands[1067], 1 };
+			case SpirvDecoration::SIMTCallINTEL:
+				return { &s_operands[1068], 1 };
+			case SpirvDecoration::ClobberINTEL:
+				return { &s_operands[1069], 1 };
+			case SpirvDecoration::FuncParamIOKindINTEL:
+				return { &s_operands[1070], 1 };
+			case SpirvDecoration::GlobalVariableOffsetINTEL:
+				return { &s_operands[1067], 1 };
+			case SpirvDecoration::CounterBuffer:
+				return { &s_operands[1071], 1 };
+			case SpirvDecoration::UserSemantic:
+				return { &s_operands[1072], 1 };
+			case SpirvDecoration::UserTypeGOOGLE:
+				return { &s_operands[1073], 1 };
+			case SpirvDecoration::FunctionRoundingModeINTEL:
+				return { &s_operands[1074], 2 };
+			case SpirvDecoration::FunctionDenormModeINTEL:
+				return { &s_operands[1076], 2 };
+			case SpirvDecoration::MemoryINTEL:
+				return { &s_operands[1078], 1 };
+			case SpirvDecoration::NumbanksINTEL:
+				return { &s_operands[1079], 1 };
+			case SpirvDecoration::BankwidthINTEL:
+				return { &s_operands[1080], 1 };
+			case SpirvDecoration::MaxPrivateCopiesINTEL:
+				return { &s_operands[1081], 1 };
+			case SpirvDecoration::MaxReplicatesINTEL:
+				return { &s_operands[1082], 1 };
+			case SpirvDecoration::MergeINTEL:
+				return { &s_operands[1083], 2 };
+			case SpirvDecoration::BankBitsINTEL:
+				return { &s_operands[1085], 1 };
+			case SpirvDecoration::ForcePow2DepthINTEL:
+				return { &s_operands[1086], 1 };
+			case SpirvDecoration::CacheSizeINTEL:
+				return { &s_operands[1087], 1 };
+			case SpirvDecoration::PrefetchINTEL:
+				return { &s_operands[1088], 1 };
+			case SpirvDecoration::AliasScopeINTEL:
+				return { &s_operands[1089], 1 };
+			case SpirvDecoration::NoAliasINTEL:
+				return { &s_operands[1089], 1 };
+			case SpirvDecoration::BufferLocationINTEL:
+				return { &s_operands[1090], 1 };
+			case SpirvDecoration::IOPipeStorageINTEL:
+				return { &s_operands[1091], 1 };
+			case SpirvDecoration::FunctionFloatingPointModeINTEL:
+				return { &s_operands[1092], 2 };
+			default:
+				return { nullptr, 0 };
 		}
+	}
 	
-		std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvGroupOperation kind)
-		{
-			return { nullptr, 0 };
-		}
+	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvDim kind)
+	{
+		return { nullptr, 0 };
+	}
 	
-		std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvImageChannelDataType kind)
+	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvExecutionMode kind)
+	{
+		switch(kind)
 		{
-			return { nullptr, 0 };
+			case SpirvExecutionMode::Invocations:
+				return { &s_operands[1020], 1 };
+			case SpirvExecutionMode::LocalSize:
+				return { &s_operands[1021], 3 };
+			case SpirvExecutionMode::LocalSizeHint:
+				return { &s_operands[1021], 3 };
+			case SpirvExecutionMode::OutputVertices:
+				return { &s_operands[1024], 1 };
+			case SpirvExecutionMode::VecTypeHint:
+				return { &s_operands[1025], 1 };
+			case SpirvExecutionMode::SubgroupSize:
+				return { &s_operands[1026], 1 };
+			case SpirvExecutionMode::SubgroupsPerWorkgroup:
+				return { &s_operands[1027], 1 };
+			case SpirvExecutionMode::SubgroupsPerWorkgroupId:
+				return { &s_operands[1028], 1 };
+			case SpirvExecutionMode::LocalSizeId:
+				return { &s_operands[1029], 3 };
+			case SpirvExecutionMode::LocalSizeHintId:
+				return { &s_operands[1032], 3 };
+			case SpirvExecutionMode::DenormPreserve:
+				return { &s_operands[1035], 1 };
+			case SpirvExecutionMode::DenormFlushToZero:
+				return { &s_operands[1035], 1 };
+			case SpirvExecutionMode::SignedZeroInfNanPreserve:
+				return { &s_operands[1035], 1 };
+			case SpirvExecutionMode::RoundingModeRTE:
+				return { &s_operands[1035], 1 };
+			case SpirvExecutionMode::RoundingModeRTZ:
+				return { &s_operands[1035], 1 };
+			case SpirvExecutionMode::OutputPrimitivesNV:
+				return { &s_operands[1036], 1 };
+			case SpirvExecutionMode::SharedLocalMemorySizeINTEL:
+				return { &s_operands[320], 1 };
+			case SpirvExecutionMode::RoundingModeRTPINTEL:
+				return { &s_operands[1035], 1 };
+			case SpirvExecutionMode::RoundingModeRTNINTEL:
+				return { &s_operands[1035], 1 };
+			case SpirvExecutionMode::FloatingPointModeALTINTEL:
+				return { &s_operands[1035], 1 };
+			case SpirvExecutionMode::FloatingPointModeIEEEINTEL:
+				return { &s_operands[1035], 1 };
+			case SpirvExecutionMode::MaxWorkgroupSizeINTEL:
+				return { &s_operands[1037], 3 };
+			case SpirvExecutionMode::MaxWorkDimINTEL:
+				return { &s_operands[1040], 1 };
+			case SpirvExecutionMode::NumSIMDWorkitemsINTEL:
+				return { &s_operands[1041], 1 };
+			case SpirvExecutionMode::SchedulerTargetFmaxMhzINTEL:
+				return { &s_operands[1042], 1 };
+			case SpirvExecutionMode::NamedBarrierCountINTEL:
+				return { &s_operands[1043], 1 };
+			default:
+				return { nullptr, 0 };
 		}
+	}
 	
-		std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvImageChannelOrder kind)
-		{
-			return { nullptr, 0 };
-		}
+	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvExecutionModel kind)
+	{
+		return { nullptr, 0 };
+	}
 	
-		std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvImageFormat kind)
-		{
-			return { nullptr, 0 };
-		}
+	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvFPDenormMode kind)
+	{
+		return { nullptr, 0 };
+	}
 	
-		std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvKernelEnqueueFlags kind)
-		{
-			return { nullptr, 0 };
-		}
+	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvFPOperationMode kind)
+	{
+		return { nullptr, 0 };
+	}
 	
-		std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvLinkageType kind)
-		{
-			return { nullptr, 0 };
-		}
+	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvFPRoundingMode kind)
+	{
+		return { nullptr, 0 };
+	}
 	
-		std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvMemoryModel kind)
-		{
-			return { nullptr, 0 };
-		}
+	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvFunctionParameterAttribute kind)
+	{
+		return { nullptr, 0 };
+	}
 	
-		std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvOverflowModes kind)
-		{
-			return { nullptr, 0 };
-		}
+	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvGroupOperation kind)
+	{
+		return { nullptr, 0 };
+	}
 	
-		std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvPackedVectorFormat kind)
-		{
-			return { nullptr, 0 };
-		}
+	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvImageChannelDataType kind)
+	{
+		return { nullptr, 0 };
+	}
 	
-		std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvQuantizationModes kind)
-		{
-			return { nullptr, 0 };
-		}
+	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvImageChannelOrder kind)
+	{
+		return { nullptr, 0 };
+	}
 	
-		std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvRayQueryCandidateIntersectionType kind)
-		{
-			return { nullptr, 0 };
-		}
+	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvImageFormat kind)
+	{
+		return { nullptr, 0 };
+	}
 	
-		std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvRayQueryCommittedIntersectionType kind)
-		{
-			return { nullptr, 0 };
-		}
+	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvKernelEnqueueFlags kind)
+	{
+		return { nullptr, 0 };
+	}
 	
-		std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvRayQueryIntersection kind)
-		{
-			return { nullptr, 0 };
-		}
+	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvLinkageType kind)
+	{
+		return { nullptr, 0 };
+	}
 	
-		std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvSamplerAddressingMode kind)
-		{
-			return { nullptr, 0 };
-		}
+	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvMemoryModel kind)
+	{
+		return { nullptr, 0 };
+	}
 	
-		std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvSamplerFilterMode kind)
-		{
-			return { nullptr, 0 };
-		}
+	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvOverflowModes kind)
+	{
+		return { nullptr, 0 };
+	}
 	
-		std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvScope kind)
-		{
-			return { nullptr, 0 };
-		}
+	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvPackedVectorFormat kind)
+	{
+		return { nullptr, 0 };
+	}
 	
-		std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvSourceLanguage kind)
-		{
-			return { nullptr, 0 };
-		}
+	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvQuantizationModes kind)
+	{
+		return { nullptr, 0 };
+	}
 	
-		std::pair<const SpirvInstruction::Operand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvStorageClass kind)
-		{
-			return { nullptr, 0 };
-		}
+	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvRayQueryCandidateIntersectionType kind)
+	{
+		return { nullptr, 0 };
+	}
+	
+	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvRayQueryCommittedIntersectionType kind)
+	{
+		return { nullptr, 0 };
+	}
+	
+	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvRayQueryIntersection kind)
+	{
+		return { nullptr, 0 };
+	}
+	
+	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvSamplerAddressingMode kind)
+	{
+		return { nullptr, 0 };
+	}
+	
+	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvSamplerFilterMode kind)
+	{
+		return { nullptr, 0 };
+	}
+	
+	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvScope kind)
+	{
+		return { nullptr, 0 };
+	}
+	
+	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvSourceLanguage kind)
+	{
+		return { nullptr, 0 };
+	}
+	
+	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvStorageClass kind)
+	{
+		return { nullptr, 0 };
+	}
+
 	const SpirvInstruction* GetSpirvInstruction(std::uint16_t op)
 	{
 		auto it = std::lower_bound(std::begin(s_instructions), std::end(s_instructions), op, [](const SpirvInstruction& inst, std::uint16_t op) { return std::uint16_t(inst.op) < op; });
 		if (it != std::end(s_instructions) && std::uint16_t(it->op) == op)
+			return &*it;
+		else
+			return nullptr;
+	}
+
+	const SpirvGlslStd450Instruction* GetSpirvGlslStd450Instruction(std::uint16_t op)
+	{
+		auto it = std::lower_bound(std::begin(s_instructionsGlslStd450), std::end(s_instructionsGlslStd450), op, [](const SpirvGlslStd450Instruction& inst, std::uint16_t op) { return std::uint16_t(inst.op) < op; });
+		if (it != std::end(s_instructionsGlslStd450) && std::uint16_t(it->op) == op)
 			return &*it;
 		else
 			return nullptr;
