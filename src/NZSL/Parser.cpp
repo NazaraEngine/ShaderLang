@@ -1637,7 +1637,7 @@ namespace nzsl
 
 		inputFile.seekg(0, std::ios::beg);
 
-		std::vector<char> content(length);
+		std::vector<char> content(Nz::SafeCast<std::size_t>(length));
 		if (length > 0 && !inputFile.read(&content[0], length))
 			throw std::runtime_error("failed to read " + sourcePath.generic_u8string());
 

@@ -683,7 +683,7 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 
 		inputFile.seekg(0, std::ios::beg);
 
-		std::vector<std::uint8_t> content(length);
+		std::vector<std::uint8_t> content(Nz::SafeCast<std::size_t>(length));
 		if (length > 0 && !inputFile.read(reinterpret_cast<char*>(&content[0]), length))
 			throw std::runtime_error("failed to read " + filePath.generic_u8string());
 
