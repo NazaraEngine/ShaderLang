@@ -17,6 +17,7 @@ namespace nzsl::Ast
 		Simple             = 0, //< a = b
 		CompoundAdd        = 1, //< a += b
 		CompoundDivide     = 2, //< a /= b
+		CompoundModulo     = 7, //< a %= b
 		CompoundMultiply   = 3, //< a *= b
 		CompoundLogicalAnd = 4, //< a &&= b
 		CompoundLogicalOr  = 5, //< a ||= b
@@ -51,6 +52,7 @@ namespace nzsl::Ast
 		Divide     = 7,  //< /
 		LogicalAnd = 9,  //< &&
 		LogicalOr  = 10, //< ||
+		Modulo     = 12, //< %
 		Multiply   = 8,  //< *
 		Subtract   = 11, //< -
 	};

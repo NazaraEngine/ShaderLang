@@ -786,6 +786,7 @@ namespace nzsl
 			case Ast::AssignType::Simple: Append(" = "); break;
 			case Ast::AssignType::CompoundAdd: Append(" += "); break;
 			case Ast::AssignType::CompoundDivide: Append(" /= "); break;
+			case Ast::AssignType::CompoundModulo: Append(" %= "); break;
 			case Ast::AssignType::CompoundMultiply: Append(" *= "); break;
 			case Ast::AssignType::CompoundLogicalAnd: Append(" &&= "); break;
 			case Ast::AssignType::CompoundLogicalOr: Append(" ||= "); break;
@@ -803,6 +804,7 @@ namespace nzsl
 		{
 			case Ast::BinaryType::Add:        Append(" + "); break;
 			case Ast::BinaryType::Subtract:   Append(" - "); break;
+			case Ast::BinaryType::Modulo:     Append(" % "); break;
 			case Ast::BinaryType::Multiply:   Append(" * "); break;
 			case Ast::BinaryType::Divide:     Append(" / "); break;
 

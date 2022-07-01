@@ -141,6 +141,27 @@ namespace nzsl
 
 					break;
 				}
+				
+				case Ast::BinaryType::Modulo:
+				{
+					switch (leftTypeBase)
+					{
+						case Ast::PrimitiveType::Float32:
+							return SpirvOp::OpFMod;
+
+						case Ast::PrimitiveType::Int32:
+							return SpirvOp::OpSMod;
+
+						case Ast::PrimitiveType::UInt32:
+							return SpirvOp::OpUMod;
+
+						case Ast::PrimitiveType::Boolean:
+						case Ast::PrimitiveType::String:
+							break;
+					}
+
+					break;
+				}
 
 				case Ast::BinaryType::Multiply:
 				{
@@ -337,7 +358,7 @@ namespace nzsl
 		if (swapOperands)
 			std::swap(leftOperand, rightOperand);
 
-		if (node.op == Ast::BinaryType::Divide)
+		if (node.op == Ast::BinaryType::Divide || node.op == Ast::BinaryType::Modulo)
 		{
 			//TODO: Handle other cases
 			if (IsVectorType(leftType) && IsPrimitiveType(rightType))
@@ -359,7 +380,7 @@ namespace nzsl
 				rightOperand = rightAsVec;
 			}
 			else if (leftType != rightType)
-				throw std::runtime_error("unexpected division operands");
+				throw std::runtime_error("unexpected division/modulo operands");
 		}
 
 		m_currentBlock->Append(op, m_writer.GetTypeId(resultType), resultId, leftOperand, rightOperand);

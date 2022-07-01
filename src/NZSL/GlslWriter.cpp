@@ -1279,17 +1279,50 @@ namespace nzsl
 
 	void GlslWriter::Visit(Ast::AssignExpression& node)
 	{
+		// Special case, GLSL modulo on floating point requires a call to the mod intrinsic
+		if (node.op == Ast::AssignType::CompoundModulo)
+		{
+			bool isFmod = false;
+			if (IsPrimitiveType(*node.cachedExpressionType))
+			{
+				Ast::PrimitiveType primitiveType = std::get<Ast::PrimitiveType>(*node.cachedExpressionType);
+				if (primitiveType == Ast::PrimitiveType::Float32)
+					isFmod = true;
+			}
+			else if (IsVectorType(*node.cachedExpressionType))
+			{
+				Ast::PrimitiveType primitiveType = std::get<Ast::VectorType>(*node.cachedExpressionType).type;
+				if (primitiveType == Ast::PrimitiveType::Float32)
+					isFmod = true;
+			}
+			else
+				throw std::runtime_error("unexpected type for modulo");
+
+			if (isFmod)
+			{
+				node.left->Visit(*this);
+				Append(" = mod(");
+				node.left->Visit(*this);
+				Append(", ");
+				Visit(node.right);
+				Append(")");
+
+				return; //< prevent normal generation
+			}
+		}
+
 		node.left->Visit(*this);
 
 		switch (node.op)
 		{
-			case Ast::AssignType::Simple: Append(" = "); break;
-			case Ast::AssignType::CompoundAdd: Append(" += "); break;
-			case Ast::AssignType::CompoundDivide: Append(" /= "); break;
-			case Ast::AssignType::CompoundMultiply: Append(" *= "); break;
+			case Ast::AssignType::Simple:             Append(" = "); break;
+			case Ast::AssignType::CompoundAdd:        Append(" += "); break;
+			case Ast::AssignType::CompoundDivide:     Append(" /= "); break;
+			case Ast::AssignType::CompoundModulo:     Append(" %= "); break;
+			case Ast::AssignType::CompoundMultiply:   Append(" *= "); break;
 			case Ast::AssignType::CompoundLogicalAnd: Append(" &&= "); break;
-			case Ast::AssignType::CompoundLogicalOr: Append(" ||= "); break;
-			case Ast::AssignType::CompoundSubtract: Append(" -= "); break;
+			case Ast::AssignType::CompoundLogicalOr:  Append(" ||= "); break;
+			case Ast::AssignType::CompoundSubtract:   Append(" -= "); break;
 		}
 
 		node.right->Visit(*this);
@@ -1297,6 +1330,37 @@ namespace nzsl
 
 	void GlslWriter::Visit(Ast::BinaryExpression& node)
 	{
+		// Special case, GLSL modulo on floating point requires a call to the mod intrinsic
+		if (node.op == Ast::BinaryType::Modulo)
+		{
+			bool isFmod = false;
+			if (IsPrimitiveType(*node.cachedExpressionType))
+			{
+				Ast::PrimitiveType primitiveType = std::get<Ast::PrimitiveType>(*node.cachedExpressionType);
+				if (primitiveType == Ast::PrimitiveType::Float32)
+					isFmod = true;
+			}
+			else if (IsVectorType(*node.cachedExpressionType))
+			{
+				Ast::PrimitiveType primitiveType = std::get<Ast::VectorType>(*node.cachedExpressionType).type;
+				if (primitiveType == Ast::PrimitiveType::Float32)
+					isFmod = true;
+			}
+			else
+				throw std::runtime_error("unexpected type for modulo");
+
+			if (isFmod)
+			{
+				Append("mod(");
+				Visit(node.left);
+				Append(", ");
+				Visit(node.right);
+				Append(")");
+
+				return; //< prevent normal generation
+			}
+		}
+
 		Visit(node.left, true);
 
 		switch (node.op)
@@ -1305,6 +1369,7 @@ namespace nzsl
 			case Ast::BinaryType::Subtract:  Append(" - "); break;
 			case Ast::BinaryType::Multiply:  Append(" * "); break;
 			case Ast::BinaryType::Divide:    Append(" / "); break;
+			case Ast::BinaryType::Modulo:    Append(" % "); break;
 
 			case Ast::BinaryType::CompEq:    Append(" == "); break;
 			case Ast::BinaryType::CompGe:    Append(" >= "); break;

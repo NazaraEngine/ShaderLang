@@ -41,13 +41,15 @@ module;
 [entry(frag)]
 fn main()
 {
-	let output = 8.0 * (7.0 + 5.0) * 2.0 / 4.0 - 6.0;
+	let output = 8.0 * (7.0 + 5.0) * 2.0 / 4.0 - 6.0 % 7.0;
+	let output2 = 8 * (7 + 5) * 2 / 4 - 6 % 7;
 }
 )", R"(
 [entry(frag)]
 fn main()
 {
 	let output: f32 = 42.0;
+	let output2: i32 = 42;
 }
 )");
 	}
@@ -62,12 +64,14 @@ module;
 fn main()
 {
 	let output = vec4[f32](8.0, 2.0, -7.0, 0.0) * (7.0 + 5.0) * 2.0 / 4.0;
+	let output2 = vec4[i32](8, 2, -7, 0) * (7 + 5) * 2 / 4;
 }
 )", R"(
 [entry(frag)]
 fn main()
 {
 	let output: vec4[f32] = vec4[f32](48.0, 12.0, -42.0, 0.0);
+	let output2: vec4[i32] = vec4[i32](48, 12, -42, 0);
 )");
 	}
 

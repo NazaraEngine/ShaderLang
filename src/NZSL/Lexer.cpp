@@ -421,6 +421,20 @@ namespace nzsl
 
 					break;
 				}
+				
+				case '%':
+				{
+					char next = Peek();
+					if (next == '=')
+					{
+						currentPos++;
+						tokenType = TokenType::ModuloAssign;
+					}
+					else
+						tokenType = TokenType::Modulo;
+
+					break;
+				}
 
 				case ':': tokenType = TokenType::Colon; break;
 				case ';': tokenType = TokenType::Semicolon; break;

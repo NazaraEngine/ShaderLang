@@ -3594,12 +3594,13 @@ namespace nzsl::Ast
 
 				break;
 
-			case AssignType::CompoundAdd: binaryType = BinaryType::Add; break;
-			case AssignType::CompoundDivide: binaryType = BinaryType::Divide; break;
-			case AssignType::CompoundMultiply: binaryType = BinaryType::Multiply; break;
+			case AssignType::CompoundAdd:        binaryType = BinaryType::Add; break;
+			case AssignType::CompoundDivide:     binaryType = BinaryType::Divide; break;
+			case AssignType::CompoundModulo:     binaryType = BinaryType::Modulo; break;
+			case AssignType::CompoundMultiply:   binaryType = BinaryType::Multiply; break;
 			case AssignType::CompoundLogicalAnd: binaryType = BinaryType::LogicalAnd; break;
-			case AssignType::CompoundLogicalOr: binaryType = BinaryType::LogicalOr; break;
-			case AssignType::CompoundSubtract: binaryType = BinaryType::Subtract; break;
+			case AssignType::CompoundLogicalOr:  binaryType = BinaryType::LogicalOr; break;
+			case AssignType::CompoundSubtract:   binaryType = BinaryType::Subtract; break;
 		}
 
 		if (binaryType)
@@ -4359,6 +4360,7 @@ namespace nzsl::Ast
 					TypeMustMatch(leftExprType, rightExprType, sourceLocation);
 					return leftExprType;
 
+				case BinaryType::Modulo:
 				case BinaryType::Multiply:
 				case BinaryType::Divide:
 				{
@@ -4427,6 +4429,7 @@ namespace nzsl::Ast
 					TypeMustMatch(leftExprType, rightExprType, sourceLocation);
 					return leftExprType;
 
+				case BinaryType::Modulo:
 				case BinaryType::Multiply:
 				case BinaryType::Divide:
 				{
@@ -4478,6 +4481,7 @@ namespace nzsl::Ast
 					TypeMustMatch(leftExprType, rightExprType, sourceLocation);
 					return leftExprType;
 
+				case BinaryType::Modulo:
 				case BinaryType::Multiply:
 				case BinaryType::Divide:
 				{
