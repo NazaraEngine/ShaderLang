@@ -3,9 +3,22 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <NZSL/Vector.hpp>
+#include <cmath>
 
 namespace nzsl
 {
+	namespace Detail
+	{
+		template<typename T>
+		T Modulo(T lhs, T rhs)
+		{
+			if constexpr (std::is_floating_point_v<T>)
+				return std::fmod(lhs, rhs);
+			else
+				return lhs % rhs;
+		}
+	}
+
 	template<typename T, std::size_t N>
 	Vector<T, N>::Vector(T x)
 	{
@@ -165,6 +178,16 @@ namespace nzsl
 	}
 
 	template<typename T, std::size_t N>
+	Vector<T, N> Vector<T, N>::operator%(T rhs) const
+	{
+		Vector result;
+		for (std::size_t i = 0; i < N; ++i)
+			result.values[i] = Detail::Modulo(values[i], rhs);
+
+		return result;
+	}
+
+	template<typename T, std::size_t N>
 	Vector<T, N> Vector<T, N>::operator+(const Vector& vec) const
 	{
 		Vector result;
@@ -200,6 +223,16 @@ namespace nzsl
 		Vector result;
 		for (std::size_t i = 0; i < N; ++i)
 			result.values[i] = values[i] / vec.values[i];
+
+		return result;
+	}
+	
+	template<typename T, std::size_t N>
+	Vector<T, N> Vector<T, N>::operator%(const Vector& vec) const
+	{
+		Vector result;
+		for (std::size_t i = 0; i < N; ++i)
+			result.values[i] = Detail::Modulo(values[i], vec.values[i]);
 
 		return result;
 	}
@@ -308,13 +341,23 @@ namespace nzsl
 	{
 		return rhs * lhs;
 	}
-	
+
 	template<typename T, std::size_t N>
 	Vector<T, N> operator/(T lhs, const Vector<T, N>& rhs)
 	{
 		Vector<T, N> result;
 		for (std::size_t i = 0; i < N; ++i)
 			result.values[i] = lhs / rhs.values[i];
+
+		return result;
+	}
+
+	template<typename T, std::size_t N>
+	Vector<T, N> operator%(T lhs, const Vector<T, N>& rhs)
+	{
+		Vector<T, N> result;
+		for (std::size_t i = 0; i < N; ++i)
+			result.values[i] = Detail::Modulo(lhs, rhs.values[i]);
 
 		return result;
 	}

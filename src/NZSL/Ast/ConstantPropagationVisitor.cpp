@@ -6,6 +6,7 @@
 #include <NZSL/Errors.hpp>
 #include <NZSL/ShaderBuilder.hpp>
 #include <cassert>
+#include <cmath>
 #include <stdexcept>
 
 namespace nzsl::Ast
@@ -307,6 +308,42 @@ namespace nzsl::Ast
 		{
 			using Op = BinaryDivision<T1, T2>;
 		};
+		
+		// Modulo
+		template<typename T1, typename T2>
+		struct BinaryModuloBase
+		{
+			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs, const SourceLocation& sourceLocation)
+			{
+				if constexpr (std::is_integral_v<T2>)
+				{
+					if (rhs == 0)
+						throw CompilerIntegralModuloByZeroError{ sourceLocation, ConstantToString(lhs), ConstantToString(rhs) };
+				}
+				else if constexpr (IsVector_v<T2>)
+				{
+					for (std::size_t i = 0; i < T2::Dimensions; ++i)
+					{
+						if (rhs[i] == 0)
+							throw CompilerIntegralModuloByZeroError{ sourceLocation, ConstantToString(lhs), ConstantToString(rhs) };
+					}
+				}
+
+				if constexpr (std::is_floating_point_v<T1> && std::is_floating_point_v<T2>)
+					return ShaderBuilder::ConstantValue(std::fmod(lhs, rhs));
+				else
+					return ShaderBuilder::ConstantValue(lhs % rhs);
+			}
+		};
+
+		template<typename T1, typename T2>
+		struct BinaryModulo;
+
+		template<typename T1, typename T2>
+		struct BinaryConstantPropagation<BinaryType::Modulo, T1, T2>
+		{
+			using Op = BinaryModulo<T1, T2>;
+		};
 
 		// Multiplication
 		template<typename T1, typename T2>
@@ -578,6 +615,47 @@ namespace nzsl::Ast
 		EnableOptimisation(BinaryDivision, Vector3u32, Vector3u32);
 		EnableOptimisation(BinaryDivision, Vector4u32, std::uint32_t);
 		EnableOptimisation(BinaryDivision, Vector4u32, Vector4u32);
+		
+		EnableOptimisation(BinaryModulo, double, double);
+		EnableOptimisation(BinaryModulo, double, Vector2f64);
+		EnableOptimisation(BinaryModulo, double, Vector3f64);
+		EnableOptimisation(BinaryModulo, double, Vector4f64);
+		EnableOptimisation(BinaryModulo, float, float);
+		EnableOptimisation(BinaryModulo, float, Vector2f32);
+		EnableOptimisation(BinaryModulo, float, Vector3f32);
+		EnableOptimisation(BinaryModulo, float, Vector4f32);
+		EnableOptimisation(BinaryModulo, std::int32_t, std::int32_t);
+		EnableOptimisation(BinaryModulo, std::int32_t, Vector2i32);
+		EnableOptimisation(BinaryModulo, std::int32_t, Vector3i32);
+		EnableOptimisation(BinaryModulo, std::int32_t, Vector4i32);
+		EnableOptimisation(BinaryModulo, std::uint32_t, std::uint32_t);
+		EnableOptimisation(BinaryModulo, std::uint32_t, Vector2u32);
+		EnableOptimisation(BinaryModulo, std::uint32_t, Vector3u32);
+		EnableOptimisation(BinaryModulo, std::uint32_t, Vector4u32);
+		EnableOptimisation(BinaryModulo, Vector2f32, float);
+		EnableOptimisation(BinaryModulo, Vector2f32, Vector2f32);
+		EnableOptimisation(BinaryModulo, Vector3f32, float);
+		EnableOptimisation(BinaryModulo, Vector3f32, Vector3f32);
+		EnableOptimisation(BinaryModulo, Vector4f32, float);
+		EnableOptimisation(BinaryModulo, Vector4f32, Vector4f32);
+		EnableOptimisation(BinaryModulo, Vector2f64, double);
+		EnableOptimisation(BinaryModulo, Vector2f64, Vector2f64);
+		EnableOptimisation(BinaryModulo, Vector3f64, double);
+		EnableOptimisation(BinaryModulo, Vector3f64, Vector3f64);
+		EnableOptimisation(BinaryModulo, Vector4f64, double);
+		EnableOptimisation(BinaryModulo, Vector4f64, Vector4f64);
+		EnableOptimisation(BinaryModulo, Vector2i32, std::int32_t);
+		EnableOptimisation(BinaryModulo, Vector2i32, Vector2i32);
+		EnableOptimisation(BinaryModulo, Vector3i32, std::int32_t);
+		EnableOptimisation(BinaryModulo, Vector3i32, Vector3i32);
+		EnableOptimisation(BinaryModulo, Vector4i32, std::int32_t);
+		EnableOptimisation(BinaryModulo, Vector4i32, Vector4i32);
+		EnableOptimisation(BinaryModulo, Vector2u32, std::uint32_t);
+		EnableOptimisation(BinaryModulo, Vector2u32, Vector2u32);
+		EnableOptimisation(BinaryModulo, Vector3u32, std::uint32_t);
+		EnableOptimisation(BinaryModulo, Vector3u32, Vector3u32);
+		EnableOptimisation(BinaryModulo, Vector4u32, std::uint32_t);
+		EnableOptimisation(BinaryModulo, Vector4u32, Vector4u32);
 
 		EnableOptimisation(BinaryMultiplication, double, double);
 		EnableOptimisation(BinaryMultiplication, double, Vector2f64);
@@ -797,6 +875,10 @@ namespace nzsl::Ast
 
 				case BinaryType::Subtract:
 					optimized = PropagateBinaryConstant<BinaryType::Subtract>(lhsConstant, rhsConstant, node.sourceLocation);
+					break;
+
+				case BinaryType::Modulo:
+					optimized = PropagateBinaryConstant<BinaryType::Modulo>(lhsConstant, rhsConstant, node.sourceLocation);
 					break;
 
 				case BinaryType::Multiply:

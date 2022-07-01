@@ -1276,6 +1276,7 @@ namespace nzsl
 					case TokenType::LogicalOr:         return BuildBinary(Ast::BinaryType::LogicalOr,  std::move(lhs), std::move(rhs));
 					case TokenType::GreaterThan:       return BuildBinary(Ast::BinaryType::CompGt,     std::move(lhs), std::move(rhs));
 					case TokenType::GreaterThanEqual:  return BuildBinary(Ast::BinaryType::CompGe,     std::move(lhs), std::move(rhs));
+					case TokenType::Modulo:            return BuildBinary(Ast::BinaryType::Modulo,     std::move(lhs), std::move(rhs));
 					case TokenType::Minus:             return BuildBinary(Ast::BinaryType::Subtract,   std::move(lhs), std::move(rhs));
 					case TokenType::Multiply:          return BuildBinary(Ast::BinaryType::Multiply,   std::move(lhs), std::move(rhs));
 					case TokenType::NotEqual:          return BuildBinary(Ast::BinaryType::CompNe,     std::move(lhs), std::move(rhs));
@@ -1350,6 +1351,7 @@ namespace nzsl
 			case TokenType::DivideAssign:     assignType = Ast::AssignType::CompoundDivide; break;
 			case TokenType::LogicalAndAssign: assignType = Ast::AssignType::CompoundLogicalAnd; break;
 			case TokenType::LogicalOrAssign:  assignType = Ast::AssignType::CompoundLogicalOr; break;
+			case TokenType::ModuloAssign:     assignType = Ast::AssignType::CompoundModulo; break;
 			case TokenType::MultiplyAssign:   assignType = Ast::AssignType::CompoundMultiply; break;
 			case TokenType::MinusAssign:      assignType = Ast::AssignType::CompoundSubtract; break;
 			case TokenType::PlusAssign:       assignType = Ast::AssignType::CompoundAdd; break;
@@ -1615,6 +1617,7 @@ namespace nzsl
 			case TokenType::LogicalOr:         return 10;
 			case TokenType::GreaterThan:       return 40;
 			case TokenType::GreaterThanEqual:  return 40;
+			case TokenType::Modulo:            return 80;
 			case TokenType::Multiply:          return 80;
 			case TokenType::Minus:             return 60;
 			case TokenType::NotEqual:          return 50;

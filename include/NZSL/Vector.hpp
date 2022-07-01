@@ -50,11 +50,13 @@ namespace nzsl
 
 		Vector operator*(T rhs) const;
 		Vector operator/(T rhs) const;
+		Vector operator%(T rhs) const;
 
 		Vector operator+(const Vector& vec) const;
 		Vector operator-(const Vector& vec) const;
 		Vector operator*(const Vector& vec) const;
 		Vector operator/(const Vector& vec) const;
+		Vector operator%(const Vector& vec) const;
 
 		bool operator==(const Vector& vec) const;
 		bool operator!=(const Vector& vec) const;
@@ -79,6 +81,9 @@ namespace nzsl
 
 	template<typename T, std::size_t N>
 	Vector<T, N> operator/(T lhs, const Vector<T, N>& rhs);
+
+	template<typename T, std::size_t N>
+	Vector<T, N> operator%(T lhs, const Vector<T, N>& rhs);
 
 	template<typename T> using Vector2 = Vector<T, 2>;
 	using Vector2f32 = Vector<float, 2>;
