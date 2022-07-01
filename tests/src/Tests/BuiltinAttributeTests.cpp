@@ -57,7 +57,7 @@ fn main(input: Input) -> Output
 		WHEN("generating with draw parameters support as an extension")
 		{
 			glslEnv.glES = false;
-			glslEnv.extCallback = [](const std::string_view& extName) { return extName == "GL_ARB_shader_draw_parameters"; };
+			glslEnv.extCallback = [](std::string_view extName) { return extName == "GL_ARB_shader_draw_parameters"; };
 
 			ExpectGLSL(*shaderModule, R"(
 #extension GL_ARB_shader_draw_parameters : require

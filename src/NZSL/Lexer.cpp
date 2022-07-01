@@ -79,7 +79,7 @@ namespace nzsl
 		return result;
 	}
 
-	std::vector<Token> Tokenize(const std::string_view& str, const std::string& filePath)
+	std::vector<Token> Tokenize(std::string_view str, const std::string& filePath)
 	{
 		std::size_t currentPos = 0;
 
