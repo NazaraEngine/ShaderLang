@@ -52,7 +52,7 @@ namespace nzsl
 		return AppendRaw(std::string_view(str));
 	}
 
-	inline std::size_t SpirvSectionBase::AppendRaw(const std::string_view& str)
+	inline std::size_t SpirvSectionBase::AppendRaw(std::string_view str)
 	{
 		std::size_t offset = GetOutputOffset();
 
@@ -145,7 +145,7 @@ namespace nzsl
 		return static_cast<unsigned int>((raw.size + sizeof(std::uint32_t) - 1) / sizeof(std::uint32_t));
 	}
 
-	inline unsigned int SpirvSectionBase::CountWord(const std::string_view& str)
+	inline unsigned int SpirvSectionBase::CountWord(std::string_view str)
 	{
 		return (static_cast<unsigned int>(str.size() + 1) + sizeof(std::uint32_t) - 1) / sizeof(std::uint32_t); //< + 1 for null character
 	}

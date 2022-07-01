@@ -50,7 +50,7 @@ namespace nzsl
 			template<typename... Args> std::size_t Append(SpirvOp opcode, const Args&... args);
 			template<typename F> std::size_t AppendVariadic(SpirvOp opcode, F&& callback);
 			inline std::size_t AppendRaw(const char* str);
-			inline std::size_t AppendRaw(const std::string_view& str);
+			inline std::size_t AppendRaw(std::string_view str);
 			inline std::size_t AppendRaw(const std::string& str);
 			inline std::size_t AppendRaw(std::uint32_t value);
 			std::size_t AppendRaw(const Raw& raw);
@@ -59,7 +59,7 @@ namespace nzsl
 			template<typename T, typename = std::enable_if_t<std::is_integral_v<T> || std::is_enum_v<T>>> std::size_t AppendRaw(T value);
 
 			inline unsigned int CountWord(const char* str);
-			inline unsigned int CountWord(const std::string_view& str);
+			inline unsigned int CountWord(std::string_view str);
 			inline unsigned int CountWord(const std::string& str);
 			inline unsigned int CountWord(const Raw& raw);
 			template<typename T, typename = std::enable_if_t<std::is_integral_v<T> || std::is_enum_v<T>>> unsigned int CountWord(const T& value);

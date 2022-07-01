@@ -11,7 +11,7 @@ namespace nzsl
 	{
 	}
 
-	inline Ast::ModulePtr Parse(const std::string_view& source, const std::string& filePath)
+	inline Ast::ModulePtr Parse(std::string_view source, const std::string& filePath)
 	{
 		return Parse(Tokenize(source, filePath));
 	}

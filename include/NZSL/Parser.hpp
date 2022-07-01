@@ -103,7 +103,7 @@ namespace nzsl
 			Context* m_context;
 	};
 
-	inline Ast::ModulePtr Parse(const std::string_view& source, const std::string& filePath = std::string{});
+	inline Ast::ModulePtr Parse(std::string_view source, const std::string& filePath = std::string{});
 	inline Ast::ModulePtr Parse(const std::vector<Token>& tokens);
 	NZSL_API Ast::ModulePtr ParseFromFile(const std::filesystem::path& sourcePath);
 }

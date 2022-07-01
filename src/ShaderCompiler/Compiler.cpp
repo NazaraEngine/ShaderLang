@@ -28,7 +28,7 @@ namespace nzslc
 {
 	namespace
 	{
-		inline bool EndsWith(const std::string_view& str, const std::string_view& s)
+		inline bool EndsWith(std::string_view str, std::string_view s)
 		{
 			if (s.size() > str.size())
 				return false;
