@@ -1248,8 +1248,6 @@ namespace nzsl::Ast
 
 			extVar.type = std::move(resolvedType).value();
 			extVar.varIndex = RegisterVariable(extVar.name, std::move(varType), extVar.varIndex, extVar.sourceLocation);
-
-			SanitizeIdentifier(extVar.name);
 		}
 
 		return clone;
@@ -1351,8 +1349,6 @@ namespace nzsl::Ast
 
 		std::size_t funcIndex = RegisterFunction(clone->name, std::move(funcData), node.funcIndex, node.sourceLocation);
 		clone->funcIndex = funcIndex;
-
-		SanitizeIdentifier(clone->name);
 
 		return clone;
 	}
@@ -1502,8 +1498,6 @@ namespace nzsl::Ast
 
 		clone->structIndex = RegisterStruct(clone->description.name, &clone->description, clone->structIndex, clone->sourceLocation);
 
-		SanitizeIdentifier(clone->description.name);
-
 		return clone;
 	}
 
@@ -1571,8 +1565,6 @@ namespace nzsl::Ast
 				clone->statement = CloneStatement(node.statement);
 			}
 			PopScope();
-
-			SanitizeIdentifier(clone->varName);
 
 			return clone;
 		};
@@ -1898,8 +1890,6 @@ namespace nzsl::Ast
 				clone->statement = CloneStatement(node.statement);
 			}
 			PopScope();
-
-			SanitizeIdentifier(clone->varName);
 
 			return clone;
 		}
@@ -2245,33 +2235,24 @@ namespace nzsl::Ast
 		return clone;
 	}
 
-	auto SanitizeVisitor::FindIdentifier(const std::string_view& identifierName) const -> const IdentifierData*
+	auto SanitizeVisitor::FindIdentifier(std::string_view identifierName) const -> const IdentifierData*
 	{
 		return FindIdentifier(*m_context->currentEnv, identifierName);
 	}
 
 	template<typename F>
-	auto SanitizeVisitor::FindIdentifier(const std::string_view& identifierName, F&& functor) const -> const IdentifierData*
+	auto SanitizeVisitor::FindIdentifier(std::string_view identifierName, F&& functor) const -> const IdentifierData*
 	{
 		return FindIdentifier(*m_context->currentEnv, identifierName, std::forward<F>(functor));
 	}
 
-	auto SanitizeVisitor::FindIdentifier(const Environment& environment, const std::string_view& identifierName) const -> const IdentifierData*
+	auto SanitizeVisitor::FindIdentifier(const Environment& environment, std::string_view identifierName) const -> const IdentifierData*
 	{
-		auto it = std::find_if(environment.identifiersInScope.rbegin(), environment.identifiersInScope.rend(), [&](const Identifier& identifier) { return identifier.name == identifierName; });
-		if (it == environment.identifiersInScope.rend())
-		{
-			if (environment.parentEnv)
-				return FindIdentifier(*environment.parentEnv, identifierName);
-			else
-				return nullptr;
-		}
-
-		return &it->target;
+		return FindIdentifier(environment, identifierName, [](const IdentifierData& identifierData) { return identifierData.category != IdentifierCategory::ReservedName; });
 	}
 
 	template<typename F>
-	auto SanitizeVisitor::FindIdentifier(const Environment& environment, const std::string_view& identifierName, F&& functor) const -> const IdentifierData*
+	auto SanitizeVisitor::FindIdentifier(const Environment& environment, std::string_view identifierName, F&& functor) const -> const IdentifierData*
 	{
 		auto it = std::find_if(environment.identifiersInScope.rbegin(), environment.identifiersInScope.rend(), [&](const Identifier& identifier)
 		{
@@ -2386,6 +2367,9 @@ namespace nzsl::Ast
 				return typeExpr;
 			}
 
+			case IdentifierCategory::ReservedName:
+				throw AstUnexpectedIdentifierError{ sourceLocation, "reserved" };
+
 			case IdentifierCategory::Unresolved:
 				throw AstUnexpectedIdentifierError{ sourceLocation, "unresolved" };
 
@@ -2402,6 +2386,14 @@ namespace nzsl::Ast
 		}
 
 		throw AstInternalError{ sourceLocation, "unhandled identifier category" };
+	}
+
+	bool SanitizeVisitor::IsIdentifierAvailable(std::string_view identifier, bool allowReserved) const
+	{
+		if (allowReserved)
+			return FindIdentifier(identifier) == nullptr;
+		else
+			return FindIdentifier(identifier, [](const IdentifierData&) { return true; }) == nullptr;
 	}
 
 	void SanitizeVisitor::PushScope()
@@ -2813,7 +2805,7 @@ namespace nzsl::Ast
 
 	std::size_t SanitizeVisitor::RegisterAlias(std::string name, std::optional<Identifier> aliasData, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
 	{
-		if (FindIdentifier(name))
+		if (!IsIdentifierAvailable(name))
 			throw CompilerIdentifierAlreadyUsedError{ sourceLocation, name };
 
 		std::size_t aliasIndex;
@@ -2841,7 +2833,7 @@ namespace nzsl::Ast
 
 	std::size_t SanitizeVisitor::RegisterConstant(std::string name, std::optional<ConstantValue> value, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
 	{
-		if (FindIdentifier(name))
+		if (!IsIdentifierAvailable(name))
 			throw CompilerIdentifierAlreadyUsedError{ sourceLocation, name };
 
 		std::size_t constantIndex;
@@ -2921,7 +2913,7 @@ namespace nzsl::Ast
 
 	std::size_t SanitizeVisitor::RegisterIntrinsic(std::string name, IntrinsicType type)
 	{
-		if (FindIdentifier(name))
+		if (!IsIdentifierAvailable(name))
 			throw CompilerIdentifierAlreadyUsedError{ {}, name };
 
 		std::size_t intrinsicIndex = m_context->intrinsics.Register(std::move(type), std::nullopt, {});
@@ -2940,7 +2932,7 @@ namespace nzsl::Ast
 
 	std::size_t SanitizeVisitor::RegisterModule(std::string moduleIdentifier, std::size_t index)
 	{
-		if (FindIdentifier(moduleIdentifier))
+		if (!IsIdentifierAvailable(moduleIdentifier))
 			throw CompilerIdentifierAlreadyUsedError{ {}, moduleIdentifier };
 
 		std::size_t moduleIndex = m_context->moduleIndices.Register(index, std::nullopt, {});
@@ -2955,6 +2947,18 @@ namespace nzsl::Ast
 		});
 
 		return moduleIndex;
+	}
+
+	void SanitizeVisitor::RegisterReservedName(std::string name)
+	{
+		m_context->currentEnv->identifiersInScope.push_back({
+			std::move(name),
+			{
+				std::numeric_limits<std::size_t>::max(),
+				IdentifierCategory::ReservedName,
+				m_context->inConditionalStatement
+			}
+		});
 	}
 
 	std::size_t SanitizeVisitor::RegisterStruct(std::string name, std::optional<StructDescription*> description, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
@@ -2998,7 +3002,7 @@ namespace nzsl::Ast
 
 	std::size_t SanitizeVisitor::RegisterType(std::string name, std::optional<ExpressionType> expressionType, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
 	{
-		if (FindIdentifier(name))
+		if (!IsIdentifierAvailable(name))
 			throw CompilerIdentifierAlreadyUsedError{ sourceLocation, name };
 
 		std::size_t typeIndex;
@@ -3026,7 +3030,7 @@ namespace nzsl::Ast
 
 	std::size_t SanitizeVisitor::RegisterType(std::string name, std::optional<PartialType> partialType, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
 	{
-		if (FindIdentifier(name))
+		if (!IsIdentifierAvailable(name))
 			throw CompilerIdentifierAlreadyUsedError{ sourceLocation, name };
 
 		std::size_t typeIndex;
@@ -3128,10 +3132,7 @@ namespace nzsl::Ast
 			for (auto& parameter : pendingFunc.cloneNode->parameters)
 			{
 				if (!m_context->options.allowPartialSanitization || parameter.type.IsResultingValue())
-				{
 					parameter.varIndex = RegisterVariable(parameter.name, parameter.type.GetResultingValue(), parameter.varIndex, parameter.sourceLocation);
-					SanitizeIdentifier(parameter.name);
-				}
 				else
 					RegisterUnresolved(parameter.name);
 			}
@@ -3287,19 +3288,6 @@ namespace nzsl::Ast
 		return ResolveType(*exprType, resolveAlias, sourceLocation);
 	}
 
-	void SanitizeVisitor::SanitizeIdentifier(std::string& identifier)
-	{
-		// Append _ until the identifier is no longer found
-		while (m_context->options.reservedIdentifiers.find(identifier) != m_context->options.reservedIdentifiers.end())
-		{
-			do 
-			{
-				identifier += "_";
-			}
-			while (FindIdentifier(identifier) != nullptr);
-		}
-	}
-	
 	MultiStatementPtr SanitizeVisitor::SanitizeInternal(MultiStatement& rootNode, std::string* error)
 	{
 		MultiStatementPtr output;
@@ -4037,7 +4025,7 @@ namespace nzsl::Ast
 
 			if (FindIdentifier(node.varName, IgnoreOurself) != nullptr)
 			{
-				// Try to make variable name unique by appending _X to its name (incrementing X until it's unique) to the variable name until by incrementing X
+				// Try to make variable name unique by appending _X to its name (incrementing X until it's unique) to the variable name until it's unique
 				unsigned int cloneIndex = 2;
 				std::string candidateName;
 				do
@@ -4047,10 +4035,10 @@ namespace nzsl::Ast
 				while (FindIdentifier(candidateName, IgnoreOurself) != nullptr);
 
 				node.varName = std::move(candidateName);
+				RegisterReservedName(node.varName);
 			}
 		}
 
-		SanitizeIdentifier(node.varName);
 		return ValidationResult::Validated;
 	}
 

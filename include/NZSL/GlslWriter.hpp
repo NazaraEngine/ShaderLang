@@ -25,7 +25,7 @@ namespace nzsl
 	{
 		public:
 			using BindingMapping = std::unordered_map<std::uint64_t /* set | binding */, unsigned /*glBinding*/>;
-			using ExtSupportCallback = std::function<bool(const std::string_view& name)>;
+			using ExtSupportCallback = std::function<bool(std::string_view name)>;
 			struct Environment;
 			struct Output;
 
@@ -109,6 +109,7 @@ namespace nzsl
 			void RegisterStruct(std::size_t structIndex, Ast::StructDescription* desc, std::string structName);
 			void RegisterVariable(std::size_t varIndex, std::string varName);
 
+			std::string SanitizeIdentifier(std::string identifier);
 			void ScopeVisit(Ast::Statement& node);
 
 			void Visit(Ast::ExpressionPtr& expr, bool encloseIfRequired = false);

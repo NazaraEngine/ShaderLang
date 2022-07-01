@@ -41,7 +41,6 @@ namespace nzsl::Ast
 			struct Options
 			{
 				std::shared_ptr<ModuleResolver> moduleResolver;
-				std::unordered_set<std::string> reservedIdentifiers;
 				std::unordered_map<std::uint32_t, ConstantValue> optionValues;
 				bool allowPartialSanitization = false;
 				bool makeVariableNameUnique = false;
@@ -107,15 +106,17 @@ namespace nzsl::Ast
 			StatementPtr Clone(ScopedStatement& node) override;
 			StatementPtr Clone(WhileStatement& node) override;
 
-			const IdentifierData* FindIdentifier(const std::string_view& identifierName) const;
-			template<typename F> const IdentifierData* FindIdentifier(const std::string_view& identifierName, F&& functor) const;
-			const IdentifierData* FindIdentifier(const Environment& environment, const std::string_view& identifierName) const;
-			template<typename F> const IdentifierData* FindIdentifier(const Environment& environment, const std::string_view& identifierName, F&& functor) const;
+			const IdentifierData* FindIdentifier(std::string_view identifierName) const;
+			template<typename F> const IdentifierData* FindIdentifier(std::string_view identifierName, F&& functor) const;
+			const IdentifierData* FindIdentifier(const Environment& environment, std::string_view identifierName) const;
+			template<typename F> const IdentifierData* FindIdentifier(const Environment& environment, std::string_view identifierName, F&& functor) const;
 
 			const ExpressionType* GetExpressionType(Expression& expr) const;
 			const ExpressionType& GetExpressionTypeSecure(Expression& expr) const;
 
 			ExpressionPtr HandleIdentifier(const IdentifierData* identifierData, const SourceLocation& sourceLocation);
+
+			bool IsIdentifierAvailable(std::string_view identifier, bool allowReserved = true) const;
 
 			void PushScope();
 			void PopScope();
@@ -137,6 +138,7 @@ namespace nzsl::Ast
 			std::size_t RegisterFunction(std::string name, std::optional<FunctionData> funcData, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
 			std::size_t RegisterIntrinsic(std::string name, IntrinsicType type);
 			std::size_t RegisterModule(std::string moduleIdentifier, std::size_t moduleIndex);
+			void RegisterReservedName(std::string name);
 			std::size_t RegisterStruct(std::string name, std::optional<StructDescription*> description, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
 			std::size_t RegisterType(std::string name, std::optional<ExpressionType> expressionType, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
 			std::size_t RegisterType(std::string name, std::optional<PartialType> partialType, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
@@ -153,7 +155,6 @@ namespace nzsl::Ast
 			ExpressionType ResolveType(const ExpressionType& exprType, bool resolveAlias, const SourceLocation& sourceLocation);
 			std::optional<ExpressionType> ResolveTypeExpr(const ExpressionValue<ExpressionType>& exprTypeValue, bool resolveAlias, const SourceLocation& sourceLocation);
 
-			void SanitizeIdentifier(std::string& identifier);
 			MultiStatementPtr SanitizeInternal(MultiStatement& rootNode, std::string* error);
 
 			std::string ToString(const ExpressionType& exprType, const SourceLocation& sourceLocation) const;
@@ -199,6 +200,7 @@ namespace nzsl::Ast
 				Function,
 				Intrinsic,
 				Module,
+				ReservedName,
 				Struct,
 				Type,
 				Unresolved,
