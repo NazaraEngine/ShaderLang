@@ -47,6 +47,7 @@ TEST_CASE("vector", "[Vector]")
 		CHECK(2 * lhs / rhs == nzsl::Vector4i32(0, 0, 0, 1));
 		CHECK(2 * lhs / rhs != nzsl::Vector4i32(0, 0, 0, 0));
 
+		CHECK(2 % lhs == nzsl::Vector4i32(0, 0, 2, 2));
 		CHECK(rhs % lhs == nzsl::Vector4i32(0, 0, 1, 0));
 	}
 
@@ -57,6 +58,7 @@ TEST_CASE("vector", "[Vector]")
 		nzsl::Vector3f32 up(0.f, 1.f, 0.f);
 		nzsl::Vector3f32 down(0.f, -1.f, 0.f);
 
+		CHECK(3.f % position1 == nzsl::Vector3f32(1.f, 0.f, 3.f));
 		CHECK(position2 % position1 == nzsl::Vector3f32(0.f, 2.f, -2.f));
 
 		CHECK(ToString(position1) == "Vector3(-2, 3, 4)");
