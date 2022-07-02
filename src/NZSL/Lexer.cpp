@@ -151,7 +151,6 @@ namespace nzsl
 					{
 						currentPos++;
 						tokenType = TokenType::Arrow;
-						break;
 					}
 					else if (next == '=')
 					{
