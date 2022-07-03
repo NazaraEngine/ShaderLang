@@ -8,9 +8,9 @@
 #define NZSL_AST_CONSTANTPROPAGATIONVISITOR_HPP
 
 #include <NZSL/Config.hpp>
-#include <NZSL/Lang/SourceLocation.hpp>
 #include <NZSL/Ast/Cloner.hpp>
 #include <NZSL/Ast/Module.hpp>
+#include <NZSL/Lang/SourceLocation.hpp>
 
 namespace nzsl::Ast
 {

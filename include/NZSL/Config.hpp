@@ -24,8 +24,8 @@
 
 #pragma once
 
-#ifndef NZSL_PREREQUISITES_HPP
-#define NZSL_PREREQUISITES_HPP
+#ifndef NZSL_CONFIG_HPP
+#define NZSL_CONFIG_HPP
 
 #include <Nazara/Prerequisites.hpp>
 
@@ -46,4 +46,4 @@
 
 #include <cstdint>
 
-#endif // NZSL_PREREQUISITES_HPP
+#endif // NZSL_CONFIG_HPP

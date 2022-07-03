@@ -4,13 +4,13 @@
 
 #pragma once
 
-#ifndef NZSL_AST_SERIALIZER_HPP
-#define NZSL_AST_SERIALIZER_HPP
+#ifndef NZSL_AST_ASTSERIALIZER_HPP
+#define NZSL_AST_ASTSERIALIZER_HPP
 
 #include <NZSL/Config.hpp>
-#include <NZSL/Lang/SourceLocation.hpp>
 #include <NZSL/Serializer.hpp>
 #include <NZSL/Ast/Module.hpp>
+#include <NZSL/Lang/SourceLocation.hpp>
 
 namespace nzsl::Ast
 {
@@ -183,4 +183,4 @@ namespace nzsl::Ast
 
 #include <NZSL/Ast/AstSerializer.inl>
 
-#endif // NZSL_AST_SERIALIZER_HPP
+#endif // NZSL_AST_ASTSERIALIZER_HPP

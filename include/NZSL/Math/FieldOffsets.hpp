@@ -4,8 +4,8 @@
 
 #pragma once
 
-#ifndef NZSL_FIELDOFFSETS_HPP
-#define NZSL_FIELDOFFSETS_HPP
+#ifndef NZSL_MATH_FIELDOFFSETS_HPP
+#define NZSL_MATH_FIELDOFFSETS_HPP
 
 #include <NZSL/Config.hpp>
 #include <NZSL/Enums.hpp>
@@ -50,4 +50,4 @@ namespace nzsl
 
 #include <NZSL/Math/FieldOffsets.inl>
 
-#endif // NZSL_FIELDOFFSETS_HPP
+#endif // NZSL_MATH_FIELDOFFSETS_HPP

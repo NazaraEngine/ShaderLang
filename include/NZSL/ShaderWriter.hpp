@@ -8,7 +8,6 @@
 #define NZSL_SHADERWRITER_HPP
 
 #include <NZSL/Config.hpp>
-#include <NZSL/Config.hpp>
 #include <NZSL/Ast/ConstantValue.hpp>
 #include <memory>
 #include <string>

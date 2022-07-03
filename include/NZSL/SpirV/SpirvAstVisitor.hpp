@@ -4,15 +4,14 @@
 
 #pragma once
 
-#ifndef NZSL_SPIRVASTVISITOR_HPP
-#define NZSL_SPIRVASTVISITOR_HPP
+#ifndef NZSL_SPIRV_SPIRVASTVISITOR_HPP
+#define NZSL_SPIRV_SPIRVASTVISITOR_HPP
 
 #include <NZSL/Config.hpp>
-#include <NZSL/Config.hpp>
-#include <NZSL/SpirV/SpirvBlock.hpp>
+#include <NZSL/Ast/ExpressionType.hpp>
 #include <NZSL/Ast/ExpressionVisitorExcept.hpp>
 #include <NZSL/Ast/StatementVisitorExcept.hpp>
-#include <NZSL/Ast/ExpressionType.hpp>
+#include <NZSL/SpirV/SpirvBlock.hpp>
 #include <unordered_map>
 #include <vector>
 
@@ -157,4 +156,4 @@ namespace nzsl
 
 #include <NZSL/SpirV/SpirvAstVisitor.inl>
 
-#endif // NZSL_SPIRVASTVISITOR_HPP
+#endif // NZSL_SPIRV_SPIRVASTVISITOR_HPP

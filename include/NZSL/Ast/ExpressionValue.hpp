@@ -9,6 +9,7 @@
 
 #include <NZSL/Config.hpp>
 #include <NZSL/Ast/Enums.hpp>
+#include <memory>
 #include <variant>
 
 namespace nzsl::Ast

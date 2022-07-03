@@ -4,8 +4,8 @@
 
 #pragma once
 
-#ifndef NZSL_SOURCELOCATION_HPP
-#define NZSL_SOURCELOCATION_HPP
+#ifndef NZSL_LANG_SOURCELOCATION_HPP
+#define NZSL_LANG_SOURCELOCATION_HPP
 
 #include <NZSL/Config.hpp>
 #include <memory>
@@ -37,4 +37,4 @@ namespace nzsl
 
 #include <NZSL/Lang/SourceLocation.inl>
 
-#endif // NZSL_SOURCELOCATION_HPP
+#endif // NZSL_LANG_SOURCELOCATION_HPP

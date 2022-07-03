@@ -4,14 +4,13 @@
 
 #pragma once
 
-#ifndef NZSL_SPIRVEXPRESSIONSTORE_HPP
-#define NZSL_SPIRVEXPRESSIONSTORE_HPP
+#ifndef NZSL_SPIRV_SPIRVEXPRESSIONSTORE_HPP
+#define NZSL_SPIRV_SPIRVEXPRESSIONSTORE_HPP
 
 #include <NZSL/Config.hpp>
-#include <NZSL/Config.hpp>
-#include <NZSL/SpirV/SpirvData.hpp>
-#include <NZSL/Ast/ExpressionVisitorExcept.hpp>
 #include <NZSL/Ast/Enums.hpp>
+#include <NZSL/Ast/ExpressionVisitorExcept.hpp>
+#include <NZSL/SpirV/SpirvData.hpp>
 
 namespace nzsl
 {
@@ -60,4 +59,4 @@ namespace nzsl
 
 #include <NZSL/SpirV/SpirvExpressionStore.inl>
 
-#endif // NZSL_SPIRVEXPRESSIONSTORE_HPP
+#endif // NZSL_SPIRV_SPIRVEXPRESSIONSTORE_HPP

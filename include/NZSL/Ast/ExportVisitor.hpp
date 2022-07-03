@@ -8,7 +8,6 @@
 #define NZSL_AST_EXPORTVISITOR_HPP
 
 #include <NZSL/Config.hpp>
-#include <NZSL/Config.hpp>
 #include <NZSL/Ast/RecursiveVisitor.hpp>
 #include <vector>
 

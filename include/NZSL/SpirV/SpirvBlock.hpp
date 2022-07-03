@@ -4,12 +4,12 @@
 
 #pragma once
 
-#ifndef NZSL_SPIRVBLOCK_HPP
-#define NZSL_SPIRVBLOCK_HPP
+#ifndef NZSL_SPIRV_SPIRVBLOCK_HPP
+#define NZSL_SPIRV_SPIRVBLOCK_HPP
 
 #include <NZSL/Config.hpp>
-#include <NZSL/SpirV/SpirvSectionBase.hpp>
 #include <NZSL/SpirvWriter.hpp>
+#include <NZSL/SpirV/SpirvSectionBase.hpp>
 #include <string>
 #include <vector>
 
@@ -46,4 +46,4 @@ namespace nzsl
 
 #include <NZSL/SpirV/SpirvBlock.inl>
 
-#endif // NZSL_SPIRVBLOCK_HPP
+#endif // NZSL_SPIRV_SPIRVBLOCK_HPP

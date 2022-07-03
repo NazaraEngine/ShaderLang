@@ -4,13 +4,13 @@
 
 #pragma once
 
-#ifndef NZSL_SHADERLANGERRORS_HPP
-#define NZSL_SHADERLANGERRORS_HPP
+#ifndef NZSL_LANG_ERRORS_HPP
+#define NZSL_LANG_ERRORS_HPP
 
 #include <NZSL/Config.hpp>
 #include <NZSL/Parser.hpp>
-#include <NZSL/Lang/SourceLocation.hpp>
 #include <NZSL/Ast/Enums.hpp>
+#include <NZSL/Lang/SourceLocation.hpp>
 #include <exception>
 #include <memory>
 #include <string>
@@ -120,4 +120,4 @@ namespace nzsl
 
 #include <NZSL/Lang/Errors.inl>
 
-#endif // NZSL_SHADERLANGERRORS_HPP
+#endif // NZSL_LANG_ERRORS_HPP

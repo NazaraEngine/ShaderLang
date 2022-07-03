@@ -4,8 +4,8 @@
 
 #pragma once
 
-#ifndef NZSL_SPIRVSECTION_HPP
-#define NZSL_SPIRVSECTION_HPP
+#ifndef NZSL_SPIRV_SPIRVSECTION_HPP
+#define NZSL_SPIRV_SPIRVSECTION_HPP
 
 #include <NZSL/Config.hpp>
 #include <NZSL/SpirV/SpirvSectionBase.hpp>
@@ -32,4 +32,4 @@ namespace nzsl
 
 #include <NZSL/SpirV/SpirvSection.inl>
 
-#endif // NZSL_SPIRVSECTION_HPP
+#endif // NZSL_SPIRV_SPIRVSECTION_HPP

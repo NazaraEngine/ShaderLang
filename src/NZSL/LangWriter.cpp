@@ -8,10 +8,10 @@
 #include <NZSL/Enums.hpp>
 #include <NZSL/ShaderBuilder.hpp>
 #include <NZSL/Ast/Cloner.hpp>
-#include <NZSL/Lang/LangData.hpp>
 #include <NZSL/Ast/RecursiveVisitor.hpp>
-#include <NZSL/Ast/Utils.hpp>
 #include <NZSL/Ast/SanitizeVisitor.hpp>
+#include <NZSL/Ast/Utils.hpp>
+#include <NZSL/Lang/LangData.hpp>
 #include <cassert>
 #include <optional>
 #include <stdexcept>

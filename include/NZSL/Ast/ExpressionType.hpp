@@ -9,9 +9,9 @@
 
 #include <NZSL/Config.hpp>
 #include <NZSL/Enums.hpp>
-#include <NZSL/Lang/SourceLocation.hpp>
 #include <NZSL/Ast/Enums.hpp>
 #include <NZSL/Ast/ExpressionValue.hpp>
+#include <NZSL/Lang/SourceLocation.hpp>
 #include <optional>
 #include <string>
 #include <variant>

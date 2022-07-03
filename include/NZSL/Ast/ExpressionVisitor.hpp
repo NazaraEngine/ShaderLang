@@ -8,7 +8,6 @@
 #define NZSL_AST_EXPRESSIONVISITOR_HPP
 
 #include <NZSL/Config.hpp>
-#include <NZSL/Config.hpp>
 #include <NZSL/Ast/Nodes.hpp>
 
 namespace nzsl::Ast

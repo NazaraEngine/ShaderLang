@@ -4,9 +4,9 @@
 
 #include <NZSL/SpirV/SpirvExpressionLoad.hpp>
 #include <Nazara/Utils/StackArray.hpp>
+#include <NZSL/SpirvWriter.hpp>
 #include <NZSL/SpirV/SpirvAstVisitor.hpp>
 #include <NZSL/SpirV/SpirvBlock.hpp>
-#include <NZSL/SpirvWriter.hpp>
 
 namespace nzsl
 {

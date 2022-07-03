@@ -7,10 +7,10 @@
 #include <Nazara/Utils/CallOnExit.hpp>
 #include <Nazara/Utils/StackArray.hpp>
 #include <Nazara/Utils/StackVector.hpp>
+#include <NZSL/SpirvWriter.hpp>
 #include <NZSL/SpirV/SpirvExpressionLoad.hpp>
 #include <NZSL/SpirV/SpirvExpressionStore.hpp>
 #include <NZSL/SpirV/SpirvSection.hpp>
-#include <NZSL/SpirvWriter.hpp>
 
 namespace nzsl
 {
