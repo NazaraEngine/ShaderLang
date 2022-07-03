@@ -2,7 +2,7 @@
 #include <NZSL/GlslWriter.hpp>
 #include <NZSL/LangWriter.hpp>
 #include <NZSL/Parser.hpp>
-#include <NZSL/SpirvPrinter.hpp>
+#include <NZSL/SpirV/SpirvPrinter.hpp>
 #include <NZSL/SpirvWriter.hpp>
 #include <NZSL/Ast/ReflectVisitor.hpp>
 #include <NZSL/Ast/SanitizeVisitor.hpp>

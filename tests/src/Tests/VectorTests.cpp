@@ -1,4 +1,4 @@
-#include <NZSL/Vector.hpp>
+#include <NZSL/Math/Vector.hpp>
 #include <catch2/catch.hpp>
 #include <sstream>
 #include <unordered_map>

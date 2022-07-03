@@ -11,7 +11,7 @@
 #include <NZSL/Ast/Cloner.hpp>
 #include <NZSL/Ast/ConstantPropagationVisitor.hpp>
 #include <NZSL/Ast/ConstantValue.hpp>
-#include <NZSL/Ast/LangData.hpp>
+#include <NZSL/Lang/LangData.hpp>
 #include <NZSL/Ast/RecursiveVisitor.hpp>
 #include <NZSL/Ast/Utils.hpp>
 #include <NZSL/Ast/EliminateUnusedPassVisitor.hpp>

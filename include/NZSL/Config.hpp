@@ -22,6 +22,8 @@
 	SOFTWARE.
 */
 
+#pragma once
+
 #ifndef NZSL_PREREQUISITES_HPP
 #define NZSL_PREREQUISITES_HPP
 

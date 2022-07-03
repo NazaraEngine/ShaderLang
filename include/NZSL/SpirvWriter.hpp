@@ -10,8 +10,8 @@
 #include <NZSL/Config.hpp>
 #include <NZSL/Config.hpp>
 #include <NZSL/ShaderWriter.hpp>
-#include <NZSL/SpirvConstantCache.hpp>
-#include <NZSL/SpirvVariable.hpp>
+#include <NZSL/SpirV/SpirvConstantCache.hpp>
+#include <NZSL/SpirV/SpirvVariable.hpp>
 #include <NZSL/Ast/ConstantValue.hpp>
 #include <NZSL/Ast/Module.hpp>
 #include <string>

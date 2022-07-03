@@ -9,7 +9,7 @@
 
 #include <Nazara/Utils/TypeList.hpp>
 #include <NZSL/Config.hpp>
-#include <NZSL/Vector.hpp>
+#include <NZSL/Math/Vector.hpp>
 #include <NZSL/Ast/ExpressionType.hpp>
 #include <variant>
 #include <vector>

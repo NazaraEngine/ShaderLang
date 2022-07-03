@@ -9,7 +9,7 @@
 
 #include <NZSL/Config.hpp>
 #include <NZSL/Config.hpp>
-#include <NZSL/SourceLocation.hpp>
+#include <NZSL/Lang/SourceLocation.hpp>
 #include <NZSL/Ast/ExpressionValue.hpp>
 #include <NZSL/Ast/Module.hpp>
 #include <vector>
