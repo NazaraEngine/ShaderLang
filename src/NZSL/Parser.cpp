@@ -7,11 +7,11 @@
 #include <NZSL/ShaderBuilder.hpp>
 #include <NZSL/Lang/Errors.hpp>
 #include <NZSL/Lang/LangData.hpp>
-#include <array>
-#include <fstream>
 #include <frozen/string.h>
 #include <frozen/unordered_map.h>
+#include <array>
 #include <cassert>
+#include <fstream>
 #include <random>
 #include <regex>
 

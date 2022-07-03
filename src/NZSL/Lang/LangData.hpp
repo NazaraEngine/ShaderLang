@@ -4,8 +4,8 @@
 
 #pragma once
 
-#ifndef NZSL_AST_LANGDATA_HPP
-#define NZSL_AST_LANGDATA_HPP
+#ifndef NZSL_LANG_LANGDATA_HPP
+#define NZSL_LANG_LANGDATA_HPP
 
 #include <NZSL/Config.hpp>
 #include <NZSL/Enums.hpp>
@@ -36,4 +36,4 @@ namespace nzsl::Ast
 	});
 }
 
-#endif // NZSL_AST_LANGDATA_HPP
+#endif // NZSL_LANG_LANGDATA_HPP

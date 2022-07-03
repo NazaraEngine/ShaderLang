@@ -8,10 +8,9 @@
 #define NZSL_AST_CLONER_HPP
 
 #include <NZSL/Config.hpp>
-#include <NZSL/Config.hpp>
+#include <NZSL/Ast/ExpressionValue.hpp>
 #include <NZSL/Ast/ExpressionVisitor.hpp>
 #include <NZSL/Ast/StatementVisitor.hpp>
-#include <NZSL/Ast/ExpressionValue.hpp>
 #include <vector>
 
 namespace nzsl::Ast

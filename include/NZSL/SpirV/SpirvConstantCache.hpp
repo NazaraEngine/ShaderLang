@@ -4,14 +4,14 @@
 
 #pragma once
 
-#ifndef NZSL_SPIRVCONSTANTCACHE_HPP
-#define NZSL_SPIRVCONSTANTCACHE_HPP
+#ifndef NZSL_SPIRV_SPIRVCONSTANTCACHE_HPP
+#define NZSL_SPIRV_SPIRVCONSTANTCACHE_HPP
 
 #include <NZSL/Config.hpp>
-#include <NZSL/SpirV/SpirvData.hpp>
 #include <NZSL/Ast/ConstantValue.hpp>
 #include <NZSL/Ast/Enums.hpp>
 #include <NZSL/Ast/ExpressionType.hpp>
+#include <NZSL/SpirV/SpirvData.hpp>
 #include <memory>
 #include <optional>
 #include <string>
@@ -241,4 +241,4 @@ namespace nzsl
 
 #include <NZSL/SpirV/SpirvConstantCache.inl>
 
-#endif // NZSL_SPIRVCONSTANTCACHE_HPP
+#endif // NZSL_SPIRV_SPIRVCONSTANTCACHE_HPP

@@ -3,9 +3,9 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <NZSL/SpirV/SpirvConstantCache.hpp>
+#include <NZSL/Ast/Nodes.hpp>
 #include <NZSL/Math/FieldOffsets.hpp>
 #include <NZSL/SpirV/SpirvSection.hpp>
-#include <NZSL/Ast/Nodes.hpp>
 #include <tsl/ordered_map.h>
 #include <cassert>
 #include <stdexcept>

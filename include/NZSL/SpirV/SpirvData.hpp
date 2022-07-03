@@ -6,8 +6,8 @@
 
 #pragma once
 
-#ifndef NZSL_SPIRVDATA_HPP
-#define NZSL_SPIRVDATA_HPP
+#ifndef NZSL_SPIRV_SPIRVDATA_HPP
+#define NZSL_SPIRV_SPIRVDATA_HPP
 
 #include <Nazara/Utils/Flags.hpp>
 #include <NZSL/Config.hpp>
@@ -2033,4 +2033,4 @@ namespace Nz
 
 }
 	
-#endif // NZSL_SPIRVDATA_HPP
+#endif // NZSL_SPIRV_SPIRVDATA_HPP

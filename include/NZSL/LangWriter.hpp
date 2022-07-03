@@ -10,8 +10,8 @@
 #include <NZSL/Config.hpp>
 #include <NZSL/ShaderWriter.hpp>
 #include <NZSL/Ast/ExpressionVisitorExcept.hpp>
-#include <NZSL/Ast/StatementVisitorExcept.hpp>
 #include <NZSL/Ast/Module.hpp>
+#include <NZSL/Ast/StatementVisitorExcept.hpp>
 #include <set>
 #include <sstream>
 #include <string>

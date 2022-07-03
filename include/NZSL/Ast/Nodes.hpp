@@ -8,11 +8,11 @@
 #define NZSL_AST_NODES_HPP
 
 #include <NZSL/Config.hpp>
-#include <NZSL/Lang/SourceLocation.hpp>
 #include <NZSL/Ast/ConstantValue.hpp>
 #include <NZSL/Ast/Enums.hpp>
 #include <NZSL/Ast/ExpressionType.hpp>
 #include <NZSL/Ast/ExpressionValue.hpp>
+#include <NZSL/Lang/SourceLocation.hpp>
 #include <array>
 #include <memory>
 #include <optional>

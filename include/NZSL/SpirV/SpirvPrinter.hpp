@@ -4,10 +4,9 @@
 
 #pragma once
 
-#ifndef NZSL_SPIRVPRINTER_HPP
-#define NZSL_SPIRVPRINTER_HPP
+#ifndef NZSL_SPIRV_SPIRVPRINTER_HPP
+#define NZSL_SPIRV_SPIRVPRINTER_HPP
 
-#include <NZSL/Config.hpp>
 #include <NZSL/Config.hpp>
 #include <NZSL/SpirV/SpirvDecoder.hpp>
 #include <iosfwd>
@@ -57,4 +56,4 @@ namespace nzsl
 
 #include <NZSL/SpirV/SpirvPrinter.inl>
 
-#endif // NZSL_SPIRVPRINTER_HPP
+#endif // NZSL_SPIRV_SPIRVPRINTER_HPP

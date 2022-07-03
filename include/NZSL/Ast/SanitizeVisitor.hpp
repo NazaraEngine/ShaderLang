@@ -11,8 +11,8 @@
 #include <NZSL/Config.hpp>
 #include <NZSL/ModuleResolver.hpp>
 #include <NZSL/Ast/Cloner.hpp>
-#include <NZSL/Ast/Types.hpp>
 #include <NZSL/Ast/Module.hpp>
+#include <NZSL/Ast/Types.hpp>
 #include <functional>
 #include <unordered_map>
 #include <unordered_set>

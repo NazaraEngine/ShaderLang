@@ -8,7 +8,6 @@
 #define NZSL_AST_INDEXREMAPPERVISITOR_HPP
 
 #include <NZSL/Config.hpp>
-#include <NZSL/Config.hpp>
 #include <NZSL/Ast/Cloner.hpp>
 #include <functional>
 

@@ -2,6 +2,7 @@
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
+#include <NZSL/Serializer.hpp>
 #include <NZSL/ShaderBuilder.hpp>
 #include "Serializer.hpp"
 
@@ -18,4 +19,3 @@ namespace nzsl
 		m_ptrEnd = m_ptr + dataSize;
 	}
 }
-

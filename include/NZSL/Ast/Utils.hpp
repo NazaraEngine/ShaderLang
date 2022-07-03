@@ -8,9 +8,8 @@
 #define NZSL_AST_UTILS_HPP
 
 #include <NZSL/Config.hpp>
-#include <NZSL/Config.hpp>
-#include <NZSL/Ast/ExpressionVisitor.hpp>
 #include <NZSL/Ast/Enums.hpp>
+#include <NZSL/Ast/ExpressionVisitor.hpp>
 #include <vector>
 
 namespace nzsl::Ast

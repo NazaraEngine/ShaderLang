@@ -11,10 +11,10 @@
 #include <NZSL/Ast/Cloner.hpp>
 #include <NZSL/Ast/ConstantPropagationVisitor.hpp>
 #include <NZSL/Ast/ConstantValue.hpp>
-#include <NZSL/Lang/LangData.hpp>
+#include <NZSL/Ast/EliminateUnusedPassVisitor.hpp>
 #include <NZSL/Ast/RecursiveVisitor.hpp>
 #include <NZSL/Ast/Utils.hpp>
-#include <NZSL/Ast/EliminateUnusedPassVisitor.hpp>
+#include <NZSL/Lang/LangData.hpp>
 #include <frozen/unordered_map.h>
 #include <tsl/ordered_set.h>
 #include <cassert>

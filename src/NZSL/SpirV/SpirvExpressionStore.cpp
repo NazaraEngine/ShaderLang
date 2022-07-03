@@ -5,9 +5,9 @@
 #include <NZSL/SpirV/SpirvExpressionStore.hpp>
 #include <Nazara/Utils/Algorithm.hpp>
 #include <Nazara/Utils/StackArray.hpp>
+#include <NZSL/SpirvWriter.hpp>
 #include <NZSL/SpirV/SpirvAstVisitor.hpp>
 #include <NZSL/SpirV/SpirvBlock.hpp>
-#include <NZSL/SpirvWriter.hpp>
 #include <cassert>
 #include <numeric>
 

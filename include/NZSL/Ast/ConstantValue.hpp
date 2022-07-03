@@ -9,8 +9,8 @@
 
 #include <Nazara/Utils/TypeList.hpp>
 #include <NZSL/Config.hpp>
-#include <NZSL/Math/Vector.hpp>
 #include <NZSL/Ast/ExpressionType.hpp>
+#include <NZSL/Math/Vector.hpp>
 #include <variant>
 #include <vector>
 

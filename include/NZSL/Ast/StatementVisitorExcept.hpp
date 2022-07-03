@@ -8,7 +8,6 @@
 #define NZSL_AST_STATEMENTVISITOREXCEPT_HPP
 
 #include <NZSL/Config.hpp>
-#include <NZSL/Config.hpp>
 #include <NZSL/Ast/StatementVisitor.hpp>
 
 namespace nzsl::Ast

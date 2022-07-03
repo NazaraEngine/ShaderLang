@@ -4,12 +4,12 @@
 
 #pragma once
 
-#ifndef NZSL_SPIRVSECTIONBASE_HPP
-#define NZSL_SPIRVSECTIONBASE_HPP
+#ifndef NZSL_SPIRV_SPIRVSECTIONBASE_HPP
+#define NZSL_SPIRV_SPIRVSECTIONBASE_HPP
 
 #include <NZSL/Config.hpp>
-#include <NZSL/SpirV/SpirvData.hpp>
 #include <NZSL/Ast/Enums.hpp>
+#include <NZSL/SpirV/SpirvData.hpp>
 #include <string>
 #include <vector>
 
@@ -72,4 +72,4 @@ namespace nzsl
 
 #include <NZSL/SpirV/SpirvSectionBase.inl>
 
-#endif // NZSL_SPIRVSECTIONBASE_HPP
+#endif // NZSL_SPIRV_SPIRVSECTIONBASE_HPP

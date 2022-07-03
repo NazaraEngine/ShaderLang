@@ -3,8 +3,8 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <NZSL/Lexer.hpp>
-#include <NZSL/Lang/Errors.hpp>
 #include <Nazara/Utils/Algorithm.hpp>
+#include <NZSL/Lang/Errors.hpp>
 #include <fast_float/fast_float.h>
 #include <fmt/format.h>
 #include <frozen/string.h>

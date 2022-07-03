@@ -8,12 +8,11 @@
 #define NZSL_SPIRVWRITER_HPP
 
 #include <NZSL/Config.hpp>
-#include <NZSL/Config.hpp>
 #include <NZSL/ShaderWriter.hpp>
-#include <NZSL/SpirV/SpirvConstantCache.hpp>
-#include <NZSL/SpirV/SpirvVariable.hpp>
 #include <NZSL/Ast/ConstantValue.hpp>
 #include <NZSL/Ast/Module.hpp>
+#include <NZSL/SpirV/SpirvConstantCache.hpp>
+#include <NZSL/SpirV/SpirvVariable.hpp>
 #include <string>
 #include <string_view>
 #include <unordered_map>

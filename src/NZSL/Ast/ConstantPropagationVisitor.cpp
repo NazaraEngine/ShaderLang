@@ -3,8 +3,8 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <NZSL/Ast/ConstantPropagationVisitor.hpp>
-#include <NZSL/Lang/Errors.hpp>
 #include <NZSL/ShaderBuilder.hpp>
+#include <NZSL/Lang/Errors.hpp>
 #include <cassert>
 #include <cmath>
 #include <stdexcept>

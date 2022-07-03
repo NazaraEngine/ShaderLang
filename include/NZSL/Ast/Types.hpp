@@ -7,9 +7,9 @@
 #ifndef NZSL_AST_TYPES_HPP
 #define NZSL_AST_TYPES_HPP
 
-#include <NZSL/Lang/SourceLocation.hpp>
 #include <NZSL/Ast/ConstantValue.hpp>
 #include <NZSL/Ast/ExpressionType.hpp>
+#include <NZSL/Lang/SourceLocation.hpp>
 #include <functional>
 
 namespace nzsl::Ast

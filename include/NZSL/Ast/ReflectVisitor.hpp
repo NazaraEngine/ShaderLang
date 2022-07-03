@@ -4,14 +4,13 @@
 
 #pragma once
 
-#ifndef NZSL_AST_REFLECT_HPP
-#define NZSL_AST_REFLECT_HPP
+#ifndef NZSL_AST_REFLECTVISITOR_HPP
+#define NZSL_AST_REFLECTVISITOR_HPP
 
 #include <NZSL/Config.hpp>
-#include <NZSL/Config.hpp>
-#include <NZSL/Lang/SourceLocation.hpp>
 #include <NZSL/Ast/Module.hpp>
 #include <NZSL/Ast/RecursiveVisitor.hpp>
+#include <NZSL/Lang/SourceLocation.hpp>
 #include <vector>
 
 namespace nzsl::Ast
@@ -69,4 +68,4 @@ namespace nzsl::Ast
 
 #include <NZSL/Ast/ReflectVisitor.inl>
 
-#endif // NZSL_AST_REFLECT_HPP
+#endif // NZSL_AST_REFLECTVISITOR_HPP

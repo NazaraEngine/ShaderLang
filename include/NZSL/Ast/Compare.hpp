@@ -8,10 +8,9 @@
 #define NZSL_AST_COMPARE_HPP
 
 #include <NZSL/Config.hpp>
-#include <NZSL/Config.hpp>
-#include <NZSL/Lang/SourceLocation.hpp>
 #include <NZSL/Ast/ExpressionValue.hpp>
 #include <NZSL/Ast/Module.hpp>
+#include <NZSL/Lang/SourceLocation.hpp>
 #include <vector>
 
 namespace nzsl::Ast

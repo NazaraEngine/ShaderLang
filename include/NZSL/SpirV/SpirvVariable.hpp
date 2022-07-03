@@ -4,8 +4,8 @@
 
 #pragma once
 
-#ifndef NZSL_SPIRVVARIABLE_HPP
-#define NZSL_SPIRVVARIABLE_HPP
+#ifndef NZSL_SPIRV_SPIRVVARIABLE_HPP
+#define NZSL_SPIRV_SPIRVVARIABLE_HPP
 
 #include <NZSL/Config.hpp>
 #include <NZSL/SpirV/SpirvData.hpp>
@@ -20,4 +20,4 @@ namespace nzsl
 	};
 }
 
-#endif // NZSL_SPIRVVARIABLE_HPP
+#endif // NZSL_SPIRV_SPIRVVARIABLE_HPP

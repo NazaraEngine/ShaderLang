@@ -8,16 +8,15 @@
 #define NZSL_GLSLWRITER_HPP
 
 #include <NZSL/Config.hpp>
-#include <NZSL/Config.hpp>
 #include <NZSL/ShaderWriter.hpp>
 #include <NZSL/Ast/ExpressionVisitorExcept.hpp>
-#include <NZSL/Ast/StatementVisitorExcept.hpp>
 #include <NZSL/Ast/Module.hpp>
 #include <NZSL/Ast/SanitizeVisitor.hpp>
+#include <NZSL/Ast/StatementVisitorExcept.hpp>
 #include <string>
+#include <unordered_map>
 #include <variant>
 #include <vector>
-#include <unordered_map>
 
 namespace nzsl
 {

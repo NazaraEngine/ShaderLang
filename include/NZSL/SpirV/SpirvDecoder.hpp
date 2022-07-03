@@ -4,10 +4,9 @@
 
 #pragma once
 
-#ifndef NZSL_SPIRVDECODER_HPP
-#define NZSL_SPIRVDECODER_HPP
+#ifndef NZSL_SPIRV_SPIRVDECODER_HPP
+#define NZSL_SPIRV_SPIRVDECODER_HPP
 
-#include <NZSL/Config.hpp>
 #include <NZSL/Config.hpp>
 #include <NZSL/SpirV/SpirvData.hpp>
 #include <functional>
@@ -58,4 +57,4 @@ namespace nzsl
 
 #include <NZSL/SpirV/SpirvDecoder.inl>
 
-#endif // NZSL_SPIRVDECODER_HPP
+#endif // NZSL_SPIRV_SPIRVDECODER_HPP

@@ -4,11 +4,11 @@
 
 #pragma once
 
-#ifndef NZSL_VECTOR_HPP
-#define NZSL_VECTOR_HPP
+#ifndef NZSL_MATH_VECTOR_HPP
+#define NZSL_MATH_VECTOR_HPP
 
-#include <NZSL/Config.hpp>
 #include <Nazara/Utils/Algorithm.hpp>
+#include <NZSL/Config.hpp>
 #include <array>
 #include <ostream>
 #include <type_traits>
@@ -117,4 +117,4 @@ namespace nzsl
 
 #include <NZSL/Math/Vector.inl>
 
-#endif // NZSL_VECTOR_HPP
+#endif // NZSL_MATH_VECTOR_HPP
