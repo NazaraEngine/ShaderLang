@@ -8,7 +8,7 @@
 #define NZSL_LEXER_HPP
 
 #include <NZSL/Config.hpp>
-#include <NZSL/SourceLocation.hpp>
+#include <NZSL/Lang/SourceLocation.hpp>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -21,7 +21,7 @@ namespace nzsl
 	{
 #define NZSL_SHADERLANG_TOKEN(X) X,
 
-#include <NZSL/TokenList.hpp>
+#include <NZSL/Lang/TokenList.hpp>
 	};
 
 	struct Token

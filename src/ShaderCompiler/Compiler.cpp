@@ -7,10 +7,10 @@
 #include <NZSL/FilesystemModuleResolver.hpp>
 #include <NZSL/GlslWriter.hpp>
 #include <NZSL/LangWriter.hpp>
-#include <NZSL/Errors.hpp>
+#include <NZSL/Lang/Errors.hpp>
 #include <NZSL/Lexer.hpp>
 #include <NZSL/Parser.hpp>
-#include <NZSL/SpirvPrinter.hpp>
+#include <NZSL/SpirV/SpirvPrinter.hpp>
 #include <NZSL/SpirvWriter.hpp>
 #include <NZSL/Serializer.hpp>
 #include <NZSL/Ast/AstSerializer.hpp>

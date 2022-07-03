@@ -8,10 +8,10 @@
 #include <Nazara/Utils/StackArray.hpp>
 #include <Nazara/Utils/StackVector.hpp>
 #include <NZSL/ShaderBuilder.hpp>
-#include <NZSL/Errors.hpp>
+#include <NZSL/Lang/Errors.hpp>
 #include <NZSL/Ast/ConstantPropagationVisitor.hpp>
 #include <NZSL/Ast/ExportVisitor.hpp>
-#include <NZSL/Ast/LangData.hpp>
+#include <NZSL/Lang/LangData.hpp>
 #include <NZSL/Ast/RecursiveVisitor.hpp>
 #include <NZSL/Ast/ReflectVisitor.hpp>
 #include <NZSL/Ast/Utils.hpp>

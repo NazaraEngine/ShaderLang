@@ -1,4 +1,4 @@
-#include <NZSL/FieldOffsets.hpp>
+#include <NZSL/Math/FieldOffsets.hpp>
 #include <catch2/catch.hpp>
 
 TEST_CASE("Field offsets", "[FieldOffsets]")

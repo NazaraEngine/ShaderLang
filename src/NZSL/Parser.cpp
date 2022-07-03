@@ -5,8 +5,8 @@
 #include <NZSL/Parser.hpp>
 #include <Nazara/Utils/Algorithm.hpp>
 #include <NZSL/ShaderBuilder.hpp>
-#include <NZSL/Errors.hpp>
-#include <NZSL/Ast/LangData.hpp>
+#include <NZSL/Lang/Errors.hpp>
+#include <NZSL/Lang/LangData.hpp>
 #include <array>
 #include <fstream>
 #include <frozen/string.h>

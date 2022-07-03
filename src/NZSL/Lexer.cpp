@@ -3,7 +3,7 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <NZSL/Lexer.hpp>
-#include <NZSL/Errors.hpp>
+#include <NZSL/Lang/Errors.hpp>
 #include <Nazara/Utils/Algorithm.hpp>
 #include <fast_float/fast_float.h>
 #include <fmt/format.h>
@@ -549,7 +549,7 @@ namespace nzsl
 		{
 #define NZSL_SHADERLANG_TOKEN(X) case TokenType:: X: return #X;
 
-#include <NZSL/TokenList.hpp>
+#include <NZSL/Lang/TokenList.hpp>
 		}
 
 		return "<Error>";

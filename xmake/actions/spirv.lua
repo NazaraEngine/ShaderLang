@@ -425,7 +425,7 @@ namespace Nz
 
 // this file was automatically generated and should not be edited
 
-#include <NZSL/SpirvData.hpp>
+#include <NZSL/SpirV/SpirvData.hpp>
 #include <algorithm>
 #include <array>
 #include <cassert>
