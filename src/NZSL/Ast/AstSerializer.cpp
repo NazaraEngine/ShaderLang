@@ -386,6 +386,7 @@ namespace nzsl::Ast
 
 	void SerializerBase::Serialize(ForStatement& node)
 	{
+		OptVal(node.varIndex);
 		ExprValue(node.unroll);
 		Value(node.varName);
 		Node(node.fromExpr);
@@ -396,6 +397,7 @@ namespace nzsl::Ast
 
 	void SerializerBase::Serialize(ForEachStatement& node)
 	{
+		OptVal(node.varIndex);
 		ExprValue(node.unroll);
 		Value(node.varName);
 		Node(node.expression);
