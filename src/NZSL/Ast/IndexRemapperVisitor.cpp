@@ -162,7 +162,7 @@ namespace nzsl::Ast
 		if (clone->varIndex)
 		{
 			std::size_t newVarIndex = m_context->options->varIndexGenerator(*clone->varIndex);
-			UniqueInsert(m_context->newConstIndices, *clone->varIndex, newVarIndex);
+			UniqueInsert(m_context->newVarIndices, *clone->varIndex, newVarIndex);
 			clone->varIndex = newVarIndex;
 		}
 		else if (m_context->options->forceIndexGeneration)
