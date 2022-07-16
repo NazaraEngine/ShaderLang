@@ -112,7 +112,11 @@ namespace nzsl::Ast
 			for (auto& parameter : clone->parameters)
 			{
 				if (parameter.varIndex)
-					parameter.varIndex = Nz::Retrieve(m_context->newVarIndices, *parameter.varIndex);
+				{
+					std::size_t newVarIndex = m_context->options->varIndexGenerator(*parameter.varIndex);
+					UniqueInsert(m_context->newVarIndices, *parameter.varIndex, newVarIndex);
+					parameter.varIndex = newVarIndex;
+				}
 				else if (m_context->options->forceIndexGeneration)
 					parameter.varIndex = m_context->options->varIndexGenerator(std::numeric_limits<std::size_t>::max());
 
