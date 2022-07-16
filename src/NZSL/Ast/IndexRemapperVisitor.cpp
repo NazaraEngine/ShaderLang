@@ -43,6 +43,15 @@ namespace nzsl::Ast
 		return Cloner::Clone(statement);
 	}
 
+	ExpressionPtr IndexRemapperVisitor::CloneExpression(Expression& expr)
+	{
+		auto clonedExpr = Cloner::CloneExpression(expr);
+		if (clonedExpr->cachedExpressionType)
+			clonedExpr->cachedExpressionType = RemapType(*clonedExpr->cachedExpressionType);
+
+		return clonedExpr;
+	}
+
 	StatementPtr IndexRemapperVisitor::Clone(DeclareAliasStatement& node)
 	{
 		DeclareAliasStatementPtr clone = Nz::StaticUniquePointerCast<DeclareAliasStatement>(Cloner::Clone(node));
