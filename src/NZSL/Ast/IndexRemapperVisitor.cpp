@@ -145,6 +145,22 @@ namespace nzsl::Ast
 		return clone;
 	}
 
+	StatementPtr IndexRemapperVisitor::Clone(DeclareOptionStatement& node)
+	{
+		DeclareOptionStatementPtr clone = Nz::StaticUniquePointerCast<DeclareOptionStatement>(Cloner::Clone(node));
+
+		if (clone->optIndex)
+		{
+			std::size_t newConstIndex = m_context->options->constIndexGenerator(*clone->optIndex);
+			UniqueInsert(m_context->newConstIndices, *clone->optIndex, newConstIndex);
+			clone->optIndex = newConstIndex;
+		}
+		else if (m_context->options->forceIndexGeneration)
+			clone->optIndex = m_context->options->constIndexGenerator(std::numeric_limits<std::size_t>::max());
+
+		return clone;
+	}
+
 	StatementPtr IndexRemapperVisitor::Clone(DeclareStructStatement& node)
 	{
 		DeclareStructStatementPtr clone = Nz::StaticUniquePointerCast<DeclareStructStatement>(Cloner::Clone(node));
