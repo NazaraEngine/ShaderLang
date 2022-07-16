@@ -139,8 +139,8 @@ namespace nzsl::Ast
 			}
 		}
 
-		if (node.returnType.HasValue())
-			HandleType(node.returnType);
+		if (clone->returnType.HasValue())
+			HandleType(clone->returnType);
 
 		return clone;
 	}
@@ -177,7 +177,7 @@ namespace nzsl::Ast
 		else if (m_context->options->forceIndexGeneration)
 			clone->varIndex = m_context->options->varIndexGenerator(std::numeric_limits<std::size_t>::max());
 
-		HandleType(node.varType);
+		HandleType(clone->varType);
 
 		return clone;
 	}
