@@ -106,7 +106,7 @@ jobs:
       run: xmake run UnitTests
 
     # Install the result files
-    - name: Install Nazara
+    - name: Install NZSL
       run: xmake install -vo package
 
     # Upload artifacts
