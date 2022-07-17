@@ -59,8 +59,8 @@ TEST_CASE("Standalone compiler", "[NZSLC]")
 		auto Cleanup = []
 		{
 			std::filesystem::remove("../resources/Shader.nzslb");
-			std::filesystem::remove("../resources/Modules/Color.nzslb");
-			std::filesystem::remove("../resources/Modules/Data/OutputStruct.nzslb");
+			std::filesystem::remove("../resources/modules/Color.nzslb");
+			std::filesystem::remove("../resources/modules/Data/OutputStruct.nzslb");
 		};
 
 		Cleanup();
@@ -69,11 +69,11 @@ TEST_CASE("Standalone compiler", "[NZSLC]")
 
 		// Compile each module separately
 		ExecuteCommand("./nzslc --compile=nzslb --partial ../resources/Shader.nzsl");
-		ExecuteCommand("./nzslc --compile=nzslb --partial ../resources/Modules/Color.nzsl");
-		ExecuteCommand("./nzslc --compile=nzslb --partial ../resources/Modules/Data/OutputStruct.nzsl");
-		ExecuteCommand("./nzslc ../resources/Modules/Data/DataStruct.nzslb"); //< validation
+		ExecuteCommand("./nzslc --compile=nzslb --partial ../resources/modules/Color.nzsl");
+		ExecuteCommand("./nzslc --compile=nzslb --partial ../resources/modules/Data/OutputStruct.nzsl");
+		ExecuteCommand("./nzslc ../resources/modules/Data/DataStruct.nzslb"); //< validation
 
 		// Try to generate a full shader based on partial compilation result
-		ExecuteCommand("./nzslc --compile=glsl,spv-txt --output=@stdout -m ../resources/Modules/Color.nzslb  -m ../resources/Modules/Data/OutputStruct.nzslb -m ../resources/Modules/Data/DataStruct.nzslb ../resources/Shader.nzslb");
+		ExecuteCommand("./nzslc --compile=glsl,spv-txt --output=@stdout -m ../resources/modules/Color.nzslb  -m ../resources/modules/Data/OutputStruct.nzslb -m ../resources/modules/Data/DataStruct.nzslb ../resources/Shader.nzslb");
 	}
 }

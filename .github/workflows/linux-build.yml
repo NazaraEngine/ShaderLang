@@ -71,7 +71,7 @@ jobs:
       run: xmake run UnitTests
 
     # Install the result files
-    - name: Install Nazara
+    - name: Install NZSL
       if: ${{ matrix.mode }} == 'debug' || ${{ matrix.mode }} == 'release'
       run: xmake install -vo package
 
