@@ -11,8 +11,7 @@ if has_config("tests") then
 		add_defines("CATCH_CONFIG_NO_POSIX_SIGNALS")
 	end
 
-	add_requires("catch2", "spirv-tools")
-	add_requires("tiny-process-library", { debug = is_mode("debug") })
+	add_requires("catch2", "spirv-tools", "tiny-process-library")
 	add_requires("glslang", { configs = { rtti = is_mode("ubsan") } }) -- ubsan requires rtti
 
 	add_includedirs("src")
@@ -25,9 +24,12 @@ if has_config("tests") then
 		add_files("src/**.cpp")
 
 		add_deps("nzsl")
-		add_packages("catch2", "fmt", "glslang", "spirv-tools", "tiny-process-library")
+		add_packages("catch2", "glslang", "spirv-tools")
 
-		if not has_config("with_nzslc") then
+		if has_config("with_nzslc") then
+			add_deps("nzslc", { links = {} })
+			add_packages("fmt", "tiny-process-library")
+		else
 			remove_files("src/Tests/NzslcTests.cpp")
 		end
 end
