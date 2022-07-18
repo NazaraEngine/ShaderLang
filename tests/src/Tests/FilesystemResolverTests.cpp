@@ -40,9 +40,12 @@ TEST_CASE("FilesystemModuleResolver", "[Shader]")
 	ExpectGLSL(*shaderModule, R"(
 // Module Color
 
+uniform sampler2D tex1_Color;
+
 vec4 GenerateColor_Color()
 {
-	return vec4(0.0, 0.0, 1.0, 1.0);
+	float cachedResult = 0.0;
+	return texture(tex1_Color, vec2(cachedResult, cachedResult));
 }
 
 vec4 GetColor_Color()
@@ -61,7 +64,7 @@ struct Data_DataStruct
 
 vec4 GetColorFromData_OutputStruct(Data_DataStruct data)
 {
-	return data.color;
+	return data.color * (vec4(0.5, 0.5, 0.5, 1.0));
 }
 
 struct Output_OutputStruct
@@ -70,10 +73,6 @@ struct Output_OutputStruct
 };
 
 // Main file
-
-uniform sampler2D tex1;
-
-uniform sampler2D tex2;
 
 /*************** Outputs ***************/
 layout(location = 0) out vec4 _nzslOut_color;
@@ -97,14 +96,22 @@ module Shader;
 [nzsl_version("1.0")]
 module _Color
 {
+	[set(0)]
+	external
+	{
+		[set(0), binding(0)] tex1: sampler2D[f32]
+	}
+
 	fn GenerateColor() -> vec4[f32]
 	{
-		return vec4[f32](0.0, 0.0, 1.0, 1.0);
+		return tex1.Sample((0.0).xx);
 	}
+
+	alias GenColor = GenerateColor;
 
 	fn GetColor() -> vec4[f32]
 	{
-		return GenerateColor();
+		return GenColor();
 	}
 
 }
@@ -122,9 +129,10 @@ module _OutputStruct
 {
 	alias Data = _DataStruct.Data;
 
+	option ColorMultiplier: vec4[f32] = vec4[f32](0.5, 0.5, 0.5, 1.0);
 	fn GetColorFromData(data: Data) -> vec4[f32]
 	{
-		return data.color;
+		return data.color * ColorMultiplier;
 	}
 
 	struct Output
@@ -141,18 +149,6 @@ alias GetColorFromData = _OutputStruct.GetColorFromData;
 
 alias Output = _OutputStruct.Output;
 
-[set(0)]
-external
-{
-	[set(0), binding(0)] tex1: sampler2D[f32]
-}
-
-[set(1)]
-external
-{
-	[set(1), binding(0)] tex2: sampler2D[f32]
-}
-
 [entry(frag)]
 fn main() -> Output
 {
@@ -165,39 +161,42 @@ fn main() -> Output
 )");
 
 	ExpectSPIRV(*shaderModule, R"(
-OpFunction
-OpLabel
-OpCompositeConstruct
-OpReturnValue
-OpFunctionEnd
-OpFunction
-OpLabel
-OpFunctionCall
-OpReturnValue
-OpFunctionEnd
-OpFunction
-OpFunctionParameter
-OpLabel
-OpAccessChain
-OpLoad
-OpReturnValue
-OpFunctionEnd
-OpFunction
-OpLabel
-OpVariable
-OpVariable
-OpVariable
-OpFunctionCall
-OpAccessChain
-OpStore
-OpLoad
-OpStore
-OpFunctionCall
-OpAccessChain
-OpStore
-OpLoad
-OpCompositeExtract
-OpStore
-OpReturn
-OpFunctionEnd)");
+%24 = OpFunction %6 FunctionControl(0) %7
+%28 = OpLabel
+%29 = OpLoad %3 %5
+%30 = OpCompositeConstruct %11 %8 %8
+%31 = OpImageSampleImplicitLod %6 %29 %30
+      OpReturnValue %31
+      OpFunctionEnd
+%25 = OpFunction %6 FunctionControl(0) %7
+%32 = OpLabel
+%33 = OpFunctionCall %6 %24
+      OpReturnValue %33
+      OpFunctionEnd
+%26 = OpFunction %6 FunctionControl(0) %14
+%34 = OpFunctionParameter %13
+%35 = OpLabel
+%37 = OpAccessChain %36 %34 %10
+%38 = OpLoad %6 %37
+%39 = OpFMul %6 %38 %17
+      OpReturnValue %39
+      OpFunctionEnd
+%27 = OpFunction %19 FunctionControl(0) %20
+%40 = OpLabel
+%41 = OpVariable %13 StorageClass(Function)
+%42 = OpVariable %23 StorageClass(Function)
+%43 = OpVariable %13 StorageClass(Function)
+%44 = OpFunctionCall %6 %25
+%45 = OpAccessChain %36 %41 %10
+      OpStore %45 %44
+%46 = OpLoad %12 %41
+      OpStore %43 %46
+%47 = OpFunctionCall %6 %26 %43
+%48 = OpAccessChain %36 %42 %10
+      OpStore %48 %47
+%49 = OpLoad %18 %42
+%50 = OpCompositeExtract %6 %49 0
+      OpStore %22 %50
+      OpReturn
+      OpFunctionEnd)", {}, true);
 }

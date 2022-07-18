@@ -5,18 +5,6 @@ import GetColor as Color from Color;
 import * from DataStruct;
 import * from OutputStruct;
 
-[set(0)]
-external
-{
-    [binding(0)] tex1: sampler2D[f32]
-}
-
-[set(1)]
-external
-{
-    [binding(0)] tex2: sampler2D[f32]
-}
-
 [entry(frag)]
 fn main() -> Output
 {
