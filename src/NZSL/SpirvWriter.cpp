@@ -77,14 +77,13 @@ namespace nzsl
 			using LocationDecoration = tsl::ordered_map<std::uint32_t, std::uint32_t>;
 			using ExtInstList = tsl::ordered_set<std::string>;
 			using ExtVarContainer = std::unordered_map<std::size_t /*varIndex*/, UniformVar>;
+			using FunctionContainer = tsl::ordered_map<std::size_t, SpirvAstVisitor::FuncData>;
 			using LocalContainer = tsl::ordered_set<Ast::ExpressionType>;
-			using FunctionContainer = std::vector<std::reference_wrapper<Ast::DeclareFunctionStatement>>;
 			using StructContainer = std::vector<Ast::StructDescription*>;
 
-			PreVisitor(const SpirvWriter& writer, SpirvConstantCache& constantCache, std::unordered_map<std::size_t, SpirvAstVisitor::FuncData>& funcs) :
+			PreVisitor(const SpirvWriter& writer, SpirvConstantCache& constantCache) :
 			m_constantCache(constantCache),
-			m_writer(writer),
-			m_funcs(funcs)
+			m_writer(writer)
 			{
 				m_constantCache.SetStructCallback([this](std::size_t structIndex) -> const Ast::StructDescription&
 				{
@@ -114,7 +113,9 @@ namespace nzsl
 				RecursiveVisitor::Visit(node);
 
 				assert(m_funcIndex);
-				auto& func = Nz::Retrieve(m_funcs, *m_funcIndex);
+				auto it = funcs.find(*m_funcIndex);
+				assert(it != funcs.end());
+				auto& func = it.value();
 
 				auto& funcCall = func.funcCalls.emplace_back();
 				funcCall.firstVarIndex = func.variables.size();
@@ -268,7 +269,7 @@ namespace nzsl
 				assert(node.funcIndex);
 				std::size_t funcIndex = *node.funcIndex;
 
-				auto& funcData = m_funcs[funcIndex];
+				auto& funcData = funcs[funcIndex];
 				funcData.name = node.name;
 				funcData.funcIndex = funcIndex;
 
@@ -431,7 +432,9 @@ namespace nzsl
 				RecursiveVisitor::Visit(node);
 
 				assert(m_funcIndex);
-				auto& func = m_funcs[*m_funcIndex];
+				auto it = funcs.find(*m_funcIndex);
+				assert(it != funcs.end());
+				auto& func = it.value();
 
 				assert(node.varIndex);
 				func.varIndexToVarId[*node.varIndex] = func.variables.size();
@@ -555,6 +558,7 @@ namespace nzsl
 			ConstantVariables constantVariables;
 			ExtInstList extInsts;
 			ExtVarContainer extVars;
+			FunctionContainer funcs;
 			LocationDecoration locationDecorations;
 			StructContainer declaredStructs;
 			tsl::ordered_set<SpirvCapability> spirvCapabilities;
@@ -563,13 +567,12 @@ namespace nzsl
 			SpirvConstantCache& m_constantCache;
 			const SpirvWriter& m_writer;
 			std::optional<std::size_t> m_funcIndex;
-			std::unordered_map<std::size_t, SpirvAstVisitor::FuncData>& m_funcs;
 	};
 
 	struct SpirvWriter::State
 	{
 		State() :
-		constantTypeCache(nextVarIndex)
+		constantTypeCache(nextResultId)
 		{
 		}
 
@@ -581,10 +584,9 @@ namespace nzsl
 		};
 
 		std::unordered_map<std::string, std::uint32_t> extensionInstructionSet;
-		std::unordered_map<std::string, std::uint32_t> varToResult;
 		std::unordered_map<std::size_t, SpirvAstVisitor::FuncData> funcs;
 		std::vector<std::uint32_t> resultIds;
-		std::uint32_t nextVarIndex = 1;
+		std::uint32_t nextResultId = 1;
 		SpirvConstantCache constantTypeCache; //< init after nextVarIndex
 		PreVisitor* previsitor;
 
@@ -650,7 +652,7 @@ namespace nzsl
 		});
 
 		// Register all extended instruction sets
-		PreVisitor previsitor(*this, state.constantTypeCache, state.funcs);
+		PreVisitor previsitor(*this, state.constantTypeCache);
 		for (const auto& importedModule : targetModule->importedModules)
 			importedModule.module->rootNode->Visit(previsitor);
 
@@ -662,8 +664,13 @@ namespace nzsl
 			state.extensionInstructionSet[extInst] = AllocateResultId();
 
 		// Assign function ID (required for forward declaration)
-		for (auto&& [funcIndex, func] : state.funcs)
+		for (auto it = previsitor.funcs.begin(); it != previsitor.funcs.end(); ++it)
+		{
+			auto& func = it.value();
 			func.funcId = AllocateResultId();
+			state.funcs.emplace(it.key(), std::move(func));
+		}
+		previsitor.funcs.clear(); //< since we moved every value, prevent further usage
 
 		SpirvAstVisitor visitor(*this, state.instructions, state.funcs);
 		for (const auto& importedModule : targetModule->importedModules)
@@ -724,7 +731,7 @@ namespace nzsl
 
 	std::uint32_t SpirvWriter::AllocateResultId()
 	{
-		return m_currentState->nextVarIndex++;
+		return m_currentState->nextResultId++;
 	}
 
 	void SpirvWriter::AppendHeader()
@@ -736,7 +743,7 @@ namespace nzsl
 		m_currentState->header.AppendRaw(version); //< SPIR-V version number
 		m_currentState->header.AppendRaw(0); //< Generator identifier (TODO: Register generator to Khronos)
 
-		m_currentState->header.AppendRaw(m_currentState->nextVarIndex); //< Bound (ID count)
+		m_currentState->header.AppendRaw(m_currentState->nextResultId); //< Bound (ID count)
 		m_currentState->header.AppendRaw(0); //< Instruction schema (required to be 0 for now)
 
 		for (SpirvCapability capability : m_currentState->previsitor->spirvCapabilities)
