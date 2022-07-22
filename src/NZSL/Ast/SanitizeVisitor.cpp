@@ -1239,7 +1239,7 @@ namespace nzsl::Ast
 				varType = std::get<StorageType>(targetType).containedType;
 			else if (IsUniformType(targetType))
 				varType = std::get<UniformType>(targetType).containedType;
-			else if (IsSamplerType(targetType))
+			else if (IsSamplerType(targetType) || IsPrimitiveType(targetType) || IsVectorType(targetType) || IsMatrixType(targetType))
 				varType = targetType;
 			else
 				throw CompilerExtTypeNotAllowedError{ extVar.sourceLocation, extVar.name, ToString(*resolvedType, extVar.sourceLocation) };

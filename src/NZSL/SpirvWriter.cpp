@@ -205,15 +205,8 @@ namespace nzsl
 
 					const Ast::ExpressionType& extVarType = extVar.type.GetResultingValue();
 
-					if (Ast::IsSamplerType(extVarType))
+					if (Ast::IsStorageType(extVarType) || Ast::IsUniformType(extVarType))
 					{
-						variable.storageClass = SpirvStorageClass::UniformConstant;
-						variable.type = m_constantCache.BuildPointerType(extVarType, variable.storageClass);
-					}
-					else
-					{
-						assert(Ast::IsStorageType(extVarType) || Ast::IsUniformType(extVarType));
-
 						SpirvDecoration decoration;
 						std::size_t structIndex;
 						if (Ast::IsStorageType(extVarType))
@@ -249,6 +242,13 @@ namespace nzsl
 						const auto& type = m_constantCache.BuildType(*declaredStructs[structIndex], { decoration });
 						variable.type = m_constantCache.BuildPointerType(type, variable.storageClass);
 					}
+					else if (Ast::IsSamplerType(extVarType))
+					{
+						variable.storageClass = SpirvStorageClass::UniformConstant;
+						variable.type = m_constantCache.BuildPointerType(extVarType, variable.storageClass);
+					}
+					else
+						throw std::runtime_error("unsupported type used in external block (SPIR-V doesn't allow primitive types as uniforms)");
 
 					assert(extVar.bindingIndex.IsResultingValue());
 
