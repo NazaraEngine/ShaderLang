@@ -21,10 +21,10 @@ jobs:
         arch: [x86, x64]
         kind: [static, shared]
         type:
-        - { name: "Debug MD", mode: "debug", runtime: "MDd" }
-        - { name: "Debug MT", mode: "debug", runtime: "MTd" }
-        - { name: "Release MD", mode: "release", runtime: "MD" }
-        - { name: "Release MT", mode: "release", runtime: "MT" }
+        - { mode: "debug", runtime: "MDd" }
+        - { mode: "debug", runtime: "MTd" }
+        - { mode: "release", runtime: "MD" }
+        - { mode: "release", runtime: "MT" }
 
     runs-on: ${{ matrix.os }}
     if: "!contains(github.event.head_commit.message, 'ci skip')"
