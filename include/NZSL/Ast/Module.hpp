@@ -41,6 +41,9 @@ namespace nzsl::Ast
 
 			struct Metadata
 			{
+				std::string author;
+				std::string description;
+				std::string license;
 				std::string moduleName;
 				std::uint32_t shaderLangVersion;
 			};

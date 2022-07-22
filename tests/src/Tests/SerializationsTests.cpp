@@ -209,6 +209,9 @@ TEST_CASE("serialization", "[Shader]")
 	{
 		ParseSerializeUnserialize(R"(
 [nzsl_version("1.0")]
+[author("Lynix")]
+[desc("Serialization\" \"test")]
+[license("Public domain")]
 module;
 
 struct Data

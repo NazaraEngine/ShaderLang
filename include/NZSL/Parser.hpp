@@ -85,9 +85,10 @@ namespace nzsl
 			std::string ParseModuleName();
 			Ast::ExpressionPtr ParseType();
 
+			const std::string& ExtractStringAttribute(Attribute&& attribute);
 			template<typename T> void HandleUniqueAttribute(Ast::ExpressionValue<T>& targetAttribute, Attribute&& attribute);
 			template<typename T> void HandleUniqueAttribute(Ast::ExpressionValue<T>& targetAttribute, Attribute&& attribute, T defaultValue);
-			template<typename T, typename M> void HandleUniqueStringAttribute(Ast::ExpressionValue<T>& targetAttribute, Attribute&& attribute, const M& map, std::optional<T> defaultValue = {});
+			template<typename T, typename M> void HandleUniqueStringAttributeKey(Ast::ExpressionValue<T>& targetAttribute, Attribute&& attribute, const M& map, std::optional<T> defaultValue = {});
 
 			static int GetTokenPrecedence(TokenType token);
 

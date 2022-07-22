@@ -6,6 +6,7 @@
 #include <Nazara/Utils/Algorithm.hpp>
 #include <Nazara/Utils/CallOnExit.hpp>
 #include <NZSL/Enums.hpp>
+#include <NZSL/Lexer.hpp>
 #include <NZSL/ShaderBuilder.hpp>
 #include <NZSL/Ast/Cloner.hpp>
 #include <NZSL/Ast/RecursiveVisitor.hpp>
@@ -18,6 +19,13 @@
 
 namespace nzsl
 {
+	struct LangWriter::AuthorAttribute
+	{
+		const std::string& author;
+
+		bool HasValue() const { return !author.empty(); }
+	};
+
 	struct LangWriter::BindingAttribute
 	{
 		const Ast::ExpressionValue<std::uint32_t>& bindingIndex;
@@ -37,6 +45,13 @@ namespace nzsl
 		const Ast::ExpressionValue<Ast::DepthWriteMode>& writeMode;
 
 		bool HasValue() const { return writeMode.HasValue(); }
+	};
+
+	struct LangWriter::DescriptionAttribute
+	{
+		const std::string& description;
+
+		bool HasValue() const { return !description.empty(); }
 	};
 
 	struct LangWriter::EarlyFragmentTestsAttribute
@@ -65,6 +80,13 @@ namespace nzsl
 		const Ast::ExpressionValue<StructLayout>& layout;
 
 		bool HasValue() const { return layout.HasValue(); }
+	};
+
+	struct LangWriter::LicenseAttribute
+	{
+		const std::string& license;
+
+		bool HasValue() const { return !license.empty(); }
 	};
 
 	struct LangWriter::LocationAttribute
@@ -128,7 +150,7 @@ namespace nzsl
 		m_currentState->currentModuleIndex = 0;
 		for (const auto& importedModule : module.importedModules)
 		{
-			AppendAttributes(true, LangVersionAttribute{ importedModule.module->metadata->shaderLangVersion });
+			AppendModuleAttributes(*importedModule.module->metadata);
 			AppendLine("module ", importedModule.identifier);
 			EnterScope();
 			importedModule.module->rootNode->Visit(*this);
@@ -339,6 +361,14 @@ namespace nzsl
 		AppendAttributesInternal(first, secondParam, std::forward<Rest>(params)...);
 	}
 
+	void LangWriter::AppendAttribute(AuthorAttribute attribute)
+	{
+		if (!attribute.HasValue())
+			return;
+
+		Append("author(", EscapeString(attribute.author), ")");
+	}
+
 	void LangWriter::AppendAttribute(BindingAttribute attribute)
 	{
 		if (!attribute.HasValue())
@@ -406,6 +436,14 @@ namespace nzsl
 			attribute.writeMode.GetExpression()->Visit(*this);
 
 		Append(")");
+	}
+
+	void LangWriter::AppendAttribute(DescriptionAttribute attribute)
+	{
+		if (!attribute.HasValue())
+			return;
+
+		Append("desc(", EscapeString(attribute.description), ")");
 	}
 
 	void LangWriter::AppendAttribute(EarlyFragmentTestsAttribute attribute)
@@ -495,6 +533,14 @@ namespace nzsl
 		else
 			attribute.layout.GetExpression()->Visit(*this);
 		Append(")");
+	}
+
+	void LangWriter::AppendAttribute(LicenseAttribute attribute)
+	{
+		if (!attribute.HasValue())
+			return;
+
+		Append("license(", EscapeString(attribute.license), ")");
 	}
 
 	void LangWriter::AppendAttribute(LocationAttribute attribute)
@@ -629,6 +675,13 @@ namespace nzsl
 		}
 		else
 			Append(Ast::ConstantToString(value));
+	}
+
+	void LangWriter::AppendModuleAttributes(const Ast::Module::Metadata& metadata)
+	{
+		AppendAttributes(true, LangVersionAttribute{ metadata.shaderLangVersion });
+		AppendAttributes(true, AuthorAttribute{ metadata.author }, DescriptionAttribute{ metadata.description });
+		AppendAttributes(true, LicenseAttribute{ metadata.license });
 	}
 
 	void LangWriter::AppendStatementList(std::vector<Ast::StatementPtr>& statements)
@@ -1337,7 +1390,7 @@ namespace nzsl
 
 	void LangWriter::AppendHeader()
 	{
-		AppendAttributes(true, LangVersionAttribute{ m_currentState->module->metadata->shaderLangVersion });
+		AppendModuleAttributes(*m_currentState->module->metadata);
 		if (!m_currentState->module->metadata->moduleName.empty() && m_currentState->module->metadata->moduleName[0] != '_')
 			AppendLine("module ", m_currentState->module->metadata->moduleName, ";");
 		else

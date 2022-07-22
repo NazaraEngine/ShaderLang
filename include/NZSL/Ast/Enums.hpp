@@ -26,16 +26,19 @@ namespace nzsl::Ast
 
 	enum class AttributeType
 	{
+		Author             = 12, //< Module author (module statement only) - has argument version string
 		Binding            =  0, //< Binding (external var only) - has argument index
 		Builtin            =  1, //< Builtin (struct member only) - has argument type
 		Cond               =  2, //< Conditional compilation option - has argument expr
 		DepthWrite         =  3, //< Depth write mode (function only) - has argument type
+		Description        = 13, //< Module description (module statement only) - has argument version string
 		EarlyFragmentTests =  4, //< Entry point (function only) - has argument on/off
 		Entry              =  5, //< Entry point (function only) - has argument type
 		Export             =  6, //< Exported (external block, function and struct only)
+		LangVersion        =  9, //< NZSL version (module statement) - has argument version string
+		License            = 14, //< Module license (module statement) - has argument version string
 		Layout             =  7, //< Struct layout (struct only) - has argument style
 		Location           =  8, //< Location (struct member only) - has argument index
-		LangVersion        =  9, //< NZSL version - has argument version string
 		Set                = 10, //< Binding set (external var only) - has argument index
 		Unroll             = 11, //< Unroll (for/for each only) - has argument mode
 	};

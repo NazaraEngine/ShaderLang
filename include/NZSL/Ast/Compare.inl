@@ -61,6 +61,15 @@ namespace nzsl::Ast
 		if (!Compare(lhs.shaderLangVersion, rhs.shaderLangVersion))
 			return false;
 
+		if (!Compare(lhs.author, rhs.author))
+			return false;
+
+		if (!Compare(lhs.description, rhs.description))
+			return false;
+
+		if (!Compare(lhs.license, rhs.license))
+			return false;
+
 		return true;
 	}
 

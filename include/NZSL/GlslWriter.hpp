@@ -94,6 +94,7 @@ namespace nzsl
 			void AppendHeader();
 			void AppendLine(std::string_view txt = {});
 			template<typename... Args> void AppendLine(Args&&... params);
+			void AppendModuleComments(const Ast::Module::Metadata& metadata);
 			void AppendStatementList(std::vector<Ast::StatementPtr>& statements);
 			template<typename T> void AppendValue(const T& value);
 			void AppendVariableDeclaration(const Ast::ExpressionType& varType, const std::string& varName);
