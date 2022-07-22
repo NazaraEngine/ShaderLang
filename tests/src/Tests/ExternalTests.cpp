@@ -511,15 +511,15 @@ void main()
 		ExpectNZSL(*shaderModule, R"(
 external
 {
-	[binding(0)] bVal: bool,
-	[binding(1)] fVal: f32,
-	[binding(2)] iVal: i32,
-	[binding(3)] uVal: u32,
-	[binding(4)] bVec: vec4[bool],
-	[binding(5)] fVec: vec4[f32],
-	[binding(6)] iVec: vec4[i32],
-	[binding(7)] uVec: vec4[u32],
-	[binding(8)] fMat: mat4[f32],
+	[set(0), binding(0)] bVal: bool,
+	[set(0), binding(1)] fVal: f32,
+	[set(0), binding(2)] iVal: i32,
+	[set(0), binding(3)] uVal: u32,
+	[set(0), binding(4)] bVec: vec4[bool],
+	[set(0), binding(5)] fVec: vec4[f32],
+	[set(0), binding(6)] iVec: vec4[i32],
+	[set(0), binding(7)] uVec: vec4[u32],
+	[set(0), binding(8)] fMat: mat4[f32]
 }
 
 [entry(frag)]
