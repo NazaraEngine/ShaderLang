@@ -1687,10 +1687,8 @@ namespace nzsl
 
 			if (IsStorageType(exprType))
 				Append("buffer ");
-			else if (IsSamplerType(exprType) || IsUniformType(exprType))
-				Append("uniform ");
 			else
-				throw std::runtime_error("unexpected type");
+				Append("uniform ");
 
 			if (isUniformOrStorage)
 			{

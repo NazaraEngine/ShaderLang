@@ -451,4 +451,92 @@ fn main()
 			}
 		}
 	}
+
+	SECTION("Primitive external")
+	{
+		std::string_view nzslSource = R"(
+[nzsl_version("1.0")]
+[allow_primitive_externals]
+module;
+
+external
+{
+	[binding(0)] bVal: bool,
+	[binding(1)] fVal: f32,
+	[binding(2)] iVal: i32,
+	[binding(3)] uVal: u32,
+
+	[binding(4)] bVec: vec4[bool],
+	[binding(5)] fVec: vec4[f32],
+	[binding(6)] iVec: vec4[i32],
+	[binding(7)] uVec: vec4[u32],
+
+	[binding(8)] fMat: mat4[f32],
+}
+
+[entry(frag)]
+fn main()
+{
+	let value: bool = bVec[1] && bVal;
+	let value: vec4[f32] = fVal * fVec;
+	let value: vec4[i32] = iVal.xxxx + iVec;
+	let value: vec4[u32] = uVal.xxxx - uVec;
+	let value: vec4[f32] = fMat * fVec;
+}
+)";
+
+		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
+		shaderModule = SanitizeModule(*shaderModule);
+
+		ExpectGLSL(*shaderModule, R"(
+uniform bool bVal;
+uniform float fVal;
+uniform int iVal;
+uniform uint uVal;
+uniform bvec4 bVec;
+uniform vec4 fVec;
+uniform ivec4 iVec;
+uniform uvec4 uVec;
+uniform mat4 fMat;
+
+void main()
+{
+	bool value = bVec[1] && bVal;
+	vec4 value_2 = fVal * fVec;
+	ivec4 value_3 = (ivec4(iVal, iVal, iVal, iVal)) + iVec;
+	uvec4 value_4 = (uvec4(uVal, uVal, uVal, uVal)) - uVec;
+	vec4 value_5 = fMat * fVec;
+}
+)");
+
+		ExpectNZSL(*shaderModule, R"(
+external
+{
+	[binding(0)] bVal: bool,
+	[binding(1)] fVal: f32,
+	[binding(2)] iVal: i32,
+	[binding(3)] uVal: u32,
+	[binding(4)] bVec: vec4[bool],
+	[binding(5)] fVec: vec4[f32],
+	[binding(6)] iVec: vec4[i32],
+	[binding(7)] uVec: vec4[u32],
+	[binding(8)] fMat: mat4[f32],
+}
+
+[entry(frag)]
+fn main()
+{
+	let value: bool = bVec[1] && bVal;
+	let value: vec4[f32] = fVal * fVec;
+	let value: vec4[i32] = (iVal.xxxx) + iVec;
+	let value: vec4[u32] = (uVal.xxxx) - uVec;
+	let value: vec4[f32] = fMat * fVec;
+})");
+
+		WHEN("Generating SPIR-V 1.0 (which doesn't support primitive externals)")
+		{
+			nzsl::SpirvWriter spirvWriter;
+			CHECK_THROWS_WITH(spirvWriter.Generate(*shaderModule), "unsupported type used in external block (SPIR-V doesn't allow primitive types as uniforms)");
+		}
+	}
 }

@@ -83,7 +83,7 @@ NZSL_SHADERLANG_COMPILER_ERROR(ExpectedPartialType, "only partial types can be s
 NZSL_SHADERLANG_COMPILER_ERROR(ExtAlreadyDeclared, "external variable {} is already declared", std::string)
 NZSL_SHADERLANG_COMPILER_ERROR(ExtBindingAlreadyUsed, "binding (set={}, binding={}) is already in use", std::uint32_t, std::uint32_t)
 NZSL_SHADERLANG_COMPILER_ERROR(ExtMissingBindingIndex, "external variable requires a binding index")
-NZSL_SHADERLANG_COMPILER_ERROR(ExtTypeNotAllowed, "external variable {} is of wrong type ({}): only storage, sampler and uniform are allowed in external blocks", std::string, std::string)
+NZSL_SHADERLANG_COMPILER_ERROR(ExtTypeNotAllowed, "external variable {} is of wrong type ({}): only storage, sampler and uniform (or primitive, vector and matrices if targetting GLSL) are allowed in external blocks", std::string, std::string)
 NZSL_SHADERLANG_COMPILER_ERROR(ForEachUnsupportedType, "for-each statements can only be called on array types, got {}", std::string)
 NZSL_SHADERLANG_COMPILER_ERROR(ForFromTypeExpectIntegerType, "numerical for from expression must be an integer or unsigned integer, got {}", std::string)
 NZSL_SHADERLANG_COMPILER_ERROR(ForStepUnmatchingType, "numerical for step expression type ({}) must match from expression type ({})", std::string, std::string)

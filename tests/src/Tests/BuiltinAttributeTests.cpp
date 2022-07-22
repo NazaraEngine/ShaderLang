@@ -222,7 +222,7 @@ fn main(input: Input) -> Output
 }
 )");
 
-		WHEN("Generating SPIR-V 1.0 (without draw parameter support")
+		WHEN("Generating SPIR-V 1.0 (without draw parameter support)")
 		{
 			nzsl::SpirvWriter spirvWriter;
 			CHECK_THROWS_WITH(spirvWriter.Generate(*shaderModule), "using builtin base_instance requires SPIR-V 1.3");
