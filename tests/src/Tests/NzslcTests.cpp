@@ -108,7 +108,7 @@ TEST_CASE("Standalone compiler", "[NZSLC]")
 			std::filesystem::remove("../resources/Shader.nzslb");
 			std::filesystem::remove("../resources/modules/Color.nzslb");
 			std::filesystem::remove("../resources/modules/Data/OutputStruct.nzslb");
-			std::filesystem::remove_all("UnitTests");
+			std::filesystem::remove_all("test_files");
 		};
 
 		Cleanup();
@@ -122,18 +122,18 @@ TEST_CASE("Standalone compiler", "[NZSLC]")
 		ExecuteCommand("./nzslc ../resources/modules/Data/DataStruct.nzslb"); //< validation
 
 		// Try to generate a full shader based on partial compilation result
-		ExecuteCommand("./nzslc --compile=glsl,glsl-header,nzsl,nzsl-header,nzslb,nzslb-header,spv,spv-header,spv-txt -o UnitTests -m ../resources/modules/Color.nzslb  -m ../resources/modules/Data/OutputStruct.nzslb -m ../resources/modules/Data/DataStruct.nzslb ../resources/Shader.nzslb");
+		ExecuteCommand("./nzslc --compile=glsl,glsl-header,nzsl,nzsl-header,nzslb,nzslb-header,spv,spv-header,spv-txt -o test_files -m ../resources/modules/Color.nzslb  -m ../resources/modules/Data/OutputStruct.nzslb -m ../resources/modules/Data/DataStruct.nzslb ../resources/Shader.nzslb");
 		
 		// Validate generated files
-		ExecuteCommand("./nzslc UnitTests/Shader.nzsl");
-		ExecuteCommand("./nzslc UnitTests/Shader.nzslb");
-		ExecuteCommand("glslangValidator -S frag UnitTests/Shader.glsl");
-		ExecuteCommand("spirv-val UnitTests/Shader.spv");
+		ExecuteCommand("./nzslc test_files/Shader.nzsl");
+		ExecuteCommand("./nzslc test_files/Shader.nzslb");
+		ExecuteCommand("glslangValidator -S frag test_files/Shader.glsl");
+		ExecuteCommand("spirv-val test_files/Shader.spv");
 
 		// Check that header version matches original files
-		CheckHeaderMatch("UnitTests/Shader.glsl");
-		CheckHeaderMatch("UnitTests/Shader.nzsl");
-		CheckHeaderMatch("UnitTests/Shader.nzslb");
-		CheckHeaderMatch("UnitTests/Shader.spv");
+		CheckHeaderMatch("test_files/Shader.glsl");
+		CheckHeaderMatch("test_files/Shader.nzsl");
+		CheckHeaderMatch("test_files/Shader.nzslb");
+		CheckHeaderMatch("test_files/Shader.spv");
 	}
 }
