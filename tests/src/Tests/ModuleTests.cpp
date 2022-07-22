@@ -13,6 +13,9 @@ TEST_CASE("Modules", "[Shader]")
 	{
 		std::string_view importedSource = R"(
 [nzsl_version("1.0")]
+[author("Lynix")]
+[desc("Simple \"module\" for testing")]
+[license("Public domain")]
 module SimpleModule;
 
 [export]
@@ -54,6 +57,9 @@ struct OutputData
 
 		std::string_view shaderSource = R"(
 [nzsl_version("1.0")]
+[author("Sir Lynix")]
+[desc("Main file")]
+[license("MIT")]
 module;
 
 import * from SimpleModule;
@@ -84,6 +90,9 @@ fn main(input: InputData) -> OutputData
 
 		ExpectGLSL(*shaderModule, R"(
 // Module SimpleModule
+// Author: Lynix
+// Description: Simple "module" for testing
+// License: Public domain
 
 struct Data_SimpleModule
 {
@@ -107,7 +116,10 @@ struct OutputData_SimpleModule
 	float value;
 };
 
-// Main file
+// Main module
+// Author: Sir Lynix
+// Description: Main file
+// License: MIT
 
 layout(std140) uniform _nzslBinding_block
 {
@@ -135,9 +147,13 @@ void main()
 
 		ExpectNZSL(*shaderModule, R"(
 [nzsl_version("1.0")]
+[author("Sir Lynix"), desc("Main file")]
+[license("MIT")]
 module;
 
 [nzsl_version("1.0")]
+[author("Lynix"), desc("Simple \"module\" for testing")]
+[license("Public domain")]
 module _SimpleModule
 {
 	const Pi: f32 = 3.141592;
@@ -335,7 +351,7 @@ struct OutputData_Modules_InputOutput
 	float value;
 };
 
-// Main file
+// Main module
 
 layout(std140) uniform _nzslBinding_block
 {

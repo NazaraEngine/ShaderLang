@@ -72,7 +72,7 @@ struct Output_OutputStruct
 	vec4 color;
 };
 
-// Main file
+// Main module
 
 /*************** Outputs ***************/
 layout(location = 0) out vec4 _nzslOut_color;

@@ -37,13 +37,16 @@ namespace nzsl
 			};
 
 		private:
+			struct AuthorAttribute;
 			struct BindingAttribute;
 			struct BuiltinAttribute;
 			struct DepthWriteAttribute;
+			struct DescriptionAttribute;
 			struct EarlyFragmentTestsAttribute;
 			struct EntryAttribute;
 			struct LangVersionAttribute;
 			struct LayoutAttribute;
+			struct LicenseAttribute;
 			struct LocationAttribute;
 			struct SetAttribute;
 			struct UnrollAttribute;
@@ -70,13 +73,16 @@ namespace nzsl
 			template<typename... Args> void AppendAttributes(bool appendLine, Args&&... params);
 			template<typename T> void AppendAttributesInternal(bool& first, const T& param);
 			template<typename T1, typename T2, typename... Rest> void AppendAttributesInternal(bool& first, const T1& firstParam, const T2& secondParam, Rest&&... params);
+			void AppendAttribute(AuthorAttribute attribute);
 			void AppendAttribute(BindingAttribute attribute);
 			void AppendAttribute(BuiltinAttribute attribute);
 			void AppendAttribute(DepthWriteAttribute attribute);
+			void AppendAttribute(DescriptionAttribute attribute);
 			void AppendAttribute(EarlyFragmentTestsAttribute attribute);
 			void AppendAttribute(EntryAttribute attribute);
 			void AppendAttribute(LangVersionAttribute attribute);
 			void AppendAttribute(LayoutAttribute attribute);
+			void AppendAttribute(LicenseAttribute attribute);
 			void AppendAttribute(LocationAttribute attribute);
 			void AppendAttribute(SetAttribute seattributet);
 			void AppendAttribute(UnrollAttribute attribute);
@@ -86,6 +92,7 @@ namespace nzsl
 			template<typename T> void AppendIdentifier(const T& map, std::size_t id);
 			void AppendLine(std::string_view txt = {});
 			template<typename... Args> void AppendLine(Args&&... params);
+			void AppendModuleAttributes(const Ast::Module::Metadata& metadata);
 			void AppendStatementList(std::vector<Ast::StatementPtr>& statements);
 			template<typename T> void AppendValue(const T& value);
 

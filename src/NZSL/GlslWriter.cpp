@@ -341,6 +341,7 @@ namespace nzsl
 		for (const auto& importedModule : targetModule->importedModules)
 		{
 			AppendComment("Module " + importedModule.module->metadata->moduleName);
+			AppendModuleComments(*importedModule.module->metadata);
 			AppendLine();
 
 			m_currentState->moduleSuffix = importedModule.identifier;
@@ -351,9 +352,12 @@ namespace nzsl
 
 		if (!targetModule->importedModules.empty())
 		{
-			AppendComment("Main file");
+			AppendComment("Main module");
+			AppendModuleComments(*module.metadata);
 			AppendLine();
 		}
+		else
+			AppendModuleComments(*module.metadata);
 
 		m_currentState->moduleSuffix = {};
 		targetModule->rootNode->Visit(*this);
@@ -968,6 +972,18 @@ namespace nzsl
 			Append("vec4(" + Ast::ToString(value.x()) + ", " + Ast::ToString(value.y()) + ", " + Ast::ToString(value.z()) + ", " + Ast::ToString(value.w()) + ")");
 		else
 			static_assert(Nz::AlwaysFalse<T>(), "non-exhaustive visitor");
+	}
+
+	void GlslWriter::AppendModuleComments(const Ast::Module::Metadata& metadata)
+	{
+		if (!metadata.author.empty())
+			AppendComment("Author: " + metadata.author);
+
+		if (!metadata.description.empty())
+			AppendComment("Description: " + metadata.description);
+
+		if (!metadata.license.empty())
+			AppendComment("License: " + metadata.license);
 	}
 
 	void GlslWriter::AppendStatementList(std::vector<Ast::StatementPtr>& statements)

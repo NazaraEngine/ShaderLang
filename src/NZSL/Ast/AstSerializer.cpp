@@ -12,7 +12,7 @@ namespace nzsl::Ast
 	namespace
 	{
 		constexpr std::uint32_t s_shaderAstMagicNumber = 0x4E534852;
-		constexpr std::uint32_t s_shaderAstCurrentVersion = 1;
+		constexpr std::uint32_t s_shaderAstCurrentVersion = 2;
 
 		class ShaderSerializerVisitor : public ExpressionVisitor, public StatementVisitor
 		{
@@ -501,6 +501,9 @@ namespace nzsl::Ast
 	{
 		m_serializer.Serialize(module->metadata->moduleName);
 		m_serializer.Serialize(module->metadata->shaderLangVersion);
+		m_serializer.Serialize(module->metadata->author);
+		m_serializer.Serialize(module->metadata->description);
+		m_serializer.Serialize(module->metadata->license);
 
 		Container(module->importedModules);
 		for (auto& importedModule : module->importedModules)
@@ -709,13 +712,13 @@ namespace nzsl::Ast
 	ModulePtr ShaderAstUnserializer::Unserialize()
 	{
 		std::uint32_t magicNumber = 0;
-		std::uint32_t version = 0;
+		m_version = 0;
 		m_unserializer.Unserialize(magicNumber);
 		if (magicNumber != s_shaderAstMagicNumber)
 			throw std::runtime_error("invalid shader file");
 
-		m_unserializer.Unserialize(version);
-		if (version > s_shaderAstCurrentVersion)
+		m_unserializer.Unserialize(m_version);
+		if (m_version > s_shaderAstCurrentVersion)
 			throw std::runtime_error("unsupported version");
 
 		ModulePtr module;
@@ -786,6 +789,12 @@ namespace nzsl::Ast
 		std::shared_ptr<Module::Metadata> metadata = std::make_shared<Module::Metadata>();
 		m_unserializer.Unserialize(metadata->moduleName);
 		m_unserializer.Unserialize(metadata->shaderLangVersion);
+		if (m_version >= 2)
+		{
+			m_unserializer.Unserialize(metadata->author);
+			m_unserializer.Unserialize(metadata->description);
+			m_unserializer.Unserialize(metadata->license);
+		}
 
 		std::vector<Module::ImportedModule> importedModules;
 		Container(importedModules);

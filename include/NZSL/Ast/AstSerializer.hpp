@@ -175,6 +175,7 @@ namespace nzsl::Ast
 
 			std::vector<std::shared_ptr<const std::string>> m_strings;
 			AbstractUnserializer& m_unserializer;
+			std::uint32_t m_version;
 	};
 	
 	NZSL_API void SerializeShader(AbstractSerializer& serializer, ModulePtr& shader);

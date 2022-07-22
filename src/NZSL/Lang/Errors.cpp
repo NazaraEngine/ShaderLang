@@ -18,16 +18,19 @@ struct fmt::formatter<nzsl::Ast::AttributeType> : formatter<string_view>
 		std::string_view name = "<unhandled attribute type>";
 		switch (p)
 		{
+			case nzsl::Ast::AttributeType::Author:             name = "author"; break;
 			case nzsl::Ast::AttributeType::Binding:            name = "binding"; break;
 			case nzsl::Ast::AttributeType::Builtin:            name = "builtin"; break;
 			case nzsl::Ast::AttributeType::Cond:               name = "cond"; break;
 			case nzsl::Ast::AttributeType::DepthWrite:         name = "depth_write"; break;
+			case nzsl::Ast::AttributeType::Description:        name = "desc"; break;
 			case nzsl::Ast::AttributeType::EarlyFragmentTests: name = "early_fragment_tests"; break;
 			case nzsl::Ast::AttributeType::Entry:              name = "entry"; break;
 			case nzsl::Ast::AttributeType::Export:             name = "export"; break;
-			case nzsl::Ast::AttributeType::Layout:             name = "layout"; break;
-			case nzsl::Ast::AttributeType::Location:           name = "location"; break;
 			case nzsl::Ast::AttributeType::LangVersion:        name = "nzsl_version"; break;
+			case nzsl::Ast::AttributeType::Layout:             name = "layout"; break;
+			case nzsl::Ast::AttributeType::License:            name = "license"; break;
+			case nzsl::Ast::AttributeType::Location:           name = "location"; break;
 			case nzsl::Ast::AttributeType::Set:                name = "set"; break;
 			case nzsl::Ast::AttributeType::Unroll:             name = "unroll"; break;
 		}

@@ -44,14 +44,17 @@ namespace nzsl
 		});
 
 		constexpr auto s_identifierToAttributeType = frozen::make_unordered_map<frozen::string, Ast::AttributeType>({
+			{ "author",               Ast::AttributeType::Author },
 			{ "binding",              Ast::AttributeType::Binding },
 			{ "builtin",              Ast::AttributeType::Builtin },
 			{ "cond",                 Ast::AttributeType::Cond },
 			{ "depth_write",          Ast::AttributeType::DepthWrite },
+			{ "desc",                 Ast::AttributeType::Description },
 			{ "early_fragment_tests", Ast::AttributeType::EarlyFragmentTests },
 			{ "entry",                Ast::AttributeType::Entry },
 			{ "export",               Ast::AttributeType::Export },
 			{ "layout",               Ast::AttributeType::Layout },
+			{ "license",              Ast::AttributeType::License },
 			{ "location",             Ast::AttributeType::Location },
 			{ "nzsl_version",         Ast::AttributeType::LangVersion },
 			{ "set",                  Ast::AttributeType::Set },
@@ -240,35 +243,46 @@ namespace nzsl
 
 		const Token& moduleToken = Expect(Advance(), TokenType::Module);
 
+		std::string author;
+		std::string description;
+		std::string license;
 		std::optional<std::uint32_t> moduleVersion;
 		
-		for (auto&& [attributeType, expr, location] : attributes)
+		for (auto&& attribute : attributes)
 		{
-			switch (attributeType)
+			switch (attribute.type)
 			{
+				case Ast::AttributeType::Author:
+				{
+					if (!author.empty())
+						throw ParserAttributeMultipleUniqueError{ attribute.sourceLocation, attribute.type };
+
+					author = ExtractStringAttribute(std::move(attribute));
+					break;
+				}
+
+				case Ast::AttributeType::Description:
+				{
+					if (!description.empty())
+						throw ParserAttributeMultipleUniqueError{ attribute.sourceLocation, attribute.type };
+
+					description = ExtractStringAttribute(std::move(attribute));
+					break;
+				}
+
 				case Ast::AttributeType::LangVersion:
 				{
 					// Version parsing
 					if (moduleVersion.has_value())
-						throw ParserAttributeMultipleUniqueError{ location, attributeType };
+						throw ParserAttributeMultipleUniqueError{ attribute.sourceLocation, attribute.type };
 
-					if (!expr)
-						throw ParserAttributeMissingParameterError{ location, attributeType };
-
-					if (expr->GetType() != Ast::NodeType::ConstantValueExpression)
-						throw ParserAttributeExpectStringError{ location, attributeType };
-
-					auto& constantValue = Nz::SafeCast<Ast::ConstantValueExpression&>(*expr);
-					if (Ast::GetConstantType(constantValue.value) != Ast::ExpressionType{ Ast::PrimitiveType::String })
-						throw ParserAttributeExpectStringError{ location, attributeType };
-
-					const std::string& versionStr = std::get<std::string>(constantValue.value);
+					const std::string& versionStr = ExtractStringAttribute(std::move(attribute));
 
 					std::regex versionRegex(R"(^(\d+)(\.(\d+)(\.(\d+))?)?$)", std::regex::ECMAScript);
 
 					std::smatch versionMatch;
 					if (!std::regex_match(versionStr, versionMatch, versionRegex))
-						throw ParserInvalidVersionError{ location, versionStr };
+						throw ParserInvalidVersionError{ attribute.sourceLocation, versionStr };
 
 					assert(versionMatch.size() == 6);
 
@@ -284,19 +298,34 @@ namespace nzsl
 					moduleVersion = version;
 					break;
 				}
+				
+				case Ast::AttributeType::License:
+				{
+					if (!license.empty())
+						throw ParserAttributeMultipleUniqueError{ attribute.sourceLocation, attribute.type };
+
+					license = ExtractStringAttribute(std::move(attribute));
+					break;
+				}
 
 				default:
-					throw ParserUnexpectedAttributeError{ location, attributeType };
+					throw ParserUnexpectedAttributeError{ attribute.sourceLocation, attribute.type };
 			}
 		}
 
 		if (!moduleVersion.has_value())
 			throw ParserMissingAttributeError{ moduleToken.location, Ast::AttributeType::LangVersion };
 
+		std::shared_ptr<Ast::Module::Metadata> moduleMetadata = std::make_shared<Ast::Module::Metadata>();
+		moduleMetadata->author = std::move(author);
+		moduleMetadata->description = std::move(description);
+		moduleMetadata->license = std::move(license);
+		moduleMetadata->shaderLangVersion = *moduleVersion;
+
 		if (m_context->module)
 		{
-			std::string moduleName = ParseModuleName();
-			auto module = std::make_shared<Ast::Module>(*moduleVersion, std::move(moduleName));
+			moduleMetadata->moduleName = ParseModuleName();
+			auto module = std::make_shared<Ast::Module>(std::move(moduleMetadata));
 
 			// Imported module
 			Expect(Advance(), TokenType::OpenCurlyBracket);
@@ -340,7 +369,9 @@ namespace nzsl
 					moduleName[i] = characterSet[dis(randomEngine)];
 			}
 
-			auto module = std::make_shared<Ast::Module>(*moduleVersion, std::move(moduleName));
+			moduleMetadata->moduleName = std::move(moduleName);
+
+			auto module = std::make_shared<Ast::Module>(std::move(moduleMetadata));
 
 			// First declaration
 			Expect(Advance(), TokenType::Semicolon);
@@ -670,7 +701,7 @@ namespace nzsl
 				switch (attribute.type)
 				{
 					case Ast::AttributeType::Unroll:
-						HandleUniqueStringAttribute(forNode->unroll, std::move(attribute), s_unrollModes, std::make_optional(Ast::LoopUnroll::Always));
+						HandleUniqueStringAttributeKey(forNode->unroll, std::move(attribute), s_unrollModes, std::make_optional(Ast::LoopUnroll::Always));
 						break;
 
 					default:
@@ -694,7 +725,7 @@ namespace nzsl
 				switch (attribute.type)
 				{
 					case Ast::AttributeType::Unroll:
-						HandleUniqueStringAttribute(forEachNode->unroll, std::move(attribute), s_unrollModes, std::make_optional(Ast::LoopUnroll::Always));
+						HandleUniqueStringAttributeKey(forEachNode->unroll, std::move(attribute), s_unrollModes, std::make_optional(Ast::LoopUnroll::Always));
 						break;
 
 					default:
@@ -762,7 +793,7 @@ namespace nzsl
 					break;
 
 				case Ast::AttributeType::Entry:
-					HandleUniqueStringAttribute(func->entryStage, std::move(attribute), s_entryPoints);
+					HandleUniqueStringAttributeKey(func->entryStage, std::move(attribute), s_entryPoints);
 					break;
 
 				case Ast::AttributeType::Export:
@@ -770,7 +801,7 @@ namespace nzsl
 					break;
 
 				case Ast::AttributeType::DepthWrite:
-					HandleUniqueStringAttribute(func->depthWrite, std::move(attribute), s_depthWriteModes);
+					HandleUniqueStringAttributeKey(func->depthWrite, std::move(attribute), s_depthWriteModes);
 					break;
 
 				case Ast::AttributeType::EarlyFragmentTests:
@@ -1079,7 +1110,7 @@ namespace nzsl
 					break;
 
 				case Ast::AttributeType::Layout:
-					HandleUniqueStringAttribute(description.layout, std::move(attribute), s_layoutMapping);
+					HandleUniqueStringAttributeKey(description.layout, std::move(attribute), s_layoutMapping);
 					break;
 
 				default:
@@ -1120,7 +1151,7 @@ namespace nzsl
 					switch (attribute.type)
 					{
 						case Ast::AttributeType::Builtin:
-							HandleUniqueStringAttribute(structField.builtin, std::move(attribute), s_builtinMapping);
+							HandleUniqueStringAttributeKey(structField.builtin, std::move(attribute), s_builtinMapping);
 							break;
 
 						case Ast::AttributeType::Cond:
@@ -1200,7 +1231,7 @@ namespace nzsl
 			switch (attribute.type)
 			{
 				case Ast::AttributeType::Unroll:
-					HandleUniqueStringAttribute(whileStatement->unroll, std::move(attribute), s_unrollModes, std::make_optional(Ast::LoopUnroll::Always));
+					HandleUniqueStringAttributeKey(whileStatement->unroll, std::move(attribute), s_unrollModes, std::make_optional(Ast::LoopUnroll::Always));
 					break;
 
 				default:
@@ -1551,6 +1582,21 @@ namespace nzsl
 		return ParseExpression();
 	}
 
+	const std::string& Parser::ExtractStringAttribute(Attribute&& attribute)
+	{
+		if (!attribute.args)
+			throw ParserAttributeMissingParameterError{ attribute.sourceLocation, attribute.type };
+
+		if (attribute.args->GetType() != Ast::NodeType::ConstantValueExpression)
+			throw ParserAttributeExpectStringError{ attribute.sourceLocation, attribute.type };
+
+		auto& constantValue = Nz::SafeCast<Ast::ConstantValueExpression&>(*attribute.args);
+		if (Ast::GetConstantType(constantValue.value) != Ast::ExpressionType{ Ast::PrimitiveType::String })
+			throw ParserAttributeExpectStringError{ attribute.sourceLocation, attribute.type };
+
+		return std::get<std::string>(constantValue.value);
+	}
+
 	template<typename T>
 	void Parser::HandleUniqueAttribute(Ast::ExpressionValue<T>& targetAttribute, Parser::Attribute&& attribute)
 	{
@@ -1576,7 +1622,7 @@ namespace nzsl
 	}
 
 	template<typename T, typename M>
-	void Parser::HandleUniqueStringAttribute(Ast::ExpressionValue<T>& targetAttribute, Parser::Attribute&& attribute, const M& map, std::optional<T> defaultValue)
+	void Parser::HandleUniqueStringAttributeKey(Ast::ExpressionValue<T>& targetAttribute, Parser::Attribute&& attribute, const M& map, std::optional<T> defaultValue)
 	{
 		if (targetAttribute.HasValue())
 			throw ParserAttributeMultipleUniqueError{ attribute.sourceLocation, attribute.type };
