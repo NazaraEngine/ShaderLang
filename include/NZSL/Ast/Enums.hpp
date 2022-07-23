@@ -35,6 +35,7 @@ namespace nzsl::Ast
 		EarlyFragmentTests =  4, //< Entry point (function only) - has argument on/off
 		Entry              =  5, //< Entry point (function only) - has argument type
 		Export             =  6, //< Exported (external block, function and struct only)
+		Feature            = 15, //< Feature (module statement) - has argument feature
 		LangVersion        =  9, //< NZSL version (module statement) - has argument version string
 		License            = 14, //< Module license (module statement) - has argument version string
 		Layout             =  7, //< Struct layout (struct only) - has argument style
@@ -113,6 +114,11 @@ namespace nzsl::Ast
 	enum class MemoryLayout
 	{
 		Std140 = 0
+	};
+
+	enum class ModuleFeature
+	{
+		PrimitiveExternals = 0
 	};
 
 	enum class NodeType

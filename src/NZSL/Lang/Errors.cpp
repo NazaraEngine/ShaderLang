@@ -27,6 +27,7 @@ struct fmt::formatter<nzsl::Ast::AttributeType> : formatter<string_view>
 			case nzsl::Ast::AttributeType::EarlyFragmentTests: name = "early_fragment_tests"; break;
 			case nzsl::Ast::AttributeType::Entry:              name = "entry"; break;
 			case nzsl::Ast::AttributeType::Export:             name = "export"; break;
+			case nzsl::Ast::AttributeType::Feature:            name = "feature"; break;
 			case nzsl::Ast::AttributeType::LangVersion:        name = "nzsl_version"; break;
 			case nzsl::Ast::AttributeType::Layout:             name = "layout"; break;
 			case nzsl::Ast::AttributeType::License:            name = "license"; break;
@@ -57,6 +58,23 @@ struct fmt::formatter<nzsl::Ast::BuiltinEntry> : formatter<string_view>
 			case nzsl::Ast::BuiltinEntry::InstanceIndex:  name = "instanceindex"; break;
 			case nzsl::Ast::BuiltinEntry::VertexIndex :   name = "vertexindex"; break;
 			case nzsl::Ast::BuiltinEntry::VertexPosition: name = "position"; break;
+		}
+
+		return formatter<string_view>::format(name, ctx);
+	}
+};
+
+template <>
+struct fmt::formatter<nzsl::Ast::ModuleFeature> : formatter<string_view>
+{
+	template <typename FormatContext>
+	auto format(const nzsl::Ast::ModuleFeature& p, FormatContext& ctx) -> decltype(ctx.out())
+	{
+		// TODO: Add ToString
+		std::string_view name = "<unhandled module feature>";
+		switch (p)
+		{
+			case nzsl::Ast::ModuleFeature::PrimitiveExternals: name = "primitive_externals"; break;
 		}
 
 		return formatter<string_view>::format(name, ctx);

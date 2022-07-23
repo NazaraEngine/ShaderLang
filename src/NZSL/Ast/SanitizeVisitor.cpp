@@ -1239,9 +1239,15 @@ namespace nzsl::Ast
 				varType = std::get<StorageType>(targetType).containedType;
 			else if (IsUniformType(targetType))
 				varType = std::get<UniformType>(targetType).containedType;
-			else if (IsSamplerType(targetType) || IsPrimitiveType(targetType) || IsVectorType(targetType) || IsMatrixType(targetType))
+			else if (IsSamplerType(targetType))
 				varType = targetType;
-			else
+			else if (IsSamplerType(targetType) || IsPrimitiveType(targetType) || IsVectorType(targetType) || IsMatrixType(targetType))
+			{
+				if (IsFeatureEnabled(ModuleFeature::PrimitiveExternals))
+					varType = targetType;
+			}
+			
+			if (IsNoType(varType))
 				throw CompilerExtTypeNotAllowedError{ extVar.sourceLocation, extVar.name, ToString(*resolvedType, extVar.sourceLocation) };
 
 			ValidateConcreteType(varType, extVar.sourceLocation);
@@ -1966,6 +1972,13 @@ namespace nzsl::Ast
 		if (!targetModule)
 			throw CompilerModuleNotFoundError{ node.sourceLocation, node.moduleName };
 
+		// Check enabled features
+		for (ModuleFeature feature : targetModule->metadata->enabledFeatures)
+		{
+			if (!IsFeatureEnabled(feature))
+				throw CompilerModuleFeatureMismatchError{ node.sourceLocation, node.moduleName, feature };
+		}
+
 		std::size_t moduleIndex;
 
 		const std::string& moduleName = targetModule->metadata->moduleName;
@@ -2386,6 +2399,12 @@ namespace nzsl::Ast
 		}
 
 		throw AstInternalError{ sourceLocation, "unhandled identifier category" };
+	}
+
+	bool SanitizeVisitor::IsFeatureEnabled(ModuleFeature feature) const
+	{
+		const std::vector<ModuleFeature>& enabledFeatures = m_context->currentModule->metadata->enabledFeatures;
+		return std::find(enabledFeatures.begin(), enabledFeatures.end(), feature) != enabledFeatures.end();
 	}
 
 	bool SanitizeVisitor::IsIdentifierAvailable(std::string_view identifier, bool allowReserved) const

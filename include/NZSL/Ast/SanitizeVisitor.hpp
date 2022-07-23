@@ -116,6 +116,7 @@ namespace nzsl::Ast
 
 			ExpressionPtr HandleIdentifier(const IdentifierData* identifierData, const SourceLocation& sourceLocation);
 
+			bool IsFeatureEnabled(ModuleFeature feature) const;
 			bool IsIdentifierAvailable(std::string_view identifier, bool allowReserved = true) const;
 
 			void PushScope();

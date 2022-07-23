@@ -142,6 +142,22 @@ namespace nzsl::Ast
 			Type(optType.value());
 	}
 
+	inline void SerializerBase::Metadata(Module::Metadata& metadata)
+	{
+		Value(metadata.moduleName);
+		Value(metadata.shaderLangVersion);
+		if (IsVersionGreaterOrEqual(2))
+		{
+			Value(metadata.author);
+			Value(metadata.description);
+			Value(metadata.license);
+
+			Container(metadata.enabledFeatures);
+			for (ModuleFeature& feature : metadata.enabledFeatures)
+				Enum(feature);
+		}
+	}
+
 	template<typename T>
 	void SerializerBase::OptVal(std::optional<T>& optVal)
 	{
@@ -165,15 +181,6 @@ namespace nzsl::Ast
 		}
 	}
 
-	inline void SerializerBase::SourceLoc(SourceLocation& sourceLoc)
-	{
-		SharedString(sourceLoc.file);
-		Value(sourceLoc.endColumn);
-		Value(sourceLoc.endLine);
-		Value(sourceLoc.startColumn);
-		Value(sourceLoc.startLine);
-	}
-
 	inline void SerializerBase::SizeT(std::size_t& val)
 	{
 		bool isWriting = IsWriting();
@@ -186,6 +193,15 @@ namespace nzsl::Ast
 
 		if (!isWriting)
 			val = Nz::SafeCast<std::size_t>(fixedVal);
+	}
+
+	inline void SerializerBase::SourceLoc(SourceLocation& sourceLoc)
+	{
+		SharedString(sourceLoc.file);
+		Value(sourceLoc.endColumn);
+		Value(sourceLoc.endLine);
+		Value(sourceLoc.startColumn);
+		Value(sourceLoc.startLine);
 	}
 
 	inline ShaderAstSerializer::ShaderAstSerializer(AbstractSerializer& serializer) :

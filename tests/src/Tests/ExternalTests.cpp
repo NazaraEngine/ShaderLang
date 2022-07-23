@@ -456,6 +456,7 @@ fn main()
 	{
 		std::string_view nzslSource = R"(
 [nzsl_version("1.0")]
+[feature(primitive_externals)]
 module;
 
 external

@@ -1,4 +1,5 @@
 #include <Tests/ShaderUtils.hpp>
+#include <NZSL/FilesystemModuleResolver.hpp>
 #include <NZSL/Parser.hpp>
 #include <NZSL/Ast/SanitizeVisitor.hpp>
 #include <catch2/catch.hpp>
@@ -23,6 +24,19 @@ TEST_CASE("errors", "[Shader]")
 		CHECK_THROWS_WITH(nzsl::Parse("[nzsl_version(\"1.0\"), author(\"Lynix\"), author(\"Sir Lynix\")] module;"), "(1,40 -> 58): PAttributeMultipleUnique error: attribute author can only be present once");
 		CHECK_THROWS_WITH(nzsl::Parse("[nzsl_version(\"1.0\"), author(\"Lynix\"), desc(\"Desc\")] [desc(\"Description\")] module;"), "(1,55 -> 73): PAttributeMultipleUnique error: attribute desc can only be present once");
 		CHECK_THROWS_WITH(nzsl::Parse("[nzsl_version(\"1.0\"), author(\"Lynix\"), desc(\"Desc\"), license(\"Public domain\")] [license(\"MIT\")] module;"), "(1,81 -> 94): PAttributeMultipleUnique error: attribute license can only be present once");
+
+		CHECK_THROWS_WITH(nzsl::Parse(R"(
+[nzsl_version("1.0")]
+[feature(non_existent)]
+module;
+)"), "(3,10 -> 21): PAttributeInvalidParameter error: invalid parameter non_existent for attribute feature");
+
+		CHECK_THROWS_WITH(nzsl::Parse(R"(
+[nzsl_version("1.0")]
+[feature(primitive_externals)]
+[feature(primitive_externals)]
+module;
+)"), "(4,2 -> 29): PModuleFeatureMultipleUnique error: module feature primitive_externals has already been specified");
 
 		CHECK_THROWS_WITH(nzsl::Parse(R"(
 [nzsl_version("1.0")]
@@ -286,6 +300,21 @@ const V = vec4[i32](7, 6, 5, 4) % vec4[i32](3, 2, 1, 0);
 
 		/************************************************************************/
 
+		SECTION("Features")
+		{
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+external
+{
+	[binding(0)] data: mat4[f32]
+}
+)"), "(7,15 -> 29): CExtTypeNotAllowed error: external variable data has unauthorized type (mat4[f32]): only storage buffers, samplers and uniform buffers (and primitives, vectors and matrices if primitive external feature is enabled) are allowed in external blocks");
+		}
+
+		/************************************************************************/
+
 		SECTION("Import")
 		{
 			CHECK_THROWS_WITH(Compile(R"(
@@ -327,6 +356,39 @@ fn main()
 	let b = inverse(a);
 }
 )"), "(8, 18): CIntrinsicExpectedType error: expected type square matrix for parameter #0, got mat2x3[f32]");
+		}
+
+		/************************************************************************/
+
+		SECTION("Modules")
+		{
+			std::string_view importedSource = R"(
+[nzsl_version("1.0")]
+[feature(primitive_externals)]
+module Module;
+
+external
+{
+	data: mat4[f32]
+}
+)";
+
+			std::string_view shaderSource = R"(
+[nzsl_version("1.0")]
+module;
+
+import * from Module;
+)";
+
+			nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(shaderSource);
+
+			auto directoryModuleResolver = std::make_shared<nzsl::FilesystemModuleResolver>();
+			directoryModuleResolver->RegisterModule(importedSource);
+
+			nzsl::Ast::SanitizeVisitor::Options sanitizeOpt;
+			sanitizeOpt.moduleResolver = directoryModuleResolver;
+
+			CHECK_THROWS_WITH(nzsl::Ast::Sanitize(*shaderModule, sanitizeOpt), "(5,1 -> 21): CModuleFeatureMismatch error: module Module requires feature primitive_externals");
 		}
 
 		/************************************************************************/

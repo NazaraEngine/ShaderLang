@@ -43,6 +43,11 @@ namespace nzsl
 			{ "unchanged", Ast::DepthWriteMode::Unchanged },
 		});
 
+		constexpr auto s_entryPoints = frozen::make_unordered_map<frozen::string, ShaderStageType>({
+			{ "frag", ShaderStageType::Fragment },
+			{ "vert", ShaderStageType::Vertex },
+		});
+
 		constexpr auto s_identifierToAttributeType = frozen::make_unordered_map<frozen::string, Ast::AttributeType>({
 			{ "author",               Ast::AttributeType::Author },
 			{ "binding",              Ast::AttributeType::Binding },
@@ -53,6 +58,7 @@ namespace nzsl
 			{ "early_fragment_tests", Ast::AttributeType::EarlyFragmentTests },
 			{ "entry",                Ast::AttributeType::Entry },
 			{ "export",               Ast::AttributeType::Export },
+			{ "feature",              Ast::AttributeType::Feature },
 			{ "layout",               Ast::AttributeType::Layout },
 			{ "license",              Ast::AttributeType::License },
 			{ "location",             Ast::AttributeType::Location },
@@ -60,10 +66,9 @@ namespace nzsl
 			{ "set",                  Ast::AttributeType::Set },
 			{ "unroll",               Ast::AttributeType::Unroll }
 		});
-
-		constexpr auto s_entryPoints = frozen::make_unordered_map<frozen::string, ShaderStageType>({
-			{ "frag", ShaderStageType::Fragment },
-			{ "vert", ShaderStageType::Vertex },
+		
+		constexpr auto s_moduleFeatures = frozen::make_unordered_map<frozen::string, Ast::ModuleFeature>({
+			{ "primitive_externals", Ast::ModuleFeature::PrimitiveExternals },
 		});
 
 		constexpr auto BuildIdentifierMapping()
@@ -247,6 +252,7 @@ namespace nzsl
 		std::string description;
 		std::string license;
 		std::optional<std::uint32_t> moduleVersion;
+		std::vector<Ast::ModuleFeature> moduleFeatures;
 		
 		for (auto&& attribute : attributes)
 		{
@@ -267,6 +273,20 @@ namespace nzsl
 						throw ParserAttributeMultipleUniqueError{ attribute.sourceLocation, attribute.type };
 
 					description = ExtractStringAttribute(std::move(attribute));
+					break;
+				}
+
+				case Ast::AttributeType::Feature:
+				{
+					Ast::ExpressionValue<Ast::ModuleFeature> featureExpr;
+					HandleUniqueStringAttributeKey(featureExpr, std::move(attribute), s_moduleFeatures);
+
+					Ast::ModuleFeature feature = featureExpr.GetResultingValue();
+
+					if (std::find(moduleFeatures.begin(), moduleFeatures.end(), feature) != moduleFeatures.end())
+						throw ParserModuleFeatureMultipleUniqueError{ attribute.sourceLocation, feature };
+
+					moduleFeatures.push_back(feature);
 					break;
 				}
 
@@ -321,6 +341,7 @@ namespace nzsl
 		moduleMetadata->description = std::move(description);
 		moduleMetadata->license = std::move(license);
 		moduleMetadata->shaderLangVersion = *moduleVersion;
+		moduleMetadata->enabledFeatures = std::move(moduleFeatures);
 
 		if (m_context->module)
 		{
