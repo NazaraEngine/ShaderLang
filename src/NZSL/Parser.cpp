@@ -240,6 +240,8 @@ namespace nzsl
 
 	void Parser::ParseModuleStatement(std::vector<Attribute> attributes)
 	{
+		NAZARA_USE_ANONYMOUS_NAMESPACE
+
 		if (m_context->parsingImportedModule)
 		{
 			const Token& token = Peek();
