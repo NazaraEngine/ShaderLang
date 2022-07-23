@@ -19,10 +19,13 @@ jobs:
       matrix:
         os: [windows-latest]
         arch: [x86, x64]
-        kind: [static, shared]
-        type:
-        - { mode: "debug", runtime: "MDd" }
-        - { mode: "release", runtime: "MD" }
+        config:
+        - { kind: "static", mode: "debug",   runtime: "MDd" }
+        - { kind: "static", mode: "debug",   runtime: "MTd" }
+        - { kind: "static", mode: "release", runtime: "MD" }
+        - { kind: "static", mode: "release", runtime: "MT" }
+        - { kind: "shared", mode: "debug",   runtime: "MDd" }
+        - { kind: "shared", mode: "release", runtime: "MD" }
 
     runs-on: ${{ matrix.os }}
     if: "!contains(github.event.head_commit.message, 'ci skip')"
@@ -60,11 +63,11 @@ jobs:
       uses: actions/cache@v3
       with:
         path: ${{ env.XMAKE_GLOBALDIR }}\.xmake\packages
-        key: MSVC-${{ matrix.arch }}-${{ matrix.type.mode }}-${{ matrix.type.runtime }}-${{ steps.dep_hash.outputs.hash }}-W${{ steps.pkg_key.outputs.key }}
+        key: MSVC-${{ matrix.arch }}-${{ matrix.config.mode }}-${{ matrix.config.runtime }}-${{ steps.dep_hash.outputs.hash }}-W${{ steps.pkg_key.outputs.key }}
 
     # Setup compilation mode and install project dependencies
     - name: Configure xmake and install dependencies
-      run: xmake config --arch=${{ matrix.arch }} --kind=${{ matrix.kind }} --mode=${{ matrix.type.mode }} --vs_runtime=${{ matrix.type.runtime }} --ccache=n --tests=y --unitybuild=y --yes
+      run: xmake config --arch=${{ matrix.arch }} --kind=${{ matrix.config.kind }} --mode=${{ matrix.config.mode }} --vs_runtime=${{ matrix.config.runtime }} --ccache=n --tests=y --unitybuild=y --yes
 
     # Build library and tests
     - name: Build library
@@ -81,5 +84,5 @@ jobs:
     # Upload artifacts
     - uses: actions/upload-artifact@v3
       with:
-        name: ${{ matrix.os }}-${{ matrix.arch }}-${{ matrix.kind }}-${{ matrix.type.mode }}-${{ matrix.type.runtime }}
+        name: ${{ matrix.os }}-${{ matrix.arch }}-${{ matrix.config.kind }}-${{ matrix.config.mode }}-${{ matrix.config.runtime }}
         path: package
