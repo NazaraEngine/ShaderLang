@@ -76,13 +76,18 @@ namespace nzsl::Ast
 			inline void OptType(std::optional<ExpressionType>& optType);
 			template<typename T> void OptVal(std::optional<T>& optVal);
 
+			virtual bool IsVersionGreaterOrEqual(std::uint32_t version) const = 0;
 			virtual bool IsWriting() const = 0;
+
+			inline void Metadata(Module::Metadata& metadata);
 
 			virtual void Node(ExpressionPtr& node) = 0;
 			virtual void Node(StatementPtr& node) = 0;
 
 			virtual void SerializeModule(ModulePtr& module) = 0;
 			virtual void SharedString(std::shared_ptr<const std::string>& val) = 0;
+
+			inline void SizeT(std::size_t& val);
 
 			inline void SourceLoc(SourceLocation& sourceLoc);
 
@@ -102,7 +107,6 @@ namespace nzsl::Ast
 			virtual void Value(std::uint16_t& val) = 0;
 			virtual void Value(std::uint32_t& val) = 0;
 			virtual void Value(std::uint64_t& val) = 0;
-			inline void SizeT(std::size_t& val);
 	};
 
 	class NZSL_API ShaderAstSerializer final : public SerializerBase
@@ -116,6 +120,7 @@ namespace nzsl::Ast
 		private:
 			using SerializerBase::Serialize;
 
+			bool IsVersionGreaterOrEqual(std::uint32_t version) const override;
 			bool IsWriting() const override;
 			void Node(ExpressionPtr& node) override;
 			void Node(StatementPtr& node) override;
@@ -152,6 +157,7 @@ namespace nzsl::Ast
 		private:
 			using SerializerBase::Serialize;
 
+			bool IsVersionGreaterOrEqual(std::uint32_t version) const override;
 			bool IsWriting() const override;
 			void Node(ExpressionPtr& node) override;
 			void Node(StatementPtr& node) override;

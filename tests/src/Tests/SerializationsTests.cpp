@@ -239,6 +239,34 @@ fn main() -> Output
 }
 )");
 	}
+	
+	WHEN("serializing and unserializing a shader using features")
+	{
+		ParseSerializeUnserialize(R"(
+[nzsl_version("1.0")]
+[feature(primitive_externals)]
+module;
+
+struct Output
+{
+	[location(0)] value: f32
+}
+
+external
+{
+	[set(0), binding(0)] data: f32
+}
+
+[entry(frag)]
+fn main() -> Output
+{
+	let output: Output;
+	output.value = data;
+
+	return output;
+}
+)");
+	}
 
 	WHEN("serializing and unserializing branches")
 	{

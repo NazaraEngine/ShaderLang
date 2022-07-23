@@ -68,6 +68,13 @@ namespace nzsl
 		bool HasValue() const { return stageType.HasValue(); }
 	};
 
+	struct LangWriter::FeatureAttribute
+	{
+		Ast::ModuleFeature featureAttribute;
+
+		bool HasValue() const { return true; }
+	};
+
 	struct LangWriter::LangVersionAttribute
 	{
 		std::uint32_t version;
@@ -492,6 +499,20 @@ namespace nzsl
 		Append(")");
 	}
 
+	void LangWriter::AppendAttribute(FeatureAttribute attribute)
+	{
+		Append("feature(");
+
+		switch (attribute.featureAttribute)
+		{
+			case Ast::ModuleFeature::PrimitiveExternals:
+				Append("primitive_externals");
+				break;
+		}
+
+		Append(")");
+	}
+
 	void LangWriter::AppendAttribute(LangVersionAttribute attribute)
 	{
 		std::uint32_t shaderLangVersion = attribute.version;
@@ -680,6 +701,9 @@ namespace nzsl
 	void LangWriter::AppendModuleAttributes(const Ast::Module::Metadata& metadata)
 	{
 		AppendAttributes(true, LangVersionAttribute{ metadata.shaderLangVersion });
+		for (Ast::ModuleFeature feature : metadata.enabledFeatures)
+			AppendAttributes(true, FeatureAttribute{ feature });
+
 		AppendAttributes(true, AuthorAttribute{ metadata.author }, DescriptionAttribute{ metadata.description });
 		AppendAttributes(true, LicenseAttribute{ metadata.license });
 	}

@@ -468,6 +468,11 @@ namespace nzsl::Ast
 		SerializeModule(module);
 	}
 	
+	bool ShaderAstSerializer::IsVersionGreaterOrEqual(std::uint32_t /*version*/) const
+	{
+		return true; //< we're writing the last binary version
+	}
+
 	bool ShaderAstSerializer::IsWriting() const
 	{
 		return true;
@@ -499,11 +504,7 @@ namespace nzsl::Ast
 	
 	void ShaderAstSerializer::SerializeModule(ModulePtr& module)
 	{
-		m_serializer.Serialize(module->metadata->moduleName);
-		m_serializer.Serialize(module->metadata->shaderLangVersion);
-		m_serializer.Serialize(module->metadata->author);
-		m_serializer.Serialize(module->metadata->description);
-		m_serializer.Serialize(module->metadata->license);
+		Metadata(const_cast<Module::Metadata&>(*module->metadata)); //< won't be used for writing
 
 		Container(module->importedModules);
 		for (auto& importedModule : module->importedModules)
@@ -727,6 +728,11 @@ namespace nzsl::Ast
 		return module;
 	}
 
+	bool ShaderAstUnserializer::IsVersionGreaterOrEqual(std::uint32_t version) const
+	{
+		return m_version >= version;
+	}
+
 	bool ShaderAstUnserializer::IsWriting() const
 	{
 		return false;
@@ -787,14 +793,7 @@ namespace nzsl::Ast
 	void ShaderAstUnserializer::SerializeModule(ModulePtr& module)
 	{
 		std::shared_ptr<Module::Metadata> metadata = std::make_shared<Module::Metadata>();
-		m_unserializer.Unserialize(metadata->moduleName);
-		m_unserializer.Unserialize(metadata->shaderLangVersion);
-		if (m_version >= 2)
-		{
-			m_unserializer.Unserialize(metadata->author);
-			m_unserializer.Unserialize(metadata->description);
-			m_unserializer.Unserialize(metadata->license);
-		}
+		Metadata(*metadata);
 
 		std::vector<Module::ImportedModule> importedModules;
 		Container(importedModules);

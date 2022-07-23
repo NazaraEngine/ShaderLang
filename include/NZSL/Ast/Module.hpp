@@ -8,8 +8,10 @@
 #define NZSL_AST_MODULE_HPP
 
 #include <NZSL/Config.hpp>
+#include <NZSL/Ast/Enums.hpp>
 #include <NZSL/Ast/Nodes.hpp>
 #include <memory>
+#include <vector>
 
 namespace nzsl::Ast
 {
@@ -46,6 +48,7 @@ namespace nzsl::Ast
 				std::string license;
 				std::string moduleName;
 				std::uint32_t shaderLangVersion;
+				std::vector<ModuleFeature> enabledFeatures;
 			};
 
 			std::shared_ptr<const Metadata> metadata;

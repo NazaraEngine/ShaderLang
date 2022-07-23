@@ -44,6 +44,7 @@ namespace nzsl
 			struct DescriptionAttribute;
 			struct EarlyFragmentTestsAttribute;
 			struct EntryAttribute;
+			struct FeatureAttribute;
 			struct LangVersionAttribute;
 			struct LayoutAttribute;
 			struct LicenseAttribute;
@@ -80,6 +81,7 @@ namespace nzsl
 			void AppendAttribute(DescriptionAttribute attribute);
 			void AppendAttribute(EarlyFragmentTestsAttribute attribute);
 			void AppendAttribute(EntryAttribute attribute);
+			void AppendAttribute(FeatureAttribute attribute);
 			void AppendAttribute(LangVersionAttribute attribute);
 			void AppendAttribute(LayoutAttribute attribute);
 			void AppendAttribute(LicenseAttribute attribute);
