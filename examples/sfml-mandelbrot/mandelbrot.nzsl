@@ -1,0 +1,60 @@
+[nzsl_version("1.0")]
+[desc("Mandelbrot shader from http://nuclear.mutantstargoat.com/articles/sdr_fract")]
+[feature(primitive_externals)] //< Required since SFML doesn't use UBO
+module;
+
+external
+{
+	[binding(0)] palette: sampler2D[f32],
+	[binding(1)] screen_size: vec2[f32],
+	[binding(2)] center: vec2[f32],
+	[binding(3)] scale: f32,
+	[binding(4)] iteration_count: i32
+}
+
+struct Input
+{
+	[builtin(frag_coord)] fragcoord: vec4[f32]
+}
+
+struct Output
+{
+	[location(0)] color: vec4[f32]
+}
+
+[entry(frag)]
+fn main(input: Input) -> Output
+{
+	let coords = input.fragcoord.xy / screen_size;
+
+	let c: vec2[f32];
+	c.x = (screen_size.x / screen_size.y) * (coords.x - 0.5) * scale - center.x / screen_size.y;
+	c.y = (coords.y - 0.5) * scale - center.y / screen_size.y;
+
+	let z = c;
+	let i = 0;
+	while (i < iteration_count)
+	{
+		let x = (z.x * z.x - z.y * z.y) + c.x;
+		let y = (z.y * z.x + z.x * z.y) + c.y;
+
+		if ((x * x + y * y) > 4.0)
+			break;
+
+		z.x = x;
+		z.y = y;
+
+		i += 1;
+	}
+
+	let u: f32;
+	if (i < iteration_count)
+		u = f32(i) / 100.0;
+	else
+		u = 0.0;
+
+	let out: Output;
+	out.color = palette.Sample(vec2[f32](u, 0.0));
+
+	return out;
+}
