@@ -288,6 +288,12 @@ namespace nzsl::Ast
 		bool isConst = false;
 	};
 
+	struct NZSL_API BreakStatement : Statement
+	{
+		NodeType GetType() const override;
+		void Visit(StatementVisitor& visitor) override;
+	};
+
 	struct NZSL_API ConditionalStatement : Statement
 	{
 		NodeType GetType() const override;
@@ -295,6 +301,12 @@ namespace nzsl::Ast
 
 		ExpressionPtr condition;
 		StatementPtr statement;
+	};
+
+	struct NZSL_API ContinueStatement : Statement
+	{
+		NodeType GetType() const override;
+		void Visit(StatementVisitor& visitor) override;
 	};
 
 	struct NZSL_API DeclareAliasStatement : Statement

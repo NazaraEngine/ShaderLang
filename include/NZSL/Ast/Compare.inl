@@ -538,6 +538,11 @@ namespace nzsl::Ast
 		return true;
 	}
 
+	bool Compare(const BreakStatement& /*lhs*/, const BreakStatement& /*rhs*/)
+	{
+		return true;
+	}
+
 	inline bool Compare(const ConditionalStatement& lhs, const ConditionalStatement& rhs)
 	{
 		if (!Compare(lhs.condition, rhs.condition))
@@ -546,6 +551,11 @@ namespace nzsl::Ast
 		if (!Compare(lhs.statement, rhs.statement))
 			return false;
 
+		return true;
+	}
+
+	bool Compare(const ContinueStatement& /*lhs*/, const ContinueStatement& /*rhs*/)
+	{
 		return true;
 	}
 

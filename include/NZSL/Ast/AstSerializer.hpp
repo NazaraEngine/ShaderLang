@@ -45,7 +45,9 @@ namespace nzsl::Ast
 			void Serialize(UnaryExpression& node);
 
 			void Serialize(BranchStatement& node);
+			void Serialize(BreakStatement& node);
 			void Serialize(ConditionalStatement& node);
+			void Serialize(ContinueStatement& node);
 			void Serialize(DeclareAliasStatement& node);
 			void Serialize(DeclareConstStatement& node);
 			void Serialize(DeclareExternalStatement& node);

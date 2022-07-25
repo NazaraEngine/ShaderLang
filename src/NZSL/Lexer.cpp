@@ -24,8 +24,10 @@ namespace nzsl
 		constexpr auto s_reservedKeywords = frozen::make_unordered_map<frozen::string, TokenType>({
 			{ "alias",        TokenType::Alias },
 			{ "as",           TokenType::As },
+			{ "break",        TokenType::Break },
 			{ "const",        TokenType::Const },
 			{ "const_select", TokenType::ConstSelect },
+			{ "continue",     TokenType::Continue },
 			{ "discard",      TokenType::Discard },
 			{ "else",         TokenType::Else },
 			{ "external",     TokenType::External },

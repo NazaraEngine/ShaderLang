@@ -114,6 +114,7 @@ NZSL_SHADERLANG_COMPILER_ERROR(InvalidCast, "invalid cast to type {}", std::stri
 NZSL_SHADERLANG_COMPILER_ERROR(InvalidScalarSwizzle, "invalid swizzle for scalar")
 NZSL_SHADERLANG_COMPILER_ERROR(InvalidStageDependency, "this is only valid in the {} stage but this functions gets called in the {} stage", ShaderStageType, ShaderStageType)
 NZSL_SHADERLANG_COMPILER_ERROR(InvalidSwizzle, "invalid swizzle {}", std::string)
+NZSL_SHADERLANG_COMPILER_ERROR(LoopControlOutsideOfLoop, "loop control instruction {} found outside of loop", std::string_view)
 NZSL_SHADERLANG_COMPILER_ERROR(MissingOptionValue, "option {} requires a value (no default value set)", std::string)
 NZSL_SHADERLANG_COMPILER_ERROR(ModuleCompilationFailed, "module {} compilation failed: {}", std::string, std::string)
 NZSL_SHADERLANG_COMPILER_ERROR(ModuleFeatureMismatch, "module {} requires feature {}", std::string, Ast::ModuleFeature)

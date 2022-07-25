@@ -133,7 +133,9 @@ namespace nzsl
 
 			using StatementVisitorExcept::Visit;
 			void Visit(Ast::BranchStatement& node) override;
+			void Visit(Ast::BreakStatement& node) override;
 			void Visit(Ast::ConditionalStatement& node) override;
+			void Visit(Ast::ContinueStatement& node) override;
 			void Visit(Ast::DeclareAliasStatement& node) override;
 			void Visit(Ast::DeclareConstStatement& node) override;
 			void Visit(Ast::DeclareExternalStatement& node) override;

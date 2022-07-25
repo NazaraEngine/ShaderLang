@@ -138,9 +138,17 @@ namespace nzsl::Ast
 			node.elseStatement->Visit(*this);
 	}
 
+	void RecursiveVisitor::Visit(BreakStatement& /*node*/)
+	{
+	}
+
 	void RecursiveVisitor::Visit(ConditionalStatement& node)
 	{
 		node.statement->Visit(*this);
+	}
+
+	void RecursiveVisitor::Visit(ContinueStatement& /*node*/)
+	{
 	}
 
 	void RecursiveVisitor::Visit(DeclareAliasStatement& node)

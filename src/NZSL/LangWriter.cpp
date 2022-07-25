@@ -1143,12 +1143,22 @@ namespace nzsl
 		}
 	}
 
+	void LangWriter::Visit(Ast::BreakStatement& /*node*/)
+	{
+		Append("break;");
+	}
+
 	void LangWriter::Visit(Ast::ConditionalStatement& node)
 	{
 		Append("[cond(");
 		node.condition->Visit(*this);
 		AppendLine(")]");
 		node.statement->Visit(*this);
+	}
+
+	void LangWriter::Visit(Ast::ContinueStatement& /*node*/)
+	{
+		Append("continue;");
 	}
 
 	void LangWriter::Visit(Ast::DeclareAliasStatement& node)

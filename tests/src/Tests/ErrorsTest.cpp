@@ -360,6 +360,63 @@ fn main()
 
 		/************************************************************************/
 
+		SECTION("Loops")
+		{
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+fn main()
+{
+	break;
+}
+)"), "(7,2 -> 6): CLoopControlOutsideOfLoop error: loop control instruction break found outside of loop");
+
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+fn main()
+{
+	continue;
+}
+)"), "(7,2 -> 9): CLoopControlOutsideOfLoop error: loop control instruction continue found outside of loop");
+
+			// break is forbidden in a unrolled loop
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+fn main()
+{
+	[unroll]
+	for i in 0 -> 10
+	{
+		if (i > 5)
+			break;
+	}
+}
+)"), "(11,4 -> 8): CLoopControlOutsideOfLoop error: loop control instruction break found outside of loop");
+
+			// continue is forbidden in a unrolled loop
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+fn main()
+{
+	[unroll]
+	for i in 0 -> 10
+	{
+		if (i == 5)
+			continue;
+	}
+}
+)"), "(11,4 -> 11): CLoopControlOutsideOfLoop error: loop control instruction continue found outside of loop");
+		}
+
+		/************************************************************************/
+
 		SECTION("Modules")
 		{
 			std::string_view importedSource = R"(

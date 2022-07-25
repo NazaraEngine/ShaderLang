@@ -209,6 +209,7 @@ namespace nzsl::Ast
 		FunctionData* currentFunction = nullptr;
 		bool allowUnknownIdentifiers = false;
 		bool inConditionalStatement = false;
+		bool inLoop = false;
 	};
 
 	ModulePtr SanitizeVisitor::Sanitize(const Module& module, const Options& options, std::string* error)
@@ -1117,6 +1118,14 @@ namespace nzsl::Ast
 		return clone;
 	}
 
+	StatementPtr SanitizeVisitor::Clone(BreakStatement& node)
+	{
+		if (!m_context->inLoop)
+			throw CompilerLoopControlOutsideOfLoopError{ node.sourceLocation, "break" };
+
+		return Cloner::Clone(node);
+	}
+
 	StatementPtr SanitizeVisitor::Clone(ConditionalStatement& node)
 	{
 		MandatoryExpr(node.condition, node.sourceLocation);
@@ -1146,6 +1155,14 @@ namespace nzsl::Ast
 			return Cloner::Clone(*node.statement);
 		else
 			return ShaderBuilder::NoOp();
+	}
+
+	StatementPtr SanitizeVisitor::Clone(ContinueStatement& node)
+	{
+		if (!m_context->inLoop)
+			throw CompilerLoopControlOutsideOfLoopError{ node.sourceLocation, "continue" };
+
+		return Cloner::Clone(node);
 	}
 
 	StatementPtr SanitizeVisitor::Clone(DeclareAliasStatement& node)
@@ -1568,6 +1585,11 @@ namespace nzsl::Ast
 					RegisterUnresolved(node.varName);
 					clone->varIndex = node.varIndex; //< preserve var index, if set
 				}
+
+				bool wasInLoop = m_context->inLoop;
+				m_context->inLoop = true;
+				Nz::CallOnExit restoreLoop([=] { m_context->inLoop = wasInLoop; });
+
 				clone->statement = CloneStatement(node.statement);
 			}
 			PopScope();
@@ -1731,8 +1753,14 @@ namespace nzsl::Ast
 			// While body
 			auto body = std::make_unique<MultiStatement>();
 			body->statements.reserve(2);
+			{
+				bool wasInLoop = m_context->inLoop;
+				m_context->inLoop = true;
+				Nz::CallOnExit restoreLoop([=] { m_context->inLoop = wasInLoop; });
 
-			body->statements.emplace_back(Unscope(CloneStatement(node.statement)));
+				body->statements.emplace_back(Unscope(CloneStatement(node.statement)));
+			}
+
 
 			ExpressionPtr incrExpr;
 			if (stepVarIndex)
@@ -1866,7 +1894,13 @@ namespace nzsl::Ast
 				Validate(*elementVariable);
 				body->statements.emplace_back(std::move(elementVariable));
 
-				body->statements.emplace_back(Unscope(CloneStatement(node.statement)));
+				{
+					bool wasInLoop = m_context->inLoop;
+					m_context->inLoop = true;
+					Nz::CallOnExit restoreLoop([=] { m_context->inLoop = wasInLoop; });
+
+					body->statements.emplace_back(Unscope(CloneStatement(node.statement)));
+				}
 
 				auto incrCounter = ShaderBuilder::Assign(AssignType::CompoundAdd, ShaderBuilder::Variable(counterVarIndex, PrimitiveType::UInt32), ShaderBuilder::ConstantValue(1u));
 				Validate(*incrCounter);
@@ -1893,6 +1927,11 @@ namespace nzsl::Ast
 			PushScope();
 			{
 				clone->varIndex = RegisterVariable(node.varName, innerType, node.varIndex, node.sourceLocation);
+
+				bool wasInLoop = m_context->inLoop;
+				m_context->inLoop = true;
+				Nz::CallOnExit restoreLoop([=] { m_context->inLoop = wasInLoop; });
+
 				clone->statement = CloneStatement(node.statement);
 			}
 			PopScope();
@@ -2235,7 +2274,20 @@ namespace nzsl::Ast
 		MandatoryExpr(node.condition, node.sourceLocation);
 		MandatoryStatement(node.body, node.sourceLocation);
 
-		auto clone = Nz::StaticUniquePointerCast<WhileStatement>(Cloner::Clone(node));
+		auto clone = std::make_unique<WhileStatement>();
+		clone->condition = CloneExpression(node.condition);
+		clone->unroll = Cloner::Clone(node.unroll);
+
+		clone->sourceLocation = node.sourceLocation;
+
+		{
+			bool wasInLoop = m_context->inLoop;
+			m_context->inLoop = true;
+			Nz::CallOnExit restoreLoop([=] { m_context->inLoop = wasInLoop; });
+
+			clone->body = CloneStatement(node.body);
+		}
+
 		if (Validate(*clone) == ValidationResult::Unresolved)
 			return clone;
 
