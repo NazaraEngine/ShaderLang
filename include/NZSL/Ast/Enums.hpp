@@ -123,11 +123,54 @@ namespace nzsl::Ast
 
 	enum class NodeType
 	{
+		// Remember to update Max value at the end of the enum when adding an entry
 		None = -1,
 
-#define NZSL_SHADERAST_NODE(Node, Category) Node##Category,
-#define NZSL_SHADERAST_STATEMENT_LAST(Node) Node##Statement, Max = Node##Statement
-#include <NZSL/Ast/NodeList.hpp>
+		// Expressions
+		AccessIdentifierExpression   = 0,
+		AccessIndexExpression        = 1,
+		AliasValueExpression         = 2,
+		AssignExpression             = 3,
+		BinaryExpression             = 4,
+		CallFunctionExpression       = 5,
+		CallMethodExpression         = 6,
+		CastExpression               = 7,
+		ConditionalExpression        = 8,
+		ConstantExpression           = 9,
+		ConstantArrayValueExpression = 10,
+		ConstantValueExpression      = 11,
+		FunctionExpression           = 12,
+		IdentifierExpression         = 13,
+		IntrinsicExpression          = 14,
+		IntrinsicFunctionExpression  = 15,
+		StructTypeExpression         = 16,
+		SwizzleExpression            = 17,
+		TypeExpression               = 18,
+		VariableValueExpression      = 19,
+		UnaryExpression              = 20,
+
+		// Statements
+		BranchStatement          = 21,
+		ConditionalStatement     = 22,
+		DeclareAliasStatement    = 23,
+		DeclareConstStatement    = 24,
+		DeclareExternalStatement = 25,
+		DeclareFunctionStatement = 26,
+		DeclareOptionStatement   = 27,
+		DeclareStructStatement   = 28,
+		DeclareVariableStatement = 29,
+		DiscardStatement         = 30,
+		ForStatement             = 31,
+		ForEachStatement         = 32,
+		ExpressionStatement      = 33,
+		ImportStatement          = 34,
+		MultiStatement           = 35,
+		NoOpStatement            = 36,
+		ReturnStatement          = 37,
+		ScopedStatement          = 38,
+		WhileStatement           = 39,
+
+		Max = WhileStatement
 	};
 
 	enum class PrimitiveType
