@@ -62,7 +62,9 @@ namespace nzsl::Ast
 			virtual ExpressionPtr Clone(UnaryExpression& node);
 
 			virtual StatementPtr Clone(BranchStatement& node);
+			virtual StatementPtr Clone(BreakStatement& node);
 			virtual StatementPtr Clone(ConditionalStatement& node);
+			virtual StatementPtr Clone(ContinueStatement& node);
 			virtual StatementPtr Clone(DeclareAliasStatement& node);
 			virtual StatementPtr Clone(DeclareConstStatement& node);
 			virtual StatementPtr Clone(DeclareExternalStatement& node);

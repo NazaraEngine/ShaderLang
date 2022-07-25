@@ -422,6 +422,14 @@ namespace nzsl
 		m_currentBlock = m_functionBlocks.back().get();
 	}
 
+	void SpirvAstVisitor::Visit(Ast::BreakStatement& /*node*/)
+	{
+		if (!m_breakTarget)
+			throw std::runtime_error("break statement outside of while");
+
+		m_currentBlock->Append(SpirvOp::OpBranch, *m_breakTarget);
+	}
+
 	void SpirvAstVisitor::Visit(Ast::CallFunctionExpression& node)
 	{
 		std::size_t functionIndex = std::get<Ast::FunctionType>(*GetExpressionType(*node.targetFunction)).funcIndex;
@@ -603,6 +611,14 @@ namespace nzsl
 	void SpirvAstVisitor::Visit(Ast::ConstantValueExpression& node)
 	{
 		PushResultId(m_writer.GetSingleConstantId(node.value));
+	}
+
+	void SpirvAstVisitor::Visit(Ast::ContinueStatement& /*node*/)
+	{
+		if (!m_continueTarget)
+			throw std::runtime_error("continue statement outside of while");
+
+		m_currentBlock->Append(SpirvOp::OpBranch, *m_continueTarget);
 	}
 
 	void SpirvAstVisitor::Visit(Ast::DeclareConstStatement& /*node*/)
@@ -1182,6 +1198,7 @@ namespace nzsl
 		auto headerBlock = std::make_unique<SpirvBlock>(m_writer);
 		auto bodyBlock = std::make_unique<SpirvBlock>(m_writer);
 		auto mergeBlock = std::make_unique<SpirvBlock>(m_writer);
+		auto continueBlock = std::make_unique<SpirvBlock>(m_writer);
 
 		m_currentBlock->Append(SpirvOp::OpBranch, headerBlock->GetLabelId());
 		m_currentBlock = headerBlock.get();
@@ -1211,19 +1228,30 @@ namespace nzsl
 				return SpirvLoopControl::None;
 		}();
 
-		m_currentBlock->Append(SpirvOp::OpLoopMerge, mergeBlock->GetLabelId(), bodyBlock->GetLabelId(), loopControl);
+		m_currentBlock->Append(SpirvOp::OpLoopMerge, mergeBlock->GetLabelId(), continueBlock->GetLabelId(), loopControl);
 		m_currentBlock->Append(SpirvOp::OpBranchConditional, expressionId, bodyBlock->GetLabelId(), mergeBlock->GetLabelId());
 
 		std::uint32_t headerLabelId = headerBlock->GetLabelId();
+		std::uint32_t continueLabelId = continueBlock->GetLabelId();
 
 		m_currentBlock = bodyBlock.get();
 		m_functionBlocks.emplace_back(std::move(headerBlock));
 		m_functionBlocks.emplace_back(std::move(bodyBlock));
 
-		node.body->Visit(*this);
+		m_breakTarget = mergeBlock->GetLabelId();
+		m_continueTarget = continueLabelId;
+		{
+			node.body->Visit(*this);
+		}
+		m_breakTarget = std::nullopt;
+		m_continueTarget = std::nullopt;
 
-		// Jump back to header block to test condition
-		m_currentBlock->Append(SpirvOp::OpBranch, headerLabelId);
+		// Continue block sole purpose is to jump back to the header block
+		continueBlock->Append(SpirvOp::OpBranch, headerLabelId);
+		m_functionBlocks.emplace_back(std::move(continueBlock));
+
+		// Jump to continue block
+		m_currentBlock->Append(SpirvOp::OpBranch, continueLabelId);
 
 		m_functionBlocks.emplace_back(std::move(mergeBlock));
 		m_currentBlock = m_functionBlocks.back().get();

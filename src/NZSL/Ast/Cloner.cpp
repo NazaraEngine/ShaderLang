@@ -69,12 +69,28 @@ namespace nzsl::Ast
 		return clone;
 	}
 
+	StatementPtr Cloner::Clone(BreakStatement& node)
+	{
+		auto clone = std::make_unique<BreakStatement>();
+		clone->sourceLocation = node.sourceLocation;
+
+		return clone;
+	}
+
 	StatementPtr Cloner::Clone(ConditionalStatement& node)
 	{
 		auto clone = std::make_unique<ConditionalStatement>();
 		clone->condition = CloneExpression(node.condition);
 		clone->statement = CloneStatement(node.statement);
 
+		clone->sourceLocation = node.sourceLocation;
+
+		return clone;
+	}
+
+	StatementPtr Cloner::Clone(ContinueStatement& node)
+	{
+		auto clone = std::make_unique<ContinueStatement>();
 		clone->sourceLocation = node.sourceLocation;
 
 		return clone;
@@ -216,7 +232,6 @@ namespace nzsl::Ast
 	StatementPtr Cloner::Clone(DiscardStatement& node)
 	{
 		auto clone = std::make_unique<DiscardStatement>();
-
 		clone->sourceLocation = node.sourceLocation;
 
 		return clone;

@@ -465,6 +465,9 @@ fn main()
 	let x = 0;
 	for v in 0 -> 10
 	{
+		if (v == 5)
+			continue;
+
 		x += v;
 	}
 
@@ -472,6 +475,8 @@ fn main()
 	for v in data.value
 	{
 		x += v;
+		if (v > 8.0)
+			break;
 	}
 }
 )");

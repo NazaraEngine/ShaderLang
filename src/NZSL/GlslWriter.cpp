@@ -1606,6 +1606,16 @@ namespace nzsl
 			ScopeVisit(*node.elseStatement);
 		}
 	}
+	
+	void GlslWriter::Visit(Ast::BreakStatement& /*node*/)
+	{
+		Append("break;");
+	}
+
+	void GlslWriter::Visit(Ast::ContinueStatement& /*node*/)
+	{
+		Append("continue;");
+	}
 
 	void GlslWriter::Visit(Ast::DeclareAliasStatement& /*node*/)
 	{

@@ -42,7 +42,9 @@ namespace nzsl::Ast
 			void Visit(UnaryExpression& node) override;
 
 			void Visit(BranchStatement& node) override;
+			void Visit(BreakStatement& node) override;
 			void Visit(ConditionalStatement& node) override;
+			void Visit(ContinueStatement& node) override;
 			void Visit(DeclareAliasStatement& node) override;
 			void Visit(DeclareConstStatement& node) override;
 			void Visit(DeclareExternalStatement& node) override;

@@ -276,10 +276,20 @@ namespace nzsl::Ast
 		Value(node.isConst);
 	}
 
+	void SerializerBase::Serialize(BreakStatement& /*node*/)
+	{
+		/* Nothing to do */
+	}
+
 	void SerializerBase::Serialize(ConditionalStatement& node)
 	{
 		Node(node.condition);
 		Node(node.statement);
+	}
+
+	void SerializerBase::Serialize(ContinueStatement& /*node*/)
+	{
+		/* Nothing to do */
 	}
 
 	void SerializerBase::Serialize(DeclareAliasStatement& node)

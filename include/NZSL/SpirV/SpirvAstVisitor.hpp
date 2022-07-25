@@ -12,6 +12,7 @@
 #include <NZSL/Ast/ExpressionVisitorExcept.hpp>
 #include <NZSL/Ast/StatementVisitorExcept.hpp>
 #include <NZSL/SpirV/SpirvBlock.hpp>
+#include <optional>
 #include <unordered_map>
 #include <vector>
 
@@ -43,10 +44,12 @@ namespace nzsl
 			void Visit(Ast::AssignExpression& node) override;
 			void Visit(Ast::BinaryExpression& node) override;
 			void Visit(Ast::BranchStatement& node) override;
+			void Visit(Ast::BreakStatement& node) override;
 			void Visit(Ast::CallFunctionExpression& node) override;
 			void Visit(Ast::CastExpression& node) override;
 			void Visit(Ast::ConstantExpression& node) override;
 			void Visit(Ast::ConstantValueExpression& node) override;
+			void Visit(Ast::ContinueStatement& node) override;
 			void Visit(Ast::DeclareConstStatement& node) override;
 			void Visit(Ast::DeclareExternalStatement& node) override;
 			void Visit(Ast::DeclareFunctionStatement& node) override;
@@ -140,6 +143,8 @@ namespace nzsl
 			inline void RegisterStruct(std::size_t structIndex, Ast::StructDescription* structDesc);
 			inline void RegisterVariable(std::size_t varIndex, std::uint32_t typeId, std::uint32_t pointerId, SpirvStorageClass storageClass);
 
+			std::optional<std::uint32_t> m_breakTarget;
+			std::optional<std::uint32_t> m_continueTarget;
 			std::size_t m_funcCallIndex;
 			std::size_t m_funcIndex;
 			std::unordered_map<std::size_t, FuncData>& m_funcData;

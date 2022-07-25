@@ -89,7 +89,9 @@ namespace nzsl::Ast
 			ExpressionPtr Clone(VariableValueExpression& node) override;
 
 			StatementPtr Clone(BranchStatement& node) override;
+			StatementPtr Clone(BreakStatement& node) override;
 			StatementPtr Clone(ConditionalStatement& node) override;
+			StatementPtr Clone(ContinueStatement& node) override;
 			StatementPtr Clone(DeclareAliasStatement& node) override;
 			StatementPtr Clone(DeclareConstStatement& node) override;
 			StatementPtr Clone(DeclareExternalStatement& node) override;

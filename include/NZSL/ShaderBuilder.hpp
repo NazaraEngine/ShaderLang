@@ -214,6 +214,7 @@ namespace nzsl::ShaderBuilder
 	constexpr Impl::Assign Assign;
 	constexpr Impl::Binary Binary;
 	constexpr Impl::Branch<false> Branch;
+	constexpr Impl::NoParam<Ast::BreakStatement> Break;
 	constexpr Impl::CallFunction CallFunction;
 	constexpr Impl::Cast Cast;
 	constexpr Impl::ConditionalExpression ConditionalExpression;
@@ -222,6 +223,7 @@ namespace nzsl::ShaderBuilder
 	constexpr Impl::ConstantValue ConstantValue;
 	constexpr Impl::ConstantArrayValue ConstantArrayValue;
 	constexpr Impl::Branch<true> ConstBranch;
+	constexpr Impl::NoParam<Ast::ContinueStatement> Continue;
 	constexpr Impl::DeclareAlias DeclareAlias;
 	constexpr Impl::DeclareConst DeclareConst;
 	constexpr Impl::DeclareFunction DeclareFunction;

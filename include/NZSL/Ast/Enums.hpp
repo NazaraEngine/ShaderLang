@@ -151,7 +151,9 @@ namespace nzsl::Ast
 
 		// Statements
 		BranchStatement          = 21,
+		BreakStatement           = 40,
 		ConditionalStatement     = 22,
+		ContinueStatement        = 41,
 		DeclareAliasStatement    = 23,
 		DeclareConstStatement    = 24,
 		DeclareExternalStatement = 25,
@@ -170,7 +172,7 @@ namespace nzsl::Ast
 		ScopedStatement          = 38,
 		WhileStatement           = 39,
 
-		Max = WhileStatement
+		Max = ContinueStatement
 	};
 
 	enum class PrimitiveType

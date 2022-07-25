@@ -520,6 +520,17 @@ namespace nzsl
 
 		return branch;
 	}
+	
+	Ast::StatementPtr Parser::ParseBreakStatement()
+	{
+		const Token& token = Expect(Advance(), TokenType::Break);
+		Expect(Advance(), TokenType::Semicolon);
+
+		auto statement = ShaderBuilder::Break();
+		statement->sourceLocation = token.location;
+
+		return statement;
+	}
 
 	Ast::StatementPtr Parser::ParseConstStatement(std::vector<Attribute> attributes)
 	{
@@ -586,16 +597,27 @@ namespace nzsl
 				throw ParserUnexpectedTokenError{ token.location, token.type };
 		}
 	}
+	
+	Ast::StatementPtr Parser::ParseContinueStatement()
+	{
+		const Token& token = Expect(Advance(), TokenType::Continue);
+		Expect(Advance(), TokenType::Semicolon);
+
+		auto statement = ShaderBuilder::Continue();
+		statement->sourceLocation = token.location;
+
+		return statement;
+	}
 
 	Ast::StatementPtr Parser::ParseDiscardStatement()
 	{
-		const Token& discardToken = Expect(Advance(), TokenType::Discard);
+		const Token& token = Expect(Advance(), TokenType::Discard);
 		Expect(Advance(), TokenType::Semicolon);
 
-		auto discardStatement = ShaderBuilder::Discard();
-		discardStatement->sourceLocation = discardToken.location;
+		auto statement = ShaderBuilder::Discard();
+		statement->sourceLocation = token.location;
 
-		return discardStatement;
+		return statement;
 	}
 
 	Ast::StatementPtr Parser::ParseExternalBlock(std::vector<Attribute> attributes)
@@ -1008,11 +1030,25 @@ namespace nzsl
 			const Token& token = Peek();
 			switch (token.type)
 			{
+				case TokenType::Break:
+					if (!attributes.empty())
+						throw ParserUnexpectedTokenError{ token.location, token.type };
+
+					statement = ParseBreakStatement();
+					break;
+
 				case TokenType::Const:
 					if (!attributes.empty())
 						throw ParserUnexpectedTokenError{ token.location, token.type };
 
 					statement = ParseConstStatement();
+					break;
+					
+				case TokenType::Continue:
+					if (!attributes.empty())
+						throw ParserUnexpectedTokenError{ token.location, token.type };
+
+					statement = ParseContinueStatement();
 					break;
 
 				case TokenType::Discard:
