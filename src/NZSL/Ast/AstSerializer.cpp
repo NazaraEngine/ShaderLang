@@ -470,12 +470,12 @@ namespace nzsl::Ast
 	{
 	}
 
-	void ShaderAstSerializer::Serialize(ModulePtr& module)
+	void ShaderAstSerializer::Serialize(const Module& module)
 	{
 		m_serializer.Serialize(s_shaderAstMagicNumber);
 		m_serializer.Serialize(s_shaderAstCurrentVersion);
 
-		SerializeModule(module);
+		SerializeModule(const_cast<Module&>(module)); //< won't be used for writing
 	}
 	
 	bool ShaderAstSerializer::IsVersionGreaterOrEqual(std::uint32_t /*version*/) const
@@ -512,19 +512,19 @@ namespace nzsl::Ast
 		}
 	}
 	
-	void ShaderAstSerializer::SerializeModule(ModulePtr& module)
+	void ShaderAstSerializer::SerializeModule(Module& module)
 	{
-		Metadata(const_cast<Module::Metadata&>(*module->metadata)); //< won't be used for writing
+		Metadata(const_cast<Module::Metadata&>(*module.metadata)); //< won't be used for writing
 
-		Container(module->importedModules);
-		for (auto& importedModule : module->importedModules)
+		Container(module.importedModules);
+		for (auto& importedModule : module.importedModules)
 		{
 			Value(importedModule.identifier);
-			SerializeModule(importedModule.module);
+			SerializeModule(*importedModule.module);
 		}
 
 		ShaderSerializerVisitor visitor(*this);
-		module->rootNode->Visit(visitor);
+		module.rootNode->Visit(visitor);
 	}
 
 	void ShaderAstSerializer::SharedString(std::shared_ptr<const std::string>& val)
@@ -732,8 +732,8 @@ namespace nzsl::Ast
 		if (m_version > s_shaderAstCurrentVersion)
 			throw std::runtime_error("unsupported version");
 
-		ModulePtr module;
-		SerializeModule(module);
+		ModulePtr module = std::make_shared<Module>();
+		SerializeModule(*module);
 
 		return module;
 	}
@@ -800,7 +800,7 @@ namespace nzsl::Ast
 		}
 	}
 
-	void ShaderAstUnserializer::SerializeModule(ModulePtr& module)
+	void ShaderAstUnserializer::SerializeModule(Module& module)
 	{
 		std::shared_ptr<Module::Metadata> metadata = std::make_shared<Module::Metadata>();
 		Metadata(*metadata);
@@ -810,7 +810,9 @@ namespace nzsl::Ast
 		for (auto& importedModule : importedModules)
 		{
 			Value(const_cast<std::string&>(importedModule.identifier)); //< not used for writing
-			SerializeModule(importedModule.module);
+
+			importedModule.module = std::make_shared<Module>();
+			SerializeModule(*importedModule.module);
 		}
 
 		MultiStatementPtr rootNode = std::make_unique<MultiStatement>();
@@ -818,7 +820,7 @@ namespace nzsl::Ast
 		ShaderSerializerVisitor visitor(*this);
 		rootNode->Visit(visitor);
 
-		module = std::make_shared<Module>(std::move(metadata), std::move(rootNode), std::move(importedModules));
+		module = Module(std::move(metadata), std::move(rootNode), std::move(importedModules));
 	}
 
 	void ShaderAstUnserializer::SharedString(std::shared_ptr<const std::string>& val)
@@ -1143,7 +1145,7 @@ namespace nzsl::Ast
 	}
 	
 
-	void SerializeShader(AbstractSerializer& serializer, ModulePtr& module)
+	void SerializeShader(AbstractSerializer& serializer, const Module& module)
 	{
 		ShaderAstSerializer astSerializer(serializer);
 		astSerializer.Serialize(module);

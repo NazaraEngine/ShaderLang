@@ -25,6 +25,7 @@ namespace nzsl::Ast
 			struct ImportedModule;
 			struct Metadata;
 
+			Module() = default;
 			inline Module(std::uint32_t shaderLangVersion, std::string moduleName = std::string());
 			inline Module(std::shared_ptr<const Metadata> metadata, std::vector<ImportedModule> importedModules = {});
 			inline Module(std::shared_ptr<const Metadata> metadata, MultiStatementPtr rootNode, std::vector<ImportedModule> importedModules = {});

@@ -86,7 +86,7 @@ namespace nzsl::Ast
 			virtual void Node(ExpressionPtr& node) = 0;
 			virtual void Node(StatementPtr& node) = 0;
 
-			virtual void SerializeModule(ModulePtr& module) = 0;
+			virtual void SerializeModule(Module& module) = 0;
 			virtual void SharedString(std::shared_ptr<const std::string>& val) = 0;
 
 			inline void SizeT(std::size_t& val);
@@ -117,7 +117,7 @@ namespace nzsl::Ast
 			inline ShaderAstSerializer(AbstractSerializer& stream);
 			~ShaderAstSerializer() = default;
 
-			void Serialize(ModulePtr& shader);
+			void Serialize(const Module& shader);
 
 		private:
 			using SerializerBase::Serialize;
@@ -126,7 +126,7 @@ namespace nzsl::Ast
 			bool IsWriting() const override;
 			void Node(ExpressionPtr& node) override;
 			void Node(StatementPtr& node) override;
-			void SerializeModule(ModulePtr& module) override;
+			void SerializeModule(Module& module) override;
 			void SharedString(std::shared_ptr<const std::string>& val) override;
 			void Type(ExpressionType& type) override;
 			void Value(bool& val) override;
@@ -163,7 +163,7 @@ namespace nzsl::Ast
 			bool IsWriting() const override;
 			void Node(ExpressionPtr& node) override;
 			void Node(StatementPtr& node) override;
-			void SerializeModule(ModulePtr& module) override;
+			void SerializeModule(Module& module) override;
 			void SharedString(std::shared_ptr<const std::string>& val) override;
 			void Type(ExpressionType& type) override;
 			void Value(bool& val) override;
@@ -186,7 +186,7 @@ namespace nzsl::Ast
 			std::uint32_t m_version;
 	};
 	
-	NZSL_API void SerializeShader(AbstractSerializer& serializer, ModulePtr& shader);
+	NZSL_API void SerializeShader(AbstractSerializer& serializer, const Module& shader);
 	NZSL_API ModulePtr UnserializeShader(AbstractUnserializer& unserializer);
 }
 
