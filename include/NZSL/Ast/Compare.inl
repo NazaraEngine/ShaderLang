@@ -50,7 +50,7 @@ namespace nzsl::Ast
 		if (!Compare(*lhs.module, *rhs.module))
 			return false;
 
-		return false;
+		return true;
 	}
 
 	bool Compare(const Module::Metadata& lhs, const Module::Metadata& rhs)
