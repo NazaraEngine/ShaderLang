@@ -16,10 +16,10 @@ void ParseSerializeUnserialize(std::string_view sourceCode, bool sanitize)
 	if (sanitize)
 		REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(*shaderModule));
 
-	nzsl::Serializer serializedModule;
-	REQUIRE_NOTHROW(nzsl::Ast::SerializeShader(serializedModule, shaderModule));
+	nzsl::Serializer serializer;
+	REQUIRE_NOTHROW(nzsl::Ast::SerializeShader(serializer, *shaderModule));
 
-	const std::vector<std::uint8_t>& data = serializedModule.GetData();
+	const std::vector<std::uint8_t>& data = serializer.GetData();
 
 	nzsl::Unserializer unserializer(&data[0], data.size());
 	nzsl::Ast::ModulePtr unserializedShader;

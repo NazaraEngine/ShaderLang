@@ -257,7 +257,7 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 			if (outputType == "nzsl")
 				Step("Compile to NZSL", &Compiler::CompileToNZSL, outputFilePath, *m_shaderModule);
 			else if (outputType == "nzslb")
-				Step("Compile to NZSLB", &Compiler::CompileToNZSLB, outputFilePath, m_shaderModule);
+				Step("Compile to NZSLB", &Compiler::CompileToNZSLB, outputFilePath, *m_shaderModule);
 			else if (outputType == "spv")
 				Step("Compile to SPIR-V", &Compiler::CompileToSPV, outputFilePath, *m_shaderModule, false);
 			else if (outputType == "spv-dis")
@@ -405,7 +405,7 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 		OutputFile(std::move(outputPath), nzsl.data(), nzsl.size());
 	}
 
-	void Compiler::CompileToNZSLB(std::filesystem::path outputPath, nzsl::Ast::ModulePtr& module)
+	void Compiler::CompileToNZSLB(std::filesystem::path outputPath, const nzsl::Ast::Module& module)
 	{
 		nzsl::Serializer serializer;
 		nzsl::Ast::SerializeShader(serializer, module);
