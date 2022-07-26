@@ -4,6 +4,8 @@
 #include <NZSL/Parser.hpp>
 #include <NZSL/SpirV/SpirvPrinter.hpp>
 #include <NZSL/SpirvWriter.hpp>
+#include <NZSL/Ast/AstSerializer.hpp>
+#include <NZSL/Ast/Compare.hpp>
 #include <NZSL/Ast/ReflectVisitor.hpp>
 #include <NZSL/Ast/SanitizeVisitor.hpp>
 #include <catch2/catch.hpp>
@@ -314,16 +316,67 @@ nzsl::Ast::ModulePtr SanitizeModule(const nzsl::Ast::Module& module)
 nzsl::Ast::ModulePtr SanitizeModule(const nzsl::Ast::Module& module, const nzsl::Ast::SanitizeVisitor::Options& options)
 {
 	nzsl::Ast::ModulePtr shaderModule;
-	WHEN("We sanitize the shader")
+	auto Sanitize = [&]
 	{
 		REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(module, options));
-	}
+	};
 
-	WHEN("We output NZSL and try to parse it again")
+	auto Reparse = [&]
 	{
 		nzsl::LangWriter langWriter;
 		std::string outputCode = langWriter.Generate((shaderModule) ? *shaderModule : module);
 		REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(*nzsl::Parse(outputCode), options));
+	};
+
+	auto Serialize = [&]
+	{
+		const nzsl::Ast::Module& targetModule = (shaderModule) ? *shaderModule : module;
+
+		nzsl::Serializer serializer;
+		REQUIRE_NOTHROW(nzsl::Ast::SerializeShader(serializer, targetModule));
+
+		const std::vector<std::uint8_t>& data = serializer.GetData();
+
+		nzsl::Unserializer unserializer(&data[0], data.size());
+		nzsl::Ast::ModulePtr unserializedShader;
+		REQUIRE_NOTHROW(unserializedShader = nzsl::Ast::UnserializeShader(unserializer));
+
+		CHECK(nzsl::Ast::Compare(targetModule, *unserializedShader));
+	};
+
+	WHEN("We sanitize the shader")
+	{
+		Sanitize();
+
+		WHEN("We output NZSL and try to parse it again")
+		{
+			Reparse();
+
+			WHEN("We serialize/unserialize the shader and except the same result")
+			{
+				Serialize();
+			}
+		}
+		
+		WHEN("We serialize/unserialize the shader and except the same result")
+		{
+			Serialize();
+		}
+	}
+
+	WHEN("We output NZSL and try to parse it again")
+	{
+		Reparse();
+
+		WHEN("We serialize/unserialize the shader and except the same result")
+		{
+			Serialize();
+		}
+	}
+
+	WHEN("We serialize/unserialize the shader and except the same result")
+	{
+		Serialize();
 	}
 
 	// Ensure sanitization
