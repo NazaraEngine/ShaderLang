@@ -506,10 +506,10 @@ namespace nzsl
 
 				if (member.builtin.HasValue())
 				{
-					auto builtinIt = Ast::s_builtinData.find(member.builtin.GetResultingValue());
-					assert(builtinIt != Ast::s_builtinData.end());
+					auto builtinIt = LangData::s_builtinData.find(member.builtin.GetResultingValue());
+					assert(builtinIt != LangData::s_builtinData.end());
 
-					const Ast::BuiltinData& builtinData = builtinIt->second;
+					const LangData::BuiltinData& builtinData = builtinIt->second;
 
 					if ((builtinData.compatibleStages & entryPointType) == 0)
 						return 0;
