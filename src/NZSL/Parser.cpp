@@ -36,68 +36,30 @@ namespace nzsl
 {
 	namespace NAZARA_ANONYMOUS_NAMESPACE
 	{
-		constexpr auto s_depthWriteModes = frozen::make_unordered_map<frozen::string, Ast::DepthWriteMode>({
-			{ "greater",   Ast::DepthWriteMode::Greater },
-			{ "less",      Ast::DepthWriteMode::Less },
-			{ "replace",   Ast::DepthWriteMode::Replace },
-			{ "unchanged", Ast::DepthWriteMode::Unchanged },
-		});
-
-		constexpr auto s_entryPoints = frozen::make_unordered_map<frozen::string, ShaderStageType>({
-			{ "frag", ShaderStageType::Fragment },
-			{ "vert", ShaderStageType::Vertex },
-		});
-
-		constexpr auto s_identifierToAttributeType = frozen::make_unordered_map<frozen::string, Ast::AttributeType>({
-			{ "author",               Ast::AttributeType::Author },
-			{ "binding",              Ast::AttributeType::Binding },
-			{ "builtin",              Ast::AttributeType::Builtin },
-			{ "cond",                 Ast::AttributeType::Cond },
-			{ "depth_write",          Ast::AttributeType::DepthWrite },
-			{ "desc",                 Ast::AttributeType::Description },
-			{ "early_fragment_tests", Ast::AttributeType::EarlyFragmentTests },
-			{ "entry",                Ast::AttributeType::Entry },
-			{ "export",               Ast::AttributeType::Export },
-			{ "feature",              Ast::AttributeType::Feature },
-			{ "layout",               Ast::AttributeType::Layout },
-			{ "license",              Ast::AttributeType::License },
-			{ "location",             Ast::AttributeType::Location },
-			{ "nzsl_version",         Ast::AttributeType::LangVersion },
-			{ "set",                  Ast::AttributeType::Set },
-			{ "unroll",               Ast::AttributeType::Unroll }
-		});
-		
-		constexpr auto s_moduleFeatures = frozen::make_unordered_map<frozen::string, Ast::ModuleFeature>({
-			{ "primitive_externals", Ast::ModuleFeature::PrimitiveExternals },
-		});
-
-		constexpr auto BuildIdentifierMapping()
+		template<typename K, typename V, std::size_t N>
+		constexpr auto BuildIdentifierMapping(const frozen::unordered_map<K, V, N>& container)
 		{
-			std::array<std::pair<std::string_view, Ast::BuiltinEntry>, Ast::s_builtinData.size()> identifierToBuiltin;
+			std::array<std::pair<std::string_view, K>, N> identifierToBuiltin;
 
 			std::size_t index = 0;
-			for (const auto& [builtinEntry, builtinData] : Ast::s_builtinData)
+			for (const auto& [entry, data] : container)
 			{
-				identifierToBuiltin[index].first = builtinData.identifier;
-				identifierToBuiltin[index].second = builtinEntry;
+				identifierToBuiltin[index].first = data.identifier;
+				identifierToBuiltin[index].second = entry;
 
 				++index;
 			}
-			
+
 			return frozen::make_unordered_map(identifierToBuiltin);
 		}
 
-		constexpr auto s_builtinMapping = BuildIdentifierMapping();
-
-		constexpr auto s_layoutMapping = frozen::make_unordered_map<frozen::string, StructLayout>({
-			{ "std140", StructLayout::Std140 }
-		});
-
-		constexpr auto s_unrollModes = frozen::make_unordered_map<frozen::string, Ast::LoopUnroll>({
-			{ "always", Ast::LoopUnroll::Always },
-			{ "hint",   Ast::LoopUnroll::Hint },
-			{ "never",  Ast::LoopUnroll::Never }
-		});
+		constexpr auto s_attributeMapping     = BuildIdentifierMapping(LangData::s_attributeData);
+		constexpr auto s_builtinMapping       = BuildIdentifierMapping(LangData::s_builtinData);
+		constexpr auto s_depthWriteMapping    = BuildIdentifierMapping(LangData::s_depthWriteModes);
+		constexpr auto s_entryPointMapping    = BuildIdentifierMapping(LangData::s_entryPoints);
+		constexpr auto s_layoutMapping        = BuildIdentifierMapping(LangData::s_memoryLayouts);
+		constexpr auto s_moduleFeatureMapping = BuildIdentifierMapping(LangData::s_moduleFeatures);
+		constexpr auto s_unrollModeMapping    = BuildIdentifierMapping(LangData::s_unrollModes);
 	}
 
 	Ast::ModulePtr Parser::Parse(const std::vector<Token>& tokens)
@@ -126,6 +88,62 @@ namespace nzsl
 		}
 
 		return std::move(context.module);
+	}
+
+	std::string_view Parser::ToString(Ast::AttributeType attributeType)
+	{
+		auto it = LangData::s_attributeData.find(attributeType);
+		assert(it != LangData::s_attributeData.end());
+
+		return it->second.identifier;
+	}
+
+	std::string_view Parser::ToString(Ast::BuiltinEntry builtinEntry)
+	{
+		auto it = LangData::s_builtinData.find(builtinEntry);
+		assert(it != LangData::s_builtinData.end());
+
+		return it->second.identifier;
+	}
+
+	std::string_view Parser::ToString(Ast::DepthWriteMode depthWriteMode)
+	{
+		auto it = LangData::s_depthWriteModes.find(depthWriteMode);
+		assert(it != LangData::s_depthWriteModes.end());
+
+		return it->second.identifier;
+	}
+
+	std::string_view Parser::ToString(Ast::LoopUnroll loopUnroll)
+	{
+		auto it = LangData::s_unrollModes.find(loopUnroll);
+		assert(it != LangData::s_unrollModes.end());
+
+		return it->second.identifier;
+	}
+
+	std::string_view Parser::ToString(Ast::MemoryLayout memoryLayout)
+	{
+		auto it = LangData::s_memoryLayouts.find(memoryLayout);
+		assert(it != LangData::s_memoryLayouts.end());
+
+		return it->second.identifier;
+	}
+
+	std::string_view Parser::ToString(Ast::ModuleFeature moduleFeature)
+	{
+		auto it = LangData::s_moduleFeatures.find(moduleFeature);
+		assert(it != LangData::s_moduleFeatures.end());
+
+		return it->second.identifier;
+	}
+
+	std::string_view Parser::ToString(ShaderStageType shaderStage)
+	{
+		auto it = LangData::s_entryPoints.find(shaderStage);
+		assert(it != LangData::s_entryPoints.end());
+
+		return it->second.identifier;
 	}
 
 	const Token& Parser::Advance()
@@ -207,8 +225,8 @@ namespace nzsl
 
 			SourceLocation attributeLocation = identifierToken.location;
 
-			auto it = s_identifierToAttributeType.find(identifier);
-			if (it == s_identifierToAttributeType.end())
+			auto it = s_attributeMapping.find(identifier);
+			if (it == s_attributeMapping.end())
 				throw ParserUnknownAttributeError{ identifierToken.location };
 
 			Ast::AttributeType attributeType = it->second;
@@ -281,7 +299,7 @@ namespace nzsl
 				case Ast::AttributeType::Feature:
 				{
 					Ast::ExpressionValue<Ast::ModuleFeature> featureExpr;
-					HandleUniqueStringAttributeKey(featureExpr, std::move(attribute), s_moduleFeatures);
+					HandleUniqueStringAttributeKey(featureExpr, std::move(attribute), s_moduleFeatureMapping);
 
 					Ast::ModuleFeature feature = featureExpr.GetResultingValue();
 
@@ -746,7 +764,7 @@ namespace nzsl
 				switch (attribute.type)
 				{
 					case Ast::AttributeType::Unroll:
-						HandleUniqueStringAttributeKey(forNode->unroll, std::move(attribute), s_unrollModes, std::make_optional(Ast::LoopUnroll::Always));
+						HandleUniqueStringAttributeKey(forNode->unroll, std::move(attribute), s_unrollModeMapping, std::make_optional(Ast::LoopUnroll::Always));
 						break;
 
 					default:
@@ -770,7 +788,7 @@ namespace nzsl
 				switch (attribute.type)
 				{
 					case Ast::AttributeType::Unroll:
-						HandleUniqueStringAttributeKey(forEachNode->unroll, std::move(attribute), s_unrollModes, std::make_optional(Ast::LoopUnroll::Always));
+						HandleUniqueStringAttributeKey(forEachNode->unroll, std::move(attribute), s_unrollModeMapping, std::make_optional(Ast::LoopUnroll::Always));
 						break;
 
 					default:
@@ -838,7 +856,7 @@ namespace nzsl
 					break;
 
 				case Ast::AttributeType::Entry:
-					HandleUniqueStringAttributeKey(func->entryStage, std::move(attribute), s_entryPoints);
+					HandleUniqueStringAttributeKey(func->entryStage, std::move(attribute), s_entryPointMapping);
 					break;
 
 				case Ast::AttributeType::Export:
@@ -846,7 +864,7 @@ namespace nzsl
 					break;
 
 				case Ast::AttributeType::DepthWrite:
-					HandleUniqueStringAttributeKey(func->depthWrite, std::move(attribute), s_depthWriteModes);
+					HandleUniqueStringAttributeKey(func->depthWrite, std::move(attribute), s_depthWriteMapping);
 					break;
 
 				case Ast::AttributeType::EarlyFragmentTests:
@@ -1290,7 +1308,7 @@ namespace nzsl
 			switch (attribute.type)
 			{
 				case Ast::AttributeType::Unroll:
-					HandleUniqueStringAttributeKey(whileStatement->unroll, std::move(attribute), s_unrollModes, std::make_optional(Ast::LoopUnroll::Always));
+					HandleUniqueStringAttributeKey(whileStatement->unroll, std::move(attribute), s_unrollModeMapping, std::make_optional(Ast::LoopUnroll::Always));
 					break;
 
 				default:

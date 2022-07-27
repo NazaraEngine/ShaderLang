@@ -1483,7 +1483,7 @@ namespace nzsl::Ast
 			}
 
 			const ExpressionType& memberType = member.type.GetResultingValue();
-			if (clone->description.layout.IsResultingValue() && clone->description.layout.GetResultingValue() == StructLayout::Std140)
+			if (clone->description.layout.IsResultingValue() && clone->description.layout.GetResultingValue() == Ast::MemoryLayout::Std140)
 			{
 				const ExpressionType& targetType = ResolveAlias(member.type.GetResultingValue());
 
@@ -1503,11 +1503,11 @@ namespace nzsl::Ast
 			if (member.builtin.IsResultingValue())
 			{
 				BuiltinEntry builtin = member.builtin.GetResultingValue();
-				auto it = Ast::s_builtinData.find(builtin);
-				if (it == Ast::s_builtinData.end())
+				auto it = LangData::s_builtinData.find(builtin);
+				if (it == LangData::s_builtinData.end())
 					throw AstInternalError{ member.sourceLocation, "missing builtin data" };
 
-				const Ast::BuiltinData& builtinData = it->second;
+				const LangData::BuiltinData& builtinData = it->second;
 				std::visit([&](auto&& arg)
 				{
 					using T = std::decay_t<decltype(arg)>;
@@ -3254,11 +3254,11 @@ namespace nzsl::Ast
 				// Check builtin usage
 				for (auto&& [builtin, sourceLocation] : funcData.usedBuiltins)
 				{
-					auto it = Ast::s_builtinData.find(builtin);
-					if (it == Ast::s_builtinData.end())
+					auto it = LangData::s_builtinData.find(builtin);
+					if (it == LangData::s_builtinData.end())
 						throw AstInternalError{ sourceLocation, "missing builtin data" };
 
-					const Ast::BuiltinData& builtinData = it->second;
+					const LangData::BuiltinData& builtinData = it->second;
 					if (!builtinData.compatibleStages.Test(stageType))
 						throw CompilerBuiltinUnsupportedStageError{ sourceLocation, builtin, stageType };
 				}

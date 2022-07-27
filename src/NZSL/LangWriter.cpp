@@ -7,6 +7,7 @@
 #include <Nazara/Utils/CallOnExit.hpp>
 #include <NZSL/Enums.hpp>
 #include <NZSL/Lexer.hpp>
+#include <NZSL/Parser.hpp>
 #include <NZSL/ShaderBuilder.hpp>
 #include <NZSL/Ast/Cloner.hpp>
 #include <NZSL/Ast/RecursiveVisitor.hpp>
@@ -84,7 +85,7 @@ namespace nzsl
 
 	struct LangWriter::LayoutAttribute
 	{
-		const Ast::ExpressionValue<StructLayout>& layout;
+		const Ast::ExpressionValue<Ast::MemoryLayout>& layout;
 
 		bool HasValue() const { return layout.HasValue(); }
 	};
@@ -399,12 +400,7 @@ namespace nzsl
 		Append("builtin(");
 
 		if (attribute.builtin.IsResultingValue())
-		{
-			auto it = Ast::s_builtinData.find(attribute.builtin.GetResultingValue());
-			assert(it != Ast::s_builtinData.end());
-
-			Append(it->second.identifier);
-		}
+			Append(Parser::ToString(attribute.builtin.GetResultingValue()));
 		else
 			attribute.builtin.GetExpression()->Visit(*this);
 
@@ -419,26 +415,7 @@ namespace nzsl
 		Append("depth_write(");
 
 		if (attribute.writeMode.IsResultingValue())
-		{
-			switch (attribute.writeMode.GetResultingValue())
-			{
-				case Ast::DepthWriteMode::Greater:
-					Append("greater");
-					break;
-
-				case Ast::DepthWriteMode::Less:
-					Append("less");
-					break;
-
-				case Ast::DepthWriteMode::Replace:
-					Append("replace");
-					break;
-
-				case Ast::DepthWriteMode::Unchanged:
-					Append("unchanged");
-					break;
-			}
-		}
+			Append(Parser::ToString(attribute.writeMode.GetResultingValue()));
 		else
 			attribute.writeMode.GetExpression()->Visit(*this);
 
@@ -481,18 +458,7 @@ namespace nzsl
 		Append("entry(");
 
 		if (attribute.stageType.IsResultingValue())
-		{
-			switch (attribute.stageType.GetResultingValue())
-			{
-				case ShaderStageType::Fragment:
-					Append("frag");
-					break;
-
-				case ShaderStageType::Vertex:
-					Append("vert");
-					break;
-			}
-		}
+			Append(Parser::ToString(attribute.stageType.GetResultingValue()));
 		else
 			attribute.stageType.GetExpression()->Visit(*this);
 
@@ -503,12 +469,10 @@ namespace nzsl
 	{
 		Append("feature(");
 
-		switch (attribute.featureAttribute)
-		{
-			case Ast::ModuleFeature::PrimitiveExternals:
-				Append("primitive_externals");
-				break;
-		}
+		auto it = LangData::s_moduleFeatures.find(attribute.featureAttribute);
+		assert(it != LangData::s_moduleFeatures.end());
+
+		Append(it->second.identifier);
 
 		Append(")");
 	}
@@ -539,18 +503,7 @@ namespace nzsl
 
 		Append("layout(");
 		if (attribute.layout.IsResultingValue())
-		{
-			switch (attribute.layout.GetResultingValue())
-			{
-				case StructLayout::Packed:
-					Append("packed");
-					break;
-
-				case StructLayout::Std140:
-					Append("std140");
-					break;
-			}
-		}
+			Append(Parser::ToString(attribute.layout.GetResultingValue()));
 		else
 			attribute.layout.GetExpression()->Visit(*this);
 		Append(")");
@@ -602,25 +555,7 @@ namespace nzsl
 		Append("unroll(");
 
 		if (attribute.unroll.IsResultingValue())
-		{
-			switch (attribute.unroll.GetResultingValue())
-			{
-				case Ast::LoopUnroll::Always:
-					Append("always");
-					break;
-
-				case Ast::LoopUnroll::Hint:
-					Append("hint");
-					break;
-
-				case Ast::LoopUnroll::Never:
-					Append("never");
-					break;
-
-				default:
-					break;
-			}
-		}
+			Append(Parser::ToString(attribute.unroll.GetResultingValue()));
 		else
 			attribute.unroll.GetExpression()->Visit(*this);
 
@@ -860,14 +795,14 @@ namespace nzsl
 
 		switch (node.op)
 		{
-			case Ast::AssignType::Simple: Append(" = "); break;
-			case Ast::AssignType::CompoundAdd: Append(" += "); break;
-			case Ast::AssignType::CompoundDivide: Append(" /= "); break;
-			case Ast::AssignType::CompoundModulo: Append(" %= "); break;
-			case Ast::AssignType::CompoundMultiply: Append(" *= "); break;
+			case Ast::AssignType::Simple:             Append(" = "); break;
+			case Ast::AssignType::CompoundAdd:        Append(" += "); break;
+			case Ast::AssignType::CompoundDivide:     Append(" /= "); break;
+			case Ast::AssignType::CompoundModulo:     Append(" %= "); break;
+			case Ast::AssignType::CompoundMultiply:   Append(" *= "); break;
 			case Ast::AssignType::CompoundLogicalAnd: Append(" &&= "); break;
-			case Ast::AssignType::CompoundLogicalOr: Append(" ||= "); break;
-			case Ast::AssignType::CompoundSubtract: Append(" -= "); break;
+			case Ast::AssignType::CompoundLogicalOr:  Append(" ||= "); break;
+			case Ast::AssignType::CompoundSubtract:   Append(" -= "); break;
 		}
 
 		node.right->Visit(*this);

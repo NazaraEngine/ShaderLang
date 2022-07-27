@@ -24,6 +24,14 @@ namespace nzsl
 
 			Ast::ModulePtr Parse(const std::vector<Token>& tokens);
 
+			static std::string_view ToString(Ast::AttributeType attributeType);
+			static std::string_view ToString(Ast::BuiltinEntry builtinEntry);
+			static std::string_view ToString(Ast::DepthWriteMode depthWriteMode);
+			static std::string_view ToString(Ast::LoopUnroll loopUnroll);
+			static std::string_view ToString(Ast::MemoryLayout memoryLayout);
+			static std::string_view ToString(Ast::ModuleFeature moduleFeature);
+			static std::string_view ToString(ShaderStageType shaderStage);
+
 		private:
 			struct Attribute
 			{

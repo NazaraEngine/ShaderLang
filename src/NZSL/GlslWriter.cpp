@@ -1090,10 +1090,10 @@ namespace nzsl
 
 				if (member.builtin.HasValue())
 				{
-					auto it = Ast::s_builtinData.find(member.builtin.GetResultingValue());
-					assert(it != Ast::s_builtinData.end());
+					auto it = LangData::s_builtinData.find(member.builtin.GetResultingValue());
+					assert(it != LangData::s_builtinData.end());
 
-					const Ast::BuiltinData& builtin = it->second;
+					const LangData::BuiltinData& builtin = it->second;
 					if (!builtin.compatibleStages.Test(m_currentState->stage))
 						continue; //< This builtin is not active in this stage, skip it
 
@@ -1656,7 +1656,7 @@ namespace nzsl
 				
 				const auto& structInfo = Nz::Retrieve(m_currentState->structs, structIndex);
 				if (structInfo.desc->layout.HasValue())
-					isStd140 = structInfo.desc->layout.GetResultingValue() == StructLayout::Std140;
+					isStd140 = structInfo.desc->layout.GetResultingValue() == Ast::MemoryLayout::Std140;
 			}
 
 			std::string varName = SanitizeIdentifier(externalVar.name + m_currentState->moduleSuffix);

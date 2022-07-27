@@ -3,6 +3,8 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <NZSL/Lang/Errors.hpp>
+#include <NZSL/Parser.hpp>
+#include <NZSL/Lang/LangData.hpp>
 #include <fmt/format.h>
 #include <string>
 #include <utility>
@@ -14,29 +16,7 @@ struct fmt::formatter<nzsl::Ast::AttributeType> : formatter<string_view>
 	template <typename FormatContext>
 	auto format(const nzsl::Ast::AttributeType& p, FormatContext& ctx) -> decltype(ctx.out())
 	{
-		// TODO: Add ToString
-		std::string_view name = "<unhandled attribute type>";
-		switch (p)
-		{
-			case nzsl::Ast::AttributeType::Author:             name = "author"; break;
-			case nzsl::Ast::AttributeType::Binding:            name = "binding"; break;
-			case nzsl::Ast::AttributeType::Builtin:            name = "builtin"; break;
-			case nzsl::Ast::AttributeType::Cond:               name = "cond"; break;
-			case nzsl::Ast::AttributeType::DepthWrite:         name = "depth_write"; break;
-			case nzsl::Ast::AttributeType::Description:        name = "desc"; break;
-			case nzsl::Ast::AttributeType::EarlyFragmentTests: name = "early_fragment_tests"; break;
-			case nzsl::Ast::AttributeType::Entry:              name = "entry"; break;
-			case nzsl::Ast::AttributeType::Export:             name = "export"; break;
-			case nzsl::Ast::AttributeType::Feature:            name = "feature"; break;
-			case nzsl::Ast::AttributeType::LangVersion:        name = "nzsl_version"; break;
-			case nzsl::Ast::AttributeType::Layout:             name = "layout"; break;
-			case nzsl::Ast::AttributeType::License:            name = "license"; break;
-			case nzsl::Ast::AttributeType::Location:           name = "location"; break;
-			case nzsl::Ast::AttributeType::Set:                name = "set"; break;
-			case nzsl::Ast::AttributeType::Unroll:             name = "unroll"; break;
-		}
-
-		return formatter<string_view>::format(name, ctx);
+		return formatter<string_view>::format(nzsl::Parser::ToString(p), ctx);
 	}
 };
 
@@ -46,21 +26,7 @@ struct fmt::formatter<nzsl::Ast::BuiltinEntry> : formatter<string_view>
 	template <typename FormatContext>
 	auto format(const nzsl::Ast::BuiltinEntry& p, FormatContext& ctx) -> decltype(ctx.out())
 	{
-		// TODO: Add ToString
-		std::string_view name = "<unhandled builtin>";
-		switch (p)
-		{
-			case nzsl::Ast::BuiltinEntry::BaseInstance:   name = "baseinstance"; break;
-			case nzsl::Ast::BuiltinEntry::BaseVertex:     name = "basevertex"; break;
-			case nzsl::Ast::BuiltinEntry::DrawIndex:      name = "drawindex"; break;
-			case nzsl::Ast::BuiltinEntry::FragCoord:      name = "fragcoord"; break;
-			case nzsl::Ast::BuiltinEntry::FragDepth:      name = "fragdepth"; break;
-			case nzsl::Ast::BuiltinEntry::InstanceIndex:  name = "instanceindex"; break;
-			case nzsl::Ast::BuiltinEntry::VertexIndex :   name = "vertexindex"; break;
-			case nzsl::Ast::BuiltinEntry::VertexPosition: name = "position"; break;
-		}
-
-		return formatter<string_view>::format(name, ctx);
+		return formatter<string_view>::format(nzsl::Parser::ToString(p), ctx);
 	}
 };
 
@@ -70,14 +36,7 @@ struct fmt::formatter<nzsl::Ast::ModuleFeature> : formatter<string_view>
 	template <typename FormatContext>
 	auto format(const nzsl::Ast::ModuleFeature& p, FormatContext& ctx) -> decltype(ctx.out())
 	{
-		// TODO: Add ToString
-		std::string_view name = "<unhandled module feature>";
-		switch (p)
-		{
-			case nzsl::Ast::ModuleFeature::PrimitiveExternals: name = "primitive_externals"; break;
-		}
-
-		return formatter<string_view>::format(name, ctx);
+		return formatter<string_view>::format(nzsl::Parser::ToString(p), ctx);
 	}
 };
 
@@ -107,15 +66,11 @@ struct fmt::formatter<nzsl::ShaderStageType> : formatter<string_view>
 	template <typename FormatContext>
 	auto format(const nzsl::ShaderStageType& p, FormatContext& ctx) -> decltype(ctx.out())
 	{
-		// TODO: Add ToString
-		std::string_view name = "<unhandled shader stage>";
-		switch (p)
-		{
-			case nzsl::ShaderStageType::Fragment: name = "fragment"; break;
-			case nzsl::ShaderStageType::Vertex:   name = "vertex"; break;
-		}
+		// Use complete name instead of identifier ("fragment" instead of "frag")
+		auto it = nzsl::LangData::s_entryPoints.find(p);
+		assert(it != nzsl::LangData::s_entryPoints.end());
 
-		return formatter<string_view>::format(name, ctx);
+		return formatter<string_view>::format(it->second.name, ctx);
 	}
 };
 

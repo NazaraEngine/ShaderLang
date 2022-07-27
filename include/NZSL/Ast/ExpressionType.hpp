@@ -207,7 +207,7 @@ namespace nzsl::Ast
 			SourceLocation sourceLocation;
 		};
 
-		ExpressionValue<StructLayout> layout;
+		ExpressionValue<MemoryLayout> layout;
 		std::string name;
 		std::vector<StructMember> members;
 		bool isConditional = false;
