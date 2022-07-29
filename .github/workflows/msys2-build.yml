@@ -99,7 +99,7 @@ jobs:
 
     # Build library and tests
     - name: Build library
-      run: xmake
+      run: xmake --verbose --diagnosis
 
     # Run unit tests
     - name: Run unit tests
