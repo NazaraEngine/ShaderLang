@@ -508,6 +508,9 @@ namespace nzsl::Ast
 		EnableOptimisation(ArrayBuilder, Vector2i32);
 		EnableOptimisation(ArrayBuilder, Vector3i32);
 		EnableOptimisation(ArrayBuilder, Vector4i32);
+		EnableOptimisation(ArrayBuilder, Vector2u32);
+		EnableOptimisation(ArrayBuilder, Vector3u32);
+		EnableOptimisation(ArrayBuilder, Vector4u32);
 
 		// Binary
 
