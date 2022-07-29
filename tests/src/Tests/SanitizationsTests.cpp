@@ -123,12 +123,12 @@ fn main()
 fn main()
 {
 	let x: f32 = 0.0;
-	let i: u32 = 0;
-	while (i < (10))
+	let i: u32 = u32(0);
+	while (i < (u32(10)))
 	{
 		let v: f32 = data.value[i];
 		x += v;
-		i += 1;
+		i += u32(1);
 	}
 
 }
@@ -204,8 +204,8 @@ fn testMat4ToMat4(input: mat4[f32]) -> mat4[f32]
 fn buildMat2x3(a: f32, b: f32, c: f32, d: f32, e: f32, f: f32) -> mat2x3[f32]
 {
 	let temp: mat2x3[f32];
-	temp[0] = vec3[f32](a, b, c);
-	temp[1] = vec3[f32](d, e, f);
+	temp[u32(0)] = vec3[f32](a, b, c);
+	temp[u32(1)] = vec3[f32](d, e, f);
 	return temp;
 }
 
@@ -217,27 +217,27 @@ fn testMat2ToMat2(input: mat2[f32]) -> mat2[f32]
 fn testMat2ToMat3(input: mat2[f32]) -> mat3[f32]
 {
 	let temp: mat3[f32];
-	temp[0] = vec3[f32](input[0], 0.0);
-	temp[1] = vec3[f32](input[1], 0.0);
-	temp[2] = vec3[f32](input[2], 1.0);
+	temp[u32(0)] = vec3[f32](input[u32(0)], 0.0);
+	temp[u32(1)] = vec3[f32](input[u32(1)], 0.0);
+	temp[u32(2)] = vec3[f32](input[u32(2)], 1.0);
 	return temp;
 }
 
 fn testMat2ToMat4(input: mat2[f32]) -> mat4[f32]
 {
 	let temp: mat4[f32];
-	temp[0] = vec4[f32](input[0], 0.0, 0.0);
-	temp[1] = vec4[f32](input[1], 0.0, 0.0);
-	temp[2] = vec4[f32](input[2], 1.0, 0.0);
-	temp[3] = vec4[f32](input[3], 0.0, 1.0);
+	temp[u32(0)] = vec4[f32](input[u32(0)], 0.0, 0.0);
+	temp[u32(1)] = vec4[f32](input[u32(1)], 0.0, 0.0);
+	temp[u32(2)] = vec4[f32](input[u32(2)], 1.0, 0.0);
+	temp[u32(3)] = vec4[f32](input[u32(3)], 0.0, 1.0);
 	return temp;
 }
 
 fn testMat3ToMat2(input: mat3[f32]) -> mat2[f32]
 {
 	let temp: mat2[f32];
-	temp[0] = input[0].xy;
-	temp[1] = input[1].xy;
+	temp[u32(0)] = input[u32(0)].xy;
+	temp[u32(1)] = input[u32(1)].xy;
 	return temp;
 }
 
@@ -249,27 +249,27 @@ fn testMat3ToMat3(input: mat3[f32]) -> mat3[f32]
 fn testMat3ToMat4(input: mat3[f32]) -> mat4[f32]
 {
 	let temp: mat4[f32];
-	temp[0] = vec4[f32](input[0], 0.0);
-	temp[1] = vec4[f32](input[1], 0.0);
-	temp[2] = vec4[f32](input[2], 0.0);
-	temp[3] = vec4[f32](input[3], 1.0);
+	temp[u32(0)] = vec4[f32](input[u32(0)], 0.0);
+	temp[u32(1)] = vec4[f32](input[u32(1)], 0.0);
+	temp[u32(2)] = vec4[f32](input[u32(2)], 0.0);
+	temp[u32(3)] = vec4[f32](input[u32(3)], 1.0);
 	return temp;
 }
 
 fn testMat4ToMat2(input: mat4[f32]) -> mat2[f32]
 {
 	let temp: mat2[f32];
-	temp[0] = input[0].xy;
-	temp[1] = input[1].xy;
+	temp[u32(0)] = input[u32(0)].xy;
+	temp[u32(1)] = input[u32(1)].xy;
 	return temp;
 }
 
 fn testMat4ToMat3(input: mat4[f32]) -> mat3[f32]
 {
 	let temp: mat3[f32];
-	temp[0] = input[0].xyz;
-	temp[1] = input[1].xyz;
-	temp[2] = input[2].xyz;
+	temp[u32(0)] = input[u32(0)].xyz;
+	temp[u32(1)] = input[u32(1)].xyz;
+	temp[u32(2)] = input[u32(2)].xyz;
 	return temp;
 }
 

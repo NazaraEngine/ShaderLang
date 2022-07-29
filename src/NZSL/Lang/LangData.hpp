@@ -98,6 +98,7 @@ namespace nzsl::LangData
 	});
 
 	constexpr auto s_moduleFeatures = frozen::make_unordered_map<Ast::ModuleFeature, ModuleFeatureData>({
+		{ Ast::ModuleFeature::Float64,            { "float64" } },
 		{ Ast::ModuleFeature::PrimitiveExternals, { "primitive_externals" } },
 	});
 

@@ -34,6 +34,8 @@ namespace nzsl::Ast
 				return NoType{};
 			else if constexpr (std::is_same_v<T, bool>)
 				return PrimitiveType::Boolean;
+			else if constexpr (std::is_same_v<T, double>)
+				return PrimitiveType::Float64;
 			else if constexpr (std::is_same_v<T, float>)
 				return PrimitiveType::Float32;
 			else if constexpr (std::is_same_v<T, std::int32_t>)
@@ -42,18 +44,14 @@ namespace nzsl::Ast
 				return PrimitiveType::UInt32;
 			else if constexpr (std::is_same_v<T, std::string>)
 				return PrimitiveType::String;
-			else if constexpr (std::is_same_v<T, Vector2f32>)
-				return VectorType{ 2, PrimitiveType::Float32 };
-			else if constexpr (std::is_same_v<T, Vector3f32>)
-				return VectorType{ 3, PrimitiveType::Float32 };
-			else if constexpr (std::is_same_v<T, Vector4f32>)
-				return VectorType{ 4, PrimitiveType::Float32 };
-			else if constexpr (std::is_same_v<T, Vector2i32>)
-				return VectorType{ 2, PrimitiveType::Int32 };
-			else if constexpr (std::is_same_v<T, Vector3i32>)
-				return VectorType{ 3, PrimitiveType::Int32 };
-			else if constexpr (std::is_same_v<T, Vector4i32>)
-				return VectorType{ 4, PrimitiveType::Int32 };
+			else if constexpr (IsVector_v<T> && std::is_same_v<typename T::Base, float>)
+				return VectorType{ T::Dimensions, PrimitiveType::Float32 };
+			else if constexpr (IsVector_v<T> && std::is_same_v<typename T::Base, double>)
+				return VectorType{ T::Dimensions, PrimitiveType::Float64 };
+			else if constexpr (IsVector_v<T> && std::is_same_v<typename T::Base, std::int32_t>)
+				return VectorType{ T::Dimensions, PrimitiveType::Int32 };
+			else if constexpr (IsVector_v<T> && std::is_same_v<typename T::Base, std::uint32_t>)
+				return VectorType{ T::Dimensions, PrimitiveType::UInt32 };
 			else
 				static_assert(Nz::AlwaysFalse<T>(), "non-exhaustive visitor");
 		}
@@ -129,30 +127,52 @@ namespace nzsl::Ast
 			else if constexpr (std::is_same_v<T, bool>)
 				return (arg) ? "true" : "false";
 			else if constexpr (std::is_same_v<T, double> || std::is_same_v<T, float> || std::is_same_v<T, std::int32_t> || std::is_same_v<T, std::uint32_t>)
-				return ToString(arg);
+			{
+				// temporary fix until unsized literal float/int are supported
+				if constexpr (std::is_same_v<T, double>)
+					return "f64(" + ToString(arg) + ")";
+				else if constexpr (std::is_same_v<T, std::uint32_t>)
+					return "u32(" + ToString(arg) + ")";
+				else
+					return ToString(arg);
+			}
 			else if constexpr (std::is_same_v<T, std::string>)
 				return EscapeString(arg, true);
 			else if constexpr (IsVector_v<T>)
 			{
 				std::string_view vecTypeStr;
 
+				// temporary fix until unsized literal float/int are supported
+				std::string_view litPrefix;
+				std::string_view litSuffix;
+
 				if constexpr (std::is_same_v<typename T::Base, bool>)
 					vecTypeStr = "bool";
+				else if constexpr (std::is_same_v<typename T::Base, double>)
+				{
+					litPrefix = "f64(";
+					vecTypeStr = "f64";
+					litSuffix = ")";
+				}
 				else if constexpr (std::is_same_v<typename T::Base, float>)
 					vecTypeStr = "f32";
 				else if constexpr (std::is_same_v<typename T::Base, std::int32_t>)
 					vecTypeStr = "i32";
 				else if constexpr (std::is_same_v<typename T::Base, std::uint32_t>)
+				{
+					litPrefix = "u32(";
 					vecTypeStr = "u32";
+					litSuffix = ")";
+				}
 				else
 					static_assert(Nz::AlwaysFalse<T>(), "unhandled vector base type");
 
 				if constexpr (T::Dimensions == 2)
-					return fmt::format("vec2[{}]({}, {})", vecTypeStr, ToString(arg.x()), ToString(arg.y()));
+					return fmt::format("vec2[{}]({}{}{}, {}{}{})", vecTypeStr, litPrefix, ToString(arg.x()), litSuffix, litPrefix, ToString(arg.y()), litSuffix);
 				else if constexpr (T::Dimensions == 3)
-					return fmt::format("vec3[{}]({}, {}, {})", vecTypeStr, ToString(arg.x()), ToString(arg.y()), ToString(arg.z()));
+					return fmt::format("vec3[{}]({}{}{}, {}{}{}, {}{}{})", vecTypeStr, litPrefix, ToString(arg.x()), litSuffix, litPrefix, ToString(arg.y()), litSuffix, litPrefix, ToString(arg.z()), litSuffix);
 				else if constexpr (T::Dimensions == 4)
-					return fmt::format("vec4[{}]({}, {}, {}, {})", vecTypeStr, ToString(arg.x()), ToString(arg.y()), ToString(arg.z()), ToString(arg.w()));
+					return fmt::format("vec4[{}]({}{}{}, {}{}{}, {}{}{}, {}{}{})", vecTypeStr, litPrefix, ToString(arg.x()), litSuffix, litPrefix, ToString(arg.y()), litSuffix, litPrefix, ToString(arg.z()), litSuffix, litPrefix, ToString(arg.w()), litSuffix);
 				else
 					static_assert(Nz::AlwaysFalse<T>(), "unhandled vector size");
 			}

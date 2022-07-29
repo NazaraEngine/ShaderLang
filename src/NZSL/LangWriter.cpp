@@ -253,6 +253,7 @@ namespace nzsl
 		{
 			case Ast::PrimitiveType::Boolean: return Append("bool");
 			case Ast::PrimitiveType::Float32: return Append("f32");
+			case Ast::PrimitiveType::Float64: return Append("f64");
 			case Ast::PrimitiveType::Int32:   return Append("i32");
 			case Ast::PrimitiveType::UInt32:  return Append("u32");
 			case Ast::PrimitiveType::String:  return Append("string");

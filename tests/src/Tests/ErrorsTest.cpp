@@ -302,6 +302,18 @@ const V = vec4[i32](7, 6, 5, 4) % vec4[i32](3, 2, 1, 0);
 
 		SECTION("Features")
 		{
+			// Float64
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+fn main()
+{
+	let x: f64 = 0.0;
+}
+)"), "(7,9 -> 11): CUnknownIdentifier error: unknown identifier f64");
+
+			// Primitive externals
 			CHECK_THROWS_WITH(Compile(R"(
 [nzsl_version("1.0")]
 module;

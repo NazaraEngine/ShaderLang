@@ -267,17 +267,17 @@ fn main()
 {
 	let color: vec4[f32] = (0.0).xxxx;
 	{
-		let light: Light = data.lights[0];
+		let light: Light = data.lights[u32(0)];
 		color += light.color;
 	}
 
 	{
-		let light: Light = data.lights[1];
+		let light: Light = data.lights[u32(1)];
 		color += light.color;
 	}
 
 	{
-		let light: Light = data.lights[2];
+		let light: Light = data.lights[u32(2)];
 		color += light.color;
 	}
 

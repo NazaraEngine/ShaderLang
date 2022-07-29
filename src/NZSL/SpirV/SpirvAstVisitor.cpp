@@ -88,6 +88,7 @@ namespace nzsl
 					switch (leftTypeBase)
 					{
 						case Ast::PrimitiveType::Float32:
+						case Ast::PrimitiveType::Float64:
 							return SpirvOp::OpFAdd;
 
 						case Ast::PrimitiveType::Int32:
@@ -107,6 +108,7 @@ namespace nzsl
 					switch (leftTypeBase)
 					{
 						case Ast::PrimitiveType::Float32:
+						case Ast::PrimitiveType::Float64:
 							return SpirvOp::OpFSub;
 
 						case Ast::PrimitiveType::Int32:
@@ -126,6 +128,7 @@ namespace nzsl
 					switch (leftTypeBase)
 					{
 						case Ast::PrimitiveType::Float32:
+						case Ast::PrimitiveType::Float64:
 							return SpirvOp::OpFDiv;
 
 						case Ast::PrimitiveType::Int32:
@@ -147,6 +150,7 @@ namespace nzsl
 					switch (leftTypeBase)
 					{
 						case Ast::PrimitiveType::Float32:
+						case Ast::PrimitiveType::Float64:
 							return SpirvOp::OpFMod;
 
 						case Ast::PrimitiveType::Int32:
@@ -168,6 +172,7 @@ namespace nzsl
 					switch (leftTypeBase)
 					{
 						case Ast::PrimitiveType::Float32:
+						case Ast::PrimitiveType::Float64:
 						{
 							if (IsPrimitiveType(leftType))
 							{
@@ -226,6 +231,7 @@ namespace nzsl
 							return SpirvOp::OpLogicalEqual;
 
 						case Ast::PrimitiveType::Float32:
+						case Ast::PrimitiveType::Float64:
 							return SpirvOp::OpFOrdEqual;
 
 						case Ast::PrimitiveType::Int32:
@@ -244,6 +250,7 @@ namespace nzsl
 					switch (leftTypeBase)
 					{
 						case Ast::PrimitiveType::Float32:
+						case Ast::PrimitiveType::Float64:
 							return SpirvOp::OpFOrdGreaterThan;
 
 						case Ast::PrimitiveType::Int32:
@@ -265,6 +272,7 @@ namespace nzsl
 					switch (leftTypeBase)
 					{
 						case Ast::PrimitiveType::Float32:
+						case Ast::PrimitiveType::Float64:
 							return SpirvOp::OpFOrdGreaterThanEqual;
 
 						case Ast::PrimitiveType::Int32:
@@ -286,6 +294,7 @@ namespace nzsl
 					switch (leftTypeBase)
 					{
 						case Ast::PrimitiveType::Float32:
+						case Ast::PrimitiveType::Float64:
 							return SpirvOp::OpFOrdLessThanEqual;
 
 						case Ast::PrimitiveType::Int32:
@@ -307,6 +316,7 @@ namespace nzsl
 					switch (leftTypeBase)
 					{
 						case Ast::PrimitiveType::Float32:
+						case Ast::PrimitiveType::Float64:
 							return SpirvOp::OpFOrdLessThan;
 
 						case Ast::PrimitiveType::Int32:
@@ -331,6 +341,7 @@ namespace nzsl
 							return SpirvOp::OpLogicalNotEqual;
 
 						case Ast::PrimitiveType::Float32:
+						case Ast::PrimitiveType::Float64:
 							return SpirvOp::OpFOrdNotEqual;
 
 						case Ast::PrimitiveType::Int32:
@@ -507,6 +518,38 @@ namespace nzsl
 						case Ast::PrimitiveType::Float32:
 							break; //< Already handled
 
+						case Ast::PrimitiveType::Float64:
+							castOp = SpirvOp::OpFConvert;
+							break;
+
+						case Ast::PrimitiveType::Int32:
+							castOp = SpirvOp::OpConvertSToF;
+							break;
+
+						case Ast::PrimitiveType::UInt32:
+							castOp = SpirvOp::OpConvertUToF;
+							break;
+
+						case Ast::PrimitiveType::String:
+							throw std::runtime_error("unexpected string type");
+					}
+					break;
+				}
+				
+				case Ast::PrimitiveType::Float64:
+				{
+					switch (fromType)
+					{
+						case Ast::PrimitiveType::Boolean:
+							throw std::runtime_error("unsupported cast from boolean");
+
+						case Ast::PrimitiveType::Float32:
+							castOp = SpirvOp::OpFConvert;
+							break;
+
+						case Ast::PrimitiveType::Float64:
+							break; //< Already handled
+
 						case Ast::PrimitiveType::Int32:
 							castOp = SpirvOp::OpConvertSToF;
 							break;
@@ -529,6 +572,7 @@ namespace nzsl
 							throw std::runtime_error("unsupported cast from boolean");
 
 						case Ast::PrimitiveType::Float32:
+						case Ast::PrimitiveType::Float64:
 							castOp = SpirvOp::OpConvertFToS;
 							break;
 
@@ -552,6 +596,7 @@ namespace nzsl
 							throw std::runtime_error("unsupported cast from boolean");
 
 						case Ast::PrimitiveType::Float32:
+						case Ast::PrimitiveType::Float64:
 							castOp = SpirvOp::OpConvertFToU;
 							break;
 
@@ -893,6 +938,7 @@ namespace nzsl
 						throw std::runtime_error("unexpected boolean for max/min intrinsic");
 
 					case Ast::PrimitiveType::Float32:
+					case Ast::PrimitiveType::Float64:
 						op = (node.intrinsic == Ast::IntrinsicType::Max) ? SpirvGlslStd450Op::FMax : SpirvGlslStd450Op::FMin;
 						break;
 
