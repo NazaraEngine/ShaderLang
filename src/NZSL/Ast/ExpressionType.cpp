@@ -155,6 +155,7 @@ namespace nzsl::Ast
 		{
 			case Ast::PrimitiveType::Boolean: return "bool";
 			case Ast::PrimitiveType::Float32: return "f32";
+			case Ast::PrimitiveType::Float64: return "f64";
 			case Ast::PrimitiveType::Int32:   return "i32";
 			case Ast::PrimitiveType::UInt32:  return "u32";
 			case Ast::PrimitiveType::String:  return "string";

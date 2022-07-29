@@ -502,6 +502,9 @@ namespace nzsl::Ast
 		EnableOptimisation(ArrayBuilder, Vector2f32);
 		EnableOptimisation(ArrayBuilder, Vector3f32);
 		EnableOptimisation(ArrayBuilder, Vector4f32);
+		EnableOptimisation(ArrayBuilder, Vector2f64);
+		EnableOptimisation(ArrayBuilder, Vector3f64);
+		EnableOptimisation(ArrayBuilder, Vector4f64);
 		EnableOptimisation(ArrayBuilder, Vector2i32);
 		EnableOptimisation(ArrayBuilder, Vector3i32);
 		EnableOptimisation(ArrayBuilder, Vector4i32);
@@ -516,6 +519,9 @@ namespace nzsl::Ast
 		EnableOptimisation(BinaryCompEq, Vector2f32, Vector2f32);
 		EnableOptimisation(BinaryCompEq, Vector3f32, Vector3f32);
 		EnableOptimisation(BinaryCompEq, Vector4f32, Vector4f32);
+		EnableOptimisation(BinaryCompEq, Vector2f64, Vector2f64);
+		EnableOptimisation(BinaryCompEq, Vector3f64, Vector3f64);
+		EnableOptimisation(BinaryCompEq, Vector4f64, Vector4f64);
 		EnableOptimisation(BinaryCompEq, Vector2i32, Vector2i32);
 		EnableOptimisation(BinaryCompEq, Vector3i32, Vector3i32);
 		EnableOptimisation(BinaryCompEq, Vector4i32, Vector4i32);
@@ -551,6 +557,9 @@ namespace nzsl::Ast
 		EnableOptimisation(BinaryCompNe, Vector2f32, Vector2f32);
 		EnableOptimisation(BinaryCompNe, Vector3f32, Vector3f32);
 		EnableOptimisation(BinaryCompNe, Vector4f32, Vector4f32);
+		EnableOptimisation(BinaryCompNe, Vector2f64, Vector2f64);
+		EnableOptimisation(BinaryCompNe, Vector3f64, Vector3f64);
+		EnableOptimisation(BinaryCompNe, Vector4f64, Vector4f64);
 		EnableOptimisation(BinaryCompNe, Vector2i32, Vector2i32);
 		EnableOptimisation(BinaryCompNe, Vector3i32, Vector3i32);
 		EnableOptimisation(BinaryCompNe, Vector4i32, Vector4i32);
@@ -568,6 +577,9 @@ namespace nzsl::Ast
 		EnableOptimisation(BinaryAddition, Vector2f32, Vector2f32);
 		EnableOptimisation(BinaryAddition, Vector3f32, Vector3f32);
 		EnableOptimisation(BinaryAddition, Vector4f32, Vector4f32);
+		EnableOptimisation(BinaryAddition, Vector2f64, Vector2f64);
+		EnableOptimisation(BinaryAddition, Vector3f64, Vector3f64);
+		EnableOptimisation(BinaryAddition, Vector4f64, Vector4f64);
 		EnableOptimisation(BinaryAddition, Vector2i32, Vector2i32);
 		EnableOptimisation(BinaryAddition, Vector3i32, Vector3i32);
 		EnableOptimisation(BinaryAddition, Vector4i32, Vector4i32);
@@ -705,6 +717,9 @@ namespace nzsl::Ast
 		EnableOptimisation(BinarySubtraction, Vector2f32, Vector2f32);
 		EnableOptimisation(BinarySubtraction, Vector3f32, Vector3f32);
 		EnableOptimisation(BinarySubtraction, Vector4f32, Vector4f32);
+		EnableOptimisation(BinarySubtraction, Vector2f64, Vector2f64);
+		EnableOptimisation(BinarySubtraction, Vector3f64, Vector3f64);
+		EnableOptimisation(BinarySubtraction, Vector4f64, Vector4f64);
 		EnableOptimisation(BinarySubtraction, Vector2i32, Vector2i32);
 		EnableOptimisation(BinarySubtraction, Vector3i32, Vector3i32);
 		EnableOptimisation(BinarySubtraction, Vector4i32, Vector4i32);
@@ -738,9 +753,9 @@ namespace nzsl::Ast
 		EnableOptimisation(CastConstant, std::uint32_t, std::int32_t);
 		EnableOptimisation(CastConstant, std::uint32_t, std::uint32_t);
 
-		//EnableOptimisation(CastConstant, Vector2f64, double, double);
-		//EnableOptimisation(CastConstant, Vector3f64, double, double, double);
-		//EnableOptimisation(CastConstant, Vector4f64, double, double, double, double);
+		EnableOptimisation(CastConstant, Vector2f64, double, double);
+		EnableOptimisation(CastConstant, Vector3f64, double, double, double);
+		EnableOptimisation(CastConstant, Vector4f64, double, double, double, double);
 
 		EnableOptimisation(CastConstant, Vector2f32, float, float);
 		EnableOptimisation(CastConstant, Vector3f32, float, float, float);
@@ -750,9 +765,9 @@ namespace nzsl::Ast
 		EnableOptimisation(CastConstant, Vector3i32, std::int32_t, std::int32_t, std::int32_t);
 		EnableOptimisation(CastConstant, Vector4i32, std::int32_t, std::int32_t, std::int32_t, std::int32_t);
 
-		//EnableOptimisation(CastConstant, Vector2ui32, std::uint32_t, std::uint32_t);
-		//EnableOptimisation(CastConstant, Vector3ui32, std::uint32_t, std::uint32_t, std::uint32_t);
-		//EnableOptimisation(CastConstant, Vector4ui32, std::uint32_t, std::uint32_t, std::uint32_t, std::uint32_t);
+		EnableOptimisation(CastConstant, Vector2u32, std::uint32_t, std::uint32_t);
+		EnableOptimisation(CastConstant, Vector3u32, std::uint32_t, std::uint32_t, std::uint32_t);
+		EnableOptimisation(CastConstant, Vector4u32, std::uint32_t, std::uint32_t, std::uint32_t, std::uint32_t);
 
 		// Swizzle
 		EnableOptimisation(SwizzlePropagation, double, 1, 1);
@@ -814,6 +829,26 @@ namespace nzsl::Ast
 		EnableOptimisation(SwizzlePropagation, std::int32_t, 4, 2);
 		EnableOptimisation(SwizzlePropagation, std::int32_t, 4, 3);
 		EnableOptimisation(SwizzlePropagation, std::int32_t, 4, 4);
+
+		EnableOptimisation(SwizzlePropagation, std::uint32_t, 1, 1);
+		EnableOptimisation(SwizzlePropagation, std::uint32_t, 1, 2);
+		EnableOptimisation(SwizzlePropagation, std::uint32_t, 1, 3);
+		EnableOptimisation(SwizzlePropagation, std::uint32_t, 1, 4);
+
+		EnableOptimisation(SwizzlePropagation, std::uint32_t, 2, 1);
+		EnableOptimisation(SwizzlePropagation, std::uint32_t, 2, 2);
+		EnableOptimisation(SwizzlePropagation, std::uint32_t, 2, 3);
+		EnableOptimisation(SwizzlePropagation, std::uint32_t, 2, 4);
+
+		EnableOptimisation(SwizzlePropagation, std::uint32_t, 3, 1);
+		EnableOptimisation(SwizzlePropagation, std::uint32_t, 3, 2);
+		EnableOptimisation(SwizzlePropagation, std::uint32_t, 3, 3);
+		EnableOptimisation(SwizzlePropagation, std::uint32_t, 3, 4);
+
+		EnableOptimisation(SwizzlePropagation, std::uint32_t, 4, 1);
+		EnableOptimisation(SwizzlePropagation, std::uint32_t, 4, 2);
+		EnableOptimisation(SwizzlePropagation, std::uint32_t, 4, 3);
+		EnableOptimisation(SwizzlePropagation, std::uint32_t, 4, 4);
 
 		// Unary
 
@@ -963,6 +998,7 @@ namespace nzsl::Ast
 				{
 					case PrimitiveType::Boolean: optimized = PropagateSingleValueCast<bool>(constantExpr, node.sourceLocation); break;
 					case PrimitiveType::Float32: optimized = PropagateSingleValueCast<float>(constantExpr, node.sourceLocation); break;
+					case PrimitiveType::Float64: optimized = PropagateSingleValueCast<double>(constantExpr, node.sourceLocation); break;
 					case PrimitiveType::Int32:   optimized = PropagateSingleValueCast<std::int32_t>(constantExpr, node.sourceLocation); break;
 					case PrimitiveType::UInt32:  optimized = PropagateSingleValueCast<std::uint32_t>(constantExpr, node.sourceLocation); break;
 					case PrimitiveType::String: break;
@@ -998,20 +1034,20 @@ namespace nzsl::Ast
 
 					if constexpr (std::is_same_v<T, NoValue>)
 						throw std::runtime_error("invalid type (value expected)");
-					else if constexpr (std::is_same_v<T, bool> || std::is_same_v<T, float> || std::is_same_v<T, std::int32_t> || std::is_same_v<T, std::uint32_t> || std::is_same_v<T, std::string>)
+					else if constexpr (std::is_same_v<T, bool> || std::is_same_v<T, double> || std::is_same_v<T, float> || std::is_same_v<T, std::int32_t> || std::is_same_v<T, std::uint32_t> || std::is_same_v<T, std::string>)
 						constantValues.push_back(arg);
-					else if constexpr (std::is_same_v<T, Vector2f32> || std::is_same_v<T, Vector2i32>)
+					else if constexpr (IsVector_v<T> && T::Dimensions == 2)
 					{
 						constantValues.push_back(arg.x());
 						constantValues.push_back(arg.y());
 					}
-					else if constexpr (std::is_same_v<T, Vector3f32> || std::is_same_v<T, Vector3i32>)
+					else if constexpr (IsVector_v<T> && T::Dimensions == 3)
 					{
 						constantValues.push_back(arg.x());
 						constantValues.push_back(arg.y());
 						constantValues.push_back(arg.z());
 					}
-					else if constexpr (std::is_same_v<T, Vector4f32> || std::is_same_v<T, Vector4i32>)
+					else if constexpr (IsVector_v<T> && T::Dimensions == 4)
 					{
 						constantValues.push_back(arg.x());
 						constantValues.push_back(arg.y());

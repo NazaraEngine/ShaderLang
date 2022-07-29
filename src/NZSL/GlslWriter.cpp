@@ -38,6 +38,7 @@ namespace nzsl
 		{
 			None = -1,
 
+			Float64, // GLSL 4.0 or GL_ARB_gpu_shader_fp64
 			ShaderDrawParameters_BaseInstance, // GLSL 4.6 or GL_ARB_shader_draw_parameters
 			ShaderDrawParameters_BaseVertex, // GLSL 4.6 or GL_ARB_shader_draw_parameters
 			ShaderDrawParameters_DrawIndex, // GLSL 4.6 or GL_ARB_shader_draw_parameters
@@ -316,6 +317,19 @@ namespace nzsl
 		}
 
 		// Previsitor
+		for (Ast::ModuleFeature feature : targetModule->metadata->enabledFeatures)
+		{
+			switch (feature)
+			{
+				case Ast::ModuleFeature::Float64:
+					state.previsitor.capabilities.insert(GlslCapability::Float64);
+					break;
+
+				case Ast::ModuleFeature::PrimitiveExternals:
+					break;
+			}
+		}
+
 		state.previsitor.selectedStage = shaderStage;
 
 		for (const auto& importedModule : targetModule->importedModules)
@@ -531,6 +545,7 @@ namespace nzsl
 		{
 			case Ast::PrimitiveType::Boolean: return Append("bool");
 			case Ast::PrimitiveType::Float32: return Append("float");
+			case Ast::PrimitiveType::Float64: return Append("double");
 			case Ast::PrimitiveType::Int32:   return Append("int");
 			case Ast::PrimitiveType::UInt32:  return Append("uint");
 			case Ast::PrimitiveType::String:  throw std::runtime_error("unexpected string constant");
@@ -542,13 +557,18 @@ namespace nzsl
 		switch (samplerType.sampledType)
 		{
 			case Ast::PrimitiveType::Boolean:
+				throw std::runtime_error("unexpected bool type for sampler");
+			case Ast::PrimitiveType::Float64:
+				throw std::runtime_error("unexpected f64 type for sampler");
+
 			case Ast::PrimitiveType::Float32:
 				break;
 
 			case Ast::PrimitiveType::Int32:   Append("i"); break;
 			case Ast::PrimitiveType::UInt32:  Append("u"); break;
 
-			case Ast::PrimitiveType::String:  throw std::runtime_error("unexpected string type");
+			case Ast::PrimitiveType::String:
+				throw std::runtime_error("unexpected string type for sampler");
 		}
 
 		Append("sampler");
@@ -591,6 +611,7 @@ namespace nzsl
 		{
 			case Ast::PrimitiveType::Boolean: Append("b"); break;
 			case Ast::PrimitiveType::Float32: break;
+			case Ast::PrimitiveType::Float64: Append("d"); break;
 			case Ast::PrimitiveType::Int32:   Append("i"); break;
 			case Ast::PrimitiveType::UInt32:  Append("u"); break;
 			case Ast::PrimitiveType::String:  throw std::runtime_error("unexpected string type");
@@ -798,6 +819,20 @@ namespace nzsl
 				case GlslCapability::None:
 					break;
 
+				case GlslCapability::Float64:
+				{
+					if (m_environment.glES)
+						throw std::runtime_error("OpenGL ES does not support fp64");
+					else if (glslVersion < 400)
+					{
+						if (m_environment.extCallback && m_environment.extCallback("GL_ARB_gpu_shader_fp64"))
+							requiredExtensions.emplace("GL_ARB_gpu_shader_fp64");
+						else
+							throw std::runtime_error("this version of OpenGL does not support fp64");
+					}
+					break;
+				}
+
 				case GlslCapability::ShaderDrawParameters_BaseInstance:
 				{
 					if (m_environment.glES)
@@ -947,10 +982,12 @@ namespace nzsl
 	template<typename T>
 	void GlslWriter::AppendValue(const T& value)
 	{
-		if constexpr (std::is_same_v<T, Vector2i32> || std::is_same_v<T, Vector3i32> || std::is_same_v<T, Vector4i32>)
+		if constexpr (std::is_same_v<T, Vector2f64> || std::is_same_v<T, Vector3f64> || std::is_same_v<T, Vector4f64>)
+			Append("d"); //< dvec
+		else if constexpr (std::is_same_v<T, Vector2i32> || std::is_same_v<T, Vector3i32> || std::is_same_v<T, Vector4i32>)
 			Append("i"); //< ivec
 		else if constexpr (std::is_same_v<T, Vector2u32> || std::is_same_v<T, Vector3u32> || std::is_same_v<T, Vector4u32>)
-			Append("i"); //< uvec
+			Append("u"); //< uvec
 
 		if constexpr (std::is_same_v<T, Ast::NoValue>)
 			throw std::runtime_error("invalid type (value expected)");
@@ -958,17 +995,17 @@ namespace nzsl
 			throw std::runtime_error("unexpected string litteral");
 		else if constexpr (std::is_same_v<T, bool> || std::is_same_v<T, std::vector<bool>::reference>)
 			Append((value) ? "true" : "false");
-		else if constexpr (std::is_same_v<T, float> || std::is_same_v<T, std::int32_t> || std::is_same_v<T, std::uint32_t>)
+		else if constexpr (std::is_same_v<T, double> || std::is_same_v<T, float> || std::is_same_v<T, std::int32_t> || std::is_same_v<T, std::uint32_t>)
 		{
 			Append(Ast::ToString(value));
 			if constexpr (std::is_same_v<T, std::uint32_t>)
 				Append("u");
 		}
-		else if constexpr (std::is_same_v<T, Vector2f32> || std::is_same_v<T, Vector2i32>)
+		else if constexpr (IsVector_v<T> && T::Dimensions == 2)
 			Append("vec2(" + Ast::ToString(value.x()) + ", " + Ast::ToString(value.y()) + ")");
-		else if constexpr (std::is_same_v<T, Vector3f32> || std::is_same_v<T, Vector3i32>)
+		else if constexpr (IsVector_v<T> && T::Dimensions == 3)
 			Append("vec3(" + Ast::ToString(value.x()) + ", " + Ast::ToString(value.y()) + ", " + Ast::ToString(value.z()) + ")");
-		else if constexpr (std::is_same_v<T, Vector4f32> || std::is_same_v<T, Vector4i32>)
+		else if constexpr (IsVector_v<T> && T::Dimensions == 4)
 			Append("vec4(" + Ast::ToString(value.x()) + ", " + Ast::ToString(value.y()) + ", " + Ast::ToString(value.z()) + ", " + Ast::ToString(value.w()) + ")");
 		else
 			static_assert(Nz::AlwaysFalse<T>(), "non-exhaustive visitor");
@@ -1281,13 +1318,13 @@ namespace nzsl
 			if (IsPrimitiveType(*node.cachedExpressionType))
 			{
 				Ast::PrimitiveType primitiveType = std::get<Ast::PrimitiveType>(*node.cachedExpressionType);
-				if (primitiveType == Ast::PrimitiveType::Float32)
+				if (primitiveType == Ast::PrimitiveType::Float32 || primitiveType == Ast::PrimitiveType::Float64)
 					isFmod = true;
 			}
 			else if (IsVectorType(*node.cachedExpressionType))
 			{
 				Ast::PrimitiveType primitiveType = std::get<Ast::VectorType>(*node.cachedExpressionType).type;
-				if (primitiveType == Ast::PrimitiveType::Float32)
+				if (primitiveType == Ast::PrimitiveType::Float32 || primitiveType == Ast::PrimitiveType::Float64)
 					isFmod = true;
 			}
 			else
@@ -1332,13 +1369,13 @@ namespace nzsl
 			if (IsPrimitiveType(*node.cachedExpressionType))
 			{
 				Ast::PrimitiveType primitiveType = std::get<Ast::PrimitiveType>(*node.cachedExpressionType);
-				if (primitiveType == Ast::PrimitiveType::Float32)
+				if (primitiveType == Ast::PrimitiveType::Float32 || primitiveType == Ast::PrimitiveType::Float64)
 					isFmod = true;
 			}
 			else if (IsVectorType(*node.cachedExpressionType))
 			{
 				Ast::PrimitiveType primitiveType = std::get<Ast::VectorType>(*node.cachedExpressionType).type;
-				if (primitiveType == Ast::PrimitiveType::Float32)
+				if (primitiveType == Ast::PrimitiveType::Float32 || primitiveType == Ast::PrimitiveType::Float64)
 					isFmod = true;
 			}
 			else

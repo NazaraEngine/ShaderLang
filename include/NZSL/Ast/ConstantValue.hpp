@@ -29,7 +29,14 @@ namespace nzsl::Ast
 		Vector2i32,
 		Vector3i32,
 		Vector4i32,
-		std::string
+		std::string,
+		double,
+		Vector2f64,
+		Vector3f64,
+		Vector4f64,
+		Vector2u32,
+		Vector3u32,
+		Vector4u32
 	>;
 
 	template<typename T>

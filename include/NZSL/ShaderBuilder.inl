@@ -188,6 +188,7 @@ namespace nzsl::ShaderBuilder
 		{
 			case Ast::PrimitiveType::Boolean: return ShaderBuilder::ConstantValue(value != T(0));
 			case Ast::PrimitiveType::Float32: return ShaderBuilder::ConstantValue(Nz::SafeCast<float>(value));
+			case Ast::PrimitiveType::Float64: return ShaderBuilder::ConstantValue(Nz::SafeCast<double>(value));
 			case Ast::PrimitiveType::Int32:   return ShaderBuilder::ConstantValue(Nz::SafeCast<std::int32_t>(value));
 			case Ast::PrimitiveType::UInt32:  return ShaderBuilder::ConstantValue(Nz::SafeCast<std::uint32_t>(value));
 			case Ast::PrimitiveType::String:  return ShaderBuilder::ConstantValue(value);

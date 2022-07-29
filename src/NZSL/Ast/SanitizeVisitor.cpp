@@ -2665,6 +2665,9 @@ namespace nzsl::Ast
 		RegisterType("i32", PrimitiveType::Int32, std::nullopt, {});
 		RegisterType("u32", PrimitiveType::UInt32, std::nullopt, {});
 
+		if (IsFeatureEnabled(ModuleFeature::Float64))
+			RegisterType("f64", PrimitiveType::Float64, std::nullopt, {});
+
 		// Partial types
 
 		// Array
@@ -3864,6 +3867,25 @@ namespace nzsl::Ast
 								return false;
 
 							case PrimitiveType::Float32:
+							case PrimitiveType::Float64:
+							case PrimitiveType::Int32:
+							case PrimitiveType::UInt32:
+								return true;
+						}
+
+						break;
+					}
+					
+					case PrimitiveType::Float64:
+					{
+						switch (fromPrimitiveType)
+						{
+							case PrimitiveType::Boolean:
+							case PrimitiveType::String:
+								return false;
+
+							case PrimitiveType::Float32:
+							case PrimitiveType::Float64:
 							case PrimitiveType::Int32:
 							case PrimitiveType::UInt32:
 								return true;
@@ -3882,6 +3904,7 @@ namespace nzsl::Ast
 								return false;
 
 							case PrimitiveType::Float32:
+							case PrimitiveType::Float64:
 							case PrimitiveType::Int32:
 								return true;
 						}
@@ -3898,6 +3921,7 @@ namespace nzsl::Ast
 								return false;
 
 							case PrimitiveType::Float32:
+							case PrimitiveType::Float64:
 							case PrimitiveType::Int32:
 							case PrimitiveType::UInt32:
 								return true;
@@ -4121,9 +4145,16 @@ namespace nzsl::Ast
 			return IsArrayType(type) || IsDynArrayType(type);
 		};
 
-		auto IsFloatingPointVector = [](const ExpressionType& type)
+		auto IsFloatingPointVector3 = [](const ExpressionType& type)
 		{
-			return type == ExpressionType{ VectorType{ 3, PrimitiveType::Float32 } };
+			if (!IsVectorType(type))
+				return false;
+
+			const VectorType& vectorType = std::get<VectorType>(type);
+			if (vectorType.componentCount != 3)
+				return false;
+
+			return vectorType.type == PrimitiveType::Float32 || vectorType.type == PrimitiveType::Float64;
 		};
 
 		auto IsSquareMatrix = [](const ExpressionType& type)
@@ -4142,10 +4173,17 @@ namespace nzsl::Ast
 				throw CompilerIntrinsicUnexpectedBooleanError{ expression.sourceLocation };
 		};
 
-		auto CheckFloatingPoint = [](Expression& expression, const ExpressionType& type)
+		auto CheckFloat32 = [](Expression& expression, const ExpressionType& type)
 		{
-			if ((IsPrimitiveType(type) && std::get<PrimitiveType>(type) != PrimitiveType::Float32) ||
-				(IsVectorType(type) && std::get<VectorType>(type).type != PrimitiveType::Float32))
+			PrimitiveType primitiveType;
+			if (IsPrimitiveType(type))
+				primitiveType = std::get<PrimitiveType>(type);
+			else if (IsVectorType(type))
+				primitiveType = std::get<VectorType>(type).type;
+			else
+				throw CompilerIntrinsicExpectedFloatError{ expression.sourceLocation };
+
+			if (primitiveType != PrimitiveType::Float32)
 				throw CompilerIntrinsicExpectedFloatError{ expression.sourceLocation };
 		};
 
@@ -4177,7 +4215,7 @@ namespace nzsl::Ast
 			case IntrinsicType::CrossProduct:
 				if (IsUnresolved(ValidateIntrinsicParamCount<2>(node))
 				 || IsUnresolved(ValidateIntrinsicParamMatchingType(node))
-				 || IsUnresolved(ValidateIntrinsicParameterType<0>(node, IsFloatingPointVector, "floating-point vector")))
+				 || IsUnresolved(ValidateIntrinsicParameterType<0>(node, IsFloatingPointVector3, "floating-point vec3")))
 					return ValidationResult::Unresolved;
 
 				return SetReturnTypeToFirstParameterType();
@@ -4185,21 +4223,21 @@ namespace nzsl::Ast
 			case IntrinsicType::DotProduct:
 				if (IsUnresolved(ValidateIntrinsicParamCount<2>(node))
 				 || IsUnresolved(ValidateIntrinsicParamMatchingType(node))
-				 || IsUnresolved(ValidateIntrinsicParameterType<0>(node, IsFloatingPointVector, "floating-point vector")))
+				 || IsUnresolved(ValidateIntrinsicParameterType<0>(node, IsFloatingPointVector3, "floating-point vec3")))
 					return ValidationResult::Unresolved;
 
 				return SetReturnTypeToFirstParameterInnerType();
 
 			case IntrinsicType::Exp:
 				if (IsUnresolved(ValidateIntrinsicParamCount<1>(node))
-				 || IsUnresolved(ValidateIntrinsicParameter<0>(node, CheckFloatingPoint)))
+				 || IsUnresolved(ValidateIntrinsicParameter<0>(node, CheckFloat32)))
 					return ValidationResult::Unresolved;
 
 				return SetReturnTypeToFirstParameterType();
 
 			case IntrinsicType::Length:
 				if (IsUnresolved(ValidateIntrinsicParamCount<1>(node))
-				 || IsUnresolved(ValidateIntrinsicParameterType<0>(node, IsFloatingPointVector, "floating-point vector")))
+				 || IsUnresolved(ValidateIntrinsicParameterType<0>(node, IsFloatingPointVector3, "floating-point vec3")))
 					return ValidationResult::Unresolved;
 
 				return SetReturnTypeToFirstParameterInnerType();
@@ -4222,7 +4260,7 @@ namespace nzsl::Ast
 
 			case IntrinsicType::Normalize:
 				if (IsUnresolved(ValidateIntrinsicParamCount<1>(node))
-				 || IsUnresolved(ValidateIntrinsicParameterType<0>(node, IsFloatingPointVector, "floating-point vector")))
+				 || IsUnresolved(ValidateIntrinsicParameterType<0>(node, IsFloatingPointVector3, "floating-point vec3")))
 					return ValidationResult::Unresolved;
 
 				return SetReturnTypeToFirstParameterType();
@@ -4230,7 +4268,7 @@ namespace nzsl::Ast
 			case IntrinsicType::Pow:
 				if (IsUnresolved(ValidateIntrinsicParamCount<2>(node))
 				 || IsUnresolved(ValidateIntrinsicParamMatchingType(node))
-				 || IsUnresolved(ValidateIntrinsicParameter<0>(node, CheckFloatingPoint)))
+				 || IsUnresolved(ValidateIntrinsicParameter<0>(node, CheckFloat32)))
 					return ValidationResult::Unresolved;
 
 				return SetReturnTypeToFirstParameterType();
@@ -4238,7 +4276,7 @@ namespace nzsl::Ast
 			case IntrinsicType::Reflect:
 				if (IsUnresolved(ValidateIntrinsicParamCount<2>(node))
 				 || IsUnresolved(ValidateIntrinsicParamMatchingType(node))
-				 || IsUnresolved(ValidateIntrinsicParameterType<0>(node, IsFloatingPointVector, "floating-point vector")))
+				 || IsUnresolved(ValidateIntrinsicParameterType<0>(node, IsFloatingPointVector3, "floating-point vec3")))
 					return ValidationResult::Unresolved;
 
 				return SetReturnTypeToFirstParameterType();
@@ -4275,7 +4313,11 @@ namespace nzsl::Ast
 
 				auto IsRightType = [=](const ExpressionType& type)
 				{
-					return type == ExpressionType{ VectorType{ requiredComponentCount, PrimitiveType::Float32 } };
+					if (!IsVectorType(type))
+						return false;
+
+					const VectorType& vectorType = std::get<VectorType>(type);
+					return vectorType.type == PrimitiveType::Float32 || vectorType.type == PrimitiveType::Float64;
 				};
 
 				if (IsUnresolved(ValidateIntrinsicParameterType<1>(node, IsRightType, "sampler of requirement components")))
@@ -4381,7 +4423,7 @@ namespace nzsl::Ast
 				else
 					throw CompilerUnaryUnsupportedError{ node.sourceLocation, ToString(*exprType, node.sourceLocation) };
 
-				if (basicType != PrimitiveType::Float32 && basicType != PrimitiveType::Int32 && basicType != PrimitiveType::UInt32)
+				if (basicType != PrimitiveType::Float32 && basicType != PrimitiveType::Float64 && basicType != PrimitiveType::Int32 && basicType != PrimitiveType::UInt32)
 					throw CompilerUnaryUnsupportedError{ node.sourceLocation, ToString(*exprType, node.sourceLocation) };
 
 				break;
@@ -4438,6 +4480,7 @@ namespace nzsl::Ast
 					switch (leftType)
 					{
 						case PrimitiveType::Float32:
+						case PrimitiveType::Float64:
 						case PrimitiveType::Int32:
 						case PrimitiveType::UInt32:
 						{

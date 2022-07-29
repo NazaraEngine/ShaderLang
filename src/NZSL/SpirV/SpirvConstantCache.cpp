@@ -485,9 +485,9 @@ namespace nzsl
 				throw std::runtime_error("unexpected string literal");
 			else if constexpr (std::is_same_v<T, bool>)
 				return ConstantBool{ arg };
-			else if constexpr (std::is_same_v<T, float> || std::is_same_v<T, std::int32_t> || std::is_same_v<T, std::uint32_t>)
+			else if constexpr (std::is_same_v<T, double> || std::is_same_v<T, float> || std::is_same_v<T, std::int32_t> || std::is_same_v<T, std::uint32_t>)
 				return ConstantScalar{ arg };
-			else if constexpr (std::is_same_v<T, Vector2f32> || std::is_same_v<T, Vector2i32>)
+			else if constexpr (IsVector_v<T> && T::Dimensions == 2)
 			{
 				return ConstantComposite{
 					std::make_shared<Type>(BuildSingleType<T>()),
@@ -497,7 +497,7 @@ namespace nzsl
 					}
 				};
 			}
-			else if constexpr (std::is_same_v<T, Vector3f32> || std::is_same_v<T, Vector3i32>)
+			else if constexpr (IsVector_v<T> && T::Dimensions == 3)
 			{
 				return ConstantComposite{
 					std::make_shared<Type>(BuildSingleType<T>()),
@@ -508,7 +508,7 @@ namespace nzsl
 					}
 				};
 			}
-			else if constexpr (std::is_same_v<T, Vector4f32> || std::is_same_v<T, Vector4i32>)
+			else if constexpr (IsVector_v<T> && T::Dimensions == 4)
 			{
 				return ConstantComposite{
 					std::make_shared<Type>(BuildSingleType<T>()),
@@ -766,6 +766,9 @@ namespace nzsl
 
 				case Ast::PrimitiveType::Float32:
 					return Float{ 32 };
+
+				case Ast::PrimitiveType::Float64:
+					return Float{ 64 };
 
 				case Ast::PrimitiveType::Int32:
 					return Integer{ 32, true };

@@ -36,6 +36,7 @@ TEST_CASE("optimizations", "[Shader]")
 	{
 		PropagateConstantAndExpect(R"(
 [nzsl_version("1.0")]
+[feature(float64)]
 module;
 
 [entry(frag)]
@@ -43,6 +44,8 @@ fn main()
 {
 	let output = 8.0 * (7.0 + 5.0) * 2.0 / 4.0 - 6.0 % 7.0;
 	let output2 = 8 * (7 + 5) * 2 / 4 - 6 % 7;
+	let output3 = f64(8.0) * (f64(7.0) + f64(5.0)) * f64(2.0) / f64(4.0) - f64(6.0) % f64(7.0);
+	let output4 = u32(8) * (u32(7) + u32(5)) * u32(2) / u32(4) - u32(6) % u32(7);
 }
 )", R"(
 [entry(frag)]
@@ -50,6 +53,8 @@ fn main()
 {
 	let output: f32 = 42.0;
 	let output2: i32 = 42;
+	let output3: f64 = f64(42.0);
+	let output4: u32 = u32(42);
 }
 )");
 	}
@@ -58,6 +63,7 @@ fn main()
 	{
 		PropagateConstantAndExpect(R"(
 [nzsl_version("1.0")]
+[feature(float64)]
 module;
 
 [entry(frag)]
@@ -65,6 +71,8 @@ fn main()
 {
 	let output = vec4[f32](8.0, 2.0, -7.0, 0.0) * (7.0 + 5.0) * 2.0 / 4.0;
 	let output2 = vec4[i32](8, 2, -7, 0) * (7 + 5) * 2 / 4;
+	let output3 = vec4[f64](f64(8.0), f64(2.0), f64(-7.0), f64(0.0)) * (f64(7.0) + f64(5.0)) * f64(2.0) / f64(4.0);
+	let output4 = vec4[u32](u32(8), u32(2), u32(7), u32(0)) * (u32(7) + u32(5)) * u32(2) / u32(4);
 }
 )", R"(
 [entry(frag)]
@@ -72,19 +80,32 @@ fn main()
 {
 	let output: vec4[f32] = vec4[f32](48.0, 12.0, -42.0, 0.0);
 	let output2: vec4[i32] = vec4[i32](48, 12, -42, 0);
+	let output3: vec4[f64] = vec4[f64](f64(48.0), f64(12.0), f64(-42.0), f64(0.0));
+	let output4: vec4[u32] = vec4[u32](u32(48), u32(12), u32(42), u32(0));
+}
 )");
 	}
 
-	WHEN("eliminating simple branch")
+	WHEN("eliminating simple branches")
 	{
 		PropagateConstantAndExpect(R"(
 [nzsl_version("1.0")]
+[feature(float64)]
 module;
 
 [entry(frag)]
 fn main()
 {
 	if (5 + 3 < 2)
+		discard;
+
+	if (u32(5) + u32(3) != u32(8))
+		discard;
+
+	if (5.0 + 3.0 > 10.0)
+		discard;
+
+	if (f64(5.0) + f64(3.0) > f64(10.0))
 		discard;
 }
 )", R"(
@@ -179,18 +200,25 @@ fn main()
 	{
 		PropagateConstantAndExpect(R"(
 [nzsl_version("1.0")]
+[feature(float64)]
 module;
 
 [entry(frag)]
 fn main()
 {
-	let value = vec3[f32](3.0, 0.0, 1.0).z;
+	let v1 = vec3[f32](3.0, 0.0, 1.0).z;
+	let v2 = vec2[f64](f64(3.0), f64(-5.0)).g;
+	let v3 = vec4[i32](3, 1, 2, 0).a;
+	let v4 = vec3[u32](u32(3), u32(21) * u32(2), u32(1)).y;
 }
 )", R"(
 [entry(frag)]
 fn main()
 {
-	let value: f32 = 1.0;
+	let v1: f32 = 1.0;
+	let v2: f64 = f64(-5.0);
+	let v3: i32 = 0;
+	let v4: u32 = u32(42);
 }
 )");
 	}

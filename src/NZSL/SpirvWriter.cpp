@@ -653,6 +653,20 @@ namespace nzsl
 
 		// Register all extended instruction sets
 		PreVisitor previsitor(*this, state.constantTypeCache);
+		
+		for (Ast::ModuleFeature feature : targetModule->metadata->enabledFeatures)
+		{
+			switch (feature)
+			{
+				case Ast::ModuleFeature::Float64:
+					previsitor.spirvCapabilities.insert(SpirvCapability::Float64);
+					break;
+
+				case Ast::ModuleFeature::PrimitiveExternals:
+					break; //< Don't trigger an error here, wait until it's actually used (just in case it's in disabled code)
+			}
+		}
+
 		for (const auto& importedModule : targetModule->importedModules)
 			importedModule.module->rootNode->Visit(previsitor);
 
