@@ -66,7 +66,7 @@ if is_plat("windows") then
 	add_cxflags("/wd4251") -- Disable warning: class needs to have dll-interface to be used by clients of class blah blah blah
 	add_cxflags("/wd4275") -- Disable warning: DLL-interface class 'class_1' used as base for DLL-interface blah
 elseif is_plat("mingw") then
-	add_cxflags("-Og", "-Wa,-mbig-obj")
+	add_cxflags("-Wa,-mbig-obj")
 	add_ldflags("-Wa,-mbig-obj")
 end
 
@@ -81,6 +81,11 @@ elseif is_mode("coverage") then
 elseif is_mode("releasedbg") then
 	set_fpmodels("fast")
 	add_vectorexts("sse", "sse2", "sse3", "ssse3")
+end
+
+-- Always enable at least -Os optimization with MinGW to fix "string table overflow" error
+if is_plat("mingw") and not is_mode("release", "releasedbg") then
+	set_optimize("smallest")
 end
 
 if has_config("unitybuild") then
