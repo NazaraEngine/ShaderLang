@@ -5,7 +5,7 @@
 #include <NZSL/Ast/AstSerializer.hpp>
 #include <NZSL/Ast/Compare.hpp>
 #include <NZSL/Ast/SanitizeVisitor.hpp>
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include <cctype>
 
 void ParseSerializeUnserialize(std::string_view sourceCode, bool sanitize)

@@ -1,7 +1,9 @@
 #include <Nazara/Utils/Algorithm.hpp>
 #include <Nazara/Utils/CallOnExit.hpp>
 #include <NZSL/Config.hpp>
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
 #include <fmt/format.h>
 #include <process.hpp>
 #include <filesystem>

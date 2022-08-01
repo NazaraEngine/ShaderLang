@@ -4,7 +4,7 @@
 #include <NZSL/Ast/ConstantPropagationVisitor.hpp>
 #include <NZSL/Ast/EliminateUnusedPassVisitor.hpp>
 #include <NZSL/Ast/SanitizeVisitor.hpp>
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include <cctype>
 
 void PropagateConstantAndExpect(std::string_view sourceCode, std::string_view expectedOptimizedResult)
