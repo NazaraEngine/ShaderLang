@@ -1,5 +1,6 @@
 #include <NZSL/Math/Vector.hpp>
-#include <catch2/catch.hpp>
+#include <catch2/catch_approx.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include <sstream>
 #include <unordered_map>
 
@@ -63,13 +64,13 @@ TEST_CASE("vector", "[Vector]")
 
 		CHECK(ToString(position1) == "Vector3(-2, 3, 4)");
 
-		CHECK(position1.Length() == Approx(std::sqrt(2.f * 2.f + 3.f * 3.f + 4.f * 4.f)));
-		CHECK(position1.Length() == Approx(std::sqrt(nzsl::Vector3f32::DotProduct(position1, position1))));
-		CHECK(position2.Length() == Approx(126.79117f));
+		CHECK(position1.Length() == Catch::Approx(std::sqrt(2.f * 2.f + 3.f * 3.f + 4.f * 4.f)));
+		CHECK(position1.Length() == Catch::Approx(std::sqrt(nzsl::Vector3f32::DotProduct(position1, position1))));
+		CHECK(position2.Length() == Catch::Approx(126.79117f));
 
 		CHECK(nzsl::Vector3f32::CrossProduct(position1, position2) == nzsl::Vector3f32(-578.f, -20.f, -274.f));
-		CHECK(nzsl::Vector3f32::Distance(position1, position2) == Approx(128.76723f));
-		CHECK(nzsl::Vector3f32::DotProduct(position1, position2) == Approx(position1.x() * position2.x() + position1.y() * position2.y() + position1.z() * position2.z()));
+		CHECK(nzsl::Vector3f32::Distance(position1, position2) == Catch::Approx(128.76723f));
+		CHECK(nzsl::Vector3f32::DotProduct(position1, position2) == Catch::Approx(position1.x() * position2.x() + position1.y() * position2.y() + position1.z() * position2.z()));
 		CHECK(nzsl::Vector3f32::Normalize(nzsl::Vector3f32(0.f, 10.f, 0.f)) == nzsl::Vector3f32(0.f, 1.f, 0.f));
 		CHECK(nzsl::Vector3f32::Normalize(position1) == nzsl::Vector3f32(-0.371390671f, 0.557086051f, 0.742781341f));
 		CHECK(nzsl::Vector3f32::Reflect(down, up) == up);

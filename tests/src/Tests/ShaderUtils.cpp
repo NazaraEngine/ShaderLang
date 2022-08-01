@@ -8,7 +8,7 @@
 #include <NZSL/Ast/Compare.hpp>
 #include <NZSL/Ast/ReflectVisitor.hpp>
 #include <NZSL/Ast/SanitizeVisitor.hpp>
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include <glslang/Public/ShaderLang.h>
 #include <spirv-tools/libspirv.hpp>
 

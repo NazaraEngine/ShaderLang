@@ -4,7 +4,7 @@
 #include <NZSL/ShaderBuilder.hpp>
 #include <NZSL/Parser.hpp>
 #include <NZSL/Ast/SanitizeVisitor.hpp>
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include <cctype>
 
 std::filesystem::path GetResourceDir()
