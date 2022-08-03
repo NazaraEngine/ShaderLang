@@ -63,7 +63,7 @@ namespace nzslc
 
 		m_inputFilePath = m_options["input"].as<std::string>();
 		if (!std::filesystem::is_regular_file(m_inputFilePath))
-			throw std::runtime_error(fmt::format("{} is not a file", m_inputFilePath.generic_u8string()));
+			throw std::runtime_error(fmt::format("{} is not a file", Nz::PathToString(m_inputFilePath)));
 
 		if (m_options.count("output") > 0)
 		{
@@ -76,7 +76,7 @@ namespace nzslc
 				m_outputPath = m_options["output"].as<std::string>();
 
 				if (!std::filesystem::is_directory(m_outputPath) && !std::filesystem::create_directories(m_outputPath))
-					throw std::runtime_error(fmt::format("failed to create {} directory", m_outputPath.generic_u8string()));
+					throw std::runtime_error(fmt::format("failed to create {} directory", Nz::PathToString(m_outputPath)));
 			}
 		}
 
@@ -161,7 +161,7 @@ namespace nzslc
 				if (errorLocation.file)
 					fullPath = std::filesystem::absolute(*errorLocation.file);
 
-				fmt::print(stderr, "{}({},{}): error {}: {}\n", fullPath.generic_u8string(), errorLocation.startLine, errorLocation.startColumn, ToString(error.GetErrorType()), error.GetErrorMessage());
+				fmt::print(stderr, "{}({},{}): error {}: {}\n", Nz::PathToString(fullPath), errorLocation.startLine, errorLocation.startColumn, ToString(error.GetErrorType()), error.GetErrorMessage());
 			}
 		}
 		else
@@ -545,14 +545,14 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 		{
 			std::string headerFile = ToHeader(data, size);
 
-			filePath.replace_extension(filePath.extension().generic_u8string() + ".h");
+			filePath.replace_extension(Nz::PathToString(filePath.extension()) + ".h");
 			WriteFileContent(filePath, headerFile.data(), headerFile.size());
 		}
 		else
 			WriteFileContent(filePath, data, size);
 
 		if (m_verbose)
-			fmt::print("Generated file {}\n", std::filesystem::absolute(filePath).generic_u8string());
+			fmt::print("Generated file {}\n", Nz::PathToString(std::filesystem::absolute(filePath)));
 	}
 
 	void Compiler::ReadInput()
@@ -564,7 +564,7 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 		if (extension == ".nzsl")
 		{
 			std::string sourceContent = Step("File reading"sv, &Compiler::ReadSourceFileContent, m_inputFilePath);
-			m_shaderModule = Step("Parse input"sv, &Compiler::Parse, sourceContent, m_inputFilePath.generic_u8string());
+			m_shaderModule = Step("Parse input"sv, &Compiler::Parse, sourceContent, Nz::PathToString(m_inputFilePath));
 		}
 		else if (extension == ".nzslb")
 		{
@@ -572,7 +572,7 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 			m_shaderModule = Step("Unserialize input"sv, &Compiler::Unserialize, sourceContent.data(), sourceContent.size());
 		}
 		else
-			throw std::runtime_error(fmt::format("{} has unknown extension \"{}\"", m_inputFilePath.filename().generic_u8string(), extension.generic_u8string()));
+			throw std::runtime_error(fmt::format("{} has unknown extension \"{}\"", Nz::PathToString(m_inputFilePath.filename()), Nz::PathToString(extension)));
 	}
 
 	void Compiler::Sanitize()
@@ -588,15 +588,15 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 
 			for (const std::string& modulePath : m_options["module"].as<std::vector<std::string>>())
 			{
-				std::filesystem::path path = std::filesystem::u8path(modulePath);
+				std::filesystem::path path = Nz::Utf8Path(modulePath);
 				if (std::filesystem::is_regular_file(path))
 				{
-					std::string stepName = "Register module " + path.generic_u8string();
+					std::string stepName = "Register module " + Nz::PathToString(path);
 					Step(stepName, [&] { resolver->RegisterModule(path); });
 				}
 				else if (std::filesystem::is_directory(path))
 				{
-					std::string stepName = "Register module directory " + path.generic_u8string();
+					std::string stepName = "Register module directory " + Nz::PathToString(path);
 					Step(stepName, [&] { resolver->RegisterModuleDirectory(path); });
 				}
 				else
@@ -675,7 +675,7 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 	{
 		std::ifstream inputFile(filePath, std::ios::in | std::ios::binary);
 		if (!inputFile)
-			throw std::runtime_error("failed to open " + filePath.generic_u8string());
+			throw std::runtime_error("failed to open " + Nz::PathToString(filePath));
 
 		inputFile.seekg(0, std::ios::end);
 
@@ -685,7 +685,7 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 
 		std::vector<std::uint8_t> content(Nz::SafeCast<std::size_t>(length));
 		if (length > 0 && !inputFile.read(reinterpret_cast<char*>(&content[0]), length))
-			throw std::runtime_error("failed to read " + filePath.generic_u8string());
+			throw std::runtime_error("failed to read " + Nz::PathToString(filePath));
 
 		return content;
 	}
@@ -726,9 +726,9 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 	{
 		std::ofstream outputFile(filePath, std::ios::out | std::ios::binary | std::ios::trunc);
 		if (!outputFile)
-			throw std::runtime_error(fmt::format("failed to open {}, reason: {}", filePath.generic_u8string(), std::strerror(errno)));
+			throw std::runtime_error(fmt::format("failed to open {}, reason: {}", Nz::PathToString(filePath), std::strerror(errno)));
 
 		if (!outputFile.write(static_cast<const char*>(data), size))
-			throw std::runtime_error(fmt::format("failed to write {}, reason: {}", filePath.generic_u8string(), std::strerror(errno)));
+			throw std::runtime_error(fmt::format("failed to write {}, reason: {}", Nz::PathToString(filePath), std::strerror(errno)));
 	}
 }
