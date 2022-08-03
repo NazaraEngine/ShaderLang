@@ -30,7 +30,7 @@ namespace nzsl
 		{
 			std::ifstream inputFile(realPath, std::ios::in | std::ios::binary);
 			if (!inputFile)
-				throw std::runtime_error("failed to open " + realPath.generic_u8string());
+				throw std::runtime_error("failed to open " + Nz::PathToString(realPath));
 
 			inputFile.seekg(0, std::ios::end);
 
@@ -42,22 +42,22 @@ namespace nzsl
 
 			std::vector<char> content(Nz::SafeCast<std::size_t>(length));
 			if (!inputFile.read(&content[0], length))
-				throw std::runtime_error("failed to read " + realPath.generic_u8string());
+				throw std::runtime_error("failed to read " + Nz::PathToString(realPath));
 
-			std::string ext = realPath.extension().generic_u8string();
+			std::string ext = Nz::PathToString(realPath.extension());
 			if (ext == CompiledModuleExtension)
 			{
 				Unserializer unserializer(content.data(), content.size());
 				module = Ast::UnserializeShader(unserializer);
 			}
 			else if (ext == ModuleExtension)
-				module = Parse(std::string_view(content.data(), content.size()), realPath.generic_u8string());
+				module = Parse(std::string_view(content.data(), content.size()), Nz::PathToString(realPath));
 			else
 				throw std::runtime_error("unknown extension " + ext);
 		}
 		catch (const std::exception& e)
 		{
-			throw std::runtime_error(fmt::format("failed to register module {}: {}", realPath.generic_u8string(), e.what()));
+			throw std::runtime_error(fmt::format("failed to register module {}: {}", Nz::PathToString(realPath), e.what()));
 		}
 
 		if (!module)
@@ -69,7 +69,7 @@ namespace nzsl
 		RegisterModule(std::move(module));
 
 		std::filesystem::path canonicalPath = std::filesystem::canonical(realPath);
-		m_moduleByFilepath.emplace(canonicalPath.generic_u8string(), std::move(moduleName));
+		m_moduleByFilepath.emplace(Nz::PathToString(canonicalPath), std::move(moduleName));
 	}
 
 	void FilesystemModuleResolver::RegisterModule(std::string_view moduleSource)
@@ -140,7 +140,7 @@ namespace nzsl
 				}
 			};
 		
-			efsw_addwatch(m_fileWatcher, realPath.generic_u8string().c_str(), FileSystemCallback, 1, this);
+			efsw_addwatch(m_fileWatcher, Nz::PathToString(realPath).c_str(), FileSystemCallback, 1, this);
 #else
 			throw std::runtime_error("nzsl was built without filesystem watch feature");
 #endif
@@ -148,7 +148,7 @@ namespace nzsl
 
 		for (const auto& entry : std::filesystem::recursive_directory_iterator(realPath))
 		{
-			if (entry.is_regular_file() && CheckExtension(entry.path().generic_u8string()))
+			if (entry.is_regular_file() && CheckExtension(Nz::PathToString(entry.path())))
 			{
 				try
 				{
@@ -156,7 +156,7 @@ namespace nzsl
 				}
 				catch (const std::exception& e)
 				{
-					throw std::runtime_error(fmt::format("failed to register module {}: {}", entry.path().generic_u8string(), e.what()));
+					throw std::runtime_error(fmt::format("failed to register module {}: {}", Nz::PathToString(entry.path()), e.what()));
 				}
 			}
 		}
@@ -184,7 +184,7 @@ namespace nzsl
 		}
 		catch (const std::exception& e)
 		{
-			fmt::print(stderr, "failed to register module from new file {}: {}", filepath.generic_u8string(), e.what());
+			fmt::print(stderr, "failed to register module from new file {}: {}", Nz::PathToString(filepath), e.what());
 		}
 	}
 
@@ -197,7 +197,7 @@ namespace nzsl
 
 		std::filesystem::path canonicalPath = std::filesystem::canonical(std::filesystem::path(directory) / filename);
 
-		auto it = m_moduleByFilepath.find(canonicalPath.generic_u8string());
+		auto it = m_moduleByFilepath.find(Nz::PathToString(canonicalPath));
 		if (it != m_moduleByFilepath.end())
 		{
 			m_modules.erase(it->second);
@@ -213,7 +213,7 @@ namespace nzsl
 		std::lock_guard lock(m_moduleLock);
 
 		std::filesystem::path canonicalPath = std::filesystem::canonical(std::filesystem::path(directory) / oldFilename);
-		auto it = m_moduleByFilepath.find(canonicalPath.generic_u8string());
+		auto it = m_moduleByFilepath.find(Nz::PathToString(canonicalPath));
 		if (it != m_moduleByFilepath.end())
 		{
 			std::filesystem::path newCanonicalPath = std::filesystem::canonical(std::filesystem::path(directory) / filename);
@@ -221,7 +221,7 @@ namespace nzsl
 			std::string moduleName = std::move(it->second);
 			m_moduleByFilepath.erase(it);
 
-			m_moduleByFilepath.emplace(newCanonicalPath.generic_u8string(), std::move(moduleName));
+			m_moduleByFilepath.emplace(Nz::PathToString(newCanonicalPath), std::move(moduleName));
 		}
 	}
 
@@ -238,7 +238,7 @@ namespace nzsl
 		}
 		catch (const std::exception& e)
 		{
-			fmt::print(stderr, "failed to update module from {}: {}", filepath.generic_u8string(), e.what());
+			fmt::print(stderr, "failed to update module from {}: {}", Nz::PathToString(filepath), e.what());
 		}
 	}
 	

@@ -1755,7 +1755,7 @@ namespace nzsl
 	{
 		std::ifstream inputFile(sourcePath, std::ios::in | std::ios::binary);
 		if (!inputFile)
-			throw std::runtime_error("failed to open " + sourcePath.generic_u8string());
+			throw std::runtime_error("failed to open " + Nz::PathToString(sourcePath));
 
 		inputFile.seekg(0, std::ios::end);
 
@@ -1765,8 +1765,8 @@ namespace nzsl
 
 		std::vector<char> content(Nz::SafeCast<std::size_t>(length));
 		if (length > 0 && !inputFile.read(&content[0], length))
-			throw std::runtime_error("failed to read " + sourcePath.generic_u8string());
+			throw std::runtime_error("failed to read " + Nz::PathToString(sourcePath));
 
-		return Parse(std::string_view(content.data(), content.size()), sourcePath.generic_u8string());
+		return Parse(std::string_view(content.data(), content.size()), Nz::PathToString(sourcePath));
 	}
 }
