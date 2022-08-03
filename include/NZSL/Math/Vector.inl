@@ -297,7 +297,7 @@ namespace nzsl
 		static_assert(std::is_floating_point_v<T>, "Refract is only available with floating-point types");
 
 		T NdotI = DotProduct(normal, incident);
-		T k = T(1.0) - eta * eta * (T(1.0) - NdotI);
+		T k = T(1.0) - eta * eta * (T(1.0) - NdotI * NdotI);
 		if (k < T(0.0))
 			return Vector::Zero();
 
