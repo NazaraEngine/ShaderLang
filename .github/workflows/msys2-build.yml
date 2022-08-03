@@ -95,11 +95,11 @@ jobs:
 
     # Setup compilation mode and install project dependencies
     - name: Configure xmake and install dependencies
-      run: xmake config --arch=${{ matrix.arch }} --mode=${{ matrix.mode }} --kind=${{ matrix.kind }} --ccache=n --examples=y --tests=y --yes --verbose --diagnosis
+      run: xmake config --arch=${{ matrix.arch }} --mode=${{ matrix.mode }} --kind=${{ matrix.kind }} --ccache=n --examples=y --tests=y --unitybuild=n --yes
 
     # Build library and tests
     - name: Build library
-      run: xmake --verbose --diagnosis
+      run: xmake
 
     # Run unit tests
     - name: Run unit tests

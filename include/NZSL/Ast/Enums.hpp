@@ -180,7 +180,7 @@ namespace nzsl::Ast
 	{
 		Boolean = 0, //< bool
 		Float32 = 1, //< f32
-		Float64 = 5, //< f32
+		Float64 = 5, //< f64
 		Int32   = 2, //< i32
 		UInt32  = 3, //< u32
 		String  = 4  //< str
