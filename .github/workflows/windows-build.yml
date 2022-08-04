@@ -84,5 +84,5 @@ jobs:
     # Upload artifacts
     - uses: actions/upload-artifact@v3
       with:
-        name: ${{ matrix.os }}-${{ matrix.arch }}-${{ matrix.config.kind }}-${{ matrix.config.mode }}-${{ matrix.config.runtime }}
+        name: nzsl-${{ matrix.os }}-${{ matrix.arch }}-${{ matrix.config.kind }}-${{ matrix.config.mode }}-${{ matrix.config.runtime }}
         path: package

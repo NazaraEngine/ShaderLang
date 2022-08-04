@@ -85,5 +85,5 @@ jobs:
     - uses: actions/upload-artifact@v3
       if: ${{ matrix.mode }} == 'debug' || ${{ matrix.mode }} == 'release'
       with:
-        name: ${{ matrix.os }}-${{ matrix.arch }}-${{ matrix.kind }}-${{ matrix.mode }}
+        name: nzsl-${{ matrix.os }}-${{ matrix.arch }}-${{ matrix.kind }}-${{ matrix.mode }}
         path: package
