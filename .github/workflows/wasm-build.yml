@@ -57,7 +57,7 @@ jobs:
       uses: mymindstorm/setup-emsdk@v11
       with:
         version: 1.38.40
-        actions-cache-folder: emsdk-cache-${{ matrix.arch }}-${{ matrix.mode }}
+        actions-cache-folder: emsdk-cache-${{ matrix.mode }}-${{ matrix.kind }}
 
     # Cache xmake dependencies
     - name: Retrieve cached xmake dependencies
