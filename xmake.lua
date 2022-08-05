@@ -68,16 +68,22 @@ if is_plat("windows") then
 elseif is_plat("mingw") then
 	add_cxflags("-Wa,-mbig-obj")
 	add_ldflags("-Wa,-mbig-obj")
-end
-
-add_rules("wasm_files")
-
-if is_mode("debug") then
-	add_rules("debug_suffix")
-	if is_plat("wasm") then
+	-- Always enable at least -Os optimization with MinGW to fix "string table overflow" error
+	if not is_mode("release", "releasedbg") then
+		set_optimize("smallest")
+	end
+elseif is_plat("wasm") then
+	add_rules("wasm_files")
+	add_cxflags("-s DISABLE_EXCEPTION_CATCHING=0")
+	add_ldflags("-s DISABLE_EXCEPTION_CATCHING=0")
+	if is_mode("debug") then
 		-- See https://github.com/xmake-io/xmake/issues/2646
 		add_cxflags("-gsource-map")
 	end
+end
+
+if is_mode("debug") then
+	add_rules("debug_suffix")
 elseif is_mode("asan", "tsan", "ubsan") then
 	set_optimize("none") -- by default xmake will optimize asan builds
 elseif is_mode("coverage") then
@@ -87,11 +93,6 @@ elseif is_mode("coverage") then
 elseif is_mode("releasedbg") then
 	set_fpmodels("fast")
 	add_vectorexts("sse", "sse2", "sse3", "ssse3")
-end
-
--- Always enable at least -Os optimization with MinGW to fix "string table overflow" error
-if is_plat("mingw") and not is_mode("release", "releasedbg") then
-	set_optimize("smallest")
 end
 
 if has_config("unitybuild") then

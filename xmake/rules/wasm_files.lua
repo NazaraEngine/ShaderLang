@@ -2,9 +2,9 @@
 rule("wasm_files")
     on_load("wasm", function (target)
         if target:kind() == "binary" then
-            target:add("installfiles", (target:targetfile():gsub("%.html", ".js")))
-            target:add("installfiles", (target:targetfile():gsub("%.html", ".mem")))
-            target:add("installfiles", (target:targetfile():gsub("%.html", ".mjs")))
-            target:add("installfiles", (target:targetfile():gsub("%.html", ".wasm")))
+            target:add("installfiles", (target:targetfile():gsub("%.html", ".js")), { prefixdir = "bin" })
+            target:add("installfiles", (target:targetfile():gsub("%.html", ".mem")), { prefixdir = "bin" })
+            target:add("installfiles", (target:targetfile():gsub("%.html", ".mjs")), { prefixdir = "bin" })
+            target:add("installfiles", (target:targetfile():gsub("%.html", ".wasm")), { prefixdir = "bin" })
 		end
 	end)
