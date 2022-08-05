@@ -78,7 +78,7 @@ elseif is_plat("wasm") then
 	add_ldflags("-s DISABLE_EXCEPTION_CATCHING=0")
 	if is_mode("debug") then
 		-- See https://github.com/xmake-io/xmake/issues/2646
-		add_cxflags("-gsource-map")
+		add_ldflags("-gsource-map")
 	end
 end
 
