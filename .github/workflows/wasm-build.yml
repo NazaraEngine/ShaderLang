@@ -22,7 +22,7 @@ jobs:
         os: [ubuntu-latest]
         arch: [x86_64]
         mode: [debug, release]
-        kind: [static, shared]
+        kind: [static]
 
     runs-on: ${{ matrix.os }}
     if: "!contains(github.event.head_commit.message, 'ci skip')"
@@ -68,11 +68,11 @@ jobs:
 
     # Setup compilation mode and install project dependencies
     - name: Configure xmake and install dependencies
-      run: xmake config --plat=wasm --arch=${{ matrix.arch }} --mode=${{ matrix.mode }} --kind=${{ matrix.kind }} --ccache=n --fs_watcher=n --tests=n --unitybuild=y --yes -vD
+      run: xmake config --plat=wasm --arch=${{ matrix.arch }} --mode=${{ matrix.mode }} --kind=${{ matrix.kind }} --ccache=n --fs_watcher=n --tests=n --unitybuild=y --yes
 
     # Build library and tests
     - name: Build library
-      run: xmake -vD
+      run: xmake
 
     # Install the result files
     - name: Install NZSL

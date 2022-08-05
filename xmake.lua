@@ -70,8 +70,14 @@ elseif is_plat("mingw") then
 	add_ldflags("-Wa,-mbig-obj")
 end
 
+add_rules("wasm_files")
+
 if is_mode("debug") then
 	add_rules("debug_suffix")
+	if is_plat("wasm") then
+		-- See https://github.com/xmake-io/xmake/issues/2646
+		add_cxflags("-gsource-map")
+	end
 elseif is_mode("asan", "tsan", "ubsan") then
 	set_optimize("none") -- by default xmake will optimize asan builds
 elseif is_mode("coverage") then
