@@ -68,7 +68,7 @@ namespace nzsl
 		std::string moduleName = module->metadata->moduleName;
 		RegisterModule(std::move(module));
 
-		std::filesystem::path canonicalPath = std::filesystem::canonical(realPath);
+		std::filesystem::path canonicalPath = std::filesystem::weakly_canonical(realPath);
 		m_moduleByFilepath.emplace(Nz::PathToString(canonicalPath), std::move(moduleName));
 	}
 
@@ -195,7 +195,7 @@ namespace nzsl
 
 		std::lock_guard lock(m_moduleLock);
 
-		std::filesystem::path canonicalPath = std::filesystem::canonical(std::filesystem::path(directory) / filename);
+		std::filesystem::path canonicalPath = std::filesystem::weakly_canonical(std::filesystem::path(directory) / filename);
 
 		auto it = m_moduleByFilepath.find(Nz::PathToString(canonicalPath));
 		if (it != m_moduleByFilepath.end())
@@ -212,11 +212,11 @@ namespace nzsl
 
 		std::lock_guard lock(m_moduleLock);
 
-		std::filesystem::path canonicalPath = std::filesystem::canonical(std::filesystem::path(directory) / oldFilename);
+		std::filesystem::path canonicalPath = std::filesystem::weakly_canonical(std::filesystem::path(directory) / oldFilename);
 		auto it = m_moduleByFilepath.find(Nz::PathToString(canonicalPath));
 		if (it != m_moduleByFilepath.end())
 		{
-			std::filesystem::path newCanonicalPath = std::filesystem::canonical(std::filesystem::path(directory) / filename);
+			std::filesystem::path newCanonicalPath = std::filesystem::weakly_canonical(std::filesystem::path(directory) / filename);
 
 			std::string moduleName = std::move(it->second);
 			m_moduleByFilepath.erase(it);
