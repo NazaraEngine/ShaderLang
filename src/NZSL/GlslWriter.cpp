@@ -903,9 +903,12 @@ namespace nzsl
 
 		if (m_environment.glES)
 		{
-			// GL_ARB_separate_shader_objects (required for layout(location = X))
+			// GLSL ES doesn't support explicit uniform binding nor varying locations before 3.1
 			if (glslVersion < 310)
+			{
+				m_currentState->requiresExplicitUniformBinding = true;
 				m_currentState->supportsVaryingLocations = false;
+			}
 		}
 		else
 		{
