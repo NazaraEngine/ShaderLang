@@ -1747,7 +1747,7 @@ namespace nzsl
 				else
 				{
 					// Ensure name is unique
-					varName += "_binding" + std::to_string(glslBindingIndex);
+					varName += std::to_string(glslBindingIndex);
 
 					if (IsSamplerType(exprType))
 						m_currentState->explicitTextureBinding.emplace(varName, glslBindingIndex);
