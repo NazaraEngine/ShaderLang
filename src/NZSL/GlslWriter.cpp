@@ -1703,8 +1703,24 @@ namespace nzsl
 
 			std::string varName = SanitizeIdentifier(externalVar.name + m_currentState->moduleSuffix);
 
-			if (!m_currentState->bindingMapping.empty() || isStd140)
-				Append("layout(");
+			// Layout handling
+			bool hasLayout = false;
+			auto BeginLayout = [&]
+			{
+				if (hasLayout)
+					Append(", ");
+				else
+				{
+					Append("layout(");
+					hasLayout = true;
+				}
+			};
+
+			auto EndLayout = [&]
+			{
+				if (hasLayout)
+					Append(") ");
+			};
 
 			if (!m_currentState->bindingMapping.empty())
 			{
@@ -1725,9 +1741,8 @@ namespace nzsl
 
 				if (!m_currentState->requiresExplicitUniformBinding)
 				{
-					Append("binding = ", bindingIt->second);
-					if (isStd140)
-						Append(", ");
+					BeginLayout();
+					Append("binding = ", glslBindingIndex);
 				}
 				else
 				{
@@ -1747,8 +1762,7 @@ namespace nzsl
 				Append("std140");
 			}
 
-			if (!m_currentState->bindingMapping.empty() || isStd140)
-				Append(") ");
+			EndLayout();
 
 			// Variable declaration
 			if (IsStorageType(exprType))
