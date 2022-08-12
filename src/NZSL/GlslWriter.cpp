@@ -263,6 +263,7 @@ namespace nzsl
 		std::unordered_map<std::size_t, std::string> constantNames;
 		std::unordered_map<std::size_t, StructData> structs;
 		std::unordered_map<std::size_t, std::string> variableNames;
+		std::unordered_map<std::string, unsigned int> explicitTextureBinding;
 		std::unordered_map<std::string, unsigned int> explicitUniformBlockBinding;
 		std::unordered_set<std::string> reservedKeywords;
 		Nz::Bitset<> declaredFunctions;
@@ -378,6 +379,7 @@ namespace nzsl
 
 		Output output;
 		output.code = std::move(state.stream).str();
+		output.explicitTextureBinding = std::move(state.explicitTextureBinding);
 		output.explicitUniformBlockBinding = std::move(state.explicitUniformBlockBinding);
 		output.usesDrawParameterBaseInstanceUniform = m_currentState->hasDrawParametersBaseInstanceUniform;
 		output.usesDrawParameterBaseVertexUniform = m_currentState->hasDrawParametersBaseVertexUniform;
@@ -1681,10 +1683,10 @@ namespace nzsl
 		{
 			const Ast::ExpressionType& exprType = externalVar.type.GetResultingValue();
 			
-			bool isUniformOrStorage = IsStorageType(exprType) || IsUniformType(exprType);
+			bool isUniformOrStorageBuffer = IsStorageType(exprType) || IsUniformType(exprType);
 
 			bool isStd140 = false;
-			if (isUniformOrStorage)
+			if (isUniformOrStorageBuffer)
 			{
 				std::size_t structIndex;
 				if (IsStorageType(exprType))
@@ -1719,6 +1721,8 @@ namespace nzsl
 				if (bindingIt == m_currentState->bindingMapping.end())
 					throw std::runtime_error("no binding found for (set=" + std::to_string(bindingSet) + ", binding=" + std::to_string(bindingIndex) + ")");
 
+				unsigned int glslBindingIndex = bindingIt->second;
+
 				if (!m_currentState->requiresExplicitUniformBinding)
 				{
 					Append("binding = ", bindingIt->second);
@@ -1726,21 +1730,33 @@ namespace nzsl
 						Append(", ");
 				}
 				else
-					m_currentState->explicitUniformBlockBinding.emplace(varName, bindingIt->second);
+				{
+					// We have to use explicit binding here
+					varName += "_" + std::to_string(glslBindingIndex);
+
+					if (IsSamplerType(exprType))
+						m_currentState->explicitTextureBinding.emplace(varName, glslBindingIndex);
+					else
+						m_currentState->explicitUniformBlockBinding.emplace(varName, glslBindingIndex);
+				}
 			}
 
 			if (isStd140)
+			{
+				BeginLayout();
 				Append("std140");
+			}
 
 			if (!m_currentState->bindingMapping.empty() || isStd140)
 				Append(") ");
 
+			// Variable declaration
 			if (IsStorageType(exprType))
 				Append("buffer ");
 			else
 				Append("uniform ");
 
-			if (isUniformOrStorage)
+			if (isUniformOrStorageBuffer)
 			{
 				Append("_nzslBinding_");
 				AppendLine(varName);
@@ -1775,7 +1791,7 @@ namespace nzsl
 
 			AppendLine(";");
 
-			if (isUniformOrStorage)
+			if (isUniformOrStorageBuffer)
 				AppendLine();
 
 			assert(externalVar.varIndex);
