@@ -30,6 +30,8 @@ namespace nzsl
 		constexpr std::string_view s_glslWriterShaderDrawParametersBaseInstanceName = "_nzslBaseInstance";
 		constexpr std::string_view s_glslWriterShaderDrawParametersBaseVertexName = "_nzslBaseVertex";
 		constexpr std::string_view s_glslWriterShaderDrawParametersDrawIndexName = "_nzslDrawID";
+		constexpr std::string_view s_glslWriterBlockBindingPrefix = "_nzslBinding_";
+		constexpr std::string_view s_glslWriterVaryingPrefix = "_nzslVarying_";
 		constexpr std::string_view s_glslWriterInputPrefix = "_nzslIn_";
 		constexpr std::string_view s_glslWriterOutputPrefix = "_nzslOut_";
 		constexpr std::string_view s_glslWriterOutputVarName = "_nzslOutput";
@@ -1175,7 +1177,7 @@ namespace nzsl
 						else
 						{
 							std::string originalName = std::move(varName);
-							varName = "_nzslVarying_" + std::to_string(member.locationIndex.GetResultingValue());
+							varName = std::string(s_glslWriterVaryingPrefix) + std::to_string(member.locationIndex.GetResultingValue());
 							OutputVariable(" // ", originalName);
 						}
 					}
@@ -1752,7 +1754,7 @@ namespace nzsl
 					if (IsSamplerType(exprType))
 						m_currentState->explicitTextureBinding.emplace(varName, glslBindingIndex);
 					else
-						m_currentState->explicitUniformBlockBinding.emplace(varName, glslBindingIndex);
+						m_currentState->explicitUniformBlockBinding.emplace(std::string(s_glslWriterBlockBindingPrefix) + varName, glslBindingIndex);
 				}
 			}
 
@@ -1772,7 +1774,7 @@ namespace nzsl
 
 			if (isUniformOrStorageBuffer)
 			{
-				Append("_nzslBinding_");
+				Append(s_glslWriterBlockBindingPrefix);
 				AppendLine(varName);
 
 				EnterScope();
