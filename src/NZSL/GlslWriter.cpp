@@ -950,6 +950,8 @@ namespace nzsl
 			AppendLine("#else");
 			AppendLine("precision mediump float;");
 			AppendLine("#endif");
+			AppendLine("precision highp int;");
+			AppendLine("precision highp uint;");
 			AppendLine();
 		}
 
