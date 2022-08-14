@@ -945,13 +945,12 @@ namespace nzsl
 
 		if (m_environment.glES)
 		{
+			AppendLine("precision highp int;");
 			AppendLine("#if GL_FRAGMENT_PRECISION_HIGH");
 			AppendLine("precision highp float;");
 			AppendLine("#else");
 			AppendLine("precision mediump float;");
 			AppendLine("#endif");
-			AppendLine("precision highp int;");
-			AppendLine("precision highp uint;");
 			AppendLine();
 		}
 
