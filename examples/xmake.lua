@@ -1,5 +1,5 @@
 option("examples")
-	set_default(false)
+	set_default(true)
 	set_showmenu(true)
 	set_description("Build examples")
 option_end()
