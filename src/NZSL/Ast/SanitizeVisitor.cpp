@@ -2551,12 +2551,12 @@ namespace nzsl::Ast
 					{
 						std::int32_t intVal = std::get<std::int32_t>(*value);
 						if (intVal < 0)
-							throw CompilerAttributeUnexpectedNegativeError{ expr.sourceLocation, std::to_string(intVal) };
+							throw CompilerAttributeUnexpectedNegativeError{ expr.sourceLocation, Ast::ToString(intVal) };
 					
 						attribute = static_cast<std::uint32_t>(intVal);
 					}
 					else
-						throw CompilerAttributeUnexpectedTypeError{ expr.sourceLocation, ToString(GetExpressionTypeSecure(expr), sourceLocation) };
+						throw CompilerAttributeUnexpectedTypeError{ expr.sourceLocation, ToString(GetConstantExpressionType<T>(), sourceLocation), ToString(GetExpressionTypeSecure(expr), sourceLocation) };
 				}
 				else
 					attribute = std::get<T>(*value);
@@ -2594,12 +2594,12 @@ namespace nzsl::Ast
 					{
 						std::int32_t intVal = std::get<std::int32_t>(*value);
 						if (intVal < 0)
-							throw CompilerAttributeUnexpectedNegativeError{ expr.sourceLocation, std::to_string(intVal) };
+							throw CompilerAttributeUnexpectedNegativeError{ expr.sourceLocation, Ast::ToString(intVal) };
 
 						targetAttribute = static_cast<std::uint32_t>(intVal);
 					}
 					else
-						throw CompilerAttributeUnexpectedTypeError{ expr.sourceLocation, ToString(GetExpressionTypeSecure(expr), sourceLocation) };
+						throw CompilerAttributeUnexpectedTypeError{ expr.sourceLocation, ToString(GetConstantExpressionType<T>(), sourceLocation), ToString(GetExpressionTypeSecure(expr), sourceLocation) };
 				}
 				else
 					targetAttribute = std::get<T>(*value);
@@ -2702,7 +2702,7 @@ namespace nzsl::Ast
 					{
 						std::int32_t value = std::get<std::int32_t>(length);
 						if (value <= 0)
-							throw CompilerArrayLengthError{ sourceLocation, std::to_string(value) };
+							throw CompilerArrayLengthError{ sourceLocation, Ast::ToString(value) };
 
 						lengthValue = Nz::SafeCast<std::uint32_t>(value);
 					}
@@ -2710,7 +2710,7 @@ namespace nzsl::Ast
 					{
 						lengthValue = std::get<std::uint32_t>(length);
 						if (lengthValue == 0)
-							throw CompilerArrayLengthError{ sourceLocation, std::to_string(lengthValue) };
+							throw CompilerArrayLengthError{ sourceLocation, Ast::ToString(lengthValue) };
 					}
 					else
 						throw CompilerArrayLengthError{ sourceLocation, ToString(GetConstantType(length), sourceLocation) };

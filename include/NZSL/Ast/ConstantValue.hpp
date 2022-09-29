@@ -53,6 +53,8 @@ namespace nzsl::Ast
 	using ConstantArrayValue = Nz::TypeListInstantiate<Nz::TypeListConcat<Nz::TypeList<NoValue>, ConstantArrayTypes>, std::variant>;
 	using ConstantValue = Nz::TypeListInstantiate<Nz::TypeListConcat<Nz::TypeList<NoValue>, ConstantTypes>, std::variant>;
 
+	template<typename T> ExpressionType GetConstantExpressionType();
+
 	NZSL_API ExpressionType GetConstantType(const ConstantValue& constant);
 	NZSL_API ExpressionType GetConstantType(const ConstantArrayValue& constantArray);
 	NZSL_API ExpressionType GetConstantType(const ConstantSingleValue& constant);
