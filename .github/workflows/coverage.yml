@@ -39,7 +39,7 @@ jobs:
       if: runner.os == 'Linux'
       run: |
         sudo apt-get update
-        sudo apt-get -y install gcovr
+        sudo apt-get -y install gcovr mesa-common-dev
 
     - name: Install OpenCppCoverage (Windows)
       if: runner.os == 'Windows'
