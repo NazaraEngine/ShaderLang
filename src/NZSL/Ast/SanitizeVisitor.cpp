@@ -2548,9 +2548,15 @@ namespace nzsl::Ast
 				{
 					// HAAAAAX
 					if (std::holds_alternative<std::int32_t>(*value) && std::is_same_v<T, std::uint32_t>)
-						attribute = static_cast<std::uint32_t>(std::get<std::int32_t>(*value));
+					{
+						std::int32_t intVal = std::get<std::int32_t>(*value);
+						if (intVal < 0)
+							throw CompilerAttributeUnexpectedNegativeError{ expr.sourceLocation, std::to_string(intVal) };
+					
+						attribute = static_cast<std::uint32_t>(intVal);
+					}
 					else
-						throw CompilerAttributeUnexpectedTypeError{ expr.sourceLocation };
+						throw CompilerAttributeUnexpectedTypeError{ expr.sourceLocation, ToString(GetExpressionTypeSecure(expr), sourceLocation) };
 				}
 				else
 					attribute = std::get<T>(*value);
@@ -2572,10 +2578,10 @@ namespace nzsl::Ast
 		{
 			auto& expr = *attribute.GetExpression();
 
-			std::optional<ConstantValue> value = ComputeConstantValue(*attribute.GetExpression());
+			std::optional<ConstantValue> value = ComputeConstantValue(expr);
 			if (!value)
 			{
-				targetAttribute = Cloner::Clone(*attribute.GetExpression());
+				targetAttribute = Cloner::Clone(expr);
 				return ValidationResult::Unresolved;
 			}
 
@@ -2585,9 +2591,15 @@ namespace nzsl::Ast
 				{
 					// HAAAAAX
 					if (std::holds_alternative<std::int32_t>(*value) && std::is_same_v<T, std::uint32_t>)
-						targetAttribute = static_cast<std::uint32_t>(std::get<std::int32_t>(*value));
+					{
+						std::int32_t intVal = std::get<std::int32_t>(*value);
+						if (intVal < 0)
+							throw CompilerAttributeUnexpectedNegativeError{ expr.sourceLocation, std::to_string(intVal) };
+
+						targetAttribute = static_cast<std::uint32_t>(intVal);
+					}
 					else
-						throw CompilerAttributeUnexpectedTypeError{ expr.sourceLocation };
+						throw CompilerAttributeUnexpectedTypeError{ expr.sourceLocation, ToString(GetExpressionTypeSecure(expr), sourceLocation) };
 				}
 				else
 					targetAttribute = std::get<T>(*value);

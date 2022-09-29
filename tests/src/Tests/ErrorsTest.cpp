@@ -301,6 +301,123 @@ const V = vec4[i32](7, 6, 5, 4) % vec4[i32](3, 2, 1, 0);
 
 		/************************************************************************/
 
+		SECTION("Externals")
+		{
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+external
+{
+	foo: i32
+}
+
+)"), "(7,2 -> 9): CExtMissingBindingIndex error: external variable requires a binding index");
+
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+external
+{
+	[binding(0)] foo: i32
+}
+
+)"), "(7,15 -> 22): CExtTypeNotAllowed error: external variable foo has unauthorized type (i32): only storage buffers, samplers and uniform buffers (and primitives, vectors and matrices if primitive external feature is enabled) are allowed in external blocks");
+
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+external
+{
+	[binding("Hello")] foo: i32
+}
+
+)"), "(7,11 -> 17): CAttributeUnexpectedType error: unexpected attribute type (got type string)");
+
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+external
+{
+	[binding(-1)] foo: sampler2D[f32]
+}
+
+)"), "(7,11 -> 12): CAttributeUnexpectedNegative error: attribute value cannot be negative, got -1");
+
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+const foo = 42;
+
+external
+{
+	[binding(0)] foo: sampler2D[f32]
+}
+
+)"), "(9,15 -> 33): CIdentifierAlreadyUsed error: identifier foo is already used");
+
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+external
+{
+	[binding(0)] foo: sampler2D[f32],
+	[binding(0)] bar: sampler2D[f32]
+}
+
+)"), "(8,15 -> 33): CExtBindingAlreadyUsed error: binding (set=0, binding=0) is already in use");
+
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+external
+{
+	[binding(0)] foo: sampler2D[f32],
+	[binding(1)] foo: sampler2D[f32]
+}
+
+)"), "(8,15 -> 33): CExtAlreadyDeclared error: external variable foo is already declared");
+
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+external
+{
+	[binding(1)] foo: sampler2D[f32]
+}
+
+external
+{
+	[binding(1)] bar: sampler2D[f32]
+}
+
+)"), "(12,15 -> 33): CExtBindingAlreadyUsed error: binding (set=0, binding=1) is already in use");
+
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+external
+{
+	[binding(1)] foo: sampler2D[f32]
+}
+
+external
+{
+	[binding(1)] bar: sampler2D[f32]
+}
+
+)"), "(12,15 -> 33): CExtBindingAlreadyUsed error: binding (set=0, binding=1) is already in use");
+
+		/************************************************************************/
+
 		SECTION("Features")
 		{
 			// Float64
