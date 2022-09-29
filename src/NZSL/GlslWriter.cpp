@@ -814,7 +814,7 @@ namespace nzsl
 
 		// Extensions
 
-		tsl::ordered_set<std::string> requiredExtensions;
+		tsl::ordered_set<std::string_view> requiredExtensions;
 		
 		for (GlslCapability capability : m_currentState->previsitor.capabilities)
 		{
@@ -1682,8 +1682,14 @@ namespace nzsl
 
 	void GlslWriter::Visit(Ast::DeclareExternalStatement& node)
 	{
+		if (!node.tag.empty())
+			AppendComment("external block tag: " + node.tag);
+
 		for (const auto& externalVar : node.externalVars)
 		{
+			if (!externalVar.tag.empty())
+				AppendComment("external var tag: " + externalVar.tag);
+
 			const Ast::ExpressionType& exprType = externalVar.type.GetResultingValue();
 			
 			bool isUniformOrStorageBuffer = IsStorageType(exprType) || IsUniformType(exprType);
@@ -1702,6 +1708,9 @@ namespace nzsl
 				const auto& structInfo = Nz::Retrieve(m_currentState->structs, structIndex);
 				if (structInfo.desc->layout.HasValue())
 					isStd140 = structInfo.desc->layout.GetResultingValue() == Ast::MemoryLayout::Std140;
+
+				if (!structInfo.desc->tag.empty())
+					AppendComment("struct tag: " + structInfo.desc->tag);
 			}
 
 			std::string varName = SanitizeIdentifier(externalVar.name + m_currentState->moduleSuffix);
@@ -1794,6 +1803,9 @@ namespace nzsl
 
 						first = false;
 
+						if (!member.tag.empty())
+							AppendComment("member tag: " + member.tag);
+
 						AppendVariableDeclaration(member.type.GetResultingValue(), member.name);
 						Append(";");
 					}
@@ -1883,6 +1895,9 @@ namespace nzsl
 			return;
 		}
 
+		if (!node.description.tag.empty())
+			AppendComment("struct tag: " + node.description.tag);
+
 		Append("struct ");
 		AppendLine(structName);
 		EnterScope();
@@ -1897,6 +1912,9 @@ namespace nzsl
 					AppendLine();
 
 				first = false;
+
+				if (!member.tag.empty())
+					AppendComment("member tag: " + member.tag);
 
 				AppendVariableDeclaration(member.type.GetResultingValue(), member.name);
 				Append(";");

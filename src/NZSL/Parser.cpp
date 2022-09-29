@@ -662,6 +662,13 @@ namespace nzsl
 					HandleUniqueAttribute(externalStatement->bindingSet, std::move(attribute));
 					break;
 
+				case Ast::AttributeType::Tag:
+					if (!externalStatement->tag.empty())
+						throw ParserAttributeMultipleUniqueError{ attribute.sourceLocation, attribute.type };
+
+					externalStatement->tag = ExtractStringAttribute(std::move(attribute));
+					break;
+
 				default:
 					throw ParserUnexpectedAttributeError{ attribute.sourceLocation, attribute.type };
 			}
@@ -702,6 +709,13 @@ namespace nzsl
 
 						case Ast::AttributeType::Set:
 							HandleUniqueAttribute(extVar.bindingSet, std::move(attribute));
+							break;
+
+						case Ast::AttributeType::Tag:
+							if (!extVar.tag.empty())
+								throw ParserAttributeMultipleUniqueError{ attribute.sourceLocation, attribute.type };
+
+							extVar.tag = ExtractStringAttribute(std::move(attribute));
 							break;
 
 						default:
@@ -1190,6 +1204,13 @@ namespace nzsl
 					HandleUniqueStringAttributeKey(description.layout, std::move(attribute), s_layoutMapping);
 					break;
 
+				case Ast::AttributeType::Tag:
+					if (!description.tag.empty())
+						throw ParserAttributeMultipleUniqueError{ attribute.sourceLocation, attribute.type };
+
+					description.tag = ExtractStringAttribute(std::move(attribute));
+					break;
+
 				default:
 					throw ParserUnexpectedAttributeError{ attribute.sourceLocation, attribute.type };
 			}
@@ -1237,6 +1258,13 @@ namespace nzsl
 
 						case Ast::AttributeType::Location:
 							HandleUniqueAttribute(structField.locationIndex, std::move(attribute));
+							break;
+
+						case Ast::AttributeType::Tag:
+							if (!structField.tag.empty())
+								throw ParserAttributeMultipleUniqueError{ attribute.sourceLocation, attribute.type };
+
+							structField.tag = ExtractStringAttribute(std::move(attribute));
 							break;
 
 						default:

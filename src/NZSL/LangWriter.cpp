@@ -111,6 +111,13 @@ namespace nzsl
 		bool HasValue() const { return setIndex.HasValue(); }
 	};
 
+	struct LangWriter::TagAttribute
+	{
+		const std::string& tag;
+
+		bool HasValue() const { return !tag.empty(); }
+	};
+
 	struct LangWriter::UnrollAttribute
 	{
 		const Ast::ExpressionValue<Ast::LoopUnroll>& unroll;
@@ -546,6 +553,14 @@ namespace nzsl
 			attribute.setIndex.GetExpression()->Visit(*this);
 
 		Append(")");
+	}
+
+	void LangWriter::AppendAttribute(TagAttribute attribute)
+	{
+		if (!attribute.HasValue())
+			return;
+
+		Append("tag(", EscapeString(attribute.tag), ")");
 	}
 
 	void LangWriter::AppendAttribute(UnrollAttribute attribute)
@@ -1128,7 +1143,7 @@ namespace nzsl
 
 	void LangWriter::Visit(Ast::DeclareExternalStatement& node)
 	{
-		AppendAttributes(true, SetAttribute{ node.bindingSet });
+		AppendAttributes(true, SetAttribute{ node.bindingSet }, TagAttribute{ node.tag } );
 		AppendLine("external");
 		EnterScope();
 
@@ -1140,7 +1155,7 @@ namespace nzsl
 
 			first = false;
 
-			AppendAttributes(false, SetAttribute{ externalVar.bindingSet }, BindingAttribute{ externalVar.bindingIndex });
+			AppendAttributes(false, SetAttribute{ externalVar.bindingSet }, BindingAttribute{ externalVar.bindingIndex }, TagAttribute{ externalVar.tag });
 			Append(externalVar.name, ": ", externalVar.type);
 
 			if (externalVar.varIndex)
@@ -1211,7 +1226,7 @@ namespace nzsl
 		if (node.structIndex)
 			RegisterStruct(*node.structIndex, node.description.name);
 
-		AppendAttributes(true, LayoutAttribute{ node.description.layout });
+		AppendAttributes(true, LayoutAttribute{ node.description.layout }, TagAttribute{ node.description.tag });
 		Append("struct ");
 		AppendLine(node.description.name);
 		EnterScope();
@@ -1224,7 +1239,7 @@ namespace nzsl
 
 				first = false;
 
-				AppendAttributes(false, LocationAttribute{ member.locationIndex }, BuiltinAttribute{ member.builtin });
+				AppendAttributes(false, LocationAttribute{ member.locationIndex }, BuiltinAttribute{ member.builtin }, TagAttribute{ member.tag });
 				Append(member.name, ": ", member.type);
 			}
 		}

@@ -41,6 +41,7 @@ namespace nzsl::Ast
 		Layout             =  7, //< Struct layout (struct only) - has argument style
 		Location           =  8, //< Location (struct member only) - has argument index
 		Set                = 10, //< Binding set (external var only) - has argument index
+		Tag                = 16, //< Tag (external block and external var only) - has argument string
 		Unroll             = 11, //< Unroll (for/for each only) - has argument mode
 	};
 

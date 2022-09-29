@@ -12,7 +12,7 @@ namespace nzsl::Ast
 	namespace
 	{
 		constexpr std::uint32_t s_shaderAstMagicNumber = 0x4E534852;
-		constexpr std::uint32_t s_shaderAstCurrentVersion = 2;
+		constexpr std::uint32_t s_shaderAstCurrentVersion = 3;
 
 		class ShaderSerializerVisitor : public ExpressionVisitor, public StatementVisitor
 		{
@@ -325,6 +325,8 @@ namespace nzsl::Ast
 	void SerializerBase::Serialize(DeclareExternalStatement& node)
 	{
 		ExprValue(node.bindingSet);
+		if (IsVersionGreaterOrEqual(3))
+			Value(node.tag);
 
 		Container(node.externalVars);
 		for (auto& extVar : node.externalVars)
@@ -335,6 +337,8 @@ namespace nzsl::Ast
 			ExprValue(extVar.bindingIndex);
 			ExprValue(extVar.bindingSet);
 			SourceLoc(extVar.sourceLocation);
+			if (IsVersionGreaterOrEqual(3))
+				Value(extVar.tag);
 		}
 	}
 
@@ -377,6 +381,8 @@ namespace nzsl::Ast
 
 		Value(node.description.name);
 		ExprValue(node.description.layout);
+		if (IsVersionGreaterOrEqual(3))
+			Value(node.description.tag);
 
 		Container(node.description.members);
 		for (auto& member : node.description.members)
@@ -387,6 +393,8 @@ namespace nzsl::Ast
 			ExprValue(member.cond);
 			ExprValue(member.locationIndex);
 			SourceLoc(member.sourceLocation);
+			if (IsVersionGreaterOrEqual(3))
+				Value(member.tag);
 		}
 	}
 	

@@ -340,12 +340,14 @@ namespace nzsl::Ast
 		{
 			std::optional<std::size_t> varIndex;
 			std::string name;
+			std::string tag;
 			ExpressionValue<std::uint32_t> bindingIndex;
 			ExpressionValue<std::uint32_t> bindingSet;
 			ExpressionValue<ExpressionType> type;
 			SourceLocation sourceLocation;
 		};
 
+		std::string tag;
 		std::vector<ExternalVar> externalVars;
 		ExpressionValue<std::uint32_t> bindingSet;
 	};
