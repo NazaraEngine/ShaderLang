@@ -334,7 +334,7 @@ external
 	[binding("Hello")] foo: i32
 }
 
-)"), "(7,11 -> 17): CAttributeUnexpectedType error: unexpected attribute type (got type string)");
+)"), "(7,11 -> 17): CAttributeUnexpectedType error: unexpected attribute type (expected u32, got string)");
 
 			CHECK_THROWS_WITH(Compile(R"(
 [nzsl_version("1.0")]
