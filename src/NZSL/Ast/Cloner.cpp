@@ -126,6 +126,7 @@ namespace nzsl::Ast
 	{
 		auto clone = std::make_unique<DeclareExternalStatement>();
 		clone->bindingSet = Clone(node.bindingSet);
+		clone->tag = node.tag;
 
 		clone->externalVars.reserve(node.externalVars.size());
 		for (const auto& var : node.externalVars)
@@ -136,6 +137,7 @@ namespace nzsl::Ast
 			cloneVar.type = Clone(var.type);
 			cloneVar.bindingIndex = Clone(var.bindingIndex);
 			cloneVar.bindingSet = Clone(var.bindingSet);
+			cloneVar.tag = var.tag;
 
 			cloneVar.sourceLocation = var.sourceLocation;
 		}
@@ -197,6 +199,7 @@ namespace nzsl::Ast
 
 		clone->description.layout = Clone(node.description.layout);
 		clone->description.name = node.description.name;
+		clone->description.tag = node.description.tag;
 
 		clone->description.members.reserve(node.description.members.size());
 		for (const auto& member : node.description.members)
@@ -209,6 +212,7 @@ namespace nzsl::Ast
 			cloneMember.locationIndex = Clone(member.locationIndex);
 
 			cloneMember.sourceLocation = member.sourceLocation;
+			cloneMember.tag = member.tag;
 		}
 
 		clone->sourceLocation = node.sourceLocation;

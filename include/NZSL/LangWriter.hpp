@@ -50,6 +50,7 @@ namespace nzsl
 			struct LicenseAttribute;
 			struct LocationAttribute;
 			struct SetAttribute;
+			struct TagAttribute;
 			struct UnrollAttribute;
 
 			void Append(const Ast::AliasType& type);
@@ -86,7 +87,8 @@ namespace nzsl
 			void AppendAttribute(LayoutAttribute attribute);
 			void AppendAttribute(LicenseAttribute attribute);
 			void AppendAttribute(LocationAttribute attribute);
-			void AppendAttribute(SetAttribute seattributet);
+			void AppendAttribute(SetAttribute attribute);
+			void AppendAttribute(TagAttribute attribute);
 			void AppendAttribute(UnrollAttribute attribute);
 			void AppendComment(std::string_view section);
 			void AppendCommentSection(std::string_view section);

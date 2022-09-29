@@ -217,6 +217,9 @@ namespace nzsl::Ast
 		if (!Compare(lhs.sourceLocation, rhs.sourceLocation))
 			return false;
 
+		if (!Compare(lhs.tag, rhs.tag))
+			return false;
+
 		return true;
 	}
 
@@ -279,6 +282,9 @@ namespace nzsl::Ast
 		if (!Compare(lhs.name, rhs.name))
 			return false;
 
+		if (!Compare(lhs.tag, rhs.tag))
+			return false;
+
 		if (!Compare(lhs.members, rhs.members))
 			return false;
 
@@ -303,6 +309,9 @@ namespace nzsl::Ast
 			return false;
 
 		if (!Compare(lhs.sourceLocation, rhs.sourceLocation))
+			return false;
+
+		if (!Compare(lhs.tag, rhs.tag))
 			return false;
 
 		return true;
@@ -587,6 +596,9 @@ namespace nzsl::Ast
 	inline bool Compare(const DeclareExternalStatement& lhs, const DeclareExternalStatement& rhs)
 	{
 		if (!Compare(lhs.bindingSet, rhs.bindingSet))
+			return false;
+
+		if (!Compare(lhs.tag, rhs.tag))
 			return false;
 
 		if (!Compare(lhs.externalVars, rhs.externalVars))

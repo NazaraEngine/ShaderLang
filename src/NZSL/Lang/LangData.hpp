@@ -38,6 +38,7 @@ namespace nzsl::LangData
 		{ Ast::AttributeType::Location,           { "location" } },
 		{ Ast::AttributeType::LangVersion,        { "nzsl_version" } },
 		{ Ast::AttributeType::Set,                { "set" } },
+		{ Ast::AttributeType::Tag,                { "tag" } },
 		{ Ast::AttributeType::Unroll,             { "unroll" } }
 	});
 

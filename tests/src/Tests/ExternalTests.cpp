@@ -15,6 +15,7 @@ module;
 
 external
 {
+	[tag("Color map")]
 	[binding(0)] tex: sampler2D[f32]
 }
 
@@ -29,6 +30,7 @@ fn main()
 		shaderModule = SanitizeModule(*shaderModule);
 
 		ExpectGLSL(*shaderModule, R"(
+// external var tag: Color map
 uniform sampler2D tex;
 
 void main()
@@ -40,7 +42,7 @@ void main()
 		ExpectNZSL(*shaderModule, R"(
 external
 {
-	[set(0), binding(0)] tex: sampler2D[f32]
+	[set(0), binding(0), tag("Color map")] tex: sampler2D[f32]
 }
 
 [entry(frag)]
@@ -78,8 +80,10 @@ fn main()
 [nzsl_version("1.0")]
 module;
 
+[tag("DataStruct")]
 struct Data
 {
+	[tag("Values")]
 	values: array[f32, 47]
 }
 
@@ -99,8 +103,10 @@ fn main()
 		shaderModule = SanitizeModule(*shaderModule);
 
 		ExpectGLSL(*shaderModule, R"(
+// struct tag: DataStruct
 uniform _nzslBinding_data
 {
+	// member tag: Values
 	float values[47];
 } data;
 
@@ -111,9 +117,10 @@ void main()
 )");
 
 		ExpectNZSL(*shaderModule, R"(
+[tag("DataStruct")]
 struct Data
 {
-	values: array[f32, 47]
+	[tag("Values")] values: array[f32, 47]
 }
 
 external
@@ -460,18 +467,22 @@ fn main()
 [feature(primitive_externals)]
 module;
 
+[tag("External set tag")]
 external
 {
+	[tag("Scalars")]
 	[binding(0)] bVal: bool,
 	[binding(1)] fVal: f32,
 	[binding(2)] iVal: i32,
 	[binding(3)] uVal: u32,
 
+	[tag("Vectors")]
 	[binding(4)] bVec: vec4[bool],
 	[binding(5)] fVec: vec4[f32],
 	[binding(6)] iVec: vec4[i32],
 	[binding(7)] uVec: vec4[u32],
 
+	[tag("Matrices")]
 	[binding(8)] fMat: mat4[f32],
 }
 
@@ -490,14 +501,18 @@ fn main()
 		shaderModule = SanitizeModule(*shaderModule);
 
 		ExpectGLSL(*shaderModule, R"(
+// external block tag: External set tag
+// external var tag: Scalars
 uniform bool bVal;
 uniform float fVal;
 uniform int iVal;
 uniform uint uVal;
+// external var tag: Vectors
 uniform bvec4 bVec;
 uniform vec4 fVec;
 uniform ivec4 iVec;
 uniform uvec4 uVec;
+// external var tag: Matrices
 uniform mat4 fMat;
 
 void main()
@@ -511,17 +526,18 @@ void main()
 )");
 
 		ExpectNZSL(*shaderModule, R"(
+[tag("External set tag")]
 external
 {
-	[set(0), binding(0)] bVal: bool,
+	[set(0), binding(0), tag("Scalars")] bVal: bool,
 	[set(0), binding(1)] fVal: f32,
 	[set(0), binding(2)] iVal: i32,
 	[set(0), binding(3)] uVal: u32,
-	[set(0), binding(4)] bVec: vec4[bool],
+	[set(0), binding(4), tag("Vectors")] bVec: vec4[bool],
 	[set(0), binding(5)] fVec: vec4[f32],
 	[set(0), binding(6)] iVec: vec4[i32],
 	[set(0), binding(7)] uVec: vec4[u32],
-	[set(0), binding(8)] fMat: mat4[f32]
+	[set(0), binding(8), tag("Matrices")] fMat: mat4[f32]
 }
 
 [entry(frag)]

@@ -203,12 +203,14 @@ namespace nzsl::Ast
 			ExpressionValue<bool> cond;
 			ExpressionValue<std::uint32_t> locationIndex;
 			ExpressionValue<ExpressionType> type;
-			std::string name;
 			SourceLocation sourceLocation;
+			std::string name;
+			std::string tag;
 		};
 
 		ExpressionValue<MemoryLayout> layout;
 		std::string name;
+		std::string tag;
 		std::vector<StructMember> members;
 		bool isConditional = false;
 	};

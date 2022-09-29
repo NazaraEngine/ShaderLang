@@ -416,6 +416,32 @@ external
 
 )"), "(12,15 -> 33): CExtBindingAlreadyUsed error: binding (set=0, binding=1) is already in use");
 
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+[tag("First")]
+[tag("Second")]
+external
+{
+	foo: sampler2D[f32]
+}
+
+)"), "(6,2 -> 14): PAttributeMultipleUnique error: attribute tag can only be present once");
+
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+external
+{
+	[tag("First"), tag("Second")]
+	foo: sampler2D[f32]
+}
+
+)"), "(7,17 -> 29): PAttributeMultipleUnique error: attribute tag can only be present once");
+		}
+
 		/************************************************************************/
 
 		SECTION("Features")
