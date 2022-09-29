@@ -1,3 +1,7 @@
+if is_plat("wasm") then
+	return
+end
+
 add_requires("sfml", { configs = { audio = false, network = false }})
 
 target("sfml-mandelbrot")
