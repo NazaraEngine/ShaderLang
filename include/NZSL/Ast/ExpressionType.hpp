@@ -22,6 +22,11 @@
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #endif
 
+namespace nzsl
+{
+	class FieldOffsets;
+}
+
 namespace nzsl::Ast
 {
 	struct ContainedType;
@@ -230,6 +235,24 @@ namespace nzsl::Ast
 	inline bool IsTypeExpression(const ExpressionType& type);
 	inline bool IsUniformType(const ExpressionType& type);
 	inline bool IsVectorType(const ExpressionType& type);
+
+	using StructFinder = std::function<const FieldOffsets& (std::size_t structIndex)>;
+
+	std::size_t RegisterStructField(FieldOffsets& fieldOffsets, const ExpressionType& type, const StructFinder& structFinder = {});
+	std::size_t RegisterStructField(FieldOffsets& fieldOffsets, const ExpressionType& type, std::size_t arraySize, const StructFinder& structFinder = {});
+
+	std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const ArrayType& arrayType, const StructFinder& structFinder = {});
+	std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const ArrayType& arrayType, std::size_t arraySize, const StructFinder& structFinder = {});
+	std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const DynArrayType& dynArrayType, const StructFinder& structFinder = {});
+	std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const DynArrayType& dynArrayType, std::size_t arraySize, const StructFinder& structFinder = {});
+	std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const MatrixType& matrixType, const StructFinder& structFinder = {});
+	std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const MatrixType& matrixType, std::size_t arraySize, const StructFinder& structFinder = {});
+	std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const PrimitiveType& primitiveType, const StructFinder& structFinder = {});
+	std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const PrimitiveType& primitiveType, std::size_t arraySize, const StructFinder& structFinder = {});
+	std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const StructType& primitiveType, const StructFinder& structFinder = {});
+	std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const StructType& primitiveType, std::size_t arraySize, const StructFinder& structFinder = {});
+	std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const VectorType& vectorType, const StructFinder& structFinder = {});
+	std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const VectorType& vectorType, std::size_t arraySize, const StructFinder& structFinder = {});
 
 	struct Stringifier
 	{
