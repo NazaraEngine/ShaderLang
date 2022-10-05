@@ -238,21 +238,21 @@ namespace nzsl::Ast
 
 	using StructFinder = std::function<const FieldOffsets& (std::size_t structIndex)>;
 
-	std::size_t RegisterStructField(FieldOffsets& fieldOffsets, const ExpressionType& type, const StructFinder& structFinder = {});
-	std::size_t RegisterStructField(FieldOffsets& fieldOffsets, const ExpressionType& type, std::size_t arraySize, const StructFinder& structFinder = {});
+	NZSL_API std::size_t RegisterStructField(FieldOffsets& fieldOffsets, const ExpressionType& type, const StructFinder& structFinder = {});
+	NZSL_API std::size_t RegisterStructField(FieldOffsets& fieldOffsets, const ExpressionType& type, std::size_t arraySize, const StructFinder& structFinder = {});
 
-	std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const ArrayType& arrayType, const StructFinder& structFinder = {});
-	std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const ArrayType& arrayType, std::size_t arraySize, const StructFinder& structFinder = {});
-	std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const DynArrayType& dynArrayType, const StructFinder& structFinder = {});
-	std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const DynArrayType& dynArrayType, std::size_t arraySize, const StructFinder& structFinder = {});
-	std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const MatrixType& matrixType, const StructFinder& structFinder = {});
-	std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const MatrixType& matrixType, std::size_t arraySize, const StructFinder& structFinder = {});
-	std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const PrimitiveType& primitiveType, const StructFinder& structFinder = {});
-	std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const PrimitiveType& primitiveType, std::size_t arraySize, const StructFinder& structFinder = {});
-	std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const StructType& primitiveType, const StructFinder& structFinder = {});
-	std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const StructType& primitiveType, std::size_t arraySize, const StructFinder& structFinder = {});
-	std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const VectorType& vectorType, const StructFinder& structFinder = {});
-	std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const VectorType& vectorType, std::size_t arraySize, const StructFinder& structFinder = {});
+	NZSL_API std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const ArrayType& arrayType, const StructFinder& structFinder = {});
+	NZSL_API std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const ArrayType& arrayType, std::size_t arraySize, const StructFinder& structFinder = {});
+	NZSL_API std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const DynArrayType& dynArrayType, const StructFinder& structFinder = {});
+	NZSL_API std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const DynArrayType& dynArrayType, std::size_t arraySize, const StructFinder& structFinder = {});
+	NZSL_API std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const MatrixType& matrixType, const StructFinder& structFinder = {});
+	NZSL_API std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const MatrixType& matrixType, std::size_t arraySize, const StructFinder& structFinder = {});
+	NZSL_API std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const PrimitiveType& primitiveType, const StructFinder& structFinder = {});
+	NZSL_API std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const PrimitiveType& primitiveType, std::size_t arraySize, const StructFinder& structFinder = {});
+	NZSL_API std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const StructType& primitiveType, const StructFinder& structFinder = {});
+	NZSL_API std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const StructType& primitiveType, std::size_t arraySize, const StructFinder& structFinder = {});
+	NZSL_API std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const VectorType& vectorType, const StructFinder& structFinder = {});
+	NZSL_API std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const VectorType& vectorType, std::size_t arraySize, const StructFinder& structFinder = {});
 
 	struct Stringifier
 	{
@@ -261,22 +261,22 @@ namespace nzsl::Ast
 		std::function<std::string(std::size_t typeIndex)> typeStringifier;
 	};
 
-	std::string ToString(const AliasType& type, const Stringifier& stringifier = {});
-	std::string ToString(const ArrayType& type, const Stringifier& stringifier = {});
-	std::string ToString(const DynArrayType& type, const Stringifier& stringifier = {});
-	std::string ToString(const ExpressionType& type, const Stringifier& stringifier = {});
-	std::string ToString(const FunctionType& type, const Stringifier& stringifier = {});
-	std::string ToString(const IntrinsicFunctionType& type, const Stringifier& stringifier = {});
-	std::string ToString(const MatrixType& type, const Stringifier& stringifier = {});
-	std::string ToString(const MethodType& type, const Stringifier& stringifier = {});
-	std::string ToString(NoType type, const Stringifier& stringifier = {});
-	std::string ToString(PrimitiveType type, const Stringifier& stringifier = {});
-	std::string ToString(const SamplerType& type, const Stringifier& stringifier = {});
-	std::string ToString(const StorageType& type, const Stringifier& stringifier = {});
-	std::string ToString(const StructType& type, const Stringifier& stringifier = {});
-	std::string ToString(const Type& type, const Stringifier& stringifier = {});
-	std::string ToString(const UniformType& type, const Stringifier& stringifier = {});
-	std::string ToString(const VectorType& type, const Stringifier& stringifier = {});
+	NZSL_API std::string ToString(const AliasType& type, const Stringifier& stringifier = {});
+	NZSL_API std::string ToString(const ArrayType& type, const Stringifier& stringifier = {});
+	NZSL_API std::string ToString(const DynArrayType& type, const Stringifier& stringifier = {});
+	NZSL_API std::string ToString(const ExpressionType& type, const Stringifier& stringifier = {});
+	NZSL_API std::string ToString(const FunctionType& type, const Stringifier& stringifier = {});
+	NZSL_API std::string ToString(const IntrinsicFunctionType& type, const Stringifier& stringifier = {});
+	NZSL_API std::string ToString(const MatrixType& type, const Stringifier& stringifier = {});
+	NZSL_API std::string ToString(const MethodType& type, const Stringifier& stringifier = {});
+	NZSL_API std::string ToString(NoType type, const Stringifier& stringifier = {});
+	NZSL_API std::string ToString(PrimitiveType type, const Stringifier& stringifier = {});
+	NZSL_API std::string ToString(const SamplerType& type, const Stringifier& stringifier = {});
+	NZSL_API std::string ToString(const StorageType& type, const Stringifier& stringifier = {});
+	NZSL_API std::string ToString(const StructType& type, const Stringifier& stringifier = {});
+	NZSL_API std::string ToString(const Type& type, const Stringifier& stringifier = {});
+	NZSL_API std::string ToString(const UniformType& type, const Stringifier& stringifier = {});
+	NZSL_API std::string ToString(const VectorType& type, const Stringifier& stringifier = {});
 }
 
 #ifdef NAZARA_COMPILER_GCC
