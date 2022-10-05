@@ -3,8 +3,11 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <NZSL/Ast/ExpressionType.hpp>
+#include <Nazara/Utils/Algorithm.hpp>
+#include <Nazara/Utils/TypeList.hpp>
 #include <NZSL/Ast/Cloner.hpp>
 #include <NZSL/Ast/Compare.hpp>
+#include <NZSL/Math/FieldOffsets.hpp>
 #include <fmt/format.h>
 
 namespace nzsl::Ast
@@ -90,6 +93,173 @@ namespace nzsl::Ast
 		assert(objectType);
 		assert(rhs.objectType);
 		return objectType->type == rhs.objectType->type && methodIndex == rhs.methodIndex;
+	}
+	
+	using ForbiddenStructTypes = Nz::TypeList<AliasType, FunctionType, IntrinsicFunctionType, MethodType, NoType, SamplerType, StorageType, Type, UniformType>;
+
+	std::size_t RegisterStructField(FieldOffsets& fieldOffsets, const ExpressionType& type, const StructFinder& structFinder)
+	{
+		return std::visit([&](auto&& arg) -> std::size_t
+		{
+			using T = std::decay_t<decltype(arg)>;
+			if constexpr (!Nz::TypeListFind<ForbiddenStructTypes, T>)
+				return RegisterStructFieldType(fieldOffsets, arg, structFinder);
+			else
+				throw std::runtime_error("unexpected type (" + ToString(arg) + ") as struct field");
+		}, ResolveAlias(type));
+	}
+
+	std::size_t RegisterStructField(FieldOffsets& fieldOffsets, const ExpressionType& type, std::size_t arraySize, const StructFinder& structFinder)
+	{
+		return std::visit([&](auto&& arg) -> std::size_t
+		{
+			using T = std::decay_t<decltype(arg)>;
+			if constexpr (!Nz::TypeListFind<ForbiddenStructTypes, T>)
+				return RegisterStructFieldType(fieldOffsets, arg, arraySize, structFinder);
+			else
+				throw std::runtime_error("unexpected type (" + ToString(arg) + ") as struct field");
+		}, ResolveAlias(type));
+	}
+
+	std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const ArrayType& arrayType, const StructFinder& structFinder)
+	{
+		return RegisterStructField(fieldOffsets, arrayType.containedType->type, arrayType.length, structFinder);
+	}
+
+	std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const ArrayType& arrayType, std::size_t arraySize, const StructFinder& structFinder)
+	{
+		FieldOffsets dummyStruct(fieldOffsets.GetLayout());
+		RegisterStructField(dummyStruct, arrayType.containedType->type, arrayType.length, structFinder);
+
+		return fieldOffsets.AddStructArray(dummyStruct, arraySize);
+	}
+
+	std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const DynArrayType& arrayType, const StructFinder& structFinder)
+	{
+		FieldOffsets dummyStruct(fieldOffsets.GetLayout());
+		RegisterStructField(dummyStruct, arrayType.containedType->type, 1, structFinder);
+
+		return fieldOffsets.AddStruct(dummyStruct);
+	}
+
+	std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const DynArrayType& arrayType, std::size_t arraySize, const StructFinder& structFinder)
+	{
+		FieldOffsets dummyStruct(fieldOffsets.GetLayout());
+		RegisterStructField(dummyStruct, arrayType.containedType->type, 1, structFinder);
+
+		return fieldOffsets.AddStructArray(dummyStruct, arraySize);
+	}
+
+	std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const MatrixType& matrixType, const StructFinder& /*structFinder*/)
+	{
+		switch (matrixType.type)
+		{
+			case PrimitiveType::Boolean: return fieldOffsets.AddMatrix(StructFieldType::Bool1,   Nz::SafeCast<unsigned int>(matrixType.columnCount), Nz::SafeCast<unsigned int>(matrixType.rowCount), true);
+			case PrimitiveType::Float32: return fieldOffsets.AddMatrix(StructFieldType::Float1,  Nz::SafeCast<unsigned int>(matrixType.columnCount), Nz::SafeCast<unsigned int>(matrixType.rowCount), true);
+			case PrimitiveType::Float64: return fieldOffsets.AddMatrix(StructFieldType::Double1, Nz::SafeCast<unsigned int>(matrixType.columnCount), Nz::SafeCast<unsigned int>(matrixType.rowCount), true);
+			case PrimitiveType::Int32:   return fieldOffsets.AddMatrix(StructFieldType::Int1,    Nz::SafeCast<unsigned int>(matrixType.columnCount), Nz::SafeCast<unsigned int>(matrixType.rowCount), true);
+			case PrimitiveType::UInt32:  return fieldOffsets.AddMatrix(StructFieldType::UInt1,   Nz::SafeCast<unsigned int>(matrixType.columnCount), Nz::SafeCast<unsigned int>(matrixType.rowCount), true);
+			case PrimitiveType::String:  break;
+		}
+
+		throw std::runtime_error("unexpected type");
+	}
+
+	std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const MatrixType& matrixType, std::size_t arraySize, const StructFinder& /*structFinder*/)
+	{
+		switch (matrixType.type)
+		{
+			case PrimitiveType::Boolean: return fieldOffsets.AddMatrixArray(StructFieldType::Bool1,   Nz::SafeCast<unsigned int>(matrixType.columnCount), Nz::SafeCast<unsigned int>(matrixType.rowCount), true, arraySize);
+			case PrimitiveType::Float32: return fieldOffsets.AddMatrixArray(StructFieldType::Float1,  Nz::SafeCast<unsigned int>(matrixType.columnCount), Nz::SafeCast<unsigned int>(matrixType.rowCount), true, arraySize);
+			case PrimitiveType::Float64: return fieldOffsets.AddMatrixArray(StructFieldType::Double1, Nz::SafeCast<unsigned int>(matrixType.columnCount), Nz::SafeCast<unsigned int>(matrixType.rowCount), true, arraySize);
+			case PrimitiveType::Int32:   return fieldOffsets.AddMatrixArray(StructFieldType::Int1,    Nz::SafeCast<unsigned int>(matrixType.columnCount), Nz::SafeCast<unsigned int>(matrixType.rowCount), true, arraySize);
+			case PrimitiveType::UInt32:  return fieldOffsets.AddMatrixArray(StructFieldType::UInt1,   Nz::SafeCast<unsigned int>(matrixType.columnCount), Nz::SafeCast<unsigned int>(matrixType.rowCount), true, arraySize);
+			case PrimitiveType::String:  break;
+		}
+
+		throw std::runtime_error("unexpected type");
+	}
+
+	std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const PrimitiveType& primitiveType, const StructFinder& /*structFinder*/)
+	{
+		switch (primitiveType)
+		{
+			case PrimitiveType::Boolean: return fieldOffsets.AddField(StructFieldType::Bool1);
+			case PrimitiveType::Float32: return fieldOffsets.AddField(StructFieldType::Float1);
+			case PrimitiveType::Float64: return fieldOffsets.AddField(StructFieldType::Double1);
+			case PrimitiveType::Int32:   return fieldOffsets.AddField(StructFieldType::Int1);
+			case PrimitiveType::UInt32:  return fieldOffsets.AddField(StructFieldType::UInt1);
+			case PrimitiveType::String:  break;
+		}
+
+		throw std::runtime_error("unexpected type");
+	}
+
+	std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const PrimitiveType& primitiveType, std::size_t arraySize, const StructFinder& /*structFinder*/)
+	{
+		switch (primitiveType)
+		{
+			case PrimitiveType::Boolean: return fieldOffsets.AddFieldArray(StructFieldType::Bool1, arraySize);
+			case PrimitiveType::Float32: return fieldOffsets.AddFieldArray(StructFieldType::Float1, arraySize);
+			case PrimitiveType::Float64: return fieldOffsets.AddFieldArray(StructFieldType::Double1, arraySize);
+			case PrimitiveType::Int32:   return fieldOffsets.AddFieldArray(StructFieldType::Int1, arraySize);
+			case PrimitiveType::UInt32:  return fieldOffsets.AddFieldArray(StructFieldType::UInt1, arraySize);
+			case PrimitiveType::String:  break;
+		}
+
+		throw std::runtime_error("unexpected type");
+	}
+	
+	std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const StructType& structType, const StructFinder& structFinder)
+	{
+		if (!structFinder)
+			throw std::runtime_error("struct found with no missing struct finder");
+
+		const FieldOffsets& innerFieldOffsets = structFinder(structType.structIndex);
+		return fieldOffsets.AddStruct(innerFieldOffsets);
+	}
+
+	std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const StructType& structType, std::size_t arraySize, const StructFinder& structFinder)
+	{
+		if (!structFinder)
+			throw std::runtime_error("struct found with no missing struct finder");
+
+		const FieldOffsets& innerFieldOffsets = structFinder(structType.structIndex);
+		return fieldOffsets.AddStructArray(innerFieldOffsets, arraySize);
+	}
+
+	std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const VectorType& vectorType, const StructFinder& /*structFinder*/)
+	{
+		assert(vectorType.componentCount >= 1 && vectorType.componentCount <= 4);
+
+		switch (vectorType.type)
+		{
+			case PrimitiveType::Boolean: return fieldOffsets.AddField(static_cast<StructFieldType>(Nz::UnderlyingCast(StructFieldType::Bool1) + vectorType.componentCount - 1));
+			case PrimitiveType::Float32: return fieldOffsets.AddField(static_cast<StructFieldType>(Nz::UnderlyingCast(StructFieldType::Float1) + vectorType.componentCount - 1));
+			case PrimitiveType::Float64: return fieldOffsets.AddField(static_cast<StructFieldType>(Nz::UnderlyingCast(StructFieldType::Double1) + vectorType.componentCount - 1));
+			case PrimitiveType::Int32:   return fieldOffsets.AddField(static_cast<StructFieldType>(Nz::UnderlyingCast(StructFieldType::Int1) + vectorType.componentCount - 1));
+			case PrimitiveType::UInt32:  return fieldOffsets.AddField(static_cast<StructFieldType>(Nz::UnderlyingCast(StructFieldType::UInt1) + vectorType.componentCount - 1));
+			case PrimitiveType::String:  break;
+		}
+
+		throw std::runtime_error("unexpected type");
+	}
+	
+	std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const VectorType& vectorType, std::size_t arraySize, const StructFinder& /*structFinder*/)
+	{
+		assert(vectorType.componentCount >= 1 && vectorType.componentCount <= 4);
+
+		switch (vectorType.type)
+		{
+			case PrimitiveType::Boolean: return fieldOffsets.AddFieldArray(static_cast<StructFieldType>(Nz::UnderlyingCast(StructFieldType::Bool1) + vectorType.componentCount - 1), arraySize);
+			case PrimitiveType::Float32: return fieldOffsets.AddFieldArray(static_cast<StructFieldType>(Nz::UnderlyingCast(StructFieldType::Float1) + vectorType.componentCount - 1), arraySize);
+			case PrimitiveType::Float64: return fieldOffsets.AddFieldArray(static_cast<StructFieldType>(Nz::UnderlyingCast(StructFieldType::Double1) + vectorType.componentCount - 1), arraySize);
+			case PrimitiveType::Int32:   return fieldOffsets.AddFieldArray(static_cast<StructFieldType>(Nz::UnderlyingCast(StructFieldType::Int1) + vectorType.componentCount - 1), arraySize);
+			case PrimitiveType::UInt32:  return fieldOffsets.AddFieldArray(static_cast<StructFieldType>(Nz::UnderlyingCast(StructFieldType::UInt1) + vectorType.componentCount - 1), arraySize);
+			case PrimitiveType::String:  break;
+		}
+
+		throw std::runtime_error("unexpected type");
 	}
 
 	std::string ToString(const AliasType& type, const Stringifier& stringifier)

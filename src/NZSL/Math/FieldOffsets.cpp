@@ -32,7 +32,7 @@ namespace nzsl
 		m_largestFieldAlignment = std::max(fieldAlignement, m_largestFieldAlignment);
 
 		std::size_t offset = Nz::Align(m_size, Nz::Align(fieldAlignement, m_offsetRounding));
-		m_size = offset + GetSize(type) * arraySize;
+		m_size = offset + fieldAlignement * arraySize;
 
 		m_offsetRounding = 1;
 
@@ -72,7 +72,7 @@ namespace nzsl
 		m_largestFieldAlignment = std::max(m_largestFieldAlignment, fieldAlignement);
 
 		std::size_t offset = Nz::Align(m_size, Nz::Align(fieldAlignement, m_offsetRounding));
-		m_size = offset + fieldStruct.GetSize();
+		m_size = offset + fieldStruct.GetAlignedSize();
 
 		m_offsetRounding = std::max<std::size_t>(Nz::Align(fieldStruct.GetSize(), fieldAlignement) - fieldStruct.GetSize(), 1);
 
