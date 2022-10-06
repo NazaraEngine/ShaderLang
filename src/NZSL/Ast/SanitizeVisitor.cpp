@@ -1135,12 +1135,12 @@ namespace nzsl::Ast
 
 		std::optional<ConstantValue> conditionValue = ComputeConstantValue(*cloneCondition);
 
-		bool wasInConditionalStatement = m_context->inConditionalStatement;
-		m_context->inConditionalStatement = true;
-		Nz::CallOnExit restoreCond([=] { m_context->inConditionalStatement = wasInConditionalStatement; });
-
 		if (!conditionValue.has_value())
 		{
+			bool wasInConditionalStatement = m_context->inConditionalStatement;
+			m_context->inConditionalStatement = true;
+			Nz::CallOnExit restoreCond([=] { m_context->inConditionalStatement = wasInConditionalStatement; });
+
 			// Unresolvable condition
 			auto condStatement = ShaderBuilder::ConditionalStatement(std::move(cloneCondition), Cloner::Clone(*node.statement));
 			condStatement->sourceLocation = node.sourceLocation;
