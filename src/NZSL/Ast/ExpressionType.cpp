@@ -102,7 +102,7 @@ namespace nzsl::Ast
 		return std::visit([&](auto&& arg) -> std::size_t
 		{
 			using T = std::decay_t<decltype(arg)>;
-			if constexpr (!Nz::TypeListFind<ForbiddenStructTypes, T>)
+			if constexpr (!Nz::TypeListHas<ForbiddenStructTypes, T>)
 				return RegisterStructFieldType(fieldOffsets, arg, structFinder);
 			else
 				throw std::runtime_error("unexpected type (" + ToString(arg) + ") as struct field");
@@ -114,7 +114,7 @@ namespace nzsl::Ast
 		return std::visit([&](auto&& arg) -> std::size_t
 		{
 			using T = std::decay_t<decltype(arg)>;
-			if constexpr (!Nz::TypeListFind<ForbiddenStructTypes, T>)
+			if constexpr (!Nz::TypeListHas<ForbiddenStructTypes, T>)
 				return RegisterStructFieldType(fieldOffsets, arg, arraySize, structFinder);
 			else
 				throw std::runtime_error("unexpected type (" + ToString(arg) + ") as struct field");
