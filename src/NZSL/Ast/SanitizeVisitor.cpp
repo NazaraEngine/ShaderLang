@@ -2542,7 +2542,7 @@ namespace nzsl::Ast
 			if (!value)
 				return ValidationResult::Unresolved;
 
-			if constexpr (Nz::TypeListFind<ConstantTypes, T>)
+			if constexpr (Nz::TypeListHas<ConstantTypes, T>)
 			{
 				if (!std::holds_alternative<T>(*value))
 				{
@@ -2585,7 +2585,7 @@ namespace nzsl::Ast
 				return ValidationResult::Unresolved;
 			}
 
-			if constexpr (Nz::TypeListFind<ConstantTypes, T>)
+			if constexpr (Nz::TypeListHas<ConstantTypes, T>)
 			{
 				if (!std::holds_alternative<T>(*value))
 				{
