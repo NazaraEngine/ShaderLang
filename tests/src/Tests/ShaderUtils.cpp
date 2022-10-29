@@ -108,6 +108,15 @@ namespace
 		1,      //< maxTaskWorkGroupSizeY_NV
 		1,      //< maxTaskWorkGroupSizeZ_NV
 		4,      //< maxMeshViewCountNV
+		256,    //< maxMeshOutputVerticesEXT
+		256,    //< maxMeshOutputPrimitivesEXT
+		128,    //< maxMeshWorkGroupSizeX_EXT
+		128,    //< maxMeshWorkGroupSizeY_EXT
+		128,    //< maxMeshWorkGroupSizeZ_EXT
+		128,    //< maxTaskWorkGroupSizeX_EXT
+		128,    //< maxTaskWorkGroupSizeY_EXT
+		128,    //< maxTaskWorkGroupSizeZ_EXT
+		4,      //< maxMeshViewCountEXT
 		1,      //< maxDualSourceDrawBuffersEXT
 		{       //< limits
 			true, //< nonInductiveForLoops
