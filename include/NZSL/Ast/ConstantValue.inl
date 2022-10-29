@@ -23,6 +23,8 @@ namespace nzsl::Ast
 			return PrimitiveType::UInt32;
 		else if constexpr (std::is_same_v<T, std::string>)
 			return PrimitiveType::String;
+		else if constexpr (IsVector_v<T> && std::is_same_v<typename T::Base, bool>)
+			return VectorType{ T::Dimensions, PrimitiveType::Boolean };
 		else if constexpr (IsVector_v<T> && std::is_same_v<typename T::Base, float>)
 			return VectorType{ T::Dimensions, PrimitiveType::Float32 };
 		else if constexpr (IsVector_v<T> && std::is_same_v<typename T::Base, double>)

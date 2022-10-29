@@ -36,7 +36,10 @@ namespace nzsl::Ast
 		Vector4f64,
 		Vector2u32,
 		Vector3u32,
-		Vector4u32
+		Vector4u32,
+		Vector2<bool>,
+		Vector3<bool>,
+		Vector4<bool>
 	>;
 
 	template<typename T>
@@ -61,6 +64,7 @@ namespace nzsl::Ast
 
 	NZSL_API std::string ConstantToString(const ConstantSingleValue& value);
 
+	NZSL_API std::string ToString(bool value);
 	NZSL_API std::string ToString(double value);
 	NZSL_API std::string ToString(float value);
 	NZSL_API std::string ToString(std::int32_t value);

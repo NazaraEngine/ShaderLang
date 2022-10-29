@@ -78,6 +78,7 @@ namespace nzsl
 		std::uint32_t resultId = m_writer.AllocateResultId();
 
 		bool swapOperands = false;
+		std::uint32_t resultTypeId = m_writer.GetTypeId(resultType);
 
 		SpirvOp op = [&]
 		{
@@ -228,7 +229,13 @@ namespace nzsl
 					switch (leftTypeBase)
 					{
 						case Ast::PrimitiveType::Boolean:
+						{
+							// comparing two vectors in SPIR-V produces a vector (comparison is done per-component)
+							if (IsVectorType(leftType))
+								resultTypeId = m_writer.GetTypeId(leftType);
+						
 							return SpirvOp::OpLogicalEqual;
+						}
 
 						case Ast::PrimitiveType::Float32:
 						case Ast::PrimitiveType::Float64:
@@ -338,7 +345,13 @@ namespace nzsl
 					switch (leftTypeBase)
 					{
 						case Ast::PrimitiveType::Boolean:
+						{
+							// comparing two vectors in SPIR-V produces a vector (comparison is done per-component)
+							if (IsVectorType(leftType))
+								resultTypeId = m_writer.GetTypeId(leftType);
+
 							return SpirvOp::OpLogicalNotEqual;
+						}
 
 						case Ast::PrimitiveType::Float32:
 						case Ast::PrimitiveType::Float64:
@@ -371,6 +384,7 @@ namespace nzsl
 
 		if (node.op == Ast::BinaryType::Divide || node.op == Ast::BinaryType::Modulo)
 		{
+			// SPIR-V cannot divide a vector by a primitive, turn the primitive to a vector
 			//TODO: Handle other cases
 			if (IsVectorType(leftType) && IsPrimitiveType(rightType))
 			{
@@ -394,7 +408,19 @@ namespace nzsl
 				throw std::runtime_error("unexpected division/modulo operands");
 		}
 
-		m_currentBlock->Append(op, m_writer.GetTypeId(resultType), resultId, leftOperand, rightOperand);
+		m_currentBlock->Append(op, resultTypeId, resultId, leftOperand, rightOperand);
+
+		if ((node.op == Ast::BinaryType::CompEq || node.op == Ast::BinaryType::CompNe) && IsVectorType(leftType) && std::get<Ast::VectorType>(leftType).type == Ast::PrimitiveType::Boolean)
+		{
+			// When comparing two vecI[bool], OpLogicalEqual/OpLogicialNotEqual produce per-component result
+			// but the language expect a single boolean value for all components, this can be fixed with OpAll
+
+			std::uint32_t operand = resultId;
+			resultId = m_writer.AllocateResultId();
+
+			m_currentBlock->Append(SpirvOp::OpAll, m_writer.GetTypeId(resultType), resultId, operand);
+		}
+
 		PushResultId(resultId);
 	}
 

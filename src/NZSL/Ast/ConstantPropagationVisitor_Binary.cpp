@@ -326,6 +326,9 @@ namespace nzsl::Ast
 		EnableOptimisation(BinaryCompEq, float, float);
 		EnableOptimisation(BinaryCompEq, std::int32_t, std::int32_t);
 		EnableOptimisation(BinaryCompEq, std::uint32_t, std::uint32_t);
+		EnableOptimisation(BinaryCompEq, Vector2<bool>, Vector2<bool>);
+		EnableOptimisation(BinaryCompEq, Vector3<bool>, Vector3<bool>);
+		EnableOptimisation(BinaryCompEq, Vector4<bool>, Vector4<bool>);
 		EnableOptimisation(BinaryCompEq, Vector2f32, Vector2f32);
 		EnableOptimisation(BinaryCompEq, Vector3f32, Vector3f32);
 		EnableOptimisation(BinaryCompEq, Vector4f32, Vector4f32);
@@ -364,6 +367,9 @@ namespace nzsl::Ast
 		EnableOptimisation(BinaryCompNe, float, float);
 		EnableOptimisation(BinaryCompNe, std::int32_t, std::int32_t);
 		EnableOptimisation(BinaryCompNe, std::uint32_t, std::uint32_t);
+		EnableOptimisation(BinaryCompNe, Vector2<bool>, Vector2<bool>);
+		EnableOptimisation(BinaryCompNe, Vector3<bool>, Vector3<bool>);
+		EnableOptimisation(BinaryCompNe, Vector4<bool>, Vector4<bool>);
 		EnableOptimisation(BinaryCompNe, Vector2f32, Vector2f32);
 		EnableOptimisation(BinaryCompNe, Vector3f32, Vector3f32);
 		EnableOptimisation(BinaryCompNe, Vector4f32, Vector4f32);

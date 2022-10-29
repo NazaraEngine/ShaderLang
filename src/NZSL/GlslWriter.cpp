@@ -990,12 +990,17 @@ namespace nzsl
 	template<typename T>
 	void GlslWriter::AppendValue(const T& value)
 	{
-		if constexpr (std::is_same_v<T, Vector2f64> || std::is_same_v<T, Vector3f64> || std::is_same_v<T, Vector4f64>)
-			Append("d"); //< dvec
-		else if constexpr (std::is_same_v<T, Vector2i32> || std::is_same_v<T, Vector3i32> || std::is_same_v<T, Vector4i32>)
-			Append("i"); //< ivec
-		else if constexpr (std::is_same_v<T, Vector2u32> || std::is_same_v<T, Vector3u32> || std::is_same_v<T, Vector4u32>)
-			Append("u"); //< uvec
+		if constexpr (IsVector_v<T>)
+		{
+			if constexpr (std::is_same_v<typename T::Base, bool>)
+				Append("b"); //< bvec
+			else if constexpr (std::is_same_v<typename T::Base, double>)
+				Append("d"); //< dvec
+			else if constexpr (std::is_same_v<typename T::Base, std::int32_t>)
+				Append("i"); //< ivec
+			else if constexpr (std::is_same_v<typename T::Base, std::uint32_t>)
+				Append("u"); //< uvec
+		}
 
 		if constexpr (std::is_same_v<T, Ast::NoValue>)
 			throw std::runtime_error("invalid type (value expected)");

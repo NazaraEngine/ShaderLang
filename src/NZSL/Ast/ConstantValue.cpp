@@ -152,6 +152,11 @@ namespace nzsl::Ast
 		}, value);
 	}
 
+	std::string ToString(bool value)
+	{
+		return (value) ? "true" : "false";
+	}
+
 	std::string ToString(double value)
 	{
 		std::string str = fmt::format("{:.15f}", value);
