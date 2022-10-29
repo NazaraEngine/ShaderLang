@@ -37,120 +37,6 @@ namespace nzsl::Ast
 		template<BinaryType Type, typename T1, typename T2>
 		struct BinaryConstantPropagation;
 
-		// CompEq
-		template<typename T1, typename T2>
-		struct BinaryCompEqBase
-		{
-			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
-			{
-				return ShaderBuilder::ConstantValue(lhs == rhs);
-			}
-		};
-
-		template<typename T1, typename T2>
-		struct BinaryCompEq;
-
-		template<typename T1, typename T2>
-		struct BinaryConstantPropagation<BinaryType::CompEq, T1, T2>
-		{
-			using Op = BinaryCompEq<T1, T2>;
-		};
-
-		// CompGe
-		template<typename T1, typename T2>
-		struct BinaryCompGeBase
-		{
-			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
-			{
-				return ShaderBuilder::ConstantValue(lhs >= rhs);
-			}
-		};
-
-		template<typename T1, typename T2>
-		struct BinaryCompGe;
-
-		template<typename T1, typename T2>
-		struct BinaryConstantPropagation<BinaryType::CompGe, T1, T2>
-		{
-			using Op = BinaryCompGe<T1, T2>;
-		};
-
-		// CompGt
-		template<typename T1, typename T2>
-		struct BinaryCompGtBase
-		{
-			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
-			{
-				return ShaderBuilder::ConstantValue(lhs > rhs);
-			}
-		};
-
-		template<typename T1, typename T2>
-		struct BinaryCompGt;
-
-		template<typename T1, typename T2>
-		struct BinaryConstantPropagation<BinaryType::CompGt, T1, T2>
-		{
-			using Op = BinaryCompGt<T1, T2>;
-		};
-
-		// CompLe
-		template<typename T1, typename T2>
-		struct BinaryCompLeBase
-		{
-			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
-			{
-				return ShaderBuilder::ConstantValue(lhs <= rhs);
-			}
-		};
-
-		template<typename T1, typename T2>
-		struct BinaryCompLe;
-
-		template<typename T1, typename T2>
-		struct BinaryConstantPropagation<BinaryType::CompLe, T1, T2>
-		{
-			using Op = BinaryCompLe<T1, T2>;
-		};
-
-		// CompLt
-		template<typename T1, typename T2>
-		struct BinaryCompLtBase
-		{
-			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
-			{
-				return ShaderBuilder::ConstantValue(lhs < rhs);
-			}
-		};
-
-		template<typename T1, typename T2>
-		struct BinaryCompLt;
-
-		template<typename T1, typename T2>
-		struct BinaryConstantPropagation<BinaryType::CompLt, T1, T2>
-		{
-			using Op = BinaryCompLe<T1, T2>;
-		};
-
-		// CompNe
-		template<typename T1, typename T2>
-		struct BinaryCompNeBase
-		{
-			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
-			{
-				return ShaderBuilder::ConstantValue(lhs != rhs);
-			}
-		};
-
-		template<typename T1, typename T2>
-		struct BinaryCompNe;
-
-		template<typename T1, typename T2>
-		struct BinaryConstantPropagation<BinaryType::CompNe, T1, T2>
-		{
-			using Op = BinaryCompNe<T1, T2>;
-		};
-
 		// LogicalAnd
 		template<typename T1, typename T2>
 		struct BinaryLogicalAndBase
@@ -321,68 +207,6 @@ namespace nzsl::Ast
 
 		// Binary
 
-		EnableOptimisation(BinaryCompEq, bool, bool);
-		EnableOptimisation(BinaryCompEq, double, double);
-		EnableOptimisation(BinaryCompEq, float, float);
-		EnableOptimisation(BinaryCompEq, std::int32_t, std::int32_t);
-		EnableOptimisation(BinaryCompEq, std::uint32_t, std::uint32_t);
-		EnableOptimisation(BinaryCompEq, Vector2<bool>, Vector2<bool>);
-		EnableOptimisation(BinaryCompEq, Vector3<bool>, Vector3<bool>);
-		EnableOptimisation(BinaryCompEq, Vector4<bool>, Vector4<bool>);
-		EnableOptimisation(BinaryCompEq, Vector2f32, Vector2f32);
-		EnableOptimisation(BinaryCompEq, Vector3f32, Vector3f32);
-		EnableOptimisation(BinaryCompEq, Vector4f32, Vector4f32);
-		EnableOptimisation(BinaryCompEq, Vector2f64, Vector2f64);
-		EnableOptimisation(BinaryCompEq, Vector3f64, Vector3f64);
-		EnableOptimisation(BinaryCompEq, Vector4f64, Vector4f64);
-		EnableOptimisation(BinaryCompEq, Vector2i32, Vector2i32);
-		EnableOptimisation(BinaryCompEq, Vector3i32, Vector3i32);
-		EnableOptimisation(BinaryCompEq, Vector4i32, Vector4i32);
-		EnableOptimisation(BinaryCompEq, Vector2u32, Vector2u32);
-		EnableOptimisation(BinaryCompEq, Vector3u32, Vector3u32);
-		EnableOptimisation(BinaryCompEq, Vector4u32, Vector4u32);
-
-		EnableOptimisation(BinaryCompGe, double, double);
-		EnableOptimisation(BinaryCompGe, float, float);
-		EnableOptimisation(BinaryCompGe, std::int32_t, std::int32_t);
-		EnableOptimisation(BinaryCompGe, std::uint32_t, std::uint32_t);
-
-		EnableOptimisation(BinaryCompGt, double, double);
-		EnableOptimisation(BinaryCompGt, float, float);
-		EnableOptimisation(BinaryCompGt, std::int32_t, std::int32_t);
-		EnableOptimisation(BinaryCompGt, std::uint32_t, std::uint32_t);
-
-		EnableOptimisation(BinaryCompLe, double, double);
-		EnableOptimisation(BinaryCompLe, float, float);
-		EnableOptimisation(BinaryCompLe, std::int32_t, std::int32_t);
-		EnableOptimisation(BinaryCompLe, std::uint32_t, std::uint32_t);
-
-		EnableOptimisation(BinaryCompLt, double, double);
-		EnableOptimisation(BinaryCompLt, float, float);
-		EnableOptimisation(BinaryCompLt, std::int32_t, std::int32_t);
-		EnableOptimisation(BinaryCompLt, std::uint32_t, std::uint32_t);
-
-		EnableOptimisation(BinaryCompNe, bool, bool);
-		EnableOptimisation(BinaryCompNe, double, double);
-		EnableOptimisation(BinaryCompNe, float, float);
-		EnableOptimisation(BinaryCompNe, std::int32_t, std::int32_t);
-		EnableOptimisation(BinaryCompNe, std::uint32_t, std::uint32_t);
-		EnableOptimisation(BinaryCompNe, Vector2<bool>, Vector2<bool>);
-		EnableOptimisation(BinaryCompNe, Vector3<bool>, Vector3<bool>);
-		EnableOptimisation(BinaryCompNe, Vector4<bool>, Vector4<bool>);
-		EnableOptimisation(BinaryCompNe, Vector2f32, Vector2f32);
-		EnableOptimisation(BinaryCompNe, Vector3f32, Vector3f32);
-		EnableOptimisation(BinaryCompNe, Vector4f32, Vector4f32);
-		EnableOptimisation(BinaryCompNe, Vector2f64, Vector2f64);
-		EnableOptimisation(BinaryCompNe, Vector3f64, Vector3f64);
-		EnableOptimisation(BinaryCompNe, Vector4f64, Vector4f64);
-		EnableOptimisation(BinaryCompNe, Vector2i32, Vector2i32);
-		EnableOptimisation(BinaryCompNe, Vector3i32, Vector3i32);
-		EnableOptimisation(BinaryCompNe, Vector4i32, Vector4i32);
-		EnableOptimisation(BinaryCompNe, Vector2u32, Vector2u32);
-		EnableOptimisation(BinaryCompNe, Vector3u32, Vector3u32);
-		EnableOptimisation(BinaryCompNe, Vector4u32, Vector4u32);
-
 		EnableOptimisation(BinaryLogicalAnd, bool, bool);
 		EnableOptimisation(BinaryLogicalOr, bool, bool);
 
@@ -546,90 +370,24 @@ namespace nzsl::Ast
 #undef EnableOptimisation
 	}
 
-	ExpressionPtr ConstantPropagationVisitor::Clone(BinaryExpression& node)
+	ExpressionPtr ConstantPropagationVisitor::PropagateBinaryArithmeticsConstant(BinaryType type, const ConstantValueExpression& lhs, const ConstantValueExpression& rhs, const SourceLocation& sourceLocation)
 	{
-		auto lhs = CloneExpression(node.left);
-		auto rhs = CloneExpression(node.right);
-
-		if (lhs->GetType() == NodeType::ConstantValueExpression && rhs->GetType() == NodeType::ConstantValueExpression)
+		switch (type)
 		{
-			const ConstantValueExpression& lhsConstant = static_cast<const ConstantValueExpression&>(*lhs);
-			const ConstantValueExpression& rhsConstant = static_cast<const ConstantValueExpression&>(*rhs);
-
-			ExpressionPtr optimized;
-			switch (node.op)
-			{
-				case BinaryType::Add:
-					optimized = PropagateBinaryConstant<BinaryType::Add>(lhsConstant, rhsConstant, node.sourceLocation);
-					break;
-
-				case BinaryType::Subtract:
-					optimized = PropagateBinaryConstant<BinaryType::Subtract>(lhsConstant, rhsConstant, node.sourceLocation);
-					break;
-
-				case BinaryType::Modulo:
-					optimized = PropagateBinaryConstant<BinaryType::Modulo>(lhsConstant, rhsConstant, node.sourceLocation);
-					break;
-
-				case BinaryType::Multiply:
-					optimized = PropagateBinaryConstant<BinaryType::Multiply>(lhsConstant, rhsConstant, node.sourceLocation);
-					break;
-
-				case BinaryType::Divide:
-					optimized = PropagateBinaryConstant<BinaryType::Divide>(lhsConstant, rhsConstant, node.sourceLocation);
-					break;
-
-				case BinaryType::CompEq:
-					optimized = PropagateBinaryConstant<BinaryType::CompEq>(lhsConstant, rhsConstant, node.sourceLocation);
-					break;
-
-				case BinaryType::CompGe:
-					optimized = PropagateBinaryConstant<BinaryType::CompGe>(lhsConstant, rhsConstant, node.sourceLocation);
-					break;
-
-				case BinaryType::CompGt:
-					optimized = PropagateBinaryConstant<BinaryType::CompGt>(lhsConstant, rhsConstant, node.sourceLocation);
-					break;
-
-				case BinaryType::CompLe:
-					optimized = PropagateBinaryConstant<BinaryType::CompLe>(lhsConstant, rhsConstant, node.sourceLocation);
-					break;
-
-				case BinaryType::CompLt:
-					optimized = PropagateBinaryConstant<BinaryType::CompLt>(lhsConstant, rhsConstant, node.sourceLocation);
-					break;
-
-				case BinaryType::CompNe:
-					optimized = PropagateBinaryConstant<BinaryType::CompNe>(lhsConstant, rhsConstant, node.sourceLocation);
-					break;
-
-				case BinaryType::LogicalAnd:
-					optimized = PropagateBinaryConstant<BinaryType::LogicalAnd>(lhsConstant, rhsConstant, node.sourceLocation);
-					break;
-
-				case BinaryType::LogicalOr:
-					optimized = PropagateBinaryConstant<BinaryType::LogicalOr>(lhsConstant, rhsConstant, node.sourceLocation);
-					break;
-			}
-
-			if (optimized)
-			{
-				optimized->cachedExpressionType = node.cachedExpressionType;
-				optimized->sourceLocation = node.sourceLocation;
-				
-				return optimized;
-			}
+			case BinaryType::Add:        return PropagateBinaryArithmeticsConstant<BinaryType::Add>(lhs, rhs, sourceLocation);
+			case BinaryType::Divide:     return PropagateBinaryArithmeticsConstant<BinaryType::Divide>(lhs, rhs, sourceLocation);
+			case BinaryType::LogicalAnd: return PropagateBinaryArithmeticsConstant<BinaryType::LogicalAnd>(lhs, rhs, sourceLocation);
+			case BinaryType::LogicalOr:  return PropagateBinaryArithmeticsConstant<BinaryType::LogicalOr>(lhs, rhs, sourceLocation);
+			case BinaryType::Modulo:     return PropagateBinaryArithmeticsConstant<BinaryType::Modulo>(lhs, rhs, sourceLocation);
+			case BinaryType::Multiply:   return PropagateBinaryArithmeticsConstant<BinaryType::Multiply>(lhs, rhs, sourceLocation);
+			case BinaryType::Subtract:   return PropagateBinaryArithmeticsConstant<BinaryType::Subtract>(lhs, rhs, sourceLocation);
+			default:
+				throw std::runtime_error("unexpected binary op");
 		}
-
-		auto binary = ShaderBuilder::Binary(node.op, std::move(lhs), std::move(rhs));
-		binary->cachedExpressionType = node.cachedExpressionType;
-		binary->sourceLocation = node.sourceLocation;
-
-		return binary;
 	}
 
 	template<BinaryType Type>
-	ExpressionPtr ConstantPropagationVisitor::PropagateBinaryConstant(const ConstantValueExpression& lhs, const ConstantValueExpression& rhs, const SourceLocation& sourceLocation)
+	ExpressionPtr ConstantPropagationVisitor::PropagateBinaryArithmeticsConstant(const ConstantValueExpression& lhs, const ConstantValueExpression& rhs, const SourceLocation& sourceLocation)
 	{
 		NAZARA_USE_ANONYMOUS_NAMESPACE
 

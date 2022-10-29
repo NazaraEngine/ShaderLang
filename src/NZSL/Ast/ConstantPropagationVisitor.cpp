@@ -416,6 +416,55 @@ namespace nzsl::Ast
 
 		return std::make_shared<Module>(shaderModule.metadata, std::move(rootNode), shaderModule.importedModules);
 	}
+	
+	ExpressionPtr ConstantPropagationVisitor::Clone(BinaryExpression& node)
+	{
+		auto lhs = CloneExpression(node.left);
+		auto rhs = CloneExpression(node.right);
+
+		if (lhs->GetType() == NodeType::ConstantValueExpression && rhs->GetType() == NodeType::ConstantValueExpression)
+		{
+			const ConstantValueExpression& lhsConstant = static_cast<const ConstantValueExpression&>(*lhs);
+			const ConstantValueExpression& rhsConstant = static_cast<const ConstantValueExpression&>(*rhs);
+
+			ExpressionPtr optimized;
+			switch (node.op)
+			{
+				case BinaryType::Add:
+				case BinaryType::Divide:
+				case BinaryType::LogicalAnd:
+				case BinaryType::LogicalOr:
+				case BinaryType::Modulo:
+				case BinaryType::Multiply:
+				case BinaryType::Subtract:
+					optimized = PropagateBinaryArithmeticsConstant(node.op, lhsConstant, rhsConstant, node.sourceLocation);
+					break;
+
+				case BinaryType::CompEq:
+				case BinaryType::CompGe:
+				case BinaryType::CompGt:
+				case BinaryType::CompLe:
+				case BinaryType::CompLt:
+				case BinaryType::CompNe:
+					optimized = PropagateBinaryComparisonConstant(node.op, lhsConstant, rhsConstant, node.sourceLocation);
+					break;
+			}
+
+			if (optimized)
+			{
+				optimized->cachedExpressionType = node.cachedExpressionType;
+				optimized->sourceLocation = node.sourceLocation;
+				
+				return optimized;
+			}
+		}
+
+		auto binary = ShaderBuilder::Binary(node.op, std::move(lhs), std::move(rhs));
+		binary->cachedExpressionType = node.cachedExpressionType;
+		binary->sourceLocation = node.sourceLocation;
+
+		return binary;
+	}
 
 	ExpressionPtr ConstantPropagationVisitor::Clone(CastExpression& node)
 	{
