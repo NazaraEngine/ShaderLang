@@ -35,6 +35,7 @@ jobs:
     - name: Get current date as package key
       id: pkg_key
       run: echo "key=$(date +'%W')" >> $GITHUB_OUTPUT
+      shell: bash
 
     - name: Avoid line ending issues on Windows
       run: git config --global core.autocrlf false
@@ -58,6 +59,7 @@ jobs:
     - name: Retrieve dependencies hash
       id: dep_hash
       run: echo "hash=$(xmake l utils.ci.packageskey)" >> $GITHUB_OUTPUT
+      shell: bash
 
     # Cache xmake dependencies
     - name: Retrieve cached xmake dependencies
