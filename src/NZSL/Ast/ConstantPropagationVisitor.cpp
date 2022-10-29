@@ -255,6 +255,10 @@ namespace nzsl::Ast
 		EnableOptimisation(CastConstant, std::uint32_t, std::int32_t);
 		EnableOptimisation(CastConstant, std::uint32_t, std::uint32_t);
 
+		EnableOptimisation(CastConstant, Vector2<bool>, bool, bool);
+		EnableOptimisation(CastConstant, Vector3<bool>, bool, bool, bool);
+		EnableOptimisation(CastConstant, Vector4<bool>, bool, bool, bool, bool);
+
 		EnableOptimisation(CastConstant, Vector2f64, double, double);
 		EnableOptimisation(CastConstant, Vector3f64, double, double, double);
 		EnableOptimisation(CastConstant, Vector4f64, double, double, double, double);
@@ -272,6 +276,26 @@ namespace nzsl::Ast
 		EnableOptimisation(CastConstant, Vector4u32, std::uint32_t, std::uint32_t, std::uint32_t, std::uint32_t);
 
 		// Swizzle
+		EnableOptimisation(SwizzlePropagation, bool, 1, 1);
+		EnableOptimisation(SwizzlePropagation, bool, 1, 2);
+		EnableOptimisation(SwizzlePropagation, bool, 1, 3);
+		EnableOptimisation(SwizzlePropagation, bool, 1, 4);
+
+		EnableOptimisation(SwizzlePropagation, bool, 2, 1);
+		EnableOptimisation(SwizzlePropagation, bool, 2, 2);
+		EnableOptimisation(SwizzlePropagation, bool, 2, 3);
+		EnableOptimisation(SwizzlePropagation, bool, 2, 4);
+
+		EnableOptimisation(SwizzlePropagation, bool, 3, 1);
+		EnableOptimisation(SwizzlePropagation, bool, 3, 2);
+		EnableOptimisation(SwizzlePropagation, bool, 3, 3);
+		EnableOptimisation(SwizzlePropagation, bool, 3, 4);
+
+		EnableOptimisation(SwizzlePropagation, bool, 4, 1);
+		EnableOptimisation(SwizzlePropagation, bool, 4, 2);
+		EnableOptimisation(SwizzlePropagation, bool, 4, 3);
+		EnableOptimisation(SwizzlePropagation, bool, 4, 4);
+
 		EnableOptimisation(SwizzlePropagation, double, 1, 1);
 		EnableOptimisation(SwizzlePropagation, double, 1, 2);
 		EnableOptimisation(SwizzlePropagation, double, 1, 3);

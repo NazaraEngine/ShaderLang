@@ -155,7 +155,7 @@ namespace nzsl::Ast
 			}
 		};
 
-		static_assert(std::variant_size_v<decltype(node.values)> == 19);
+		static_assert(std::variant_size_v<decltype(node.values)> == 22);
 		switch (typeIndex)
 		{
 			case 0:  break;
@@ -177,6 +177,9 @@ namespace nzsl::Ast
 			case 16: SerializeValue(Vector2u32()); break;
 			case 17: SerializeValue(Vector3u32()); break;
 			case 18: SerializeValue(Vector4u32()); break;
+			case 19: SerializeValue(Vector2<bool>()); break;
+			case 20: SerializeValue(Vector3<bool>()); break;
+			case 21: SerializeValue(Vector4<bool>()); break;
 			default: throw std::runtime_error("unexpected data type");
 		}
 	}
@@ -198,7 +201,7 @@ namespace nzsl::Ast
 			Value(value);
 		};
 
-		static_assert(std::variant_size_v<decltype(node.value)> == 19);
+		static_assert(std::variant_size_v<decltype(node.value)> == 22);
 		switch (typeIndex)
 		{
 			case 0:  break;
@@ -220,6 +223,9 @@ namespace nzsl::Ast
 			case 16: SerializeValue(Vector2u32()); break;
 			case 17: SerializeValue(Vector3u32()); break;
 			case 18: SerializeValue(Vector4u32()); break;
+			case 19: SerializeValue(Vector2<bool>()); break;
+			case 20: SerializeValue(Vector3<bool>()); break;
+			case 21: SerializeValue(Vector4<bool>()); break;
 			default: throw std::runtime_error("unexpected data type");
 		}
 	}
@@ -683,6 +689,27 @@ namespace nzsl::Ast
 	void ShaderAstSerializer::Value(std::int32_t& val)
 	{
 		m_serializer.Serialize(val);
+	}
+
+	void ShaderAstSerializer::Value(Vector2<bool>& val)
+	{
+		m_serializer.Serialize(val.x());
+		m_serializer.Serialize(val.y());
+	}
+
+	void ShaderAstSerializer::Value(Vector3<bool>& val)
+	{
+		m_serializer.Serialize(val.x());
+		m_serializer.Serialize(val.y());
+		m_serializer.Serialize(val.z());
+	}
+
+	void ShaderAstSerializer::Value(Vector4<bool>& val)
+	{
+		m_serializer.Serialize(val.x());
+		m_serializer.Serialize(val.y());
+		m_serializer.Serialize(val.z());
+		m_serializer.Serialize(val.w());
 	}
 
 	void ShaderAstSerializer::Value(Vector2f32& val)
@@ -1156,6 +1183,27 @@ namespace nzsl::Ast
 		m_unserializer.Unserialize(val);
 	}
 
+	void ShaderAstUnserializer::Value(Vector2<bool>& val)
+	{
+		m_unserializer.Unserialize(val.x());
+		m_unserializer.Unserialize(val.y());
+	}
+
+	void ShaderAstUnserializer::Value(Vector3<bool>& val)
+	{
+		m_unserializer.Unserialize(val.x());
+		m_unserializer.Unserialize(val.y());
+		m_unserializer.Unserialize(val.z());
+	}
+
+	void ShaderAstUnserializer::Value(Vector4<bool>& val)
+	{
+		m_unserializer.Unserialize(val.x());
+		m_unserializer.Unserialize(val.y());
+		m_unserializer.Unserialize(val.z());
+		m_unserializer.Unserialize(val.w());
+	}
+
 	void ShaderAstUnserializer::Value(Vector2f32& val)
 	{
 		m_unserializer.Unserialize(val.x());
@@ -1259,7 +1307,7 @@ namespace nzsl::Ast
 	{
 		m_unserializer.Unserialize(val);
 	}
-	
+
 
 	void SerializeShader(AbstractSerializer& serializer, const Module& module)
 	{

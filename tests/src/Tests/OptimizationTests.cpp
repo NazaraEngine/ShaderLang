@@ -73,6 +73,7 @@ fn main()
 	let output2 = vec4[i32](8, 2, -7, 0) * (7 + 5) * 2 / 4;
 	let output3 = vec4[f64](f64(8.0), f64(2.0), f64(-7.0), f64(0.0)) * (f64(7.0) + f64(5.0)) * f64(2.0) / f64(4.0);
 	let output4 = vec4[u32](u32(8), u32(2), u32(7), u32(0)) * (u32(7) + u32(5)) * u32(2) / u32(4);
+	let output5 = vec4[bool](true, false, true, false) == vec4[bool](false, true, true, false);
 }
 )", R"(
 [entry(frag)]
@@ -82,6 +83,7 @@ fn main()
 	let output2: vec4[i32] = vec4[i32](48, 12, -42, 0);
 	let output3: vec4[f64] = vec4[f64](f64(48.0), f64(12.0), f64(-42.0), f64(0.0));
 	let output4: vec4[u32] = vec4[u32](u32(48), u32(12), u32(42), u32(0));
+	let output5: bool = false;
 }
 )");
 	}
