@@ -55,6 +55,7 @@ namespace nzsl
 			Ast::ExpressionPtr BuildIdentifierAccess(Ast::ExpressionPtr lhs, Ast::ExpressionPtr rhs);
 			Ast::ExpressionPtr BuildIndexAccess(Ast::ExpressionPtr lhs, Ast::ExpressionPtr rhs);
 			Ast::ExpressionPtr BuildBinary(Ast::BinaryType binaryType, Ast::ExpressionPtr lhs, Ast::ExpressionPtr rhs);
+			Ast::ExpressionPtr BuildUnary(Ast::UnaryType unaryType, Ast::ExpressionPtr expr);
 
 			// Statements
 			Ast::StatementPtr ParseAliasDeclaration();
@@ -100,7 +101,8 @@ namespace nzsl
 			template<typename T> void HandleUniqueAttribute(Ast::ExpressionValue<T>& targetAttribute, Attribute&& attribute, T defaultValue);
 			template<typename T, typename M> void HandleUniqueStringAttributeKey(Ast::ExpressionValue<T>& targetAttribute, Attribute&& attribute, const M& map, std::optional<T> defaultValue = {});
 
-			static int GetTokenPrecedence(TokenType token);
+			static int GetBinaryTokenPrecedence(TokenType token);
+			static int GetUnaryTokenPrecedence(TokenType token);
 
 			struct Context
 			{
