@@ -389,7 +389,7 @@ namespace nzsl::Ast
 					{
 						if (!field.cond.IsResultingValue())
 						{
-							if (m_context->options.allowPartialSanitization)
+							if (m_context->options.partialSanitization)
 								return Cloner::Clone(node); //< unresolved
 
 							throw CompilerConstantExpressionRequiredError{ field.cond.GetExpression()->sourceLocation };
@@ -853,7 +853,7 @@ namespace nzsl::Ast
 		const ConstantValue* value = m_context->constantValues.TryRetrieve(node.constantId, node.sourceLocation);
 		if (!value)
 		{
-			if (!m_context->options.allowPartialSanitization)
+			if (!m_context->options.partialSanitization)
 				throw AstInvalidConstantIndexError{ node.sourceLocation, node.constantId };
 
 			return Cloner::Clone(node); //< unresolved
@@ -1227,8 +1227,12 @@ namespace nzsl::Ast
 			{
 				if (hasAutoBinding == false)
 					throw CompilerExtMissingBindingIndexError{ extVar.sourceLocation };
-				else if (!m_context->options.allowPartialSanitization && hasAutoBinding == true) // Don't resolve binding indices (?) when performing a partial compilation
-					autoBindingEntries.push_back(i);
+				else if (hasAutoBinding == true && extVar.bindingSet.IsResultingValue())
+				{
+					// Don't resolve binding indices (?) when performing a partial compilation
+					if (!m_context->options.partialSanitization || m_context->options.forceAutoBindingResolve)
+						autoBindingEntries.push_back(i);
+				}
 			}
 			else
 				ComputeExprValue(extVar.bindingIndex, node.sourceLocation);
@@ -1362,7 +1366,7 @@ namespace nzsl::Ast
 		{
 			ShaderStageType stageType = clone->entryStage.GetResultingValue();
 
-			if (!m_context->options.allowPartialSanitization)
+			if (!m_context->options.partialSanitization)
 			{
 				if (m_context->entryFunctions[Nz::UnderlyingCast(stageType)])
 					throw CompilerEntryPointAlreadyDefinedError{ clone->sourceLocation, stageType };
@@ -1454,7 +1458,7 @@ namespace nzsl::Ast
 			clone->optIndex = RegisterConstant(clone->optName, optionValueIt->second, node.optIndex, node.sourceLocation);
 		else
 		{
-			if (m_context->options.allowPartialSanitization)
+			if (m_context->options.partialSanitization)
 			{
 				// Partial sanitization, we cannot give a value to this option
 				clone->optIndex = RegisterConstant(clone->optName, std::nullopt, clone->optIndex, node.sourceLocation);
@@ -1508,7 +1512,7 @@ namespace nzsl::Ast
 
 			if (declaredMembers.find(member.name) != declaredMembers.end())
 			{
-				if ((!member.cond.HasValue() || !member.cond.IsResultingValue()) && !m_context->options.allowPartialSanitization)
+				if ((!member.cond.HasValue() || !member.cond.IsResultingValue()) && !m_context->options.partialSanitization)
 					throw CompilerStructFieldMultipleError{ member.sourceLocation, member.name };
 			}
 
@@ -1516,7 +1520,7 @@ namespace nzsl::Ast
 
 			if (member.type.HasValue() && member.type.IsExpression())
 			{
-				assert(m_context->options.allowPartialSanitization);
+				assert(m_context->options.partialSanitization);
 				continue;
 			}
 
@@ -2022,7 +2026,7 @@ namespace nzsl::Ast
 
 		if (!m_context->options.moduleResolver)
 		{
-			if (!m_context->options.allowPartialSanitization)
+			if (!m_context->options.partialSanitization)
 				throw CompilerNoModuleResolverError{ node.sourceLocation };
 
 			// when partially sanitizing, importing a whole module could register any identifier, so at this point we can't see unknown identifiers as errors
@@ -2106,7 +2110,7 @@ namespace nzsl::Ast
 			auto& moduleData = m_context->modules.emplace_back();
 
 			// Don't run dependency checker when partially sanitizing
-			if (!m_context->options.allowPartialSanitization)
+			if (!m_context->options.partialSanitization)
 			{
 				moduleData.dependenciesVisitor = std::make_unique<DependencyCheckerVisitor>();
 				moduleData.dependenciesVisitor->Register(*sanitizedModule->rootNode);
@@ -2383,7 +2387,7 @@ namespace nzsl::Ast
 		const ExpressionType* expressionType = Ast::GetExpressionType(expr);
 		if (!expressionType)
 		{
-			if (!m_context->options.allowPartialSanitization)
+			if (!m_context->options.partialSanitization)
 				throw AstInternalError{ expr.sourceLocation, "unexpected missing expression type" };
 		}
 
@@ -2559,7 +2563,7 @@ namespace nzsl::Ast
 		}
 		else
 		{
-			if (!m_context->options.allowPartialSanitization)
+			if (!m_context->options.partialSanitization)
 				throw CompilerConstantExpressionRequiredError{ expr.sourceLocation };
 
 			return std::nullopt;
@@ -2661,7 +2665,7 @@ namespace nzsl::Ast
 		optimizerOptions.constantQueryCallback = [&](std::size_t constantId) -> const ConstantValue*
 		{
 			const ConstantValue* value = m_context->constantValues.TryRetrieve(constantId, node.sourceLocation);
-			if (!value && !m_context->options.allowPartialSanitization)
+			if (!value && !m_context->options.partialSanitization)
 				throw AstInvalidConstantIndexError{ node.sourceLocation, constantId };
 
 			return value;
@@ -2988,7 +2992,7 @@ namespace nzsl::Ast
 		if (auto* identifier = FindIdentifier(name))
 		{
 			// Functions can be conditionally defined and condition not resolved yet, allow duplicates when partially sanitizing
-			bool duplicate = !m_context->options.allowPartialSanitization;
+			bool duplicate = !m_context->options.partialSanitization;
 
 			// Functions cannot be declared twice, except for entry ones if their stages are different
 			if (funcData)
@@ -3002,7 +3006,7 @@ namespace nzsl::Ast
 			}
 			else
 			{
-				if (!m_context->options.allowPartialSanitization)
+				if (!m_context->options.partialSanitization)
 					throw AstInternalError{ sourceLocation, "unexpected missing function data" };
 
 				duplicate = false;
@@ -3255,7 +3259,7 @@ namespace nzsl::Ast
 
 			for (auto& parameter : pendingFunc.cloneNode->parameters)
 			{
-				if (!m_context->options.allowPartialSanitization || parameter.type.IsResultingValue())
+				if (!m_context->options.partialSanitization || parameter.type.IsResultingValue())
 					parameter.varIndex = RegisterVariable(parameter.name, parameter.type.GetResultingValue(), parameter.varIndex, parameter.sourceLocation);
 				else
 					RegisterUnresolved(parameter.name);
@@ -4078,7 +4082,7 @@ namespace nzsl::Ast
 		if (constantType != NodeType::ConstantValueExpression && constantType != NodeType::ConstantArrayValueExpression)
 		{
 			// Constant propagation failed
-			if (!m_context->options.allowPartialSanitization)
+			if (!m_context->options.partialSanitization)
 				throw CompilerConstantExpressionRequiredError{ node.expression->sourceLocation };
 
 			node.constIndex = RegisterConstant(node.name, std::nullopt, node.constIndex, node.sourceLocation);
