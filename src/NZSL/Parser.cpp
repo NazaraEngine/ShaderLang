@@ -1447,9 +1447,9 @@ namespace nzsl
 		return condExpr;
 	}
 
-	Ast::ExpressionPtr Parser::ParseExpression()
+	Ast::ExpressionPtr Parser::ParseExpression(int exprPrecedence)
 	{
-		return ParseBinOpRhs(0, ParsePrimaryExpression());
+		return ParseBinOpRhs(exprPrecedence, ParsePrimaryExpression());
 	}
 
 	std::vector<Ast::ExpressionPtr> Parser::ParseExpressionList(TokenType terminationToken, SourceLocation* terminationLocation)
@@ -1588,7 +1588,7 @@ namespace nzsl
 			case TokenType::Minus:
 			{
 				Consume();
-				Ast::ExpressionPtr expr = ParseExpression();
+				Ast::ExpressionPtr expr = ParseExpression(90);
 
 				auto minusExpr = ShaderBuilder::Unary(Ast::UnaryType::Minus, std::move(expr));
 				minusExpr->sourceLocation = SourceLocation::BuildFromTo(token.location, minusExpr->expression->sourceLocation);
@@ -1600,7 +1600,7 @@ namespace nzsl
 			case TokenType::Plus:
 			{
 				Consume();
-				Ast::ExpressionPtr expr = ParseExpression();
+				Ast::ExpressionPtr expr = ParseExpression(90);
 
 				auto plusExpr = ShaderBuilder::Unary(Ast::UnaryType::Plus, std::move(expr));
 				plusExpr->sourceLocation = SourceLocation::BuildFromTo(token.location, plusExpr->expression->sourceLocation);
@@ -1612,7 +1612,7 @@ namespace nzsl
 			case TokenType::Not:
 			{
 				Consume();
-				Ast::ExpressionPtr expr = ParseExpression();
+				Ast::ExpressionPtr expr = ParseExpression(90);
 
 				auto notExpr = ShaderBuilder::Unary(Ast::UnaryType::LogicalNot, std::move(expr));
 				notExpr->sourceLocation = SourceLocation::BuildFromTo(token.location, notExpr->expression->sourceLocation);
