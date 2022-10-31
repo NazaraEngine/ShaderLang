@@ -37,6 +37,7 @@ namespace nzsl
 			};
 
 		private:
+			struct AutoBindingAttribute;
 			struct AuthorAttribute;
 			struct BindingAttribute;
 			struct BuiltinAttribute;
@@ -75,6 +76,7 @@ namespace nzsl
 			template<typename... Args> void AppendAttributes(bool appendLine, Args&&... params);
 			template<typename T> void AppendAttributesInternal(bool& first, const T& param);
 			template<typename T1, typename T2, typename... Rest> void AppendAttributesInternal(bool& first, const T1& firstParam, const T2& secondParam, Rest&&... params);
+			void AppendAttribute(AutoBindingAttribute attribute);
 			void AppendAttribute(AuthorAttribute attribute);
 			void AppendAttribute(BindingAttribute attribute);
 			void AppendAttribute(BuiltinAttribute attribute);

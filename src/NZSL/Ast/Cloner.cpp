@@ -125,6 +125,7 @@ namespace nzsl::Ast
 	StatementPtr Cloner::Clone(DeclareExternalStatement& node)
 	{
 		auto clone = std::make_unique<DeclareExternalStatement>();
+		clone->autoBinding = Clone(node.autoBinding);
 		clone->bindingSet = Clone(node.bindingSet);
 		clone->tag = node.tag;
 

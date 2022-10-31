@@ -26,6 +26,7 @@ namespace nzsl::Ast
 
 	enum class AttributeType
 	{
+		AutoBinding        = 17, //< Incremental binding index (external block only)
 		Author             = 12, //< Module author (module statement only) - has argument version string
 		Binding            =  0, //< Binding (external var only) - has argument index
 		Builtin            =  1, //< Builtin (struct member only) - has argument type
