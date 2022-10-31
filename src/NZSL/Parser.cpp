@@ -668,6 +668,10 @@ namespace nzsl
 					HandleUniqueAttribute(condition, std::move(attribute));
 					break;
 
+				case Ast::AttributeType::AutoBinding:
+					HandleUniqueAttribute(externalStatement->autoBinding, std::move(attribute), true);
+					break;
+
 				case Ast::AttributeType::Set:
 					HandleUniqueAttribute(externalStatement->bindingSet, std::move(attribute));
 					break;

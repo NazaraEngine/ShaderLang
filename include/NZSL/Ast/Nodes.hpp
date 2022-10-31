@@ -350,6 +350,7 @@ namespace nzsl::Ast
 		std::string tag;
 		std::vector<ExternalVar> externalVars;
 		ExpressionValue<std::uint32_t> bindingSet;
+		ExpressionValue<bool> autoBinding;
 	};
 
 	struct NZSL_API DeclareFunctionStatement : Statement

@@ -556,4 +556,110 @@ fn main()
 			CHECK_THROWS_WITH(spirvWriter.Generate(*shaderModule), "unsupported type used in external block (SPIR-V doesn't allow primitive types as uniforms)");
 		}
 	}
+
+
+	SECTION("Auto binding generation")
+	{
+		std::string_view nzslSource = R"(
+[nzsl_version("1.0")]
+module;
+
+[auto_binding]
+external
+{
+	tex1: sampler2D[f32],
+	tex2: sampler2D[f32],
+	[binding(4)] tex3: sampler2D[f32],
+	[binding(0)] tex4: sampler2D[f32]
+}
+
+[auto_binding(true)]
+external
+{
+	tex5: sampler2D[f32]
+}
+
+[auto_binding(false)]
+external
+{
+	[binding(6)] tex6: sampler2D[f32]
+}
+
+[entry(frag)]
+fn main()
+{
+}
+)";
+
+		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
+
+		WHEN("Performing a full compilation")
+		{
+			shaderModule = SanitizeModule(*shaderModule);
+
+			ExpectNZSL(*shaderModule, R"(
+[auto_binding(true)]
+external
+{
+	[set(0), binding(1)] tex1: sampler2D[f32],
+	[set(0), binding(2)] tex2: sampler2D[f32],
+	[set(0), binding(4)] tex3: sampler2D[f32],
+	[set(0), binding(0)] tex4: sampler2D[f32]
+}
+
+[auto_binding(true)]
+external
+{
+	[set(0), binding(3)] tex5: sampler2D[f32]
+}
+
+[auto_binding(false)]
+external
+{
+	[set(0), binding(6)] tex6: sampler2D[f32]
+}
+
+[entry(frag)]
+fn main()
+{
+
+})");
+		}
+
+		WHEN("Performing a partial compilation")
+		{
+			nzsl::Ast::SanitizeVisitor::Options options;
+			options.allowPartialSanitization = true;
+
+			shaderModule = SanitizeModule(*shaderModule, options);
+
+			ExpectNZSL(*shaderModule, R"(
+[auto_binding(true)]
+external
+{
+	[set(0)] tex1: sampler2D[f32],
+	[set(0)] tex2: sampler2D[f32],
+	[set(0), binding(4)] tex3: sampler2D[f32],
+	[set(0), binding(0)] tex4: sampler2D[f32]
+}
+
+[auto_binding(true)]
+external
+{
+	[set(0)] tex5: sampler2D[f32]
+}
+
+[auto_binding(false)]
+external
+{
+	[set(0), binding(6)] tex6: sampler2D[f32]
+}
+
+[entry(frag)]
+fn main()
+{
+
+})");
+		}
+	}
 }

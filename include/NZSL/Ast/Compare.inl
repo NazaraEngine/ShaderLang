@@ -598,6 +598,9 @@ namespace nzsl::Ast
 		if (!Compare(lhs.bindingSet, rhs.bindingSet))
 			return false;
 
+		if (!Compare(lhs.autoBinding, rhs.autoBinding))
+			return false;
+
 		if (!Compare(lhs.tag, rhs.tag))
 			return false;
 

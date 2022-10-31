@@ -23,6 +23,7 @@ namespace nzsl::LangData
 	};
 
 	constexpr auto s_attributeData = frozen::make_unordered_map<Ast::AttributeType, AttributeData>({
+		{ Ast::AttributeType::AutoBinding,        { "auto_binding" } },
 		{ Ast::AttributeType::Author,             { "author" } },
 		{ Ast::AttributeType::Binding,            { "binding" } },
 		{ Ast::AttributeType::Builtin,            { "builtin" } },

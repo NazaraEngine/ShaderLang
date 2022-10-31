@@ -20,6 +20,13 @@
 
 namespace nzsl
 {
+	struct LangWriter::AutoBindingAttribute
+	{
+		const Ast::ExpressionValue<bool>& autoBinding;
+
+		bool HasValue() const { return autoBinding.HasValue(); }
+	};
+
 	struct LangWriter::AuthorAttribute
 	{
 		const std::string& author;
@@ -377,6 +384,21 @@ namespace nzsl
 		AppendAttributesInternal(first, secondParam, std::forward<Rest>(params)...);
 	}
 
+	void LangWriter::AppendAttribute(AutoBindingAttribute attribute)
+	{
+		if (!attribute.HasValue())
+			return;
+
+		Append("auto_binding(");
+
+		if (attribute.autoBinding.IsResultingValue())
+			Append((attribute.autoBinding.GetResultingValue()) ? "true" : "false");
+		else
+			attribute.autoBinding.GetExpression()->Visit(*this);
+
+		Append(")");
+	}
+
 	void LangWriter::AppendAttribute(AuthorAttribute attribute)
 	{
 		if (!attribute.HasValue())
@@ -446,12 +468,7 @@ namespace nzsl
 		Append("early_fragment_tests(");
 
 		if (attribute.earlyFragmentTests.IsResultingValue())
-		{
-			if (attribute.earlyFragmentTests.GetResultingValue())
-				Append("true");
-			else
-				Append("false");
-		}
+			Append((attribute.earlyFragmentTests.GetResultingValue()) ? "true" : "false");
 		else
 			attribute.earlyFragmentTests.GetExpression()->Visit(*this);
 
@@ -1143,7 +1160,7 @@ namespace nzsl
 
 	void LangWriter::Visit(Ast::DeclareExternalStatement& node)
 	{
-		AppendAttributes(true, SetAttribute{ node.bindingSet }, TagAttribute{ node.tag } );
+		AppendAttributes(true, SetAttribute{ node.bindingSet }, AutoBindingAttribute{ node.autoBinding }, TagAttribute{ node.tag });
 		AppendLine("external");
 		EnterScope();
 

@@ -1204,17 +1204,34 @@ namespace nzsl::Ast
 				defaultBlockSet.reset(); //< Unresolved value
 		}
 
-		for (auto& extVar : clone->externalVars)
+		std::optional<bool> hasAutoBinding = false;
+		if (clone->autoBinding.HasValue())
 		{
-			if (!extVar.bindingIndex.HasValue())
-				throw CompilerExtMissingBindingIndexError{ extVar.sourceLocation };
+			if (ComputeExprValue(clone->autoBinding, node.sourceLocation) == ValidationResult::Validated)
+				hasAutoBinding = clone->autoBinding.GetResultingValue();
+			else
+				hasAutoBinding.reset(); //< Unresolved value
+		}
+
+		Nz::StackVector<std::size_t> autoBindingEntries = NazaraStackVector(std::size_t, clone->externalVars.size());
+		for (std::size_t i = 0; i < clone->externalVars.size(); ++i)
+		{
+			auto& extVar = clone->externalVars[i];
 
 			if (extVar.bindingSet.HasValue())
 				ComputeExprValue(extVar.bindingSet, node.sourceLocation);
 			else if (defaultBlockSet)
 				extVar.bindingSet = *defaultBlockSet;
 
-			ComputeExprValue(extVar.bindingIndex, node.sourceLocation);
+			if (!extVar.bindingIndex.HasValue())
+			{
+				if (hasAutoBinding == false)
+					throw CompilerExtMissingBindingIndexError{ extVar.sourceLocation };
+				else if (!m_context->options.allowPartialSanitization && hasAutoBinding == true) // Don't resolve binding indices (?) when performing a partial compilation
+					autoBindingEntries.push_back(i);
+			}
+			else
+				ComputeExprValue(extVar.bindingIndex, node.sourceLocation);
 
 			Context::UsedExternalData usedBindingData;
 			usedBindingData.isConditional = m_context->inConditionalStatement;
@@ -1271,6 +1288,27 @@ namespace nzsl::Ast
 
 			extVar.type = std::move(resolvedType).value();
 			extVar.varIndex = RegisterVariable(extVar.name, std::move(varType), extVar.varIndex, extVar.sourceLocation);
+		}
+
+		// Resolve auto-binding entries when explicit binding are known
+		for (std::size_t extVarIndex : autoBindingEntries)
+		{
+			auto& extVar = clone->externalVars[extVarIndex];
+
+			// Since we're not in a partial compilation at this point, binding set has a known value
+			assert(extVar.bindingSet.IsResultingValue());
+
+			// Find first binding index
+			std::uint64_t bindingSet = extVar.bindingSet.GetResultingValue();
+			std::uint32_t bindingIndex = 0;
+			while (m_context->usedBindingIndexes.find(bindingSet << 32 | bindingIndex) != m_context->usedBindingIndexes.end())
+				bindingIndex++;
+
+			Context::UsedExternalData usedBindingData;
+			usedBindingData.isConditional = m_context->inConditionalStatement;
+
+			extVar.bindingIndex = bindingIndex;
+			m_context->usedBindingIndexes.emplace(bindingSet << 32 | bindingIndex, usedBindingData);
 		}
 
 		return clone;
