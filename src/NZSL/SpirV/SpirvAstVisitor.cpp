@@ -1333,18 +1333,10 @@ namespace nzsl
 	{
 		for (auto& statement : statements)
 		{
-			// Handle termination statements
-			switch (statement->GetType())
-			{
-				case Ast::NodeType::DiscardStatement:
-				case Ast::NodeType::ReturnStatement:
-					statement->Visit(*this);
-					return; //< stop processing statements after this one
+			statement->Visit(*this);
 
-				default:
-					statement->Visit(*this);
-					break;
-			}
+			if (m_currentBlock && m_currentBlock->IsTerminated())
+				return; //< stop processing statement after a termination instruction (discard/return)
 		}
 	}
 
