@@ -580,7 +580,7 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 		using namespace std::literals;
 
 		nzsl::Ast::SanitizeVisitor::Options sanitizeOptions;
-		sanitizeOptions.allowPartialSanitization = m_options.count("partial") > 0;
+		sanitizeOptions.partialSanitization = m_options.count("partial") > 0;
 
 		if (m_options.count("module") > 0)
 		{

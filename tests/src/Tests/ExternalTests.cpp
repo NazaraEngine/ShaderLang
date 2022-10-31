@@ -629,7 +629,7 @@ fn main()
 		WHEN("Performing a partial compilation")
 		{
 			nzsl::Ast::SanitizeVisitor::Options options;
-			options.allowPartialSanitization = true;
+			options.partialSanitization = true;
 
 			shaderModule = SanitizeModule(*shaderModule, options);
 
@@ -647,6 +647,43 @@ external
 external
 {
 	[set(0)] tex5: sampler2D[f32]
+}
+
+[auto_binding(false)]
+external
+{
+	[set(0), binding(6)] tex6: sampler2D[f32]
+}
+
+[entry(frag)]
+fn main()
+{
+
+})");
+		}
+
+		WHEN("Performing a partial compilation and forcing auto_binding resolve")
+		{
+			nzsl::Ast::SanitizeVisitor::Options options;
+			options.forceAutoBindingResolve = true;
+			options.partialSanitization = true;
+
+			shaderModule = SanitizeModule(*shaderModule, options);
+
+			ExpectNZSL(*shaderModule, R"(
+[auto_binding(true)]
+external
+{
+	[set(0), binding(1)] tex1: sampler2D[f32],
+	[set(0), binding(2)] tex2: sampler2D[f32],
+	[set(0), binding(4)] tex3: sampler2D[f32],
+	[set(0), binding(0)] tex4: sampler2D[f32]
+}
+
+[auto_binding(true)]
+external
+{
+	[set(0), binding(3)] tex5: sampler2D[f32]
 }
 
 [auto_binding(false)]

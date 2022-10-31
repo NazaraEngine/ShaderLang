@@ -42,8 +42,9 @@ namespace nzsl::Ast
 			{
 				std::shared_ptr<ModuleResolver> moduleResolver;
 				std::unordered_map<std::uint32_t, ConstantValue> optionValues;
-				bool allowPartialSanitization = false;
+				bool forceAutoBindingResolve = false;
 				bool makeVariableNameUnique = false;
+				bool partialSanitization = false;
 				bool reduceLoopsToWhile = false;
 				bool removeAliases = false;
 				bool removeCompoundAssignments = false;
