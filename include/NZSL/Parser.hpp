@@ -81,7 +81,7 @@ namespace nzsl
 			// Expressions
 			Ast::ExpressionPtr ParseBinOpRhs(int exprPrecedence, Ast::ExpressionPtr lhs);
 			Ast::ExpressionPtr ParseConstSelectExpression();
-			Ast::ExpressionPtr ParseExpression();
+			Ast::ExpressionPtr ParseExpression(int exprPrecedence = 0);
 			std::vector<Ast::ExpressionPtr> ParseExpressionList(TokenType terminationToken, SourceLocation* terminationLocation);
 			Ast::ExpressionPtr ParseExpressionStatement();
 			Ast::ExpressionPtr ParseFloatingPointExpression();
