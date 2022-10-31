@@ -474,10 +474,20 @@ namespace nzsl
 	{
 		SourceLocation location = SourceLocation::BuildFromTo(lhs->sourceLocation, rhs->sourceLocation);
 
-		auto accessIndexExpr = ShaderBuilder::Binary(binaryType, std::move(lhs), std::move(rhs));
-		accessIndexExpr->sourceLocation = std::move(location);
+		auto binaryExpr = ShaderBuilder::Binary(binaryType, std::move(lhs), std::move(rhs));
+		binaryExpr->sourceLocation = std::move(location);
 
-		return accessIndexExpr;
+		return binaryExpr;
+	}
+
+	Ast::ExpressionPtr Parser::BuildUnary(Ast::UnaryType unaryType, Ast::ExpressionPtr expr)
+	{
+		SourceLocation location = expr->sourceLocation;
+
+		auto unaryExpr = ShaderBuilder::Unary(unaryType, std::move(expr));
+		unaryExpr->sourceLocation = std::move(location);
+
+		return unaryExpr;
 	}
 
 	Ast::StatementPtr Parser::ParseAliasDeclaration()
@@ -1356,7 +1366,7 @@ namespace nzsl
 			if (currentTokenType == TokenType::EndOfStream)
 				throw ParserUnexpectedTokenError{ token.location, token.type };
 
-			int tokenPrecedence = GetTokenPrecedence(currentTokenType);
+			int tokenPrecedence = GetBinaryTokenPrecedence(currentTokenType);
 			if (tokenPrecedence < exprPrecedence)
 				return lhs;
 
@@ -1393,7 +1403,7 @@ namespace nzsl
 
 			const Token& nextOp = Peek();
 
-			int nextTokenPrecedence = GetTokenPrecedence(nextOp.type);
+			int nextTokenPrecedence = GetBinaryTokenPrecedence(nextOp.type);
 			if (tokenPrecedence < nextTokenPrecedence)
 				rhs = ParseBinOpRhs(tokenPrecedence + 1, std::move(rhs));
 
@@ -1586,38 +1596,25 @@ namespace nzsl
 				break;
 
 			case TokenType::Minus:
-			{
-				Consume();
-				Ast::ExpressionPtr expr = ParseExpression(90);
-
-				auto minusExpr = ShaderBuilder::Unary(Ast::UnaryType::Minus, std::move(expr));
-				minusExpr->sourceLocation = SourceLocation::BuildFromTo(token.location, minusExpr->expression->sourceLocation);
-
-				primaryExpr = std::move(minusExpr);
-				break;
-			}
-
+			case TokenType::Not:
 			case TokenType::Plus:
 			{
 				Consume();
-				Ast::ExpressionPtr expr = ParseExpression(90);
+				Ast::ExpressionPtr expr = ParseExpression(GetUnaryTokenPrecedence(token.type));
 
-				auto plusExpr = ShaderBuilder::Unary(Ast::UnaryType::Plus, std::move(expr));
-				plusExpr->sourceLocation = SourceLocation::BuildFromTo(token.location, plusExpr->expression->sourceLocation);
+				primaryExpr = [&]
+				{
+					switch (token.type)
+					{
+						case TokenType::Minus: return BuildUnary(Ast::UnaryType::Minus, std::move(expr));
+						case TokenType::Not:   return BuildUnary(Ast::UnaryType::LogicalNot, std::move(expr));
+						case TokenType::Plus:  return BuildUnary(Ast::UnaryType::Plus, std::move(expr));
+						default:
+							throw ParserUnexpectedTokenError{ token.location, token.type };
+					}
+				}();
 
-				primaryExpr = std::move(plusExpr);
-				break;
-			}
-
-			case TokenType::Not:
-			{
-				Consume();
-				Ast::ExpressionPtr expr = ParseExpression(90);
-
-				auto notExpr = ShaderBuilder::Unary(Ast::UnaryType::LogicalNot, std::move(expr));
-				notExpr->sourceLocation = SourceLocation::BuildFromTo(token.location, notExpr->expression->sourceLocation);
-
-				primaryExpr = std::move(notExpr);
+				primaryExpr->sourceLocation.ExtendToLeft(token.location);
 				break;
 			}
 
@@ -1755,7 +1752,7 @@ namespace nzsl
 		}
 	}
 
-	int Parser::GetTokenPrecedence(TokenType token)
+	int Parser::GetBinaryTokenPrecedence(TokenType token)
 	{
 		switch (token)
 		{
@@ -1775,6 +1772,17 @@ namespace nzsl
 			case TokenType::Plus:              return 60;
 			case TokenType::OpenSquareBracket: return 100;
 			case TokenType::OpenParenthesis:   return 100;
+			default: return -1;
+		}
+	}
+
+	int Parser::GetUnaryTokenPrecedence(TokenType token)
+	{
+		switch (token)
+		{
+			case TokenType::Minus:             return 90;
+			case TokenType::Not:               return 90;
+			case TokenType::Plus:              return 90;
 			default: return -1;
 		}
 	}
