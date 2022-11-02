@@ -1760,6 +1760,7 @@ namespace nzsl::Ast
 						Validate(*var);
 						innerMulti->statements.emplace_back(std::move(var));
 
+						// FIXME: This may break if statement has unique statements (like variable declaration with a set index)
 						innerMulti->statements.emplace_back(Unscope(CloneStatement(node.statement)));
 
 						multi->statements.emplace_back(ShaderBuilder::Scoped(std::move(innerMulti)));
@@ -1932,6 +1933,8 @@ namespace nzsl::Ast
 						Validate(*elementVariable);
 
 						innerMulti->statements.emplace_back(std::move(elementVariable));
+						
+						// FIXME: This may break if statement has unique statements (like variable declaration with a set index)
 						innerMulti->statements.emplace_back(Unscope(CloneStatement(node.statement)));
 
 						multi->statements.emplace_back(ShaderBuilder::Scoped(std::move(innerMulti)));
@@ -2142,12 +2145,11 @@ namespace nzsl::Ast
 
 			// Remap already used indices 
 			IndexRemapperVisitor::Options indexCallbacks;
-			indexCallbacks.aliasIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_context->aliases.RegisterNewIndex(true); };
-			indexCallbacks.constIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_context->constantValues.RegisterNewIndex(true); };
-			indexCallbacks.funcIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_context->functions.RegisterNewIndex(true); };
+			indexCallbacks.aliasIndexGenerator  = [this](std::size_t /*previousIndex*/) { return m_context->aliases.RegisterNewIndex(true); };
+			indexCallbacks.constIndexGenerator  = [this](std::size_t /*previousIndex*/) { return m_context->constantValues.RegisterNewIndex(true); };
+			indexCallbacks.funcIndexGenerator   = [this](std::size_t /*previousIndex*/) { return m_context->functions.RegisterNewIndex(true); };
 			indexCallbacks.structIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_context->structs.RegisterNewIndex(true); };
-			indexCallbacks.varIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_context->variableTypes.RegisterNewIndex(true); };
-			indexCallbacks.forceIndexGeneration = true;
+			indexCallbacks.varIndexGenerator    = [this](std::size_t /*previousIndex*/) { return m_context->variableTypes.RegisterNewIndex(true); };
 
 			sanitizedModule->rootNode = Nz::StaticUniquePointerCast<MultiStatement>(RemapIndices(*targetModule->rootNode, indexCallbacks));
 
