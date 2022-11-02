@@ -77,7 +77,9 @@ namespace nzsl::ShaderBuilder
 		struct ConstantValue
 		{
 			inline Ast::ConstantValueExpressionPtr operator()(Ast::ConstantSingleValue value) const;
+			inline Ast::ConstantValueExpressionPtr operator()(Ast::ConstantSingleValue value, const SourceLocation& sourceLocation) const;
 			template<typename T> Ast::ConstantValueExpressionPtr operator()(Ast::ExpressionType type, T value) const;
+			template<typename T> Ast::ConstantValueExpressionPtr operator()(Ast::ExpressionType type, T value, const SourceLocation& sourceLocation) const;
 		};
 
 		struct ConstantArrayValue
@@ -201,6 +203,7 @@ namespace nzsl::ShaderBuilder
 		struct Variable
 		{
 			inline Ast::VariableValueExpressionPtr operator()(std::size_t variableId, Ast::ExpressionType expressionType) const;
+			inline Ast::VariableValueExpressionPtr operator()(std::size_t variableId, Ast::ExpressionType expressionType, const SourceLocation& sourceLocation) const;
 		};
 
 		struct While

@@ -179,6 +179,16 @@ namespace nzsl::ShaderBuilder
 		return constantNode;
 	}
 
+	inline Ast::ConstantValueExpressionPtr Impl::ConstantValue::operator()(Ast::ConstantSingleValue value, const SourceLocation& sourceLocation) const
+	{
+		auto constantNode = std::make_unique<Ast::ConstantValueExpression>();
+		constantNode->value = std::move(value);
+		constantNode->cachedExpressionType = Ast::GetConstantType(constantNode->value);
+		constantNode->sourceLocation = sourceLocation;
+
+		return constantNode;
+	}
+
 	template<typename T>
 	Ast::ConstantValueExpressionPtr Impl::ConstantValue::operator()(Ast::ExpressionType type, T value) const
 	{
@@ -191,6 +201,24 @@ namespace nzsl::ShaderBuilder
 			case Ast::PrimitiveType::Float64: return ShaderBuilder::ConstantValue(Nz::SafeCast<double>(value));
 			case Ast::PrimitiveType::Int32:   return ShaderBuilder::ConstantValue(Nz::SafeCast<std::int32_t>(value));
 			case Ast::PrimitiveType::UInt32:  return ShaderBuilder::ConstantValue(Nz::SafeCast<std::uint32_t>(value));
+			case Ast::PrimitiveType::String:  return ShaderBuilder::ConstantValue(value);
+		}
+
+		throw std::runtime_error("unexpected primitive type");
+	}
+	
+	template<typename T>
+	Ast::ConstantValueExpressionPtr Impl::ConstantValue::operator()(Ast::ExpressionType type, T value, const SourceLocation& sourceLocation) const
+	{
+		assert(IsPrimitiveType(type));
+
+		switch (std::get<Ast::PrimitiveType>(type))
+		{
+			case Ast::PrimitiveType::Boolean: return ShaderBuilder::ConstantValue(value != T(0), sourceLocation);
+			case Ast::PrimitiveType::Float32: return ShaderBuilder::ConstantValue(Nz::SafeCast<float>(value), sourceLocation);
+			case Ast::PrimitiveType::Float64: return ShaderBuilder::ConstantValue(Nz::SafeCast<double>(value), sourceLocation);
+			case Ast::PrimitiveType::Int32:   return ShaderBuilder::ConstantValue(Nz::SafeCast<std::int32_t>(value), sourceLocation);
+			case Ast::PrimitiveType::UInt32:  return ShaderBuilder::ConstantValue(Nz::SafeCast<std::uint32_t>(value), sourceLocation);
 			case Ast::PrimitiveType::String:  return ShaderBuilder::ConstantValue(value);
 		}
 
@@ -487,6 +515,16 @@ namespace nzsl::ShaderBuilder
 		auto varNode = std::make_unique<Ast::VariableValueExpression>();
 		varNode->variableId = variableId;
 		varNode->cachedExpressionType = std::move(expressionType);
+
+		return varNode;
+	}
+
+	inline Ast::VariableValueExpressionPtr Impl::Variable::operator()(std::size_t variableId, Ast::ExpressionType expressionType, const SourceLocation& sourceLocation) const
+	{
+		auto varNode = std::make_unique<Ast::VariableValueExpression>();
+		varNode->variableId = variableId;
+		varNode->cachedExpressionType = std::move(expressionType);
+		varNode->sourceLocation = sourceLocation;
 
 		return varNode;
 	}

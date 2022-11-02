@@ -452,7 +452,7 @@ namespace nzsl::Ast
 					std::unique_ptr<AccessIndexExpression> accessIndex = std::make_unique<AccessIndexExpression>();
 					accessIndex->sourceLocation = indexedExpr->sourceLocation;
 					accessIndex->expr = std::move(indexedExpr);
-					accessIndex->indices.push_back(ShaderBuilder::ConstantValue(fieldIndex));
+					accessIndex->indices.push_back(ShaderBuilder::ConstantValue(fieldIndex, fieldPtr->sourceLocation));
 					accessIndex->cachedExpressionType = ResolveTypeExpr(fieldPtr->type, false, identifierEntry.sourceLocation);
 
 					indexedExpr = std::move(accessIndex);
@@ -653,7 +653,7 @@ namespace nzsl::Ast
 					throw AstInvalidMethodIndexError{ node.sourceLocation, methodType.methodIndex, ToString(objectType, node.sourceLocation) };
 
 				const ArrayType& arrayType = std::get<ArrayType>(objectType);
-				return ShaderBuilder::ConstantValue(arrayType.length);
+				return ShaderBuilder::ConstantValue(arrayType.length, node.sourceLocation);
 			}
 			else if (IsArrayType(objectType) || IsDynArrayType(objectType))
 			{
@@ -728,8 +728,7 @@ namespace nzsl::Ast
 			for (std::size_t i = 0; i < targetMatrixType.columnCount; ++i)
 			{
 				// temp[i]
-				auto columnExpr = ShaderBuilder::AccessIndex(ShaderBuilder::Variable(variableIndex, targetType), ShaderBuilder::ConstantValue(std::uint32_t(i)));
-				columnExpr->sourceLocation = node.sourceLocation;
+				auto columnExpr = ShaderBuilder::AccessIndex(ShaderBuilder::Variable(variableIndex, targetType, node.sourceLocation), ShaderBuilder::ConstantValue(std::uint32_t(i), node.sourceLocation));
 				Validate(*columnExpr);
 
 				// vector expression
@@ -738,8 +737,7 @@ namespace nzsl::Ast
 				if (isMatrixCast)
 				{
 					// fromMatrix[i]
-					auto matrixColumnExpr = ShaderBuilder::AccessIndex(CloneExpression(clone->expressions.front()), ShaderBuilder::ConstantValue(std::uint32_t(i)));
-					matrixColumnExpr->sourceLocation = node.sourceLocation;
+					auto matrixColumnExpr = ShaderBuilder::AccessIndex(CloneExpression(clone->expressions.front()), ShaderBuilder::ConstantValue(std::uint32_t(i), node.sourceLocation));
 					Validate(*matrixColumnExpr);
 
 					vectorExpr = std::move(matrixColumnExpr);
@@ -753,6 +751,9 @@ namespace nzsl::Ast
 				}
 				else
 				{
+					assert(IsPrimitiveType(frontExprType));
+
+					// Use a Cast expression to replace swizzle
 					std::vector<ExpressionPtr> expressions(targetMatrixType.rowCount);
 					SourceLocation location;
 					for (std::size_t j = 0; j < targetMatrixType.rowCount; ++j)
@@ -783,7 +784,7 @@ namespace nzsl::Ast
 						std::vector<ExpressionPtr> expressions;
 						expressions.push_back(std::move(vectorExpr));
 						for (std::size_t j = 0; j < targetMatrixType.rowCount - vectorComponentCount; ++j)
-							expressions.push_back(ShaderBuilder::ConstantValue(ExpressionType{ targetMatrixType.type }, (i == j + vectorComponentCount) ? 1 : 0)); //< set 1 to diagonal
+							expressions.push_back(ShaderBuilder::ConstantValue(ExpressionType{ targetMatrixType.type }, (i == j + vectorComponentCount) ? 1 : 0, node.sourceLocation)); //< set 1 to diagonal
 
 						vecCast = ShaderBuilder::Cast(ExpressionType{ VectorType{ targetMatrixType.rowCount, targetMatrixType.type } }, std::move(expressions));
 						vecCast->sourceLocation = node.sourceLocation;
@@ -813,10 +814,7 @@ namespace nzsl::Ast
 				m_context->currentStatementList->emplace_back(ShaderBuilder::ExpressionStatement(std::move(assignExpr)));
 			}
 
-			auto varExpr = ShaderBuilder::Variable(variableIndex, targetType);
-			varExpr->sourceLocation = node.sourceLocation;
-
-			return varExpr;
+			return ShaderBuilder::Variable(variableIndex, targetType, node.sourceLocation);
 		}
 
 		return clone;
@@ -877,13 +875,7 @@ namespace nzsl::Ast
 			else
 			{
 				if (m_context->options.removeSingleConstDeclaration)
-				{
-					auto constantValue = ShaderBuilder::ConstantValue(arg);
-					constantValue->cachedExpressionType = GetConstantType(constantValue->value);
-					constantValue->sourceLocation = node.sourceLocation;
-
-					return constantValue;
-				}
+					return ShaderBuilder::ConstantValue(arg, node.sourceLocation);
 				else
 				{
 					auto constantExpr = Cloner::Clone(node);
@@ -949,7 +941,7 @@ namespace nzsl::Ast
 				if (IsArrayType(paramType))
 				{
 					const ArrayType& arrayType = std::get<ArrayType>(paramType);
-					return ShaderBuilder::ConstantValue(arrayType.length);
+					return ShaderBuilder::ConstantValue(arrayType.length, node.sourceLocation);
 				}
 			}
 		}
@@ -1704,8 +1696,7 @@ namespace nzsl::Ast
 						auto innerMulti = std::make_unique<MultiStatement>();
 						innerMulti->sourceLocation = node.sourceLocation;
 
-						auto constant = ShaderBuilder::ConstantValue(counter);
-						constant->sourceLocation = node.sourceLocation;
+						auto constant = ShaderBuilder::ConstantValue(counter, node.sourceLocation);
 
 						auto var = ShaderBuilder::DeclareVariable(node.varName, std::move(constant));
 						var->sourceLocation = node.sourceLocation;
@@ -1780,11 +1771,8 @@ namespace nzsl::Ast
 			whileStatement->unroll = std::move(unrollValue);
 
 			// While condition
-			auto conditionCounterVariable = ShaderBuilder::Variable(counterVarIndex, counterType);
-			conditionCounterVariable->sourceLocation = node.sourceLocation;
-
-			auto conditionTargetVariable = ShaderBuilder::Variable(targetVarIndex, counterType);
-			conditionTargetVariable->sourceLocation = node.sourceLocation;
+			auto conditionCounterVariable = ShaderBuilder::Variable(counterVarIndex, counterType, node.sourceLocation);
+			auto conditionTargetVariable = ShaderBuilder::Variable(targetVarIndex, counterType, node.sourceLocation);
 
 			auto condition = ShaderBuilder::Binary(BinaryType::CompLt, std::move(conditionCounterVariable), std::move(conditionTargetVariable));
 			condition->sourceLocation = node.sourceLocation;
@@ -1803,14 +1791,16 @@ namespace nzsl::Ast
 				body->statements.emplace_back(Unscope(CloneStatement(node.statement)));
 			}
 
-
+			// Counter and increment
 			ExpressionPtr incrExpr;
 			if (stepVarIndex)
-				incrExpr = ShaderBuilder::Variable(*stepVarIndex, counterType);
+				incrExpr = ShaderBuilder::Variable(*stepVarIndex, counterType, node.sourceLocation);
 			else
-				incrExpr = (counterType == PrimitiveType::Int32) ? ShaderBuilder::ConstantValue(1) : ShaderBuilder::ConstantValue(1u);
+				incrExpr = (counterType == PrimitiveType::Int32) ? ShaderBuilder::ConstantValue(1, node.sourceLocation) : ShaderBuilder::ConstantValue(1u, node.sourceLocation);
 
-			auto incrCounter = ShaderBuilder::Assign(AssignType::CompoundAdd, ShaderBuilder::Variable(counterVarIndex, counterType), std::move(incrExpr));
+			incrExpr->sourceLocation = node.sourceLocation;
+
+			auto incrCounter = ShaderBuilder::Assign(AssignType::CompoundAdd, ShaderBuilder::Variable(counterVarIndex, counterType, node.sourceLocation), std::move(incrExpr));
 			incrCounter->sourceLocation = node.sourceLocation;
 			Validate(*incrCounter);
 
@@ -1876,9 +1866,13 @@ namespace nzsl::Ast
 						innerMulti->sourceLocation = node.sourceLocation;
 
 						auto accessIndex = ShaderBuilder::AccessIndex(CloneExpression(expr), ShaderBuilder::ConstantValue(i));
+						accessIndex->sourceLocation = node.sourceLocation;
+
 						Validate(*accessIndex);
 
 						auto elementVariable = ShaderBuilder::DeclareVariable(node.varName, std::move(accessIndex));
+						elementVariable->sourceLocation = node.sourceLocation;
+
 						Validate(*elementVariable);
 
 						innerMulti->statements.emplace_back(std::move(elementVariable));
@@ -1910,6 +1904,8 @@ namespace nzsl::Ast
 
 				// Counter variable
 				auto counterVariable = ShaderBuilder::DeclareVariable("i", ShaderBuilder::ConstantValue(0u));
+				counterVariable->sourceLocation = node.sourceLocation;
+
 				Validate(*counterVariable);
 
 				std::size_t counterVarIndex = counterVariable->varIndex.value();
@@ -1920,7 +1916,7 @@ namespace nzsl::Ast
 				whileStatement->unroll = std::move(unrollValue);
 
 				// While condition
-				auto condition = ShaderBuilder::Binary(BinaryType::CompLt, ShaderBuilder::Variable(counterVarIndex, PrimitiveType::UInt32), ShaderBuilder::ConstantValue(arrayType.length));
+				auto condition = ShaderBuilder::Binary(BinaryType::CompLt, ShaderBuilder::Variable(counterVarIndex, PrimitiveType::UInt32, node.sourceLocation), ShaderBuilder::ConstantValue(arrayType.length, node.sourceLocation));
 				Validate(*condition);
 				whileStatement->condition = std::move(condition);
 
@@ -1928,7 +1924,7 @@ namespace nzsl::Ast
 				auto body = std::make_unique<MultiStatement>();
 				body->statements.reserve(3);
 
-				auto accessIndex = ShaderBuilder::AccessIndex(std::move(expr), ShaderBuilder::Variable(counterVarIndex, PrimitiveType::UInt32));
+				auto accessIndex = ShaderBuilder::AccessIndex(std::move(expr), ShaderBuilder::Variable(counterVarIndex, PrimitiveType::UInt32, node.sourceLocation));
 				Validate(*accessIndex);
 
 				auto elementVariable = ShaderBuilder::DeclareVariable(node.varName, std::move(accessIndex));
@@ -1944,7 +1940,7 @@ namespace nzsl::Ast
 					body->statements.emplace_back(Unscope(CloneStatement(node.statement)));
 				}
 
-				auto incrCounter = ShaderBuilder::Assign(AssignType::CompoundAdd, ShaderBuilder::Variable(counterVarIndex, PrimitiveType::UInt32), ShaderBuilder::ConstantValue(1u));
+				auto incrCounter = ShaderBuilder::Assign(AssignType::CompoundAdd, ShaderBuilder::Variable(counterVarIndex, PrimitiveType::UInt32, node.sourceLocation), ShaderBuilder::ConstantValue(1u, node.sourceLocation));
 				Validate(*incrCounter);
 
 				body->statements.emplace_back(ShaderBuilder::ExpressionStatement(std::move(incrCounter)));
@@ -3866,7 +3862,7 @@ namespace nzsl::Ast
 				std::size_t requiredComponentCount = targetMatrixType.columnCount * targetMatrixType.rowCount;
 				if (expressionCount != requiredComponentCount)
 					throw CompilerCastComponentMismatchError{ node.sourceLocation, Nz::SafeCast<std::uint32_t>(expressionCount), Nz::SafeCast<std::uint32_t>(requiredComponentCount) };
-
+				
 				for (std::size_t i = 0; i < requiredComponentCount; ++i)
 				{
 					auto& exprPtr = MandatoryExpr(node.expressions[i], node.sourceLocation);
