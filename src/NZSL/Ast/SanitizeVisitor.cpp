@@ -725,6 +725,8 @@ namespace nzsl::Ast
 
 			m_context->currentStatementList->emplace_back(std::move(variableDeclaration));
 
+			ExpressionPtr cachedDiagonalValue;
+
 			for (std::size_t i = 0; i < targetMatrixType.columnCount; ++i)
 			{
 				// temp[i]
@@ -758,7 +760,18 @@ namespace nzsl::Ast
 					SourceLocation location;
 					for (std::size_t j = 0; j < targetMatrixType.rowCount; ++j)
 					{
-						expressions[j] = std::move(clone->expressions[i * targetMatrixType.rowCount + j]);
+						if (clone->expressions.size() == 1) //< diagonal value
+						{
+							if (!cachedDiagonalValue)
+								cachedDiagonalValue = CacheResult(std::move(clone->expressions.front()));
+
+							if (i == j)
+								expressions[j] = CloneExpression(cachedDiagonalValue);
+							else
+								expressions[j] = ShaderBuilder::ConstantValue(ExpressionType{ targetMatrixType.type }, 0, node.sourceLocation);
+						}
+						else
+							expressions[j] = std::move(clone->expressions[i * targetMatrixType.rowCount + j]);
 					
 						if (j == 0)
 							location = expressions[j]->sourceLocation;
@@ -3860,12 +3873,14 @@ namespace nzsl::Ast
 			{
 				// Matrix builder (from scalars)
 				std::size_t requiredComponentCount = targetMatrixType.columnCount * targetMatrixType.rowCount;
-				if (expressionCount != requiredComponentCount)
+				if (expressionCount != requiredComponentCount && expressionCount != 1) //< special case where matrices can be built using one value
 					throw CompilerCastComponentMismatchError{ node.sourceLocation, Nz::SafeCast<std::uint32_t>(expressionCount), Nz::SafeCast<std::uint32_t>(requiredComponentCount) };
 				
 				for (std::size_t i = 0; i < requiredComponentCount; ++i)
 				{
-					auto& exprPtr = MandatoryExpr(node.expressions[i], node.sourceLocation);
+					std::size_t exprIndex = (expressionCount > 1) ? i : 0;
+
+					auto& exprPtr = MandatoryExpr(node.expressions[exprIndex], node.sourceLocation);
 
 					const ExpressionType* exprType = GetExpressionType(exprPtr);
 					if (!exprType)
@@ -3877,7 +3892,7 @@ namespace nzsl::Ast
 
 					const PrimitiveType& baseType = std::get<PrimitiveType>(resolvedExprType);
 					if (baseType != targetMatrixType.type)
-						throw CompilerCastIncompatibleBaseTypesError{ node.expressions[i]->sourceLocation, ToString(targetMatrixType.type, node.sourceLocation), ToString(baseType, node.sourceLocation) };
+						throw CompilerCastIncompatibleBaseTypesError{ node.expressions[exprIndex]->sourceLocation, ToString(targetMatrixType.type, node.sourceLocation), ToString(baseType, node.sourceLocation) };
 				}
 			}
 			else
