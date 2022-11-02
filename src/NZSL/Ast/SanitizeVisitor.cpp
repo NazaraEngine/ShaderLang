@@ -564,7 +564,50 @@ namespace nzsl::Ast
 	ExpressionPtr SanitizeVisitor::Clone(BinaryExpression& node)
 	{
 		auto clone = Nz::StaticUniquePointerCast<BinaryExpression>(Cloner::Clone(node));
-		Validate(*clone);
+		if (Validate(*clone) == ValidationResult::Unresolved)
+			return clone;
+
+		if (m_context->options.removeMatrixBinaryAddSub && (clone->op == BinaryType::Add || clone->op == BinaryType::Subtract))
+		{
+			const ExpressionType& leftExprType = GetExpressionTypeSecure(*clone->left);
+			const ExpressionType& rightExprType = GetExpressionTypeSecure(*clone->right);
+			if (IsMatrixType(leftExprType) && IsMatrixType(rightExprType))
+			{
+				const MatrixType& matrixType = std::get<MatrixType>(leftExprType);
+				assert(leftExprType == rightExprType);
+
+				// Since we're going to access both matrices multiples times, make sure we cache them into variables if required
+				auto leftMatrix = CacheResult(std::move(clone->left));
+				auto rightMatrix = CacheResult(std::move(clone->right));
+
+				std::vector<ExpressionPtr> columnExpressions(matrixType.columnCount);
+
+				for (std::size_t i = 0; i < matrixType.columnCount; ++i)
+				{
+					// mat[i]
+					auto leftColumnExpr = ShaderBuilder::AccessIndex(CloneExpression(leftMatrix), ShaderBuilder::ConstantValue(std::uint32_t(i), clone->sourceLocation));
+					auto rightColumnExpr = ShaderBuilder::AccessIndex(CloneExpression(rightMatrix), ShaderBuilder::ConstantValue(std::uint32_t(i), clone->sourceLocation));
+
+					Validate(*leftColumnExpr);
+					Validate(*rightColumnExpr);
+
+					// lhs[i] +- rhs[i]
+					auto binOp = ShaderBuilder::Binary(clone->op, std::move(leftColumnExpr), std::move(rightColumnExpr));
+					binOp->sourceLocation = clone->sourceLocation;
+
+					Validate(*binOp);
+
+					columnExpressions[i] = std::move(binOp);
+				}
+
+				// Build resulting matrix
+				auto result = ShaderBuilder::Cast(leftExprType, std::move(columnExpressions));
+				result->sourceLocation = clone->sourceLocation;
+
+				// Re-clone resulting cast operation, so it can be transformed again if required
+				return Clone(*result);
+			}
+		}
 
 		return clone;
 	}
@@ -4608,9 +4651,7 @@ namespace nzsl::Ast
 					TypeMustMatch(leftExprType, rightExprType, sourceLocation);
 					return leftExprType;
 
-				case BinaryType::Modulo:
 				case BinaryType::Multiply:
-				case BinaryType::Divide:
 				{
 					if (IsMatrixType(rightExprType))
 					{
@@ -4636,6 +4677,8 @@ namespace nzsl::Ast
 						throw CompilerBinaryIncompatibleTypesError{ sourceLocation, ToString(leftExprType, sourceLocation), ToString(rightExprType, sourceLocation) };
 				}
 
+				case BinaryType::Divide:
+				case BinaryType::Modulo:
 				case BinaryType::LogicalAnd:
 				case BinaryType::LogicalOr:
 					throw CompilerBinaryUnsupportedError{ sourceLocation, "left", ToString(leftExprType, sourceLocation) };
