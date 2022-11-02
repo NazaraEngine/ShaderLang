@@ -280,6 +280,94 @@ fn testMat4ToMat4(input: mat4[f32]) -> mat4[f32]
 )");
 
 	}
+	
+	WHEN("removing matrix add/sub")
+	{
+		std::string_view nzslSource = R"(
+[nzsl_version("1.0")]
+module;
+
+fn testMat4PlusMat4(x: mat4[f32], y: mat4[f32]) -> mat4[f32]
+{
+	return x + y;
+}
+
+fn testMat4SubMat4(x: mat4[f32], y: mat4[f32]) -> mat4[f32]
+{
+	return x - y;
+}
+
+fn testMat4SubMat4TimesMat4(x: mat4[f32], y: mat4[f32], z: mat4[f32]) -> mat4[f32]
+{
+	return x - (y * y);
+}
+)";
+
+		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
+
+		nzsl::Ast::SanitizeVisitor::Options options;
+		options.removeMatrixBinaryAddSub = true;
+
+		REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(*shaderModule, options));
+
+		ExpectNZSL(*shaderModule, R"(
+fn testMat4PlusMat4(x: mat4[f32], y: mat4[f32]) -> mat4[f32]
+{
+	return mat4[f32](x[u32(0)] + y[u32(0)], x[u32(1)] + y[u32(1)], x[u32(2)] + y[u32(2)], x[u32(3)] + y[u32(3)]);
+}
+
+fn testMat4SubMat4(x: mat4[f32], y: mat4[f32]) -> mat4[f32]
+{
+	return mat4[f32](x[u32(0)] - y[u32(0)], x[u32(1)] - y[u32(1)], x[u32(2)] - y[u32(2)], x[u32(3)] - y[u32(3)]);
+}
+
+fn testMat4SubMat4TimesMat4(x: mat4[f32], y: mat4[f32], z: mat4[f32]) -> mat4[f32]
+{
+	let cachedResult: mat4[f32] = y * y;
+	return mat4[f32](x[u32(0)] - cachedResult[u32(0)], x[u32(1)] - cachedResult[u32(1)], x[u32(2)] - cachedResult[u32(2)], x[u32(3)] - cachedResult[u32(3)]);
+}
+)");
+
+		WHEN("Removing matrix casts")
+		{
+			options.removeMatrixCast = true;
+
+			REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(*shaderModule, options));
+
+			ExpectNZSL(*shaderModule, R"(
+fn testMat4PlusMat4(x: mat4[f32], y: mat4[f32]) -> mat4[f32]
+{
+	let temp: mat4[f32];
+	temp[u32(0)] = x[u32(0)] + y[u32(0)];
+	temp[u32(1)] = x[u32(1)] + y[u32(1)];
+	temp[u32(2)] = x[u32(2)] + y[u32(2)];
+	temp[u32(3)] = x[u32(3)] + y[u32(3)];
+	return temp;
+}
+
+fn testMat4SubMat4(x: mat4[f32], y: mat4[f32]) -> mat4[f32]
+{
+	let temp: mat4[f32];
+	temp[u32(0)] = x[u32(0)] - y[u32(0)];
+	temp[u32(1)] = x[u32(1)] - y[u32(1)];
+	temp[u32(2)] = x[u32(2)] - y[u32(2)];
+	temp[u32(3)] = x[u32(3)] - y[u32(3)];
+	return temp;
+}
+
+fn testMat4SubMat4TimesMat4(x: mat4[f32], y: mat4[f32], z: mat4[f32]) -> mat4[f32]
+{
+	let cachedResult: mat4[f32] = y * y;
+	let temp: mat4[f32];
+	temp[u32(0)] = x[u32(0)] - cachedResult[u32(0)];
+	temp[u32(1)] = x[u32(1)] - cachedResult[u32(1)];
+	temp[u32(2)] = x[u32(2)] - cachedResult[u32(2)];
+	temp[u32(3)] = x[u32(3)] - cachedResult[u32(3)];
+	return temp;
+}
+)");
+		}
+	}
 
 	WHEN("removing aliases")
 	{

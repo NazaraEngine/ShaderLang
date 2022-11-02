@@ -308,6 +308,226 @@ fn main()
        OpFunctionEnd)", {}, true);
 	}
 
+	SECTION("Matrix/matrix operations")
+	{
+		std::string_view nzslSource = R"(
+[nzsl_version("1.0")]
+module;
+
+[entry(frag)]
+fn main()
+{
+	let x = mat3[f32](0.0);
+	let y = mat3[f32](1.0);
+
+	let r = x + y;
+	let r = x - y;
+	let r = x * y;
+}
+)";
+
+		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
+		shaderModule = SanitizeModule(*shaderModule);
+
+		ExpectGLSL(*shaderModule, R"(
+void main()
+{
+	mat3 x = mat3(0.0);
+	mat3 y = mat3(1.0);
+	mat3 r = x + y;
+	mat3 r_2 = x - y;
+	mat3 r_3 = x * y;
+}
+)");
+
+		ExpectNZSL(*shaderModule, R"(
+[entry(frag)]
+fn main()
+{
+	let x: mat3[f32] = mat3[f32](0.0);
+	let y: mat3[f32] = mat3[f32](1.0);
+	let r: mat3[f32] = x + y;
+	let r: mat3[f32] = x - y;
+	let r: mat3[f32] = x * y;
+}
+)");
+
+		ExpectSPIRV(*shaderModule, R"(
+%14 = OpFunction %1 FunctionControl(0) %2
+%15 = OpLabel
+%16 = OpVariable %6 StorageClass(Function)
+%17 = OpVariable %8 StorageClass(Function)
+%18 = OpVariable %6 StorageClass(Function)
+%19 = OpVariable %6 StorageClass(Function)
+%20 = OpVariable %8 StorageClass(Function)
+%21 = OpVariable %6 StorageClass(Function)
+%22 = OpVariable %6 StorageClass(Function)
+%23 = OpVariable %6 StorageClass(Function)
+%24 = OpVariable %6 StorageClass(Function)
+%25 = OpVariable %6 StorageClass(Function)
+%26 = OpVariable %6 StorageClass(Function)
+      OpStore %17 %7
+%27 = OpLoad %3 %17
+%28 = OpCompositeConstruct %4 %27 %7 %7
+%29 = OpAccessChain %30 %16 %10
+      OpStore %29 %28
+%31 = OpLoad %3 %17
+%32 = OpCompositeConstruct %4 %7 %31 %7
+%33 = OpAccessChain %30 %16 %11
+      OpStore %33 %32
+%34 = OpLoad %3 %17
+%35 = OpCompositeConstruct %4 %7 %7 %34
+%36 = OpAccessChain %30 %16 %12
+      OpStore %36 %35
+%37 = OpLoad %5 %16
+      OpStore %18 %37
+      OpStore %20 %13
+%38 = OpLoad %3 %20
+%39 = OpCompositeConstruct %4 %38 %7 %7
+%40 = OpAccessChain %30 %19 %10
+      OpStore %40 %39
+%41 = OpLoad %3 %20
+%42 = OpCompositeConstruct %4 %7 %41 %7
+%43 = OpAccessChain %30 %19 %11
+      OpStore %43 %42
+%44 = OpLoad %3 %20
+%45 = OpCompositeConstruct %4 %7 %7 %44
+%46 = OpAccessChain %30 %19 %12
+      OpStore %46 %45
+%47 = OpLoad %5 %19
+      OpStore %21 %47
+%50 = OpAccessChain %30 %18 %49
+%51 = OpLoad %4 %50
+%52 = OpAccessChain %30 %21 %49
+%53 = OpLoad %4 %52
+%54 = OpFAdd %4 %51 %53
+%55 = OpAccessChain %30 %22 %10
+      OpStore %55 %54
+%57 = OpAccessChain %30 %18 %56
+%58 = OpLoad %4 %57
+%59 = OpAccessChain %30 %21 %56
+%60 = OpLoad %4 %59
+%61 = OpFAdd %4 %58 %60
+%62 = OpAccessChain %30 %22 %11
+      OpStore %62 %61
+%64 = OpAccessChain %30 %18 %63
+%65 = OpLoad %4 %64
+%66 = OpAccessChain %30 %21 %63
+%67 = OpLoad %4 %66
+%68 = OpFAdd %4 %65 %67
+%69 = OpAccessChain %30 %22 %12
+      OpStore %69 %68
+%70 = OpLoad %5 %22
+      OpStore %23 %70
+%71 = OpAccessChain %30 %18 %49
+%72 = OpLoad %4 %71
+%73 = OpAccessChain %30 %21 %49
+%74 = OpLoad %4 %73
+%75 = OpFSub %4 %72 %74
+%76 = OpAccessChain %30 %24 %10
+      OpStore %76 %75
+%77 = OpAccessChain %30 %18 %56
+%78 = OpLoad %4 %77
+%79 = OpAccessChain %30 %21 %56
+%80 = OpLoad %4 %79
+%81 = OpFSub %4 %78 %80
+%82 = OpAccessChain %30 %24 %11
+      OpStore %82 %81
+%83 = OpAccessChain %30 %18 %63
+%84 = OpLoad %4 %83
+%85 = OpAccessChain %30 %21 %63
+%86 = OpLoad %4 %85
+%87 = OpFSub %4 %84 %86
+%88 = OpAccessChain %30 %24 %12
+      OpStore %88 %87
+%89 = OpLoad %5 %24
+      OpStore %25 %89
+%90 = OpLoad %5 %18
+%91 = OpLoad %5 %21
+%92 = OpMatrixTimesMatrix %5 %90 %91
+      OpStore %26 %92
+      OpReturn
+      OpFunctionEnd)", {}, true);
+	}
+	
+	SECTION("Matrix/scalars operations")
+	{
+		std::string_view nzslSource = R"(
+[nzsl_version("1.0")]
+module;
+
+[entry(frag)]
+fn main()
+{
+	let mat = mat3[f32](1.0);
+	let val = 42.0;
+
+	let r = mat * val;
+	let r = val * mat;
+}
+)";
+
+		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
+		shaderModule = SanitizeModule(*shaderModule);
+
+		ExpectGLSL(*shaderModule, R"(
+void main()
+{
+	mat3 mat = mat3(1.0);
+	float val = 42.0;
+	mat3 r = mat * val;
+	mat3 r_2 = val * mat;
+}
+)");
+
+		ExpectNZSL(*shaderModule, R"(
+[entry(frag)]
+fn main()
+{
+	let mat: mat3[f32] = mat3[f32](1.0);
+	let val: f32 = 42.0;
+	let r: mat3[f32] = mat * val;
+	let r: mat3[f32] = val * mat;
+}
+)");
+
+		ExpectSPIRV(*shaderModule, R"(
+%15 = OpFunction %1 FunctionControl(0) %2
+%16 = OpLabel
+%17 = OpVariable %6 StorageClass(Function)
+%18 = OpVariable %8 StorageClass(Function)
+%19 = OpVariable %6 StorageClass(Function)
+%20 = OpVariable %8 StorageClass(Function)
+%21 = OpVariable %6 StorageClass(Function)
+%22 = OpVariable %6 StorageClass(Function)
+      OpStore %18 %7
+%23 = OpLoad %3 %18
+%24 = OpCompositeConstruct %4 %23 %11 %11
+%25 = OpAccessChain %26 %17 %10
+      OpStore %25 %24
+%27 = OpLoad %3 %18
+%28 = OpCompositeConstruct %4 %11 %27 %11
+%29 = OpAccessChain %26 %17 %12
+      OpStore %29 %28
+%30 = OpLoad %3 %18
+%31 = OpCompositeConstruct %4 %11 %11 %30
+%32 = OpAccessChain %26 %17 %13
+      OpStore %32 %31
+%33 = OpLoad %5 %17
+      OpStore %19 %33
+      OpStore %20 %14
+%34 = OpLoad %5 %19
+%35 = OpLoad %3 %20
+%36 = OpMatrixTimesScalar %5 %34 %35
+      OpStore %21 %36
+%37 = OpLoad %3 %20
+%38 = OpLoad %5 %19
+%39 = OpMatrixTimesScalar %5 %38 %37
+      OpStore %22 %39
+      OpReturn
+      OpFunctionEnd)", {}, true);
+	}
+
 	SECTION("Unary operators combined with binary operators")
 	{
 		std::string_view nzslSource = R"(

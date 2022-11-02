@@ -49,6 +49,7 @@ namespace nzsl::Ast
 				bool removeAliases = false;
 				bool removeCompoundAssignments = false;
 				bool removeConstArraySize = false;
+				bool removeMatrixBinaryAddSub = false;
 				bool removeMatrixCast = false;
 				bool removeOptionDeclaration = false;
 				bool removeScalarSwizzling = false;
