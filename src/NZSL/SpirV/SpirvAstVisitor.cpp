@@ -613,7 +613,8 @@ namespace nzsl
 							break; //< Already handled
 
 						case Ast::PrimitiveType::UInt32:
-							throw std::runtime_error("unsupported cast from int32");
+							castOp = SpirvOp::OpBitcast;
+							break;
 
 						case Ast::PrimitiveType::String:
 							throw std::runtime_error("unexpected string type");

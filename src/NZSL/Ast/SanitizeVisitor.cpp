@@ -4013,12 +4013,12 @@ namespace nzsl::Ast
 						{
 							case PrimitiveType::Boolean:
 							case PrimitiveType::String:
-							case PrimitiveType::UInt32:
 								return false;
 
 							case PrimitiveType::Float32:
 							case PrimitiveType::Float64:
 							case PrimitiveType::Int32:
+							case PrimitiveType::UInt32:
 								return true;
 						}
 
