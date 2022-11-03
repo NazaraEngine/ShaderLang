@@ -375,9 +375,9 @@ namespace nzsl::Ast
 				else
 					throw CompilerUnknownMethodError{ identifierEntry.sourceLocation, ToString(resolvedType, indexedExpr->sourceLocation), identifierEntry.identifier };
 			}
-			else if (IsStructType(resolvedType))
+			else if (IsStructAddressible(resolvedType))
 			{
-				std::size_t structIndex = ResolveStruct(resolvedType, indexedExpr->sourceLocation);
+				std::size_t structIndex = ResolveStructIndex(resolvedType, indexedExpr->sourceLocation);
 				const StructDescription* s = m_context->structs.Retrieve(structIndex, indexedExpr->sourceLocation);
 
 				// Retrieve member index (not counting disabled fields)
@@ -1321,13 +1321,9 @@ namespace nzsl::Ast
 			const ExpressionType& targetType = ResolveAlias(*resolvedType);
 
 			ExpressionType varType;
-			if (IsStorageType(targetType))
-				varType = std::get<StorageType>(targetType).containedType;
-			else if (IsUniformType(targetType))
-				varType = std::get<UniformType>(targetType).containedType;
-			else if (IsSamplerType(targetType))
+			if (IsStructAddressible(targetType) || IsSamplerType(targetType))
 				varType = targetType;
-			else if (IsSamplerType(targetType) || IsPrimitiveType(targetType) || IsVectorType(targetType) || IsMatrixType(targetType))
+			else if (IsPrimitiveType(targetType) || IsVectorType(targetType) || IsMatrixType(targetType))
 			{
 				if (IsFeatureEnabled(ModuleFeature::PrimitiveExternals))
 					varType = targetType;
@@ -3388,51 +3384,13 @@ namespace nzsl::Ast
 		}
 	}
 
-	std::size_t SanitizeVisitor::ResolveStruct(const AliasType& aliasType, const SourceLocation& sourceLocation)
+	std::size_t SanitizeVisitor::ResolveStructIndex(const ExpressionType& exprType, const SourceLocation& sourceLocation)
 	{
-		return ResolveStruct(aliasType.targetType->type, sourceLocation);
-	}
+		std::size_t structIndex = Ast::ResolveStructIndex(exprType);
+		if (structIndex == std::numeric_limits<std::size_t>::max())
+			throw CompilerStructExpectedError{ sourceLocation, ToString(exprType, sourceLocation) };
 
-	std::size_t SanitizeVisitor::ResolveStruct(const ExpressionType& exprType, const SourceLocation& sourceLocation)
-	{
-		return std::visit([&](auto&& arg) -> std::size_t
-		{
-			using T = std::decay_t<decltype(arg)>;
-
-			if constexpr (std::is_same_v<T, StorageType> || std::is_same_v<T, StructType> || std::is_same_v<T, UniformType> || std::is_same_v<T, AliasType>)
-				return ResolveStruct(arg, sourceLocation);
-			else if constexpr (std::is_same_v<T, NoType> ||
-			                   std::is_same_v<T, ArrayType> ||
-			                   std::is_same_v<T, DynArrayType> ||
-			                   std::is_same_v<T, FunctionType> ||
-			                   std::is_same_v<T, IntrinsicFunctionType> ||
-			                   std::is_same_v<T, PrimitiveType> ||
-			                   std::is_same_v<T, MatrixType> ||
-			                   std::is_same_v<T, MethodType> ||
-			                   std::is_same_v<T, SamplerType> ||
-			                   std::is_same_v<T, Type> ||
-			                   std::is_same_v<T, VectorType>)
-			{
-				throw CompilerStructExpectedError{ sourceLocation, ToString(exprType, sourceLocation) };
-			}
-			else
-				static_assert(Nz::AlwaysFalse<T>::value, "non-exhaustive visitor");
-		}, exprType);
-	}
-
-	std::size_t SanitizeVisitor::ResolveStruct(const StorageType& structType, const SourceLocation& /*sourceLocation*/)
-	{
-		return structType.containedType.structIndex;;
-	}
-
-	std::size_t SanitizeVisitor::ResolveStruct(const StructType& structType, const SourceLocation& /*sourceLocation*/)
-	{
-		return structType.structIndex;
-	}
-
-	std::size_t SanitizeVisitor::ResolveStruct(const UniformType& uniformType, const SourceLocation& /*sourceLocation*/)
-	{
-		return uniformType.containedType.structIndex;
+		return structIndex;
 	}
 
 	ExpressionType SanitizeVisitor::ResolveType(const ExpressionType& exprType, bool resolveAlias, const SourceLocation& sourceLocation)
@@ -3564,7 +3522,7 @@ namespace nzsl::Ast
 
 		if (IsStructType(resolvedType))
 		{
-			std::size_t structIndex = ResolveStruct(resolvedType, node.expression->sourceLocation);
+			std::size_t structIndex = ResolveStructIndex(resolvedType, node.expression->sourceLocation);
 			aliasIdentifier.target = { structIndex, IdentifierCategory::Struct };
 		}
 		else if (IsFunctionType(resolvedType))
@@ -3715,16 +3673,16 @@ namespace nzsl::Ast
 					ExpressionType containedType = arrayType.containedType->type; //< Don't overwrite exprType directly since it contains arrayType
 					resolvedExprType = std::move(containedType);
 				}
-				else if (IsStructType(resolvedExprType))
+				else if (IsStructAddressible(resolvedExprType))
 				{
 					if (primitiveIndexType != PrimitiveType::Int32)
 						throw CompilerIndexStructRequiresInt32IndicesError{ node.sourceLocation, ToString(*indexType, indexExpr->sourceLocation) };
 
 					ConstantValueExpression& constantExpr = static_cast<ConstantValueExpression&>(*indexExpr);
 
-					std::int32_t index = std::get<std::int32_t>(constantExpr.value);
+					std::int32_t index = std::get<std::int32_t>(*constantValue);
 
-					std::size_t structIndex = ResolveStruct(resolvedExprType, indexExpr->sourceLocation);
+					std::size_t structIndex = ResolveStructIndex(resolvedExprType, indexExpr->sourceLocation);
 					const StructDescription* s = m_context->structs.Retrieve(structIndex, indexExpr->sourceLocation);
 
 					std::optional<ExpressionType> resolvedExprTypeOpt = ResolveTypeExpr(s->members[index].type, true, indexExpr->sourceLocation);
@@ -3851,7 +3809,7 @@ namespace nzsl::Ast
 				return ValidationResult::Unresolved;
 
 			if (ResolveAlias(*parameterType) != ResolveAlias(referenceDeclaration->parameters[i].type.GetResultingValue()))
-				throw CompilerFunctionCallUnmatchingParameterTypeError{ node.sourceLocation, referenceDeclaration->name, Nz::SafeCast<std::uint32_t>(i), ToString(referenceDeclaration->parameters[i].type.GetResultingValue(), referenceDeclaration->parameters[i].sourceLocation), ToString(*parameterType, node.parameters[i]->sourceLocation) };
+				throw CompilerFunctionCallUnmatchingParameterTypeError{ node.parameters[i]->sourceLocation, referenceDeclaration->name, Nz::SafeCast<std::uint32_t>(i), ToString(referenceDeclaration->parameters[i].type.GetResultingValue(), referenceDeclaration->parameters[i].sourceLocation), ToString(*parameterType, node.parameters[i]->sourceLocation)};
 		}
 
 		if (node.parameters.size() != referenceDeclaration->parameters.size())

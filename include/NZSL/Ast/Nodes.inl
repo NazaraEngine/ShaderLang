@@ -16,17 +16,6 @@ namespace nzsl::Ast
 		return (expr.cachedExpressionType) ? &expr.cachedExpressionType.value() : nullptr;
 	}
 
-	inline const ExpressionType& ResolveAlias(const ExpressionType& exprType)
-	{
-		if (IsAliasType(exprType))
-		{
-			const AliasType& alias = std::get<AliasType>(exprType);
-			return alias.targetType->type;
-		}
-		else
-			return exprType;
-	}
-
 	inline bool IsExpression(NodeType nodeType)
 	{
 		switch (nodeType)

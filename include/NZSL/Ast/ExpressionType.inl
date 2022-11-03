@@ -233,5 +233,22 @@ namespace nzsl::Ast
 	{
 		return std::holds_alternative<VectorType>(type);
 	}
+
+	bool IsStructAddressible(const ExpressionType& exprType)
+	{
+		return ResolveStructIndex(exprType) != std::numeric_limits<std::size_t>::max();
+	}
+
+	inline const ExpressionType& ResolveAlias(const ExpressionType& exprType)
+	{
+		if (IsAliasType(exprType))
+		{
+			const AliasType& alias = std::get<AliasType>(exprType);
+			return alias.targetType->type;
+		}
+		else
+			return exprType;
+	}
+
 }
 

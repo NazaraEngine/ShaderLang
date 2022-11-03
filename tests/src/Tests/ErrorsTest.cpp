@@ -440,6 +440,32 @@ external
 }
 
 )"), "(7,17 -> 29): PAttributeMultipleUnique error: attribute tag can only be present once");
+
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+struct Data
+{
+	value: i32
+}
+
+[auto_binding]
+external
+{
+	data: uniform[Data]
+}
+
+fn GetValue(data: Data) -> i32
+{
+	return data.value;
+}
+
+fn main()
+{
+	let x = GetValue(data);
+}
+)"), "(23,19 -> 22): CFunctionCallUnmatchingParameterType error: function GetValue parameter #0 type mismatch (expected struct Data, got uniform[struct Data])");
 		}
 
 		/************************************************************************/

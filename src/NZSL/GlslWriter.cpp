@@ -1294,7 +1294,7 @@ namespace nzsl
 		const Ast::ExpressionType* exprType = GetExpressionType(*node.expr);
 		NazaraUnused(exprType);
 		assert(exprType);
-		assert(IsStructType(*exprType));
+		assert(IsStructAddressible(*exprType));
 
 		for (const auto& identifierEntry : node.identifiers)
 			Append(".", identifierEntry.identifier);
@@ -1307,7 +1307,7 @@ namespace nzsl
 		const Ast::ExpressionType* exprType = GetExpressionType(*node.expr);
 		NazaraUnused(exprType);
 		assert(exprType);
-		assert(!IsStructType(*exprType));
+		assert(!IsStructAddressible(*exprType));
 
 		// Array access
 		assert(node.indices.size() == 1);
