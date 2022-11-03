@@ -2854,7 +2854,7 @@ namespace nzsl::Ast
 
 				RegisterType(std::move(name), PartialType{
 					{ TypeParameterCategory::PrimitiveType }, {},
-					[=](const TypeParameter* parameters, [[maybe_unused]] std::size_t parameterCount, const SourceLocation& /*sourceLocation*/) -> ExpressionType
+					[=](const TypeParameter* parameters, [[maybe_unused]] std::size_t parameterCount, const SourceLocation& sourceLocation) -> ExpressionType
 					{
 						assert(parameterCount == 1);
 						assert(std::holds_alternative<ExpressionType>(*parameters));
@@ -2862,8 +2862,12 @@ namespace nzsl::Ast
 						const ExpressionType& exprType = std::get<ExpressionType>(*parameters);
 						assert(IsPrimitiveType(exprType));
 
+						PrimitiveType primitiveType = std::get<PrimitiveType>(exprType);
+						if (primitiveType != PrimitiveType::Float32 && primitiveType != PrimitiveType::Float64)
+							throw CompilerMatrixExpectedFloatError{ sourceLocation, Ast::ToString(exprType) };
+
 						return MatrixType {
-							columnCount, rowCount, std::get<PrimitiveType>(exprType)
+							columnCount, rowCount, primitiveType
 						};
 					}
 				}, std::nullopt, {});
