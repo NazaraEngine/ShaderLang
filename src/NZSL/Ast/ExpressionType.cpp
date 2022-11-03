@@ -261,6 +261,53 @@ namespace nzsl::Ast
 
 		throw std::runtime_error("unexpected type");
 	}
+	
+	std::size_t ResolveStructIndex(const AliasType& aliasType)
+	{
+		return ResolveStructIndex(aliasType.targetType->type);
+	}
+
+	std::size_t ResolveStructIndex(const ExpressionType& exprType)
+	{
+		return std::visit([&](auto&& arg) -> std::size_t
+		{
+			using T = std::decay_t<decltype(arg)>;
+
+			if constexpr (std::is_same_v<T, StorageType> || std::is_same_v<T, StructType> || std::is_same_v<T, UniformType> || std::is_same_v<T, AliasType>)
+				return ResolveStructIndex(arg);
+			else if constexpr (std::is_same_v<T, NoType> ||
+			                   std::is_same_v<T, ArrayType> ||
+			                   std::is_same_v<T, DynArrayType> ||
+			                   std::is_same_v<T, FunctionType> ||
+			                   std::is_same_v<T, IntrinsicFunctionType> ||
+			                   std::is_same_v<T, PrimitiveType> ||
+			                   std::is_same_v<T, MatrixType> ||
+			                   std::is_same_v<T, MethodType> ||
+			                   std::is_same_v<T, SamplerType> ||
+			                   std::is_same_v<T, Type> ||
+			                   std::is_same_v<T, VectorType>)
+			{
+				return std::numeric_limits<std::size_t>::max();
+			}
+			else
+				static_assert(Nz::AlwaysFalse<T>::value, "non-exhaustive visitor");
+		}, exprType);
+	}
+
+	std::size_t ResolveStructIndex(const StorageType& structType)
+	{
+		return structType.containedType.structIndex;
+	}
+
+	std::size_t ResolveStructIndex(const StructType& structType)
+	{
+		return structType.structIndex;
+	}
+
+	std::size_t ResolveStructIndex(const UniformType& uniformType)
+	{
+		return uniformType.containedType.structIndex;
+	}
 
 	std::string ToString(const AliasType& type, const Stringifier& stringifier)
 	{

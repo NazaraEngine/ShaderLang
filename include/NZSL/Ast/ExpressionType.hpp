@@ -236,6 +236,8 @@ namespace nzsl::Ast
 	inline bool IsUniformType(const ExpressionType& type);
 	inline bool IsVectorType(const ExpressionType& type);
 
+	inline bool IsStructAddressible(const ExpressionType& exprType);
+
 	using StructFinder = std::function<const FieldOffsets& (std::size_t structIndex)>;
 
 	NZSL_API std::size_t RegisterStructField(FieldOffsets& fieldOffsets, const ExpressionType& type, const StructFinder& structFinder = {});
@@ -253,6 +255,14 @@ namespace nzsl::Ast
 	NZSL_API std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const StructType& primitiveType, std::size_t arraySize, const StructFinder& structFinder = {});
 	NZSL_API std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const VectorType& vectorType, const StructFinder& structFinder = {});
 	NZSL_API std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const VectorType& vectorType, std::size_t arraySize, const StructFinder& structFinder = {});
+
+	inline const ExpressionType& ResolveAlias(const ExpressionType& exprType);
+
+	NZSL_API std::size_t ResolveStructIndex(const AliasType& aliasType);
+	NZSL_API std::size_t ResolveStructIndex(const ExpressionType& exprType);
+	NZSL_API std::size_t ResolveStructIndex(const StorageType& structType);
+	NZSL_API std::size_t ResolveStructIndex(const StructType& structType);
+	NZSL_API std::size_t ResolveStructIndex(const UniformType& uniformType);
 
 	struct Stringifier
 	{
