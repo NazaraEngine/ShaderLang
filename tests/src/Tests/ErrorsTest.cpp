@@ -629,6 +629,16 @@ fn main()
 	let a: i32 = 42.66;
 }
 )"), "(7,2 -> 20): CVarDeclarationTypeUnmatching error: initial expression type (i32) doesn't match specified type (f32)");
+
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+fn main()
+{
+	let a: mat4[i32];
+}
+)"), "(7,9 -> 17): CMatrixExpectedFloat error: expected floating-point primitive as matrix type, got i32");
 		}
 	}
 }
