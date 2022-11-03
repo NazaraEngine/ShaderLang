@@ -527,6 +527,320 @@ fn main()
       OpReturn
       OpFunctionEnd)", {}, true);
 	}
+	
+	SECTION("Vector/vector operations")
+	{
+		std::string_view nzslSource = R"(
+[nzsl_version("1.0")]
+module;
+
+[entry(frag)]
+fn main()
+{
+	let x = vec3[f32](0.0, 1.0, 2.0);
+	let y = vec3[f32](2.0, 1.0, 0.0);
+
+	let r = x + y;
+	let r = x - y;
+	let r = x * y;
+	let r = x / y;
+	let r = x % y;
+
+	let x = vec3[u32](u32(0), u32(1), u32(2));
+	let y = vec3[u32](u32(2), u32(1), u32(0));
+
+	let r = x + y;
+	let r = x - y;
+	let r = x * y;
+	let r = x / y;
+	let r = x % y;
+}
+)";
+
+		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
+		shaderModule = SanitizeModule(*shaderModule);
+
+		ExpectGLSL(*shaderModule, R"(
+void main()
+{
+	vec3 x = vec3(0.0, 1.0, 2.0);
+	vec3 y = vec3(2.0, 1.0, 0.0);
+	vec3 r = x + y;
+	vec3 r_2 = x - y;
+	vec3 r_3 = x * y;
+	vec3 r_4 = x / y;
+	vec3 r_5 = mod(x, y);
+	uvec3 x_2 = uvec3(uint(0), uint(1), uint(2));
+	uvec3 y_2 = uvec3(uint(2), uint(1), uint(0));
+	uvec3 r_6 = x_2 + y_2;
+	uvec3 r_7 = x_2 - y_2;
+	uvec3 r_8 = x_2 * y_2;
+	uvec3 r_9 = x_2 / y_2;
+	uvec3 r_10 = x_2 % y_2;
+}
+)");
+
+		ExpectNZSL(*shaderModule, R"(
+[entry(frag)]
+fn main()
+{
+	let x: vec3[f32] = vec3[f32](0.0, 1.0, 2.0);
+	let y: vec3[f32] = vec3[f32](2.0, 1.0, 0.0);
+	let r: vec3[f32] = x + y;
+	let r: vec3[f32] = x - y;
+	let r: vec3[f32] = x * y;
+	let r: vec3[f32] = x / y;
+	let r: vec3[f32] = x % y;
+	let x: vec3[u32] = vec3[u32](u32(0), u32(1), u32(2));
+	let y: vec3[u32] = vec3[u32](u32(2), u32(1), u32(0));
+	let r: vec3[u32] = x + y;
+	let r: vec3[u32] = x - y;
+	let r: vec3[u32] = x * y;
+	let r: vec3[u32] = x / y;
+	let r: vec3[u32] = x % y;
+}
+)");
+
+		ExpectSPIRV(*shaderModule, R"(
+%16 = OpFunction %1 FunctionControl(0) %2
+%17 = OpLabel
+%18 = OpVariable %8 StorageClass(Function)
+%19 = OpVariable %8 StorageClass(Function)
+%20 = OpVariable %8 StorageClass(Function)
+%21 = OpVariable %8 StorageClass(Function)
+%22 = OpVariable %8 StorageClass(Function)
+%23 = OpVariable %8 StorageClass(Function)
+%24 = OpVariable %8 StorageClass(Function)
+%25 = OpVariable %15 StorageClass(Function)
+%26 = OpVariable %15 StorageClass(Function)
+%27 = OpVariable %15 StorageClass(Function)
+%28 = OpVariable %15 StorageClass(Function)
+%29 = OpVariable %15 StorageClass(Function)
+%30 = OpVariable %15 StorageClass(Function)
+%31 = OpVariable %15 StorageClass(Function)
+%32 = OpCompositeConstruct %7 %4 %5 %6
+      OpStore %18 %32
+%33 = OpCompositeConstruct %7 %6 %5 %4
+      OpStore %19 %33
+%34 = OpLoad %7 %18
+%35 = OpLoad %7 %19
+%36 = OpFAdd %7 %34 %35
+      OpStore %20 %36
+%37 = OpLoad %7 %18
+%38 = OpLoad %7 %19
+%39 = OpFSub %7 %37 %38
+      OpStore %21 %39
+%40 = OpLoad %7 %18
+%41 = OpLoad %7 %19
+%42 = OpFMul %7 %40 %41
+      OpStore %22 %42
+%43 = OpLoad %7 %18
+%44 = OpLoad %7 %19
+%45 = OpFDiv %7 %43 %44
+      OpStore %23 %45
+%46 = OpLoad %7 %18
+%47 = OpLoad %7 %19
+%48 = OpFMod %7 %46 %47
+      OpStore %24 %48
+%49 = OpBitcast %11 %10
+%50 = OpBitcast %11 %12
+%51 = OpBitcast %11 %13
+%52 = OpCompositeConstruct %14 %49 %50 %51
+      OpStore %25 %52
+%53 = OpBitcast %11 %13
+%54 = OpBitcast %11 %12
+%55 = OpBitcast %11 %10
+%56 = OpCompositeConstruct %14 %53 %54 %55
+      OpStore %26 %56
+%57 = OpLoad %14 %25
+%58 = OpLoad %14 %26
+%59 = OpIAdd %14 %57 %58
+      OpStore %27 %59
+%60 = OpLoad %14 %25
+%61 = OpLoad %14 %26
+%62 = OpISub %14 %60 %61
+      OpStore %28 %62
+%63 = OpLoad %14 %25
+%64 = OpLoad %14 %26
+%65 = OpIMul %14 %63 %64
+      OpStore %29 %65
+%66 = OpLoad %14 %25
+%67 = OpLoad %14 %26
+%68 = OpUDiv %14 %66 %67
+      OpStore %30 %68
+%69 = OpLoad %14 %25
+%70 = OpLoad %14 %26
+%71 = OpUMod %14 %69 %70
+      OpStore %31 %71
+      OpReturn
+      OpFunctionEnd)", {}, true);
+	}
+	
+	SECTION("Vector/scalars operations")
+	{
+		std::string_view nzslSource = R"(
+[nzsl_version("1.0")]
+module;
+
+[entry(frag)]
+fn main()
+{
+	let vec = vec4[i32](1, 2, 3, 4);
+	let val = 42;
+
+	let r = vec * val;
+	let r = val * vec;
+	let r = vec / val;
+	let r = val / vec;
+	let r = vec % val;
+	let r = val % vec;
+
+	let vec = vec4[f32](1.0, 2.0, 3.0, 4.0);
+	let val = 42.0;
+
+	let r = vec * val;
+	let r = val * vec;
+	let r = vec / val;
+	let r = val / vec;
+	let r = vec % val;
+	let r = val % vec;
+}
+)";
+
+		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
+		shaderModule = SanitizeModule(*shaderModule);
+
+		ExpectGLSL(*shaderModule, R"(
+void main()
+{
+	ivec4 vec = ivec4(1, 2, 3, 4);
+	int val = 42;
+	ivec4 r = vec * val;
+	ivec4 r_2 = val * vec;
+	ivec4 r_3 = vec / val;
+	ivec4 r_4 = val / vec;
+	ivec4 r_5 = vec % val;
+	ivec4 r_6 = val % vec;
+	vec4 vec_2 = vec4(1.0, 2.0, 3.0, 4.0);
+	float val_2 = 42.0;
+	vec4 r_7 = vec_2 * val_2;
+	vec4 r_8 = val_2 * vec_2;
+	vec4 r_9 = vec_2 / val_2;
+	vec4 r_10 = val_2 / vec_2;
+	vec4 r_11 = mod(vec_2, val_2);
+	vec4 r_12 = mod(vec4(val_2), vec_2);
+}
+)");
+
+		ExpectNZSL(*shaderModule, R"(
+[entry(frag)]
+fn main()
+{
+	let vec: vec4[i32] = vec4[i32](1, 2, 3, 4);
+	let val: i32 = 42;
+	let r: vec4[i32] = vec * val;
+	let r: vec4[i32] = val * vec;
+	let r: vec4[i32] = vec / val;
+	let r: vec4[i32] = val / vec;
+	let r: vec4[i32] = vec % val;
+	let r: vec4[i32] = val % vec;
+	let vec: vec4[f32] = vec4[f32](1.0, 2.0, 3.0, 4.0);
+	let val: f32 = 42.0;
+	let r: vec4[f32] = vec * val;
+	let r: vec4[f32] = val * vec;
+	let r: vec4[f32] = vec / val;
+	let r: vec4[f32] = val / vec;
+	let r: vec4[f32] = vec % val;
+	let r: vec4[f32] = val % vec;
+}
+)");
+
+		ExpectSPIRV(*shaderModule, R"(
+%21 = OpFunction %1 FunctionControl(0) %2
+%22 = OpLabel
+%23 = OpVariable %9 StorageClass(Function)
+%24 = OpVariable %11 StorageClass(Function)
+%25 = OpVariable %9 StorageClass(Function)
+%26 = OpVariable %9 StorageClass(Function)
+%27 = OpVariable %9 StorageClass(Function)
+%28 = OpVariable %9 StorageClass(Function)
+%29 = OpVariable %9 StorageClass(Function)
+%30 = OpVariable %9 StorageClass(Function)
+%31 = OpVariable %18 StorageClass(Function)
+%32 = OpVariable %20 StorageClass(Function)
+%33 = OpVariable %18 StorageClass(Function)
+%34 = OpVariable %18 StorageClass(Function)
+%35 = OpVariable %18 StorageClass(Function)
+%36 = OpVariable %18 StorageClass(Function)
+%37 = OpVariable %18 StorageClass(Function)
+%38 = OpVariable %18 StorageClass(Function)
+%39 = OpCompositeConstruct %8 %4 %5 %6 %7
+      OpStore %23 %39
+      OpStore %24 %10
+%40 = OpLoad %8 %23
+%41 = OpLoad %3 %24
+%43 = OpCompositeConstruct %8 %41 %41 %41 %41
+%42 = OpIMul %8 %40 %43
+      OpStore %25 %42
+%44 = OpLoad %3 %24
+%45 = OpLoad %8 %23
+%47 = OpCompositeConstruct %8 %44 %44 %44 %44
+%46 = OpIMul %8 %47 %45
+      OpStore %26 %46
+%48 = OpLoad %8 %23
+%49 = OpLoad %3 %24
+%51 = OpCompositeConstruct %8 %49 %49 %49 %49
+%50 = OpSDiv %8 %48 %51
+      OpStore %27 %50
+%52 = OpLoad %3 %24
+%53 = OpLoad %8 %23
+%55 = OpCompositeConstruct %8 %52 %52 %52 %52
+%54 = OpSDiv %8 %55 %53
+      OpStore %28 %54
+%56 = OpLoad %8 %23
+%57 = OpLoad %3 %24
+%59 = OpCompositeConstruct %8 %57 %57 %57 %57
+%58 = OpSMod %8 %56 %59
+      OpStore %29 %58
+%60 = OpLoad %3 %24
+%61 = OpLoad %8 %23
+%63 = OpCompositeConstruct %8 %60 %60 %60 %60
+%62 = OpSMod %8 %63 %61
+      OpStore %30 %62
+%64 = OpCompositeConstruct %17 %13 %14 %15 %16
+      OpStore %31 %64
+      OpStore %32 %19
+%65 = OpLoad %17 %31
+%66 = OpLoad %12 %32
+%67 = OpVectorTimesScalar %17 %65 %66
+      OpStore %33 %67
+%68 = OpLoad %12 %32
+%69 = OpLoad %17 %31
+%70 = OpVectorTimesScalar %17 %69 %68
+      OpStore %34 %70
+%71 = OpLoad %17 %31
+%72 = OpLoad %12 %32
+%74 = OpCompositeConstruct %17 %72 %72 %72 %72
+%73 = OpFDiv %17 %71 %74
+      OpStore %35 %73
+%75 = OpLoad %12 %32
+%76 = OpLoad %17 %31
+%78 = OpCompositeConstruct %17 %75 %75 %75 %75
+%77 = OpFDiv %17 %78 %76
+      OpStore %36 %77
+%79 = OpLoad %17 %31
+%80 = OpLoad %12 %32
+%82 = OpCompositeConstruct %17 %80 %80 %80 %80
+%81 = OpFMod %17 %79 %82
+      OpStore %37 %81
+%83 = OpLoad %12 %32
+%84 = OpLoad %17 %31
+%86 = OpCompositeConstruct %17 %83 %83 %83 %83
+%85 = OpFMod %17 %86 %84
+      OpStore %38 %85
+      OpReturn
+      OpFunctionEnd)", {}, true);
+	}
 
 	SECTION("Unary operators combined with binary operators")
 	{

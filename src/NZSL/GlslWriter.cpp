@@ -1378,32 +1378,44 @@ namespace nzsl
 		// Special case, GLSL modulo on floating point requires a call to the mod intrinsic
 		if (node.op == Ast::BinaryType::Modulo)
 		{
-			bool isFmod = false;
-			if (IsPrimitiveType(*node.cachedExpressionType))
-			{
-				Ast::PrimitiveType primitiveType = std::get<Ast::PrimitiveType>(*node.cachedExpressionType);
-				if (primitiveType == Ast::PrimitiveType::Float32 || primitiveType == Ast::PrimitiveType::Float64)
-					isFmod = true;
-			}
-			else if (IsVectorType(*node.cachedExpressionType))
-			{
-				Ast::PrimitiveType primitiveType = std::get<Ast::VectorType>(*node.cachedExpressionType).type;
-				if (primitiveType == Ast::PrimitiveType::Float32 || primitiveType == Ast::PrimitiveType::Float64)
-					isFmod = true;
-			}
-			else
-				throw std::runtime_error("unexpected type for modulo");
-
-			if (isFmod)
+			auto BuildFmod = [&]
 			{
 				Append("mod(");
 				Visit(node.left);
 				Append(", ");
 				Visit(node.right);
 				Append(")");
+			};
 
-				return; //< prevent normal generation
+			if (IsPrimitiveType(*node.cachedExpressionType))
+			{
+				Ast::PrimitiveType primitiveType = std::get<Ast::PrimitiveType>(*node.cachedExpressionType);
+				if (primitiveType == Ast::PrimitiveType::Float32 || primitiveType == Ast::PrimitiveType::Float64)
+					return BuildFmod();
 			}
+			else if (IsVectorType(*node.cachedExpressionType))
+			{
+				const Ast::VectorType& vecType = std::get<Ast::VectorType>(*node.cachedExpressionType);
+				Ast::PrimitiveType primitiveType = vecType.type;
+				if (primitiveType == Ast::PrimitiveType::Float32 || primitiveType == Ast::PrimitiveType::Float64)
+				{
+					// Special case: primitive % vector, this isn't supported by mod intrinsic, turn primitive into a vec
+					if (IsPrimitiveType(*node.left->cachedExpressionType))
+					{
+						Append("mod(");
+						Append(vecType, "(");
+						Visit(node.left);
+						Append("), ");
+						Visit(node.right);
+						Append(")");
+						return;
+					}
+
+					return BuildFmod();
+				}
+			}
+			else
+				throw std::runtime_error("unexpected type for modulo");
 		}
 
 		Visit(node.left, true);

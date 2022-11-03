@@ -77,6 +77,8 @@ namespace nzsl
 		std::uint32_t rightOperand = EvaluateExpression(*node.right);
 		std::uint32_t resultId = m_writer.AllocateResultId();
 
+		bool compositeVecLeft = false;
+		bool compositeVecRight = false;
 		bool swapOperands = false;
 		std::uint32_t resultTypeId = m_writer.GetTypeId(resultType);
 
@@ -125,40 +127,24 @@ namespace nzsl
 				}
 
 				case Ast::BinaryType::Divide:
-				{
-					switch (leftTypeBase)
-					{
-						case Ast::PrimitiveType::Float32:
-						case Ast::PrimitiveType::Float64:
-							return SpirvOp::OpFDiv;
-
-						case Ast::PrimitiveType::Int32:
-							return SpirvOp::OpSDiv;
-
-						case Ast::PrimitiveType::UInt32:
-							return SpirvOp::OpUDiv;
-
-						case Ast::PrimitiveType::Boolean:
-						case Ast::PrimitiveType::String:
-							break;
-					}
-
-					break;
-				}
-				
 				case Ast::BinaryType::Modulo:
 				{
+					if (IsPrimitiveType(leftType) && IsVectorType(rightType))
+						compositeVecLeft = true; // primitive / vec = vec
+					else if (IsVectorType(leftType) && IsPrimitiveType(rightType))
+						compositeVecRight = true; // vec / primitive = vec
+
 					switch (leftTypeBase)
 					{
 						case Ast::PrimitiveType::Float32:
 						case Ast::PrimitiveType::Float64:
-							return SpirvOp::OpFMod;
+							return (node.op == Ast::BinaryType::Divide) ? SpirvOp::OpFDiv : SpirvOp::OpFMod;
 
 						case Ast::PrimitiveType::Int32:
-							return SpirvOp::OpSMod;
+							return (node.op == Ast::BinaryType::Divide) ? SpirvOp::OpSDiv : SpirvOp::OpSMod;
 
 						case Ast::PrimitiveType::UInt32:
-							return SpirvOp::OpUMod;
+							return (node.op == Ast::BinaryType::Divide) ? SpirvOp::OpUDiv : SpirvOp::OpUMod;
 
 						case Ast::PrimitiveType::Boolean:
 						case Ast::PrimitiveType::String:
@@ -214,7 +200,17 @@ namespace nzsl
 
 						case Ast::PrimitiveType::Int32:
 						case Ast::PrimitiveType::UInt32:
+						{
+							if (IsVectorType(resultType))
+							{
+								if (IsPrimitiveType(leftType))
+									compositeVecLeft = true;
+								else if (IsPrimitiveType(rightType))
+									compositeVecRight = true;
+							}
+
 							return SpirvOp::OpIMul;
+						}
 
 						case Ast::PrimitiveType::Boolean:
 						case Ast::PrimitiveType::String:
@@ -379,34 +375,45 @@ namespace nzsl
 			throw std::runtime_error("unexpected binary operation");
 		}();
 
-		if (swapOperands)
-			std::swap(leftOperand, rightOperand);
-
-		if (node.op == Ast::BinaryType::Divide || node.op == Ast::BinaryType::Modulo)
+		if (compositeVecLeft || compositeVecRight)
 		{
-			// SPIR-V cannot divide a vector by a primitive, turn the primitive to a vector
-			//TODO: Handle other cases
-			if (IsVectorType(leftType) && IsPrimitiveType(rightType))
+			const Ast::VectorType& vecType = std::get<Ast::VectorType>(resultType);
+
+			std::uint32_t vecTypeId = m_writer.GetTypeId(vecType);
+
+			if (compositeVecLeft)
 			{
-				const Ast::VectorType& leftVec = std::get<Ast::VectorType>(leftType);
+				std::uint32_t leftAsVec = m_writer.AllocateResultId();
+				m_currentBlock->AppendVariadic(SpirvOp::OpCompositeConstruct, [&](auto&& append)
+				{
+					append(vecTypeId);
+					append(leftAsVec);
 
-				std::uint32_t vecType = m_writer.GetTypeId(leftType);
+					for (std::size_t i = 0; i < vecType.componentCount; ++i)
+						append(leftOperand);
+				});
 
+				leftOperand = leftAsVec;
+			}
+			
+			if (compositeVecRight)
+			{
 				std::uint32_t rightAsVec = m_writer.AllocateResultId();
 				m_currentBlock->AppendVariadic(SpirvOp::OpCompositeConstruct, [&](auto&& append)
 				{
-					append(vecType);
+					append(vecTypeId);
 					append(rightAsVec);
 
-					for (std::size_t i = 0; i < leftVec.componentCount; ++i)
+					for (std::size_t i = 0; i < vecType.componentCount; ++i)
 						append(rightOperand);
 				});
 
 				rightOperand = rightAsVec;
 			}
-			else if (leftType != rightType)
-				throw std::runtime_error("unexpected division/modulo operands");
 		}
+
+		if (swapOperands)
+			std::swap(leftOperand, rightOperand);
 
 		m_currentBlock->Append(op, resultTypeId, resultId, leftOperand, rightOperand);
 
