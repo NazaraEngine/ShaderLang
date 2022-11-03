@@ -3797,8 +3797,7 @@ namespace nzsl::Ast
 			if (m_context->options.removeCompoundAssignments)
 			{
 				node.op = AssignType::Simple;
-				node.right = ShaderBuilder::Binary(*binaryType, Cloner::Clone(*node.left), std::move(node.right));
-				node.right->cachedExpressionType = std::move(expressionType);
+				node.right = Clone(*ShaderBuilder::Binary(*binaryType, Cloner::Clone(*node.left), std::move(node.right)));
 			}
 		}
 

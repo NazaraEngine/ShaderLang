@@ -301,12 +301,25 @@ fn testMat4SubMat4TimesMat4(x: mat4[f32], y: mat4[f32], z: mat4[f32]) -> mat4[f3
 {
 	return x - (y * y);
 }
+
+fn testMat4CompoundPlusMat4(x: mat4[f32], y: mat4[f32]) -> mat4[f32]
+{
+	x += y;
+	return x;
+}
+
+fn testMat4CompoundMinusMat4(x: mat4[f32], y: mat4[f32]) -> mat4[f32]
+{
+	x -= y;
+	return x;
+}
 )";
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
 
 		nzsl::Ast::SanitizeVisitor::Options options;
 		options.removeMatrixBinaryAddSub = true;
+		options.removeCompoundAssignments = true;
 
 		REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(*shaderModule, options));
 
@@ -325,6 +338,18 @@ fn testMat4SubMat4TimesMat4(x: mat4[f32], y: mat4[f32], z: mat4[f32]) -> mat4[f3
 {
 	let cachedResult: mat4[f32] = y * y;
 	return mat4[f32](x[u32(0)] - cachedResult[u32(0)], x[u32(1)] - cachedResult[u32(1)], x[u32(2)] - cachedResult[u32(2)], x[u32(3)] - cachedResult[u32(3)]);
+}
+
+fn testMat4CompoundPlusMat4(x: mat4[f32], y: mat4[f32]) -> mat4[f32]
+{
+	x = mat4[f32](x[u32(0)] + y[u32(0)], x[u32(1)] + y[u32(1)], x[u32(2)] + y[u32(2)], x[u32(3)] + y[u32(3)]);
+	return x;
+}
+
+fn testMat4CompoundMinusMat4(x: mat4[f32], y: mat4[f32]) -> mat4[f32]
+{
+	x = mat4[f32](x[u32(0)] - y[u32(0)], x[u32(1)] - y[u32(1)], x[u32(2)] - y[u32(2)], x[u32(3)] - y[u32(3)]);
+	return x;
 }
 )");
 
