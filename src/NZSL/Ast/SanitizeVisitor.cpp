@@ -3682,7 +3682,7 @@ namespace nzsl::Ast
 					if (!constantValue.has_value())
 						return ValidationResult::Unresolved;
 
-					if (std::holds_alternative<std::int32_t>(*constantValue))
+					if (!std::holds_alternative<std::int32_t>(*constantValue))
 						throw AstInternalError{ indexExpr->sourceLocation, "node index typed as i32 yield a non-i32 value (of type " + Ast::ToString(GetConstantType(*constantValue)) + ")" };
 
 					std::int32_t index = std::get<std::int32_t>(*constantValue);
