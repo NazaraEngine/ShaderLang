@@ -466,6 +466,69 @@ fn main()
 	let x = GetValue(data);
 }
 )"), "(23,19 -> 22): CFunctionCallUnmatchingParameterType error: function GetValue parameter #0 type mismatch (expected struct Data, got uniform[struct Data])");
+
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+struct Inner
+{
+	value: f32
+}
+
+struct Outer
+{
+	inner: Inner
+}
+
+[auto_binding]
+external
+{
+	data: uniform[Outer]
+}
+
+fn GetValue(data: Inner) -> i32
+{
+	return data.value;
+}
+
+fn main()
+{
+	let x = GetValue(data.inner);
+}
+)"), "(28,19 -> 28): CFunctionCallUnmatchingParameterType error: function GetValue parameter #0 type mismatch (expected struct Inner, got uniform[struct Inner])");
+
+		CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+struct Inner
+{
+	value: f32
+}
+
+struct Outer
+{
+	inner: array[Inner, 3]
+}
+
+[auto_binding]
+external
+{
+	data: uniform[Outer]
+}
+
+fn GetValue(data: array[Inner, 3]) -> i32
+{
+	return data[1];
+}
+
+fn main()
+{
+	let x = GetValue(data.inner);
+}
+)"), "(28,19 -> 28): CFunctionCallUnmatchingParameterType error: function GetValue parameter #0 type mismatch (expected array[struct Inner, 3], got array[uniform[struct Inner], 3])");
+
 		}
 
 		/************************************************************************/

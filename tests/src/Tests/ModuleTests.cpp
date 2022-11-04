@@ -72,8 +72,10 @@ external
 [entry(frag)]
 fn main(input: InputData) -> OutputData
 {
+	let data = block.data;
+
 	let output: OutputData;
-	output.value = GetDataValue(block.data) * input.value * Pi;
+	output.value = GetDataValue(data) * input.value * Pi;
 	return output;
 }
 )";
@@ -137,8 +139,9 @@ void main()
 	InputData_SimpleModule input_;
 	input_.value = _nzslIn_value;
 
+	Data_SimpleModule data = block.data;
 	OutputData_SimpleModule output_;
-	output_.value = ((GetDataValue_SimpleModule(block.data)) * input_.value) * (3.141592);
+	output_.value = ((GetDataValue_SimpleModule(data)) * input_.value) * (3.141592);
 
 	_nzslOut_value = output_.value;
 	return;
@@ -204,8 +207,9 @@ external
 [entry(frag)]
 fn main(input: InputData) -> OutputData
 {
+	let data: _SimpleModule.Data = block.data;
 	let output: OutputData;
-	output.value = ((GetDataValue(block.data)) * input.value) * Pi;
+	output.value = ((GetDataValue(data)) * input.value) * Pi;
 	return output;
 }
 )");
@@ -223,7 +227,10 @@ OpLabel
 OpVariable
 OpVariable
 OpVariable
+OpVariable
 OpAccessChain
+OpLoad
+OpStore
 OpLoad
 OpStore
 OpFunctionCall
