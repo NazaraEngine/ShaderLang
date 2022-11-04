@@ -421,6 +421,18 @@ namespace nzsl::Ast
 					m_context->currentFunction->usedBuiltins.emplace(builtin, node.sourceLocation);
 				}
 
+				std::optional<ExpressionType> resolvedFieldTypeOpt = ResolveTypeExpr(fieldPtr->type, false, identifierEntry.sourceLocation);
+
+				// Preserve uniform/storage type on inner struct types
+				if (resolvedFieldTypeOpt.has_value())
+				{
+					// Preserve uniform/storage type on inner struct types
+					if (IsUniformType(resolvedType))
+						resolvedFieldTypeOpt = WrapExternalType<UniformType>(*resolvedFieldTypeOpt);
+					else if (IsStorageType(resolvedType))
+						resolvedFieldTypeOpt = WrapExternalType<StorageType>(*resolvedFieldTypeOpt);
+				}
+
 				if (m_context->options.useIdentifierAccessesForStructs)
 				{
 					// Use a AccessIdentifierExpression
@@ -428,7 +440,7 @@ namespace nzsl::Ast
 					if (indexedExpr->GetType() != NodeType::AccessIdentifierExpression)
 					{
 						std::unique_ptr<AccessIdentifierExpression> accessIndex = std::make_unique<AccessIdentifierExpression>();
-						accessIndex->sourceLocation = indexedExpr->sourceLocation;
+						accessIndex->sourceLocation = node.sourceLocation;
 						accessIndex->expr = std::move(indexedExpr);
 
 						accessIdentifierPtr = accessIndex.get();
@@ -440,7 +452,7 @@ namespace nzsl::Ast
 						accessIdentifierPtr->sourceLocation.ExtendToRight(indexedExpr->sourceLocation);
 					}
 
-					accessIdentifierPtr->cachedExpressionType = ResolveTypeExpr(fieldPtr->type, false, identifierEntry.sourceLocation);
+					accessIdentifierPtr->cachedExpressionType = std::move(resolvedFieldTypeOpt);
 
 					auto& newIdentifierEntry = accessIdentifierPtr->identifiers.emplace_back();
 					newIdentifierEntry.identifier = fieldPtr->name;
@@ -453,7 +465,7 @@ namespace nzsl::Ast
 					accessIndex->sourceLocation = indexedExpr->sourceLocation;
 					accessIndex->expr = std::move(indexedExpr);
 					accessIndex->indices.push_back(ShaderBuilder::ConstantValue(fieldIndex, fieldPtr->sourceLocation));
-					accessIndex->cachedExpressionType = ResolveTypeExpr(fieldPtr->type, false, identifierEntry.sourceLocation);
+					accessIndex->cachedExpressionType = std::move(resolvedFieldTypeOpt);
 
 					indexedExpr = std::move(accessIndex);
 				}
@@ -3685,16 +3697,24 @@ namespace nzsl::Ast
 					if (!std::holds_alternative<std::int32_t>(*constantValue))
 						throw AstInternalError{ indexExpr->sourceLocation, "node index typed as i32 yield a non-i32 value (of type " + Ast::ToString(GetConstantType(*constantValue)) + ")" };
 
-					std::int32_t index = std::get<std::int32_t>(*constantValue);
+					std::int32_t fieldIndex = std::get<std::int32_t>(*constantValue);
 
 					std::size_t structIndex = ResolveStructIndex(resolvedExprType, indexExpr->sourceLocation);
 					const StructDescription* s = m_context->structs.Retrieve(structIndex, indexExpr->sourceLocation);
 
-					std::optional<ExpressionType> resolvedExprTypeOpt = ResolveTypeExpr(s->members[index].type, true, indexExpr->sourceLocation);
-					if (!resolvedExprTypeOpt.has_value())
+					std::optional<ExpressionType> resolvedFieldTypeOpt = ResolveTypeExpr(s->members[fieldIndex].type, true, indexExpr->sourceLocation);
+					if (!resolvedFieldTypeOpt.has_value())
 						return ValidationResult::Unresolved;
 
-					resolvedExprType = std::move(resolvedExprTypeOpt).value();
+					ExpressionType resolvedFieldType = std::move(resolvedFieldTypeOpt).value();
+
+					// Preserve uniform/storage type on inner struct types
+					if (IsUniformType(resolvedExprType))
+						resolvedFieldType = WrapExternalType<UniformType>(resolvedFieldType);
+					else if (IsStorageType(resolvedExprType))
+						resolvedFieldType = WrapExternalType<StorageType>(resolvedFieldType);
+
+					resolvedExprType = std::move(resolvedFieldType);
 				}
 				else if (IsMatrixType(resolvedExprType))
 				{
@@ -3754,7 +3774,7 @@ namespace nzsl::Ast
 
 		if (binaryType)
 		{
-			ExpressionType expressionType = ValidateBinaryOp(*binaryType, ResolveAlias(*leftExprType), ResolveAlias(*rightExprType), node.sourceLocation);
+			ExpressionType expressionType = ValidateBinaryOp(*binaryType, ResolveAlias(*leftExprType), UnwrapExternalType(ResolveAlias(*rightExprType)), node.sourceLocation);
 			TypeMustMatch(*leftExprType, expressionType, node.sourceLocation);
 
 			if (m_context->options.removeCompoundAssignments)
@@ -4140,20 +4160,26 @@ namespace nzsl::Ast
 
 	auto SanitizeVisitor::Validate(DeclareVariableStatement& node) -> ValidationResult
 	{
+		ExpressionType initialExprType;
+		if (node.initialExpression)
+		{
+			const ExpressionType* initialExprTypeOpt = GetExpressionType(*node.initialExpression);
+			if (!initialExprTypeOpt)
+			{
+				RegisterUnresolved(node.varName);
+				return ValidationResult::Unresolved;
+			}
+
+			initialExprType = UnwrapExternalType(*initialExprTypeOpt);
+		}
+
 		ExpressionType resolvedType;
 		if (!node.varType.HasValue())
 		{
 			if (!node.initialExpression)
 				throw CompilerVarDeclarationMissingTypeAndValueError{ node.sourceLocation };
 
-			const ExpressionType* initialExprType = GetExpressionType(*node.initialExpression);
-			if (!initialExprType)
-			{
-				RegisterUnresolved(node.varName);
-				return ValidationResult::Unresolved;
-			}
-
-			resolvedType = *initialExprType;
+			resolvedType = initialExprType;
 		}
 		else
 		{
@@ -4165,17 +4191,10 @@ namespace nzsl::Ast
 			}
 
 			resolvedType = std::move(varType).value();
-			if (node.initialExpression)
+			if (!std::holds_alternative<NoType>(initialExprType))
 			{
-				const ExpressionType* initialExprType = GetExpressionType(*node.initialExpression);
-				if (!initialExprType)
-				{
-					RegisterUnresolved(node.varName);
-					return ValidationResult::Unresolved;
-				}
-
-				if (resolvedType != *initialExprType)
-					throw CompilerVarDeclarationTypeUnmatchingError{ node.sourceLocation, ToString(resolvedType, node.sourceLocation), ToString(*initialExprType, node.initialExpression->sourceLocation) };
+				if (resolvedType != initialExprType)
+					throw CompilerVarDeclarationTypeUnmatchingError{ node.sourceLocation, ToString(resolvedType, node.sourceLocation), ToString(initialExprType, node.initialExpression->sourceLocation) };
 			}
 		}
 
@@ -4789,16 +4808,6 @@ namespace nzsl::Ast
 		return *node;
 	}
 
-	StatementPtr SanitizeVisitor::Unscope(StatementPtr node)
-	{
-		assert(node);
-
-		if (node->GetType() == NodeType::ScopedStatement)
-			return std::move(static_cast<ScopedStatement&>(*node).statement);
-		else
-			return node;
-	}
-
 	std::uint32_t SanitizeVisitor::ToSwizzleIndex(char c, const SourceLocation& sourceLocation)
 	{
 		switch (c)
@@ -4826,5 +4835,60 @@ namespace nzsl::Ast
 			default:
 				throw CompilerInvalidSwizzleError{ sourceLocation, std::string(&c, 1) };
 		}
+	}
+
+	StatementPtr SanitizeVisitor::Unscope(StatementPtr node)
+	{
+		assert(node);
+
+		if (node->GetType() == NodeType::ScopedStatement)
+			return std::move(static_cast<ScopedStatement&>(*node).statement);
+		else
+			return node;
+	}
+
+	ExpressionType SanitizeVisitor::UnwrapExternalType(const ExpressionType& exprType)
+	{
+		if (IsStorageType(exprType))
+			return std::get<StorageType>(exprType).containedType;
+		else if (IsUniformType(exprType))
+			return std::get<UniformType>(exprType).containedType;
+		else
+			return exprType;
+	}
+
+	template<typename T>
+	ExpressionType SanitizeVisitor::WrapExternalType(const ExpressionType& exprType)
+	{
+		if (IsStructType(exprType))
+		{
+			std::size_t innerStructIndex = std::get<StructType>(exprType).structIndex;
+			return T{ innerStructIndex };
+		}
+		else if (IsArrayType(exprType))
+		{
+			const ArrayType& arrayType = std::get<ArrayType>(exprType);
+			ExpressionType wrapperInnerType = WrapExternalType<T>(arrayType.containedType->type);
+
+			ArrayType wrappedArrayType;
+			wrappedArrayType.containedType = std::make_unique<ContainedType>();
+			wrappedArrayType.containedType->type = wrapperInnerType;
+			wrappedArrayType.length = arrayType.length;
+
+			return wrappedArrayType;
+		}
+		else if (IsDynArrayType(exprType))
+		{
+			const DynArrayType& arrayType = std::get<DynArrayType>(exprType);
+			ExpressionType wrapperInnerType = WrapExternalType<T>(arrayType.containedType->type);
+
+			DynArrayType wrappedDynArrayType;
+			wrappedDynArrayType.containedType = std::make_unique<ContainedType>();
+			wrappedDynArrayType.containedType->type = wrapperInnerType;
+
+			return wrappedDynArrayType;
+		}
+		else
+			return exprType;
 	}
 }
