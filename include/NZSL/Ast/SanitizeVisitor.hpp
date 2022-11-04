@@ -187,12 +187,16 @@ namespace nzsl::Ast
 			template<std::size_t N, typename F> ValidationResult ValidateIntrinsicParameter(IntrinsicExpression& node, F&& func);
 			template<std::size_t N, typename F> ValidationResult ValidateIntrinsicParameterType(IntrinsicExpression& node, F&& func, const char* typeStr);
 
+
 			static Expression& MandatoryExpr(const ExpressionPtr& node, const SourceLocation& sourceLocation);
 			static Statement& MandatoryStatement(const StatementPtr& node, const SourceLocation& sourceLocation);
 
+			static std::uint32_t ToSwizzleIndex(char c, const SourceLocation& sourceLocation);
+
 			static StatementPtr Unscope(StatementPtr node);
 
-			static std::uint32_t ToSwizzleIndex(char c, const SourceLocation& sourceLocation);
+			static ExpressionType UnwrapExternalType(const ExpressionType& exprType);
+			template<typename T> static ExpressionType WrapExternalType(const ExpressionType& exprType);
 
 			enum class IdentifierCategory
 			{
