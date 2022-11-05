@@ -324,6 +324,21 @@ external
 }
 
 )"), "(7,15 -> 22): CExtTypeNotAllowed error: external variable foo has unauthorized type (i32): only storage buffers, samplers and uniform buffers (and primitives, vectors and matrices if primitive external feature is enabled) are allowed in external blocks");
+			
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+struct Foo
+{
+}
+
+external
+{
+	[binding(0)] foo: Foo
+}
+
+)"), "(11,15 -> 22): CExtTypeNotAllowed error: external variable foo has unauthorized type (struct Foo): only storage buffers, samplers and uniform buffers (and primitives, vectors and matrices if primitive external feature is enabled) are allowed in external blocks");
 
 			CHECK_THROWS_WITH(Compile(R"(
 [nzsl_version("1.0")]

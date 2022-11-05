@@ -1333,7 +1333,7 @@ namespace nzsl::Ast
 			const ExpressionType& targetType = ResolveAlias(*resolvedType);
 
 			ExpressionType varType;
-			if (IsStructAddressible(targetType) || IsSamplerType(targetType))
+			if (IsUniformType(targetType) || IsStorageType(targetType) || IsSamplerType(targetType))
 				varType = targetType;
 			else if (IsPrimitiveType(targetType) || IsVectorType(targetType) || IsMatrixType(targetType))
 			{
