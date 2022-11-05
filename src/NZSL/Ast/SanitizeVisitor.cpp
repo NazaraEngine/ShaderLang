@@ -1273,6 +1273,27 @@ namespace nzsl::Ast
 				hasAutoBinding.reset(); //< Unresolved value
 		}
 
+		auto BuildBindingKey = [](std::uint32_t bindingSet, std::uint32_t bindingIndex)
+		{
+			return std::uint64_t(bindingSet) << 32 | bindingIndex;
+		};
+
+		auto RegisterBinding = [&](std::uint32_t count, std::uint32_t bindingSet, std::uint32_t bindingIndex, const Context::UsedExternalData& usedBindingData, const SourceLocation& sourceLoc)
+		{
+			for (std::uint32_t i = 0; i < count; ++i)
+			{
+				std::uint64_t bindingKey = BuildBindingKey(bindingSet, bindingIndex + i);
+				if (auto it = m_context->usedBindingIndexes.find(bindingKey); it != m_context->usedBindingIndexes.end())
+				{
+					if (!it->second.isConditional || !usedBindingData.isConditional)
+						throw CompilerExtBindingAlreadyUsedError{ sourceLoc, bindingSet, bindingIndex };
+				}
+
+				m_context->usedBindingIndexes.emplace(bindingKey, usedBindingData);
+			}
+		};
+
+		bool hasUnresolved = false;
 		Nz::StackVector<std::size_t> autoBindingEntries = NazaraStackVector(std::size_t, clone->externalVars.size());
 		for (std::size_t i = 0; i < clone->externalVars.size(); ++i)
 		{
@@ -1300,21 +1321,6 @@ namespace nzsl::Ast
 			Context::UsedExternalData usedBindingData;
 			usedBindingData.isConditional = m_context->inConditionalStatement;
 
-			if (extVar.bindingSet.IsResultingValue() && extVar.bindingIndex.IsResultingValue())
-			{
-				std::uint64_t bindingSet = extVar.bindingSet.GetResultingValue();
-				std::uint64_t bindingIndex = extVar.bindingIndex.GetResultingValue();
-
-				std::uint64_t bindingKey = bindingSet << 32 | bindingIndex;
-				if (auto it = m_context->usedBindingIndexes.find(bindingKey); it != m_context->usedBindingIndexes.end())
-				{
-					if (!it->second.isConditional || !usedBindingData.isConditional)
-						throw CompilerExtBindingAlreadyUsedError{ extVar.sourceLocation, std::uint32_t(bindingSet), std::uint32_t(bindingIndex) };
-				}
-
-				m_context->usedBindingIndexes.emplace(bindingKey, usedBindingData);
-			}
-
 			if (auto it = m_context->declaredExternalVar.find(extVar.name); it != m_context->declaredExternalVar.end())
 			{
 				if (!it->second.isConditional || !usedBindingData.isConditional)
@@ -1327,13 +1333,25 @@ namespace nzsl::Ast
 			if (!resolvedType.has_value())
 			{
 				RegisterUnresolved(extVar.name);
+				hasUnresolved = true;
 				continue;
 			}
 
 			const ExpressionType& targetType = ResolveAlias(*resolvedType);
 
 			ExpressionType varType;
-			if (IsUniformType(targetType) || IsStorageType(targetType) || IsSamplerType(targetType))
+			if (IsArrayType(targetType))
+			{
+				const ExpressionType& innerType = std::get<ArrayType>(targetType).containedType->type;
+				if (IsSamplerType(innerType))
+					varType = targetType;
+				else if (IsPrimitiveType(innerType) || IsVectorType(innerType) || IsMatrixType(innerType))
+				{
+					if (IsFeatureEnabled(ModuleFeature::PrimitiveExternals))
+						varType = targetType;
+				}
+			}
+			else if (IsUniformType(targetType) || IsStorageType(targetType) || IsSamplerType(targetType))
 				varType = targetType;
 			else if (IsPrimitiveType(targetType) || IsVectorType(targetType) || IsMatrixType(targetType))
 			{
@@ -1346,29 +1364,60 @@ namespace nzsl::Ast
 
 			ValidateConcreteType(varType, extVar.sourceLocation);
 
+			if (extVar.bindingSet.IsResultingValue() && extVar.bindingIndex.IsResultingValue())
+			{
+				std::uint32_t bindingSet = extVar.bindingSet.GetResultingValue();
+				std::uint32_t bindingIndex = extVar.bindingIndex.GetResultingValue();
+
+				std::uint32_t arraySize = (IsArrayType(targetType)) ? std::get<ArrayType>(targetType).length : 1;
+				RegisterBinding(arraySize, bindingSet, bindingIndex, usedBindingData, extVar.sourceLocation);
+			}
+
 			extVar.type = std::move(resolvedType).value();
 			extVar.varIndex = RegisterVariable(extVar.name, std::move(varType), extVar.varIndex, extVar.sourceLocation);
 		}
 
 		// Resolve auto-binding entries when explicit binding are known
-		for (std::size_t extVarIndex : autoBindingEntries)
+		if (!hasUnresolved)
 		{
-			auto& extVar = clone->externalVars[extVarIndex];
+			for (std::size_t extVarIndex : autoBindingEntries)
+			{
+				auto& extVar = clone->externalVars[extVarIndex];
 
-			// Since we're not in a partial compilation at this point, binding set has a known value
-			assert(extVar.bindingSet.IsResultingValue());
+				// Since we're not in a partial compilation at this point, binding set has a known value
+				assert(extVar.bindingSet.IsResultingValue());
 
-			// Find first binding index
-			std::uint64_t bindingSet = extVar.bindingSet.GetResultingValue();
-			std::uint32_t bindingIndex = 0;
-			while (m_context->usedBindingIndexes.find(bindingSet << 32 | bindingIndex) != m_context->usedBindingIndexes.end())
-				bindingIndex++;
+				// Find first binding range
+				std::uint32_t bindingSet = extVar.bindingSet.GetResultingValue();
+				std::uint32_t bindingIndex = 0;
 
-			Context::UsedExternalData usedBindingData;
-			usedBindingData.isConditional = m_context->inConditionalStatement;
+				// Type cannot be unresolved here
+				const ExpressionType& targetType = ResolveAlias(extVar.type.GetResultingValue());
+				std::uint32_t arraySize = (IsArrayType(targetType)) ? std::get<ArrayType>(targetType).length : 1;
 
-			extVar.bindingIndex = bindingIndex;
-			m_context->usedBindingIndexes.emplace(bindingSet << 32 | bindingIndex, usedBindingData);
+				auto SearchFreeBindingRange = [&](std::uint32_t& binding)
+				{
+					for (std::uint32_t i = 0; i < arraySize; ++i)
+					{
+						if (m_context->usedBindingIndexes.find(BuildBindingKey(bindingSet, binding + i)) != m_context->usedBindingIndexes.end())
+						{
+							binding += i;
+							return false;
+						}
+					}
+
+					return true;
+				};
+
+				while (!SearchFreeBindingRange(bindingIndex))
+					bindingIndex++;
+
+				Context::UsedExternalData usedBindingData;
+				usedBindingData.isConditional = m_context->inConditionalStatement;
+
+				extVar.bindingIndex = bindingIndex;
+				RegisterBinding(arraySize, bindingSet, bindingIndex, usedBindingData, extVar.sourceLocation);
+			}
 		}
 
 		return clone;

@@ -7,7 +7,7 @@
 
 TEST_CASE("external", "[Shader]")
 {
-	SECTION("Texture sample 2D")
+	SECTION("Texture 2D")
 	{
 		std::string_view nzslSource = R"(
 [nzsl_version("1.0")]
@@ -74,6 +74,78 @@ fn main()
       OpFunctionEnd)", {}, true);
 	}
 	
+	SECTION("Arrays of texture")
+	{
+		std::string_view nzslSource = R"(
+[nzsl_version("1.0")]
+module;
+
+external
+{
+	[binding(0)] tex: array[samplerCube[f32], 5]
+}
+
+[entry(frag)]
+fn main()
+{
+	let value = tex[2].Sample(vec3[f32](0.0, 0.0, 0.0));
+}
+)";
+
+		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
+		shaderModule = SanitizeModule(*shaderModule);
+
+		ExpectGLSL(*shaderModule, R"(
+uniform samplerCube tex[5];
+
+void main()
+{
+	vec4 value = texture(tex[2], vec3(0.0, 0.0, 0.0));
+}
+)");
+
+		ExpectNZSL(*shaderModule, R"(
+external
+{
+	[set(0), binding(0)] tex: array[samplerCube[f32], 5]
+}
+
+[entry(frag)]
+fn main()
+{
+	let value: vec4[f32] = tex[2].Sample(vec3[f32](0.0, 0.0, 0.0));
+})");
+
+		ExpectSPIRV(*shaderModule, R"(
+ %1 = OpTypeFloat 32
+ %2 = OpTypeImage %1 Dim(Cube) 2 0 0 1 ImageFormat(Unknown)
+ %3 = OpTypeSampledImage %2
+ %4 = OpTypeInt 32 0
+ %5 = OpConstant %4 u32(5)
+ %6 = OpTypeArray %3 %5
+ %7 = OpTypePointer StorageClass(UniformConstant) %6
+ %9 = OpTypeVoid
+%10 = OpTypeFunction %9
+%11 = OpTypeInt 32 1
+%12 = OpConstant %11 i32(2)
+%13 = OpConstant %1 f32(0)
+%14 = OpTypeVector %1 3
+%15 = OpTypeVector %1 4
+%16 = OpTypePointer StorageClass(Function) %15
+%20 = OpTypePointer StorageClass(UniformConstant) %3
+ %8 = OpVariable %7 StorageClass(UniformConstant)
+%17 = OpFunction %9 FunctionControl(0) %10
+%18 = OpLabel
+%19 = OpVariable %16 StorageClass(Function)
+%21 = OpAccessChain %20 %8 %12
+%22 = OpLoad %3 %21
+%23 = OpCompositeConstruct %14 %13 %13 %13
+%24 = OpImageSampleImplicitLod %15 %22 %23
+      OpStore %19 %24
+      OpReturn
+      OpFunctionEnd)", {}, true);
+	}
+
 	SECTION("Uniform buffers")
 	{
 		std::string_view nzslSource = R"(
@@ -484,6 +556,9 @@ external
 
 	[tag("Matrices")]
 	[binding(8)] fMat: mat4[f32],
+
+	[tag("Arrays of matrices")]
+	[binding(9)] fArrayOfMat: array[mat4[f32], 5]
 }
 
 [entry(frag)]
@@ -494,6 +569,7 @@ fn main()
 	let value: vec4[i32] = iVal.xxxx + iVec;
 	let value: vec4[u32] = uVal.xxxx - uVec;
 	let value: vec4[f32] = fMat * fVec;
+	let value: vec4[f32] = fArrayOfMat[2] * fVec;
 }
 )";
 
@@ -514,6 +590,8 @@ uniform ivec4 iVec;
 uniform uvec4 uVec;
 // external var tag: Matrices
 uniform mat4 fMat;
+// external var tag: Arrays of matrices
+uniform mat4 fArrayOfMat[5];
 
 void main()
 {
@@ -522,6 +600,7 @@ void main()
 	ivec4 value_3 = (ivec4(iVal, iVal, iVal, iVal)) + iVec;
 	uvec4 value_4 = (uvec4(uVal, uVal, uVal, uVal)) - uVec;
 	vec4 value_5 = fMat * fVec;
+	vec4 value_6 = fArrayOfMat[2] * fVec;
 }
 )");
 
@@ -537,7 +616,8 @@ external
 	[set(0), binding(5)] fVec: vec4[f32],
 	[set(0), binding(6)] iVec: vec4[i32],
 	[set(0), binding(7)] uVec: vec4[u32],
-	[set(0), binding(8), tag("Matrices")] fMat: mat4[f32]
+	[set(0), binding(8), tag("Matrices")] fMat: mat4[f32],
+	[set(0), binding(9), tag("Arrays of matrices")] fArrayOfMat: array[mat4[f32], 5]
 }
 
 [entry(frag)]
@@ -548,6 +628,7 @@ fn main()
 	let value: vec4[i32] = (iVal.xxxx) + iVec;
 	let value: vec4[u32] = (uVal.xxxx) - uVec;
 	let value: vec4[f32] = fMat * fVec;
+	let value: vec4[f32] = fArrayOfMat[2] * fVec;
 })");
 
 		WHEN("Generating SPIR-V 1.0 (which doesn't support primitive externals)")
@@ -576,13 +657,14 @@ external
 [auto_binding(true)]
 external
 {
-	tex5: sampler2D[f32]
+	tex5: array[sampler2D[f32], 3],
+	tex6: samplerCube[f32]
 }
 
 [auto_binding(false)]
 external
 {
-	[binding(6)] tex6: sampler2D[f32]
+	[binding(8)] tex7: sampler2D[f32]
 }
 
 [entry(frag)]
@@ -610,13 +692,14 @@ external
 [auto_binding(true)]
 external
 {
-	[set(0), binding(3)] tex5: sampler2D[f32]
+	[set(0), binding(5)] tex5: array[sampler2D[f32], 3],
+	[set(0), binding(3)] tex6: samplerCube[f32]
 }
 
 [auto_binding(false)]
 external
 {
-	[set(0), binding(6)] tex6: sampler2D[f32]
+	[set(0), binding(8)] tex7: sampler2D[f32]
 }
 
 [entry(frag)]
@@ -646,13 +729,14 @@ external
 [auto_binding(true)]
 external
 {
-	[set(0)] tex5: sampler2D[f32]
+	[set(0)] tex5: array[sampler2D[f32], 3],
+	[set(0)] tex6: samplerCube[f32]
 }
 
 [auto_binding(false)]
 external
 {
-	[set(0), binding(6)] tex6: sampler2D[f32]
+	[set(0), binding(8)] tex7: sampler2D[f32]
 }
 
 [entry(frag)]
@@ -683,13 +767,14 @@ external
 [auto_binding(true)]
 external
 {
-	[set(0), binding(3)] tex5: sampler2D[f32]
+	[set(0), binding(5)] tex5: array[sampler2D[f32], 3],
+	[set(0), binding(3)] tex6: samplerCube[f32]
 }
 
 [auto_binding(false)]
 external
 {
-	[set(0), binding(6)] tex6: sampler2D[f32]
+	[set(0), binding(8)] tex7: sampler2D[f32]
 }
 
 [entry(frag)]

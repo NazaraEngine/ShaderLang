@@ -242,7 +242,7 @@ namespace nzsl
 						const auto& type = m_constantCache.BuildType(*declaredStructs[structIndex], { decoration });
 						variable.type = m_constantCache.BuildPointerType(type, variable.storageClass);
 					}
-					else if (Ast::IsSamplerType(extVarType))
+					else if (Ast::IsSamplerType(extVarType) || Ast::IsArrayType(extVarType))
 					{
 						variable.storageClass = SpirvStorageClass::UniformConstant;
 						variable.type = m_constantCache.BuildPointerType(extVarType, variable.storageClass);

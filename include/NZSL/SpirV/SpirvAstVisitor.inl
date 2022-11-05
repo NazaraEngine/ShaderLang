@@ -20,7 +20,7 @@ namespace nzsl
 	{
 		std::uint32_t pointerId = m_writer.GetExtVarPointerId(varIndex);
 		SpirvStorageClass storageClass;
-		if (IsSamplerType(type))
+		if (IsSamplerType(type) || IsArrayType(type))
 			storageClass = SpirvStorageClass::UniformConstant;
 		else if (IsStorageType(type) && m_writer.IsVersionGreaterOrEqual(1, 3))
 			// Starting from SPIR-V 1.3, Storage Buffer have their own separate storage class
