@@ -616,6 +616,36 @@ fn main()
 	let b = inverse(a);
 }
 )"), "(8, 18): CIntrinsicExpectedType error: expected type square matrix for parameter #0, got mat2x3[f32]");
+
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+external
+{
+	[binding(0)] tex: sampler2D[f32]
+}
+
+fn main()
+{
+	let a = tex.Sample(vec3[f32](0.0, 0.0, 0.0));
+}
+)"), "(12,21 -> 44): CIntrinsicExpectedType error: expected type floating-point vector of 2 components for parameter #1, got vec3[f32]");
+
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+external
+{
+	[binding(0)] tex: sampler2D[f32]
+}
+
+fn main()
+{
+	let a = tex.Sample(vec2[i32](0, 0));
+}
+)"), "(12,21 -> 35): CIntrinsicExpectedType error: expected type floating-point vector of 2 components for parameter #1, got vec2[i32]");
 		}
 
 		/************************************************************************/

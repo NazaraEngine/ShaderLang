@@ -4461,10 +4461,17 @@ namespace nzsl::Ast
 						return false;
 
 					const VectorType& vectorType = std::get<VectorType>(type);
+					if (vectorType.componentCount != requiredComponentCount)
+						return false;
+
 					return vectorType.type == PrimitiveType::Float32 || vectorType.type == PrimitiveType::Float64;
 				};
 
-				if (IsUnresolved(ValidateIntrinsicParameterType<1>(node, IsRightType, "sampler of requirement components")))
+				assert(requiredComponentCount < 9);
+				char errMessage[] = "floating-point vector of X components";
+				errMessage[25] = Nz::SafeCast<char>('0' + requiredComponentCount);
+
+				if (IsUnresolved(ValidateIntrinsicParameterType<1>(node, IsRightType, errMessage)))
 					return ValidationResult::Unresolved;
 
 				node.cachedExpressionType = VectorType{ 4, samplerType.sampledType };
