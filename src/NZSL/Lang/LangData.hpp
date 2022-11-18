@@ -186,7 +186,7 @@ namespace nzsl::LangData
 		});
 	}
 
-	constexpr auto& s_intrinsicData = IntrinsicHelper::data;
+	constexpr auto s_intrinsicData = IntrinsicHelper::data;
 
 	struct ModuleFeatureData
 	{
