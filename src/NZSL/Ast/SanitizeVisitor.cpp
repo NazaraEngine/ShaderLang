@@ -2973,19 +2973,23 @@ namespace nzsl::Ast
 				},
 				{
 					"sampler2D",
-					ImageType::E2D
+					ImageType::E2D,
+					std::nullopt
 				},
 				{
 					"sampler2DArray",
-					ImageType::E2D_Array
+					ImageType::E2D_Array,
+					std::nullopt
 				},
 				{
 					"sampler3D",
-					ImageType::E3D
+					ImageType::E3D,
+					std::nullopt
 				},
 				{
 					"samplerCube",
-					ImageType::Cubemap
+					ImageType::Cubemap,
+					std::nullopt
 				}
 			}
 		};
