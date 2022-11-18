@@ -10,6 +10,7 @@
 #include <NZSL/SpirvWriter.hpp>
 #include <NZSL/SpirV/SpirvExpressionLoad.hpp>
 #include <NZSL/SpirV/SpirvExpressionStore.hpp>
+#include <NZSL/SpirV/SpirvGenData.hpp>
 #include <NZSL/SpirV/SpirvSection.hpp>
 
 namespace nzsl
@@ -827,259 +828,74 @@ namespace nzsl
 
 	void SpirvAstVisitor::Visit(Ast::IntrinsicExpression& node)
 	{
-		switch (node.intrinsic)
+		auto it = SpirvGenData::s_intrinsicData.find(node.intrinsic);
+		if (it == SpirvGenData::s_intrinsicData.end())
+			throw std::runtime_error("unknown intrinsic value " + std::to_string(Nz::UnderlyingCast(node.intrinsic)));
+
+		std::visit([&](auto&& arg)
 		{
-			case Ast::IntrinsicType::ArraySize:
-			{
-				// First parameter must be an AccessIndex from the external variable to the member index
-				std::uint32_t typeId = m_writer.GetTypeId(Ast::PrimitiveType::UInt32);
+			using namespace SpirvGenData;
 
-				assert(node.parameters.size() == 1);
-				const Ast::ExpressionPtr& firstParameter = node.parameters.front();
-				assert(firstParameter->GetType() == Ast::NodeType::AccessIndexExpression);
-				const Ast::AccessIndexExpression& accessIndex = static_cast<const Ast::AccessIndexExpression&>(*firstParameter);
-
-				assert(accessIndex.expr->GetType() == Ast::NodeType::VariableValueExpression);
-				const Ast::VariableValueExpression& structVar = static_cast<const Ast::VariableValueExpression&>(*accessIndex.expr);
-
-				std::uint32_t structId = GetVariable(structVar.variableId).pointerId;
-
-				assert(accessIndex.indices.size() == 1);
-				assert(accessIndex.indices[0]->GetType() == Ast::NodeType::ConstantValueExpression);
-				const Ast::ConstantValueExpression& memberConstant = static_cast<const Ast::ConstantValueExpression&>(*accessIndex.indices[0]);
-				assert(std::holds_alternative<std::int32_t>(memberConstant.value));
-				std::uint32_t arrayMemberIndex = Nz::SafeCast<std::uint32_t>(std::get<std::int32_t>(memberConstant.value));
-
-				std::uint32_t resultId = m_writer.AllocateResultId();
-				m_currentBlock->Append(SpirvOp::OpArrayLength, typeId, resultId, structId, arrayMemberIndex);
-
-				PushResultId(resultId);
-				return;
-			}
-
-			case Ast::IntrinsicType::CrossProduct:
+			using T = std::decay_t<decltype(arg)>;
+			if constexpr (std::is_same_v<T, SpirvGlslStd450Op> || std::is_same_v<T, SpirvGlslStd450Selector>)
 			{
 				std::uint32_t glslInstructionSet = m_writer.GetExtendedInstructionSet("GLSL.std.450");
-
-				const Ast::ExpressionType* parameterType = GetExpressionType(*node.parameters[0]);
-				assert(parameterType);
-				assert(IsVectorType(*parameterType));
-
-				std::uint32_t typeId = m_writer.GetTypeId(*parameterType);
-
-				std::uint32_t firstParam = EvaluateExpression(*node.parameters[0]);
-				std::uint32_t secondParam = EvaluateExpression(*node.parameters[1]);
-				std::uint32_t resultId = m_writer.AllocateResultId();
-
-				m_currentBlock->Append(SpirvOp::OpExtInst, typeId, resultId, glslInstructionSet, SpirvGlslStd450Op::Cross, firstParam, secondParam);
-				PushResultId(resultId);
-				return;
-			}
-
-			case Ast::IntrinsicType::DotProduct:
-			{
-				const Ast::ExpressionType* vecExprType = GetExpressionType(*node.parameters[0]);
-				assert(vecExprType);
-				assert(IsVectorType(*vecExprType));
-
-				const Ast::VectorType& vecType = std::get<Ast::VectorType>(*vecExprType);
-
-				std::uint32_t typeId = m_writer.GetTypeId(vecType.type);
-
-				std::uint32_t vec1 = EvaluateExpression(*node.parameters[0]);
-				std::uint32_t vec2 = EvaluateExpression(*node.parameters[1]);
-
-				std::uint32_t resultId = m_writer.AllocateResultId();
-
-				m_currentBlock->Append(SpirvOp::OpDot, typeId, resultId, vec1, vec2);
-				PushResultId(resultId);
-				return;
-			}
-
-			case Ast::IntrinsicType::Exp:
-			{
-				std::uint32_t glslInstructionSet = m_writer.GetExtendedInstructionSet("GLSL.std.450");
-
-				const Ast::ExpressionType* parameterType = GetExpressionType(*node.parameters[0]);
-				assert(parameterType);
-				assert(IsPrimitiveType(*parameterType) || IsVectorType(*parameterType));
-				std::uint32_t typeId = m_writer.GetTypeId(*parameterType);
-
-				std::uint32_t param = EvaluateExpression(*node.parameters[0]);
-				std::uint32_t resultId = m_writer.AllocateResultId();
-
-				m_currentBlock->Append(SpirvOp::OpExtInst, typeId, resultId, glslInstructionSet, SpirvGlslStd450Op::Exp, param);
-				PushResultId(resultId);
-				return;
-			}
-
-			case Ast::IntrinsicType::Inverse:
-			{
-				std::uint32_t glslInstructionSet = m_writer.GetExtendedInstructionSet("GLSL.std.450");
-
-				std::uint32_t typeId = m_writer.GetTypeId(*node.cachedExpressionType);
-
-				std::uint32_t param = EvaluateExpression(*node.parameters[0]);
-				std::uint32_t resultId = m_writer.AllocateResultId();
-
-				m_currentBlock->Append(SpirvOp::OpExtInst, typeId, resultId, glslInstructionSet, SpirvGlslStd450Op::MatrixInverse, param);
-				PushResultId(resultId);
-				return;
-			}
-
-			case Ast::IntrinsicType::Length:
-			{
-				std::uint32_t glslInstructionSet = m_writer.GetExtendedInstructionSet("GLSL.std.450");
-
-				const Ast::ExpressionType* vecExprType = GetExpressionType(*node.parameters[0]);
-				assert(vecExprType);
-				assert(IsVectorType(*vecExprType));
-
-				const Ast::VectorType& vecType = std::get<Ast::VectorType>(*vecExprType);
-				std::uint32_t typeId = m_writer.GetTypeId(vecType.type);
-
-				std::uint32_t vec = EvaluateExpression(*node.parameters[0]);
-
-				std::uint32_t resultId = m_writer.AllocateResultId();
-
-				m_currentBlock->Append(SpirvOp::OpExtInst, typeId, resultId, glslInstructionSet, SpirvGlslStd450Op::Length, vec);
-				PushResultId(resultId);
-				return;
-			}
-
-			case Ast::IntrinsicType::Max:
-			case Ast::IntrinsicType::Min:
-			{
-				std::uint32_t glslInstructionSet = m_writer.GetExtendedInstructionSet("GLSL.std.450");
-
-				const Ast::ExpressionType* parameterType = GetExpressionType(*node.parameters[0]);
-				assert(parameterType);
-				assert(IsPrimitiveType(*parameterType) || IsVectorType(*parameterType));
-				std::uint32_t typeId = m_writer.GetTypeId(*parameterType);
-
-				Ast::PrimitiveType basicType;
-				if (IsPrimitiveType(*parameterType))
-					basicType = std::get<Ast::PrimitiveType>(*parameterType);
-				else if (IsVectorType(*parameterType))
-					basicType = std::get<Ast::VectorType>(*parameterType).type;
-				else
-					throw std::runtime_error("unexpected expression type");
 
 				SpirvGlslStd450Op op;
-				switch (basicType)
+				if constexpr (std::is_same_v<T, SpirvGlslStd450Selector>)
+					op = arg(node);
+				else
+					op = arg;
+
+				std::uint32_t resultTypeId = m_writer.GetTypeId(ResolveAlias(EnsureExpressionType(node)));
+
+				Nz::StackArray<std::uint32_t> parameterIds = NazaraStackArrayNoInit(std::uint32_t, node.parameters.size());
+				for (std::size_t i = 0; i < node.parameters.size(); ++i)
+					parameterIds[i] = EvaluateExpression(*node.parameters[i]);
+
+				std::uint32_t resultId = m_writer.AllocateResultId();
+
+				m_currentBlock->AppendVariadic(SpirvOp::OpExtInst, [&](auto&& append)
 				{
-					case Ast::PrimitiveType::Boolean:
-						throw std::runtime_error("unexpected boolean for max/min intrinsic");
+					append(resultTypeId);
+					append(resultId);
+					append(glslInstructionSet);
+					append(op);
 
-					case Ast::PrimitiveType::Float32:
-					case Ast::PrimitiveType::Float64:
-						op = (node.intrinsic == Ast::IntrinsicType::Max) ? SpirvGlslStd450Op::FMax : SpirvGlslStd450Op::FMin;
-						break;
+					for (std::uint32_t parameterId : parameterIds)
+						append(parameterId);
+				});
 
-					case Ast::PrimitiveType::Int32:
-						op = (node.intrinsic == Ast::IntrinsicType::Max) ? SpirvGlslStd450Op::SMax : SpirvGlslStd450Op::SMin;
-						break;
-
-					case Ast::PrimitiveType::UInt32:
-						op = (node.intrinsic == Ast::IntrinsicType::Max) ? SpirvGlslStd450Op::UMax : SpirvGlslStd450Op::UMin;
-						break;
-
-					case Ast::PrimitiveType::String:
-						throw std::runtime_error("unexpected string type");
-				}
-
-				std::uint32_t firstParam = EvaluateExpression(*node.parameters[0]);
-				std::uint32_t secondParam = EvaluateExpression(*node.parameters[1]);
-				std::uint32_t resultId = m_writer.AllocateResultId();
-
-				m_currentBlock->Append(SpirvOp::OpExtInst, typeId, resultId, glslInstructionSet, op, firstParam, secondParam);
 				PushResultId(resultId);
-				return;
 			}
-
-			case Ast::IntrinsicType::Normalize:
+			else if constexpr (std::is_same_v<T, SpirvOp>)
 			{
-				std::uint32_t glslInstructionSet = m_writer.GetExtendedInstructionSet("GLSL.std.450");
+				std::uint32_t resultTypeId = m_writer.GetTypeId(ResolveAlias(EnsureExpressionType(node)));
 
-				const Ast::ExpressionType* vecExprType = GetExpressionType(*node.parameters[0]);
-				assert(vecExprType);
-				assert(IsVectorType(*vecExprType));
-
-				const Ast::VectorType& vecType = std::get<Ast::VectorType>(*vecExprType);
-				std::uint32_t typeId = m_writer.GetTypeId(vecType);
-
-				std::uint32_t vec = EvaluateExpression(*node.parameters[0]);
+				Nz::StackArray<std::uint32_t> parameterIds = NazaraStackArrayNoInit(std::uint32_t, node.parameters.size());
+				for (std::size_t i = 0; i < node.parameters.size(); ++i)
+					parameterIds[i] = EvaluateExpression(*node.parameters[i]);
 
 				std::uint32_t resultId = m_writer.AllocateResultId();
 
-				m_currentBlock->Append(SpirvOp::OpExtInst, typeId, resultId, glslInstructionSet, SpirvGlslStd450Op::Normalize, vec);
-				PushResultId(resultId);
-				return;
-			}
+				m_currentBlock->AppendVariadic(arg, [&](auto&& append)
+				{
+					append(resultTypeId);
+					append(resultId);
 
-			case Ast::IntrinsicType::Pow:
+					for (std::uint32_t parameterId : parameterIds)
+						append(parameterId);
+				});
+
+				PushResultId(resultId);
+			}
+			else if constexpr (std::is_same_v<T, SpirvCodeGenerator>)
 			{
-				std::uint32_t glslInstructionSet = m_writer.GetExtendedInstructionSet("GLSL.std.450");
-
-				const Ast::ExpressionType* parameterType = GetExpressionType(*node.parameters[0]);
-				assert(parameterType);
-				assert(IsPrimitiveType(*parameterType) || IsVectorType(*parameterType));
-				std::uint32_t typeId = m_writer.GetTypeId(*parameterType);
-
-				std::uint32_t firstParam = EvaluateExpression(*node.parameters[0]);
-				std::uint32_t secondParam = EvaluateExpression(*node.parameters[1]);
-				std::uint32_t resultId = m_writer.AllocateResultId();
-
-				m_currentBlock->Append(SpirvOp::OpExtInst, typeId, resultId, glslInstructionSet, SpirvGlslStd450Op::Pow, firstParam, secondParam);
-				PushResultId(resultId);
-				return;
+				std::invoke(arg, this, node);
 			}
-
-			case Ast::IntrinsicType::Reflect:
-			{
-				std::uint32_t glslInstructionSet = m_writer.GetExtendedInstructionSet("GLSL.std.450");
-
-				const Ast::ExpressionType* parameterType = GetExpressionType(*node.parameters[0]);
-				assert(parameterType);
-				assert(IsVectorType(*parameterType));
-				std::uint32_t typeId = m_writer.GetTypeId(*parameterType);
-
-				std::uint32_t firstParam = EvaluateExpression(*node.parameters[0]);
-				std::uint32_t secondParam = EvaluateExpression(*node.parameters[1]);
-				std::uint32_t resultId = m_writer.AllocateResultId();
-
-				m_currentBlock->Append(SpirvOp::OpExtInst, typeId, resultId, glslInstructionSet, SpirvGlslStd450Op::Reflect, firstParam, secondParam);
-				PushResultId(resultId);
-				return;
-			}
-
-			case Ast::IntrinsicType::SampleTexture:
-			{
-				std::uint32_t typeId = m_writer.GetTypeId(Ast::VectorType{4, Ast::PrimitiveType::Float32});
-
-				std::uint32_t samplerId = EvaluateExpression(*node.parameters[0]);
-				std::uint32_t coordinatesId = EvaluateExpression(*node.parameters[1]);
-				std::uint32_t resultId = m_writer.AllocateResultId();
-
-				m_currentBlock->Append(SpirvOp::OpImageSampleImplicitLod, typeId, resultId, samplerId, coordinatesId);
-				PushResultId(resultId);
-				return;
-			}
-
-			case Ast::IntrinsicType::Transpose:
-			{
-				std::uint32_t typeId = m_writer.GetTypeId(*node.cachedExpressionType);
-
-				std::uint32_t param = EvaluateExpression(*node.parameters[0]);
-				std::uint32_t resultId = m_writer.AllocateResultId();
-
-				m_currentBlock->Append(SpirvOp::OpTranspose, typeId, resultId, param);
-				PushResultId(resultId);
-				return;
-			}
-		}
-
-		throw std::runtime_error("not yet implemented");
+			else
+				static_assert(Nz::AlwaysFalse<T>(), "non-exhaustive visitor");
+		}, it->second.op);
 	}
 
 	void SpirvAstVisitor::Visit(Ast::NoOpStatement& /*node*/)
@@ -1335,6 +1151,216 @@ namespace nzsl
 
 		m_functionBlocks.emplace_back(std::move(mergeBlock));
 		m_currentBlock = m_functionBlocks.back().get();
+	}
+
+	void SpirvAstVisitor::BuildArraySizeIntrinsic(const Ast::IntrinsicExpression& node)
+	{
+		// First parameter must be an AccessIndex from the external variable to the member index
+		std::uint32_t typeId = m_writer.GetTypeId(Ast::PrimitiveType::UInt32);
+
+		if (node.parameters.size() != 1)
+			throw std::runtime_error("ArraySize intrinsic: unexpected parameter count");
+
+		const Ast::ExpressionPtr& firstParameter = node.parameters.front();
+		if (firstParameter->GetType() != Ast::NodeType::AccessIndexExpression)
+			throw std::runtime_error("ArraySize intrinsic: parameter is not AccessIndex");
+
+		const Ast::AccessIndexExpression& accessIndex = Nz::SafeCast<const Ast::AccessIndexExpression&>(*firstParameter);
+		if (accessIndex.expr->GetType() != Ast::NodeType::VariableValueExpression)
+			throw std::runtime_error("ArraySize intrinsic: AccessIndex expr is not a variable");
+
+		if (accessIndex.indices.size() != 1)
+			throw std::runtime_error("ArraySize intrinsic: AcessIndex should have exactly one index");
+
+		if (accessIndex.indices[0]->GetType() != Ast::NodeType::ConstantValueExpression)
+			throw std::runtime_error("ArraySize intrinsic: AcessIndex index must be a constant value");
+
+		const Ast::VariableValueExpression& structVar = static_cast<const Ast::VariableValueExpression&>(*accessIndex.expr);
+
+		std::uint32_t structId = GetVariable(structVar.variableId).pointerId;
+
+		const Ast::ConstantValueExpression& memberConstant = Nz::SafeCast<const Ast::ConstantValueExpression&>(*accessIndex.indices[0]);
+		if (!std::holds_alternative<std::int32_t>(memberConstant.value))
+			throw std::runtime_error("ArraySize intrinsic: AcessIndex index constant value must be a int32");
+
+		std::uint32_t arrayMemberIndex = Nz::SafeCast<std::uint32_t>(std::get<std::int32_t>(memberConstant.value));
+
+		std::uint32_t resultId = m_writer.AllocateResultId();
+		m_currentBlock->Append(SpirvOp::OpArrayLength, typeId, resultId, structId, arrayMemberIndex);
+
+		PushResultId(resultId);
+	}
+
+	SpirvGlslStd450Op SpirvAstVisitor::SelectAbs(const Ast::IntrinsicExpression& node)
+	{
+		if (node.parameters.size() != 1)
+			throw std::runtime_error("abs intrinsic: unexpected parameter count");
+
+		const Ast::ExpressionType& parameterType = EnsureExpressionType(*node.parameters[0]);
+
+		Ast::PrimitiveType basicType;
+		if (IsPrimitiveType(parameterType))
+			basicType = std::get<Ast::PrimitiveType>(parameterType);
+		else if (IsVectorType(parameterType))
+			basicType = std::get<Ast::VectorType>(parameterType).type;
+		else
+			throw std::runtime_error("unexpected expression type");
+
+		switch (basicType)
+		{
+			case Ast::PrimitiveType::Float32:
+			case Ast::PrimitiveType::Float64:
+				return SpirvGlslStd450Op::FAbs;
+
+			case Ast::PrimitiveType::Int32:
+				return SpirvGlslStd450Op::SAbs;
+
+			case Ast::PrimitiveType::Boolean:
+			case Ast::PrimitiveType::String:
+			case Ast::PrimitiveType::UInt32:
+				break;
+		}
+
+		throw std::runtime_error("unexpected type " + ToString(basicType) + " for abs intrinsic");
+	}
+
+	SpirvGlslStd450Op SpirvAstVisitor::SelectClamp(const Ast::IntrinsicExpression& node)
+	{
+		if (node.parameters.size() != 3)
+			throw std::runtime_error("clamp intrinsic: unexpected parameter count");
+
+		const Ast::ExpressionType& parameterType = EnsureExpressionType(*node.parameters[0]);
+
+		Ast::PrimitiveType basicType;
+		if (IsPrimitiveType(parameterType))
+			basicType = std::get<Ast::PrimitiveType>(parameterType);
+		else if (IsVectorType(parameterType))
+			basicType = std::get<Ast::VectorType>(parameterType).type;
+		else
+			throw std::runtime_error("unexpected expression type");
+
+		switch (basicType)
+		{
+			case Ast::PrimitiveType::Float32:
+			case Ast::PrimitiveType::Float64:
+				return SpirvGlslStd450Op::FClamp;
+
+			case Ast::PrimitiveType::Int32:
+				return SpirvGlslStd450Op::SClamp;
+
+			case Ast::PrimitiveType::UInt32:
+				return SpirvGlslStd450Op::UClamp;
+
+			case Ast::PrimitiveType::Boolean:
+			case Ast::PrimitiveType::String:
+				break;
+		}
+
+		throw std::runtime_error("unexpected type " + ToString(basicType) + " for clamp intrinsic");
+	}
+
+	SpirvGlslStd450Op SpirvAstVisitor::SelectLerp(const Ast::IntrinsicExpression& node)
+	{
+		if (node.parameters.size() != 3)
+			throw std::runtime_error("lerp intrinsic: unexpected parameter count");
+
+		const Ast::ExpressionType& parameterType = EnsureExpressionType(*node.parameters[0]);
+
+		Ast::PrimitiveType basicType;
+		if (IsPrimitiveType(parameterType))
+			basicType = std::get<Ast::PrimitiveType>(parameterType);
+		else if (IsVectorType(parameterType))
+			basicType = std::get<Ast::VectorType>(parameterType).type;
+		else
+			throw std::runtime_error("unexpected expression type");
+
+		switch (basicType)
+		{
+			case Ast::PrimitiveType::Float32:
+			case Ast::PrimitiveType::Float64:
+				return SpirvGlslStd450Op::FMix;
+
+			case Ast::PrimitiveType::Int32:
+				return SpirvGlslStd450Op::IMix;
+
+			case Ast::PrimitiveType::Boolean:
+			case Ast::PrimitiveType::String:
+			case Ast::PrimitiveType::UInt32:
+				break;
+		}
+
+		throw std::runtime_error("unexpected type " + ToString(basicType) + " for lerp intrinsic");
+	}
+
+	SpirvGlslStd450Op SpirvAstVisitor::SelectMaxMin(const Ast::IntrinsicExpression& node)
+	{
+		assert(node.intrinsic == Ast::IntrinsicType::Max || node.intrinsic == Ast::IntrinsicType::Min);
+		bool isMax = (node.intrinsic == Ast::IntrinsicType::Max);
+
+		if (node.parameters.size() != 2)
+			throw std::runtime_error("max/min intrinsic: unexpected parameter count");
+
+		const Ast::ExpressionType& parameterType = EnsureExpressionType(*node.parameters[0]);
+
+		Ast::PrimitiveType basicType;
+		if (IsPrimitiveType(parameterType))
+			basicType = std::get<Ast::PrimitiveType>(parameterType);
+		else if (IsVectorType(parameterType))
+			basicType = std::get<Ast::VectorType>(parameterType).type;
+		else
+			throw std::runtime_error("unexpected expression type");
+
+		switch (basicType)
+		{
+			case Ast::PrimitiveType::Float32:
+			case Ast::PrimitiveType::Float64:
+				return (isMax) ? SpirvGlslStd450Op::FMax : SpirvGlslStd450Op::FMin;
+
+			case Ast::PrimitiveType::Int32:
+				return (isMax) ? SpirvGlslStd450Op::SMax : SpirvGlslStd450Op::SMin;
+
+			case Ast::PrimitiveType::UInt32:
+				return (isMax) ? SpirvGlslStd450Op::UMax : SpirvGlslStd450Op::UMin;
+
+			case Ast::PrimitiveType::Boolean:
+			case Ast::PrimitiveType::String:
+				break;
+		}
+
+		throw std::runtime_error("unexpected type " + ToString(basicType) + " for max/min intrinsic");
+	}
+
+	SpirvGlslStd450Op SpirvAstVisitor::SelectSign(const Ast::IntrinsicExpression& node)
+	{
+		if (node.parameters.size() != 1)
+			throw std::runtime_error("sign intrinsic: unexpected parameter count");
+
+		const Ast::ExpressionType& parameterType = EnsureExpressionType(*node.parameters[0]);
+
+		Ast::PrimitiveType basicType;
+		if (IsPrimitiveType(parameterType))
+			basicType = std::get<Ast::PrimitiveType>(parameterType);
+		else if (IsVectorType(parameterType))
+			basicType = std::get<Ast::VectorType>(parameterType).type;
+		else
+			throw std::runtime_error("unexpected expression type");
+
+		switch (basicType)
+		{
+			case Ast::PrimitiveType::Float32:
+			case Ast::PrimitiveType::Float64:
+				return SpirvGlslStd450Op::FSign;
+
+			case Ast::PrimitiveType::Int32:
+				return SpirvGlslStd450Op::SSign;
+
+			case Ast::PrimitiveType::Boolean:
+			case Ast::PrimitiveType::String:
+			case Ast::PrimitiveType::UInt32:
+				break;
+		}
+
+		throw std::runtime_error("unexpected type " + ToString(basicType) + " for sign intrinsic");
 	}
 
 	void SpirvAstVisitor::HandleStatementList(const std::vector<Ast::StatementPtr>& statements)

@@ -91,19 +91,50 @@ namespace nzsl::Ast
 
 	enum class IntrinsicType
 	{
-		ArraySize     = 10,
-		CrossProduct  = 0,
-		DotProduct    = 1,
-		Exp           = 7,
-		Inverse       = 11,
-		Length        = 3,
-		Max           = 4,
-		Min           = 5,
-		Normalize     = 9,
-		Pow           = 6,
-		Reflect       = 8,
-		SampleTexture = 2,
-		Transpose     = 12
+		// Next free index: 43
+		Abs                        = 31,
+		ArcCos                     = 21,
+		ArcCosh                    = 22,
+		ArcSin                     = 19,
+		ArcSinh                    = 20,
+		ArcTan                     = 24,
+		ArcTan2                    = 25,
+		ArcTanh                    = 23,
+		ArraySize                  = 10,
+		Ceil                       = 34,
+		Clamp                      = 41,
+		Cos                        = 15,
+		Cosh                       = 16,
+		CrossProduct               = 0,
+		DegToRad                   = 37,
+		DotProduct                 = 1,
+		Exp                        = 7,
+		Exp2                       = 40,
+		Floor                      = 33,
+		Fract                      = 35,
+		InverseSqrt                = 26,
+		Length                     = 3,
+		Lerp                       = 42,
+		Log                        = 38,
+		Log2                       = 39,
+		MatrixInverse              = 11,
+		MatrixTranspose            = 12,
+		Max                        = 4,
+		Min                        = 5,
+		Normalize                  = 9,
+		Pow                        = 6,
+		RadToDeg                   = 36,
+		Reflect                    = 8,
+		Round                      = 28,
+		RoundEven                  = 29,
+		TextureSampleImplicitLod   = 2,
+		Sign                       = 32,
+		Sin                        = 13,
+		Sinh                       = 14,
+		Sqrt                       = 27,
+		Tan                        = 17,
+		Tanh                       = 18,
+		Trunc                      = 30,
 	};
 
 	enum class LoopUnroll
@@ -121,7 +152,8 @@ namespace nzsl::Ast
 	enum class ModuleFeature
 	{
 		Float64            = 1,
-		PrimitiveExternals = 0
+		PrimitiveExternals = 0,
+		Texture1D          = 2,
 	};
 
 	enum class NodeType
