@@ -16,6 +16,7 @@
 #include <NZSL/SpirV/SpirvBlock.hpp>
 #include <NZSL/SpirV/SpirvConstantCache.hpp>
 #include <NZSL/SpirV/SpirvData.hpp>
+#include <NZSL/SpirV/SpirvGenData.hpp>
 #include <NZSL/SpirV/SpirvSection.hpp>
 #include <fmt/format.h>
 #include <frozen/unordered_map.h>
@@ -31,30 +32,6 @@ namespace nzsl
 {
 	namespace NAZARA_ANONYMOUS_NAMESPACE
 	{
-		struct SpirvVersion
-		{
-			std::uint32_t majorVersion;
-			std::uint32_t minorVersion;
-		};
-
-		struct SpirvBuiltin
-		{
-			SpirvBuiltIn decoration;
-			SpirvCapability capability;
-			SpirvVersion requiredVersion;
-		};
-
-		constexpr auto s_spirvBuiltinMapping = frozen::make_unordered_map<Ast::BuiltinEntry, SpirvBuiltin>({
-			{ Ast::BuiltinEntry::BaseInstance,   { SpirvBuiltIn::BaseInstance,  SpirvCapability::DrawParameters, SpirvVersion{ 1, 3 } } },
-			{ Ast::BuiltinEntry::BaseVertex,     { SpirvBuiltIn::BaseVertex,    SpirvCapability::DrawParameters, SpirvVersion{ 1, 3 } } },
-			{ Ast::BuiltinEntry::DrawIndex,      { SpirvBuiltIn::DrawIndex,     SpirvCapability::DrawParameters, SpirvVersion{ 1, 3 } } },
-			{ Ast::BuiltinEntry::FragCoord,      { SpirvBuiltIn::FragCoord,     SpirvCapability::Shader,         SpirvVersion{ 1, 0 } } },
-			{ Ast::BuiltinEntry::FragDepth,      { SpirvBuiltIn::FragDepth,     SpirvCapability::Shader,         SpirvVersion{ 1, 0 } } },
-			{ Ast::BuiltinEntry::InstanceIndex,  { SpirvBuiltIn::InstanceIndex, SpirvCapability::Shader,         SpirvVersion{ 1, 0 } } },
-			{ Ast::BuiltinEntry::VertexIndex,    { SpirvBuiltIn::VertexIndex,   SpirvCapability::Shader,         SpirvVersion{ 1, 0 } } },
-			{ Ast::BuiltinEntry::VertexPosition, { SpirvBuiltIn::Position,      SpirvCapability::Shader,         SpirvVersion{ 1, 0 } } }
-		});
-
 		template<typename T>
 		struct IsVector : std::bool_constant<false> {};
 
@@ -454,28 +431,24 @@ namespace nzsl
 			{
 				RecursiveVisitor::Visit(node);
 
-				switch (node.intrinsic)
-				{
-					// Require GLSL.std.450
-					case Ast::IntrinsicType::CrossProduct:
-					case Ast::IntrinsicType::Exp:
-					case Ast::IntrinsicType::Inverse:
-					case Ast::IntrinsicType::Length:
-					case Ast::IntrinsicType::Max:
-					case Ast::IntrinsicType::Min:
-					case Ast::IntrinsicType::Normalize:
-					case Ast::IntrinsicType::Pow:
-					case Ast::IntrinsicType::Reflect:
-						extInsts.emplace("GLSL.std.450");
-						break;
+				auto it = SpirvGenData::s_intrinsicData.find(node.intrinsic);
+				if (it == SpirvGenData::s_intrinsicData.end())
+					throw std::runtime_error("unknown intrinsic value " + std::to_string(Nz::UnderlyingCast(node.intrinsic)));
 
-					// Part of SPIR-V core
-					case Ast::IntrinsicType::ArraySize:
-					case Ast::IntrinsicType::DotProduct:
-					case Ast::IntrinsicType::SampleTexture:
-					case Ast::IntrinsicType::Transpose:
-						break;
-				}
+				std::visit([&](auto&& arg)
+				{
+					using namespace SpirvGenData;
+
+					using T = std::decay_t<decltype(arg)>;
+					if constexpr (std::is_same_v<T, SpirvGlslStd450Op> || std::is_same_v<T, SpirvGlslStd450Selector>)
+						extInsts.emplace("GLSL.std.450");
+					else if constexpr (std::is_same_v<T, SpirvOp> || std::is_same_v<T, SpirvCodeGenerator>)
+					{
+						/* Part of SPIR-V core */
+					}
+					else
+						static_assert(Nz::AlwaysFalse<T>(), "non-exhaustive visitor");
+				}, it->second.op);
 
 				m_constantCache.Register(*m_constantCache.BuildType(node.cachedExpressionType.value()));
 			}
@@ -514,11 +487,11 @@ namespace nzsl
 					if ((builtinData.compatibleStages & entryPointType) == 0)
 						return 0;
 
-					auto spvIt = s_spirvBuiltinMapping.find(member.builtin.GetResultingValue());
-					if (spvIt == s_spirvBuiltinMapping.end())
-						throw std::runtime_error("unknown builtin value " + std::to_string(static_cast<std::size_t>(member.builtin.GetResultingValue())));
+					auto spvIt = SpirvGenData::s_builtinMapping.find(member.builtin.GetResultingValue());
+					if (spvIt == SpirvGenData::s_builtinMapping.end())
+						throw std::runtime_error("unknown builtin value " + std::to_string(Nz::UnderlyingCast(member.builtin.GetResultingValue())));
 
-					const SpirvBuiltin& spirvBuiltin = spvIt->second;
+					const SpirvGenData::SpirvBuiltin& spirvBuiltin = spvIt->second;
 					if (!m_writer.IsVersionGreaterOrEqual(spirvBuiltin.requiredVersion.majorVersion, spirvBuiltin.requiredVersion.minorVersion))
 						throw std::runtime_error(fmt::format("using builtin {} requires SPIR-V {}.{}", builtinData.identifier, spirvBuiltin.requiredVersion.majorVersion, spirvBuiltin.requiredVersion.minorVersion));
 					
@@ -665,6 +638,10 @@ namespace nzsl
 
 				case Ast::ModuleFeature::PrimitiveExternals:
 					break; //< Don't trigger an error here, wait until it's actually used (just in case it's in disabled code)
+
+				case Ast::ModuleFeature::Texture1D:
+					previsitor.spirvCapabilities.insert(SpirvCapability::Sampled1D);
+					break;
 			}
 		}
 

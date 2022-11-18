@@ -6,6 +6,7 @@
 #include <Nazara/Utils/Algorithm.hpp>
 #include <NZSL/Ast/ExpressionVisitor.hpp>
 #include <NZSL/Ast/StatementVisitor.hpp>
+#include <stdexcept>
 
 namespace nzsl::Ast
 {
@@ -23,4 +24,13 @@ namespace nzsl::Ast
 	}
 
 #include <NZSL/Ast/NodeList.hpp>
+
+	const ExpressionType& EnsureExpressionType(Expression& expr)
+	{
+		const ExpressionType* exprType = GetExpressionType(expr);
+		if (!exprType)
+			throw std::runtime_error("unexpected missing expression type");
+
+		return *exprType;
+	}
 }

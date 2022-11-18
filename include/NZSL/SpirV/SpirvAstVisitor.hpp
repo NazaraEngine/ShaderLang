@@ -71,6 +71,14 @@ namespace nzsl
 			SpirvAstVisitor& operator=(const SpirvAstVisitor&) = delete;
 			SpirvAstVisitor& operator=(SpirvAstVisitor&&) = delete;
 
+			// Should be private but are referenced in SpirvGenData.hpp
+			void BuildArraySizeIntrinsic(const Ast::IntrinsicExpression& intrinsic);
+			static SpirvGlslStd450Op SelectAbs(const Ast::IntrinsicExpression& node);
+			static SpirvGlslStd450Op SelectClamp(const Ast::IntrinsicExpression& node);
+			static SpirvGlslStd450Op SelectLerp(const Ast::IntrinsicExpression& node);
+			static SpirvGlslStd450Op SelectMaxMin(const Ast::IntrinsicExpression& node);
+			static SpirvGlslStd450Op SelectSign(const Ast::IntrinsicExpression& node);
+
 			struct EntryPoint
 			{
 				struct Input

@@ -40,11 +40,12 @@ namespace nzsl
 		{
 			None = -1,
 
-			Float64, // GLSL 4.0 or GL_ARB_gpu_shader_fp64
+			Float64,                           // GLSL 4.0 or GL_ARB_gpu_shader_fp64
 			ShaderDrawParameters_BaseInstance, // GLSL 4.6 or GL_ARB_shader_draw_parameters
-			ShaderDrawParameters_BaseVertex, // GLSL 4.6 or GL_ARB_shader_draw_parameters
-			ShaderDrawParameters_DrawIndex, // GLSL 4.6 or GL_ARB_shader_draw_parameters
-			SSBO, // GLSL 4.3 or GLSL ES 3.1 or GL_ARB_shader_storage_buffer_object
+			ShaderDrawParameters_BaseVertex,   // GLSL 4.6 or GL_ARB_shader_draw_parameters
+			ShaderDrawParameters_DrawIndex,    // GLSL 4.6 or GL_ARB_shader_draw_parameters
+			SSBO,                              // GLSL 4.3 or GLSL ES 3.1 or GL_ARB_shader_storage_buffer_object
+			Texture1D                          // GLSL non-ES
 		};
 		
 		struct GlslBuiltin
@@ -329,6 +330,11 @@ namespace nzsl
 					break;
 
 				case Ast::ModuleFeature::PrimitiveExternals:
+					// supported by GLSL core
+					break;
+
+				case Ast::ModuleFeature::Texture1D:
+					state.previsitor.capabilities.insert(GlslCapability::Texture1D);
 					break;
 			}
 		}
@@ -897,6 +903,14 @@ namespace nzsl
 							throw std::runtime_error("this version of OpenGL does not support SSBO");
 					}
 					
+					break;
+				}
+
+				case GlslCapability::Texture1D:
+				{
+					if (m_environment.glES)
+						throw std::runtime_error("OpenGL ES does not support 1D textures");
+
 					break;
 				}
 			}
@@ -1529,6 +1543,51 @@ namespace nzsl
 		bool method = false;
 		switch (node.intrinsic)
 		{
+			// Function intrinsics
+			case Ast::IntrinsicType::Abs:                      Append("abs");         break;
+			case Ast::IntrinsicType::ArcCos:                   Append("acos");        break;
+			case Ast::IntrinsicType::ArcCosh:                  Append("acosh");       break;
+			case Ast::IntrinsicType::ArcSin:                   Append("asin");        break;
+			case Ast::IntrinsicType::ArcSinh:                  Append("asinh");       break;
+			case Ast::IntrinsicType::ArcTan:                   Append("atan");        break;
+			case Ast::IntrinsicType::ArcTan2:                  Append("atan");        break;
+			case Ast::IntrinsicType::ArcTanh:                  Append("atanh");       break;
+			case Ast::IntrinsicType::Ceil:                     Append("ceil");        break;
+			case Ast::IntrinsicType::Clamp:                    Append("clamp");       break;
+			case Ast::IntrinsicType::Cos:                      Append("cos");         break;
+			case Ast::IntrinsicType::Cosh:                     Append("cosh");        break;
+			case Ast::IntrinsicType::CrossProduct:             Append("cross");       break;
+			case Ast::IntrinsicType::DegToRad:                 Append("radians");     break;
+			case Ast::IntrinsicType::DotProduct:               Append("dot");         break;
+			case Ast::IntrinsicType::Exp:                      Append("exp");         break;
+			case Ast::IntrinsicType::Exp2:                     Append("exp2");        break;
+			case Ast::IntrinsicType::Floor:                    Append("floor");       break;
+			case Ast::IntrinsicType::Fract:                    Append("fract");       break;
+			case Ast::IntrinsicType::Length:                   Append("length");      break;
+			case Ast::IntrinsicType::Lerp:                     Append("mix");         break;
+			case Ast::IntrinsicType::Log:                      Append("log");         break;
+			case Ast::IntrinsicType::Log2:                     Append("log2");        break;
+			case Ast::IntrinsicType::InverseSqrt:              Append("inversesqrt"); break;
+			case Ast::IntrinsicType::MatrixInverse:            Append("inverse");     break;
+			case Ast::IntrinsicType::MatrixTranspose:          Append("transpose");   break;
+			case Ast::IntrinsicType::Max:                      Append("max");         break;
+			case Ast::IntrinsicType::Min:                      Append("min");         break;
+			case Ast::IntrinsicType::Normalize:                Append("normalize");   break;
+			case Ast::IntrinsicType::Pow:                      Append("pow");         break;
+			case Ast::IntrinsicType::Reflect:                  Append("reflect");     break;
+			case Ast::IntrinsicType::TextureSampleImplicitLod: Append("texture");     break;
+			case Ast::IntrinsicType::Sin:                      Append("sin");         break;
+			case Ast::IntrinsicType::Sinh:                     Append("sinh");        break;
+			case Ast::IntrinsicType::Sqrt:                     Append("sqrt");        break;
+			case Ast::IntrinsicType::Tan:                      Append("tan");         break;
+			case Ast::IntrinsicType::Tanh:                     Append("tanh");        break;
+			case Ast::IntrinsicType::RadToDeg:                 Append("degrees");     break;
+			case Ast::IntrinsicType::Round:                    Append("round");       break;
+			case Ast::IntrinsicType::RoundEven:                Append("roundEven");   break;
+			case Ast::IntrinsicType::Sign:                     Append("sign");        break;
+			case Ast::IntrinsicType::Trunc:                    Append("trunc");       break;
+
+			// Methods
 			case Ast::IntrinsicType::ArraySize:
 				assert(!node.parameters.empty());
 				// array.length() outputs int in GLSL, but NZSL expects uint
@@ -1538,55 +1597,9 @@ namespace nzsl
 				cast = true;
 				method = true;
 				break;
-
-			case Ast::IntrinsicType::CrossProduct:
-				Append("cross");
+			
+			default:
 				break;
-
-			case Ast::IntrinsicType::DotProduct:
-				Append("dot");
-				break;
-
-			case Ast::IntrinsicType::Exp:
-				Append("exp");
-				break;
-
-			case Ast::IntrinsicType::Inverse:
-				Append("inverse");
-				break;
-
-			case Ast::IntrinsicType::Length:
-				Append("length");
-				break;
-
-			case Ast::IntrinsicType::Max:
-				Append("max");
-				break;
-
-			case Ast::IntrinsicType::Min:
-				Append("min");
-				break;
-
-			case Ast::IntrinsicType::Normalize:
-				Append("normalize");
-				break;
-
-			case Ast::IntrinsicType::Pow:
-				Append("pow");
-				break;
-
-			case Ast::IntrinsicType::Reflect:
-				Append("reflect");
-				break;
-
-			case Ast::IntrinsicType::SampleTexture:
-				Append("texture");
-				break;
-
-			case Ast::IntrinsicType::Transpose:
-				Append("transpose");
-				break;
-
 		}
 
 		Append("(");

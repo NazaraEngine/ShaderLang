@@ -968,6 +968,58 @@ namespace nzsl
 		bool method = false;
 		switch (node.intrinsic)
 		{
+			// Function intrinsics
+			case Ast::IntrinsicType::Abs:
+			case Ast::IntrinsicType::ArcCos:
+			case Ast::IntrinsicType::ArcCosh:
+			case Ast::IntrinsicType::ArcSin:
+			case Ast::IntrinsicType::ArcSinh:
+			case Ast::IntrinsicType::ArcTan:
+			case Ast::IntrinsicType::ArcTan2:
+			case Ast::IntrinsicType::ArcTanh:
+			case Ast::IntrinsicType::Ceil:
+			case Ast::IntrinsicType::Clamp:
+			case Ast::IntrinsicType::Cos:
+			case Ast::IntrinsicType::Cosh:
+			case Ast::IntrinsicType::CrossProduct:
+			case Ast::IntrinsicType::DegToRad:
+			case Ast::IntrinsicType::DotProduct:
+			case Ast::IntrinsicType::Exp:
+			case Ast::IntrinsicType::Exp2:
+			case Ast::IntrinsicType::Floor:
+			case Ast::IntrinsicType::Fract:
+			case Ast::IntrinsicType::InverseSqrt:
+			case Ast::IntrinsicType::Length:
+			case Ast::IntrinsicType::Lerp:
+			case Ast::IntrinsicType::Log:
+			case Ast::IntrinsicType::Log2:
+			case Ast::IntrinsicType::MatrixInverse:
+			case Ast::IntrinsicType::MatrixTranspose:
+			case Ast::IntrinsicType::Max:
+			case Ast::IntrinsicType::Min:
+			case Ast::IntrinsicType::Normalize:
+			case Ast::IntrinsicType::Pow:
+			case Ast::IntrinsicType::RadToDeg:
+			case Ast::IntrinsicType::Reflect:
+			case Ast::IntrinsicType::Round:
+			case Ast::IntrinsicType::RoundEven:
+			case Ast::IntrinsicType::Sign:
+			case Ast::IntrinsicType::Sin:
+			case Ast::IntrinsicType::Sinh:
+			case Ast::IntrinsicType::Sqrt:
+			case Ast::IntrinsicType::Tan:
+			case Ast::IntrinsicType::Tanh:
+			case Ast::IntrinsicType::Trunc:
+			{
+				auto intrinsicIt = LangData::s_intrinsicData.find(node.intrinsic);
+				assert(intrinsicIt != LangData::s_intrinsicData.end());
+				assert(!intrinsicIt->second.functionName.empty());
+
+				Append(intrinsicIt->second.functionName);
+				break;
+			}
+
+			// Method intrinsics
 			case Ast::IntrinsicType::ArraySize:
 				assert(!node.parameters.empty());
 				Visit(node.parameters.front(), true);
@@ -975,56 +1027,13 @@ namespace nzsl
 				method = true;
 				break;
 
-			case Ast::IntrinsicType::CrossProduct:
-				Append("cross");
-				break;
-
-			case Ast::IntrinsicType::DotProduct:
-				Append("dot");
-				break;
-
-			case Ast::IntrinsicType::Exp:
-				Append("exp");
-				break;
-
-			case Ast::IntrinsicType::Inverse:
-				Append("inverse");
-				break;
-
-			case Ast::IntrinsicType::Length:
-				Append("length");
-				break;
-
-			case Ast::IntrinsicType::Max:
-				Append("max");
-				break;
-
-			case Ast::IntrinsicType::Min:
-				Append("min");
-				break;
-
-			case Ast::IntrinsicType::Normalize:
-				Append("normalize");
-				break;
-
-			case Ast::IntrinsicType::Pow:
-				Append("pow");
-				break;
-
-			case Ast::IntrinsicType::Reflect:
-				Append("reflect");
-				break;
-
-			case Ast::IntrinsicType::SampleTexture:
+			case Ast::IntrinsicType::TextureSampleImplicitLod:
 				assert(!node.parameters.empty());
 				Visit(node.parameters.front(), true);
 				Append(".Sample");
 				method = true;
 				break;
 
-			case Ast::IntrinsicType::Transpose:
-				Append("transpose");
-				break;
 		}
 
 		Append("(");
