@@ -53,7 +53,7 @@ namespace nzsl
 			using ConstantVariables = std::unordered_map<std::size_t /*constIndex*/, SpirvVariable /*variable*/>;
 			using LocationDecoration = tsl::ordered_map<std::uint32_t, std::uint32_t>;
 			using ExtInstList = tsl::ordered_set<std::string>;
-			using ExtVarContainer = std::unordered_map<std::size_t /*varIndex*/, UniformVar>;
+			using ExtVarContainer = tsl::ordered_map<std::size_t /*varIndex*/, UniformVar>;
 			using FunctionContainer = tsl::ordered_map<std::size_t, SpirvAstVisitor::FuncData>;
 			using LocalContainer = tsl::ordered_set<Ast::ExpressionType>;
 			using StructContainer = std::vector<Ast::StructDescription*>;
