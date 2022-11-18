@@ -16,7 +16,7 @@ namespace nzsl::Ast
 		template <typename T>
 		struct is_complete_helper
 		{
-			// SFINAE: sizeof in an incomplete type is an error, but since there's another specialization it won't result in a compilation error
+			// SFINAE: sizeof of an incomplete type is an error, but since there's another specialization it won't result in a compilation error
 			template <typename U>
 			static auto test(U*) -> std::bool_constant<sizeof(U) == sizeof(U)>;
 
@@ -774,7 +774,7 @@ namespace nzsl::Ast
 				if (parameters.size() == 1)
 				{
 					const ExpressionType* parameterType = GetExpressionType(*parameters.front());
-					if (parameterType && IsArrayType(*parameterType))
+					if (parameterType && IsArrayType(*parameterType)) //< DynArray cannot be handled for obvious reasons
 					{
 						const ArrayType& arrayType = std::get<ArrayType>(*parameterType);
 						auto constant = ShaderBuilder::ConstantValue(arrayType.length);
@@ -787,31 +787,51 @@ namespace nzsl::Ast
 			}
 			
 			// TODO
+			case IntrinsicType::Abs:
+			case IntrinsicType::ArcCos:
+			case IntrinsicType::ArcCosh:
+			case IntrinsicType::ArcSin:
+			case IntrinsicType::ArcSinh:
+			case IntrinsicType::ArcTan:
+			case IntrinsicType::ArcTan2:
+			case IntrinsicType::ArcTanh:
+			case IntrinsicType::Ceil:
+			case IntrinsicType::Clamp:
+			case IntrinsicType::Cos:
+			case IntrinsicType::Cosh:
 			case IntrinsicType::CrossProduct:
-				break;
+			case IntrinsicType::DegToRad:
 			case IntrinsicType::DotProduct:
-				break;
 			case IntrinsicType::Exp:
-				break;
-			case IntrinsicType::Inverse:
-				break;
+			case IntrinsicType::Exp2:
+			case IntrinsicType::Floor:
+			case IntrinsicType::Fract:
+			case IntrinsicType::InverseSqrt:
 			case IntrinsicType::Length:
-				break;
+			case IntrinsicType::Lerp:
+			case IntrinsicType::Log:
+			case IntrinsicType::Log2:
+			case IntrinsicType::MatrixInverse:
+			case IntrinsicType::MatrixTranspose:
 			case IntrinsicType::Max:
-				break;
 			case IntrinsicType::Min:
-				break;
 			case IntrinsicType::Normalize:
-				break;
 			case IntrinsicType::Pow:
-				break;
+			case IntrinsicType::RadToDeg:
 			case IntrinsicType::Reflect:
-				break;
-			case IntrinsicType::Transpose:
+			case IntrinsicType::Round:
+			case IntrinsicType::RoundEven:
+			case IntrinsicType::Sign:
+			case IntrinsicType::Sin:
+			case IntrinsicType::Sinh:
+			case IntrinsicType::Sqrt:
+			case IntrinsicType::Tan:
+			case IntrinsicType::Tanh:
+			case IntrinsicType::Trunc:
 				break;
 
-			// Always runtime intrinsics
-			case IntrinsicType::SampleTexture:
+			// Intrinsics that cannot be evalutated at compilation time
+			case IntrinsicType::TextureSampleImplicitLod:
 				break;
 		}
 
