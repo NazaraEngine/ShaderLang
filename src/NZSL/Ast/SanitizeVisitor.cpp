@@ -337,23 +337,25 @@ namespace nzsl::Ast
 			// TODO: Add proper support for methods
 			if (IsSamplerType(resolvedType))
 			{
+				MethodType methodType;
+
+				// FIXME
 				if (identifierEntry.identifier == "Sample")
-				{
-					// TODO: Add a MethodExpression?
-					auto identifierExpr = std::make_unique<AccessIdentifierExpression>();
-					identifierExpr->expr = std::move(indexedExpr);
-					identifierExpr->identifiers.emplace_back().identifier = identifierEntry.identifier;
-
-					MethodType methodType;
-					methodType.methodIndex = 0; //< FIXME
-					methodType.objectType = std::make_unique<ContainedType>();
-					methodType.objectType->type = resolvedType;
-
-					identifierExpr->cachedExpressionType = std::move(methodType);
-					indexedExpr = std::move(identifierExpr);
-				}
+					methodType.methodIndex = 0;
+				else if (identifierEntry.identifier == "SampleDepthComp")
+					methodType.methodIndex = 1;
 				else
 					throw CompilerUnknownMethodError{ identifierEntry.sourceLocation, ToString(resolvedType, indexedExpr->sourceLocation), identifierEntry.identifier };
+
+				methodType.objectType = std::make_unique<ContainedType>();
+				methodType.objectType->type = resolvedType;
+
+				// TODO: Add a MethodExpression?
+				auto identifierExpr = std::make_unique<AccessIdentifierExpression>();
+				identifierExpr->expr = std::move(indexedExpr);
+				identifierExpr->identifiers.emplace_back().identifier = identifierEntry.identifier;
+				identifierExpr->cachedExpressionType = std::move(methodType);
+				indexedExpr = std::move(identifierExpr);
 			}
 			else if (IsArrayType(resolvedType) || IsDynArrayType(resolvedType))
 			{
@@ -723,10 +725,16 @@ namespace nzsl::Ast
 			}
 			else if (IsSamplerType(objectType))
 			{
-				if (methodType.methodIndex != 0)
-					throw AstInvalidMethodIndexError{ node.sourceLocation, methodType.methodIndex, ToString(objectType, node.sourceLocation) };
+				IntrinsicType intrinsicType;
+				switch (methodType.methodIndex)
+				{
+					case 0: intrinsicType = IntrinsicType::TextureSampleImplicitLod; break;
+					case 1: intrinsicType = IntrinsicType::TextureSampleImplicitLodDepthComp; break;
+					default:
+						throw AstInvalidMethodIndexError{ node.sourceLocation, methodType.methodIndex, ToString(objectType, node.sourceLocation) };
+				}
 
-				auto intrinsic = ShaderBuilder::Intrinsic(IntrinsicType::TextureSampleImplicitLod, std::move(parameters));
+				auto intrinsic = ShaderBuilder::Intrinsic(intrinsicType, std::move(parameters));
 				intrinsic->sourceLocation = node.sourceLocation;
 				Validate(*intrinsic);
 
@@ -2957,39 +2965,78 @@ namespace nzsl::Ast
 			std::string_view typeName;
 			ImageType imageType;
 			std::optional<ModuleFeature> requiredFeature;
+			bool depthSampler;
 		};
 
-		constexpr std::array<SamplerInfo, 6> samplerInfos = {
+		constexpr std::array<SamplerInfo, 11> samplerInfos = {
 			{
+				// Regular samplers
 				{
 					"sampler1D",
 					ImageType::E1D,
-					ModuleFeature::Texture1D
+					ModuleFeature::Texture1D,
+					false
 				},
 				{
-					"sampler1DArray",
+					"sampler1D_array",
 					ImageType::E1D_Array,
-					ModuleFeature::Texture1D
+					ModuleFeature::Texture1D,
+					false
 				},
 				{
 					"sampler2D",
 					ImageType::E2D,
-					std::nullopt
+					std::nullopt,
+					false
 				},
 				{
-					"sampler2DArray",
+					"sampler2D_array",
 					ImageType::E2D_Array,
-					std::nullopt
+					std::nullopt,
+					false
 				},
 				{
 					"sampler3D",
 					ImageType::E3D,
-					std::nullopt
+					std::nullopt,
+					false
 				},
 				{
-					"samplerCube",
+					"sampler_cube",
 					ImageType::Cubemap,
-					std::nullopt
+					std::nullopt,
+					false
+				},
+				// Depth samplers
+				{
+					"depth_sampler1D",
+					ImageType::E1D,
+					ModuleFeature::Texture1D,
+					true
+				},
+				{
+					"depth_sampler1D_array",
+					ImageType::E1D_Array,
+					ModuleFeature::Texture1D,
+					true
+				},
+				{
+					"depth_sampler2D",
+					ImageType::E2D,
+					std::nullopt,
+					true
+				},
+				{
+					"depth_sampler2D_array",
+					ImageType::E2D_Array,
+					std::nullopt,
+					true
+				},
+				{
+					"depth_sampler_cube",
+					ImageType::Cubemap,
+					std::nullopt,
+					true
 				}
 			}
 		};
@@ -3016,7 +3063,7 @@ namespace nzsl::Ast
 						throw CompilerSamplerUnexpectedTypeError{ sourceLocation, ToString(exprType, sourceLocation) };
 
 					return SamplerType {
-						sampler.imageType, primitiveType
+						sampler.imageType, primitiveType, sampler.depthSampler
 					};
 				}
 			}, std::nullopt, {});
@@ -4332,6 +4379,19 @@ namespace nzsl::Ast
 					break;
 				}
 
+				case ParameterType::F32:
+				{
+					auto Check = [](const ExpressionType& type)
+					{
+						return type == ExpressionType{ PrimitiveType::Float32 };
+					};
+
+					if (IsUnresolved(ValidateIntrinsicParameterType(node, Check, "f32", paramIndex++)))
+						return ValidationResult::Unresolved;
+
+					break;
+				}
+
 				case ParameterType::FVal:
 				{
 					auto Check = [](const ExpressionType& type)
@@ -4696,15 +4756,17 @@ namespace nzsl::Ast
 		{
 			using namespace LangData::IntrinsicHelper;
 
-			case ReturnType::Param0SampledVec:
+			case ReturnType::Param0SampledValue:
 			{
 				const ExpressionType& paramType = ResolveAlias(GetExpressionTypeSecure(*node.parameters[0]));
 				if (!IsSamplerType(paramType))
 					throw AstInternalError{ node.sourceLocation, "intrinsic " + std::string(intrinsicData.functionName) + " first parameter is not a sampler" };
 
 				const SamplerType& samplerType = std::get<SamplerType>(paramType);
-
-				node.cachedExpressionType = VectorType{ 4, samplerType.sampledType };
+				if (samplerType.depth)
+					node.cachedExpressionType = PrimitiveType::Float32;
+				else
+					node.cachedExpressionType = VectorType{ 4, samplerType.sampledType };
 				break;
 			}
 

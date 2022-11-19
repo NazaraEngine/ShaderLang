@@ -394,7 +394,7 @@ namespace nzsl::Ast
 			case ImageType::Cubemap:   dimensionStr = "Cube";    break;
 		}
 
-		return fmt::format("sampler{}[{}]", dimensionStr, ToString(type.sampledType));
+		return fmt::format("{}sampler{}[{}]", (type.depth) ? "depth_" : "", dimensionStr, ToString(type.sampledType));
 	}
 
 	std::string ToString(const StorageType& type, const Stringifier& stringifier)

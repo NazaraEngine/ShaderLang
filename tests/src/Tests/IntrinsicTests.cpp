@@ -124,16 +124,22 @@ module;
 external
 {
 	tex1D: sampler1D[f32],
-	tex1DArray: sampler1DArray[f32],
+	tex1DArray: sampler1D_array[f32],
 	tex2D: sampler2D[f32],
-	tex2DArray: sampler2DArray[f32],
+	tex2DArray: sampler2D_array[f32],
 	tex3D: sampler3D[f32],
-	texCube: samplerCube[f32],
+	texCube: sampler_cube[f32],
+	tex1DDepth: depth_sampler1D[f32],
+	tex1DArrayDepth: depth_sampler1D_array[f32],
+	tex2DDepth: depth_sampler2D[f32],
+	tex2DArrayDepth: depth_sampler2D_array[f32],
+	texCubeDepth: depth_sampler_cube[f32],
 }
 
 [entry(frag)]
 fn main()
 {
+	let depth = 0.5;
 	let uv1f = 0.0;
 	let uv2f = vec2[f32](0.0, 1.0);
 	let uv3f = vec3[f32](0.0, 1.0, 2.0);
@@ -144,13 +150,19 @@ fn main()
 	let sampleResult4 = tex2DArray.Sample(uv3f);
 	let sampleResult5 = tex3D.Sample(uv3f);
 	let sampleResult6 = texCube.Sample(uv3f);
+
+	let depthSampleResult1 = tex1DDepth.SampleDepthComp(uv1f, depth);
+	let depthSampleResult2 = tex1DArrayDepth.SampleDepthComp(uv2f, depth);
+	let depthSampleResult3 = tex2DDepth.SampleDepthComp(uv2f, depth);
+	let depthSampleResult4 = tex2DArrayDepth.SampleDepthComp(uv3f, depth);
+	let depthSampleResult5 = texCubeDepth.SampleDepthComp(uv3f, depth);
 }
 )";
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
 		shaderModule = SanitizeModule(*shaderModule);
 
-		// sampler1D and sampler1DArray are not supported by GLSL ES
+		// sampler1D and sampler1D_array are not supported by GLSL ES
 		nzsl::GlslWriter::Environment glslEnv;
 		glslEnv.glES = false;
 
@@ -161,9 +173,15 @@ uniform sampler2D tex2D;
 uniform sampler2DArray tex2DArray;
 uniform sampler3D tex3D;
 uniform samplerCube texCube;
+uniform sampler1DShadow tex1DDepth;
+uniform sampler1DArrayShadow tex1DArrayDepth;
+uniform sampler2DShadow tex2DDepth;
+uniform sampler2DArrayShadow tex2DArrayDepth;
+uniform samplerCubeShadow texCubeDepth;
 
 void main()
 {
+	float depth = 0.5;
 	float uv1f = 0.0;
 	vec2 uv2f = vec2(0.0, 1.0);
 	vec3 uv3f = vec3(0.0, 1.0, 2.0);
@@ -173,6 +191,11 @@ void main()
 	vec4 sampleResult4 = texture(tex2DArray, uv3f);
 	vec4 sampleResult5 = texture(tex3D, uv3f);
 	vec4 sampleResult6 = texture(texCube, uv3f);
+	float depthSampleResult1 = texture(tex1DDepth, vec3(uv1f, 0.0, depth));
+	float depthSampleResult2 = texture(tex1DArrayDepth, vec3(uv2f, depth));
+	float depthSampleResult3 = texture(tex2DDepth, vec3(uv2f, depth));
+	float depthSampleResult4 = texture(tex2DArrayDepth, vec4(uv3f, depth));
+	float depthSampleResult5 = texture(texCubeDepth, vec4(uv3f, depth));
 }
 )", glslEnv);
 
@@ -181,16 +204,22 @@ void main()
 external
 {
 	[set(0), binding(0)] tex1D: sampler1D[f32],
-	[set(0), binding(1)] tex1DArray: sampler1DArray[f32],
+	[set(0), binding(1)] tex1DArray: sampler1D_array[f32],
 	[set(0), binding(2)] tex2D: sampler2D[f32],
-	[set(0), binding(3)] tex2DArray: sampler2DArray[f32],
+	[set(0), binding(3)] tex2DArray: sampler2D_array[f32],
 	[set(0), binding(4)] tex3D: sampler3D[f32],
-	[set(0), binding(5)] texCube: samplerCube[f32]
+	[set(0), binding(5)] texCube: sampler_cube[f32],
+	[set(0), binding(6)] tex1DDepth: depth_sampler1D[f32],
+	[set(0), binding(7)] tex1DArrayDepth: depth_sampler1D_array[f32],
+	[set(0), binding(8)] tex2DDepth: depth_sampler2D[f32],
+	[set(0), binding(9)] tex2DArrayDepth: depth_sampler2D_array[f32],
+	[set(0), binding(10)] texCubeDepth: depth_sampler_cube[f32]
 }
 
 [entry(frag)]
 fn main()
 {
+	let depth: f32 = 0.5;
 	let uv1f: f32 = 0.0;
 	let uv2f: vec2[f32] = vec2[f32](0.0, 1.0);
 	let uv3f: vec3[f32] = vec3[f32](0.0, 1.0, 2.0);
@@ -200,113 +229,186 @@ fn main()
 	let sampleResult4: vec4[f32] = tex2DArray.Sample(uv3f);
 	let sampleResult5: vec4[f32] = tex3D.Sample(uv3f);
 	let sampleResult6: vec4[f32] = texCube.Sample(uv3f);
+	let depthSampleResult1: f32 = tex1DDepth.SampleDepthComp(uv1f, depth);
+	let depthSampleResult2: f32 = tex1DArrayDepth.SampleDepthComp(uv2f, depth);
+	let depthSampleResult3: f32 = tex2DDepth.SampleDepthComp(uv2f, depth);
+	let depthSampleResult4: f32 = tex2DArrayDepth.SampleDepthComp(uv3f, depth);
+	let depthSampleResult5: f32 = texCubeDepth.SampleDepthComp(uv3f, depth);
 }
 )");
 
 		ExpectSPIRV(*shaderModule, R"(
-      OpCapability Capability(Shader)
-      OpCapability Capability(Sampled1D)
-      OpMemoryModel AddressingModel(Logical) MemoryModel(GLSL450)
-      OpEntryPoint ExecutionModel(Fragment) %38 "main"
-      OpExecutionMode %38 ExecutionMode(OriginUpperLeft)
-      OpName %38 "main"
-      OpName %5 "tex1D"
-      OpName %9 "tex1DArray"
-      OpName %13 "tex2D"
-      OpName %17 "tex2DArray"
-      OpName %21 "tex3D"
-      OpName %25 "texCube"
-      OpDecorate %5 Decoration(Binding) 0
-      OpDecorate %5 Decoration(DescriptorSet) 0
-      OpDecorate %9 Decoration(Binding) 1
-      OpDecorate %9 Decoration(DescriptorSet) 0
-      OpDecorate %13 Decoration(Binding) 2
-      OpDecorate %13 Decoration(DescriptorSet) 0
-      OpDecorate %17 Decoration(Binding) 3
-      OpDecorate %17 Decoration(DescriptorSet) 0
-      OpDecorate %21 Decoration(Binding) 4
-      OpDecorate %21 Decoration(DescriptorSet) 0
-      OpDecorate %25 Decoration(Binding) 5
-      OpDecorate %25 Decoration(DescriptorSet) 0
- %1 = OpTypeFloat 32
- %2 = OpTypeImage %1 Dim(Dim1D) 2 0 0 1 ImageFormat(Unknown)
- %3 = OpTypeSampledImage %2
- %4 = OpTypePointer StorageClass(UniformConstant) %3
- %6 = OpTypeImage %1 Dim(Dim1D) 2 1 0 1 ImageFormat(Unknown)
- %7 = OpTypeSampledImage %6
- %8 = OpTypePointer StorageClass(UniformConstant) %7
-%10 = OpTypeImage %1 Dim(Dim2D) 2 0 0 1 ImageFormat(Unknown)
-%11 = OpTypeSampledImage %10
-%12 = OpTypePointer StorageClass(UniformConstant) %11
-%14 = OpTypeImage %1 Dim(Dim2D) 2 1 0 1 ImageFormat(Unknown)
-%15 = OpTypeSampledImage %14
-%16 = OpTypePointer StorageClass(UniformConstant) %15
-%18 = OpTypeImage %1 Dim(Dim3D) 2 0 0 1 ImageFormat(Unknown)
-%19 = OpTypeSampledImage %18
-%20 = OpTypePointer StorageClass(UniformConstant) %19
-%22 = OpTypeImage %1 Dim(Cube) 2 0 0 1 ImageFormat(Unknown)
-%23 = OpTypeSampledImage %22
-%24 = OpTypePointer StorageClass(UniformConstant) %23
-%26 = OpTypeVoid
-%27 = OpTypeFunction %26
-%28 = OpConstant %1 f32(0)
-%29 = OpTypePointer StorageClass(Function) %1
-%30 = OpConstant %1 f32(1)
-%31 = OpTypeVector %1 2
-%32 = OpTypePointer StorageClass(Function) %31
-%33 = OpConstant %1 f32(2)
-%34 = OpTypeVector %1 3
-%35 = OpTypePointer StorageClass(Function) %34
-%36 = OpTypeVector %1 4
-%37 = OpTypePointer StorageClass(Function) %36
- %5 = OpVariable %4 StorageClass(UniformConstant)
- %9 = OpVariable %8 StorageClass(UniformConstant)
-%13 = OpVariable %12 StorageClass(UniformConstant)
-%17 = OpVariable %16 StorageClass(UniformConstant)
-%21 = OpVariable %20 StorageClass(UniformConstant)
-%25 = OpVariable %24 StorageClass(UniformConstant)
-%38 = OpFunction %26 FunctionControl(0) %27
-%39 = OpLabel
-%40 = OpVariable %29 StorageClass(Function)
-%41 = OpVariable %32 StorageClass(Function)
-%42 = OpVariable %35 StorageClass(Function)
-%43 = OpVariable %37 StorageClass(Function)
-%44 = OpVariable %37 StorageClass(Function)
-%45 = OpVariable %37 StorageClass(Function)
-%46 = OpVariable %37 StorageClass(Function)
-%47 = OpVariable %37 StorageClass(Function)
-%48 = OpVariable %37 StorageClass(Function)
-      OpStore %40 %28
-%49 = OpCompositeConstruct %31 %28 %30
-      OpStore %41 %49
-%50 = OpCompositeConstruct %34 %28 %30 %33
-      OpStore %42 %50
-%51 = OpLoad %3 %5
-%52 = OpLoad %1 %40
-%53 = OpImageSampleImplicitLod %36 %51 %52
-      OpStore %43 %53
-%54 = OpLoad %7 %9
-%55 = OpLoad %31 %41
-%56 = OpImageSampleImplicitLod %36 %54 %55
-      OpStore %44 %56
-%57 = OpLoad %11 %13
-%58 = OpLoad %31 %41
-%59 = OpImageSampleImplicitLod %36 %57 %58
-      OpStore %45 %59
-%60 = OpLoad %15 %17
-%61 = OpLoad %34 %42
-%62 = OpImageSampleImplicitLod %36 %60 %61
-      OpStore %46 %62
-%63 = OpLoad %19 %21
-%64 = OpLoad %34 %42
-%65 = OpImageSampleImplicitLod %36 %63 %64
-      OpStore %47 %65
-%66 = OpLoad %23 %25
-%67 = OpLoad %34 %42
-%68 = OpImageSampleImplicitLod %36 %66 %67
-      OpStore %48 %68
-      OpReturn
-      OpFunctionEnd)", {}, true);
+       OpCapability Capability(Shader)
+       OpCapability Capability(Sampled1D)
+       OpMemoryModel AddressingModel(Logical) MemoryModel(GLSL450)
+       OpEntryPoint ExecutionModel(Fragment) %59 "main"
+       OpExecutionMode %59 ExecutionMode(OriginUpperLeft)
+       OpName %59 "main"
+       OpName %5 "tex1D"
+       OpName %9 "tex1DArray"
+       OpName %13 "tex2D"
+       OpName %17 "tex2DArray"
+       OpName %21 "tex3D"
+       OpName %25 "texCube"
+       OpName %29 "tex1DDepth"
+       OpName %33 "tex1DArrayDepth"
+       OpName %37 "tex2DDepth"
+       OpName %41 "tex2DArrayDepth"
+       OpName %45 "texCubeDepth"
+       OpDecorate %5 Decoration(Binding) 0
+       OpDecorate %5 Decoration(DescriptorSet) 0
+       OpDecorate %9 Decoration(Binding) 1
+       OpDecorate %9 Decoration(DescriptorSet) 0
+       OpDecorate %13 Decoration(Binding) 2
+       OpDecorate %13 Decoration(DescriptorSet) 0
+       OpDecorate %17 Decoration(Binding) 3
+       OpDecorate %17 Decoration(DescriptorSet) 0
+       OpDecorate %21 Decoration(Binding) 4
+       OpDecorate %21 Decoration(DescriptorSet) 0
+       OpDecorate %25 Decoration(Binding) 5
+       OpDecorate %25 Decoration(DescriptorSet) 0
+       OpDecorate %29 Decoration(Binding) 6
+       OpDecorate %29 Decoration(DescriptorSet) 0
+       OpDecorate %33 Decoration(Binding) 7
+       OpDecorate %33 Decoration(DescriptorSet) 0
+       OpDecorate %37 Decoration(Binding) 8
+       OpDecorate %37 Decoration(DescriptorSet) 0
+       OpDecorate %41 Decoration(Binding) 9
+       OpDecorate %41 Decoration(DescriptorSet) 0
+       OpDecorate %45 Decoration(Binding) 10
+       OpDecorate %45 Decoration(DescriptorSet) 0
+  %1 = OpTypeFloat 32
+  %2 = OpTypeImage %1 Dim(Dim1D) 0 0 0 1 ImageFormat(Unknown)
+  %3 = OpTypeSampledImage %2
+  %4 = OpTypePointer StorageClass(UniformConstant) %3
+  %6 = OpTypeImage %1 Dim(Dim1D) 0 1 0 1 ImageFormat(Unknown)
+  %7 = OpTypeSampledImage %6
+  %8 = OpTypePointer StorageClass(UniformConstant) %7
+ %10 = OpTypeImage %1 Dim(Dim2D) 0 0 0 1 ImageFormat(Unknown)
+ %11 = OpTypeSampledImage %10
+ %12 = OpTypePointer StorageClass(UniformConstant) %11
+ %14 = OpTypeImage %1 Dim(Dim2D) 0 1 0 1 ImageFormat(Unknown)
+ %15 = OpTypeSampledImage %14
+ %16 = OpTypePointer StorageClass(UniformConstant) %15
+ %18 = OpTypeImage %1 Dim(Dim3D) 0 0 0 1 ImageFormat(Unknown)
+ %19 = OpTypeSampledImage %18
+ %20 = OpTypePointer StorageClass(UniformConstant) %19
+ %22 = OpTypeImage %1 Dim(Cube) 0 0 0 1 ImageFormat(Unknown)
+ %23 = OpTypeSampledImage %22
+ %24 = OpTypePointer StorageClass(UniformConstant) %23
+ %26 = OpTypeImage %1 Dim(Dim1D) 1 0 0 1 ImageFormat(Unknown)
+ %27 = OpTypeSampledImage %26
+ %28 = OpTypePointer StorageClass(UniformConstant) %27
+ %30 = OpTypeImage %1 Dim(Dim1D) 1 1 0 1 ImageFormat(Unknown)
+ %31 = OpTypeSampledImage %30
+ %32 = OpTypePointer StorageClass(UniformConstant) %31
+ %34 = OpTypeImage %1 Dim(Dim2D) 1 0 0 1 ImageFormat(Unknown)
+ %35 = OpTypeSampledImage %34
+ %36 = OpTypePointer StorageClass(UniformConstant) %35
+ %38 = OpTypeImage %1 Dim(Dim2D) 1 1 0 1 ImageFormat(Unknown)
+ %39 = OpTypeSampledImage %38
+ %40 = OpTypePointer StorageClass(UniformConstant) %39
+ %42 = OpTypeImage %1 Dim(Cube) 1 0 0 1 ImageFormat(Unknown)
+ %43 = OpTypeSampledImage %42
+ %44 = OpTypePointer StorageClass(UniformConstant) %43
+ %46 = OpTypeVoid
+ %47 = OpTypeFunction %46
+ %48 = OpConstant %1 f32(0.5)
+ %49 = OpTypePointer StorageClass(Function) %1
+ %50 = OpConstant %1 f32(0)
+ %51 = OpConstant %1 f32(1)
+ %52 = OpTypeVector %1 2
+ %53 = OpTypePointer StorageClass(Function) %52
+ %54 = OpConstant %1 f32(2)
+ %55 = OpTypeVector %1 3
+ %56 = OpTypePointer StorageClass(Function) %55
+ %57 = OpTypeVector %1 4
+ %58 = OpTypePointer StorageClass(Function) %57
+  %5 = OpVariable %4 StorageClass(UniformConstant)
+  %9 = OpVariable %8 StorageClass(UniformConstant)
+ %13 = OpVariable %12 StorageClass(UniformConstant)
+ %17 = OpVariable %16 StorageClass(UniformConstant)
+ %21 = OpVariable %20 StorageClass(UniformConstant)
+ %25 = OpVariable %24 StorageClass(UniformConstant)
+ %29 = OpVariable %28 StorageClass(UniformConstant)
+ %33 = OpVariable %32 StorageClass(UniformConstant)
+ %37 = OpVariable %36 StorageClass(UniformConstant)
+ %41 = OpVariable %40 StorageClass(UniformConstant)
+ %45 = OpVariable %44 StorageClass(UniformConstant)
+ %59 = OpFunction %46 FunctionControl(0) %47
+ %60 = OpLabel
+ %61 = OpVariable %49 StorageClass(Function)
+ %62 = OpVariable %49 StorageClass(Function)
+ %63 = OpVariable %53 StorageClass(Function)
+ %64 = OpVariable %56 StorageClass(Function)
+ %65 = OpVariable %58 StorageClass(Function)
+ %66 = OpVariable %58 StorageClass(Function)
+ %67 = OpVariable %58 StorageClass(Function)
+ %68 = OpVariable %58 StorageClass(Function)
+ %69 = OpVariable %58 StorageClass(Function)
+ %70 = OpVariable %58 StorageClass(Function)
+ %71 = OpVariable %49 StorageClass(Function)
+ %72 = OpVariable %49 StorageClass(Function)
+ %73 = OpVariable %49 StorageClass(Function)
+ %74 = OpVariable %49 StorageClass(Function)
+ %75 = OpVariable %49 StorageClass(Function)
+       OpStore %61 %48
+       OpStore %62 %50
+ %76 = OpCompositeConstruct %52 %50 %51
+       OpStore %63 %76
+ %77 = OpCompositeConstruct %55 %50 %51 %54
+       OpStore %64 %77
+ %78 = OpLoad %3 %5
+ %79 = OpLoad %1 %62
+ %80 = OpImageSampleImplicitLod %57 %78 %79
+       OpStore %65 %80
+ %81 = OpLoad %7 %9
+ %82 = OpLoad %52 %63
+ %83 = OpImageSampleImplicitLod %57 %81 %82
+       OpStore %66 %83
+ %84 = OpLoad %11 %13
+ %85 = OpLoad %52 %63
+ %86 = OpImageSampleImplicitLod %57 %84 %85
+       OpStore %67 %86
+ %87 = OpLoad %15 %17
+ %88 = OpLoad %55 %64
+ %89 = OpImageSampleImplicitLod %57 %87 %88
+       OpStore %68 %89
+ %90 = OpLoad %19 %21
+ %91 = OpLoad %55 %64
+ %92 = OpImageSampleImplicitLod %57 %90 %91
+       OpStore %69 %92
+ %93 = OpLoad %23 %25
+ %94 = OpLoad %55 %64
+ %95 = OpImageSampleImplicitLod %57 %93 %94
+       OpStore %70 %95
+ %96 = OpLoad %27 %29
+ %97 = OpLoad %1 %62
+ %98 = OpLoad %1 %61
+ %99 = OpImageSampleDrefImplicitLod %1 %96 %97 %98
+       OpStore %71 %99
+%100 = OpLoad %31 %33
+%101 = OpLoad %52 %63
+%102 = OpLoad %1 %61
+%103 = OpImageSampleDrefImplicitLod %1 %100 %101 %102
+       OpStore %72 %103
+%104 = OpLoad %35 %37
+%105 = OpLoad %52 %63
+%106 = OpLoad %1 %61
+%107 = OpImageSampleDrefImplicitLod %1 %104 %105 %106
+       OpStore %73 %107
+%108 = OpLoad %39 %41
+%109 = OpLoad %55 %64
+%110 = OpLoad %1 %61
+%111 = OpImageSampleDrefImplicitLod %1 %108 %109 %110
+       OpStore %74 %111
+%112 = OpLoad %43 %45
+%113 = OpLoad %55 %64
+%114 = OpLoad %1 %61
+%115 = OpImageSampleDrefImplicitLod %1 %112 %113 %114
+       OpStore %75 %115
+       OpReturn
+       OpFunctionEnd)", {}, true);
 	}
 	
 	WHEN("testing math intrinsics")

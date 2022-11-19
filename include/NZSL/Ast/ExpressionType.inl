@@ -97,7 +97,7 @@ namespace nzsl::Ast
 
 	inline bool SamplerType::operator==(const SamplerType& rhs) const
 	{
-		return dim == rhs.dim && sampledType == rhs.sampledType;
+		return dim == rhs.dim && sampledType == rhs.sampledType && depth == rhs.depth;
 	}
 
 	inline bool SamplerType::operator!=(const SamplerType& rhs) const

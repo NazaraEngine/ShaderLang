@@ -53,7 +53,7 @@ fn main()
 
 		ExpectSPIRV(*shaderModule, R"(
  %1 = OpTypeFloat 32
- %2 = OpTypeImage %1 Dim(Dim2D) 2 0 0 1 ImageFormat(Unknown)
+ %2 = OpTypeImage %1 Dim(Dim2D) 0 0 0 1 ImageFormat(Unknown)
  %3 = OpTypeSampledImage %2
  %4 = OpTypePointer StorageClass(UniformConstant) %3
  %6 = OpTypeVoid
@@ -82,7 +82,7 @@ module;
 
 external
 {
-	[binding(0)] tex: array[samplerCube[f32], 5]
+	[binding(0)] tex: array[sampler_cube[f32], 5]
 }
 
 [entry(frag)]
@@ -107,7 +107,7 @@ void main()
 		ExpectNZSL(*shaderModule, R"(
 external
 {
-	[set(0), binding(0)] tex: array[samplerCube[f32], 5]
+	[set(0), binding(0)] tex: array[sampler_cube[f32], 5]
 }
 
 [entry(frag)]
@@ -118,7 +118,7 @@ fn main()
 
 		ExpectSPIRV(*shaderModule, R"(
  %1 = OpTypeFloat 32
- %2 = OpTypeImage %1 Dim(Cube) 2 0 0 1 ImageFormat(Unknown)
+ %2 = OpTypeImage %1 Dim(Cube) 0 0 0 1 ImageFormat(Unknown)
  %3 = OpTypeSampledImage %2
  %4 = OpTypeInt 32 0
  %5 = OpConstant %4 u32(5)
@@ -658,7 +658,7 @@ external
 external
 {
 	tex5: array[sampler2D[f32], 3],
-	tex6: samplerCube[f32]
+	tex6: sampler_cube[f32]
 }
 
 [auto_binding(false)]
@@ -693,7 +693,7 @@ external
 external
 {
 	[set(0), binding(5)] tex5: array[sampler2D[f32], 3],
-	[set(0), binding(3)] tex6: samplerCube[f32]
+	[set(0), binding(3)] tex6: sampler_cube[f32]
 }
 
 [auto_binding(false)]
@@ -730,7 +730,7 @@ external
 external
 {
 	[set(0)] tex5: array[sampler2D[f32], 3],
-	[set(0)] tex6: samplerCube[f32]
+	[set(0)] tex6: sampler_cube[f32]
 }
 
 [auto_binding(false)]
@@ -768,7 +768,7 @@ external
 external
 {
 	[set(0), binding(5)] tex5: array[sampler2D[f32], 3],
-	[set(0), binding(3)] tex6: samplerCube[f32]
+	[set(0), binding(3)] tex6: sampler_cube[f32]
 }
 
 [auto_binding(false)]

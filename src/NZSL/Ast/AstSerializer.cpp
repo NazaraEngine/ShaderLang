@@ -12,7 +12,7 @@ namespace nzsl::Ast
 	namespace
 	{
 		constexpr std::uint32_t s_shaderAstMagicNumber = 0x4E534852;
-		constexpr std::uint32_t s_shaderAstCurrentVersion = 4;
+		constexpr std::uint32_t s_shaderAstCurrentVersion = 5;
 
 		class ShaderSerializerVisitor : public ExpressionVisitor, public StatementVisitor
 		{
@@ -605,6 +605,8 @@ namespace nzsl::Ast
 				m_serializer.Serialize(std::uint8_t(4));
 				Enum(arg.dim);
 				Enum(arg.sampledType);
+				if (IsVersionGreaterOrEqual(5))
+					Value(arg.depth);
 			}
 			else if constexpr (std::is_same_v<T, StructType>)
 			{
@@ -997,12 +999,16 @@ namespace nzsl::Ast
 			{
 				ImageType dim;
 				PrimitiveType sampledType;
+				bool depth = false;
 				Enum(dim);
 				Enum(sampledType);
+				if (IsVersionGreaterOrEqual(5))
+					Value(depth);
 
 				type = SamplerType {
 					dim,
-					sampledType
+					sampledType,
+					depth
 				};
 				break;
 			}
