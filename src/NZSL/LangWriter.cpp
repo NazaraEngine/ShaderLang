@@ -276,16 +276,19 @@ namespace nzsl
 
 	void LangWriter::Append(const Ast::SamplerType& samplerType)
 	{
+		if (samplerType.depth)
+			Append("depth_");
+
 		Append("sampler");
 
 		switch (samplerType.dim)
 		{
 			case ImageType::E1D:       Append("1D");      break;
-			case ImageType::E1D_Array: Append("1DArray"); break;
+			case ImageType::E1D_Array: Append("1D_array"); break;
 			case ImageType::E2D:       Append("2D");      break;
-			case ImageType::E2D_Array: Append("2DArray"); break;
+			case ImageType::E2D_Array: Append("2D_array"); break;
 			case ImageType::E3D:       Append("3D");      break;
-			case ImageType::Cubemap:   Append("Cube");    break;
+			case ImageType::Cubemap:   Append("_cube");    break;
 		}
 
 		Append("[", samplerType.sampledType, "]");
@@ -1034,6 +1037,12 @@ namespace nzsl
 				method = true;
 				break;
 
+			case Ast::IntrinsicType::TextureSampleImplicitLodDepthComp:
+				assert(!node.parameters.empty());
+				Visit(node.parameters.front(), true);
+				Append(".SampleDepthComp");
+				method = true;
+				break;
 		}
 
 		Append("(");

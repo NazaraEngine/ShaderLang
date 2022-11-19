@@ -146,6 +146,7 @@ namespace nzsl::Ast
 	{
 		ImageType dim;
 		PrimitiveType sampledType;
+		bool depth;
 
 		inline bool operator==(const SamplerType& rhs) const;
 		inline bool operator!=(const SamplerType& rhs) const;

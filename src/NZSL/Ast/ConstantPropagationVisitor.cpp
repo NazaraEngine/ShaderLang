@@ -832,6 +832,7 @@ namespace nzsl::Ast
 
 			// Intrinsics that cannot be evalutated at compilation time
 			case IntrinsicType::TextureSampleImplicitLod:
+			case IntrinsicType::TextureSampleImplicitLodDepthComp:
 				break;
 		}
 

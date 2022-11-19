@@ -592,6 +592,9 @@ namespace nzsl
 			case ImageType::E3D:       Append("3D");      break;
 			case ImageType::Cubemap:   Append("Cube");    break;
 		}
+
+		if (samplerType.depth)
+			Append("Shadow");
 	}
 
 	void GlslWriter::Append(const Ast::StorageType& /*storageType*/)
@@ -1539,8 +1542,9 @@ namespace nzsl
 	
 	void GlslWriter::Visit(Ast::IntrinsicExpression& node)
 	{
+		bool firstParam = true;
 		bool cast = false;
-		bool method = false;
+		std::size_t firstParamIndex = 0;
 		switch (node.intrinsic)
 		{
 			// Function intrinsics
@@ -1575,7 +1579,6 @@ namespace nzsl
 			case Ast::IntrinsicType::Normalize:                Append("normalize");   break;
 			case Ast::IntrinsicType::Pow:                      Append("pow");         break;
 			case Ast::IntrinsicType::Reflect:                  Append("reflect");     break;
-			case Ast::IntrinsicType::TextureSampleImplicitLod: Append("texture");     break;
 			case Ast::IntrinsicType::Sin:                      Append("sin");         break;
 			case Ast::IntrinsicType::Sinh:                     Append("sinh");        break;
 			case Ast::IntrinsicType::Sqrt:                     Append("sqrt");        break;
@@ -1585,7 +1588,59 @@ namespace nzsl
 			case Ast::IntrinsicType::Round:                    Append("round");       break;
 			case Ast::IntrinsicType::RoundEven:                Append("roundEven");   break;
 			case Ast::IntrinsicType::Sign:                     Append("sign");        break;
+			case Ast::IntrinsicType::TextureSampleImplicitLod: Append("texture");     break;
 			case Ast::IntrinsicType::Trunc:                    Append("trunc");       break;
+
+			// sampling of depth samplers
+			case Ast::IntrinsicType::TextureSampleImplicitLodDepthComp:
+			{
+				// Special case, GLSL expects depth comparison value as the last parameter of the sampling coordinates (if possible)
+				const Ast::ExpressionType& firstParamType = EnsureExpressionType(*node.parameters[0]);
+				assert(IsSamplerType(firstParamType));
+				const Ast::SamplerType& samplerType = std::get<Ast::SamplerType>(firstParamType);
+				assert(samplerType.depth);
+				std::size_t requirementComponentCount = 0;
+				switch (samplerType.dim)
+				{
+					case ImageType::E1D:       requirementComponentCount = 2; break;
+					case ImageType::E1D_Array: requirementComponentCount = 2; break;
+					case ImageType::E2D:       requirementComponentCount = 2; break;
+					case ImageType::E2D_Array: requirementComponentCount = 3; break;
+					case ImageType::Cubemap:   requirementComponentCount = 3; break;
+					case ImageType::E3D:
+						break; //< shouldn't happen
+				}
+
+				// Add depth comparison value
+				requirementComponentCount++;
+
+				assert(node.parameters.size() >= 3);
+
+				Append("texture(");
+				node.parameters[0]->Visit(*this);
+				Append(", ");
+				firstParam = false;
+
+				if (requirementComponentCount <= 4)
+					Append("vec", requirementComponentCount, "(");
+
+				node.parameters[1]->Visit(*this);
+				Append(", ");
+
+				// texture with a sampler1DShadow takes a vec3 for now reason
+				// "The second component of P is unused for 1D shadow lookups."
+				if (samplerType.dim == ImageType::E1D)
+					Append("0.0, ");
+
+				node.parameters[2]->Visit(*this);
+
+				firstParamIndex = 3;
+
+				if (requirementComponentCount <= 4)
+					Append(")");
+
+				break;
+			}
 
 			// Methods
 			case Ast::IntrinsicType::ArraySize:
@@ -1595,25 +1650,27 @@ namespace nzsl
 				Visit(node.parameters.front(), true);
 				Append(".length");
 				cast = true;
-				method = true;
+				firstParamIndex = 1;
 				break;
 			
 			default:
 				break;
 		}
 
-		Append("(");
-		bool first = true;
-		for (std::size_t i = (method) ? 1 : 0; i < node.parameters.size(); ++i)
+		if (firstParam)
+			Append("(");
+
+		for (std::size_t i = firstParamIndex; i < node.parameters.size(); ++i)
 		{
-			if (!first)
+			if (!firstParam)
 				Append(", ");
 
-			first = false;
+			firstParam = false;
 
 			node.parameters[i]->Visit(*this);
 		}
 		Append(")");
+
 		if (cast)
 			Append(")");
 	}

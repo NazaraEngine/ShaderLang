@@ -805,6 +805,7 @@ namespace nzsl
 		Image imageType;
 		imageType.sampled = true;
 		imageType.sampledType = BuildType(type.sampledType);
+		imageType.depth = type.depth;
 
 		imageType.dim = [&]
 		{
