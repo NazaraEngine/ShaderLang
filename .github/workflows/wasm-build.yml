@@ -79,7 +79,7 @@ jobs:
       run: xmake install -vo package
 
     # Upload artifacts
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: nzsl-${{ matrix.os }}-${{ matrix.arch }}-${{ matrix.mode }}
         path: package
