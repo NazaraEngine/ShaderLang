@@ -40,6 +40,8 @@ namespace nzsl
 		{
 			None = -1,
 
+			ConservativeDepth,                 // GLSL 4.2 or GL_ARB_conservative_depth or GL_EXT_conservative_depth (ES)
+			EarlyFragmentTests,                // GLSL 4.2 or GLSL ES 3.1 or GL_ARB_shader_image_load_store 
 			Float64,                           // GLSL 4.0 or GL_ARB_gpu_shader_fp64
 			ShaderDrawParameters_BaseInstance, // GLSL 4.6 or GL_ARB_shader_draw_parameters
 			ShaderDrawParameters_BaseVertex,   // GLSL 4.6 or GL_ARB_shader_draw_parameters
@@ -124,12 +126,10 @@ namespace nzsl
 				// Dismiss function if it's an entry point of another type than the one selected
 				if (node.entryStage.HasValue())
 				{
+					ShaderStageType stage = node.entryStage.GetResultingValue();
+
 					if (selectedStage)
 					{
-						if (!node.entryStage.IsResultingValue())
-							throw std::runtime_error("unexpected unresolved value for entry attribute, is shader sanitized?");
-
-						ShaderStageType stage = node.entryStage.GetResultingValue();
 						if (stage != *selectedStage)
 							return;
 
@@ -142,6 +142,18 @@ namespace nzsl
 							throw std::runtime_error("multiple entry point functions found, this is not allowed in GLSL, please select one");
 
 						entryPoint = &node;
+					}
+
+					if (stage == ShaderStageType::Fragment)
+					{
+						if (node.depthWrite.HasValue())
+							capabilities.insert(GlslCapability::ConservativeDepth);
+
+						if (node.earlyFragmentTests.HasValue())
+						{
+							if (node.earlyFragmentTests.GetResultingValue())
+								capabilities.insert(GlslCapability::EarlyFragmentTests);
+						}
 					}
 
 					if (!node.parameters.empty())
@@ -825,12 +837,57 @@ namespace nzsl
 
 		tsl::ordered_set<std::string_view> requiredExtensions;
 		
+		bool hasConservativeDepth = false;
+		bool hasEarlyFragmentTests = false;
 		for (GlslCapability capability : m_currentState->previsitor.capabilities)
 		{
 			switch (capability)
 			{
 				case GlslCapability::None:
 					break;
+
+				case GlslCapability::ConservativeDepth:
+				{
+					if (!m_environment.glES)
+					{
+						if (glslVersion >= 420)
+							hasConservativeDepth = true;
+						else if (m_environment.extCallback && m_environment.extCallback("GL_ARB_conservative_depth"))
+						{
+							requiredExtensions.emplace("GL_ARB_conservative_depth");
+							hasConservativeDepth = true;
+						}
+					}
+					else
+					{
+						if (m_environment.extCallback && m_environment.extCallback("GL_EXT_conservative_depth"))
+						{
+							requiredExtensions.emplace("GL_EXT_conservative_depth");
+							hasConservativeDepth = true;
+						}
+					}
+					break;
+				}
+
+				case GlslCapability::EarlyFragmentTests:
+				{
+					if (m_environment.glES)
+					{
+						if (glslVersion >= 310)
+							hasEarlyFragmentTests = true;
+					}
+					else
+					{
+						if (glslVersion >= 420)
+							hasEarlyFragmentTests = true;
+						else if (m_environment.extCallback && m_environment.extCallback("GL_ARB_shader_image_load_store"))
+						{
+							requiredExtensions.emplace("GL_ARB_shader_image_load_store");
+							hasEarlyFragmentTests = true;
+						}
+					}
+					break;
+				}
 
 				case GlslCapability::Float64:
 				{
@@ -984,6 +1041,37 @@ namespace nzsl
 
 			AppendLine();
 		}
+
+		// Handle optimization layouts
+		if (m_currentState->stage == ShaderStageType::Fragment)
+		{
+			// Conservative depth
+			if (m_currentState->previsitor.entryPoint->depthWrite.HasValue())
+			{
+				if (hasConservativeDepth)
+				{
+					switch (m_currentState->previsitor.entryPoint->depthWrite.GetResultingValue())
+					{
+						case Ast::DepthWriteMode::Greater:   AppendLine("layout (depth_greater) out float gl_FragDepth;"); break;
+						case Ast::DepthWriteMode::Less:      AppendLine("layout (depth_less) out float gl_FragDepth;"); break;
+						case Ast::DepthWriteMode::Replace:   AppendLine("layout (depth_any) out float gl_FragDepth;"); break;
+						case Ast::DepthWriteMode::Unchanged: AppendLine("layout (depth_unchanged) out float gl_FragDepth;"); break;
+					}
+
+					AppendLine();
+				}
+			}
+
+			// Early fragment tests
+			if (m_currentState->previsitor.entryPoint->earlyFragmentTests.HasValue() && m_currentState->previsitor.entryPoint->earlyFragmentTests.GetResultingValue())
+			{
+				if (hasEarlyFragmentTests)
+				{
+					AppendLine("layout(early_fragment_tests) in;");
+					AppendLine();
+				}
+			}
+		}
 	}
 
 	void GlslWriter::AppendLine(std::string_view txt)
@@ -1101,16 +1189,6 @@ namespace nzsl
 
 	void GlslWriter::HandleEntryPoint(Ast::DeclareFunctionStatement& node)
 	{
-		if (node.entryStage.GetResultingValue() == ShaderStageType::Fragment && node.earlyFragmentTests.HasValue() && node.earlyFragmentTests.GetResultingValue())
-		{
-			unsigned int glVersion = m_environment.glMajorVersion * 100 + m_environment.glMinorVersion * 10;
-			if ((m_environment.glES && glVersion >= 310) || (!m_environment.glES && glVersion >= 420) || (m_environment.extCallback && m_environment.extCallback("GL_ARB_shader_image_load_store")))
-			{
-				AppendLine("layout(early_fragment_tests) in;");
-				AppendLine();
-			}
-		}
-
 		HandleInOut();
 		AppendLine("void main()");
 		EnterScope();

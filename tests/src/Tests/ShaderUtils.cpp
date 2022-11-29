@@ -204,9 +204,11 @@ void ExpectGLSL(const nzsl::Ast::Module& shaderModule, std::string_view expected
 					break;
 			}
 
+			int version = env.glMajorVersion * 100 + env.glMinorVersion * 10;
+
 			glslang::TShader glslangShader(stage);
-			glslangShader.setEnvInput(glslang::EShSourceGlsl, stage, glslang::EShClientOpenGL, 300);
-			glslangShader.setEnvClient(glslang::EShClientOpenGL, glslang::EShTargetOpenGL_450);
+			glslangShader.setEnvInput(glslang::EShSourceGlsl, stage, glslang::EShClientOpenGL, version);
+			glslangShader.setEnvClient(glslang::EShClientNone, glslang::EShTargetOpenGL_450);
 			glslangShader.setEnvTarget(glslang::EShTargetNone, static_cast<glslang::EShTargetLanguageVersion>(0));
 			glslangShader.setEntryPoint("main");
 			glslangShader.setAutoMapLocations(true);
@@ -214,7 +216,7 @@ void ExpectGLSL(const nzsl::Ast::Module& shaderModule, std::string_view expected
 			const char* source = output.code.c_str();
 			glslangShader.setStrings(&source, 1);
 
-			if (!glslangShader.parse(&s_minResources, 300, false, static_cast<EShMessages>(EShMsgDefault | EShMsgKeepUncalled)))
+			if (!glslangShader.parse(&s_minResources, version, false, static_cast<EShMessages>(EShMsgDefault | EShMsgKeepUncalled)))
 			{
 				INFO("full GLSL output:\n" << output.code << "\nerror:\n" << glslangShader.getInfoLog());
 				REQUIRE(false);
