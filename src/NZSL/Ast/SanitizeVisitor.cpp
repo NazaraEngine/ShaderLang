@@ -1516,12 +1516,6 @@ namespace nzsl::Ast
 		pendingFunc.cloneNode = clone.get();
 		pendingFunc.node = &node;
 
-		if (clone->earlyFragmentTests.HasValue() && clone->earlyFragmentTests.GetResultingValue())
-		{
-			//TODO: warning and disable early fragment tests
-			throw CompilerDiscardEarlyFragmentTestsError{ node.sourceLocation };
-		}
-
 		FunctionData funcData;
 		funcData.node = clone.get(); //< update function node
 
@@ -2801,11 +2795,11 @@ namespace nzsl::Ast
 		// TODO: Only do this is the AST has been already sanitized, maybe using a flag stored in the module?
 
 		ReflectVisitor::Callbacks registerCallbacks;
-		registerCallbacks.onAliasIndex = [this](const std::string& /*name*/, std::size_t index, const SourceLocation& sourceLocation) { m_context->aliases.PreregisterIndex(index, sourceLocation); };
-		registerCallbacks.onConstIndex = [this](const std::string& /*name*/, std::size_t index, const SourceLocation& sourceLocation) { m_context->constantValues.PreregisterIndex(index, sourceLocation); };
+		registerCallbacks.onAliasIndex    = [this](const std::string& /*name*/, std::size_t index, const SourceLocation& sourceLocation) { m_context->aliases.PreregisterIndex(index, sourceLocation); };
+		registerCallbacks.onConstIndex    = [this](const std::string& /*name*/, std::size_t index, const SourceLocation& sourceLocation) { m_context->constantValues.PreregisterIndex(index, sourceLocation); };
 		registerCallbacks.onFunctionIndex = [this](const std::string& /*name*/, std::size_t index, const SourceLocation& sourceLocation) { m_context->functions.PreregisterIndex(index, sourceLocation); };
-		registerCallbacks.onOptionIndex = [this](const std::string& /*name*/, std::size_t index, const SourceLocation& sourceLocation) { m_context->constantValues.PreregisterIndex(index, sourceLocation); };
-		registerCallbacks.onStructIndex = [this](const std::string& /*name*/, std::size_t index, const SourceLocation& sourceLocation) { m_context->structs.PreregisterIndex(index, sourceLocation); };
+		registerCallbacks.onOptionIndex   = [this](const std::string& /*name*/, std::size_t index, const SourceLocation& sourceLocation) { m_context->constantValues.PreregisterIndex(index, sourceLocation); };
+		registerCallbacks.onStructIndex   = [this](const std::string& /*name*/, std::size_t index, const SourceLocation& sourceLocation) { m_context->structs.PreregisterIndex(index, sourceLocation); };
 		registerCallbacks.onVariableIndex = [this](const std::string& /*name*/, std::size_t index, const SourceLocation& sourceLocation) { m_context->variableTypes.PreregisterIndex(index, sourceLocation); };
 
 		ReflectVisitor reflectVisitor;
@@ -2829,14 +2823,14 @@ namespace nzsl::Ast
 		for (std::size_t i = funcData.calledByFunctions.FindFirst(); i != funcData.calledByFunctions.npos; i = funcData.calledByFunctions.FindNext(i))
 			PropagateFunctionRequirements(callingFunction, i, seen);
 	}
-	
+
 	void SanitizeVisitor::RegisterBuiltin()
 	{
 		// Primitive types
 		RegisterType("bool", PrimitiveType::Boolean, std::nullopt, {});
-		RegisterType("f32", PrimitiveType::Float32, std::nullopt, {});
-		RegisterType("i32", PrimitiveType::Int32, std::nullopt, {});
-		RegisterType("u32", PrimitiveType::UInt32, std::nullopt, {});
+		RegisterType("f32",  PrimitiveType::Float32, std::nullopt, {});
+		RegisterType("i32",  PrimitiveType::Int32,   std::nullopt, {});
+		RegisterType("u32",  PrimitiveType::UInt32,  std::nullopt, {});
 
 		if (IsFeatureEnabled(ModuleFeature::Float64))
 			RegisterType("f64", PrimitiveType::Float64, std::nullopt, {});
