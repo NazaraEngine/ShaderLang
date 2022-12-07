@@ -1813,7 +1813,7 @@ namespace nzsl::Ast
 
 						auto constant = ShaderBuilder::ConstantValue(counter, node.sourceLocation);
 
-						auto var = ShaderBuilder::DeclareVariable(node.varName, std::move(constant));
+						auto var = ShaderBuilder::DeclareConst(node.varName, std::move(constant));
 						var->sourceLocation = node.sourceLocation;
 
 						Validate(*var);
