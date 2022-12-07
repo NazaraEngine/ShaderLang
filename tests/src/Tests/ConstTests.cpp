@@ -192,27 +192,32 @@ fn main()
 {
 	let color: vec4[f32] = (0.0).xxxx;
 	{
-		let i: i32 = 0;
+		const i: i32 = 0;
+
 		color += data.lights[i].color;
 	}
 
 	{
-		let i: i32 = 2;
+		const i: i32 = 2;
+
 		color += data.lights[i].color;
 	}
 
 	{
-		let i: i32 = 4;
+		const i: i32 = 4;
+
 		color += data.lights[i].color;
 	}
 
 	{
-		let i: i32 = 6;
+		const i: i32 = 6;
+
 		color += data.lights[i].color;
 	}
 
 	{
-		let i: i32 = 8;
+		const i: i32 = 8;
+
 		color += data.lights[i].color;
 	}
 
