@@ -131,7 +131,11 @@ namespace nzsl::Ast
 			for (auto& parameter : clone->parameters)
 			{
 				if (parameter.varIndex)
-					parameter.varIndex = Nz::Retrieve(m_context->newVarIndices, *parameter.varIndex);
+				{
+					auto it = m_context->newVarIndices.find(*parameter.varIndex);
+					if (it != m_context->newVarIndices.end())
+						parameter.varIndex = it->second;
+				}
 				else if (m_context->options->forceIndexGeneration)
 					parameter.varIndex = m_context->options->varIndexGenerator(std::numeric_limits<std::size_t>::max());
 
@@ -200,40 +204,60 @@ namespace nzsl::Ast
 
 	ExpressionPtr IndexRemapperVisitor::Clone(AliasValueExpression& node)
 	{
+		auto it = m_context->newAliasIndices.find(node.aliasId);
+		if (it == m_context->newAliasIndices.end())
+			return Cloner::Clone(node);
+
 		AliasValueExpressionPtr clone = Nz::StaticUniquePointerCast<AliasValueExpression>(Cloner::Clone(node));
-		clone->aliasId = Nz::Retrieve(m_context->newAliasIndices, clone->aliasId);
+		clone->aliasId = it->second;
 
 		return clone;
 	}
 
 	ExpressionPtr IndexRemapperVisitor::Clone(ConstantExpression& node)
 	{
+		auto it = m_context->newConstIndices.find(node.constantId);
+		if (it == m_context->newConstIndices.end())
+			return Cloner::Clone(node);
+
 		ConstantExpressionPtr clone = Nz::StaticUniquePointerCast<ConstantExpression>(Cloner::Clone(node));
-		clone->constantId = Nz::Retrieve(m_context->newConstIndices, clone->constantId);
+		clone->constantId = it->second;
 
 		return clone;
 	}
 
 	ExpressionPtr IndexRemapperVisitor::Clone(FunctionExpression& node)
 	{
+		auto it = m_context->newFuncIndices.find(node.funcId);
+		if (it == m_context->newFuncIndices.end())
+			return Cloner::Clone(node);
+
 		FunctionExpressionPtr clone = Nz::StaticUniquePointerCast<FunctionExpression>(Cloner::Clone(node));
-		clone->funcId = Nz::Retrieve(m_context->newFuncIndices, clone->funcId);
+		clone->funcId = it->second;
 
 		return clone;
 	}
 
 	ExpressionPtr IndexRemapperVisitor::Clone(StructTypeExpression& node)
 	{
+		auto it = m_context->newStructIndices.find(node.structTypeId);
+		if (it == m_context->newStructIndices.end())
+			return Cloner::Clone(node);
+
 		StructTypeExpressionPtr clone = Nz::StaticUniquePointerCast<StructTypeExpression>(Cloner::Clone(node));
-		clone->structTypeId = Nz::Retrieve(m_context->newStructIndices, clone->structTypeId);
+		clone->structTypeId = it->second;
 
 		return clone;
 	}
 
 	ExpressionPtr IndexRemapperVisitor::Clone(VariableValueExpression& node)
 	{
+		auto it = m_context->newVarIndices.find(node.variableId);
+		if (it == m_context->newVarIndices.end())
+			return Cloner::Clone(node);
+
 		VariableValueExpressionPtr clone = Nz::StaticUniquePointerCast<VariableValueExpression>(Cloner::Clone(node));
-		clone->variableId = Nz::Retrieve(m_context->newVarIndices, clone->variableId);
+		clone->variableId = it->second;
 
 		return clone;
 	}
@@ -252,9 +276,12 @@ namespace nzsl::Ast
 		if (IsAliasType(exprType))
 		{
 			const AliasType& aliasType = std::get<AliasType>(exprType);
+			auto it = m_context->newAliasIndices.find(aliasType.aliasIndex);
+			if (it == m_context->newAliasIndices.end())
+				return exprType;
 
 			AliasType remappedAliasType;
-			remappedAliasType.aliasIndex = Nz::Retrieve(m_context->newAliasIndices, aliasType.aliasIndex);
+			remappedAliasType.aliasIndex = it->second;
 			remappedAliasType.targetType = std::make_unique<ContainedType>();
 			remappedAliasType.targetType->type = RemapType(aliasType.targetType->type);
 
@@ -283,8 +310,11 @@ namespace nzsl::Ast
 		}
 		else if (IsFunctionType(exprType))
 		{
-			std::size_t newFuncIndex = Nz::Retrieve(m_context->newFuncIndices, std::get<FunctionType>(exprType).funcIndex);
-			return FunctionType{ newFuncIndex };
+			auto it = m_context->newFuncIndices.find(std::get<FunctionType>(exprType).funcIndex);
+			if (it == m_context->newFuncIndices.end())
+				return exprType;
+
+			return FunctionType{ it->second };
 		}
 		else if (IsMethodType(exprType))
 		{
@@ -299,17 +329,29 @@ namespace nzsl::Ast
 		}
 		else if (IsStorageType(exprType))
 		{
+			auto it = m_context->newStructIndices.find(std::get<StorageType>(exprType).containedType.structIndex);
+			if (it == m_context->newStructIndices.end())
+				return exprType;
+
 			StorageType storageType;
-			storageType.containedType.structIndex = Nz::Retrieve(m_context->newStructIndices, std::get<StorageType>(exprType).containedType.structIndex);
+			storageType.containedType.structIndex = it->second;
 			return storageType;
 		}
 		else if (IsStructType(exprType))
 		{
-			std::size_t newStructIndex = Nz::Retrieve(m_context->newStructIndices, std::get<StructType>(exprType).structIndex);
+			auto it = m_context->newStructIndices.find(std::get<StructType>(exprType).structIndex);
+			if (it == m_context->newStructIndices.end())
+				return exprType;
+
+			std::size_t newStructIndex = it->second;
 			return StructType{ newStructIndex };
 		}
 		else if (IsUniformType(exprType))
 		{
+			auto it = m_context->newStructIndices.find(std::get<UniformType>(exprType).containedType.structIndex);
+			if (it == m_context->newStructIndices.end())
+				return exprType;
+
 			UniformType uniformType;
 			uniformType.containedType.structIndex = Nz::Retrieve(m_context->newStructIndices, std::get<UniformType>(exprType).containedType.structIndex);
 			return uniformType;
