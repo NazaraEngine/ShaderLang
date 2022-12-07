@@ -1821,8 +1821,15 @@ namespace nzsl::Ast
 						Validate(*var);
 						innerMulti->statements.emplace_back(std::move(var));
 
-						// FIXME: This may break if statement has unique statements (like variable declaration with a set index)
-						innerMulti->statements.emplace_back(Unscope(CloneStatement(node.statement)));
+						// Remap indices (as unrolling the loop will reuse them) 
+						IndexRemapperVisitor::Options indexCallbacks;
+						indexCallbacks.aliasIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_context->aliases.RegisterNewIndex(true); };
+						indexCallbacks.constIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_context->constantValues.RegisterNewIndex(true); };
+						indexCallbacks.funcIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_context->functions.RegisterNewIndex(true); };
+						indexCallbacks.structIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_context->structs.RegisterNewIndex(true); };
+						indexCallbacks.varIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_context->variableTypes.RegisterNewIndex(true); };
+
+						innerMulti->statements.emplace_back(Unscope(CloneStatement(RemapIndices(*node.statement, indexCallbacks))));
 
 						multi->statements.emplace_back(ShaderBuilder::Scoped(std::move(innerMulti)));
 
@@ -1994,8 +2001,15 @@ namespace nzsl::Ast
 
 						innerMulti->statements.emplace_back(std::move(elementVariable));
 						
-						// FIXME: This may break if statement has unique statements (like variable declaration with a set index)
-						innerMulti->statements.emplace_back(Unscope(CloneStatement(node.statement)));
+						// Remap indices (as unrolling the loop will reuse them)
+						IndexRemapperVisitor::Options indexCallbacks;
+						indexCallbacks.aliasIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_context->aliases.RegisterNewIndex(true); };
+						indexCallbacks.constIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_context->constantValues.RegisterNewIndex(true); };
+						indexCallbacks.funcIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_context->functions.RegisterNewIndex(true); };
+						indexCallbacks.structIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_context->structs.RegisterNewIndex(true); };
+						indexCallbacks.varIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_context->variableTypes.RegisterNewIndex(true); };
+
+						innerMulti->statements.emplace_back(Unscope(CloneStatement(RemapIndices(*node.statement, indexCallbacks))));
 
 						multi->statements.emplace_back(ShaderBuilder::Scoped(std::move(innerMulti)));
 

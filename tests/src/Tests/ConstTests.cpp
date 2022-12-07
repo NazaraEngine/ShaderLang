@@ -1,4 +1,5 @@
 #include <Tests/ShaderUtils.hpp>
+#include <NZSL/FilesystemModuleResolver.hpp>
 #include <NZSL/ShaderBuilder.hpp>
 #include <NZSL/Parser.hpp>
 #include <NZSL/Ast/ConstantPropagationVisitor.hpp>
@@ -289,4 +290,91 @@ fn main()
 }
 )");
 	}
+
+
+	WHEN("using [unroll] attribute on numerical for declaring variables")
+	{
+		// Special test for a bug where a shader is partially compiled with a variable declaration inside a loop meant to be unrolled (but not unrolled on the first compilation)
+		// This way, the variable is attributed an index which causes AST issue when the loop is unrolled on the second compilation pass
+
+		// Use a module to prevent loop unrolling on first pass (partial compilation doesn't resolve modules)
+		std::string_view importedSource = R"(
+[nzsl_version("1.0")]
+module ValueModule;
+
+[export]
+const MaxLoop = 3;
+)";
+
+		std::string_view shaderSource = R"(
+[nzsl_version("1.0")]
+module;
+
+import MaxLoop from ValueModule;
+
+[entry(frag)]
+fn main()
+{
+	let counter = 0;
+
+	[unroll]
+	for i in 0 -> MaxLoop
+	{
+		let inc = i;
+		counter += inc;
+	}
+}
+)";
+
+		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(shaderSource);
+
+		auto resolver = std::make_shared<nzsl::FilesystemModuleResolver>();
+		resolver->RegisterModule(importedSource);
+
+		// First pass
+		{
+			nzsl::Ast::SanitizeVisitor::Options options;
+			options.partialSanitization = true;
+
+			REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(*shaderModule, options));
+		}
+
+		// Second pass
+		{
+			nzsl::Ast::SanitizeVisitor::Options options;
+			options.moduleResolver = resolver;
+
+			REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(*shaderModule, options));
+		}
+
+		ExpectOutput(*shaderModule, {}, R"(
+[entry(frag)]
+fn main()
+{
+	let counter: i32 = 0;
+	{
+		const i: i32 = 0;
+
+		let inc: i32 = i;
+		counter += inc;
+	}
+
+	{
+		const i: i32 = 1;
+
+		let inc: i32 = i;
+		counter += inc;
+	}
+
+	{
+		const i: i32 = 2;
+
+		let inc: i32 = i;
+		counter += inc;
+	}
+
+}
+)");
+	}
+
 }
