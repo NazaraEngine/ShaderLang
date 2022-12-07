@@ -1724,9 +1724,12 @@ namespace nzsl::Ast
 			clone->varName = node.varName;
 			clone->unroll = std::move(unrollValue);
 
+			bool maybeUnroll = clone->unroll.HasValue() && (clone->unroll.IsExpression() || clone->unroll.GetResultingValue() != LoopUnroll::Always);
+
 			PushScope();
 			{
-				if (fromExprType)
+				// We can't register the counter as a variable if we need to unroll the loop later (because the counter will become const)
+				if (fromExprType && !maybeUnroll)
 					clone->varIndex = RegisterVariable(node.varName, *fromExprType, node.varIndex, node.sourceLocation);
 				else
 				{
