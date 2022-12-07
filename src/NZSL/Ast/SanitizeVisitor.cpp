@@ -1141,6 +1141,7 @@ namespace nzsl::Ast
 			auto& cond = node.condStatements[condIndex];
 
 			PushScope();
+			Nz::CallOnExit unscoper([&] { PopScope(); });
 
 			auto BuildCondStatement = [&](BranchStatement::ConditionalStatement& condStatement)
 			{
@@ -1172,8 +1173,6 @@ namespace nzsl::Ast
 				if (BuildCondStatement(clone->condStatements.emplace_back()) == ValidationResult::Unresolved)
 					return Cloner::Clone(node);
 			}
-
-			PopScope();
 		}
 
 		if (node.elseStatement)
@@ -1849,6 +1848,7 @@ namespace nzsl::Ast
 		if (m_context->options.reduceLoopsToWhile)
 		{
 			PushScope();
+			Nz::CallOnExit unscoper([&] { PopScope(); });
 
 			auto multi = std::make_unique<MultiStatement>();
 
@@ -1925,8 +1925,6 @@ namespace nzsl::Ast
 			whileStatement->body = std::move(body);
 
 			multi->statements.emplace_back(std::move(whileStatement));
-
-			PopScope();
 
 			return multi;
 		}
