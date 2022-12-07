@@ -63,6 +63,8 @@ fn main(input: Input) -> Output
 			ExpectGLSL(*shaderModule, R"(
 #extension GL_ARB_shader_draw_parameters : require
 
+// header end
+
 struct Input
 {
 	int base_instance;
@@ -154,6 +156,8 @@ void main()
 uniform int _nzslBaseInstance;
 uniform int _nzslBaseVertex;
 uniform int _nzslDrawID;
+
+// header end
 
 struct Input
 {

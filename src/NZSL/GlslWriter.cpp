@@ -1022,8 +1022,34 @@ namespace nzsl
 			AppendLine("precision highp int;");
 			AppendLine("#if GL_FRAGMENT_PRECISION_HIGH");
 			AppendLine("precision highp float;");
+			AppendLine("precision highp isampler2D;");
+			AppendLine("precision highp isampler2DArray;");
+			AppendLine("precision highp isampler3D;");
+			AppendLine("precision highp isamplerCube;");
+			AppendLine("precision highp sampler2DArray;");
+			AppendLine("precision highp sampler2DArrayShadow;");
+			AppendLine("precision highp sampler2DShadow;");
+			AppendLine("precision highp sampler3D;");
+			AppendLine("precision highp samplerCubeShadow;");
+			AppendLine("precision highp usampler2D;");
+			AppendLine("precision highp usampler2DArray;");
+			AppendLine("precision highp usampler3D;");
+			AppendLine("precision highp usamplerCube;");
 			AppendLine("#else");
 			AppendLine("precision mediump float;");
+			AppendLine("precision mediump isampler2D;");
+			AppendLine("precision mediump isampler2DArray;");
+			AppendLine("precision mediump isampler3D;");
+			AppendLine("precision mediump isamplerCube;");
+			AppendLine("precision mediump sampler2DArray;");
+			AppendLine("precision mediump sampler2DArrayShadow;");
+			AppendLine("precision mediump sampler2DShadow;");
+			AppendLine("precision mediump sampler3D;");
+			AppendLine("precision mediump samplerCubeShadow;");
+			AppendLine("precision mediump usampler2D;");
+			AppendLine("precision mediump usampler2DArray;");
+			AppendLine("precision mediump usampler3D;");
+			AppendLine("precision mediump usamplerCube;");
 			AppendLine("#endif");
 			AppendLine();
 		}
@@ -1072,6 +1098,9 @@ namespace nzsl
 				}
 			}
 		}
+
+		AppendLine("// header end");
+		AppendLine();
 	}
 
 	void GlslWriter::AppendLine(std::string_view txt)
