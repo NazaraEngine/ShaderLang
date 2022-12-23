@@ -1,4 +1,5 @@
 if is_plat("wasm") then
+	-- SFML is not supported with Emscripten
 	return
 end
 
