@@ -44,6 +44,7 @@ namespace nzsl::Ast
 		Set                = 10, //< Binding set (external var only) - has argument index
 		Tag                = 16, //< Tag (external block and external var only) - has argument string
 		Unroll             = 11, //< Unroll (for/for each only) - has argument mode
+		Workgroup          = 18, //< Work group size (function only) - has arguments X, Y, Z
 	};
 
 	enum class BinaryType
@@ -65,14 +66,20 @@ namespace nzsl::Ast
 
 	enum class BuiltinEntry
 	{
-		BaseInstance   = 3, // gl_BaseInstance (GLSL 450) / BaseInstance (SPIR-V 1.3)
-		BaseVertex     = 4, // gl_BaseVertex (GLSL 450) / BaseVertex (SPIR-V 1.3)
-		DrawIndex      = 5, // gl_DrawID (GLSL 450) / DrawIndex (SPIR-V 1.3)
-		FragCoord      = 1, // gl_FragCoord / FragCoord
-		FragDepth      = 2, // gl_FragDepth / FragDepth
-		InstanceIndex  = 6, // gl_InstanceIndex (or gl_BaseInstance + gl_InstanceID) / InstanceId
-		VertexIndex    = 7, // gl_VertexID/gl_VertexIndex / VertexId
-		VertexPosition = 0, // gl_Position / Position
+		// Next free ID: 13               -- GLSL / SPIR-V
+		BaseInstance            =  3, // gl_BaseInstance (GLSL 450) / BaseInstance (SPIR-V 1.3)
+		BaseVertex              =  4, // gl_BaseVertex (GLSL 450) / BaseVertex (SPIR-V 1.3)
+		DrawIndex               =  5, // gl_DrawID (GLSL 450) / DrawIndex (SPIR-V 1.3)
+		FragCoord               =  1, // gl_FragCoord / FragCoord
+		FragDepth               =  2, // gl_FragDepth / FragDepth
+		GlocalInvocationIndices = 12, // gl_GlobalInvocationID / GlobalInvocationId
+		InstanceIndex           =  6, // gl_InstanceIndex (or gl_BaseInstance + gl_InstanceID) / InstanceId
+		LocalInvocationIndex    = 11, // gl_LocalInvocationIndex / LocalInvocationIndex
+		LocalInvocationIndices  = 10, // gl_LocalInvocationID / LocalInvocationId
+		VertexIndex             =  7, // gl_VertexID - gl_VertexIndex / VertexId
+		VertexPosition          =  0, // gl_Position / Position
+		WorkgroupCount          =  8, // gl_NumWorkGroups / NumWorkgroups
+		WorkgroupIndices        =  9, // gl_WorkGroupID / WorkgroupId
 	};
 
 	enum class DepthWriteMode
@@ -91,7 +98,7 @@ namespace nzsl::Ast
 
 	enum class IntrinsicType
 	{
-		// Next free index: 44
+		// Next free index: 46
 		Abs                               = 31,
 		ArcCos                            = 21,
 		ArcCosh                           = 22,
@@ -127,8 +134,10 @@ namespace nzsl::Ast
 		Reflect                           = 8,
 		Round                             = 28,
 		RoundEven                         = 29,
-		TextureSampleImplicitLod          = 2,
+		TextureRead                       = 2,
+		TextureSampleImplicitLod          = 44,
 		TextureSampleImplicitLodDepthComp = 43,
+		TextureWrite                      = 45,
 		Sign                              = 32,
 		Sin                               = 13,
 		Sinh                              = 14,

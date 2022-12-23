@@ -132,6 +132,14 @@ namespace nzsl
 		bool HasValue() const { return unroll.HasValue(); }
 	};
 
+	struct LangWriter::WorkgroupAttribute
+	{
+		const Ast::ExpressionValue<Vector3u32>& workgroup;
+
+		bool HasValue() const { return workgroup.HasValue(); }
+
+	};
+
 	struct LangWriter::State
 	{
 		struct Identifier
@@ -302,6 +310,36 @@ namespace nzsl
 	void LangWriter::Append(const Ast::StructType& structType)
 	{
 		AppendIdentifier(m_currentState->structs, structType.structIndex);
+	}
+
+	void LangWriter::Append(const Ast::TextureType& textureType)
+	{
+		Append("texture");
+
+		switch (textureType.dim)
+		{
+			case ImageType::E1D:       Append("1D");       break;
+			case ImageType::E1D_Array: Append("1D_array"); break;
+			case ImageType::E2D:       Append("2D");       break;
+			case ImageType::E2D_Array: Append("2D_array"); break;
+			case ImageType::E3D:       Append("3D");       break;
+			case ImageType::Cubemap:   Append("_cube");    break;
+		}
+
+		Append("[", textureType.baseType, ", ");
+		switch (textureType.accessPolicy)
+		{
+			case AccessPolicy::ReadOnly:  Append("readonly"); break;
+			case AccessPolicy::ReadWrite: Append("readwrite"); break;
+			case AccessPolicy::WriteOnly: Append("writeonly"); break;
+		}
+
+		if (textureType.format != ImageFormat::Unknown)
+		{
+			assert(textureType.format == ImageFormat::RGBA8); //< TODO
+			Append(", rgba8");
+		}
+		Append("]");
 	}
 
 	void LangWriter::Append(const Ast::Type& /*type*/)
@@ -594,6 +632,41 @@ namespace nzsl
 			Append(Parser::ToString(attribute.unroll.GetResultingValue()));
 		else
 			attribute.unroll.GetExpression()->Visit(*this);
+
+		Append(")");
+	}
+
+	void LangWriter::AppendAttribute(WorkgroupAttribute attribute)
+	{
+		if (!attribute.HasValue())
+			return;
+
+		Append("workgroup(");
+
+		if (attribute.workgroup.IsResultingValue())
+		{
+			const Vector3u32& workgroupSize = attribute.workgroup.GetResultingValue();
+			Append(workgroupSize.x(), ", ", workgroupSize.y(), ", ", workgroupSize.z());
+		}
+		else
+		{
+			const Ast::ExpressionPtr& workgroupExpr = attribute.workgroup.GetExpression();
+			if (workgroupExpr->GetType() != Ast::NodeType::CastExpression)
+				throw std::runtime_error("expected workgroup expression to be a cast expression");
+
+			const Ast::CastExpression& workgroupCast = static_cast<const Ast::CastExpression&>(*workgroupExpr);
+			if (!workgroupCast.targetType.IsResultingValue() || workgroupCast.targetType.GetResultingValue() != Ast::ExpressionType{ Ast::VectorType{ 3, Ast::PrimitiveType::UInt32 }})
+				throw std::runtime_error("expected workgroup expression to be a cast to vec3[u32]");
+
+			if (workgroupCast.expressions.size() != 3)
+				throw std::runtime_error("expected workgroup expression to be a cast of 3 expressions");
+
+			workgroupCast.expressions[0]->Visit(*this);
+			Append(", ");
+			workgroupCast.expressions[1]->Visit(*this);
+			Append(", ");
+			workgroupCast.expressions[2]->Visit(*this);
+		}
 
 		Append(")");
 	}
@@ -1030,6 +1103,13 @@ namespace nzsl
 				method = true;
 				break;
 
+			case Ast::IntrinsicType::TextureRead:
+				assert(!node.parameters.empty());
+				Visit(node.parameters.front(), true);
+				Append(".Read");
+				method = true;
+				break;
+
 			case Ast::IntrinsicType::TextureSampleImplicitLod:
 				assert(!node.parameters.empty());
 				Visit(node.parameters.front(), true);
@@ -1041,6 +1121,13 @@ namespace nzsl
 				assert(!node.parameters.empty());
 				Visit(node.parameters.front(), true);
 				Append(".SampleDepthComp");
+				method = true;
+				break;
+
+			case Ast::IntrinsicType::TextureWrite:
+				assert(!node.parameters.empty());
+				Visit(node.parameters.front(), true);
+				Append(".Write");
 				method = true;
 				break;
 		}
@@ -1207,7 +1294,13 @@ namespace nzsl
 		if (node.funcIndex)
 			RegisterFunction(*node.funcIndex, node.name);
 
-		AppendAttributes(true, EntryAttribute{ node.entryStage }, EarlyFragmentTestsAttribute{ node.earlyFragmentTests }, DepthWriteAttribute{ node.depthWrite });
+		AppendAttributes(true, 
+			EntryAttribute{ node.entryStage },
+			WorkgroupAttribute{ node.workgroupSize },
+			EarlyFragmentTestsAttribute{ node.earlyFragmentTests },
+			DepthWriteAttribute{ node.depthWrite }
+		);
+
 		Append("fn ", node.name, "(");
 		for (std::size_t i = 0; i < node.parameters.size(); ++i)
 		{

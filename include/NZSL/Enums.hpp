@@ -11,6 +11,64 @@
 
 namespace nzsl
 {
+	enum class AccessPolicy
+	{
+		ReadOnly,
+		ReadWrite,
+		WriteOnly
+	};
+
+	enum class ImageFormat
+	{
+		Unknown,
+
+		R11fG11fB10f,
+		R16,
+		R16f,
+		R16i,
+		R16Snorm,
+		R16ui,
+		R32f,
+		R32i,
+		R32ui,
+		R64i,
+		R64ui,
+		R8,
+		R8i,
+		R8Snorm,
+		R8ui,
+		RG16,
+		RG16f,
+		RG16i,
+		RG16Snorm,
+		RG16ui,
+		RG32f,
+		RG32i,
+		RG32ui,
+		RG8,
+		RG8i,
+		RG8Snorm,
+		RG8ui,
+		RGB10A2,
+		RGB10a2ui,
+		RGBA16,
+		RGBA16f,
+		RGBA16i,
+		RGBA16Snorm,
+		RGBA16ui,
+		RGBA32f,
+		RGBA32i,
+		RGBA32ui,
+		RGBA8,
+		RGBA8i,
+		RGBA8Snorm,
+		RGBA8ui,
+
+		Max = RGBA8ui
+	};
+
+	constexpr std::size_t ImageFormatCount = static_cast<std::size_t>(ImageFormat::Max) + 1;
+
 	enum class ImageType
 	{
 		E1D,
@@ -27,6 +85,7 @@ namespace nzsl
 
 	enum class ShaderStageType
 	{
+		Compute,
 		Fragment,
 		Vertex,
 

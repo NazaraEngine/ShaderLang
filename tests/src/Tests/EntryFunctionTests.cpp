@@ -243,34 +243,8 @@ fn main() -> FragOut
 precision highp int;
 #if GL_FRAGMENT_PRECISION_HIGH
 precision highp float;
-precision highp isampler2D;
-precision highp isampler2DArray;
-precision highp isampler3D;
-precision highp isamplerCube;
-precision highp sampler2DArray;
-precision highp sampler2DArrayShadow;
-precision highp sampler2DShadow;
-precision highp sampler3D;
-precision highp samplerCubeShadow;
-precision highp usampler2D;
-precision highp usampler2DArray;
-precision highp usampler3D;
-precision highp usamplerCube;
 #else
 precision mediump float;
-precision mediump isampler2D;
-precision mediump isampler2DArray;
-precision mediump isampler3D;
-precision mediump isamplerCube;
-precision mediump sampler2DArray;
-precision mediump sampler2DArrayShadow;
-precision mediump sampler2DShadow;
-precision mediump sampler3D;
-precision mediump samplerCubeShadow;
-precision mediump usampler2D;
-precision mediump usampler2DArray;
-precision mediump usampler3D;
-precision mediump usamplerCube;
 #endif
 
 layout (depth_any) out float gl_FragDepth;
@@ -544,34 +518,8 @@ void main()
 precision highp int;
 #if GL_FRAGMENT_PRECISION_HIGH
 precision highp float;
-precision highp isampler2D;
-precision highp isampler2DArray;
-precision highp isampler3D;
-precision highp isamplerCube;
-precision highp sampler2DArray;
-precision highp sampler2DArrayShadow;
-precision highp sampler2DShadow;
-precision highp sampler3D;
-precision highp samplerCubeShadow;
-precision highp usampler2D;
-precision highp usampler2DArray;
-precision highp usampler3D;
-precision highp usamplerCube;
 #else
 precision mediump float;
-precision mediump isampler2D;
-precision mediump isampler2DArray;
-precision mediump isampler3D;
-precision mediump isamplerCube;
-precision mediump sampler2DArray;
-precision mediump sampler2DArrayShadow;
-precision mediump sampler2DShadow;
-precision mediump sampler3D;
-precision mediump samplerCubeShadow;
-precision mediump usampler2D;
-precision mediump usampler2DArray;
-precision mediump usampler3D;
-precision mediump usamplerCube;
 #endif
 
 layout(early_fragment_tests) in;
@@ -599,34 +547,8 @@ void main()
 precision highp int;
 #if GL_FRAGMENT_PRECISION_HIGH
 precision highp float;
-precision highp isampler2D;
-precision highp isampler2DArray;
-precision highp isampler3D;
-precision highp isamplerCube;
-precision highp sampler2DArray;
-precision highp sampler2DArrayShadow;
-precision highp sampler2DShadow;
-precision highp sampler3D;
-precision highp samplerCubeShadow;
-precision highp usampler2D;
-precision highp usampler2DArray;
-precision highp usampler3D;
-precision highp usamplerCube;
 #else
 precision mediump float;
-precision mediump isampler2D;
-precision mediump isampler2DArray;
-precision mediump isampler3D;
-precision mediump isamplerCube;
-precision mediump sampler2DArray;
-precision mediump sampler2DArrayShadow;
-precision mediump sampler2DShadow;
-precision mediump sampler3D;
-precision mediump samplerCubeShadow;
-precision mediump usampler2D;
-precision mediump usampler2DArray;
-precision mediump usampler3D;
-precision mediump usamplerCube;
 #endif
 
 // header end

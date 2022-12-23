@@ -53,10 +53,30 @@ namespace nzsl
 			return frozen::make_unordered_map(identifierToBuiltin);
 		}
 
+		template<typename K, typename V, std::size_t N>
+		constexpr auto BuildIdentifierMappingWithName(const frozen::unordered_map<K, V, N>& container)
+		{
+			std::array<std::pair<std::string_view, K>, N * 2> identifierToBuiltin;
+
+			std::size_t index = 0;
+			for (const auto& [entry, data] : container)
+			{
+				identifierToBuiltin[index].first = data.identifier;
+				identifierToBuiltin[index].second = entry;
+				++index;
+
+				identifierToBuiltin[index].first = data.name;
+				identifierToBuiltin[index].second = entry;
+				++index;
+			}
+
+			return frozen::make_unordered_map(identifierToBuiltin);
+		}
+
 		constexpr auto s_attributeMapping     = BuildIdentifierMapping(LangData::s_attributeData);
 		constexpr auto s_builtinMapping       = BuildIdentifierMapping(LangData::s_builtinData);
 		constexpr auto s_depthWriteMapping    = BuildIdentifierMapping(LangData::s_depthWriteModes);
-		constexpr auto s_entryPointMapping    = BuildIdentifierMapping(LangData::s_entryPoints);
+		constexpr auto s_entryPointMapping    = BuildIdentifierMappingWithName(LangData::s_entryPoints);
 		constexpr auto s_layoutMapping        = BuildIdentifierMapping(LangData::s_memoryLayouts);
 		constexpr auto s_moduleFeatureMapping = BuildIdentifierMapping(LangData::s_moduleFeatures);
 		constexpr auto s_unrollModeMapping    = BuildIdentifierMapping(LangData::s_unrollModes);
@@ -231,23 +251,22 @@ namespace nzsl
 
 			Ast::AttributeType attributeType = it->second;
 
-			Ast::ExpressionPtr arg;
+			std::vector<Ast::ExpressionPtr> args;
 			if (Peek().type == TokenType::OpenParenthesis)
 			{
 				Consume();
 
-				arg = ParseExpression();
-
-				const Token& closeToken = Expect(Advance(), TokenType::ClosingParenthesis);
-				attributeLocation.ExtendToRight(closeToken.location);
+				SourceLocation closeLocation;
+				args = ParseExpressionList(TokenType::ClosingParenthesis, &closeLocation);
+				attributeLocation.ExtendToRight(closeLocation);
 			}
 
 			expectComma = true;
 
 			attributes.push_back({
 				attributeType,
-				std::move(arg),
-				attributeLocation
+				attributeLocation,
+				std::move(args),
 			});
 		}
 
@@ -898,6 +917,30 @@ namespace nzsl
 				case Ast::AttributeType::EarlyFragmentTests:
 					HandleUniqueAttribute(func->earlyFragmentTests, std::move(attribute));
 					break;
+
+				case Ast::AttributeType::Workgroup:
+				{
+					if (func->workgroupSize.HasValue())
+						throw ParserAttributeMultipleUniqueError{ attribute.sourceLocation, attribute.type };
+
+					std::vector<Ast::ExpressionPtr> expressions(3);
+					if (attribute.args.size() != expressions.size())
+						throw ParserAttributeUnexpectedParameterCountError{ attribute.sourceLocation, attribute.type, expressions.size(), attribute.args.size() };
+
+					for (std::size_t i = 0; i < expressions.size(); ++i)
+					{
+						expressions[i] = ShaderBuilder::Cast(Ast::ExpressionType{ Ast::PrimitiveType::UInt32 }, std::move(attribute.args[i]));
+						expressions[i]->cachedExpressionType = Ast::ExpressionType{ Ast::PrimitiveType::UInt32 };
+					}
+
+					Ast::ExpressionType expectedType = Ast::ExpressionType{ Ast::VectorType{ 3, Ast::PrimitiveType::UInt32 } };
+
+					auto expr = ShaderBuilder::Cast(expectedType, std::move(expressions));
+					expr->cachedExpressionType = expectedType;
+
+					func->workgroupSize = Ast::ExpressionValue<Vector3u32>{ std::move(expr) };
+					break;
+				}
 
 				default:
 					throw ParserUnexpectedAttributeError{ attribute.sourceLocation, attribute.type };
@@ -1690,13 +1733,13 @@ namespace nzsl
 
 	const std::string& Parser::ExtractStringAttribute(Attribute&& attribute)
 	{
-		if (!attribute.args)
-			throw ParserAttributeMissingParameterError{ attribute.sourceLocation, attribute.type };
+		if (attribute.args.size() != 1)
+			throw ParserAttributeUnexpectedParameterCountError{ attribute.sourceLocation, attribute.type, 1, attribute.args.size() };
 
-		if (attribute.args->GetType() != Ast::NodeType::ConstantValueExpression)
+		if (attribute.args.front()->GetType() != Ast::NodeType::ConstantValueExpression)
 			throw ParserAttributeExpectStringError{ attribute.sourceLocation, attribute.type };
 
-		auto& constantValue = Nz::SafeCast<Ast::ConstantValueExpression&>(*attribute.args);
+		auto& constantValue = Nz::SafeCast<Ast::ConstantValueExpression&>(*attribute.args.front());
 		if (Ast::GetConstantType(constantValue.value) != Ast::ExpressionType{ Ast::PrimitiveType::String })
 			throw ParserAttributeExpectStringError{ attribute.sourceLocation, attribute.type };
 
@@ -1709,10 +1752,10 @@ namespace nzsl
 		if (targetAttribute.HasValue())
 			throw ParserAttributeMultipleUniqueError{ attribute.sourceLocation, attribute.type };
 
-		if (!attribute.args)
-			throw ParserAttributeMissingParameterError{ attribute.sourceLocation, attribute.type };
+		if (attribute.args.size() != 1)
+			throw ParserAttributeUnexpectedParameterCountError{ attribute.sourceLocation, attribute.type, 1, attribute.args.size() };
 
-		targetAttribute = std::move(attribute.args);
+		targetAttribute = std::move(attribute.args.front());
 	}
 
 	template<typename T>
@@ -1721,8 +1764,13 @@ namespace nzsl
 		if (targetAttribute.HasValue())
 			throw ParserAttributeMultipleUniqueError{ attribute.sourceLocation, attribute.type };
 
-		if (attribute.args)
-			targetAttribute = std::move(attribute.args);
+		if (!attribute.args.empty())
+		{
+			if (attribute.args.size() != 1)
+				throw ParserAttributeUnexpectedParameterCountError{ attribute.sourceLocation, attribute.type, 1, attribute.args.size() };
+		
+			targetAttribute = std::move(attribute.args.front());
+		}
 		else
 			targetAttribute = std::move(defaultValue);
 	}
@@ -1734,23 +1782,26 @@ namespace nzsl
 			throw ParserAttributeMultipleUniqueError{ attribute.sourceLocation, attribute.type };
 
 		//FIXME: This should be handled with global values at sanitization stage
-		if (attribute.args)
+		if (!attribute.args.empty())
 		{
-			if (attribute.args->GetType() != Ast::NodeType::IdentifierExpression)
-				throw ParserAttributeParameterIdentifierError{ attribute.args->sourceLocation, attribute.type };
+			if (attribute.args.size() != 1)
+				throw ParserAttributeUnexpectedParameterCountError{ attribute.sourceLocation, attribute.type, 1, attribute.args.size() };
 
-			std::string_view exprStr = static_cast<Ast::IdentifierExpression&>(*attribute.args).identifier;
+			if (attribute.args.front()->GetType() != Ast::NodeType::IdentifierExpression)
+				throw ParserAttributeParameterIdentifierError{ attribute.args.front()->sourceLocation, attribute.type };
+
+			std::string_view exprStr = static_cast<Ast::IdentifierExpression&>(*attribute.args.front()).identifier;
 
 			auto it = map.find(exprStr);
 			if (it == map.end())
-				throw ParserAttributeInvalidParameterError{ attribute.args->sourceLocation, exprStr, attribute.type };
+				throw ParserAttributeInvalidParameterError{ attribute.args.front()->sourceLocation, exprStr, attribute.type };
 
 			targetAttribute = it->second;
 		}
 		else
 		{
 			if (!defaultValue)
-				throw ParserAttributeMissingParameterError{ attribute.sourceLocation, attribute.type };
+				throw ParserAttributeUnexpectedParameterCountError{ attribute.sourceLocation, attribute.type, 1, attribute.args.size() };
 
 			targetAttribute = defaultValue.value();
 		}

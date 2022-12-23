@@ -636,6 +636,9 @@ namespace nzsl::Ast
 		if (!Compare(lhs.statements, rhs.statements, params))
 			return false;
 
+		if (!Compare(lhs.workgroupSize, rhs.workgroupSize, params))
+			return false;
+
 		return true;
 	}
 

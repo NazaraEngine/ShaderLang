@@ -36,8 +36,8 @@ namespace nzsl
 			struct Attribute
 			{
 				Ast::AttributeType type;
-				Ast::ExpressionPtr args;
 				SourceLocation sourceLocation;
+				std::vector<Ast::ExpressionPtr> args;
 			};
 
 			// Flow control

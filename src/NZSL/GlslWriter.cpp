@@ -57,14 +57,19 @@ namespace nzsl
 		};
 
 		constexpr auto s_glslBuiltinMapping = frozen::make_unordered_map<Ast::BuiltinEntry, GlslBuiltin>({
-			{ Ast::BuiltinEntry::BaseInstance,   { "gl_BaseInstance", GlslCapability::ShaderDrawParameters_BaseInstance } },
-			{ Ast::BuiltinEntry::BaseVertex,     { "gl_BaseVertex",   GlslCapability::ShaderDrawParameters_BaseVertex } },
-			{ Ast::BuiltinEntry::DrawIndex,      { "gl_DrawID",       GlslCapability::ShaderDrawParameters_DrawIndex } },
-			{ Ast::BuiltinEntry::FragCoord,      { "gl_FragCoord",    GlslCapability::None } },
-			{ Ast::BuiltinEntry::FragDepth,      { "gl_FragDepth",    GlslCapability::None } },
-			{ Ast::BuiltinEntry::InstanceIndex,  { "gl_InstanceID",   GlslCapability::ShaderDrawParameters_BaseInstance } },
-			{ Ast::BuiltinEntry::VertexIndex,    { "gl_VertexID",     GlslCapability::None } },
-			{ Ast::BuiltinEntry::VertexPosition, { "gl_Position",     GlslCapability::None } }
+			{ Ast::BuiltinEntry::BaseInstance,            { "gl_BaseInstance",         GlslCapability::ShaderDrawParameters_BaseInstance } },
+			{ Ast::BuiltinEntry::BaseVertex,              { "gl_BaseVertex",           GlslCapability::ShaderDrawParameters_BaseVertex } },
+			{ Ast::BuiltinEntry::DrawIndex,               { "gl_DrawID",               GlslCapability::ShaderDrawParameters_DrawIndex } },
+			{ Ast::BuiltinEntry::FragCoord,               { "gl_FragCoord",            GlslCapability::None } },
+			{ Ast::BuiltinEntry::FragDepth,               { "gl_FragDepth",            GlslCapability::None } },
+			{ Ast::BuiltinEntry::GlocalInvocationIndices, { "gl_GlobalInvocationID",   GlslCapability::None } },
+			{ Ast::BuiltinEntry::InstanceIndex,           { "gl_InstanceID",           GlslCapability::ShaderDrawParameters_BaseInstance } },
+			{ Ast::BuiltinEntry::LocalInvocationIndex,    { "gl_LocalInvocationIndex", GlslCapability::None } },
+			{ Ast::BuiltinEntry::LocalInvocationIndices,  { "gl_LocalInvocationID",    GlslCapability::None } },
+			{ Ast::BuiltinEntry::VertexIndex,             { "gl_VertexID",             GlslCapability::None } },
+			{ Ast::BuiltinEntry::VertexPosition,          { "gl_Position",             GlslCapability::None } },
+			{ Ast::BuiltinEntry::WorkgroupCount,          { "gl_NumWorkGroups",        GlslCapability::None } },
+			{ Ast::BuiltinEntry::WorkgroupIndices,        { "gl_WorkGroupID",          GlslCapability::None } }
 		});
 
 		struct GlslWriterPreVisitor : Ast::RecursiveVisitor
@@ -116,6 +121,16 @@ namespace nzsl
 					}
 					else if (IsUniformType(type))
 						bufferStructs.UnboundedSet(std::get<Ast::UniformType>(type).containedType.structIndex);
+					else if (IsSamplerType(type))
+						requiredPrecisionQualifiers.insert(type);
+					else if (IsTextureType(type))
+					{
+						// access qualifiers and format are not part of the type in GLSL, so uniformise them to prevent multiple declarations
+						Ast::TextureType textureType = std::get<Ast::TextureType>(type);
+						textureType.accessPolicy = AccessPolicy::ReadWrite;
+						textureType.format = ImageFormat::Unknown;
+						requiredPrecisionQualifiers.insert(textureType);
+					}
 				}
 
 				RecursiveVisitor::Visit(node);
@@ -234,6 +249,7 @@ namespace nzsl
 			FunctionData* currentFunction = nullptr;
 
 			tsl::ordered_set<GlslCapability> capabilities;
+			tsl::ordered_set<Ast::ExpressionType> requiredPrecisionQualifiers;
 			std::optional<ShaderStageType> selectedStage;
 			std::string moduleSuffix;
 			std::unordered_map<std::size_t, FunctionData> functions;
@@ -255,7 +271,7 @@ namespace nzsl
 				// All reserved GLSL keywords as of GLSL ES 3.2
 				"active", "asm", "atomic_uint", "attribute", "bool", "break", "buffer", "bvec2", "bvec3", "bvec4", "case", "cast", "centroid", "class", "coherent", "common", "const", "continue", "default", "discard", "dmat2", "dmat2x2", "dmat2x3", "dmat2x4", "dmat3", "dmat3x2", "dmat3x3", "dmat3x4", "dmat4", "dmat4x2", "dmat4x3", "dmat4x4", "do", "double", "dvec2", "dvec3", "dvec4", "else", "enum", "extern", "external", "false", "filter", "fixed", "flat", "float", "for", "fvec2", "fvec3", "fvec4", "goto", "half", "highp", "hvec2", "hvec3", "hvec4", "if", "iimage1D", "iimage1DArray", "iimage2D", "iimage2DArray", "iimage2DMS", "iimage2DMSArray", "iimage2DRect", "iimage3D", "iimageBuffer", "iimageCube", "iimageCubeArray", "image1D", "image1DArray", "image2D", "image2DArray", "image2DMS", "image2DMSArray", "image2DRect", "image3D", "imageBuffer", "imageCube", "imageCubeArray", "in", "inline", "inout", "input", "int", "interface", "invariant", "isampler1D", "isampler1DArray", "isampler2D", "isampler2DArray", "isampler2DMS", "isampler2DMSArray", "isampler2DRect", "isampler3D", "isamplerBuffer", "isamplerCube", "isamplerCubeArray", "isubpassInput", "isubpassInputMS", "itexture2D", "itexture2DArray", "itexture2DMS", "itexture2DMSArray", "itexture3D", "itextureBuffer", "itextureCube", "itextureCubeArray", "ivec2", "ivec3", "ivec4", "layout", "long", "lowp", "mat2", "mat2x2", "mat2x3", "mat2x4", "mat3", "mat3x2", "mat3x3", "mat3x4", "mat4", "mat4x2", "mat4x3", "mat4x4", "mediump", "namespace", "noinline", "noperspective", "out", "output", "partition", "patch", "precise", "precision", "public", "readonly", "resource", "restrict", "return", "sample", "sampler", "sampler1D", "sampler1DArray", "sampler1DArrayShadow", "sampler1DShadow", "sampler2D", "sampler2DArray", "sampler2DArrayShadow", "sampler2DMS", "sampler2DMSArray", "sampler2DRect", "sampler2DRectShadow", "sampler2DShadow", "sampler3D", "sampler3DRect", "samplerBuffer", "samplerCube", "samplerCubeArray", "samplerCubeArrayShadow", "samplerCubeShadow", "samplerShadow", "shared", "short", "sizeof", "smooth", "static", "struct", "subpassInput", "subpassInputMS", "subroutine", "superp", "switch", "template", "texture2D", "texture2DArray", "texture2DMS", "texture2DMSArray", "texture3D", "textureBuffer", "textureCube", "textureCubeArray", "this", "true", "typedef", "uimage1D", "uimage1DArray", "uimage2D", "uimage2DArray", "uimage2DMS", "uimage2DMSArray", "uimage2DRect", "uimage3D", "uimageBuffer", "uimageCube", "uimageCubeArray", "uint", "uniform", "union", "unsigned", "usampler1D", "usampler1DArray", "usampler2D", "usampler2DArray", "usampler2DMS", "usampler2DMSArray", "usampler2DRect", "usampler3D", "usamplerBuffer", "usamplerCube", "usamplerCubeArray", "using", "usubpassInput", "usubpassInputMS", "utexture2D", "utexture2DArray", "utexture2DMS", "utexture2DMSArray", "utexture3D", "utextureBuffer", "utextureCube", "utextureCubeArray", "uvec2", "uvec3", "uvec4", "varying", "vec2", "vec3", "vec4", "void", "volatile", "while", "writeonly",
 				// GLSL intrinsic functions (WIP)
-				"cross", "dot", "exp", "inverse", "length", "max", "min", "mod", "normalize", "pow", "texture", "transpose"
+				"abs", "acos", "acosh", "asin", "asinh", "atan", "atan", "atanh", "ceil", "clamp", "cos", "cosh", "cross", "degrees", "dot", "exp", "exp2", "floor", "fract", "imageLoad", "imageStore", "inverse", "inversesqrt", "length", "log", "log2", "max", "min", "mix", "normalize", "pow", "radians", "reflect", "round", "roundEven", "sign", "sin", "sinh", "sqrt", "tan", "tanh", "texture", "transpose", "trunc",
 			};
 		}
 
@@ -620,6 +636,38 @@ namespace nzsl
 		Append(structData.nameOverride);
 	}
 
+	void GlslWriter::Append(const Ast::TextureType& textureType)
+	{
+		switch (textureType.baseType)
+		{
+			case Ast::PrimitiveType::Boolean:
+				throw std::runtime_error("unexpected bool type for texture");
+			case Ast::PrimitiveType::Float64:
+				throw std::runtime_error("unexpected f64 type for texture");
+
+			case Ast::PrimitiveType::Float32:
+				break;
+
+			case Ast::PrimitiveType::Int32:   Append("i"); break;
+			case Ast::PrimitiveType::UInt32:  Append("u"); break;
+
+			case Ast::PrimitiveType::String:
+				throw std::runtime_error("unexpected string type for texture");
+		}
+
+		Append("image");
+
+		switch (textureType.dim)
+		{
+			case ImageType::E1D:       Append("1D");      break;
+			case ImageType::E1D_Array: Append("1DArray"); break;
+			case ImageType::E2D:       Append("2D");      break;
+			case ImageType::E2D_Array: Append("2DArray"); break;
+			case ImageType::E3D:       Append("3D");      break;
+			case ImageType::Cubemap:   Append("Cube");    break;
+		}
+	}
+
 	void GlslWriter::Append(const Ast::Type& /*type*/)
 	{
 		throw std::runtime_error("unexpected Type");
@@ -824,6 +872,7 @@ namespace nzsl
 
 		switch (m_currentState->stage)
 		{
+			case ShaderStageType::Compute: fileTitle += "compute shader - "; break;
 			case ShaderStageType::Fragment: fileTitle += "fragment shader - "; break;
 			case ShaderStageType::Vertex: fileTitle += "vertex shader - "; break;
 		}
@@ -1022,34 +1071,12 @@ namespace nzsl
 			AppendLine("precision highp int;");
 			AppendLine("#if GL_FRAGMENT_PRECISION_HIGH");
 			AppendLine("precision highp float;");
-			AppendLine("precision highp isampler2D;");
-			AppendLine("precision highp isampler2DArray;");
-			AppendLine("precision highp isampler3D;");
-			AppendLine("precision highp isamplerCube;");
-			AppendLine("precision highp sampler2DArray;");
-			AppendLine("precision highp sampler2DArrayShadow;");
-			AppendLine("precision highp sampler2DShadow;");
-			AppendLine("precision highp sampler3D;");
-			AppendLine("precision highp samplerCubeShadow;");
-			AppendLine("precision highp usampler2D;");
-			AppendLine("precision highp usampler2DArray;");
-			AppendLine("precision highp usampler3D;");
-			AppendLine("precision highp usamplerCube;");
+			for (const Ast::ExpressionType& exprType : m_currentState->previsitor.requiredPrecisionQualifiers)
+				AppendLine("precision highp ", exprType, ";");
 			AppendLine("#else");
 			AppendLine("precision mediump float;");
-			AppendLine("precision mediump isampler2D;");
-			AppendLine("precision mediump isampler2DArray;");
-			AppendLine("precision mediump isampler3D;");
-			AppendLine("precision mediump isamplerCube;");
-			AppendLine("precision mediump sampler2DArray;");
-			AppendLine("precision mediump sampler2DArrayShadow;");
-			AppendLine("precision mediump sampler2DShadow;");
-			AppendLine("precision mediump sampler3D;");
-			AppendLine("precision mediump samplerCubeShadow;");
-			AppendLine("precision mediump usampler2D;");
-			AppendLine("precision mediump usampler2DArray;");
-			AppendLine("precision mediump usampler3D;");
-			AppendLine("precision mediump usamplerCube;");
+			for (const Ast::ExpressionType& exprType : m_currentState->previsitor.requiredPrecisionQualifiers)
+				AppendLine("precision mediump ", exprType, ";");
 			AppendLine("#endif");
 			AppendLine();
 		}
@@ -1068,8 +1095,17 @@ namespace nzsl
 			AppendLine();
 		}
 
-		// Handle optimization layouts
-		if (m_currentState->stage == ShaderStageType::Fragment)
+		// Handle layouts
+		if (m_currentState->stage == ShaderStageType::Compute)
+		{
+			if (m_currentState->previsitor.entryPoint->workgroupSize.HasValue())
+			{
+				const Vector3u32& workgroupSize = m_currentState->previsitor.entryPoint->workgroupSize.GetResultingValue();
+				AppendLine("layout(local_size_x = ", workgroupSize.x(), ", local_size_y = ", workgroupSize.y(), ", local_size_z = ", workgroupSize.z(), ") in;");
+				AppendLine();
+			}
+		}
+		else if (m_currentState->stage == ShaderStageType::Fragment)
 		{
 			// Conservative depth
 			if (m_currentState->previsitor.entryPoint->depthWrite.HasValue())
@@ -1192,7 +1228,20 @@ namespace nzsl
 		if (Ast::IsArrayType(varType) || Ast::IsDynArrayType(varType))
 			AppendArray(varType, varName);
 		else
+		{
+			if (IsTextureType(varType))
+			{
+				const Ast::TextureType& textureType = std::get<Ast::TextureType>(varType);
+				switch (textureType.accessPolicy)
+				{
+					case AccessPolicy::ReadOnly:  Append("readonly "); break;
+					case AccessPolicy::ReadWrite: break;
+					case AccessPolicy::WriteOnly: Append("writeonly "); break;
+				}
+			}
+
 			Append(varType, " ", varName);
+		}
 	}
 
 	void GlslWriter::EnterScope()
@@ -1695,7 +1744,9 @@ namespace nzsl
 			case Ast::IntrinsicType::Round:                    Append("round");       break;
 			case Ast::IntrinsicType::RoundEven:                Append("roundEven");   break;
 			case Ast::IntrinsicType::Sign:                     Append("sign");        break;
+			case Ast::IntrinsicType::TextureRead:              Append("imageLoad");   break;
 			case Ast::IntrinsicType::TextureSampleImplicitLod: Append("texture");     break;
+			case Ast::IntrinsicType::TextureWrite:             Append("imageStore");  break;
 			case Ast::IntrinsicType::Trunc:                    Append("trunc");       break;
 
 			// sampling of depth samplers
@@ -1758,9 +1809,6 @@ namespace nzsl
 				Append(".length");
 				cast = true;
 				firstParamIndex = 1;
-				break;
-			
-			default:
 				break;
 		}
 
@@ -1959,6 +2007,17 @@ namespace nzsl
 						m_currentState->explicitTextureBinding.emplace(varName, glslBindingIndex);
 					else
 						m_currentState->explicitUniformBlockBinding.emplace(std::string(s_glslWriterBlockBindingPrefix) + varName, glslBindingIndex);
+				}
+			}
+
+			if (IsTextureType(exprType))
+			{
+				const Ast::TextureType& textureType = std::get<Ast::TextureType>(exprType);
+				if (textureType.format != ImageFormat::Unknown)
+				{
+					assert(textureType.format == ImageFormat::RGBA8);
+					BeginLayout();
+					Append("rgba8");
 				}
 			}
 

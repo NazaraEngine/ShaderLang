@@ -20,7 +20,7 @@ TEST_CASE("errors", "[Shader]")
 	{
 		CHECK_THROWS_WITH(nzsl::Parse("nazara"), "(1,1 -> 6): PUnexpectedToken error: unexpected token Identifier");
 		CHECK_THROWS_WITH(nzsl::Parse("module;"), "(1,1 -> 6): PMissingAttribute error: missing attribute nzsl_version");
-		CHECK_THROWS_WITH(nzsl::Parse("[nzsl_version] module;"), "(1,2 -> 13): PAttributeMissingParameter error: attribute nzsl_version requires a parameter");
+		CHECK_THROWS_WITH(nzsl::Parse("[nzsl_version] module;"), "(1,2 -> 13): PAttributeUnexpectedParameterCount error: attribute nzsl_version expects 1 arguments, got 0");
 		CHECK_THROWS_WITH(nzsl::Parse("[nzsl_version(\"1.0\"), nzsl_version(\"1.0\")] module;"), "(1,23 -> 41): PAttributeMultipleUnique error: attribute nzsl_version can only be present once");
 		CHECK_THROWS_WITH(nzsl::Parse("[nzsl_version(\"1.0\"), author(\"Lynix\"), author(\"Sir Lynix\")] module;"), "(1,40 -> 58): PAttributeMultipleUnique error: attribute author can only be present once");
 		CHECK_THROWS_WITH(nzsl::Parse("[nzsl_version(\"1.0\"), author(\"Lynix\"), desc(\"Desc\")] [desc(\"Description\")] module;"), "(1,55 -> 73): PAttributeMultipleUnique error: attribute desc can only be present once");

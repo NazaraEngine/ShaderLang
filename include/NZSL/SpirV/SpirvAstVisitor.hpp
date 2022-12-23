@@ -81,6 +81,12 @@ namespace nzsl
 
 			struct EntryPoint
 			{
+				struct ExecutionMode
+				{
+					SpirvExecutionMode mode;
+					std::vector<std::uint32_t> params;
+				};
+
 				struct Input
 				{
 					std::uint32_t memberIndexConstantId;
@@ -104,9 +110,9 @@ namespace nzsl
 				ShaderStageType stageType;
 				std::optional<InputStruct> inputStruct;
 				std::optional<std::uint32_t> outputStructTypeId;
+				std::vector<ExecutionMode> executionModes;
 				std::vector<Input> inputs;
 				std::vector<Output> outputs;
-				std::vector<SpirvExecutionMode> executionModes;
 			};
 
 			struct FuncData
