@@ -812,14 +812,17 @@ namespace nzsl
 		{
 			if (func.entryPointData)
 			{
-				for (auto& executionMode : func.entryPointData->executionModes)
+				for (const auto& executionMode : func.entryPointData->executionModes)
 				{
+					// Lambda can't capture bindings until C++20
+					const auto& execMode = executionMode;
+
 					m_currentState->header.AppendVariadic(SpirvOp::OpExecutionMode, [&](const auto& appender)
 					{
 						appender(func.funcId);
-						appender(executionMode.mode);
+						appender(execMode.mode);
 
-						for (std::uint32_t litteral : executionMode.params)
+						for (std::uint32_t litteral : execMode.params)
 							appender(litteral);
 					});
 				}
