@@ -1,6 +1,7 @@
 #include <Tests/ShaderUtils.hpp>
 #include <NZSL/Serializer.hpp>
 #include <NZSL/ShaderBuilder.hpp>
+#include <NZSL/LangWriter.hpp>
 #include <NZSL/Parser.hpp>
 #include <NZSL/Ast/AstSerializer.hpp>
 #include <NZSL/Ast/Compare.hpp>
@@ -16,16 +17,38 @@ void ParseSerializeUnserialize(std::string_view sourceCode, bool sanitize)
 	if (sanitize)
 		REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(*shaderModule));
 
-	nzsl::Serializer serializer;
-	REQUIRE_NOTHROW(nzsl::Ast::SerializeShader(serializer, *shaderModule));
+	// Text serialisation
+	{
+		nzsl::LangWriter::States states;
+		states.sanitized = true;
 
-	const std::vector<std::uint8_t>& data = serializer.GetData();
+		nzsl::LangWriter langWriter;
+		std::string output = langWriter.Generate(*shaderModule, states);
 
-	nzsl::Unserializer unserializer(&data[0], data.size());
-	nzsl::Ast::ModulePtr unserializedShader;
-	REQUIRE_NOTHROW(unserializedShader = nzsl::Ast::UnserializeShader(unserializer));
+		nzsl::Ast::ModulePtr reparsedShader;
+		REQUIRE_NOTHROW(reparsedShader = nzsl::Parse(output));
 
-	CHECK(nzsl::Ast::Compare(*shaderModule, *unserializedShader));
+		nzsl::Ast::ComparisonParams compareParams;
+		compareParams.compareModuleName = false;
+		compareParams.compareSourceLoc = false;
+		compareParams.ignoreNoOp = true;
+
+		CHECK(nzsl::Ast::Compare(*shaderModule, *reparsedShader, compareParams));
+	}
+
+	// Binary serialisation
+	{
+		nzsl::Serializer serializer;
+		REQUIRE_NOTHROW(nzsl::Ast::SerializeShader(serializer, *shaderModule));
+
+		const std::vector<std::uint8_t>& data = serializer.GetData();
+
+		nzsl::Unserializer unserializer(&data[0], data.size());
+		nzsl::Ast::ModulePtr unserializedShader;
+		REQUIRE_NOTHROW(unserializedShader = nzsl::Ast::UnserializeShader(unserializer));
+
+		CHECK(nzsl::Ast::Compare(*shaderModule, *unserializedShader));
+	}
 }
 
 void ParseSerializeUnserialize(std::string_view sourceCode)
