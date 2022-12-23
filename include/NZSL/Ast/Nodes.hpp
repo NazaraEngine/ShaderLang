@@ -371,8 +371,9 @@ namespace nzsl::Ast
 		std::vector<Parameter> parameters;
 		std::vector<StatementPtr> statements;
 		ExpressionValue<DepthWriteMode> depthWrite;
-		ExpressionValue<ShaderStageType> entryStage;
 		ExpressionValue<ExpressionType> returnType;
+		ExpressionValue<ShaderStageType> entryStage;
+		ExpressionValue<Vector3u32> workgroupSize;
 		ExpressionValue<bool> earlyFragmentTests;
 		ExpressionValue<bool> isExported;
 	};

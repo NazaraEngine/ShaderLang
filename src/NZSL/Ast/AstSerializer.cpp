@@ -12,7 +12,7 @@ namespace nzsl::Ast
 	namespace
 	{
 		constexpr std::uint32_t s_shaderAstMagicNumber = 0x4E534852;
-		constexpr std::uint32_t s_shaderAstCurrentVersion = 5;
+		constexpr std::uint32_t s_shaderAstCurrentVersion = 6;
 
 		class ShaderSerializerVisitor : public ExpressionVisitor, public StatementVisitor
 		{
@@ -362,6 +362,9 @@ namespace nzsl::Ast
 		ExprValue(node.isExported);
 		OptVal(node.funcIndex);
 
+		if (IsVersionGreaterOrEqual(6))
+			ExprValue(node.workgroupSize);
+
 		Container(node.parameters);
 		for (auto& parameter : node.parameters)
 		{
@@ -666,6 +669,14 @@ namespace nzsl::Ast
 			{
 				m_serializer.Serialize(std::uint8_t(15));
 				Type(arg.containedType->type);
+			}
+			else if constexpr (std::is_same_v<T, Ast::TextureType>)
+			{
+				m_serializer.Serialize(std::uint8_t(16));
+				Enum(arg.accessPolicy);
+				Enum(arg.format);
+				Enum(arg.dim);
+				Enum(arg.baseType);
 			}
 			else
 				static_assert(Nz::AlwaysFalse<T>::value, "non-exhaustive visitor");
@@ -1158,6 +1169,27 @@ namespace nzsl::Ast
 				type = std::move(arrayType);
 				break;
 			}
+
+			case 16: //< TextureType
+			{
+				AccessPolicy accessPolicy;
+				ImageFormat format;
+				ImageType dim;
+				PrimitiveType baseType;
+				Enum(accessPolicy);
+				Enum(format);
+				Enum(dim);
+				Enum(baseType);
+
+				type = TextureType{
+					accessPolicy,
+					format,
+					dim,
+					baseType
+				};
+				break;
+			}
+
 
 			default:
 				throw std::runtime_error("unexpected type index " + std::to_string(typeIndex));

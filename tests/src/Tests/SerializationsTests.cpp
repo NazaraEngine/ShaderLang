@@ -456,6 +456,25 @@ fn main(input: FragIn)
 }
 
 )");
+
+		ParseSerializeUnserialize(R"(
+[nzsl_version("1.0")]
+module;
+
+external
+{
+	[binding(0)] input: texture2D[f32, readonly, rgba8],
+	[binding(1)] output: texture2D[f32, writeonly]
+}
+
+[entry(compute)]
+[workgroup(16 * 8, 8 / 2, 42)]
+fn main()
+{
+	output.Write(vec2[i32](543, 210), input.Read(vec2[i32](123, 345)));
+}
+
+)");
 	}
 
 	WHEN("serializing and unserializing loops")

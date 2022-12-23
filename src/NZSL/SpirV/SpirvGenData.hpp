@@ -38,14 +38,19 @@ namespace nzsl::SpirvGenData
 	};
 
 	constexpr auto s_builtinMapping = frozen::make_unordered_map<Ast::BuiltinEntry, SpirvBuiltin>({
-		{ Ast::BuiltinEntry::BaseInstance,   { SpirvBuiltIn::BaseInstance,  SpirvCapability::DrawParameters, SpirvVersion{ 1, 3 } } },
-		{ Ast::BuiltinEntry::BaseVertex,     { SpirvBuiltIn::BaseVertex,    SpirvCapability::DrawParameters, SpirvVersion{ 1, 3 } } },
-		{ Ast::BuiltinEntry::DrawIndex,      { SpirvBuiltIn::DrawIndex,     SpirvCapability::DrawParameters, SpirvVersion{ 1, 3 } } },
-		{ Ast::BuiltinEntry::FragCoord,      { SpirvBuiltIn::FragCoord,     SpirvCapability::Shader,         SpirvVersion{ 1, 0 } } },
-		{ Ast::BuiltinEntry::FragDepth,      { SpirvBuiltIn::FragDepth,     SpirvCapability::Shader,         SpirvVersion{ 1, 0 } } },
-		{ Ast::BuiltinEntry::InstanceIndex,  { SpirvBuiltIn::InstanceIndex, SpirvCapability::Shader,         SpirvVersion{ 1, 0 } } },
-		{ Ast::BuiltinEntry::VertexIndex,    { SpirvBuiltIn::VertexIndex,   SpirvCapability::Shader,         SpirvVersion{ 1, 0 } } },
-		{ Ast::BuiltinEntry::VertexPosition, { SpirvBuiltIn::Position,      SpirvCapability::Shader,         SpirvVersion{ 1, 0 } } }
+		{ Ast::BuiltinEntry::BaseInstance,            { SpirvBuiltIn::BaseInstance,         SpirvCapability::DrawParameters, SpirvVersion{ 1, 3 } } },
+		{ Ast::BuiltinEntry::BaseVertex,              { SpirvBuiltIn::BaseVertex,           SpirvCapability::DrawParameters, SpirvVersion{ 1, 3 } } },
+		{ Ast::BuiltinEntry::DrawIndex,               { SpirvBuiltIn::DrawIndex,            SpirvCapability::DrawParameters, SpirvVersion{ 1, 3 } } },
+		{ Ast::BuiltinEntry::FragCoord,               { SpirvBuiltIn::FragCoord,            SpirvCapability::Shader,         SpirvVersion{ 1, 0 } } },
+		{ Ast::BuiltinEntry::FragDepth,               { SpirvBuiltIn::FragDepth,            SpirvCapability::Shader,         SpirvVersion{ 1, 0 } } },
+		{ Ast::BuiltinEntry::GlocalInvocationIndices, { SpirvBuiltIn::GlobalInvocationId,   SpirvCapability::Shader,         SpirvVersion{ 1, 0 } } },
+		{ Ast::BuiltinEntry::InstanceIndex,           { SpirvBuiltIn::InstanceIndex,        SpirvCapability::Shader,         SpirvVersion{ 1, 0 } } },
+		{ Ast::BuiltinEntry::LocalInvocationIndex,    { SpirvBuiltIn::LocalInvocationIndex, SpirvCapability::Shader,         SpirvVersion{ 1, 0 } } },
+		{ Ast::BuiltinEntry::LocalInvocationIndices,  { SpirvBuiltIn::LocalInvocationId,    SpirvCapability::Shader,         SpirvVersion{ 1, 0 } } },
+		{ Ast::BuiltinEntry::VertexIndex,             { SpirvBuiltIn::VertexIndex,          SpirvCapability::Shader,         SpirvVersion{ 1, 0 } } },
+		{ Ast::BuiltinEntry::VertexPosition,          { SpirvBuiltIn::Position,             SpirvCapability::Shader,         SpirvVersion{ 1, 0 } } },
+		{ Ast::BuiltinEntry::WorkgroupCount,          { SpirvBuiltIn::NumWorkgroups,        SpirvCapability::Shader,         SpirvVersion{ 1, 0 } } },
+		{ Ast::BuiltinEntry::WorkgroupIndices,        { SpirvBuiltIn::WorkgroupId,          SpirvCapability::Shader,         SpirvVersion{ 1, 0 } } }
 	});
 
 	using SpirvCodeGenerator = void(SpirvAstVisitor::*)(const Ast::IntrinsicExpression& node);
@@ -98,8 +103,10 @@ namespace nzsl::SpirvGenData
 		{ Ast::IntrinsicType::Sqrt,                              { SpirvGlslStd450Op::Sqrt } },
 		{ Ast::IntrinsicType::Tan,                               { SpirvGlslStd450Op::Tan } },
 		{ Ast::IntrinsicType::Tanh,                              { SpirvGlslStd450Op::Tanh } },
+		{ Ast::IntrinsicType::TextureRead,                       { SpirvOp::OpImageRead } },
 		{ Ast::IntrinsicType::TextureSampleImplicitLod,          { SpirvOp::OpImageSampleImplicitLod } },
 		{ Ast::IntrinsicType::TextureSampleImplicitLodDepthComp, { SpirvOp::OpImageSampleDrefImplicitLod } },
+		{ Ast::IntrinsicType::TextureWrite,                      { SpirvOp::OpImageWrite } },
 		{ Ast::IntrinsicType::Trunc,                             { SpirvGlslStd450Op::Trunc } },
 	});
 

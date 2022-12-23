@@ -868,6 +868,60 @@ namespace nzsl
 		return std::make_shared<Type>(std::move(sType));
 	}
 
+	auto SpirvConstantCache::BuildType(const Ast::TextureType& type) const -> TypePtr
+	{
+		Image imageType;
+		imageType.sampled = false;
+		imageType.sampledType = BuildType(type.baseType);
+
+		imageType.format = [&]
+		{
+			switch (type.format)
+			{
+				case ImageFormat::Unknown: return SpirvImageFormat::Unknown;
+				case ImageFormat::RGBA8: return SpirvImageFormat::Rgba8;
+				case ImageFormat::RGBA32f: return SpirvImageFormat::Rgba32f;
+				default:
+					throw std::runtime_error("<TODO>");
+			}
+		}();
+
+		imageType.dim = [&]
+		{
+			switch (type.dim)
+			{
+				case ImageType::Cubemap: return SpirvDim::Cube;
+				case ImageType::E1D_Array:
+					imageType.arrayed = true;
+					[[fallthrough]];
+				case ImageType::E1D: return SpirvDim::Dim1D;
+				case ImageType::E2D_Array:
+					imageType.arrayed = true;
+					[[fallthrough]];
+				case ImageType::E2D: return SpirvDim::Dim2D;
+				case ImageType::E3D: return SpirvDim::Dim3D;
+			}
+
+			throw std::runtime_error("unhandled image dimension");
+		}();
+
+		/*
+		* Not used outside of kernel mode
+		imageType.qualifier = [&]
+		{
+			switch (type.accessPolicy)
+			{
+				case AccessPolicy::ReadOnly: return SpirvAccessQualifier::ReadOnly;
+				case AccessPolicy::ReadWrite: return SpirvAccessQualifier::ReadWrite;
+				case AccessPolicy::WriteOnly: return SpirvAccessQualifier::WriteOnly;
+			}
+
+			throw std::runtime_error("unhandled access policy");
+		}();*/
+
+		return std::make_shared<Type>(imageType);
+	}
+
 	auto SpirvConstantCache::BuildType(const Ast::VectorType& type) const -> TypePtr
 	{
 		return std::make_shared<Type>(Vector{ BuildType(type.type), std::uint32_t(type.componentCount) });

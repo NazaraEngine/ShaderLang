@@ -219,7 +219,7 @@ namespace nzsl
 						const auto& type = m_constantCache.BuildType(*declaredStructs[structIndex], { decoration });
 						variable.type = m_constantCache.BuildPointerType(type, variable.storageClass);
 					}
-					else if (Ast::IsSamplerType(extVarType) || Ast::IsArrayType(extVarType))
+					else if (Ast::IsSamplerType(extVarType) || Ast::IsArrayType(extVarType) || Ast::IsTextureType(extVarType))
 					{
 						variable.storageClass = SpirvStorageClass::UniformConstant;
 						variable.type = m_constantCache.BuildPointerType(extVarType, variable.storageClass);
@@ -281,26 +281,43 @@ namespace nzsl
 				{
 					using EntryPoint = SpirvAstVisitor::EntryPoint;
 
-					std::vector<SpirvExecutionMode> executionModes;
-
-					if (*entryPointType == ShaderStageType::Fragment)
+					std::vector<EntryPoint::ExecutionMode> executionModes;
+					switch (*entryPointType)
 					{
-						executionModes.push_back(SpirvExecutionMode::OriginUpperLeft);
-						if (node.earlyFragmentTests.HasValue() && node.earlyFragmentTests.GetResultingValue())
-							executionModes.push_back(SpirvExecutionMode::EarlyFragmentTests);
-
-						if (node.depthWrite.HasValue())
+						case ShaderStageType::Compute:
 						{
-							executionModes.push_back(SpirvExecutionMode::DepthReplacing);
-
-							switch (node.depthWrite.GetResultingValue())
+							if (node.workgroupSize.HasValue())
 							{
-								case Ast::DepthWriteMode::Replace:   break;
-								case Ast::DepthWriteMode::Greater:   executionModes.push_back(SpirvExecutionMode::DepthGreater); break;
-								case Ast::DepthWriteMode::Less:      executionModes.push_back(SpirvExecutionMode::DepthLess); break;
-								case Ast::DepthWriteMode::Unchanged: executionModes.push_back(SpirvExecutionMode::DepthUnchanged); break;
+								Vector3u32 workgroupSize = node.workgroupSize.GetResultingValue();
+								executionModes.push_back({ SpirvExecutionMode::LocalSize, { workgroupSize.x(), workgroupSize.y(), workgroupSize.z()}});
 							}
+							break;
 						}
+
+						case ShaderStageType::Fragment:
+						{
+							executionModes.push_back({ SpirvExecutionMode::OriginUpperLeft, {} });
+							if (node.earlyFragmentTests.HasValue() && node.earlyFragmentTests.GetResultingValue())
+								executionModes.push_back({ SpirvExecutionMode::EarlyFragmentTests, {} });
+
+							if (node.depthWrite.HasValue())
+							{
+								executionModes.push_back({ SpirvExecutionMode::DepthReplacing, {} });
+
+								switch (node.depthWrite.GetResultingValue())
+								{
+									case Ast::DepthWriteMode::Replace:   break;
+									case Ast::DepthWriteMode::Greater:   executionModes.push_back({ SpirvExecutionMode::DepthGreater, {} }); break;
+									case Ast::DepthWriteMode::Less:      executionModes.push_back({ SpirvExecutionMode::DepthLess, {} }); break;
+									case Ast::DepthWriteMode::Unchanged: executionModes.push_back({ SpirvExecutionMode::DepthUnchanged, {} }); break;
+								}
+							}
+
+							break;
+						}
+
+						case ShaderStageType::Vertex:
+							break;
 					}
 
 					funcData.returnTypeId = m_constantCache.Register(*m_constantCache.BuildType(Ast::NoType{}));
@@ -379,9 +396,9 @@ namespace nzsl
 						*entryPointType,
 						inputStruct,
 						outputStructId,
+						std::move(executionModes),
 						std::move(inputs),
-						std::move(outputs),
-						std::move(executionModes)
+						std::move(outputs)
 					};
 				}
 
@@ -758,6 +775,10 @@ namespace nzsl
 
 				switch (entryPointData.stageType)
 				{
+					case ShaderStageType::Compute:
+						execModel = SpirvExecutionModel::GLCompute;
+						break;
+
 					case ShaderStageType::Fragment:
 						execModel = SpirvExecutionModel::Fragment;
 						break;
@@ -791,8 +812,17 @@ namespace nzsl
 		{
 			if (func.entryPointData)
 			{
-				for (SpirvExecutionMode executionMode : func.entryPointData->executionModes)
-					m_currentState->header.Append(SpirvOp::OpExecutionMode, func.funcId, executionMode);
+				for (auto& executionMode : func.entryPointData->executionModes)
+				{
+					m_currentState->header.AppendVariadic(SpirvOp::OpExecutionMode, [&](const auto& appender)
+					{
+						appender(func.funcId);
+						appender(executionMode.mode);
+
+						for (std::uint32_t litteral : executionMode.params)
+							appender(litteral);
+					});
+				}
 			}
 		}
 	}

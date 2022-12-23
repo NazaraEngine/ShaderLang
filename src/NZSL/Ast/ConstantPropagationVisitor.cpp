@@ -831,6 +831,8 @@ namespace nzsl::Ast
 				break;
 
 			// Intrinsics that cannot be evalutated at compilation time
+			case IntrinsicType::TextureRead:
+			case IntrinsicType::TextureWrite:
 			case IntrinsicType::TextureSampleImplicitLod:
 			case IntrinsicType::TextureSampleImplicitLodDepthComp:
 				break;

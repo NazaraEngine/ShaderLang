@@ -195,6 +195,10 @@ void ExpectGLSL(const nzsl::Ast::Module& shaderModule, std::string_view expected
 			EShLanguage stage = EShLangVertex;
 			switch (*entryShaderStage)
 			{
+				case nzsl::ShaderStageType::Compute:
+					stage = EShLangCompute;
+					break;
+
 				case nzsl::ShaderStageType::Fragment:
 					stage = EShLangFragment;
 					break;

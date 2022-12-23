@@ -95,7 +95,7 @@ namespace nzsl::Ast
 		return objectType->type == rhs.objectType->type && methodIndex == rhs.methodIndex;
 	}
 	
-	using ForbiddenStructTypes = Nz::TypeList<AliasType, FunctionType, IntrinsicFunctionType, MethodType, NoType, SamplerType, StorageType, Type, UniformType>;
+	using ForbiddenStructTypes = Nz::TypeList<AliasType, FunctionType, IntrinsicFunctionType, MethodType, NoType, SamplerType, StorageType, TextureType, Type, UniformType>;
 
 	std::size_t RegisterStructField(FieldOffsets& fieldOffsets, const ExpressionType& type, const StructFinder& structFinder)
 	{
@@ -284,6 +284,7 @@ namespace nzsl::Ast
 			                   std::is_same_v<T, MatrixType> ||
 			                   std::is_same_v<T, MethodType> ||
 			                   std::is_same_v<T, SamplerType> ||
+			                   std::is_same_v<T, TextureType> ||
 			                   std::is_same_v<T, Type> ||
 			                   std::is_same_v<T, VectorType>)
 			{
@@ -408,6 +409,22 @@ namespace nzsl::Ast
 			return "struct " + stringifier.structStringifier(type.structIndex);
 		else
 			return "struct #" + std::to_string(type.structIndex);
+	}
+
+	std::string ToString(const TextureType& type, const Stringifier& /*stringifier*/)
+	{
+		std::string_view dimensionStr;
+		switch (type.dim)
+		{
+			case ImageType::E1D:       dimensionStr = "1D";      break;
+			case ImageType::E1D_Array: dimensionStr = "1DArray"; break;
+			case ImageType::E2D:       dimensionStr = "2D";      break;
+			case ImageType::E2D_Array: dimensionStr = "2DArray"; break;
+			case ImageType::E3D:       dimensionStr = "3D";      break;
+			case ImageType::Cubemap:   dimensionStr = "Cube";    break;
+		}
+
+		return fmt::format("texture{}[{}]", dimensionStr, ToString(type.baseType));
 	}
 
 	std::string ToString(const Type& type, const Stringifier& stringifier)

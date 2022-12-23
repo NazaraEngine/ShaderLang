@@ -520,31 +520,45 @@ namespace nzsl
 	void SpirvAstVisitor::Visit(Ast::CastExpression& node)
 	{
 		const Ast::ExpressionType& targetExprType = node.targetType.GetResultingValue();
-		if (IsPrimitiveType(targetExprType))
+		if (IsPrimitiveType(targetExprType) || (IsVectorType(targetExprType) && node.expressions.size() == 1))
 		{
-			Ast::PrimitiveType targetType = std::get<Ast::PrimitiveType>(targetExprType);
+			Ast::PrimitiveType targetBaseType;
+			if (IsPrimitiveType(targetExprType))
+				targetBaseType = std::get<Ast::PrimitiveType>(targetExprType);
+			else
+			{
+				assert(IsVectorType(targetExprType));
+				targetBaseType = std::get<Ast::VectorType>(targetExprType).type;
+			}
 
 			assert(node.expressions.size() == 1);
 			Ast::ExpressionPtr& expression = node.expressions[0];
 
 			assert(expression->cachedExpressionType.has_value());
-			const Ast::ExpressionType& exprType = expression->cachedExpressionType.value();
-			assert(IsPrimitiveType(exprType));
-			Ast::PrimitiveType fromType = std::get<Ast::PrimitiveType>(exprType);
+			const Ast::ExpressionType& fromExprType = expression->cachedExpressionType.value();
+
+			Ast::PrimitiveType fromBaseType;
+			if (IsPrimitiveType(fromExprType))
+				fromBaseType = std::get<Ast::PrimitiveType>(fromExprType);
+			else
+			{
+				assert(IsVectorType(fromExprType));
+				fromBaseType = std::get<Ast::VectorType>(fromExprType).type;
+			}
 
 			std::uint32_t fromId = EvaluateExpression(*expression);
-			if (targetType == fromType)
+			if (targetBaseType == fromBaseType)
 				return PushResultId(fromId);
 
 			std::optional<SpirvOp> castOp;
-			switch (targetType)
+			switch (targetBaseType)
 			{
 				case Ast::PrimitiveType::Boolean:
 					throw std::runtime_error("unsupported cast to boolean");
 
 				case Ast::PrimitiveType::Float32:
 				{
-					switch (fromType)
+					switch (fromBaseType)
 					{
 						case Ast::PrimitiveType::Boolean:
 							throw std::runtime_error("unsupported cast from boolean");
@@ -572,7 +586,7 @@ namespace nzsl
 				
 				case Ast::PrimitiveType::Float64:
 				{
-					switch (fromType)
+					switch (fromBaseType)
 					{
 						case Ast::PrimitiveType::Boolean:
 							throw std::runtime_error("unsupported cast from boolean");
@@ -600,7 +614,7 @@ namespace nzsl
 
 				case Ast::PrimitiveType::Int32:
 				{
-					switch (fromType)
+					switch (fromBaseType)
 					{
 						case Ast::PrimitiveType::Boolean:
 							throw std::runtime_error("unsupported cast from boolean");
@@ -625,7 +639,7 @@ namespace nzsl
 
 				case Ast::PrimitiveType::UInt32:
 				{
-					switch (fromType)
+					switch (fromBaseType)
 					{
 						case Ast::PrimitiveType::Boolean:
 							throw std::runtime_error("unsupported cast from boolean");
@@ -655,7 +669,7 @@ namespace nzsl
 			assert(castOp);
 
 			std::uint32_t resultId = m_writer.AllocateResultId();
-			m_currentBlock->Append(*castOp, m_writer.GetTypeId(targetType), resultId, fromId);
+			m_currentBlock->Append(*castOp, m_writer.GetTypeId(targetExprType), resultId, fromId);
 
 			PushResultId(resultId);
 		}
@@ -870,18 +884,31 @@ namespace nzsl
 			}
 			else if constexpr (std::is_same_v<T, SpirvOp>)
 			{
-				std::uint32_t resultTypeId = m_writer.GetTypeId(ResolveAlias(EnsureExpressionType(node)));
+				const Ast::ExpressionType& resultType = ResolveAlias(EnsureExpressionType(node));
+				std::uint32_t resultTypeId;
+				if (!IsNoType(resultType))
+					resultTypeId = m_writer.GetTypeId(resultType);
+				else
+					resultTypeId = 0;
 
 				Nz::StackArray<std::uint32_t> parameterIds = NazaraStackArrayNoInit(std::uint32_t, node.parameters.size());
 				for (std::size_t i = 0; i < node.parameters.size(); ++i)
 					parameterIds[i] = EvaluateExpression(*node.parameters[i]);
 
-				std::uint32_t resultId = m_writer.AllocateResultId();
+				std::uint32_t resultId;
+				if (resultTypeId != 0)
+					resultId = m_writer.AllocateResultId();
+				else
+					resultId = 0;
 
 				m_currentBlock->AppendVariadic(arg, [&](auto&& append)
 				{
-					append(resultTypeId);
-					append(resultId);
+					if (resultTypeId != 0)
+					{
+						append(resultTypeId);
+						assert(resultId != 0);
+						append(resultId);
+					}
 
 					for (std::uint32_t parameterId : parameterIds)
 						append(parameterId);

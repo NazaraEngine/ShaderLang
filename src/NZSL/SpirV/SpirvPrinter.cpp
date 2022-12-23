@@ -425,11 +425,6 @@ namespace nzsl
 				break;
 			}
 
-			/*case SpirvOperandKind::LiteralContextDependentNumber:
-			{
-				throw std::runtime_error("not yet implemented");
-			}*/
-
 			default:
 				break;
 		}

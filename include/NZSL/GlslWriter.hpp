@@ -82,6 +82,7 @@ namespace nzsl
 			void Append(const Ast::SamplerType& samplerType);
 			void Append(const Ast::StorageType& storageType);
 			void Append(const Ast::StructType& structType);
+			void Append(const Ast::TextureType& textureType);
 			void Append(const Ast::Type& type);
 			void Append(const Ast::UniformType& uniformType);
 			void Append(const Ast::VectorType& vecType);

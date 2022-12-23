@@ -160,6 +160,17 @@ namespace nzsl::Ast
 		inline bool operator!=(const StructType& rhs) const;
 	};
 
+	struct TextureType
+	{
+		AccessPolicy accessPolicy;
+		ImageFormat format;
+		ImageType dim;
+		PrimitiveType baseType;
+
+		inline bool operator==(const TextureType& rhs) const;
+		inline bool operator!=(const TextureType& rhs) const;
+	};
+
 	struct Type
 	{
 		std::size_t typeIndex;
@@ -177,6 +188,7 @@ namespace nzsl::Ast
 		inline bool operator!=(const VectorType& rhs) const;
 	};
 
+	// Uniform and storages type need StructType to be declared
 
 	struct StorageType
 	{
@@ -194,7 +206,7 @@ namespace nzsl::Ast
 		inline bool operator!=(const UniformType& rhs) const;
 	};
 
-	using ExpressionType = std::variant<NoType, AliasType, ArrayType, DynArrayType, FunctionType, IntrinsicFunctionType, MatrixType, MethodType, PrimitiveType, SamplerType, StorageType, StructType, Type, UniformType, VectorType>;
+	using ExpressionType = std::variant<NoType, AliasType, ArrayType, DynArrayType, FunctionType, IntrinsicFunctionType, MatrixType, MethodType, PrimitiveType, SamplerType, StorageType, StructType, TextureType, Type, UniformType, VectorType>;
 
 	struct ContainedType
 	{
@@ -233,6 +245,7 @@ namespace nzsl::Ast
 	inline bool IsSamplerType(const ExpressionType& type);
 	inline bool IsStorageType(const ExpressionType& type);
 	inline bool IsStructType(const ExpressionType& type);
+	inline bool IsTextureType(const ExpressionType& type);
 	inline bool IsTypeExpression(const ExpressionType& type);
 	inline bool IsUniformType(const ExpressionType& type);
 	inline bool IsVectorType(const ExpressionType& type);
@@ -285,6 +298,7 @@ namespace nzsl::Ast
 	NZSL_API std::string ToString(const SamplerType& type, const Stringifier& stringifier = {});
 	NZSL_API std::string ToString(const StorageType& type, const Stringifier& stringifier = {});
 	NZSL_API std::string ToString(const StructType& type, const Stringifier& stringifier = {});
+	NZSL_API std::string ToString(const TextureType& type, const Stringifier& stringifier = {});
 	NZSL_API std::string ToString(const Type& type, const Stringifier& stringifier = {});
 	NZSL_API std::string ToString(const UniformType& type, const Stringifier& stringifier = {});
 	NZSL_API std::string ToString(const VectorType& type, const Stringifier& stringifier = {});

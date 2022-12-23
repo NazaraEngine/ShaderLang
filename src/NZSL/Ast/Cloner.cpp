@@ -158,6 +158,7 @@ namespace nzsl::Ast
 		clone->isExported = Clone(node.isExported);
 		clone->name = node.name;
 		clone->returnType = Clone(node.returnType);
+		clone->workgroupSize = Clone(node.workgroupSize);
 
 		clone->parameters.reserve(node.parameters.size());
 		for (auto& parameter : node.parameters)

@@ -11,6 +11,7 @@
 #include <NZSL/Enums.hpp>
 #include <NZSL/Ast/Enums.hpp>
 #include <NZSL/Ast/ExpressionType.hpp>
+#include <frozen/string.h>
 #include <frozen/unordered_map.h>
 #include <string_view>
 #include <variant>
@@ -40,7 +41,8 @@ namespace nzsl::LangData
 		{ Ast::AttributeType::LangVersion,        { "nzsl_version" } },
 		{ Ast::AttributeType::Set,                { "set" } },
 		{ Ast::AttributeType::Tag,                { "tag" } },
-		{ Ast::AttributeType::Unroll,             { "unroll" } }
+		{ Ast::AttributeType::Unroll,             { "unroll" } },
+		{ Ast::AttributeType::Workgroup,          { "workgroup" } }
 	});
 
 	struct BuiltinData
@@ -51,14 +53,19 @@ namespace nzsl::LangData
 	};
 
 	constexpr auto s_builtinData = frozen::make_unordered_map<Ast::BuiltinEntry, BuiltinData>({
-		{ Ast::BuiltinEntry::BaseInstance,   { "base_instance",  ShaderStageType::Vertex,   Ast::PrimitiveType::Int32 } },
-		{ Ast::BuiltinEntry::BaseVertex,     { "base_vertex",    ShaderStageType::Vertex,   Ast::PrimitiveType::Int32 } },
-		{ Ast::BuiltinEntry::DrawIndex,      { "draw_index",     ShaderStageType::Vertex,   Ast::PrimitiveType::Int32 } },
-		{ Ast::BuiltinEntry::FragCoord,      { "frag_coord",     ShaderStageType::Fragment, Ast::VectorType { 4, Ast::PrimitiveType::Float32 } } },
-		{ Ast::BuiltinEntry::FragDepth,      { "frag_depth",     ShaderStageType::Fragment, Ast::PrimitiveType::Float32 } },
-		{ Ast::BuiltinEntry::InstanceIndex,  { "instance_index", ShaderStageType::Vertex,   Ast::PrimitiveType::Int32 } },
-		{ Ast::BuiltinEntry::VertexIndex,    { "vertex_index",   ShaderStageType::Vertex,   Ast::PrimitiveType::Int32 } },
-		{ Ast::BuiltinEntry::VertexPosition, { "position",       ShaderStageType::Vertex,   Ast::VectorType { 4, Ast::PrimitiveType::Float32 } } }
+		{ Ast::BuiltinEntry::BaseInstance,              { "base_instance",             ShaderStageType::Vertex,   Ast::PrimitiveType::Int32 } },
+		{ Ast::BuiltinEntry::BaseVertex,                { "base_vertex",               ShaderStageType::Vertex,   Ast::PrimitiveType::Int32 } },
+		{ Ast::BuiltinEntry::DrawIndex,                 { "draw_index",                ShaderStageType::Vertex,   Ast::PrimitiveType::Int32 } },
+		{ Ast::BuiltinEntry::FragCoord,                 { "frag_coord",                ShaderStageType::Fragment, Ast::VectorType { 4, Ast::PrimitiveType::Float32 } } },
+		{ Ast::BuiltinEntry::FragDepth,                 { "frag_depth",                ShaderStageType::Fragment, Ast::PrimitiveType::Float32 } },
+		{ Ast::BuiltinEntry::GlocalInvocationIndices,   { "global_invocation_indices", ShaderStageType::Compute,  Ast::VectorType { 3, Ast::PrimitiveType::UInt32 } } },
+		{ Ast::BuiltinEntry::InstanceIndex,             { "instance_index",            ShaderStageType::Vertex,   Ast::PrimitiveType::Int32 } },
+		{ Ast::BuiltinEntry::LocalInvocationIndex,      { "local_invocation_index",    ShaderStageType::Compute,  Ast::PrimitiveType::UInt32 } },
+		{ Ast::BuiltinEntry::LocalInvocationIndices,    { "local_invocation_indices",  ShaderStageType::Compute,  Ast::VectorType { 3, Ast::PrimitiveType::UInt32 } } },
+		{ Ast::BuiltinEntry::VertexIndex,               { "vertex_index",              ShaderStageType::Vertex,   Ast::PrimitiveType::Int32 } },
+		{ Ast::BuiltinEntry::VertexPosition,            { "position",                  ShaderStageType::Vertex,   Ast::VectorType { 4, Ast::PrimitiveType::Float32 } } },
+		{ Ast::BuiltinEntry::WorkgroupCount,            { "workgroup_count",           ShaderStageType::Compute,  Ast::VectorType { 3, Ast::PrimitiveType::UInt32 } } },
+		{ Ast::BuiltinEntry::WorkgroupIndices,          { "workgroup_indices",         ShaderStageType::Compute,  Ast::VectorType { 3, Ast::PrimitiveType::UInt32 } } }
 	});
 
 	struct DepthWriteModeData
@@ -80,6 +87,7 @@ namespace nzsl::LangData
 	};
 
 	constexpr auto s_entryPoints = frozen::make_unordered_map<ShaderStageType, EntryPointData>({
+		{ ShaderStageType::Compute,  { "comp", "compute" }},
 		{ ShaderStageType::Fragment, { "frag", "fragment" }},
 		{ ShaderStageType::Vertex,   { "vert", "vertex" }},
 	});
@@ -88,21 +96,24 @@ namespace nzsl::LangData
 	{
 		enum class ParameterType
 		{
-			ArrayDyn,          // array or dyn_array
-			F32,               // Floating-point value of 32bits
-			FVal,              // Floating-point value
-			FValVec,           // Floating-point value or vector of floating-point
-			FValVec1632,       // Floating-point value or vector of floating-point of 16/32 bits (no f64)
-			FVec,              // Floating-point vector
-			FVec3,             // Floating-point vector3
-			SampleCoordinates, // floating-point vector used to sample the texture parameter
-			Matrix,            // Matrix (N*M)
-			MatrixSquare,      // Square matrix (N*N)
-			Scalar,            // Integer/Floating-point/Unsigned integer
-			ScalarVec,         // Scalar or vector of scalar
-			SignedScalar,      // Integer/Floating-point value
-			SignedScalarVec,   // signed scalar or vector of signed scalar
-			Texture,           // sampler
+			ArrayDyn,           // array or dyn_array
+			F32,                // Floating-point value of 32bits
+			FVal,               // Floating-point value
+			FValVec,            // Floating-point value or vector of floating-point
+			FValVec1632,        // Floating-point value or vector of floating-point of 16/32 bits (no f64)
+			FVec,               // Floating-point vector
+			FVec3,              // Floating-point vector3
+			Matrix,             // Matrix (N*M)
+			MatrixSquare,       // Square matrix (N*N)
+			Sampler,            // sampler
+			SampleCoordinates,  // floating-point vector used to sample the texture parameter
+			Scalar,             // Integer/Floating-point/Unsigned integer
+			ScalarVec,          // Scalar or vector of scalar
+			SignedScalar,       // Integer/Floating-point value
+			SignedScalarVec,    // signed scalar or vector of signed scalar
+			Texture,            // texture
+			TextureCoordinates, // integer vector used to sample the texture parameter
+			TextureData,        // texture content
 
 			// Constraints
 			SameType
@@ -111,10 +122,12 @@ namespace nzsl::LangData
 		enum class ReturnType
 		{
 			Param0SampledValue,
+			Param0TextureValue,
 			Param0Transposed,
 			Param0Type,
 			Param0VecComponent,
-			U32
+			U32,
+			Void
 		};
 		
 		struct IntrinsicData
@@ -182,8 +195,10 @@ namespace nzsl::LangData
 			{ Ast::IntrinsicType::Sqrt,                              Build("sqrt",      ReturnType::Param0Type,         Params<ParameterType::FValVec>{}) },
 			{ Ast::IntrinsicType::Tan,                               Build("tan",       ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
 			{ Ast::IntrinsicType::Tanh,                              Build("tanh",      ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
-			{ Ast::IntrinsicType::TextureSampleImplicitLod,          Build("",          ReturnType::Param0SampledValue, Params<ParameterType::Texture, ParameterType::SampleCoordinates>{}) },
-			{ Ast::IntrinsicType::TextureSampleImplicitLodDepthComp, Build("",          ReturnType::Param0SampledValue, Params<ParameterType::Texture, ParameterType::SampleCoordinates, ParameterType::F32>{}) },
+			{ Ast::IntrinsicType::TextureRead,                       Build("",          ReturnType::Param0TextureValue, Params<ParameterType::Texture, ParameterType::TextureCoordinates>{}) },
+			{ Ast::IntrinsicType::TextureSampleImplicitLod,          Build("",          ReturnType::Param0SampledValue, Params<ParameterType::Sampler, ParameterType::SampleCoordinates>{}) },
+			{ Ast::IntrinsicType::TextureSampleImplicitLodDepthComp, Build("",          ReturnType::Param0SampledValue, Params<ParameterType::Sampler, ParameterType::SampleCoordinates, ParameterType::F32>{}) },
+			{ Ast::IntrinsicType::TextureWrite,                      Build("",          ReturnType::Void,               Params<ParameterType::Texture, ParameterType::TextureCoordinates, ParameterType::TextureData>{}) },
 			{ Ast::IntrinsicType::Trunc,                             Build("trunc",     ReturnType::Param0Type,         Params<ParameterType::FValVec>{}) },
 		});
 	}

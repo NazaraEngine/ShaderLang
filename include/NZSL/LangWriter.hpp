@@ -28,7 +28,7 @@ namespace nzsl
 			LangWriter(LangWriter&&) = delete;
 			~LangWriter() = default;
 
-			std::string Generate(const Ast::Module& module, const States& conditions = {});
+			std::string Generate(const Ast::Module& module, const States& states = {});
 
 			void SetEnv(Environment environment);
 
@@ -53,6 +53,7 @@ namespace nzsl
 			struct SetAttribute;
 			struct TagAttribute;
 			struct UnrollAttribute;
+			struct WorkgroupAttribute;
 
 			void Append(const Ast::AliasType& type);
 			void Append(const Ast::ArrayType& type);
@@ -68,6 +69,7 @@ namespace nzsl
 			void Append(const Ast::SamplerType& samplerType);
 			void Append(const Ast::StorageType& storageType);
 			void Append(const Ast::StructType& structType);
+			void Append(const Ast::TextureType& samplerType);
 			void Append(const Ast::Type& type);
 			void Append(const Ast::UniformType& uniformType);
 			void Append(const Ast::VectorType& vecType);
@@ -92,6 +94,7 @@ namespace nzsl
 			void AppendAttribute(SetAttribute attribute);
 			void AppendAttribute(TagAttribute attribute);
 			void AppendAttribute(UnrollAttribute attribute);
+			void AppendAttribute(WorkgroupAttribute attribute);
 			void AppendComment(std::string_view section);
 			void AppendCommentSection(std::string_view section);
 			void AppendHeader();

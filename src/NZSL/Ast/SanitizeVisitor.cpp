@@ -357,6 +357,28 @@ namespace nzsl::Ast
 				identifierExpr->cachedExpressionType = std::move(methodType);
 				indexedExpr = std::move(identifierExpr);
 			}
+			else if (IsTextureType(resolvedType))
+			{
+				MethodType methodType;
+
+				// FIXME
+				if (identifierEntry.identifier == "Read")
+					methodType.methodIndex = 0;
+				else if (identifierEntry.identifier == "Write")
+					methodType.methodIndex = 1;
+				else
+					throw CompilerUnknownMethodError{ identifierEntry.sourceLocation, ToString(resolvedType, indexedExpr->sourceLocation), identifierEntry.identifier };
+
+				methodType.objectType = std::make_unique<ContainedType>();
+				methodType.objectType->type = resolvedType;
+
+				// TODO: Add a MethodExpression?
+				auto identifierExpr = std::make_unique<AccessIdentifierExpression>();
+				identifierExpr->expr = std::move(indexedExpr);
+				identifierExpr->identifiers.emplace_back().identifier = identifierEntry.identifier;
+				identifierExpr->cachedExpressionType = std::move(methodType);
+				indexedExpr = std::move(identifierExpr);
+			}
 			else if (IsArrayType(resolvedType) || IsDynArrayType(resolvedType))
 			{
 				if (identifierEntry.identifier == "Size")
@@ -730,6 +752,23 @@ namespace nzsl::Ast
 				{
 					case 0: intrinsicType = IntrinsicType::TextureSampleImplicitLod; break;
 					case 1: intrinsicType = IntrinsicType::TextureSampleImplicitLodDepthComp; break;
+					default:
+						throw AstInvalidMethodIndexError{ node.sourceLocation, methodType.methodIndex, ToString(objectType, node.sourceLocation) };
+				}
+
+				auto intrinsic = ShaderBuilder::Intrinsic(intrinsicType, std::move(parameters));
+				intrinsic->sourceLocation = node.sourceLocation;
+				Validate(*intrinsic);
+
+				return intrinsic;
+			}
+			else if (IsTextureType(objectType))
+			{
+				IntrinsicType intrinsicType;
+				switch (methodType.methodIndex)
+				{
+					case 0: intrinsicType = IntrinsicType::TextureRead; break;
+					case 1: intrinsicType = IntrinsicType::TextureWrite; break;
 					default:
 						throw AstInvalidMethodIndexError{ node.sourceLocation, methodType.methodIndex, ToString(objectType, node.sourceLocation) };
 				}
@@ -1350,7 +1389,7 @@ namespace nzsl::Ast
 			if (IsArrayType(targetType))
 			{
 				const ExpressionType& innerType = std::get<ArrayType>(targetType).containedType->type;
-				if (IsSamplerType(innerType))
+				if (IsSamplerType(innerType) || IsTextureType(innerType))
 					varType = targetType;
 				else if (IsPrimitiveType(innerType) || IsVectorType(innerType) || IsMatrixType(innerType))
 				{
@@ -1358,7 +1397,7 @@ namespace nzsl::Ast
 						varType = targetType;
 				}
 			}
-			else if (IsUniformType(targetType) || IsStorageType(targetType) || IsSamplerType(targetType))
+			else if (IsUniformType(targetType) || IsStorageType(targetType) || IsSamplerType(targetType) || IsTextureType(targetType))
 				varType = targetType;
 			else if (IsPrimitiveType(targetType) || IsVectorType(targetType) || IsMatrixType(targetType))
 			{
@@ -1474,9 +1513,14 @@ namespace nzsl::Ast
 		if (node.isExported.HasValue())
 			ComputeExprValue(node.isExported, clone->isExported, node.sourceLocation);
 
+		if (node.workgroupSize.HasValue())
+			ComputeExprValue(node.workgroupSize, clone->workgroupSize, node.sourceLocation);
+
 		if (clone->entryStage.IsResultingValue())
 		{
 			ShaderStageType stageType = clone->entryStage.GetResultingValue();
+			auto it = LangData::s_entryPoints.find(stageType);
+			assert(it != LangData::s_entryPoints.end());
 
 			if (!m_context->options.partialSanitization)
 			{
@@ -1503,10 +1547,28 @@ namespace nzsl::Ast
 			if (stageType != ShaderStageType::Fragment)
 			{
 				if (node.depthWrite.HasValue())
-					throw CompilerDepthWriteAttributeError{ node.sourceLocation };
+					throw CompilerUnsupportedAttributeOnStageError{ node.sourceLocation, it->second.identifier, "fragment" };
 
 				if (node.earlyFragmentTests.HasValue())
-					throw CompilerEarlyFragmentTestsAttributeError{ node.sourceLocation };
+					throw CompilerUnsupportedAttributeOnStageError{ node.sourceLocation, it->second.identifier, "fragment" };
+			}
+
+			if (stageType == ShaderStageType::Compute)
+			{
+				if (!node.workgroupSize.HasValue())
+					throw CompilerMissingWorkgroupAttributeError{ node.sourceLocation };
+
+				if (node.workgroupSize.IsResultingValue())
+				{
+					const Vector3u32& workgroup = node.workgroupSize.GetResultingValue();
+					if (workgroup.x() == 0 || workgroup.y() == 0 || workgroup.z() == 0)
+						throw CompilerInvalidWorkgroupError{ node.sourceLocation, ConstantToString(workgroup) };
+				}
+			}
+			else
+			{
+				if (node.workgroupSize.HasValue())
+					throw CompilerUnsupportedAttributeOnStageError{ node.sourceLocation, it->second.identifier, "compute" };
 			}
 		}
 
@@ -2748,7 +2810,7 @@ namespace nzsl::Ast
 		{
 			auto& expr = *attribute.GetExpression();
 
-			std::optional<ConstantValue> value = ComputeConstantValue(expr);
+			std::optional<ConstantValue> value = ComputeConstantValue(*Cloner::Clone(expr));
 			if (!value)
 			{
 				targetAttribute = Cloner::Clone(expr);
@@ -2760,13 +2822,18 @@ namespace nzsl::Ast
 				if (!std::holds_alternative<T>(*value))
 				{
 					// HAAAAAX
-					if (std::holds_alternative<std::int32_t>(*value) && std::is_same_v<T, std::uint32_t>)
+					if constexpr (std::is_same_v<T, std::uint32_t>)
 					{
-						std::int32_t intVal = std::get<std::int32_t>(*value);
-						if (intVal < 0)
-							throw CompilerAttributeUnexpectedNegativeError{ expr.sourceLocation, Ast::ToString(intVal) };
+						if (std::holds_alternative<std::int32_t>(*value))
+						{
+							std::int32_t intVal = std::get<std::int32_t>(*value);
+							if (intVal < 0)
+								throw CompilerAttributeUnexpectedNegativeError{ expr.sourceLocation, Ast::ToString(intVal) };
 
-						targetAttribute = static_cast<std::uint32_t>(intVal);
+							targetAttribute = static_cast<std::uint32_t>(intVal);
+						}
+						else
+							throw CompilerAttributeUnexpectedTypeError{ expr.sourceLocation, ToString(GetConstantExpressionType<T>(), sourceLocation), ToString(GetExpressionTypeSecure(expr), sourceLocation) };
 					}
 					else
 						throw CompilerAttributeUnexpectedTypeError{ expr.sourceLocation, ToString(GetConstantExpressionType<T>(), sourceLocation), ToString(GetExpressionTypeSecure(expr), sourceLocation) };
@@ -3078,6 +3145,97 @@ namespace nzsl::Ast
 			}, std::nullopt, {});
 		}
 
+		// texture
+		struct TextureInfo
+		{
+			std::string_view typeName;
+			ImageType imageType;
+			std::optional<ModuleFeature> requiredFeature;
+		};
+
+		constexpr std::array<TextureInfo, 6> textureInfos = {
+			{
+				{
+					"texture1D",
+					ImageType::E1D,
+					ModuleFeature::Texture1D
+				},
+				{
+					"texture1D_array",
+					ImageType::E1D_Array,
+					ModuleFeature::Texture1D
+				},
+				{
+					"texture2D",
+					ImageType::E2D,
+					std::nullopt
+				},
+				{
+					"texture2D_array",
+					ImageType::E2D_Array,
+					std::nullopt
+				},
+				{
+					"texture3D",
+					ImageType::E3D,
+					std::nullopt
+				},
+				{
+					"texture_cube",
+					ImageType::Cubemap,
+					std::nullopt
+				}
+			}
+		};
+
+		for (const TextureInfo& texture : textureInfos)
+		{
+			if (texture.requiredFeature.has_value() && !IsFeatureEnabled(*texture.requiredFeature))
+				continue;
+
+			RegisterType(std::string(texture.typeName), PartialType {
+				{ TypeParameterCategory::PrimitiveType, TypeParameterCategory::ConstantValue }, { TypeParameterCategory::ConstantValue },
+				[=](const TypeParameter* parameters, std::size_t parameterCount, const SourceLocation& sourceLocation) -> ExpressionType
+				{
+					assert(std::holds_alternative<ExpressionType>(parameters[0]));
+					const ExpressionType& exprType = std::get<ExpressionType>(parameters[0]);
+					assert(IsPrimitiveType(exprType));
+
+					PrimitiveType primitiveType = std::get<PrimitiveType>(exprType);
+
+					// TODO: Add support for integer textures
+					if (primitiveType != PrimitiveType::Float32)
+						throw CompilerTextureUnexpectedTypeError{ sourceLocation, ToString(exprType, sourceLocation) };
+
+					assert(std::holds_alternative<ConstantValue>(parameters[1]));
+					const ConstantValue& accessValue = std::get<ConstantValue>(parameters[1]);
+					if (!std::holds_alternative<std::uint32_t>(accessValue))
+						throw CompilerTextureUnexpectedAccessError{ sourceLocation, "<TODO>" };
+
+					AccessPolicy access = static_cast<AccessPolicy>(std::get<std::uint32_t>(accessValue));
+
+					std::optional<ImageFormat> formatOpt;
+					if (parameterCount >= 3)
+					{
+						assert(std::holds_alternative<ConstantValue>(parameters[2]));
+						const ConstantValue& formatValue = std::get<ConstantValue>(parameters[2]);
+						if (!std::holds_alternative<std::uint32_t>(formatValue))
+							throw CompilerTextureUnexpectedFormatError{ sourceLocation, "<TODO>" };
+
+						ImageFormat format = static_cast<ImageFormat>(std::get<std::uint32_t>(formatValue));
+						if (format != ImageFormat::RGBA8) //< TODO: Add support for more formats
+							throw CompilerTextureUnexpectedFormatError{ sourceLocation, "<TODO>" };
+
+						formatOpt = format;
+					}
+
+					return TextureType {
+						access, formatOpt.value_or(ImageFormat::Unknown), texture.imageType, primitiveType
+					};
+				}
+			}, std::nullopt, {});
+		}
+
 		// storage
 		RegisterType("storage", PartialType {
 			{ TypeParameterCategory::StructType }, {},
@@ -3114,12 +3272,20 @@ namespace nzsl::Ast
 			}
 		}, std::nullopt, {});
 
-		// Register intrinsics
+		// Intrinsics
 		for (const auto& [intrinsic, data] : LangData::s_intrinsicData)
 		{
 			if (!data.functionName.empty())
 				RegisterIntrinsic(std::string(data.functionName), intrinsic);
 		}
+
+		// Constants
+		RegisterConstant("readonly", Nz::SafeCast<std::uint32_t>(AccessPolicy::ReadOnly), std::nullopt, {});
+		RegisterConstant("readwrite", Nz::SafeCast<std::uint32_t>(AccessPolicy::ReadWrite), std::nullopt, {});
+		RegisterConstant("writeonly", Nz::SafeCast<std::uint32_t>(AccessPolicy::WriteOnly), std::nullopt, {});
+
+		// TODO: Register more image formats
+		RegisterConstant("rgba8", Nz::SafeCast<std::uint32_t>(ImageFormat::RGBA8), std::nullopt, {});
 	}
 
 	std::size_t SanitizeVisitor::RegisterAlias(std::string name, std::optional<Identifier> aliasData, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
@@ -3980,6 +4146,90 @@ namespace nzsl::Ast
 		auto& firstExprPtr = MandatoryExpr(node.expressions.front(), node.sourceLocation);
 
 		std::size_t expressionCount = node.expressions.size();
+		
+		auto areTypeCompatibles = [&](PrimitiveType from, PrimitiveType to)
+		{
+			switch (to)
+			{
+				case PrimitiveType::Boolean:
+				case PrimitiveType::String:
+					return false;
+
+				case PrimitiveType::Float32:
+				{
+					switch (from)
+					{
+						case PrimitiveType::Boolean:
+						case PrimitiveType::String:
+							return false;
+
+						case PrimitiveType::Float32:
+						case PrimitiveType::Float64:
+						case PrimitiveType::Int32:
+						case PrimitiveType::UInt32:
+							return true;
+					}
+
+					break;
+				}
+					
+				case PrimitiveType::Float64:
+				{
+					switch (from)
+					{
+						case PrimitiveType::Boolean:
+						case PrimitiveType::String:
+							return false;
+
+						case PrimitiveType::Float32:
+						case PrimitiveType::Float64:
+						case PrimitiveType::Int32:
+						case PrimitiveType::UInt32:
+							return true;
+					}
+
+					break;
+				}
+
+				case PrimitiveType::Int32:
+				{
+					switch (from)
+					{
+						case PrimitiveType::Boolean:
+						case PrimitiveType::String:
+							return false;
+
+						case PrimitiveType::Float32:
+						case PrimitiveType::Float64:
+						case PrimitiveType::Int32:
+						case PrimitiveType::UInt32:
+							return true;
+					}
+
+					break;
+				}
+
+				case PrimitiveType::UInt32:
+				{
+					switch (from)
+					{
+						case PrimitiveType::Boolean:
+						case PrimitiveType::String:
+							return false;
+
+						case PrimitiveType::Float32:
+						case PrimitiveType::Float64:
+						case PrimitiveType::Int32:
+						case PrimitiveType::UInt32:
+							return true;
+					}
+
+					break;
+				}
+			}
+
+			throw AstInternalError{ node.sourceLocation, "unexpected cast from " + Ast::ToString(from) + " to " + Ast::ToString(to) };
+		};
 
 		if (IsMatrixType(targetType))
 		{
@@ -4071,91 +4321,7 @@ namespace nzsl::Ast
 			PrimitiveType fromPrimitiveType = std::get<PrimitiveType>(resolvedFromType);
 			PrimitiveType targetPrimitiveType = std::get<PrimitiveType>(targetType);
 
-			bool areTypeCompatibles = [&]
-			{
-				switch (targetPrimitiveType)
-				{
-					case PrimitiveType::Boolean:
-					case PrimitiveType::String:
-						return false;
-
-					case PrimitiveType::Float32:
-					{
-						switch (fromPrimitiveType)
-						{
-							case PrimitiveType::Boolean:
-							case PrimitiveType::String:
-								return false;
-
-							case PrimitiveType::Float32:
-							case PrimitiveType::Float64:
-							case PrimitiveType::Int32:
-							case PrimitiveType::UInt32:
-								return true;
-						}
-
-						break;
-					}
-					
-					case PrimitiveType::Float64:
-					{
-						switch (fromPrimitiveType)
-						{
-							case PrimitiveType::Boolean:
-							case PrimitiveType::String:
-								return false;
-
-							case PrimitiveType::Float32:
-							case PrimitiveType::Float64:
-							case PrimitiveType::Int32:
-							case PrimitiveType::UInt32:
-								return true;
-						}
-
-						break;
-					}
-
-					case PrimitiveType::Int32:
-					{
-						switch (fromPrimitiveType)
-						{
-							case PrimitiveType::Boolean:
-							case PrimitiveType::String:
-								return false;
-
-							case PrimitiveType::Float32:
-							case PrimitiveType::Float64:
-							case PrimitiveType::Int32:
-							case PrimitiveType::UInt32:
-								return true;
-						}
-
-						break;
-					}
-
-					case PrimitiveType::UInt32:
-					{
-						switch (fromPrimitiveType)
-						{
-							case PrimitiveType::Boolean:
-							case PrimitiveType::String:
-								return false;
-
-							case PrimitiveType::Float32:
-							case PrimitiveType::Float64:
-							case PrimitiveType::Int32:
-							case PrimitiveType::UInt32:
-								return true;
-						}
-
-						break;
-					}
-				}
-
-				throw AstInternalError{ node.sourceLocation, "unexpected cast from " + Ast::ToString(fromPrimitiveType) + " to " + Ast::ToString(targetPrimitiveType) };
-			}();
-
-			if (!areTypeCompatibles)
+			if (!areTypeCompatibles(fromPrimitiveType, targetPrimitiveType))
 				throw CompilerCastIncompatibleTypesError{ node.expressions[0]->sourceLocation, ToString(targetType, node.sourceLocation), ToString(resolvedFromType, node.sourceLocation) };
 		}
 		else if (IsVectorType(targetType))
@@ -4191,9 +4357,20 @@ namespace nzsl::Ast
 				}
 				else if (IsVectorType(resolvedExprType))
 				{
-					PrimitiveType primitiveType = std::get<VectorType>(resolvedExprType).type;
-					if (primitiveType != targetBaseType)
-						throw CompilerCastIncompatibleBaseTypesError{ exprPtr->sourceLocation, ToString(targetBaseType, node.sourceLocation), ToString(primitiveType, exprPtr->sourceLocation) };
+					const VectorType& vecType = std::get<VectorType>(resolvedExprType);
+					PrimitiveType primitiveType = vecType.type;
+
+					// Conversion between base types (vec2[i32] => vec2[u32])
+					if (componentCount == 0 && requiredComponents == vecType.componentCount)
+					{
+						if (!areTypeCompatibles(primitiveType, targetBaseType))
+							throw CompilerCastIncompatibleTypesError{ exprPtr->sourceLocation, ToString(targetType, node.sourceLocation), ToString(resolvedExprType, node.sourceLocation) };
+					}
+					else
+					{
+						if (primitiveType != targetBaseType)
+							throw CompilerCastIncompatibleBaseTypesError{ exprPtr->sourceLocation, ToString(targetBaseType, node.sourceLocation), ToString(primitiveType, exprPtr->sourceLocation) };
+					}
 				}
 				else
 					throw CompilerCastIncompatibleTypesError{ exprPtr->sourceLocation, ToString(targetType, node.sourceLocation), ToString(resolvedExprType, exprPtr->sourceLocation) };
@@ -4739,7 +4916,7 @@ namespace nzsl::Ast
 					break;
 				}
 
-				case ParameterType::Texture:
+				case ParameterType::Sampler:
 				{
 					if (IsUnresolved(ValidateIntrinsicParameterType(node, IsSamplerType, "sampler type", paramIndex++)))
 						return ValidationResult::Unresolved;
@@ -4750,6 +4927,105 @@ namespace nzsl::Ast
 				case ParameterType::SameType:
 				{
 					if (IsUnresolved(ValidateIntrinsicParamMatchingType(node)))
+						return ValidationResult::Unresolved;
+
+					break;
+				}
+
+				case ParameterType::Texture:
+				{
+					if (IsUnresolved(ValidateIntrinsicParameterType(node, IsTextureType, "texture type", paramIndex++)))
+						return ValidationResult::Unresolved;
+
+					break;
+				}
+				
+				case ParameterType::TextureCoordinates:
+				{
+					// Special check: vector dimensions must match sample type
+					const TextureType& textureType = std::get<TextureType>(ResolveAlias(GetExpressionTypeSecure(*node.parameters[0])));
+					std::size_t requiredComponentCount = 0;
+					switch (textureType.dim)
+					{
+						case ImageType::E1D:
+							requiredComponentCount = 1;
+							break;
+
+						case ImageType::E1D_Array:
+						case ImageType::E2D:
+							requiredComponentCount = 2;
+							break;
+
+						case ImageType::E2D_Array:
+						case ImageType::E3D:
+						case ImageType::Cubemap:
+							requiredComponentCount = 3;
+							break;
+					}
+
+					if (requiredComponentCount == 0)
+						throw AstInternalError{ node.parameters[0]->sourceLocation, "unhandled texture dimensions" };
+
+					if (requiredComponentCount > 1)
+					{
+						// Vector coordinates
+						auto Check = [=](const ExpressionType& type)
+						{
+							if (!IsVectorType(type))
+								return false;
+
+							const VectorType& vectorType = std::get<VectorType>(type);
+							if (vectorType.componentCount != requiredComponentCount)
+								return false;
+
+							return vectorType.type == PrimitiveType::Int32;
+						};
+
+						char errMessage[] = "integer vector of X components";
+						assert(requiredComponentCount < 9);
+						errMessage[18] = Nz::SafeCast<char>('0' + requiredComponentCount);
+
+						if (IsUnresolved(ValidateIntrinsicParameterType(node, Check, errMessage, paramIndex++)))
+							return ValidationResult::Unresolved;
+					}
+					else
+					{
+						// Scalar coordinates
+						auto Check = [=](const ExpressionType& type)
+						{
+							if (!IsPrimitiveType(type))
+								return false;
+
+							PrimitiveType primitiveType = std::get<PrimitiveType>(type);
+							return primitiveType == PrimitiveType::Int32;
+						};
+
+						if (IsUnresolved(ValidateIntrinsicParameterType(node, Check, "integer value", paramIndex++)))
+							return ValidationResult::Unresolved;
+					}
+
+					break;
+				}
+
+				case ParameterType::TextureData:
+				{
+					// Special check: vector data
+					const TextureType& textureType = std::get<TextureType>(ResolveAlias(GetExpressionTypeSecure(*node.parameters[0])));
+
+					// Vector data
+					auto Check = [=](const ExpressionType& type)
+					{
+						if (!IsVectorType(type))
+							return false;
+
+						const VectorType& vectorType = std::get<VectorType>(type);
+						if (vectorType.componentCount != 4)
+							return false;
+
+						return vectorType.type == textureType.baseType;
+					};
+
+					if (IsUnresolved(ValidateIntrinsicParameterType(node, Check, "texture-type vector of 4 components", paramIndex++)))
 						return ValidationResult::Unresolved;
 
 					break;
@@ -4776,6 +5052,17 @@ namespace nzsl::Ast
 					node.cachedExpressionType = PrimitiveType::Float32;
 				else
 					node.cachedExpressionType = VectorType{ 4, samplerType.sampledType };
+				break;
+			}
+
+			case ReturnType::Param0TextureValue:
+			{
+				const ExpressionType& paramType = ResolveAlias(GetExpressionTypeSecure(*node.parameters[0]));
+				if (!IsTextureType(paramType))
+					throw AstInternalError{ node.sourceLocation, "intrinsic " + std::string(intrinsicData.functionName) + " first parameter is not a sampler" };
+
+				const TextureType& textureType = std::get<TextureType>(paramType);
+				node.cachedExpressionType = VectorType{ 4, textureType.baseType };
 				break;
 			}
 
@@ -4809,6 +5096,10 @@ namespace nzsl::Ast
 
 			case ReturnType::U32:
 				node.cachedExpressionType = ExpressionType{ PrimitiveType::UInt32 };
+				break;
+
+			case ReturnType::Void:
+				node.cachedExpressionType = ExpressionType{ NoType{} };
 				break;
 		}
 

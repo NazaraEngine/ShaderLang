@@ -105,12 +105,24 @@ namespace nzsl::Ast
 		return !operator==(rhs);
 	}
 	
+
 	inline bool StructType::operator==(const StructType& rhs) const
 	{
 		return structIndex == rhs.structIndex;
 	}
 
 	inline bool StructType::operator!=(const StructType& rhs) const
+	{
+		return !operator==(rhs);
+	}
+
+
+	inline bool TextureType::operator==(const TextureType& rhs) const
+	{
+		return accessPolicy == rhs.accessPolicy && format == rhs.format && dim == rhs.dim && baseType == rhs.baseType;
+	}
+
+	inline bool TextureType::operator!=(const TextureType& rhs) const
 	{
 		return !operator==(rhs);
 	}
@@ -219,6 +231,11 @@ namespace nzsl::Ast
 		return std::holds_alternative<StructType>(type);
 	}
 
+	bool IsTextureType(const ExpressionType& type)
+	{
+		return std::holds_alternative<TextureType>(type);
+	}
+
 	bool IsTypeExpression(const ExpressionType& type)
 	{
 		return std::holds_alternative<Type>(type);
@@ -249,6 +266,200 @@ namespace nzsl::Ast
 		else
 			return exprType;
 	}
+}
 
+namespace std
+{
+	template<>
+	struct hash<nzsl::Ast::NoType>
+	{
+		std::size_t operator()(const nzsl::Ast::NoType&) const
+		{
+			return 0;
+		}
+	};
+
+	template<>
+	struct hash<nzsl::Ast::AliasType>
+	{
+		std::size_t operator()(const nzsl::Ast::AliasType& aliasType) const
+		{
+			std::size_t h = 3;
+			Nz::HashCombine(h, aliasType.aliasIndex);
+			if (aliasType.targetType)
+				Nz::HashCombine(h, aliasType.targetType->type);
+
+			return h;
+		}
+	};
+
+	template<>
+	struct hash<nzsl::Ast::ArrayType>
+	{
+		std::size_t operator()(const nzsl::Ast::ArrayType& arrayType) const
+		{
+			std::size_t h = 3;
+			Nz::HashCombine(h, arrayType.length);
+			if (arrayType.containedType)
+				Nz::HashCombine(h, arrayType.containedType->type);
+
+			return h;
+		}
+	};
+
+	template<>
+	struct hash<nzsl::Ast::DynArrayType>
+	{
+		std::size_t operator()(const nzsl::Ast::DynArrayType& dynArrayType) const
+		{
+			std::size_t h = 3;
+			if (dynArrayType.containedType)
+				Nz::HashCombine(h, dynArrayType.containedType->type);
+
+			return h;
+		}
+	};
+
+	template<>
+	struct hash<nzsl::Ast::FunctionType>
+	{
+		std::size_t operator()(const nzsl::Ast::FunctionType& functionType) const
+		{
+			std::size_t h = 3;
+			Nz::HashCombine(h, functionType.funcIndex);
+
+			return h;
+		}
+	};
+
+	template<>
+	struct hash<nzsl::Ast::IntrinsicFunctionType>
+	{
+		std::size_t operator()(const nzsl::Ast::IntrinsicFunctionType& functionType) const
+		{
+			std::size_t h = 3;
+			Nz::HashCombine(h, functionType.intrinsic);
+
+			return h;
+		}
+	};
+
+	template<>
+	struct hash<nzsl::Ast::MatrixType>
+	{
+		std::size_t operator()(const nzsl::Ast::MatrixType& matrixType) const
+		{
+			std::size_t h = 3;
+			Nz::HashCombine(h, matrixType.columnCount);
+			Nz::HashCombine(h, matrixType.rowCount);
+			Nz::HashCombine(h, matrixType.type);
+
+			return h;
+		}
+	};
+
+	template<>
+	struct hash<nzsl::Ast::MethodType>
+	{
+		std::size_t operator()(const nzsl::Ast::MethodType& methodType) const
+		{
+			std::size_t h = 3;
+			Nz::HashCombine(h, methodType.methodIndex);
+			if (methodType.objectType)
+				Nz::HashCombine(h, methodType.objectType->type);
+
+			return h;
+		}
+	};
+
+	template<>
+	struct hash<nzsl::Ast::SamplerType>
+	{
+		std::size_t operator()(const nzsl::Ast::SamplerType& samplerType) const
+		{
+			std::size_t h = 3;
+			Nz::HashCombine(h, samplerType.depth);
+			Nz::HashCombine(h, samplerType.dim);
+			Nz::HashCombine(h, samplerType.sampledType);
+
+			return h;
+		}
+	};
+
+	template<>
+	struct hash<nzsl::Ast::StorageType>
+	{
+		std::size_t operator()(const nzsl::Ast::StorageType& storageType) const
+		{
+			std::size_t h = 3;
+			Nz::HashCombine(h, storageType.containedType.structIndex);
+
+			return h;
+		}
+	};
+
+	template<>
+	struct hash<nzsl::Ast::StructType>
+	{
+		std::size_t operator()(const nzsl::Ast::StructType& structType) const
+		{
+			std::size_t h = 3;
+			Nz::HashCombine(h, structType.structIndex);
+
+			return h;
+		}
+	};
+
+	template<>
+	struct hash<nzsl::Ast::TextureType>
+	{
+		std::size_t operator()(const nzsl::Ast::TextureType& textureType) const
+		{
+			std::size_t h = 3;
+			Nz::HashCombine(h, textureType.accessPolicy);
+			Nz::HashCombine(h, textureType.baseType);
+			Nz::HashCombine(h, textureType.dim);
+			Nz::HashCombine(h, textureType.format);
+
+			return h;
+		}
+	};
+
+	template<>
+	struct hash<nzsl::Ast::Type>
+	{
+		std::size_t operator()(const nzsl::Ast::Type& type) const
+		{
+			std::size_t h = 3;
+			Nz::HashCombine(h, type.typeIndex);
+
+			return h;
+		}
+	};
+
+	template<>
+	struct hash<nzsl::Ast::UniformType>
+	{
+		std::size_t operator()(const nzsl::Ast::UniformType& uniformType) const
+		{
+			std::size_t h = 3;
+			Nz::HashCombine(h, uniformType.containedType.structIndex);
+
+			return h;
+		}
+	};
+
+	template<>
+	struct hash<nzsl::Ast::VectorType>
+	{
+		std::size_t operator()(const nzsl::Ast::VectorType& vectorType) const
+		{
+			std::size_t h = 3;
+			Nz::HashCombine(h, vectorType.componentCount);
+			Nz::HashCombine(h, vectorType.type);
+
+			return h;
+		}
+	};
 }
 
