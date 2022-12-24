@@ -142,7 +142,7 @@ namespace nzsl
 {
 	using ShaderStageTypeFlags = Nz::Flags<nzsl::ShaderStageType>;
 
-	constexpr ShaderStageTypeFlags ShaderStageType_All = nzsl::ShaderStageType::Fragment | nzsl::ShaderStageType::Vertex;
+	constexpr ShaderStageTypeFlags ShaderStageType_All = nzsl::ShaderStageType::Compute | nzsl::ShaderStageType::Fragment | nzsl::ShaderStageType::Vertex;
 }
 
 #endif // NZSL_ENUMS_HPP
