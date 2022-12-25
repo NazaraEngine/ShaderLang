@@ -138,7 +138,7 @@ See [this issue](https://github.com/NazaraEngine/ShaderLang/issues/13) for WGSL.
 
 ## Are there limitations?
 
-Unfortunately yes, NZSL is in its early stage and is currently only capable of regular operations in fragment and vertex stages, not all intrinsics are supported, bit operators are not yet supported (see [#8](https://github.com/NazaraEngine/ShaderLang/issues/8)) and more.
+Unfortunately yes, NZSL is in its early stage and is currently only capable of regular operations in compute, fragment and vertex stages, not all intrinsics are supported, bit operators are not yet supported (see [#8](https://github.com/NazaraEngine/ShaderLang/issues/8)) and more.
 
 The reason isn't that it's complicated to add, but that I didn't need it yet. Most feature can be added quite fast so do not hesitate to [open an issue](https://github.com/NazaraEngine/ShaderLang/issues) and/or check the [roadmap](https://github.com/NazaraEngine/ShaderLang/projects/1).
 
