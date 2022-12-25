@@ -808,13 +808,14 @@ namespace nzsl
 		}
 
 		// Write execution modes
-		for (auto&& [funcIndex, func] : m_currentState->funcs)
+		for (auto&& [funcIndex, funcData] : m_currentState->funcs)
 		{
-			if (func.entryPointData)
+			if (funcData.entryPointData)
 			{
-				for (const auto& executionMode : func.entryPointData->executionModes)
+				for (const auto& executionMode : funcData.entryPointData->executionModes)
 				{
 					// Lambda can't capture bindings until C++20
+					const auto& func = funcData;
 					const auto& execMode = executionMode;
 
 					m_currentState->header.AppendVariadic(SpirvOp::OpExecutionMode, [&](const auto& appender)
