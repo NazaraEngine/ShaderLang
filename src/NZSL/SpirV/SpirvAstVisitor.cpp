@@ -1097,8 +1097,7 @@ namespace nzsl
 				}
 
 				case Ast::UnaryType::Plus:
-					PushResultId(operand); //< No-op
-					break;
+					return operand;
 			}
 
 			throw std::runtime_error("unexpected unary operation");

@@ -1005,4 +1005,65 @@ fn main()
       OpReturn
       OpFunctionEnd)", {}, true);
 	}
+
+	SECTION("Unary operators")
+	{
+		std::string_view nzslSource = R"(
+[nzsl_version("1.0")]
+module;
+
+[entry(frag)]
+fn main()
+{
+	let x = 42.0;
+	let y = -6.0;
+	let z = -y * +x;
+}
+)";
+
+		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
+		shaderModule = SanitizeModule(*shaderModule);
+
+		ExpectGLSL(*shaderModule, R"(
+void main()
+{
+	float x = 42.0;
+	float y = -6.0;
+	float z = (-y) * (+x);
+}
+)");
+
+		ExpectNZSL(*shaderModule, R"(
+[entry(frag)]
+fn main()
+{
+	let x: f32 = 42.0;
+	let y: f32 = -6.0;
+	let z: f32 = (-y) * (+x);
+}
+)");
+
+		ExpectSPIRV(*shaderModule, R"(
+ %1 = OpTypeVoid
+ %2 = OpTypeFunction %1
+ %3 = OpTypeFloat 32
+ %4 = OpConstant %3 f32(42)
+ %5 = OpTypePointer StorageClass(Function) %3
+ %6 = OpConstant %3 f32(6)
+ %7 = OpFunction %1 FunctionControl(0) %2
+ %8 = OpLabel
+ %9 = OpVariable %5 StorageClass(Function)
+%10 = OpVariable %5 StorageClass(Function)
+%11 = OpVariable %5 StorageClass(Function)
+      OpStore %9 %4
+%12 = OpFNegate %3 %6
+      OpStore %10 %12
+%13 = OpLoad %3 %10
+%14 = OpFNegate %3 %13
+%15 = OpLoad %3 %9
+%16 = OpFMul %3 %14 %15
+      OpStore %11 %16
+      OpReturn
+      OpFunctionEnd)", {}, true);
+	}
 }
