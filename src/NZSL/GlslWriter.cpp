@@ -2226,10 +2226,8 @@ namespace nzsl
 
 	void GlslWriter::Visit(Ast::ReturnStatement& node)
 	{
-		if (m_currentState->isInEntryPoint)
+		if (m_currentState->isInEntryPoint && node.returnExpr)
 		{
-			assert(node.returnExpr);
-
 			const Ast::ExpressionType* returnType = GetExpressionType(*node.returnExpr);
 			assert(returnType);
 			assert(IsStructType(*returnType));
@@ -2269,17 +2267,14 @@ namespace nzsl
 
 			Append("return;"); //< TODO: Don't return if it's the last statement of the function
 		}
-		else
+		else if (node.returnExpr)
 		{
-			if (node.returnExpr)
-			{
-				Append("return ");
-				node.returnExpr->Visit(*this);
-				Append(";");
-			}
-			else
-				Append("return;");
+			Append("return ");
+			node.returnExpr->Visit(*this);
+			Append(";");
 		}
+		else
+			Append("return;");
 	}
 
 	void GlslWriter::Visit(Ast::ScopedStatement& node)
