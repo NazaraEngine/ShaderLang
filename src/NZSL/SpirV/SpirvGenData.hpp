@@ -77,6 +77,7 @@ namespace nzsl::SpirvGenData
 		{ Ast::IntrinsicType::Cosh,                              { SpirvGlslStd450Op::Cosh } },
 		{ Ast::IntrinsicType::CrossProduct,                      { SpirvGlslStd450Op::Cross } },
 		{ Ast::IntrinsicType::DegToRad,                          { SpirvGlslStd450Op::Degrees } },
+		{ Ast::IntrinsicType::Distance,                          { SpirvGlslStd450Op::Distance } },
 		{ Ast::IntrinsicType::DotProduct,                        { SpirvOp::OpDot } },
 		{ Ast::IntrinsicType::Exp,                               { SpirvGlslStd450Op::Exp } },
 		{ Ast::IntrinsicType::Exp2,                              { SpirvGlslStd450Op::Exp2 } },
