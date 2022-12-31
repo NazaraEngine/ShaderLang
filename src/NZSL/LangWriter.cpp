@@ -1059,6 +1059,7 @@ namespace nzsl
 			case Ast::IntrinsicType::Cosh:
 			case Ast::IntrinsicType::CrossProduct:
 			case Ast::IntrinsicType::DegToRad:
+			case Ast::IntrinsicType::Distance:
 			case Ast::IntrinsicType::DotProduct:
 			case Ast::IntrinsicType::Exp:
 			case Ast::IntrinsicType::Exp2:

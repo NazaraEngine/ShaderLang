@@ -114,6 +114,7 @@ namespace nzsl::Ast
 		Cosh                              = 16,
 		CrossProduct                      = 0,
 		DegToRad                          = 37,
+		Distance                          = 46,
 		DotProduct                        = 1,
 		Exp                               = 7,
 		Exp2                              = 40,

@@ -801,6 +801,7 @@ namespace nzsl::Ast
 			case IntrinsicType::Cosh:
 			case IntrinsicType::CrossProduct:
 			case IntrinsicType::DegToRad:
+			case IntrinsicType::Distance:
 			case IntrinsicType::DotProduct:
 			case IntrinsicType::Exp:
 			case IntrinsicType::Exp2:
