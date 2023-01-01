@@ -511,8 +511,8 @@ namespace nzsl::Ast
 
 #include <NZSL/Ast/NodeList.hpp>
 
-	const ExpressionType& EnsureExpressionType(Expression& expr);
-	inline const ExpressionType* GetExpressionType(Expression& expr);
+	const ExpressionType& EnsureExpressionType(const Expression& expr);
+	inline const ExpressionType* GetExpressionType(const Expression& expr);
 	inline ExpressionType* GetExpressionTypeMut(Expression& expr);
 	inline bool IsExpression(NodeType nodeType);
 	inline bool IsStatement(NodeType nodeType);

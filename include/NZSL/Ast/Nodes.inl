@@ -6,7 +6,7 @@
 
 namespace nzsl::Ast
 {
-	inline const ExpressionType* GetExpressionType(Expression& expr)
+	inline const ExpressionType* GetExpressionType(const Expression& expr)
 	{
 		return (expr.cachedExpressionType) ? &expr.cachedExpressionType.value() : nullptr;
 	}

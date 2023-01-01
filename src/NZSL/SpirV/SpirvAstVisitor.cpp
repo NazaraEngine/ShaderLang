@@ -1217,6 +1217,57 @@ namespace nzsl
 		PushResultId(resultId);
 	}
 
+	void SpirvAstVisitor::BuildSelectIntrinsic(const Ast::IntrinsicExpression& node)
+	{
+		if (node.parameters.size() != 3)
+			throw std::runtime_error("ArraySize intrinsic: unexpected parameter count");
+
+		std::uint32_t resultTypeId = m_writer.GetTypeId(ResolveAlias(EnsureExpressionType(node)));
+
+		std::array<std::uint32_t, 3> parameterIds;
+		for (std::size_t i = 0; i < node.parameters.size(); ++i)
+			parameterIds[i] = EvaluateExpression(*node.parameters[i]);
+
+		const Ast::ExpressionType& condType = ResolveAlias(EnsureExpressionType(*node.parameters[0]));
+		const Ast::ExpressionType& paramType = ResolveAlias(EnsureExpressionType(*node.parameters[1]));
+		assert(paramType == ResolveAlias(EnsureExpressionType(*node.parameters[2])));
+
+		// OpSelect cannot select parameters using a single boolean before SPIR-V 1.4
+		if (!m_writer.IsVersionGreaterOrEqual(1, 4) && IsVectorType(paramType) && !IsVectorType(condType))
+		{
+			const Ast::VectorType& paramVec = std::get<Ast::VectorType>(paramType);
+			Ast::VectorType condVec{ paramVec.componentCount, Ast::PrimitiveType::Boolean };
+
+			std::uint32_t condVecId = m_writer.RegisterType(condVec);
+
+			std::uint32_t bVecId = m_writer.AllocateResultId();
+
+			m_currentBlock->AppendVariadic(SpirvOp::OpCompositeConstruct, [&](const auto& appender)
+			{
+				appender(condVecId);
+				appender(bVecId);
+
+				for (std::size_t i = 0; i < paramVec.componentCount; ++i)
+					appender(parameterIds[0]);
+			});
+
+			parameterIds[0] = bVecId;
+		}
+
+		std::uint32_t resultId = m_writer.AllocateResultId();
+
+		m_currentBlock->AppendVariadic(SpirvOp::OpSelect, [&](auto&& append)
+		{
+			append(resultTypeId);
+			append(resultId);
+
+			for (std::uint32_t parameterId : parameterIds)
+				append(parameterId);
+		});
+
+		PushResultId(resultId);
+	}
+
 	SpirvGlslStd450Op SpirvAstVisitor::SelectAbs(const Ast::IntrinsicExpression& node)
 	{
 		if (node.parameters.size() != 1)

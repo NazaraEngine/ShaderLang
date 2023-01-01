@@ -822,6 +822,7 @@ namespace nzsl::Ast
 			case IntrinsicType::Reflect:
 			case IntrinsicType::Round:
 			case IntrinsicType::RoundEven:
+			case IntrinsicType::Select:
 			case IntrinsicType::Sign:
 			case IntrinsicType::Sin:
 			case IntrinsicType::Sinh:
