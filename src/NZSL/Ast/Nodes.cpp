@@ -25,7 +25,7 @@ namespace nzsl::Ast
 
 #include <NZSL/Ast/NodeList.hpp>
 
-	const ExpressionType& EnsureExpressionType(Expression& expr)
+	const ExpressionType& EnsureExpressionType(const Expression& expr)
 	{
 		const ExpressionType* exprType = GetExpressionType(expr);
 		if (!exprType)

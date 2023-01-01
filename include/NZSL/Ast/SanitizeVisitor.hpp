@@ -182,7 +182,8 @@ namespace nzsl::Ast
 			ExpressionType ValidateBinaryOp(BinaryType op, const ExpressionType& leftExprType, const ExpressionType& rightExprType, const SourceLocation& sourceLocation);
 			void ValidateConcreteType(const ExpressionType& exprType, const SourceLocation& sourceLocation);
 
-			ValidationResult ValidateIntrinsicParamMatchingType(IntrinsicExpression& node);
+			ValidationResult ValidateIntrinsicParamMatchingType(IntrinsicExpression& node, std::size_t from, std::size_t to);
+			ValidationResult ValidateIntrinsicParamMatchingVecComponent(IntrinsicExpression& node, std::size_t from, std::size_t to);
 			template<typename F> ValidationResult ValidateIntrinsicParameter(IntrinsicExpression& node, F&& func, std::size_t index);
 			template<typename F> ValidationResult ValidateIntrinsicParameterType(IntrinsicExpression& node, F&& func, const char* typeStr, std::size_t index);
 

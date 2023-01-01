@@ -97,6 +97,7 @@ namespace nzsl::LangData
 		enum class ParameterType
 		{
 			ArrayDyn,           // array or dyn_array
+			BValVec,            // Boolean value or vector of booleans
 			F32,                // Floating-point value of 32bits
 			FVal,               // Floating-point value
 			FValVec,            // Floating-point value or vector of floating-point
@@ -105,18 +106,23 @@ namespace nzsl::LangData
 			FVec3,              // Floating-point vector3
 			Matrix,             // Matrix (N*M)
 			MatrixSquare,       // Square matrix (N*N)
+			Numerical,          // Integer/Floating-point/Unsigned integer
+			NumericalVec,       // Numerical or vector of numerical
 			Sampler,            // sampler
 			SampleCoordinates,  // floating-point vector used to sample the texture parameter
-			Scalar,             // Integer/Floating-point/Unsigned integer
+			Scalar,             // Boolean/Integer/Floating-point/Unsigned integer
 			ScalarVec,          // Scalar or vector of scalar
-			SignedScalar,       // Integer/Floating-point value
-			SignedScalarVec,    // signed scalar or vector of signed scalar
+			SignedNumerical,    // Integer/Floating-point value
+			SignedNumericalVec, // signed numerical or vector of signed numerical
 			Texture,            // texture
 			TextureCoordinates, // integer vector used to sample the texture parameter
 			TextureData,        // texture content
 
 			// Constraints
-			SameType
+			SameType,
+			SameTypeBarrier,
+			SameVecComponentCount,
+			SameVecComponentCountBarrier,
 		};
 
 		enum class ReturnType
@@ -126,6 +132,7 @@ namespace nzsl::LangData
 			Param0Transposed,
 			Param0Type,
 			Param0VecComponent,
+			Param1Type,
 			U32,
 			Void
 		};
@@ -154,7 +161,7 @@ namespace nzsl::LangData
 		}
 
 		constexpr auto data = frozen::make_unordered_map<Ast::IntrinsicType, IntrinsicData>({
-			{ Ast::IntrinsicType::Abs,                               Build("abs",       ReturnType::Param0Type,         Params<ParameterType::SignedScalarVec>{}) },
+			{ Ast::IntrinsicType::Abs,                               Build("abs",       ReturnType::Param0Type,         Params<ParameterType::SignedNumericalVec>{}) },
 			{ Ast::IntrinsicType::ArcCos,                            Build("acos",      ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
 			{ Ast::IntrinsicType::ArcCosh,                           Build("acosh",     ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
 			{ Ast::IntrinsicType::ArcSin,                            Build("asin",      ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
@@ -182,15 +189,16 @@ namespace nzsl::LangData
 			{ Ast::IntrinsicType::Log2,                              Build("log2",      ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
 			{ Ast::IntrinsicType::MatrixInverse,                     Build("inverse",   ReturnType::Param0Type,         Params<ParameterType::MatrixSquare>{}) },
 			{ Ast::IntrinsicType::MatrixTranspose,                   Build("transpose", ReturnType::Param0Transposed,   Params<ParameterType::Matrix>{}) },
-			{ Ast::IntrinsicType::Max,                               Build("max",       ReturnType::Param0Type,         Params<ParameterType::ScalarVec, ParameterType::ScalarVec, ParameterType::SameType>{}) },
-			{ Ast::IntrinsicType::Min,                               Build("min",       ReturnType::Param0Type,         Params<ParameterType::ScalarVec, ParameterType::ScalarVec, ParameterType::SameType>{}) },
+			{ Ast::IntrinsicType::Max,                               Build("max",       ReturnType::Param0Type,         Params<ParameterType::NumericalVec, ParameterType::NumericalVec, ParameterType::SameType>{}) },
+			{ Ast::IntrinsicType::Min,                               Build("min",       ReturnType::Param0Type,         Params<ParameterType::NumericalVec, ParameterType::NumericalVec, ParameterType::SameType>{}) },
 			{ Ast::IntrinsicType::Normalize,                         Build("normalize", ReturnType::Param0Type,         Params<ParameterType::FVec>{}) },
 			{ Ast::IntrinsicType::Pow,                               Build("pow",       ReturnType::Param0Type,         Params<ParameterType::FValVec1632, ParameterType::FValVec1632, ParameterType::SameType>{}) },
 			{ Ast::IntrinsicType::RadToDeg,                          Build("rad2deg",   ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
 			{ Ast::IntrinsicType::Reflect,                           Build("reflect",   ReturnType::Param0Type,         Params<ParameterType::FVec3, ParameterType::FVec3, ParameterType::SameType>{}) },
 			{ Ast::IntrinsicType::Round,                             Build("round",     ReturnType::Param0Type,         Params<ParameterType::FValVec>{}) },
 			{ Ast::IntrinsicType::RoundEven,                         Build("roundeven", ReturnType::Param0Type,         Params<ParameterType::FValVec>{}) },
-			{ Ast::IntrinsicType::Sign,                              Build("sign",      ReturnType::Param0Type,         Params<ParameterType::SignedScalarVec>{}) },
+			{ Ast::IntrinsicType::Select,                            Build("select",    ReturnType::Param1Type,         Params<ParameterType::BValVec, ParameterType::SameTypeBarrier, ParameterType::ScalarVec, ParameterType::ScalarVec, ParameterType::SameType>{}) },
+			{ Ast::IntrinsicType::Sign,                              Build("sign",      ReturnType::Param0Type,         Params<ParameterType::SignedNumericalVec>{}) },
 			{ Ast::IntrinsicType::Sin,                               Build("sin",       ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
 			{ Ast::IntrinsicType::Sinh,                              Build("sinh",      ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
 			{ Ast::IntrinsicType::Sqrt,                              Build("sqrt",      ReturnType::Param0Type,         Params<ParameterType::FValVec>{}) },

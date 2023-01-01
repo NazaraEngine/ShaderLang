@@ -36,6 +36,34 @@ namespace nzsl
 		constexpr std::string_view s_glslWriterOutputPrefix = "_nzslOut_";
 		constexpr std::string_view s_glslWriterOutputVarName = "_nzslOutput";
 
+		bool IsIntegerMix(Ast::IntrinsicExpression& node)
+		{
+			const Ast::ExpressionType& exprType = ResolveAlias(EnsureExpressionType(*node.parameters[1]));
+
+			Ast::PrimitiveType type;
+			if (IsVectorType(exprType))
+				type = std::get<Ast::VectorType>(exprType).type;
+			else if (IsPrimitiveType(exprType))
+				type = std::get<Ast::PrimitiveType>(exprType);
+			else
+				return false;
+
+			switch (type)
+			{
+				case Ast::PrimitiveType::Float32:
+				case Ast::PrimitiveType::Float64:
+				case Ast::PrimitiveType::String:
+					break;
+
+				case Ast::PrimitiveType::Boolean:
+				case Ast::PrimitiveType::Int32:
+				case Ast::PrimitiveType::UInt32:
+					return true;
+			}
+
+			return false;
+		}
+
 		enum class GlslCapability
 		{
 			None = -1,
@@ -46,6 +74,7 @@ namespace nzsl
 			ShaderDrawParameters_BaseInstance, // GLSL 4.6 or GL_ARB_shader_draw_parameters
 			ShaderDrawParameters_BaseVertex,   // GLSL 4.6 or GL_ARB_shader_draw_parameters
 			ShaderDrawParameters_DrawIndex,    // GLSL 4.6 or GL_ARB_shader_draw_parameters
+			ShaderIntegerMix,                  // GLSL 4.5 or GLSL ES 3.1 or GL_EXT_shader_integer_mix
 			SSBO,                              // GLSL 4.3 or GLSL ES 3.1 or GL_ARB_shader_storage_buffer_object
 			Texture1D                          // GLSL non-ES
 		};
@@ -239,6 +268,15 @@ namespace nzsl
 				RecursiveVisitor::Visit(node);
 			}
 
+			void Visit(Ast::IntrinsicExpression& node) override
+			{
+				RecursiveVisitor::Visit(node);
+
+				// Detect select used on integer/booleans mix as they're a separate feature in GLSL
+				if (node.intrinsic == Ast::IntrinsicType::Select && IsIntegerMix(node))
+					capabilities.insert(GlslCapability::ShaderIntegerMix);
+			}
+
 			struct FunctionData
 			{
 				std::string name;
@@ -308,6 +346,7 @@ namespace nzsl
 		bool hasDrawParametersBaseInstanceUniform = false;
 		bool hasDrawParametersBaseVertexUniform = false;
 		bool hasDrawParametersDrawIndexUniform = false;
+		bool hasIntegerMix = false;
 		int streamEmptyLine = 1;
 		unsigned int indentLevel = 0;
 	};
@@ -994,6 +1033,18 @@ namespace nzsl
 							m_currentState->hasDrawParametersDrawIndexUniform = true;
 					}
 
+					break;
+				}
+
+				case GlslCapability::ShaderIntegerMix:
+				{
+					if ((m_environment.glES && glslVersion >= 310) || (!m_environment.glES && glslVersion >= 450))
+						m_currentState->hasIntegerMix = true;
+					else if (m_environment.extCallback && m_environment.extCallback("GL_EXT_shader_integer_mix"))
+					{
+						requiredExtensions.emplace("GL_EXT_shader_integer_mix");
+						m_currentState->hasIntegerMix = true;
+					}
 					break;
 				}
 
@@ -1749,6 +1800,84 @@ namespace nzsl
 			case Ast::IntrinsicType::TextureSampleImplicitLod: Append("texture");     break;
 			case Ast::IntrinsicType::TextureWrite:             Append("imageStore");  break;
 			case Ast::IntrinsicType::Trunc:                    Append("trunc");       break;
+
+			// select using mix (order of parameters)
+			case Ast::IntrinsicType::Select:
+			{
+				//FIXME: All of this should be handled as sanitization level, depending on integer mix support
+
+				const Ast::ExpressionType& condParamType = ResolveAlias(EnsureExpressionType(*node.parameters[0]));
+				const Ast::ExpressionType& firstParamType = ResolveAlias(EnsureExpressionType(*node.parameters[1]));
+				if (IsIntegerMix(node) && !m_currentState->hasIntegerMix)
+				{
+					if (IsVectorType(firstParamType))
+					{
+						const auto& targetType = ResolveAlias(EnsureExpressionType(node));
+						std::size_t componentCount = std::get<Ast::VectorType>(firstParamType).componentCount;
+
+						// Component-wise selection
+						auto AppendTernary = [&](std::size_t componentIndex)
+						{
+							const char* componentStr = "xyzw";
+
+							// Object selection
+							Append("(");
+							node.parameters[0]->Visit(*this);
+							if (IsVectorType(condParamType))
+								Append(".", componentStr[componentIndex]);
+							Append(") ? ");
+							node.parameters[1]->Visit(*this);
+							Append(".", componentStr[componentIndex]);
+							Append(" : ");
+							node.parameters[2]->Visit(*this);
+							Append(".", componentStr[componentIndex]);
+						};
+
+						Append(targetType, "(");
+						for (std::size_t i = 0; i < componentCount; ++i)
+						{
+							if (i != 0)
+								Append(", ");
+
+							AppendTernary(i);
+						}
+						Append(")");
+					}
+					else
+					{
+						// Object selection
+						Append("(");
+						node.parameters[0]->Visit(*this);
+						Append(") ? ");
+						node.parameters[1]->Visit(*this);
+						Append(" : ");
+						node.parameters[2]->Visit(*this);
+					}
+				}
+				else
+				{
+					Append("mix(");
+					node.parameters[1]->Visit(*this);
+					Append(", ");
+					node.parameters[2]->Visit(*this);
+					Append(", ");
+
+					// GLSL requires boolean vectors when selecting vectors
+					if (IsVectorType(firstParamType) && !IsVectorType(condParamType))
+					{
+						std::size_t componentCount = std::get<Ast::VectorType>(firstParamType).componentCount;
+
+						Append("bvec", componentCount, "(");
+						node.parameters[0]->Visit(*this);
+						Append(")");
+					}
+					else
+						node.parameters[0]->Visit(*this);
+
+					Append(")");
+				}
+				return;
+			}
 
 			// sampling of depth samplers
 			case Ast::IntrinsicType::TextureSampleImplicitLodDepthComp:

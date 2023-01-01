@@ -1080,6 +1080,7 @@ namespace nzsl
 			case Ast::IntrinsicType::Reflect:
 			case Ast::IntrinsicType::Round:
 			case Ast::IntrinsicType::RoundEven:
+			case Ast::IntrinsicType::Select:
 			case Ast::IntrinsicType::Sign:
 			case Ast::IntrinsicType::Sin:
 			case Ast::IntrinsicType::Sinh:

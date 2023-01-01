@@ -98,6 +98,7 @@ namespace nzsl::SpirvGenData
 		{ Ast::IntrinsicType::Reflect,                           { SpirvGlslStd450Op::Reflect } },
 		{ Ast::IntrinsicType::Round,                             { SpirvGlslStd450Op::Round } },
 		{ Ast::IntrinsicType::RoundEven,                         { SpirvGlslStd450Op::RoundEven } },
+		{ Ast::IntrinsicType::Select,                            { &SpirvAstVisitor::BuildSelectIntrinsic } },
 		{ Ast::IntrinsicType::Sign,                              { &SpirvAstVisitor::SelectSign } },
 		{ Ast::IntrinsicType::Sin,                               { SpirvGlslStd450Op::Sin } },
 		{ Ast::IntrinsicType::Sinh,                              { SpirvGlslStd450Op::Sinh } },

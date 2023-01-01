@@ -4546,6 +4546,8 @@ namespace nzsl::Ast
 		const auto& intrinsicData = intrinsicIt->second;
 
 		std::size_t paramIndex = 0;
+		std::size_t lastSameComponentCountBarrierIndex = 0;
+		std::size_t lastSameParamBarrierIndex = 0;
 		for (std::size_t i = 0; i < intrinsicData.parameterCount; ++i)
 		{
 			using namespace LangData::IntrinsicHelper;
@@ -4560,6 +4562,30 @@ namespace nzsl::Ast
 					};
 
 					if (IsUnresolved(ValidateIntrinsicParameterType(node, Check, "array/dyn-array", paramIndex++)))
+						return ValidationResult::Unresolved;
+
+					break;
+				}
+
+				case ParameterType::BValVec:
+				{
+					auto Check = [](const ExpressionType& type)
+					{
+						PrimitiveType primitiveType;
+						if (IsPrimitiveType(type))
+							primitiveType = std::get<PrimitiveType>(type);
+						else if (IsVectorType(type))
+							primitiveType = std::get<VectorType>(type).type;
+						else
+							return false;
+
+						if (primitiveType != PrimitiveType::Boolean)
+							return false;
+
+						return true;
+					};
+
+					if (IsUnresolved(ValidateIntrinsicParameterType(node, Check, "boolean value or vector", paramIndex++)))
 						return ValidationResult::Unresolved;
 
 					break;
@@ -4717,7 +4743,7 @@ namespace nzsl::Ast
 					break;
 				}
 
-				case ParameterType::Scalar:
+				case ParameterType::Numerical:
 				{
 					auto Check = [](const ExpressionType& type)
 					{
@@ -4748,7 +4774,41 @@ namespace nzsl::Ast
 
 					break;
 				}
-				
+
+				case ParameterType::NumericalVec:
+				{
+					auto Check = [](const ExpressionType& type)
+					{
+						PrimitiveType primitiveType;
+						if (IsPrimitiveType(type))
+							primitiveType = std::get<PrimitiveType>(type);
+						else if (IsVectorType(type))
+							primitiveType = std::get<VectorType>(type).type;
+						else
+							return false;
+
+						switch (primitiveType)
+						{
+							case PrimitiveType::Boolean:
+							case PrimitiveType::String:
+								break;
+
+							case PrimitiveType::Float32:
+							case PrimitiveType::Float64:
+							case PrimitiveType::Int32:
+							case PrimitiveType::UInt32:
+								return true;
+						}
+
+						return false;
+					};
+
+					if (IsUnresolved(ValidateIntrinsicParameterType(node, Check, "scalar value or vector", paramIndex++)))
+						return ValidationResult::Unresolved;
+
+					break;
+				}
+
 				case ParameterType::SampleCoordinates:
 				{
 					// Special check: vector dimensions must match sample type
@@ -4815,6 +4875,38 @@ namespace nzsl::Ast
 
 					break;
 				}
+				
+				case ParameterType::Scalar:
+				{
+					auto Check = [](const ExpressionType& type)
+					{
+						PrimitiveType primitiveType;
+						if (IsPrimitiveType(type))
+							primitiveType = std::get<PrimitiveType>(type);
+						else
+							return false;
+
+						switch (primitiveType)
+						{
+							case PrimitiveType::String:
+								break;
+
+							case PrimitiveType::Boolean:
+							case PrimitiveType::Float32:
+							case PrimitiveType::Float64:
+							case PrimitiveType::Int32:
+							case PrimitiveType::UInt32:
+								return true;
+						}
+
+						return false;
+					};
+
+					if (IsUnresolved(ValidateIntrinsicParameterType(node, Check, "scalar value or vector", paramIndex++)))
+						return ValidationResult::Unresolved;
+
+					break;
+				}
 
 				case ParameterType::ScalarVec:
 				{
@@ -4830,10 +4922,10 @@ namespace nzsl::Ast
 
 						switch (primitiveType)
 						{
-							case PrimitiveType::Boolean:
 							case PrimitiveType::String:
 								break;
 
+							case PrimitiveType::Boolean:
 							case PrimitiveType::Float32:
 							case PrimitiveType::Float64:
 							case PrimitiveType::Int32:
@@ -4850,7 +4942,7 @@ namespace nzsl::Ast
 					break;
 				}
 
-				case ParameterType::SignedScalar:
+				case ParameterType::SignedNumerical:
 				{
 					auto Check = [](const ExpressionType& type)
 					{
@@ -4882,7 +4974,7 @@ namespace nzsl::Ast
 					break;
 				}
 
-				case ParameterType::SignedScalarVec:
+				case ParameterType::SignedNumericalVec:
 				{
 					auto Check = [](const ExpressionType& type)
 					{
@@ -4926,10 +5018,30 @@ namespace nzsl::Ast
 
 				case ParameterType::SameType:
 				{
-					if (IsUnresolved(ValidateIntrinsicParamMatchingType(node)))
+					if (IsUnresolved(ValidateIntrinsicParamMatchingType(node, lastSameParamBarrierIndex, paramIndex)))
 						return ValidationResult::Unresolved;
 
 					break;
+				}
+
+				case ParameterType::SameTypeBarrier:
+				{
+					lastSameParamBarrierIndex = paramIndex;
+					break; //< Handled by SameType
+				}
+
+				case ParameterType::SameVecComponentCount:
+				{
+					if (IsUnresolved(ValidateIntrinsicParamMatchingVecComponent(node, lastSameComponentCountBarrierIndex, paramIndex)))
+						return ValidationResult::Unresolved;
+
+					break;
+				}
+
+				case ParameterType::SameVecComponentCountBarrier:
+				{
+					lastSameComponentCountBarrierIndex = paramIndex;
+					break; //< Handled by SameType
 				}
 
 				case ParameterType::Texture:
@@ -5082,7 +5194,11 @@ namespace nzsl::Ast
 			case ReturnType::Param0Type:
 				node.cachedExpressionType = GetExpressionTypeSecure(*node.parameters.front());
 				break;
-				
+
+			case ReturnType::Param1Type:
+				node.cachedExpressionType = GetExpressionTypeSecure(*node.parameters[1]);
+				break;
+
 			case ReturnType::Param0VecComponent:
 			{
 				const ExpressionType& paramType = ResolveAlias(GetExpressionTypeSecure(*node.parameters[0]));
@@ -5396,20 +5512,58 @@ namespace nzsl::Ast
 		}
 	}
 
-	auto SanitizeVisitor::ValidateIntrinsicParamMatchingType(IntrinsicExpression& node) -> ValidationResult
+	auto SanitizeVisitor::ValidateIntrinsicParamMatchingType(IntrinsicExpression& node, std::size_t from, std::size_t to) -> ValidationResult
 	{
-		const ExpressionType* firstParameterType = GetExpressionType(*node.parameters.front());
+		// Check if all types prior to this one matches their type
+		const ExpressionType* firstParameterType = GetExpressionType(*node.parameters[from]);
 		if (!firstParameterType)
 			return ValidationResult::Unresolved;
 
-		for (std::size_t i = 1; i < node.parameters.size(); ++i)
+		const ExpressionType& matchingType = ResolveAlias(*firstParameterType);
+
+		for (std::size_t i = from + 1; i < to; ++i)
 		{
 			const ExpressionType* parameterType = GetExpressionType(*node.parameters[i]);
 			if (!parameterType)
 				return ValidationResult::Unresolved;
 
-			if (ResolveAlias(*firstParameterType) != ResolveAlias(*parameterType))
-				throw CompilerIntrinsicUnmatchingParameterTypeError{ node.parameters[i]->sourceLocation };
+			if (matchingType != ResolveAlias(*parameterType))
+				throw CompilerIntrinsicUnmatchingParameterTypeError{ node.parameters[i]->sourceLocation, Nz::SafeCast<std::uint32_t>(from), Nz::SafeCast<std::uint32_t>(to) };
+		}
+
+		return ValidationResult::Validated;
+	}
+
+	auto SanitizeVisitor::ValidateIntrinsicParamMatchingVecComponent(IntrinsicExpression& node, std::size_t from, std::size_t to) -> ValidationResult
+	{
+		// Check if all types prior to this one matches their type
+		std::size_t componentCount = 0;
+		for (; from < to; ++from)
+		{
+			const ExpressionType* firstParameterType = GetExpressionType(*node.parameters[from]);
+			if (!firstParameterType)
+				return ValidationResult::Unresolved;
+
+			const ExpressionType& exprType = ResolveAlias(*firstParameterType);
+			if (!IsVectorType(exprType))
+				continue;
+
+			componentCount = std::get<VectorType>(exprType).componentCount;
+			break;
+		}
+
+		for (std::size_t i = from + 1; i < to; ++i)
+		{
+			const ExpressionType* parameterType = GetExpressionType(*node.parameters[i]);
+			if (!parameterType)
+				return ValidationResult::Unresolved;
+
+			const ExpressionType& exprType = ResolveAlias(*parameterType);
+			if (!IsVectorType(exprType))
+				continue;
+
+			if (componentCount != std::get<VectorType>(exprType).componentCount)
+				throw CompilerIntrinsicUnmatchingVecComponentError{ node.parameters[i]->sourceLocation, Nz::SafeCast<std::uint32_t>(from), Nz::SafeCast<std::uint32_t>(to) };
 		}
 
 		return ValidationResult::Validated;
