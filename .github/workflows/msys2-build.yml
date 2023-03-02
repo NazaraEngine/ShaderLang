@@ -4,7 +4,9 @@ on:
   pull_request:
   push:
     paths-ignore:
+      - '.github/workflows/android-build.yml'
       - '.github/workflows/coverage.yml'
+      - '.github/workflows/ios-build.yml'
       - '.github/workflows/linux-build.yml'
       - '.github/workflows/macos-build.yml'
       - '.github/workflows/wasm-build.yml'
