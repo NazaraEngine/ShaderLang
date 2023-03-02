@@ -1,0 +1,86 @@
+name: Android build
+
+on:
+  pull_request:
+  push:
+    paths-ignore:
+      - '.github/workflows/coverage.yml'
+      - '.github/workflows/ios-build.yml'
+      - '.github/workflows/linux-build.yml'
+      - '.github/workflows/macos-build.yml'
+      - '.github/workflows/msys2-build.yml'
+      - '.github/workflows/wasm-build.yml'
+      - '.github/workflows/windows-build.yml'
+      - '.gitignore'
+      - 'LICENSE'
+      - 'CHANGELOG.md'
+      - 'README.md'
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        arch: [armeabi-v7a, arm64-v8a]
+        ndk_sdkver: ["28"]
+
+    runs-on: ${{ matrix.os }}
+    if: "!contains(github.event.head_commit.message, 'ci skip')"
+
+    steps:
+    - name: Get current date as package key
+      id: cache_key
+      run: echo "key=$(date +'%W')" >> $GITHUB_OUTPUT
+
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    # Force xmake to a specific folder (for cache)
+    - name: Set xmake env
+      run: echo "XMAKE_GLOBALDIR=${{ runner.workspace }}/xmake-global" >> $GITHUB_ENV
+
+    # Install xmake
+    - name: Setup xmake
+      uses: xmake-io/github-action-setup-xmake@v1
+      with:
+        actions-cache-folder: .xmake-cache-W${{ steps.cache_key.outputs.key }}
+
+    # Setup NDK
+    - name: Download NDK
+      run: |
+        wget -q https://dl.google.com/android/repository/android-ndk-r25c-linux.zip
+        unzip -q -o ./android-ndk-r25c-linux.zip
+
+    # Update xmake repository (in order to have the file that will be cached)
+    - name: Update xmake repository
+      run: xmake repo --update
+
+    # Fetch xmake dephash
+    - name: Retrieve dependencies hash
+      id: dep_hash
+      run: echo "hash=$(xmake l utils.ci.packageskey)" >> $GITHUB_OUTPUT
+
+    # Cache xmake dependencies
+    - name: Retrieve cached xmake dependencies
+      uses: actions/cache@v3
+      with:
+        path: ${{ env.XMAKE_GLOBALDIR }}/.xmake/packages
+        key: Android-${{ matrix.ndk_sdkver }}-${{ matrix.arch }}-${{ matrix.mode }}-${{ steps.dep_hash.outputs.hash }}-W${{ steps.cache_key.outputs.key }}
+
+    # Setup compilation mode and install project dependencies
+    - name: Configure xmake and install dependencies
+      run: xmake config --tests=y --plat=android --ndk=`pwd`/android-ndk-r25c --ndk_sdkver=${{ matrix.ndk_sdkver }} --arch=${{ matrix.arch }} --mode=${{ matrix.mode }} --ccache=n --yes
+
+    # Build library
+    - name: Build library
+      run: xmake
+
+    # Install the result files
+    - name: Install NazaraUtils
+      run: xmake install -vo package
+
+    # Upload artifacts
+    - uses: actions/upload-artifact@v3
+      with:
+        name: nazarautils-Android-${{ matrix.ndk_sdkver }}-${{ matrix.arch }}-${{ matrix.mode }}
+        path: package
