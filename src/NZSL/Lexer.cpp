@@ -176,7 +176,7 @@ namespace nzsl
 							currentPos++;
 							next = Peek();
 						}
-						while (next != -1 && next != '\n');
+						while (next != '\0' && next != '\n');
 					}
 					else if (next == '*')
 					{
@@ -198,7 +198,7 @@ namespace nzsl
 							else if (next == '\n')
 								HandleNewLine();
 						}
-						while (next != -1);
+						while (next != '\0');
 					}
 					else if (next == '=')
 					{
