@@ -103,6 +103,24 @@ namespace nzsl
 
 		struct GlslWriterPreVisitor : Ast::RecursiveVisitor
 		{
+			void RegisterPrecisionQualifiers(const Ast::ExpressionType& type)
+			{
+				if (IsSamplerType(type))
+					requiredPrecisionQualifiers.insert(type);
+				else if (IsTextureType(type))
+				{
+					// access qualifiers and format are not part of the type in GLSL, so uniformise them to prevent multiple declarations
+					Ast::TextureType textureType = std::get<Ast::TextureType>(type);
+					textureType.accessPolicy = AccessPolicy::ReadWrite;
+					textureType.format = ImageFormat::Unknown;
+					requiredPrecisionQualifiers.insert(textureType);
+				}
+				else if (IsArrayType(type))
+					RegisterPrecisionQualifiers(std::get<Ast::ArrayType>(type).containedType->type);
+				else if (IsDynArrayType(type))
+					RegisterPrecisionQualifiers(std::get<Ast::DynArrayType>(type).containedType->type);
+			}
+
 			void Resolve()
 			{
 				usedStructs.Resize(bufferStructs.GetSize());
@@ -150,16 +168,8 @@ namespace nzsl
 					}
 					else if (IsUniformType(type))
 						bufferStructs.UnboundedSet(std::get<Ast::UniformType>(type).containedType.structIndex);
-					else if (IsSamplerType(type))
-						requiredPrecisionQualifiers.insert(type);
-					else if (IsTextureType(type))
-					{
-						// access qualifiers and format are not part of the type in GLSL, so uniformise them to prevent multiple declarations
-						Ast::TextureType textureType = std::get<Ast::TextureType>(type);
-						textureType.accessPolicy = AccessPolicy::ReadWrite;
-						textureType.format = ImageFormat::Unknown;
-						requiredPrecisionQualifiers.insert(textureType);
-					}
+					else
+						RegisterPrecisionQualifiers(type);
 				}
 
 				RecursiveVisitor::Visit(node);
