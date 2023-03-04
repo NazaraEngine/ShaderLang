@@ -1,5 +1,5 @@
-if is_plat("wasm") then
-	-- SFML is not supported with Emscripten
+if is_plat("android", "iphoneos", "wasm") then
+	-- the sfml does not support emscripten nor mobile for now
 	return
 end
 

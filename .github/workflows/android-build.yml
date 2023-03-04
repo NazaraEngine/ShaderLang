@@ -69,7 +69,7 @@ jobs:
 
     # Setup compilation mode and install project dependencies
     - name: Configure xmake and install dependencies
-      run: xmake config --tests=y --plat=android --ndk=`pwd`/android-ndk-r25c --ndk_sdkver=${{ matrix.ndk_sdkver }} --arch=${{ matrix.arch }} --mode=${{ matrix.mode }} --ccache=n --yes
+      run: xmake config --tests=y --plat=android --ndk=`pwd`/android-ndk-r25c --ndk_sdkver=${{ matrix.ndk_sdkver }} --arch=${{ matrix.arch }} --mode=${{ matrix.mode }} --ccache=n --fs_watcher=n --tests=n --yes
 
     # Build library
     - name: Build library
