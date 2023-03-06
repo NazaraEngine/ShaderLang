@@ -2074,7 +2074,7 @@ namespace nzsl
 
 			const Ast::ExpressionType& exprType = externalVar.type.GetResultingValue();
 			
-			bool isUniformOrStorageBuffer = IsStorageType(exprType) || IsUniformType(exprType);
+			bool isUniformOrStorageBuffer = IsStorageType(exprType) || IsUniformType(exprType) || IsPushConstantType(exprType); // Push constants are considered as uniform buffers
 
 			bool isStd140 = false;
 			if (isUniformOrStorageBuffer)
@@ -2084,6 +2084,8 @@ namespace nzsl
 					structIndex = std::get<Ast::StorageType>(exprType).containedType.structIndex;
 				else if (IsUniformType(exprType))
 					structIndex = std::get<Ast::UniformType>(exprType).containedType.structIndex;
+				else if (IsPushConstantType(exprType))
+					structIndex = std::get<Ast::PushConstantType>(exprType).containedType.structIndex;
 				else
 					throw std::runtime_error("unexpected type");
 				
@@ -2182,7 +2184,14 @@ namespace nzsl
 
 				EnterScope();
 				{
-					std::size_t structIndex = (IsStorageType(exprType)) ? std::get<Ast::StorageType>(exprType).containedType.structIndex : std::get<Ast::UniformType>(exprType).containedType.structIndex;
+					std::size_t structIndex;
+					if (IsStorageType(exprType))
+						structIndex = std::get<Ast::StorageType>(exprType).containedType.structIndex;
+					else if (IsUniformType(exprType))
+						structIndex = std::get<Ast::UniformType>(exprType).containedType.structIndex;
+					else if (IsPushConstantType(exprType))
+						structIndex = std::get<Ast::PushConstantType>(exprType).containedType.structIndex;
+
 					const auto& structData = Nz::Retrieve(m_currentState->structs, structIndex);
 
 					bool first = true;

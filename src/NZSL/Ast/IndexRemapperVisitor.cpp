@@ -363,7 +363,7 @@ namespace nzsl::Ast
 				return exprType;
 
 			PushConstantType pushConstantType;
-			pushConstantType.containedType.structIndex = Nz::Retrieve(m_context->newStructIndices, std::get<PushConstantTypeType>(exprType).containedType.structIndex);
+			pushConstantType.containedType.structIndex = Nz::Retrieve(m_context->newStructIndices, std::get<PushConstantType>(exprType).containedType.structIndex);
 			return pushConstantType;
 		}
 		else

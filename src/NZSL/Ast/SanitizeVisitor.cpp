@@ -3272,6 +3272,24 @@ namespace nzsl::Ast
 			}
 		}, std::nullopt, {});
 
+		// push constant
+		RegisterType("push_constant", PartialType {
+			{ TypeParameterCategory::StructType }, {},
+			[=](const TypeParameter* parameters, [[maybe_unused]] std::size_t parameterCount, const SourceLocation& /*sourceLocation*/) -> ExpressionType
+			{
+				assert(parameterCount == 1);
+				assert(std::holds_alternative<ExpressionType>(*parameters));
+
+				const ExpressionType& exprType = std::get<ExpressionType>(*parameters);
+				assert(IsStructType(exprType));
+
+				StructType structType = std::get<StructType>(exprType);
+				return PushConstantType {
+					structType
+				};
+			}
+		}, std::nullopt, {});
+
 		// Intrinsics
 		for (const auto& [intrinsic, data] : LangData::s_intrinsicData)
 		{

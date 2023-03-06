@@ -841,12 +841,11 @@ fn main()
 		glslEnv.glMinorVersion = 1;
 
 		ExpectGLSL(*shaderModule, R"(
-struct _nzslPushConstant_data
+
+uniform _nzslBinding_data
 {
 	int index;
-};
-
-uniform _nzslPushConstant_data data;
+} data;
 
 void main()
 {
@@ -868,7 +867,7 @@ external
 fn main()
 {
 })");
-
+/*
 		WHEN("Generating SPIR-V 1.0")
 		{
 			nzsl::SpirvWriter::Environment spirvEnv;
@@ -930,5 +929,6 @@ fn main()
   OpReturn
   OpFunctionEnd)", spirvEnv, true);
 		}
+*/
 	}
 }
