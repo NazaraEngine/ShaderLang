@@ -227,11 +227,6 @@ namespace nzsl::Ast
 		return std::holds_alternative<PrimitiveType>(type);
 	}
 
-	bool IsPushConstantType(const ExpressionType& type)
-	{
-		return std::holds_alternative<PushConstantType>(type);
-	}
-
 	inline bool IsSamplerType(const ExpressionType& type)
 	{
 		return std::holds_alternative<SamplerType>(type);
@@ -260,6 +255,11 @@ namespace nzsl::Ast
 	bool IsUniformType(const ExpressionType& type)
 	{
 		return std::holds_alternative<UniformType>(type);
+	}
+
+	bool IsPushConstantType(const ExpressionType& type)
+	{
+		return std::holds_alternative<PushConstantType>(type);
 	}
 
 	bool IsVectorType(const ExpressionType& type)

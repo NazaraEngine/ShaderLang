@@ -727,6 +727,11 @@ namespace nzsl
 		throw std::runtime_error("unexpected UniformType");
 	}
 
+	void GlslWriter::Append(const Ast::PushConstantType& pushConstantType)
+	{
+		Append(pushConstantType.containedType);
+	}
+
 	void GlslWriter::Append(const Ast::VectorType& vecType)
 	{
 		switch (vecType.type)
@@ -2074,7 +2079,7 @@ namespace nzsl
 
 			const Ast::ExpressionType& exprType = externalVar.type.GetResultingValue();
 			
-			bool isUniformOrStorageBuffer = IsStorageType(exprType) || IsUniformType(exprType) || IsPushConstantType(exprType); // Push constants are considered as uniform buffers
+			bool isUniformOrStorageBuffer = IsStorageType(exprType) || IsUniformType(exprType);
 
 			bool isStd140 = false;
 			if (isUniformOrStorageBuffer)

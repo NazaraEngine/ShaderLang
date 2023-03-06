@@ -1344,16 +1344,17 @@ namespace nzsl::Ast
 		for (std::size_t i = 0; i < clone->externalVars.size(); ++i)
 		{
 			auto& extVar = clone->externalVars[i];
+			
+			bool shouldThrowBindingError = false;
 
 			if (extVar.bindingSet.HasValue())
 				ComputeExprValue(extVar.bindingSet, node.sourceLocation);
 			else if (defaultBlockSet)
 				extVar.bindingSet = *defaultBlockSet;
-
 			if (!extVar.bindingIndex.HasValue())
 			{
 				if (hasAutoBinding == false)
-					throw CompilerExtMissingBindingIndexError{ extVar.sourceLocation };
+					shouldThrowBindingError = true;
 				else if (hasAutoBinding == true && extVar.bindingSet.IsResultingValue())
 				{
 					// Don't resolve binding indices (?) when performing a partial compilation
@@ -1397,13 +1398,16 @@ namespace nzsl::Ast
 						varType = targetType;
 				}
 			}
-			else if (IsUniformType(targetType) || IsStorageType(targetType) || IsSamplerType(targetType) || IsTextureType(targetType))
+			else if (IsUniformType(targetType) || IsStorageType(targetType) || IsSamplerType(targetType) || IsTextureType(targetType) || IsPushConstantType(targetType))
 				varType = targetType;
 			else if (IsPrimitiveType(targetType) || IsVectorType(targetType) || IsMatrixType(targetType))
 			{
 				if (IsFeatureEnabled(ModuleFeature::PrimitiveExternals))
 					varType = targetType;
 			}
+
+			if(shouldThrowBindingError && !IsPushConstantType(targetType))
+				throw CompilerExtMissingBindingIndexError{ extVar.sourceLocation };
 			
 			if (IsNoType(varType))
 				throw CompilerExtTypeNotAllowedError{ extVar.sourceLocation, extVar.name, ToString(*resolvedType, extVar.sourceLocation) };

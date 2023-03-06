@@ -836,21 +836,18 @@ fn main()
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
 		shaderModule = SanitizeModule(*shaderModule);
 
-		nzsl::GlslWriter::Environment glslEnv;
-		glslEnv.glMajorVersion = 3;
-		glslEnv.glMinorVersion = 1;
-
 		ExpectGLSL(*shaderModule, R"(
-
-uniform _nzslBinding_data
+struct Data
 {
 	int index;
-} data;
+};
+
+uniform Data data;
 
 void main()
 {
 }
-)", glslEnv);
+)");
 
 		ExpectNZSL(*shaderModule, R"(
 struct Data

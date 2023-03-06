@@ -310,6 +310,11 @@ namespace nzsl::Ast
 		return uniformType.containedType.structIndex;
 	}
 
+	std::size_t ResolveStructIndex(const PushConstantType& pushConstantType)
+	{
+		return pushConstantType.containedType.structIndex;
+	}
+
 	std::string ToString(const AliasType& type, const Stringifier& stringifier)
 	{
 		if (stringifier.aliasStringifier)
@@ -380,6 +385,11 @@ namespace nzsl::Ast
 		}
 
 		return "<unhandled primitive type>";
+	}
+
+	std::string ToString(const PushConstantType& type, const Stringifier& stringifier)
+	{
+		return fmt::format("push_constant[{}]", ToString(type.containedType, stringifier));
 	}
 
 	std::string ToString(const SamplerType& type, const Stringifier& /*stringifier*/)

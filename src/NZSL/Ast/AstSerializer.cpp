@@ -621,6 +621,11 @@ namespace nzsl::Ast
 				m_serializer.Serialize(std::uint8_t(6));
 				SizeT(arg.containedType.structIndex);
 			}
+			else if constexpr (std::is_same_v<T, PushConstantType>)
+			{
+				m_serializer.Serialize(std::uint8_t(6));
+				SizeT(arg.containedType.structIndex);
+			}
 			else if constexpr (std::is_same_v<T, VectorType>)
 			{
 				m_serializer.Serialize(std::uint8_t(7));
