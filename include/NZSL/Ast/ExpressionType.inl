@@ -170,6 +170,17 @@ namespace nzsl::Ast
 		return !operator==(rhs);
 	}
 
+
+	inline bool PushConstantType::operator==(const PushConstantType& rhs) const
+	{
+		return containedType == rhs.containedType;
+	}
+
+	inline bool PushConstantType::operator!=(const PushConstantType& rhs) const
+	{
+		return !operator==(rhs);
+	}
+
 	
 	inline bool IsAliasType(const ExpressionType& type)
 	{
@@ -214,6 +225,11 @@ namespace nzsl::Ast
 	inline bool IsPrimitiveType(const ExpressionType& type)
 	{
 		return std::holds_alternative<PrimitiveType>(type);
+	}
+
+	bool IsPushConstantType(const ExpressionType& type)
+	{
+		return std::holds_alternative<PushConstantType>(type);
 	}
 
 	inline bool IsSamplerType(const ExpressionType& type)
@@ -367,6 +383,18 @@ namespace std
 			Nz::HashCombine(h, methodType.methodIndex);
 			if (methodType.objectType)
 				Nz::HashCombine(h, methodType.objectType->type);
+
+			return h;
+		}
+	};
+
+	template<>
+	struct hash<nzsl::Ast::PushConstantType>
+	{
+		std::size_t operator()(const nzsl::Ast::PushConstantType& pushConstantType) const
+		{
+			std::size_t h = 3;
+			Nz::HashCombine(h, pushConstantType.containedType.structIndex);
 
 			return h;
 		}

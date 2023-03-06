@@ -206,7 +206,15 @@ namespace nzsl::Ast
 		inline bool operator!=(const UniformType& rhs) const;
 	};
 
-	using ExpressionType = std::variant<NoType, AliasType, ArrayType, DynArrayType, FunctionType, IntrinsicFunctionType, MatrixType, MethodType, PrimitiveType, SamplerType, StorageType, StructType, TextureType, Type, UniformType, VectorType>;
+	struct PushConstantType
+	{
+		StructType containedType;
+
+		inline bool operator==(const PushConstantType& rhs) const;
+		inline bool operator!=(const PushConstantType& rhs) const;
+	};
+
+	using ExpressionType = std::variant<NoType, AliasType, ArrayType, DynArrayType, FunctionType, IntrinsicFunctionType, MatrixType, MethodType, PrimitiveType, PushConstantType, SamplerType, StorageType, StructType, TextureType, Type, UniformType, VectorType>;
 
 	struct ContainedType
 	{

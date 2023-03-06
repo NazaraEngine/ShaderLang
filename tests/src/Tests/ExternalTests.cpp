@@ -810,4 +810,125 @@ fn main()
 })");
 		}
 	}
+
+	SECTION("Push constant generation")
+	{
+		std::string_view nzslSource = R"(
+[nzsl_version("1.0")]
+module;
+
+struct Data
+{
+	index : i32
+}
+
+external
+{
+	data: push_constant[Data]
+}
+
+[entry(frag)]
+fn main()
+{
+}
+)";
+
+		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
+		shaderModule = SanitizeModule(*shaderModule);
+
+		nzsl::GlslWriter::Environment glslEnv;
+		glslEnv.glMajorVersion = 3;
+		glslEnv.glMinorVersion = 1;
+
+		ExpectGLSL(*shaderModule, R"(
+struct _nzslPushConstant_data
+{
+	int index;
+};
+
+uniform _nzslPushConstant_data data;
+
+void main()
+{
+}
+)", glslEnv);
+
+		ExpectNZSL(*shaderModule, R"(
+struct Data
+{
+	index : i32
+}
+
+external
+{
+	data: push_constant[Data]
+}
+
+[entry(frag)]
+fn main()
+{
+})");
+
+		WHEN("Generating SPIR-V 1.0")
+		{
+			nzsl::SpirvWriter::Environment spirvEnv;
+			ExpectSPIRV(*shaderModule, R"(
+%1 = OpTypeFloat 32
+%2 = OpTypeInt 32 0
+%4 = OpTypeArray %1 %3
+%5 = OpTypeStruct %4
+%6 = OpTypeArray %1 %3
+%7 = OpTypeStruct %6
+%8 = OpTypePointer StorageClass(PushConstant) %7
+%10 = OpTypeVoid
+%11 = OpTypeFunction %10
+%12 = OpTypeInt 32 1
+%15 = OpTypePointer StorageClass(Function) %1
+%19 = OpTypePointer StorageClass(Uniform) %1
+%9 = OpVariable %8 StorageClass(Uniform)
+%16 = OpFunction %10 FunctionControl(0) %11
+%17 = OpLabel
+  OpReturn
+  OpFunctionEnd)", spirvEnv, true);
+		}
+
+		WHEN("Generating SPIR-V 1.3")
+		{
+			nzsl::SpirvWriter::Environment spirvEnv;
+			spirvEnv.spvMajorVersion = 1;
+			spirvEnv.spvMinorVersion = 3;
+
+			ExpectSPIRV(*shaderModule, R"(
+  OpDecorate %9 Decoration(Binding) 0
+  OpDecorate %9 Decoration(DescriptorSet) 0
+  OpMemberDecorate %5 0 Decoration(Offset) 0
+  OpDecorate %6 Decoration(ArrayStride) 16
+  OpDecorate %7 Decoration(Block)
+  OpMemberDecorate %7 0 Decoration(Offset) 0
+%1 = OpTypeFloat 32
+%2 = OpTypeInt 32 0
+%3 = OpConstant %2 u32(47)
+%4 = OpTypeArray %1 %3
+%5 = OpTypeStruct %4
+%6 = OpTypeArray %1 %3
+%7 = OpTypeStruct %6
+%8 = OpTypePointer StorageClass(StorageBuffer) %7
+%10 = OpTypeVoid
+%11 = OpTypeFunction %10
+%12 = OpTypeInt 32 1
+%13 = OpConstant %12 i32(0)
+%14 = OpConstant %12 i32(42)
+%15 = OpTypePointer StorageClass(Function) %1
+%19 = OpTypePointer StorageClass(StorageBuffer) %1
+%9 = OpVariable %8 StorageClass(StorageBuffer)
+%16 = OpFunction %10 FunctionControl(0) %11
+%17 = OpLabel
+%18 = OpVariable %15 StorageClass(Function)
+%20 = OpAccessChain %19 %9 %13 %14
+%21 = OpLoad %1 %20
+  OpStore %18 %21
+  OpReturn
+  OpFunctionEnd)", spirvEnv, true);
+		}
+	}
 }
