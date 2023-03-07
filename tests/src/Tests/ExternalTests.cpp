@@ -846,13 +846,14 @@ uniform Data data;
 
 void main()
 {
+
 }
 )");
 
 		ExpectNZSL(*shaderModule, R"(
 struct Data
 {
-	index : i32
+	index: i32
 }
 
 external
@@ -863,31 +864,26 @@ external
 [entry(frag)]
 fn main()
 {
+
 })");
-/*
+
 		WHEN("Generating SPIR-V 1.0")
 		{
 			nzsl::SpirvWriter::Environment spirvEnv;
 			ExpectSPIRV(*shaderModule, R"(
-%1 = OpTypeFloat 32
-%2 = OpTypeInt 32 0
-%4 = OpTypeArray %1 %3
-%5 = OpTypeStruct %4
-%6 = OpTypeArray %1 %3
-%7 = OpTypeStruct %6
-%8 = OpTypePointer StorageClass(PushConstant) %7
-%10 = OpTypeVoid
-%11 = OpTypeFunction %10
-%12 = OpTypeInt 32 1
-%15 = OpTypePointer StorageClass(Function) %1
-%19 = OpTypePointer StorageClass(Uniform) %1
-%9 = OpVariable %8 StorageClass(Uniform)
-%16 = OpFunction %10 FunctionControl(0) %11
-%17 = OpLabel
+%1 = OpTypeInt 32 0
+%2 = OpTypeStruct %1
+%3 = OpTypePointer StorageClass(PushConstant) %2
+%4 = OpTypeVoid
+%5 = OpTypeFunction %4
+%6 = OpTypeInt 32 1
+%7 = OpVariable %3 StorageClass(PushConstant)
+%8 = OpFunction %4 FunctionControl(0) %5
+%9 = OpLabel
   OpReturn
   OpFunctionEnd)", spirvEnv, true);
 		}
-
+/*
 		WHEN("Generating SPIR-V 1.3")
 		{
 			nzsl::SpirvWriter::Environment spirvEnv;
