@@ -871,57 +871,17 @@ fn main()
 		{
 			nzsl::SpirvWriter::Environment spirvEnv;
 			ExpectSPIRV(*shaderModule, R"(
-%1 = OpTypeInt 32 0
-%2 = OpTypeStruct %1
-%3 = OpTypePointer StorageClass(PushConstant) %2
-%4 = OpTypeVoid
-%5 = OpTypeFunction %4
-%6 = OpTypeInt 32 1
-%7 = OpVariable %3 StorageClass(PushConstant)
-%8 = OpFunction %4 FunctionControl(0) %5
-%9 = OpLabel
-  OpReturn
-  OpFunctionEnd)", spirvEnv, true);
+ %1 = OpTypeInt 32 1
+ %2 = OpTypeStruct %1
+ %3 = OpTypeStruct %1
+ %4 = OpTypePointer StorageClass(PushConstant) %3
+ %6 = OpTypeVoid
+ %7 = OpTypeFunction %6
+ %5 = OpVariable %4 StorageClass(PushConstant)
+ %8 = OpFunction %6 FunctionControl(0) %7
+ %9 = OpLabel
+      OpReturn
+      OpFunctionEnd)", spirvEnv, true);
 		}
-/*
-		WHEN("Generating SPIR-V 1.3")
-		{
-			nzsl::SpirvWriter::Environment spirvEnv;
-			spirvEnv.spvMajorVersion = 1;
-			spirvEnv.spvMinorVersion = 3;
-
-			ExpectSPIRV(*shaderModule, R"(
-  OpDecorate %9 Decoration(Binding) 0
-  OpDecorate %9 Decoration(DescriptorSet) 0
-  OpMemberDecorate %5 0 Decoration(Offset) 0
-  OpDecorate %6 Decoration(ArrayStride) 16
-  OpDecorate %7 Decoration(Block)
-  OpMemberDecorate %7 0 Decoration(Offset) 0
-%1 = OpTypeFloat 32
-%2 = OpTypeInt 32 0
-%3 = OpConstant %2 u32(47)
-%4 = OpTypeArray %1 %3
-%5 = OpTypeStruct %4
-%6 = OpTypeArray %1 %3
-%7 = OpTypeStruct %6
-%8 = OpTypePointer StorageClass(StorageBuffer) %7
-%10 = OpTypeVoid
-%11 = OpTypeFunction %10
-%12 = OpTypeInt 32 1
-%13 = OpConstant %12 i32(0)
-%14 = OpConstant %12 i32(42)
-%15 = OpTypePointer StorageClass(Function) %1
-%19 = OpTypePointer StorageClass(StorageBuffer) %1
-%9 = OpVariable %8 StorageClass(StorageBuffer)
-%16 = OpFunction %10 FunctionControl(0) %11
-%17 = OpLabel
-%18 = OpVariable %15 StorageClass(Function)
-%20 = OpAccessChain %19 %9 %13 %14
-%21 = OpLoad %1 %20
-  OpStore %18 %21
-  OpReturn
-  OpFunctionEnd)", spirvEnv, true);
-		}
-*/
 	}
 }

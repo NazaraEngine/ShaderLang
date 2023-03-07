@@ -784,6 +784,11 @@ namespace nzsl
 		}());
 	}
 
+	auto SpirvConstantCache::BuildType(const Ast::PushConstantType& type) const -> TypePtr
+	{
+		return BuildType(type.containedType);
+	}
+
 	auto SpirvConstantCache::BuildType(const Ast::MatrixType& type) const -> TypePtr
 	{
 		return std::make_shared<Type>(

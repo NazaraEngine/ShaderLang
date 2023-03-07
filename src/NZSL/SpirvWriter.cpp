@@ -237,7 +237,8 @@ namespace nzsl
 					else
 						throw std::runtime_error("unsupported type used in external block (SPIR-V doesn't allow primitive types as uniforms)");
 
-					assert(extVar.bindingIndex.IsResultingValue());
+					if (!Ast::IsPushConstantType(extVarType))
+						assert(extVar.bindingIndex.IsResultingValue());
 
 					assert(extVar.varIndex);
 					UniformVar& uniformVar = extVars[*extVar.varIndex];
