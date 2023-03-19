@@ -1346,21 +1346,19 @@ namespace nzsl::Ast
 			auto& extVar = clone->externalVars[i];
 			
 			bool shouldThrowBindingError = false;
+			bool needsAutoBinding = false;
 
 			if (extVar.bindingSet.HasValue())
 				ComputeExprValue(extVar.bindingSet, node.sourceLocation);
-			else if (defaultBlockSet)
-				extVar.bindingSet = *defaultBlockSet;
+			else
+				autoSet = true;
+
 			if (!extVar.bindingIndex.HasValue())
 			{
 				if (hasAutoBinding == false)
 					shouldThrowBindingError = true;
 				else if (hasAutoBinding == true && extVar.bindingSet.IsResultingValue())
-				{
-					// Don't resolve binding indices (?) when performing a partial compilation
-					if (!m_context->options.partialSanitization || m_context->options.forceAutoBindingResolve)
-						autoBindingEntries.push_back(i);
-				}
+					needsAutoBinding = true;
 			}
 			else
 				ComputeExprValue(extVar.bindingIndex, node.sourceLocation);
@@ -1406,7 +1404,24 @@ namespace nzsl::Ast
 					varType = targetType;
 			}
 
-			if(shouldThrowBindingError && !IsPushConstantType(targetType))
+			if (IsPushConstantType(targetType))
+			{
+				if (extVar.bindingSet.IsResultingValue())
+					throw CompilerUnexpectedAttributeOnPushConstantError{ extVar.sourceLocation, Ast::AttributeType::Set };
+				else if (extVar.bindingIndex.IsResultingValue())
+					throw CompilerUnexpectedAttributeOnPushConstantError{ extVar.sourceLocation, Ast::AttributeType::Binding };
+			}
+			else
+			{
+				// Don't resolve binding indices (?) when performing a partial compilation
+				if (needsAutoBinding && (!m_context->options.partialSanitization || m_context->options.forceAutoBindingResolve))
+					autoBindingEntries.push_back(i);
+
+				if (autoSet && defaultBlockSet)
+					extVar.bindingSet = *defaultBlockSet;
+			}
+
+			if (shouldThrowBindingError && !IsPushConstantType(targetType))
 				throw CompilerExtMissingBindingIndexError{ extVar.sourceLocation };
 			
 			if (IsNoType(varType))

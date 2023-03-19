@@ -14,6 +14,7 @@
 #include <fstream>
 #include <random>
 #include <regex>
+#include <iostream>
 
 namespace frozen
 {

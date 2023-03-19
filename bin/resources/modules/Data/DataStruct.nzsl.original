@@ -1,8 +1,0 @@
-[nzsl_version("1.0")]
-module DataStruct;
-
-[export]
-struct Data
-{
-    color: vec4[f32]
-}

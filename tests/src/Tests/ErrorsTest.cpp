@@ -318,12 +318,27 @@ external
 [nzsl_version("1.0")]
 module;
 
+struct Foo
+{
+}
+
+external
+{
+	[set(0)] foo : push_constant[Foo]
+}
+
+)"), "(11,11 -> 34): CUnexpectedAttributeOnPushConstant error: unexpected attribute set on push_constant");
+
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
 external
 {
 	[binding(0)] foo: i32
 }
 
-)"), "(7,15 -> 22): CExtTypeNotAllowed error: external variable foo has unauthorized type (i32): only storage buffers, samplers and uniform buffers (and primitives, vectors and matrices if primitive external feature is enabled) are allowed in external blocks");
+)"), "(7,15 -> 22): CExtTypeNotAllowed error: external variable foo has unauthorized type (i32): only storage buffers, samplers, push constants and uniform buffers (and primitives, vectors and matrices if primitive external feature is enabled) are allowed in external blocks");
 			
 			CHECK_THROWS_WITH(Compile(R"(
 [nzsl_version("1.0")]
@@ -338,7 +353,7 @@ external
 	[binding(0)] foo: Foo
 }
 
-)"), "(11,15 -> 22): CExtTypeNotAllowed error: external variable foo has unauthorized type (struct Foo): only storage buffers, samplers and uniform buffers (and primitives, vectors and matrices if primitive external feature is enabled) are allowed in external blocks");
+)"), "(11,15 -> 22): CExtTypeNotAllowed error: external variable foo has unauthorized type (struct Foo): only storage buffers, samplers, push constants and uniform buffers (and primitives, vectors and matrices if primitive external feature is enabled) are allowed in external blocks");
 
 			CHECK_THROWS_WITH(Compile(R"(
 [nzsl_version("1.0")]
@@ -570,7 +585,7 @@ external
 {
 	[binding(0)] data: mat4[f32]
 }
-)"), "(7,15 -> 29): CExtTypeNotAllowed error: external variable data has unauthorized type (mat4[f32]): only storage buffers, samplers and uniform buffers (and primitives, vectors and matrices if primitive external feature is enabled) are allowed in external blocks");
+)"), "(7,15 -> 29): CExtTypeNotAllowed error: external variable data has unauthorized type (mat4[f32]): only storage buffers, samplers, push constants and uniform buffers (and primitives, vectors and matrices if primitive external feature is enabled) are allowed in external blocks");
 		}
 
 		/************************************************************************/

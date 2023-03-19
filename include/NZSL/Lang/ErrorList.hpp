@@ -83,7 +83,7 @@ NZSL_SHADERLANG_COMPILER_ERROR(ExpectedPartialType, "only partial types can be s
 NZSL_SHADERLANG_COMPILER_ERROR(ExtAlreadyDeclared, "external variable {} is already declared", std::string)
 NZSL_SHADERLANG_COMPILER_ERROR(ExtBindingAlreadyUsed, "binding (set={}, binding={}) is already in use", std::uint32_t, std::uint32_t)
 NZSL_SHADERLANG_COMPILER_ERROR(ExtMissingBindingIndex, "external variable requires a binding index")
-NZSL_SHADERLANG_COMPILER_ERROR(ExtTypeNotAllowed, "external variable {} has unauthorized type ({}): only storage buffers, samplers and uniform buffers (and primitives, vectors and matrices if primitive external feature is enabled) are allowed in external blocks", std::string, std::string)
+NZSL_SHADERLANG_COMPILER_ERROR(ExtTypeNotAllowed, "external variable {} has unauthorized type ({}): only storage buffers, samplers, push constants and uniform buffers (and primitives, vectors and matrices if primitive external feature is enabled) are allowed in external blocks", std::string, std::string)
 NZSL_SHADERLANG_COMPILER_ERROR(ForEachUnsupportedType, "for-each statements can only be called on array types, got {}", std::string)
 NZSL_SHADERLANG_COMPILER_ERROR(ForFromTypeExpectIntegerType, "numerical for from expression must be an integer or unsigned integer, got {}", std::string)
 NZSL_SHADERLANG_COMPILER_ERROR(ForStepUnmatchingType, "numerical for step expression type ({}) must match from expression type ({})", std::string, std::string)
@@ -149,6 +149,7 @@ NZSL_SHADERLANG_COMPILER_ERROR(VarDeclarationMissingTypeAndValue, "variable must
 NZSL_SHADERLANG_COMPILER_ERROR(VarDeclarationOutsideOfFunction, "global variables outside of external blocks are forbidden")
 NZSL_SHADERLANG_COMPILER_ERROR(VarDeclarationTypeUnmatching, "initial expression type ({}) doesn't match specified type ({})", std::string, std::string)
 NZSL_SHADERLANG_COMPILER_ERROR(WhileUnrollNotSupported, "unroll(always) is not yet supported on while, use a for loop")
+NZSL_SHADERLANG_COMPILER_ERROR(UnexpectedAttributeOnPushConstant, "unexpected attribute {} on push_constant", Ast::AttributeType)
 
 // AST errors
 NZSL_SHADERLANG_AST_ERROR(AlreadyUsedIndex, "index {} is already used", std::size_t)
