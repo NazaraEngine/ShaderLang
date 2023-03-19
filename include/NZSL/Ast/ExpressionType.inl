@@ -3,7 +3,7 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <NZSL/Ast/ExpressionType.hpp>
-#include <Nazara/Utils/Algorithm.hpp>
+#include <NazaraUtils/Algorithm.hpp>
 
 namespace nzsl::Ast
 {

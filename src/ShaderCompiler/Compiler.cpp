@@ -3,7 +3,7 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <ShaderCompiler/Compiler.hpp>
-#include <Nazara/Utils/CallOnExit.hpp>
+#include <NazaraUtils/CallOnExit.hpp>
 #include <NZSL/FilesystemModuleResolver.hpp>
 #include <NZSL/GlslWriter.hpp>
 #include <NZSL/LangWriter.hpp>

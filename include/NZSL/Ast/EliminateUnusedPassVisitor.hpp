@@ -7,7 +7,7 @@
 #ifndef NZSL_AST_ELIMINATEUNUSEDPASSVISITOR_HPP
 #define NZSL_AST_ELIMINATEUNUSEDPASSVISITOR_HPP
 
-#include <Nazara/Utils/Bitset.hpp>
+#include <NazaraUtils/Bitset.hpp>
 #include <NZSL/Config.hpp>
 #include <NZSL/Ast/Cloner.hpp>
 #include <NZSL/Ast/DependencyCheckerVisitor.hpp>

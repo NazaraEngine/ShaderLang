@@ -3,7 +3,7 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <NZSL/Math/FieldOffsets.hpp>
-#include <Nazara/Utils/Algorithm.hpp>
+#include <NazaraUtils/Algorithm.hpp>
 #include <algorithm>
 #include <cassert>
 

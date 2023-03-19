@@ -3,8 +3,8 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <NZSL/SpirvWriter.hpp>
-#include <Nazara/Utils/CallOnExit.hpp>
-#include <Nazara/Utils/StackVector.hpp>
+#include <NazaraUtils/CallOnExit.hpp>
+#include <NazaraUtils/StackVector.hpp>
 #include <NZSL/Enums.hpp>
 #include <NZSL/Ast/Cloner.hpp>
 #include <NZSL/Ast/ConstantPropagationVisitor.hpp>

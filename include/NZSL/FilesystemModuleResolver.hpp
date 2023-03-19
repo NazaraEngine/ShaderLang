@@ -7,7 +7,7 @@
 #ifndef NZSL_FILESYSTEMMODULERESOLVER_HPP
 #define NZSL_FILESYSTEMMODULERESOLVER_HPP
 
-#include <Nazara/Utils/MovablePtr.hpp>
+#include <NazaraUtils/MovablePtr.hpp>
 #include <NZSL/Config.hpp>
 #include <NZSL/ModuleResolver.hpp>
 #include <filesystem>

@@ -7,7 +7,7 @@
 #ifndef NZSL_AST_DEPENDENCYCHECKERVISITOR_HPP
 #define NZSL_AST_DEPENDENCYCHECKERVISITOR_HPP
 
-#include <Nazara/Utils/Bitset.hpp>
+#include <NazaraUtils/Bitset.hpp>
 #include <NZSL/Config.hpp>
 #include <NZSL/Ast/RecursiveVisitor.hpp>
 

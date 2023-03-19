@@ -3,9 +3,9 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <NZSL/SpirV/SpirvPrinter.hpp>
-#include <Nazara/Utils/Algorithm.hpp>
-#include <Nazara/Utils/CallOnExit.hpp>
-#include <Nazara/Utils/StackArray.hpp>
+#include <NazaraUtils/Algorithm.hpp>
+#include <NazaraUtils/CallOnExit.hpp>
+#include <NazaraUtils/StackArray.hpp>
 #include <NZSL/SpirV/SpirvData.hpp>
 #include <cassert>
 #include <cstring>

@@ -3,8 +3,8 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <NZSL/LangWriter.hpp>
-#include <Nazara/Utils/Algorithm.hpp>
-#include <Nazara/Utils/CallOnExit.hpp>
+#include <NazaraUtils/Algorithm.hpp>
+#include <NazaraUtils/CallOnExit.hpp>
 #include <NZSL/Enums.hpp>
 #include <NZSL/Lexer.hpp>
 #include <NZSL/Parser.hpp>

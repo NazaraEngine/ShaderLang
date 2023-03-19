@@ -7,7 +7,7 @@
 #ifndef NZSL_AST_SANITIZEVISITOR_HPP
 #define NZSL_AST_SANITIZEVISITOR_HPP
 
-#include <Nazara/Utils/Bitset.hpp>
+#include <NazaraUtils/Bitset.hpp>
 #include <NZSL/Config.hpp>
 #include <NZSL/ModuleResolver.hpp>
 #include <NZSL/Ast/Cloner.hpp>

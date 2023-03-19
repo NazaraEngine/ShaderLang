@@ -7,7 +7,7 @@
 #ifndef NZSL_MODULERESOLVER_HPP
 #define NZSL_MODULERESOLVER_HPP
 
-#include <Nazara/Utils/Signal.hpp>
+#include <NazaraUtils/Signal.hpp>
 #include <NZSL/Config.hpp>
 #include <memory>
 #include <string>
