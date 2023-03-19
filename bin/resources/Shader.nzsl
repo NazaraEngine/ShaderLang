@@ -1,0 +1,18 @@
+[nzsl_version("1.0")]
+module Shader;
+
+import GetColor as Color from Color;
+import * from DataStruct;
+import * from OutputStruct;
+
+[entry(frag)]
+fn main() -> Output
+{
+    let data: Data;
+    data.color = Color();
+
+    let output: Output;
+    output.color = GetColorFromData(data);
+
+    return output;
+}

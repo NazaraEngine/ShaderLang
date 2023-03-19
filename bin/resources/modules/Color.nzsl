@@ -1,0 +1,38 @@
+[nzsl_version("1.0")]
+module Color;
+
+[set(0)]
+external
+{
+    [binding(0)] tex1: sampler2D[f32]
+}
+
+fn GenerateColor() -> vec4[f32]
+{
+    return tex1.Sample(0.0.xx);
+}
+
+alias GenColor = GenerateColor;
+
+[set(1)]
+external
+{
+    [binding(0)] tex2: sampler2D[f32]
+}
+
+fn GenerateAnotherColor() -> vec4[f32]
+{
+    return tex2.Sample(0.5.xx);
+}
+
+[export]
+fn GetColor() -> vec4[f32]
+{
+    return GenColor();
+}
+
+[export]
+fn GetAnotherColor() -> vec4[f32]
+{
+    return GenerateAnotherColor();
+}

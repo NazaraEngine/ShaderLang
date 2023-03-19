@@ -56,7 +56,8 @@ else
 end
 
 if is_plat("mingw", "linux") then
-	add_cxflags("-Wno-subobject-linkage")
+	add_cxxflags("-Wno-weak-vtables", {tools = "clang"})
+	add_cxxflags("-Wno-subobject-linkage", {tools = "gcc"})
 end
 
 if is_plat("windows") then

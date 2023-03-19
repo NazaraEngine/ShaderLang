@@ -1,0 +1,18 @@
+[nzsl_version("1.0")]
+module OutputStruct;
+
+import * from DataStruct;
+
+option ColorMultiplier: vec4[f32] = vec4[f32](0.5, 0.5, 0.5, 1.0);
+
+[export]
+fn GetColorFromData(data: Data) -> vec4[f32]
+{
+    return data.color * ColorMultiplier;
+}
+
+[export]
+struct Output
+{
+    [location(0)] color: vec4[f32]
+}

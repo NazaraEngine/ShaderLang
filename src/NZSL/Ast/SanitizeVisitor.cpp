@@ -1295,6 +1295,11 @@ namespace nzsl::Ast
 		return clone;
 	}
 
+#if not defined(__clang__) && (defined(__GNUC__) || defined(__MINGW32__) || defined(__MINGW34__))
+	#pragma GCC diagnostic push
+	#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
+
 	StatementPtr SanitizeVisitor::Clone(DeclareExternalStatement& node)
 	{
 		assert(m_context);
@@ -1345,24 +1350,6 @@ namespace nzsl::Ast
 		{
 			auto& extVar = clone->externalVars[i];
 			
-			bool shouldThrowBindingError = false;
-			bool needsAutoBinding = false;
-
-			if (extVar.bindingSet.HasValue())
-				ComputeExprValue(extVar.bindingSet, node.sourceLocation);
-			else
-				autoSet = true;
-
-			if (!extVar.bindingIndex.HasValue())
-			{
-				if (hasAutoBinding == false)
-					shouldThrowBindingError = true;
-				else if (hasAutoBinding == true && extVar.bindingSet.IsResultingValue())
-					needsAutoBinding = true;
-			}
-			else
-				ComputeExprValue(extVar.bindingIndex, node.sourceLocation);
-
 			Context::UsedExternalData usedBindingData;
 			usedBindingData.isConditional = m_context->inConditionalStatement;
 
@@ -1406,24 +1393,33 @@ namespace nzsl::Ast
 
 			if (IsPushConstantType(targetType))
 			{
-				if (extVar.bindingSet.IsResultingValue())
+				if (extVar.bindingSet.HasValue())
 					throw CompilerUnexpectedAttributeOnPushConstantError{ extVar.sourceLocation, Ast::AttributeType::Set };
-				else if (extVar.bindingIndex.IsResultingValue())
+				else if (extVar.bindingIndex.HasValue())
 					throw CompilerUnexpectedAttributeOnPushConstantError{ extVar.sourceLocation, Ast::AttributeType::Binding };
 			}
 			else
 			{
-				// Don't resolve binding indices (?) when performing a partial compilation
-				if (needsAutoBinding && (!m_context->options.partialSanitization || m_context->options.forceAutoBindingResolve))
-					autoBindingEntries.push_back(i);
-
-				if (autoSet && defaultBlockSet)
+				if (extVar.bindingSet.HasValue())
+					ComputeExprValue(extVar.bindingSet, node.sourceLocation);
+				else if (defaultBlockSet)
 					extVar.bindingSet = *defaultBlockSet;
+
+				if (!extVar.bindingIndex.HasValue())
+				{
+					if (hasAutoBinding == false)
+						throw CompilerExtMissingBindingIndexError{ extVar.sourceLocation };
+					else if (hasAutoBinding == true && extVar.bindingSet.IsResultingValue())
+					{
+						// Don't resolve binding indices (?) when performing a partial compilation
+						if (!m_context->options.partialSanitization || m_context->options.forceAutoBindingResolve)
+							autoBindingEntries.push_back(i);
+					}
+				}
+				else
+					ComputeExprValue(extVar.bindingIndex, node.sourceLocation);
 			}
 
-			if (shouldThrowBindingError && !IsPushConstantType(targetType))
-				throw CompilerExtMissingBindingIndexError{ extVar.sourceLocation };
-			
 			if (IsNoType(varType))
 				throw CompilerExtTypeNotAllowedError{ extVar.sourceLocation, extVar.name, ToString(*resolvedType, extVar.sourceLocation) };
 
@@ -1487,6 +1483,10 @@ namespace nzsl::Ast
 
 		return clone;
 	}
+
+#if not defined(__clang__) && (defined(__GNUC__) || defined(__MINGW32__) || defined(__MINGW34__))
+	#pragma GCC diagnostic pop
+#endif
 
 	StatementPtr SanitizeVisitor::Clone(DeclareFunctionStatement& node)
 	{
