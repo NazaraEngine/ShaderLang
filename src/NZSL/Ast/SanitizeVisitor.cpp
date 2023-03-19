@@ -3,10 +3,10 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <NZSL/Ast/SanitizeVisitor.hpp>
-#include <Nazara/Utils/Algorithm.hpp>
-#include <Nazara/Utils/CallOnExit.hpp>
-#include <Nazara/Utils/StackArray.hpp>
-#include <Nazara/Utils/StackVector.hpp>
+#include <NazaraUtils/Algorithm.hpp>
+#include <NazaraUtils/CallOnExit.hpp>
+#include <NazaraUtils/StackArray.hpp>
+#include <NazaraUtils/StackVector.hpp>
 #include <NZSL/ShaderBuilder.hpp>
 #include <NZSL/Ast/ConstantPropagationVisitor.hpp>
 #include <NZSL/Ast/DependencyCheckerVisitor.hpp>

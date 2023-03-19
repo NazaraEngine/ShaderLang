@@ -7,7 +7,7 @@
 #ifndef NZSL_AST_ENUMS_HPP
 #define NZSL_AST_ENUMS_HPP
 
-#include <Nazara/Utils/Flags.hpp>
+#include <NazaraUtils/Flags.hpp>
 #include <NZSL/Config.hpp>
 
 namespace nzsl::Ast

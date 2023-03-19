@@ -3,8 +3,8 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <NZSL/SpirV/SpirvDecoder.hpp>
-#include <Nazara/Utils/CallOnExit.hpp>
-#include <Nazara/Utils/StackArray.hpp>
+#include <NazaraUtils/CallOnExit.hpp>
+#include <NazaraUtils/StackArray.hpp>
 #include <NZSL/SpirV/SpirvData.hpp>
 #include <cassert>
 #include <iomanip>
