@@ -350,6 +350,7 @@ on_run(function ()
 						end
 
 						-- Add header inclusion if it's missing
+						local isInl = path.extension(filePath) == ".inl"
 						if not headerInclude then
 							print(filePath .. " is missing corresponding header inclusion")
 
@@ -361,6 +362,17 @@ on_run(function ()
 
 									increment = increment + 1
 
+									return lines
+								end
+							})
+						elseif headerInclude and isInl then
+							print(filePath .. " has a header inclusion which breaks clangd (.inl should no longer includes their .hpp)")
+
+							table.insert(fixes, {
+								File = filePath,
+								Func = function (lines)
+									table.remove(lines, inclusions[headerInclude].line)
+									increment = increment - 1
 									return lines
 								end
 							})
@@ -420,9 +432,7 @@ on_run(function ()
 					local order
 					if inclusions[i].path == headerPath then
 						order = 0 -- own include comes first
-					elseif inclusions[i].path == "Nazara/Prerequisites.hpp" then
-						order = 1 -- top engine includes
-					elseif inclusions[i].path:match("^Nazara/Utils/") then
+					elseif inclusions[i].path:match("^NazaraUtils/") then
 						order = 1.9 -- NazaraUtils
 					elseif inclusions[i].path:match("^NZSL/") then
 						order = 2 -- project includes
