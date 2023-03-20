@@ -671,11 +671,16 @@ fn main()
 [nzsl_version("1.0")]
 module;
 
+struct Foo
+{
+}
+
 [auto_binding]
 external
 {
 	tex1: sampler2D[f32],
 	tex2: sampler2D[f32],
+	foo : push_constant[Foo],
 	[binding(4)] tex3: sampler2D[f32],
 	[binding(0)] tex4: sampler2D[f32]
 }
@@ -706,11 +711,17 @@ fn main()
 			shaderModule = SanitizeModule(*shaderModule);
 
 			ExpectNZSL(*shaderModule, R"(
+struct Foo
+{
+
+}
+
 [auto_binding(true)]
 external
 {
 	[set(0), binding(1)] tex1: sampler2D[f32],
 	[set(0), binding(2)] tex2: sampler2D[f32],
+	foo: push_constant[Foo],
 	[set(0), binding(4)] tex3: sampler2D[f32],
 	[set(0), binding(0)] tex4: sampler2D[f32]
 }
@@ -743,11 +754,17 @@ fn main()
 			shaderModule = SanitizeModule(*shaderModule, options);
 
 			ExpectNZSL(*shaderModule, R"(
+struct Foo
+{
+
+}
+
 [auto_binding(true)]
 external
 {
 	[set(0)] tex1: sampler2D[f32],
 	[set(0)] tex2: sampler2D[f32],
+	foo: push_constant[Foo],
 	[set(0), binding(4)] tex3: sampler2D[f32],
 	[set(0), binding(0)] tex4: sampler2D[f32]
 }
@@ -781,11 +798,17 @@ fn main()
 			shaderModule = SanitizeModule(*shaderModule, options);
 
 			ExpectNZSL(*shaderModule, R"(
+struct Foo
+{
+
+}
+
 [auto_binding(true)]
 external
 {
 	[set(0), binding(1)] tex1: sampler2D[f32],
 	[set(0), binding(2)] tex2: sampler2D[f32],
+	foo: push_constant[Foo],
 	[set(0), binding(4)] tex3: sampler2D[f32],
 	[set(0), binding(0)] tex4: sampler2D[f32]
 }
