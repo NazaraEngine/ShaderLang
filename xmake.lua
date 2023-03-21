@@ -1,30 +1,14 @@
--- Options
-option("erronwarn")
-	set_default(true)
-	set_showmenu(true)
-	set_description("Fails compilation if a warning occurs")
-option_end()
-
-option("fs_watcher")
-	set_default(true)
-	set_showmenu(true)
-	set_description("Compiles with filesystem watch support (requires efsw)")
-option_end()
-
-option("unitybuild")
-	set_default(false)
-	set_showmenu(true)
-	set_description("Build the library using unity build")
-option_end()
-
-option("with_nzslc")
-	set_default(true)
-	set_showmenu(true)
-	set_description("Builds the standalone command-line compiler (nzslc)")
-option_end()
-
--- Project definition
 set_project("NZSL")
+set_xmakever("2.6.8")
+
+----------------------- Global options -----------------------
+
+option("erronwarn", { default = false, description = "Fails compilation if a warning occurs"})
+option("fs_watcher", { default = true, description = "Compiles with filesystem watch support (uses efsw)"})
+option("unitybuild", { default = false, description = "Build the library using unity build"})
+option("with_nzslc", { default = true, description = "Builds the standalone command-line compiler (nzslc)"})
+
+----------------------- Dependencies -----------------------
 
 add_rules("mode.asan", "mode.tsan", "mode.ubsan", "mode.coverage", "mode.debug", "mode.releasedbg", "mode.release")
 add_rules("plugin.vsxmake.autoupdate")
