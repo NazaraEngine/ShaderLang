@@ -1200,7 +1200,7 @@ namespace nzsl::Ast
 				std::size_t structIndex;
 				SizeT(structIndex);
 
-				type = PusConstantType {
+				type = PushConstantType {
 					StructType {
 						structIndex
 					}
