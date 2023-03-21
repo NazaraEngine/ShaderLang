@@ -1295,7 +1295,7 @@ namespace nzsl::Ast
 		return clone;
 	}
 
-#if not defined(__clang__) && (defined(__GNUC__) || defined(__MINGW32__) || defined(__MINGW34__))
+#ifdef NAZARA_COMPILER_GCC
 	#pragma GCC diagnostic push
 	#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #endif
@@ -1484,7 +1484,7 @@ namespace nzsl::Ast
 		return clone;
 	}
 
-#if not defined(__clang__) && (defined(__GNUC__) || defined(__MINGW32__) || defined(__MINGW34__))
+#ifdef NAZARA_COMPILER_GCC
 	#pragma GCC diagnostic pop
 #endif
 

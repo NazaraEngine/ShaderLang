@@ -66,13 +66,13 @@ namespace nzsl
 			void Append(const Ast::MethodType& methodType);
 			void Append(Ast::NoType);
 			void Append(Ast::PrimitiveType type);
+			void Append(const Ast::PushConstantType& pushConstantType);
 			void Append(const Ast::SamplerType& samplerType);
 			void Append(const Ast::StorageType& storageType);
 			void Append(const Ast::StructType& structType);
 			void Append(const Ast::TextureType& samplerType);
 			void Append(const Ast::Type& type);
 			void Append(const Ast::UniformType& uniformType);
-			void Append(const Ast::PushConstantType& pushConstantType);
 			void Append(const Ast::VectorType& vecType);
 			template<typename T> void Append(const T& param);
 			template<typename T1, typename T2, typename... Args> void Append(const T1& firstParam, const T2& secondParam, Args&&... params);

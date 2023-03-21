@@ -188,7 +188,7 @@ namespace nzsl::Ast
 		inline bool operator!=(const VectorType& rhs) const;
 	};
 
-	// Uniform, storages ans push constant type need StructType to be declared
+	// Uniform, storages and push constant type need StructType to be declared
 
 	struct StorageType
 	{

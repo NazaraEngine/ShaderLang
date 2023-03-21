@@ -44,8 +44,8 @@ namespace nzsl
 		public:
 			struct UniformVar
 			{
-				std::optional<std::uint32_t> bindingIndex = std::nullopt;
-				std::optional<std::uint32_t> descriptorSet = std::nullopt;
+				std::optional<std::uint32_t> bindingIndex;
+				std::optional<std::uint32_t> descriptorSet;
 				std::uint32_t pointerId;
 			};
 
@@ -237,8 +237,7 @@ namespace nzsl
 					else
 						throw std::runtime_error("unsupported type used in external block (SPIR-V doesn't allow primitive types as uniforms)");
 
-					if (!Ast::IsPushConstantType(extVarType))
-						assert(extVar.bindingIndex.IsResultingValue());
+					assert(Ast::IsPushConstantType(extVarType) || extVar.bindingIndex.IsResultingValue());
 
 					assert(extVar.varIndex);
 					UniformVar& uniformVar = extVars[*extVar.varIndex];

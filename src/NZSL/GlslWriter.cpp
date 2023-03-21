@@ -639,6 +639,11 @@ namespace nzsl
 		}
 	}
 
+	void GlslWriter::Append(const Ast::PushConstantType& pushConstantType)
+	{
+		Append(pushConstantType.containedType);
+	}
+
 	void GlslWriter::Append(const Ast::SamplerType& samplerType)
 	{
 		switch (samplerType.sampledType)
@@ -725,11 +730,6 @@ namespace nzsl
 	void GlslWriter::Append(const Ast::UniformType& /*uniformType*/)
 	{
 		throw std::runtime_error("unexpected UniformType");
-	}
-
-	void GlslWriter::Append(const Ast::PushConstantType& pushConstantType)
-	{
-		Append(pushConstantType.containedType);
 	}
 
 	void GlslWriter::Append(const Ast::VectorType& vecType)

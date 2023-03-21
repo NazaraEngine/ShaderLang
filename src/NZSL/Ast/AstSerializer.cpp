@@ -621,11 +621,6 @@ namespace nzsl::Ast
 				m_serializer.Serialize(std::uint8_t(6));
 				SizeT(arg.containedType.structIndex);
 			}
-			else if constexpr (std::is_same_v<T, PushConstantType>)
-			{
-				m_serializer.Serialize(std::uint8_t(6));
-				SizeT(arg.containedType.structIndex);
-			}
 			else if constexpr (std::is_same_v<T, VectorType>)
 			{
 				m_serializer.Serialize(std::uint8_t(7));
@@ -682,6 +677,11 @@ namespace nzsl::Ast
 				Enum(arg.format);
 				Enum(arg.dim);
 				Enum(arg.baseType);
+			}
+			else if constexpr (std::is_same_v<T, PushConstantType>)
+			{
+				m_serializer.Serialize(std::uint8_t(17));
+				SizeT(arg.containedType.structIndex);
 			}
 			else
 				static_assert(Nz::AlwaysFalse<T>::value, "non-exhaustive visitor");
@@ -1191,6 +1191,19 @@ namespace nzsl::Ast
 					format,
 					dim,
 					baseType
+				};
+				break;
+			}
+
+			case 17: //< PushConstantType
+			{
+				std::size_t structIndex;
+				SizeT(structIndex);
+
+				type = PusConstantType {
+					StructType {
+						structIndex
+					}
 				};
 				break;
 			}

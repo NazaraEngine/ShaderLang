@@ -282,6 +282,11 @@ namespace nzsl
 		}
 	}
 
+	void LangWriter::Append(const Ast::PushConstantType& pushConstantType)
+	{
+		Append("push_constant[", pushConstantType.containedType, "]");
+	}
+
 	void LangWriter::Append(const Ast::SamplerType& samplerType)
 	{
 		if (samplerType.depth)
@@ -350,11 +355,6 @@ namespace nzsl
 	void LangWriter::Append(const Ast::UniformType& uniformType)
 	{
 		Append("uniform[", uniformType.containedType, "]");
-	}
-
-	void LangWriter::Append(const Ast::PushConstantType& pushConstantType)
-	{
-		Append("push_constant[", pushConstantType.containedType, "]");
 	}
 
 	void LangWriter::Append(const Ast::VectorType& vecType)
