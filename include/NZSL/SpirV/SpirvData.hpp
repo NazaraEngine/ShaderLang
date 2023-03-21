@@ -9,7 +9,7 @@
 #ifndef NZSL_SPIRV_SPIRVDATA_HPP
 #define NZSL_SPIRV_SPIRVDATA_HPP
 
-#include <Nazara/Utils/Flags.hpp>
+#include <NazaraUtils/Flags.hpp>
 #include <NZSL/Config.hpp>
 #include <string_view>
 #include <utility>

@@ -3,8 +3,8 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <NZSL/Ast/ExpressionType.hpp>
-#include <Nazara/Utils/Algorithm.hpp>
-#include <Nazara/Utils/TypeList.hpp>
+#include <NazaraUtils/Algorithm.hpp>
+#include <NazaraUtils/TypeList.hpp>
 #include <NZSL/Ast/Cloner.hpp>
 #include <NZSL/Ast/Compare.hpp>
 #include <NZSL/Math/FieldOffsets.hpp>

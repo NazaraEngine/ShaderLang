@@ -3,7 +3,7 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <NZSL/Ast/Nodes.hpp>
-#include <Nazara/Utils/Algorithm.hpp>
+#include <NazaraUtils/Algorithm.hpp>
 #include <NZSL/Ast/ExpressionVisitor.hpp>
 #include <NZSL/Ast/StatementVisitor.hpp>
 #include <stdexcept>

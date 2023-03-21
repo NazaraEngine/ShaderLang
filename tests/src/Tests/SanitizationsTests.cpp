@@ -1,5 +1,5 @@
 #include <Tests/ShaderUtils.hpp>
-#include <Nazara/Utils/Algorithm.hpp>
+#include <NazaraUtils/Algorithm.hpp>
 #include <NZSL/Serializer.hpp>
 #include <NZSL/ShaderBuilder.hpp>
 #include <NZSL/Parser.hpp>

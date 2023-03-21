@@ -10,12 +10,6 @@ option("with_nzslc", { default = true, description = "Builds the standalone comm
 
 ----------------------- Dependencies -----------------------
 
-add_rules("mode.asan", "mode.tsan", "mode.ubsan", "mode.coverage", "mode.debug", "mode.releasedbg", "mode.release")
-add_rules("plugin.vsxmake.autoupdate")
-
-includes("xmake/**.lua")
-
--- Thirdparty dependencies
 add_repositories("nazara-engine-repo https://github.com/NazaraEngine/xmake-repo")
 add_requires("nazarautils", "fast_float", "fmt", "frozen", "ordered_map")
 
@@ -27,7 +21,11 @@ if has_config("with_nzslc") then
 	add_requires("cxxopts", "nlohmann_json")
 end
 
--- General configuration
+----------------------- Global config -----------------------
+
+add_rules("mode.asan", "mode.tsan", "mode.ubsan", "mode.coverage", "mode.debug", "mode.releasedbg", "mode.release")
+add_rules("plugin.vsxmake.autoupdate")
+
 add_includedirs("include", "src")
 set_languages("c89", "c++17")
 set_rundir("./bin/$(plat)_$(arch)_$(mode)")
@@ -85,7 +83,8 @@ if has_config("unitybuild") then
 	add_rules("c++.unity_build", {uniqueid = "NAZARA_UNITY_ID", batchsize = 12})
 end
 
--- Target definitions
+----------------------- Targets -----------------------
+
 target("nzsl")
 	set_kind("$(kind)")
 	set_group("Libraries")
@@ -120,5 +119,6 @@ if has_config("with_nzslc") then
 		add_packages("cxxopts", "fmt", "nlohmann_json")
 end
 
+includes("xmake/**.lua")
 includes("examples/xmake.lua")
 includes("tests/xmake.lua")

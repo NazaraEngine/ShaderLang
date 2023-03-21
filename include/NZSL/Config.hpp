@@ -27,7 +27,7 @@
 #ifndef NZSL_CONFIG_HPP
 #define NZSL_CONFIG_HPP
 
-#include <Nazara/Prerequisites.hpp>
+#include <NazaraUtils/Prerequisites.hpp>
 
 // Nazara version macro
 #define NZSL_VERSION_MAJOR 0

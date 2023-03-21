@@ -1,5 +1,5 @@
-#include <Nazara/Utils/Algorithm.hpp>
-#include <Nazara/Utils/CallOnExit.hpp>
+#include <NazaraUtils/Algorithm.hpp>
+#include <NazaraUtils/CallOnExit.hpp>
 #include <NZSL/Config.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers.hpp>

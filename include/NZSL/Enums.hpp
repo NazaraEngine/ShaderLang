@@ -7,7 +7,7 @@
 #ifndef NZSL_ENUMS_HPP
 #define NZSL_ENUMS_HPP
 
-#include <Nazara/Utils/Flags.hpp>
+#include <NazaraUtils/Flags.hpp>
 
 namespace nzsl
 {

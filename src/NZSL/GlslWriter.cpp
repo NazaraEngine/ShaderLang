@@ -3,9 +3,9 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <NZSL/GlslWriter.hpp>
-#include <Nazara/Utils/Algorithm.hpp>
-#include <Nazara/Utils/Bitset.hpp>
-#include <Nazara/Utils/CallOnExit.hpp>
+#include <NazaraUtils/Algorithm.hpp>
+#include <NazaraUtils/Bitset.hpp>
+#include <NazaraUtils/CallOnExit.hpp>
 #include <NZSL/Enums.hpp>
 #include <NZSL/ShaderBuilder.hpp>
 #include <NZSL/Ast/Cloner.hpp>

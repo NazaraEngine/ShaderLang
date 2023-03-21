@@ -3,7 +3,7 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <NZSL/SpirV/SpirvExpressionLoad.hpp>
-#include <Nazara/Utils/StackArray.hpp>
+#include <NazaraUtils/StackArray.hpp>
 #include <NZSL/SpirvWriter.hpp>
 #include <NZSL/SpirV/SpirvAstVisitor.hpp>
 #include <NZSL/SpirV/SpirvBlock.hpp>

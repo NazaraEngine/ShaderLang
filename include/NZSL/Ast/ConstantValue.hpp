@@ -7,7 +7,7 @@
 #ifndef NZSL_AST_CONSTANTVALUE_HPP
 #define NZSL_AST_CONSTANTVALUE_HPP
 
-#include <Nazara/Utils/TypeList.hpp>
+#include <NazaraUtils/TypeList.hpp>
 #include <NZSL/Config.hpp>
 #include <NZSL/Ast/ExpressionType.hpp>
 #include <NZSL/Math/Vector.hpp>
