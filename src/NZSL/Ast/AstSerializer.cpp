@@ -678,6 +678,11 @@ namespace nzsl::Ast
 				Enum(arg.dim);
 				Enum(arg.baseType);
 			}
+			else if constexpr (std::is_same_v<T, PushConstantType>)
+			{
+				m_serializer.Serialize(std::uint8_t(17));
+				SizeT(arg.containedType.structIndex);
+			}
 			else
 				static_assert(Nz::AlwaysFalse<T>::value, "non-exhaustive visitor");
 		}, type);
@@ -1186,6 +1191,19 @@ namespace nzsl::Ast
 					format,
 					dim,
 					baseType
+				};
+				break;
+			}
+
+			case 17: //< PushConstantType
+			{
+				std::size_t structIndex;
+				SizeT(structIndex);
+
+				type = PushConstantType {
+					StructType {
+						structIndex
+					}
 				};
 				break;
 			}

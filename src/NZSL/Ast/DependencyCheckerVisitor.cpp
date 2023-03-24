@@ -39,7 +39,7 @@ namespace nzsl::Ast
 				RegisterType(usageSet, arg.containedType->type);
 			else if constexpr (std::is_same_v<T, StructType>)
 				usageSet.usedStructs.UnboundedSet(arg.structIndex);
-			else if constexpr (std::is_same_v<T, StorageType> || std::is_same_v<T, UniformType>)
+			else if constexpr (std::is_same_v<T, StorageType> || std::is_same_v<T, UniformType> || std::is_same_v<T, PushConstantType>)
 				usageSet.usedStructs.UnboundedSet(arg.containedType.structIndex);
 
 		}, exprType);

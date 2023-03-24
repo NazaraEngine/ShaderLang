@@ -95,7 +95,7 @@ namespace nzsl::Ast
 		return objectType->type == rhs.objectType->type && methodIndex == rhs.methodIndex;
 	}
 	
-	using ForbiddenStructTypes = Nz::TypeList<AliasType, FunctionType, IntrinsicFunctionType, MethodType, NoType, SamplerType, StorageType, TextureType, Type, UniformType>;
+	using ForbiddenStructTypes = Nz::TypeList<AliasType, FunctionType, IntrinsicFunctionType, MethodType, NoType, PushConstantType, SamplerType, StorageType, TextureType, Type, UniformType>;
 
 	std::size_t RegisterStructField(FieldOffsets& fieldOffsets, const ExpressionType& type, const StructFinder& structFinder)
 	{
@@ -273,7 +273,7 @@ namespace nzsl::Ast
 		{
 			using T = std::decay_t<decltype(arg)>;
 
-			if constexpr (std::is_same_v<T, StorageType> || std::is_same_v<T, StructType> || std::is_same_v<T, UniformType> || std::is_same_v<T, AliasType>)
+			if constexpr (std::is_same_v<T, StorageType> || std::is_same_v<T, StructType> || std::is_same_v<T, UniformType> || std::is_same_v<T, AliasType> || std::is_same_v<T, PushConstantType>)
 				return ResolveStructIndex(arg);
 			else if constexpr (std::is_same_v<T, NoType> ||
 			                   std::is_same_v<T, ArrayType> ||
@@ -308,6 +308,11 @@ namespace nzsl::Ast
 	std::size_t ResolveStructIndex(const UniformType& uniformType)
 	{
 		return uniformType.containedType.structIndex;
+	}
+
+	std::size_t ResolveStructIndex(const PushConstantType& pushConstantType)
+	{
+		return pushConstantType.containedType.structIndex;
 	}
 
 	std::string ToString(const AliasType& type, const Stringifier& stringifier)
@@ -380,6 +385,11 @@ namespace nzsl::Ast
 		}
 
 		return "<unhandled primitive type>";
+	}
+
+	std::string ToString(const PushConstantType& type, const Stringifier& stringifier)
+	{
+		return fmt::format("push_constant[{}]", ToString(type.containedType, stringifier));
 	}
 
 	std::string ToString(const SamplerType& type, const Stringifier& /*stringifier*/)

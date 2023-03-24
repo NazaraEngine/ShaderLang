@@ -44,8 +44,8 @@ namespace nzsl
 		public:
 			struct UniformVar
 			{
-				std::uint32_t bindingIndex;
-				std::uint32_t descriptorSet;
+				std::optional<std::uint32_t> bindingIndex;
+				std::optional<std::uint32_t> descriptorSet;
 				std::uint32_t pointerId;
 			};
 
@@ -182,7 +182,7 @@ namespace nzsl
 
 					const Ast::ExpressionType& extVarType = extVar.type.GetResultingValue();
 
-					if (Ast::IsStorageType(extVarType) || Ast::IsUniformType(extVarType))
+					if (Ast::IsStorageType(extVarType) || Ast::IsUniformType(extVarType) || Ast::IsPushConstantType(extVarType))
 					{
 						SpirvDecoration decoration;
 						std::size_t structIndex;
@@ -205,7 +205,7 @@ namespace nzsl
 
 							structIndex = structType.structIndex;
 						}
-						else
+						else if (Ast::IsUniformType(extVarType))
 						{
 							const auto& uniformType = std::get<Ast::UniformType>(extVarType);
 							const auto& structType = uniformType.containedType;
@@ -214,6 +214,16 @@ namespace nzsl
 							decoration = SpirvDecoration::Block;
 							structIndex = structType.structIndex;
 							variable.storageClass = SpirvStorageClass::Uniform;
+						}
+						else
+						{
+							const auto& pushConstantType = std::get<Ast::PushConstantType>(extVarType);
+							const auto& structType = pushConstantType.containedType;
+							assert(structType.structIndex < declaredStructs.size());
+
+							decoration = SpirvDecoration::Block;
+							structIndex = structType.structIndex;
+							variable.storageClass = SpirvStorageClass::PushConstant;
 						}
 
 						const auto& type = m_constantCache.BuildType(*declaredStructs[structIndex], { decoration });
@@ -227,13 +237,16 @@ namespace nzsl
 					else
 						throw std::runtime_error("unsupported type used in external block (SPIR-V doesn't allow primitive types as uniforms)");
 
-					assert(extVar.bindingIndex.IsResultingValue());
+					assert(Ast::IsPushConstantType(extVarType) || extVar.bindingIndex.IsResultingValue());
 
 					assert(extVar.varIndex);
 					UniformVar& uniformVar = extVars[*extVar.varIndex];
 					uniformVar.pointerId = m_constantCache.Register(variable);
-					uniformVar.bindingIndex = extVar.bindingIndex.GetResultingValue();
-					uniformVar.descriptorSet = (extVar.bindingSet.HasValue()) ? extVar.bindingSet.GetResultingValue() : 0;
+					if (!Ast::IsPushConstantType(extVarType))
+					{
+						uniformVar.bindingIndex = extVar.bindingIndex.GetResultingValue();
+						uniformVar.descriptorSet = (extVar.bindingSet.HasValue()) ? extVar.bindingSet.GetResultingValue() : 0;
+					}
 				}
 			}
 
@@ -691,8 +704,10 @@ namespace nzsl
 
 		for (auto&& [varIndex, extVar] : previsitor.extVars)
 		{
-			state.annotations.Append(SpirvOp::OpDecorate, extVar.pointerId, SpirvDecoration::Binding, extVar.bindingIndex);
-			state.annotations.Append(SpirvOp::OpDecorate, extVar.pointerId, SpirvDecoration::DescriptorSet, extVar.descriptorSet);
+			if (extVar.bindingIndex.has_value())
+				state.annotations.Append(SpirvOp::OpDecorate, extVar.pointerId, SpirvDecoration::Binding, extVar.bindingIndex.value());
+			if (extVar.descriptorSet.has_value())
+				state.annotations.Append(SpirvOp::OpDecorate, extVar.pointerId, SpirvDecoration::DescriptorSet, extVar.descriptorSet.value());
 		}
 
 		for (auto&& [varId, builtin] : previsitor.builtinDecorations)

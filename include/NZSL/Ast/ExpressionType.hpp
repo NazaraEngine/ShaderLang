@@ -188,7 +188,7 @@ namespace nzsl::Ast
 		inline bool operator!=(const VectorType& rhs) const;
 	};
 
-	// Uniform and storages type need StructType to be declared
+	// Uniform, storages and push constant type need StructType to be declared
 
 	struct StorageType
 	{
@@ -206,7 +206,15 @@ namespace nzsl::Ast
 		inline bool operator!=(const UniformType& rhs) const;
 	};
 
-	using ExpressionType = std::variant<NoType, AliasType, ArrayType, DynArrayType, FunctionType, IntrinsicFunctionType, MatrixType, MethodType, PrimitiveType, SamplerType, StorageType, StructType, TextureType, Type, UniformType, VectorType>;
+	struct PushConstantType
+	{
+		StructType containedType;
+
+		inline bool operator==(const PushConstantType& rhs) const;
+		inline bool operator!=(const PushConstantType& rhs) const;
+	};
+
+	using ExpressionType = std::variant<NoType, AliasType, ArrayType, DynArrayType, FunctionType, IntrinsicFunctionType, MatrixType, MethodType, PrimitiveType, PushConstantType, SamplerType, StorageType, StructType, TextureType, Type, UniformType, VectorType>;
 
 	struct ContainedType
 	{
@@ -242,6 +250,7 @@ namespace nzsl::Ast
 	inline bool IsMethodType(const ExpressionType& type);
 	inline bool IsNoType(const ExpressionType& type);
 	inline bool IsPrimitiveType(const ExpressionType& type);
+	inline bool IsPushConstantType(const ExpressionType& type);
 	inline bool IsSamplerType(const ExpressionType& type);
 	inline bool IsStorageType(const ExpressionType& type);
 	inline bool IsStructType(const ExpressionType& type);
@@ -274,6 +283,7 @@ namespace nzsl::Ast
 
 	NZSL_API std::size_t ResolveStructIndex(const AliasType& aliasType);
 	NZSL_API std::size_t ResolveStructIndex(const ExpressionType& exprType);
+	NZSL_API std::size_t ResolveStructIndex(const PushConstantType& pushConstantType);
 	NZSL_API std::size_t ResolveStructIndex(const StorageType& structType);
 	NZSL_API std::size_t ResolveStructIndex(const StructType& structType);
 	NZSL_API std::size_t ResolveStructIndex(const UniformType& uniformType);
@@ -295,6 +305,7 @@ namespace nzsl::Ast
 	NZSL_API std::string ToString(const MethodType& type, const Stringifier& stringifier = {});
 	NZSL_API std::string ToString(NoType type, const Stringifier& stringifier = {});
 	NZSL_API std::string ToString(PrimitiveType type, const Stringifier& stringifier = {});
+	NZSL_API std::string ToString(const PushConstantType& type, const Stringifier& stringifier = {});
 	NZSL_API std::string ToString(const SamplerType& type, const Stringifier& stringifier = {});
 	NZSL_API std::string ToString(const StorageType& type, const Stringifier& stringifier = {});
 	NZSL_API std::string ToString(const StructType& type, const Stringifier& stringifier = {});

@@ -356,6 +356,16 @@ namespace nzsl::Ast
 			uniformType.containedType.structIndex = Nz::Retrieve(m_context->newStructIndices, std::get<UniformType>(exprType).containedType.structIndex);
 			return uniformType;
 		}
+		else if (IsPushConstantType(exprType))
+		{
+			auto it = m_context->newStructIndices.find(std::get<PushConstantType>(exprType).containedType.structIndex);
+			if (it == m_context->newStructIndices.end())
+				return exprType;
+
+			PushConstantType pushConstantType;
+			pushConstantType.containedType.structIndex = Nz::Retrieve(m_context->newStructIndices, std::get<PushConstantType>(exprType).containedType.structIndex);
+			return pushConstantType;
+		}
 		else
 			return exprType;
 	}

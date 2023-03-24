@@ -639,6 +639,11 @@ namespace nzsl
 		}
 	}
 
+	void GlslWriter::Append(const Ast::PushConstantType& pushConstantType)
+	{
+		Append(pushConstantType.containedType);
+	}
+
 	void GlslWriter::Append(const Ast::SamplerType& samplerType)
 	{
 		switch (samplerType.sampledType)
@@ -2084,6 +2089,8 @@ namespace nzsl
 					structIndex = std::get<Ast::StorageType>(exprType).containedType.structIndex;
 				else if (IsUniformType(exprType))
 					structIndex = std::get<Ast::UniformType>(exprType).containedType.structIndex;
+				else if (IsPushConstantType(exprType))
+					structIndex = std::get<Ast::PushConstantType>(exprType).containedType.structIndex;
 				else
 					throw std::runtime_error("unexpected type");
 				
@@ -2182,7 +2189,14 @@ namespace nzsl
 
 				EnterScope();
 				{
-					std::size_t structIndex = (IsStorageType(exprType)) ? std::get<Ast::StorageType>(exprType).containedType.structIndex : std::get<Ast::UniformType>(exprType).containedType.structIndex;
+					std::size_t structIndex;
+					if (IsStorageType(exprType))
+						structIndex = std::get<Ast::StorageType>(exprType).containedType.structIndex;
+					else if (IsUniformType(exprType))
+						structIndex = std::get<Ast::UniformType>(exprType).containedType.structIndex;
+					else if (IsPushConstantType(exprType))
+						structIndex = std::get<Ast::PushConstantType>(exprType).containedType.structIndex;
+
 					const auto& structData = Nz::Retrieve(m_currentState->structs, structIndex);
 
 					bool first = true;

@@ -755,6 +755,22 @@ namespace nzsl
 		}, type);
 	}
 
+	auto SpirvConstantCache::BuildType(const Ast::MatrixType& type) const -> TypePtr
+	{
+		return std::make_shared<Type>(
+			Matrix{
+				BuildType(Ast::VectorType {
+					std::uint32_t(type.rowCount), type.type
+				}),
+				std::uint32_t(type.columnCount)
+			});
+	}
+
+	auto SpirvConstantCache::BuildType(const Ast::NoType& /*type*/) const -> TypePtr
+	{
+		return std::make_shared<Type>(Void{});
+	}
+
 	auto SpirvConstantCache::BuildType(const Ast::PrimitiveType& type) const -> TypePtr
 	{
 		return std::make_shared<Type>([&]() -> AnyType
@@ -784,20 +800,9 @@ namespace nzsl
 		}());
 	}
 
-	auto SpirvConstantCache::BuildType(const Ast::MatrixType& type) const -> TypePtr
+	auto SpirvConstantCache::BuildType(const Ast::PushConstantType& type) const -> TypePtr
 	{
-		return std::make_shared<Type>(
-			Matrix{
-				BuildType(Ast::VectorType {
-					std::uint32_t(type.rowCount), type.type
-				}),
-				std::uint32_t(type.columnCount)
-			});
-	}
-
-	auto SpirvConstantCache::BuildType(const Ast::NoType& /*type*/) const -> TypePtr
-	{
-		return std::make_shared<Type>(Void{});
+		return BuildType(type.containedType);
 	}
 
 	auto SpirvConstantCache::BuildType(const Ast::SamplerType& type) const -> TypePtr
