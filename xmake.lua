@@ -3,7 +3,7 @@ set_xmakever("2.6.8")
 
 ----------------------- Global options -----------------------
 
-option("erronwarn", { default = true, description = "Fails compilation if a warning occurs"})
+option("erronwarn", { default = false, description = "Fails compilation if a warning occurs"})
 option("fs_watcher", { default = true, description = "Compiles with filesystem watch support (uses efsw)"})
 option("unitybuild", { default = false, description = "Build the library using unity build"})
 option("with_nzslc", { default = true, description = "Builds the standalone command-line compiler (nzslc)"})
@@ -38,7 +38,8 @@ else
 end
 
 if is_plat("mingw", "linux") then
-	add_cxflags("-Wno-subobject-linkage")
+	add_cxxflags("-Wno-weak-vtables", {tools = "clang"})
+	add_cxxflags("-Wno-subobject-linkage", {tools = "gcc"})
 end
 
 if is_plat("windows") then

@@ -24,6 +24,8 @@ namespace nzsl
 		else if (IsStorageType(type) && m_writer.IsVersionGreaterOrEqual(1, 3))
 			// Starting from SPIR-V 1.3, Storage Buffer have their own separate storage class
 			storageClass = SpirvStorageClass::StorageBuffer;
+		else if (IsPushConstantType(type))
+			storageClass = SpirvStorageClass::PushConstant;
 		else
 			storageClass = SpirvStorageClass::Uniform;
 

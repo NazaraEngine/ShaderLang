@@ -1295,6 +1295,11 @@ namespace nzsl::Ast
 		return clone;
 	}
 
+#ifdef NAZARA_COMPILER_GCC
+	#pragma GCC diagnostic push
+	#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
+
 	StatementPtr SanitizeVisitor::Clone(DeclareExternalStatement& node)
 	{
 		assert(m_context);
@@ -1344,26 +1349,7 @@ namespace nzsl::Ast
 		for (std::size_t i = 0; i < clone->externalVars.size(); ++i)
 		{
 			auto& extVar = clone->externalVars[i];
-
-			if (extVar.bindingSet.HasValue())
-				ComputeExprValue(extVar.bindingSet, node.sourceLocation);
-			else if (defaultBlockSet)
-				extVar.bindingSet = *defaultBlockSet;
-
-			if (!extVar.bindingIndex.HasValue())
-			{
-				if (hasAutoBinding == false)
-					throw CompilerExtMissingBindingIndexError{ extVar.sourceLocation };
-				else if (hasAutoBinding == true && extVar.bindingSet.IsResultingValue())
-				{
-					// Don't resolve binding indices (?) when performing a partial compilation
-					if (!m_context->options.partialSanitization || m_context->options.forceAutoBindingResolve)
-						autoBindingEntries.push_back(i);
-				}
-			}
-			else
-				ComputeExprValue(extVar.bindingIndex, node.sourceLocation);
-
+			
 			Context::UsedExternalData usedBindingData;
 			usedBindingData.isConditional = m_context->inConditionalStatement;
 
@@ -1397,14 +1383,43 @@ namespace nzsl::Ast
 						varType = targetType;
 				}
 			}
-			else if (IsUniformType(targetType) || IsStorageType(targetType) || IsSamplerType(targetType) || IsTextureType(targetType))
+			else if (IsUniformType(targetType) || IsStorageType(targetType) || IsSamplerType(targetType) || IsTextureType(targetType) || IsPushConstantType(targetType))
 				varType = targetType;
 			else if (IsPrimitiveType(targetType) || IsVectorType(targetType) || IsMatrixType(targetType))
 			{
 				if (IsFeatureEnabled(ModuleFeature::PrimitiveExternals))
 					varType = targetType;
 			}
-			
+
+			if (IsPushConstantType(targetType))
+			{
+				if (extVar.bindingSet.HasValue())
+					throw CompilerUnexpectedAttributeOnPushConstantError{ extVar.sourceLocation, Ast::AttributeType::Set };
+				else if (extVar.bindingIndex.HasValue())
+					throw CompilerUnexpectedAttributeOnPushConstantError{ extVar.sourceLocation, Ast::AttributeType::Binding };
+			}
+			else
+			{
+				if (extVar.bindingSet.HasValue())
+					ComputeExprValue(extVar.bindingSet, node.sourceLocation);
+				else if (defaultBlockSet)
+					extVar.bindingSet = *defaultBlockSet;
+
+				if (!extVar.bindingIndex.HasValue())
+				{
+					if (hasAutoBinding == false)
+						throw CompilerExtMissingBindingIndexError{ extVar.sourceLocation };
+					else if (hasAutoBinding == true && extVar.bindingSet.IsResultingValue())
+					{
+						// Don't resolve binding indices (?) when performing a partial compilation
+						if (!m_context->options.partialSanitization || m_context->options.forceAutoBindingResolve)
+							autoBindingEntries.push_back(i);
+					}
+				}
+				else
+					ComputeExprValue(extVar.bindingIndex, node.sourceLocation);
+			}
+
 			if (IsNoType(varType))
 				throw CompilerExtTypeNotAllowedError{ extVar.sourceLocation, extVar.name, ToString(*resolvedType, extVar.sourceLocation) };
 
@@ -1468,6 +1483,10 @@ namespace nzsl::Ast
 
 		return clone;
 	}
+
+#ifdef NAZARA_COMPILER_GCC
+	#pragma GCC diagnostic pop
+#endif
 
 	StatementPtr SanitizeVisitor::Clone(DeclareFunctionStatement& node)
 	{
@@ -3267,6 +3286,24 @@ namespace nzsl::Ast
 
 				StructType structType = std::get<StructType>(exprType);
 				return UniformType {
+					structType
+				};
+			}
+		}, std::nullopt, {});
+
+		// push constant
+		RegisterType("push_constant", PartialType {
+			{ TypeParameterCategory::StructType }, {},
+			[=](const TypeParameter* parameters, [[maybe_unused]] std::size_t parameterCount, const SourceLocation& /*sourceLocation*/) -> ExpressionType
+			{
+				assert(parameterCount == 1);
+				assert(std::holds_alternative<ExpressionType>(*parameters));
+
+				const ExpressionType& exprType = std::get<ExpressionType>(*parameters);
+				assert(IsStructType(exprType));
+
+				StructType structType = std::get<StructType>(exprType);
+				return PushConstantType {
 					structType
 				};
 			}

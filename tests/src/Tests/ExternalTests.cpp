@@ -671,11 +671,16 @@ fn main()
 [nzsl_version("1.0")]
 module;
 
+struct Foo
+{
+}
+
 [auto_binding]
 external
 {
 	tex1: sampler2D[f32],
 	tex2: sampler2D[f32],
+	foo : push_constant[Foo],
 	[binding(4)] tex3: sampler2D[f32],
 	[binding(0)] tex4: sampler2D[f32]
 }
@@ -706,11 +711,17 @@ fn main()
 			shaderModule = SanitizeModule(*shaderModule);
 
 			ExpectNZSL(*shaderModule, R"(
+struct Foo
+{
+
+}
+
 [auto_binding(true)]
 external
 {
 	[set(0), binding(1)] tex1: sampler2D[f32],
 	[set(0), binding(2)] tex2: sampler2D[f32],
+	foo: push_constant[Foo],
 	[set(0), binding(4)] tex3: sampler2D[f32],
 	[set(0), binding(0)] tex4: sampler2D[f32]
 }
@@ -743,11 +754,17 @@ fn main()
 			shaderModule = SanitizeModule(*shaderModule, options);
 
 			ExpectNZSL(*shaderModule, R"(
+struct Foo
+{
+
+}
+
 [auto_binding(true)]
 external
 {
 	[set(0)] tex1: sampler2D[f32],
 	[set(0)] tex2: sampler2D[f32],
+	foo: push_constant[Foo],
 	[set(0), binding(4)] tex3: sampler2D[f32],
 	[set(0), binding(0)] tex4: sampler2D[f32]
 }
@@ -781,11 +798,17 @@ fn main()
 			shaderModule = SanitizeModule(*shaderModule, options);
 
 			ExpectNZSL(*shaderModule, R"(
+struct Foo
+{
+
+}
+
 [auto_binding(true)]
 external
 {
 	[set(0), binding(1)] tex1: sampler2D[f32],
 	[set(0), binding(2)] tex2: sampler2D[f32],
+	foo: push_constant[Foo],
 	[set(0), binding(4)] tex3: sampler2D[f32],
 	[set(0), binding(0)] tex4: sampler2D[f32]
 }
@@ -808,6 +831,80 @@ fn main()
 {
 
 })");
+		}
+	}
+
+	SECTION("Push constant generation")
+	{
+		std::string_view nzslSource = R"(
+[nzsl_version("1.0")]
+module;
+
+struct Data
+{
+	index : i32
+}
+
+external
+{
+	data: push_constant[Data]
+}
+
+[entry(frag)]
+fn main()
+{
+}
+)";
+
+		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
+		shaderModule = SanitizeModule(*shaderModule);
+
+		ExpectGLSL(*shaderModule, R"(
+struct Data
+{
+	int index;
+};
+
+uniform Data data;
+
+void main()
+{
+
+}
+)");
+
+		ExpectNZSL(*shaderModule, R"(
+struct Data
+{
+	index: i32
+}
+
+external
+{
+	data: push_constant[Data]
+}
+
+[entry(frag)]
+fn main()
+{
+
+})");
+
+		WHEN("Generating SPIR-V 1.0")
+		{
+			nzsl::SpirvWriter::Environment spirvEnv;
+			ExpectSPIRV(*shaderModule, R"(
+ %1 = OpTypeInt 32 1
+ %2 = OpTypeStruct %1
+ %3 = OpTypeStruct %1
+ %4 = OpTypePointer StorageClass(PushConstant) %3
+ %6 = OpTypeVoid
+ %7 = OpTypeFunction %6
+ %5 = OpVariable %4 StorageClass(PushConstant)
+ %8 = OpFunction %6 FunctionControl(0) %7
+ %9 = OpLabel
+      OpReturn
+      OpFunctionEnd)", spirvEnv, true);
 		}
 	}
 }
