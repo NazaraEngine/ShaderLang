@@ -55,11 +55,11 @@ namespace nzslc
 			if (formatStr == "vs")
 				m_logFormat = LogFormat::VisualStudio;
 			else if (formatStr != "classic")
-				throw cxxopts::OptionException(fmt::format("{} is not a valid error format", formatStr));
+				throw cxxopts::exceptions::specification(fmt::format("{} is not a valid error format", formatStr));
 		}
 
 		if (m_options.count("input") == 0)
-			throw cxxopts::OptionException("no input file");
+			throw cxxopts::exceptions::specification("no input file");
 
 		m_inputFilePath = m_options["input"].as<std::string>();
 		if (!std::filesystem::is_regular_file(m_inputFilePath))
@@ -85,7 +85,7 @@ namespace nzslc
 			m_profiling = true;
 			m_iterationCount = m_options["benchmark-iteration"].as<unsigned int>();
 			if (m_iterationCount == 0)
-				throw cxxopts::OptionException("iteration count must be over zero");
+				throw cxxopts::exceptions::specification("iteration count must be over zero");
 		}
 
 		if (m_options.count("measure") > 0)
