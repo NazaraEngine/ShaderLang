@@ -37,7 +37,7 @@ int main(int argc, char* argv[])
 			compiler.PrintError(error);
 			return EXIT_FAILURE;
 		}
-		catch (const cxxopts::OptionException& e)
+		catch (const cxxopts::exceptions::exception& e)
 		{
 			fmt::print(stderr, "{}\n{}\n", e.what(), cmdOptions.help());
 			return EXIT_FAILURE;

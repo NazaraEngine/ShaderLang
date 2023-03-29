@@ -18,7 +18,7 @@ if has_config("fs_watcher") then
 end
 
 if has_config("with_nzslc") then
-	add_requires("cxxopts", "nlohmann_json")
+	add_requires("cxxopts >=v3.1.1", "nlohmann_json")
 end
 
 ----------------------- Global config -----------------------
