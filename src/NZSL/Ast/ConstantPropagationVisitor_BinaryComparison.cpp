@@ -284,24 +284,19 @@ namespace nzsl::Ast
 		NAZARA_USE_ANONYMOUS_NAMESPACE
 
 		std::unique_ptr<ConstantValueExpression> optimized;
-		std::visit([&](auto&& arg1)
+		std::visit([&](auto&& arg1, auto&& arg2)
 		{
 			using T1 = std::decay_t<decltype(arg1)>;
+			using T2 = std::decay_t<decltype(arg2)>;
+			using PCType = BinaryConstantPropagation<Type, T1, T2>;
 
-			std::visit([&](auto&& arg2)
+			if constexpr (is_complete_v<PCType>)
 			{
-				using T2 = std::decay_t<decltype(arg2)>;
-				using PCType = BinaryConstantPropagation<Type, T1, T2>;
-
-				if constexpr (is_complete_v<PCType>)
-				{
-					using Op = typename PCType::Op;
-					if constexpr (is_complete_v<Op>)
-						optimized = Op{}(arg1, arg2, sourceLocation);
-				}
-
-			}, rhs.value);
-		}, lhs.value);
+				using Op = typename PCType::Op;
+				if constexpr (is_complete_v<Op>)
+					optimized = Op{}(arg1, arg2, sourceLocation);
+			}
+		}, lhs.value, rhs.value);
 
 		if (optimized)
 			optimized->cachedExpressionType = GetConstantType(optimized->value);
