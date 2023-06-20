@@ -3,6 +3,7 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <NZSL/FilesystemModuleResolver.hpp>
+#include <NazaraUtils/Algorithm.hpp>
 #include <NZSL/Parser.hpp>
 #include <NZSL/Ast/AstSerializer.hpp>
 #ifdef NZSL_EFSW
@@ -176,7 +177,7 @@ namespace nzsl
 		if (!CheckExtension(filename))
 			return;
 
-		std::filesystem::path filepath = std::filesystem::path(directory) / filename;
+		std::filesystem::path filepath = Nz::Utf8Path(directory) / Nz::Utf8Path(filename);
 
 		try
 		{
@@ -195,7 +196,7 @@ namespace nzsl
 
 		std::lock_guard lock(m_moduleLock);
 
-		std::filesystem::path canonicalPath = std::filesystem::weakly_canonical(std::filesystem::path(directory) / filename);
+		std::filesystem::path canonicalPath = std::filesystem::weakly_canonical(Nz::Utf8Path(directory) / Nz::Utf8Path(filename));
 
 		auto it = m_moduleByFilepath.find(Nz::PathToString(canonicalPath));
 		if (it != m_moduleByFilepath.end())
@@ -212,11 +213,13 @@ namespace nzsl
 
 		std::lock_guard lock(m_moduleLock);
 
-		std::filesystem::path canonicalPath = std::filesystem::weakly_canonical(std::filesystem::path(directory) / oldFilename);
+		std::filesystem::path dirPath = Nz::Utf8Path(directory);
+
+		std::filesystem::path canonicalPath = std::filesystem::weakly_canonical(dirPath / Nz::Utf8Path(oldFilename));
 		auto it = m_moduleByFilepath.find(Nz::PathToString(canonicalPath));
 		if (it != m_moduleByFilepath.end())
 		{
-			std::filesystem::path newCanonicalPath = std::filesystem::weakly_canonical(std::filesystem::path(directory) / filename);
+			std::filesystem::path newCanonicalPath = std::filesystem::weakly_canonical(dirPath / Nz::Utf8Path(filename));
 
 			std::string moduleName = std::move(it->second);
 			m_moduleByFilepath.erase(it);
@@ -230,11 +233,11 @@ namespace nzsl
 		if (!CheckExtension(filename))
 			return;
 
-		std::filesystem::path filepath = std::filesystem::path(directory) / filename;
+		std::filesystem::path filepath = Nz::Utf8Path(directory) / Nz::Utf8Path(filename);
 
 		try
 		{
-			RegisterModule(std::filesystem::path(directory) / filename);
+			RegisterModule(filepath);
 		}
 		catch (const std::exception& e)
 		{
