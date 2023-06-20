@@ -86,7 +86,6 @@ int main()
 				case sf::Event::MouseWheelScrolled:
 				{
 					targetScale = std::clamp(targetScale - targetScale * 0.1f * event.mouseWheelScroll.delta, 0.000001f, 3.f);
-					shader.setUniform("scale", scale);
 					break;
 				}
 
