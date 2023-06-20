@@ -3,6 +3,7 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <ShaderCompiler/Compiler.hpp>
+#include <NazaraUtils/Algorithm.hpp>
 #include <NazaraUtils/CallOnExit.hpp>
 #include <NZSL/FilesystemModuleResolver.hpp>
 #include <NZSL/GlslWriter.hpp>
@@ -61,7 +62,7 @@ namespace nzslc
 		if (m_options.count("input") == 0)
 			throw cxxopts::exceptions::specification("no input file");
 
-		m_inputFilePath = m_options["input"].as<std::string>();
+		m_inputFilePath = Nz::Utf8Path(m_options["input"].as<std::string>());
 		if (!std::filesystem::is_regular_file(m_inputFilePath))
 			throw std::runtime_error(fmt::format("{} is not a file", Nz::PathToString(m_inputFilePath)));
 
@@ -73,7 +74,7 @@ namespace nzslc
 				m_outputToStdout = true;
 			else
 			{
-				m_outputPath = m_options["output"].as<std::string>();
+				m_outputPath = Nz::Utf8Path(outputPath);
 
 				if (!std::filesystem::is_directory(m_outputPath) && !std::filesystem::create_directories(m_outputPath))
 					throw std::runtime_error(fmt::format("failed to create {} directory", Nz::PathToString(m_outputPath)));
