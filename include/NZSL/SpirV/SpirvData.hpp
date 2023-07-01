@@ -373,6 +373,9 @@ namespace nzsl
 		OpPtrEqual = 401,
 		OpPtrNotEqual = 402,
 		OpPtrDiff = 403,
+		OpColorAttachmentReadEXT = 4160,
+		OpDepthAttachmentReadEXT = 4161,
+		OpStencilAttachmentReadEXT = 4162,
 		OpTerminateInvocation = 4416,
 		OpSubgroupBallotKHR = 4421,
 		OpSubgroupFirstInvocationKHR = 4422,
@@ -392,6 +395,11 @@ namespace nzsl
 		OpSDotAccSat = 4453,
 		OpUDotAccSat = 4454,
 		OpSUDotAccSat = 4455,
+		OpTypeCooperativeMatrixKHR = 4456,
+		OpCooperativeMatrixLoadKHR = 4457,
+		OpCooperativeMatrixStoreKHR = 4458,
+		OpCooperativeMatrixMulAddKHR = 4459,
+		OpCooperativeMatrixLengthKHR = 4460,
 		OpTypeRayQueryKHR = 4472,
 		OpRayQueryInitializeKHR = 4473,
 		OpRayQueryTerminateKHR = 4474,
@@ -399,6 +407,10 @@ namespace nzsl
 		OpRayQueryConfirmIntersectionKHR = 4476,
 		OpRayQueryProceedKHR = 4477,
 		OpRayQueryGetIntersectionTypeKHR = 4479,
+		OpImageSampleWeightedQCOM = 4480,
+		OpImageBoxFilterQCOM = 4481,
+		OpImageBlockMatchSSDQCOM = 4482,
+		OpImageBlockMatchSADQCOM = 4483,
 		OpGroupIAddNonUniformAMD = 5000,
 		OpGroupFAddNonUniformAMD = 5001,
 		OpGroupFMinNonUniformAMD = 5002,
@@ -410,7 +422,42 @@ namespace nzsl
 		OpFragmentMaskFetchAMD = 5011,
 		OpFragmentFetchAMD = 5012,
 		OpReadClockKHR = 5056,
+		OpHitObjectRecordHitMotionNV = 5249,
+		OpHitObjectRecordHitWithIndexMotionNV = 5250,
+		OpHitObjectRecordMissMotionNV = 5251,
+		OpHitObjectGetWorldToObjectNV = 5252,
+		OpHitObjectGetObjectToWorldNV = 5253,
+		OpHitObjectGetObjectRayDirectionNV = 5254,
+		OpHitObjectGetObjectRayOriginNV = 5255,
+		OpHitObjectTraceRayMotionNV = 5256,
+		OpHitObjectGetShaderRecordBufferHandleNV = 5257,
+		OpHitObjectGetShaderBindingTableRecordIndexNV = 5258,
+		OpHitObjectRecordEmptyNV = 5259,
+		OpHitObjectTraceRayNV = 5260,
+		OpHitObjectRecordHitNV = 5261,
+		OpHitObjectRecordHitWithIndexNV = 5262,
+		OpHitObjectRecordMissNV = 5263,
+		OpHitObjectExecuteShaderNV = 5264,
+		OpHitObjectGetCurrentTimeNV = 5265,
+		OpHitObjectGetAttributesNV = 5266,
+		OpHitObjectGetHitKindNV = 5267,
+		OpHitObjectGetPrimitiveIndexNV = 5268,
+		OpHitObjectGetGeometryIndexNV = 5269,
+		OpHitObjectGetInstanceIdNV = 5270,
+		OpHitObjectGetInstanceCustomIndexNV = 5271,
+		OpHitObjectGetWorldRayDirectionNV = 5272,
+		OpHitObjectGetWorldRayOriginNV = 5273,
+		OpHitObjectGetRayTMaxNV = 5274,
+		OpHitObjectGetRayTMinNV = 5275,
+		OpHitObjectIsEmptyNV = 5276,
+		OpHitObjectIsHitNV = 5277,
+		OpHitObjectIsMissNV = 5278,
+		OpReorderThreadWithHitObjectNV = 5279,
+		OpReorderThreadWithHintNV = 5280,
+		OpTypeHitObjectNV = 5281,
 		OpImageSampleFootprintNV = 5283,
+		OpEmitMeshTasksEXT = 5294,
+		OpSetMeshOutputsEXT = 5295,
 		OpGroupNonUniformPartitionNV = 5296,
 		OpWritePackedPrimitiveIndices4x8NV = 5299,
 		OpReportIntersectionKHR = 5334,
@@ -419,6 +466,7 @@ namespace nzsl
 		OpTraceNV = 5337,
 		OpTraceMotionNV = 5338,
 		OpTraceRayMotionNV = 5339,
+		OpRayQueryGetIntersectionTriangleVertexPositionsKHR = 5340,
 		OpTypeAccelerationStructureKHR = 5341,
 		OpExecuteCallableNV = 5344,
 		OpTypeCooperativeMatrixNV = 5358,
@@ -676,6 +724,8 @@ namespace nzsl
 		OpTypeStructContinuedINTEL = 6090,
 		OpConstantCompositeContinuedINTEL = 6091,
 		OpSpecConstantCompositeContinuedINTEL = 6092,
+		OpConvertFToBF16INTEL = 6116,
+		OpConvertBF16ToFINTEL = 6117,
 		OpControlBarrierArriveINTEL = 6142,
 		OpControlBarrierWaitINTEL = 6143,
 		OpGroupIMulKHR = 6401,
@@ -815,6 +865,9 @@ namespace nzsl
 		RayQueryCommittedIntersectionType,
 		RayQueryCandidateIntersectionType,
 		PackedVectorFormat,
+		CooperativeMatrixOperands,
+		CooperativeMatrixLayout,
+		CooperativeMatrixUse,
 		IdResultType,
 		IdResult,
 		IdMemorySemantics,
@@ -894,6 +947,8 @@ namespace nzsl
 		MaxInterleavingINTEL = 0x200000,
 		SpeculatedIterationsINTEL = 0x400000,
 		NoFusionINTEL = 0x800000,
+		LoopCountINTEL = 0x1000000,
+		MaxReinvocationDelayINTEL = 0x2000000,
 	};
 
 	enum class SpirvFunctionControl
@@ -964,6 +1019,7 @@ namespace nzsl
 		CullNoOpaqueKHR = 0x0080,
 		SkipTrianglesKHR = 0x0100,
 		SkipAABBsKHR = 0x0200,
+		ForceOpacityMicromap2StateEXT = 0x0400,
 	};
 
 	enum class SpirvFragmentShadingRate
@@ -984,6 +1040,7 @@ namespace nzsl
 		HLSL = 5,
 		CPP_for_OpenCL = 6,
 		SYCL = 7,
+		HERO_C = 8,
 	};
 
 	enum class SpirvExecutionModel
@@ -1009,6 +1066,8 @@ namespace nzsl
 		MissKHR = 5317,
 		CallableNV = 5318,
 		CallableKHR = 5318,
+		TaskEXT = 5364,
+		MeshEXT = 5365,
 	};
 
 	enum class SpirvAddressingModel
@@ -1069,6 +1128,9 @@ namespace nzsl
 		SubgroupsPerWorkgroupId = 37,
 		LocalSizeId = 38,
 		LocalSizeHintId = 39,
+		NonCoherentColorAttachmentReadEXT = 4169,
+		NonCoherentDepthAttachmentReadEXT = 4170,
+		NonCoherentStencilAttachmentReadEXT = 4171,
 		SubgroupUniformControlFlowKHR = 4421,
 		PostDepthCoverage = 4446,
 		DenormPreserve = 4459,
@@ -1085,10 +1147,13 @@ namespace nzsl
 		StencilRefGreaterBackAMD = 5083,
 		StencilRefLessBackAMD = 5084,
 		OutputLinesNV = 5269,
+		OutputLinesEXT = 5269,
 		OutputPrimitivesNV = 5270,
+		OutputPrimitivesEXT = 5270,
 		DerivativeGroupQuadsNV = 5289,
 		DerivativeGroupLinearNV = 5290,
 		OutputTrianglesNV = 5298,
+		OutputTrianglesEXT = 5298,
 		PixelInterlockOrderedEXT = 5366,
 		PixelInterlockUnorderedEXT = 5367,
 		SampleInterlockOrderedEXT = 5368,
@@ -1105,6 +1170,8 @@ namespace nzsl
 		NoGlobalOffsetINTEL = 5895,
 		NumSIMDWorkitemsINTEL = 5896,
 		SchedulerTargetFmaxMhzINTEL = 5903,
+		StreamingInterfaceINTEL = 6154,
+		RegisterMapInterfaceINTEL = 6160,
 		NamedBarrierCountINTEL = 6417,
 	};
 
@@ -1123,6 +1190,7 @@ namespace nzsl
 		AtomicCounter = 10,
 		Image = 11,
 		StorageBuffer = 12,
+		TileImageEXT = 4172,
 		CallableDataNV = 5328,
 		CallableDataKHR = 5328,
 		IncomingCallableDataNV = 5329,
@@ -1137,6 +1205,8 @@ namespace nzsl
 		ShaderRecordBufferKHR = 5343,
 		PhysicalStorageBuffer = 5349,
 		PhysicalStorageBufferEXT = 5349,
+		HitObjectAttributeNV = 5385,
+		TaskPayloadWorkgroupEXT = 5402,
 		CodeSectionINTEL = 5605,
 		DeviceOnlyINTEL = 5936,
 		HostOnlyINTEL = 5937,
@@ -1151,6 +1221,7 @@ namespace nzsl
 		Rect = 4,
 		Buffer = 5,
 		SubpassData = 6,
+		TileImageDataEXT = 4173,
 	};
 
 	enum class SpirvSamplerAddressingMode
@@ -1257,6 +1328,8 @@ namespace nzsl
 		Float = 14,
 		UnormInt24 = 15,
 		UnormInt101010_2 = 16,
+		UnsignedIntRaw10EXT = 19,
+		UnsignedIntRaw12EXT = 20,
 	};
 
 	enum class SpirvFPRoundingMode
@@ -1323,6 +1396,7 @@ namespace nzsl
 		NoCapture = 5,
 		NoWrite = 6,
 		NoReadWrite = 7,
+		RuntimeAlignedINTEL = 5940,
 	};
 
 	enum class SpirvDecoration
@@ -1376,12 +1450,15 @@ namespace nzsl
 		MaxByteOffsetId = 47,
 		NoSignedWrap = 4469,
 		NoUnsignedWrap = 4470,
+		WeightTextureQCOM = 4487,
+		BlockMatchTextureQCOM = 4488,
 		ExplicitInterpAMD = 4999,
 		OverrideCoverageNV = 5248,
 		PassthroughNV = 5250,
 		ViewportRelativeNV = 5252,
 		SecondaryViewportRelativeNV = 5256,
 		PerPrimitiveNV = 5271,
+		PerPrimitiveEXT = 5271,
 		PerViewNV = 5272,
 		PerTaskNV = 5273,
 		PerVertexKHR = 5285,
@@ -1392,6 +1469,7 @@ namespace nzsl
 		RestrictPointerEXT = 5355,
 		AliasedPointer = 5356,
 		AliasedPointerEXT = 5356,
+		HitObjectShaderRecordBufferNV = 5386,
 		BindlessSamplerNV = 5398,
 		BindlessImageNV = 5399,
 		BoundSamplerNV = 5400,
@@ -1430,14 +1508,29 @@ namespace nzsl
 		PrefetchINTEL = 5902,
 		StallEnableINTEL = 5905,
 		FuseLoopsInFunctionINTEL = 5907,
+		MathOpDSPModeINTEL = 5909,
 		AliasScopeINTEL = 5914,
 		NoAliasINTEL = 5915,
+		InitiationIntervalINTEL = 5917,
+		MaxConcurrencyINTEL = 5918,
+		PipelineEnableINTEL = 5919,
 		BufferLocationINTEL = 5921,
 		IOPipeStorageINTEL = 5944,
 		FunctionFloatingPointModeINTEL = 6080,
 		SingleElementVectorINTEL = 6085,
 		VectorComputeCallableFunctionINTEL = 6087,
 		MediaBlockIOINTEL = 6140,
+		LatencyControlLabelINTEL = 6172,
+		LatencyControlConstraintINTEL = 6173,
+		ConduitKernelArgumentINTEL = 6175,
+		RegisterMapKernelArgumentINTEL = 6176,
+		MMHostInterfaceAddressWidthINTEL = 6177,
+		MMHostInterfaceDataWidthINTEL = 6178,
+		MMHostInterfaceLatencyINTEL = 6179,
+		MMHostInterfaceReadWriteModeINTEL = 6180,
+		MMHostInterfaceMaxBurstINTEL = 6181,
+		MMHostInterfaceWaitRequestINTEL = 6182,
+		StableKernelArgumentINTEL = 6183,
 	};
 
 	enum class SpirvBuiltIn
@@ -1483,6 +1576,11 @@ namespace nzsl
 		SubgroupLocalInvocationId = 41,
 		VertexIndex = 42,
 		InstanceIndex = 43,
+		CoreIDARM = 4160,
+		CoreCountARM = 4161,
+		CoreMaxIDARM = 4162,
+		WarpIDARM = 4163,
+		WarpMaxIDARM = 4164,
 		SubgroupEqMask = 4416,
 		SubgroupEqMaskKHR = 4416,
 		SubgroupGeMask = 4417,
@@ -1530,6 +1628,10 @@ namespace nzsl
 		FragmentSizeNV = 5292,
 		FragInvocationCountEXT = 5293,
 		InvocationsPerPixelNV = 5293,
+		PrimitivePointIndicesEXT = 5294,
+		PrimitiveLineIndicesEXT = 5295,
+		PrimitiveTriangleIndicesEXT = 5296,
+		CullPrimitiveEXT = 5299,
 		LaunchIdNV = 5319,
 		LaunchIdKHR = 5319,
 		LaunchSizeNV = 5320,
@@ -1556,6 +1658,7 @@ namespace nzsl
 		HitKindNV = 5333,
 		HitKindKHR = 5333,
 		CurrentRayTimeNV = 5334,
+		HitTriangleVertexPositionsKHR = 5335,
 		IncomingRayFlagsNV = 5351,
 		IncomingRayFlagsKHR = 5351,
 		RayGeometryIndexKHR = 5352,
@@ -1668,6 +1771,10 @@ namespace nzsl
 		ShaderLayer = 69,
 		ShaderViewportIndex = 70,
 		UniformDecoration = 71,
+		CoreBuiltinsARM = 4165,
+		TileImageColorReadAccessEXT = 4166,
+		TileImageDepthReadAccessEXT = 4167,
+		TileImageStencilReadAccessEXT = 4168,
 		FragmentShadingRateKHR = 4422,
 		SubgroupBallotKHR = 4423,
 		DrawParameters = 4427,
@@ -1699,6 +1806,9 @@ namespace nzsl
 		RayQueryKHR = 4472,
 		RayTraversalPrimitiveCullingKHR = 4478,
 		RayTracingKHR = 4479,
+		TextureSampleWeightedQCOM = 4484,
+		TextureBoxFilterQCOM = 4485,
+		TextureBlockMatchQCOM = 4486,
 		Float16ImageAMD = 5008,
 		ImageGatherBiasLodAMD = 5009,
 		FragmentMaskAMD = 5010,
@@ -1716,6 +1826,7 @@ namespace nzsl
 		FragmentFullyCoveredEXT = 5265,
 		MeshShadingNV = 5266,
 		ImageFootprintNV = 5282,
+		MeshShadingEXT = 5283,
 		FragmentBarycentricKHR = 5284,
 		FragmentBarycentricNV = 5284,
 		ComputeDerivativeGroupQuadsNV = 5288,
@@ -1746,6 +1857,7 @@ namespace nzsl
 		UniformTexelBufferArrayNonUniformIndexingEXT = 5311,
 		StorageTexelBufferArrayNonUniformIndexing = 5312,
 		StorageTexelBufferArrayNonUniformIndexingEXT = 5312,
+		RayTracingPositionFetchKHR = 5336,
 		RayTracingNV = 5340,
 		RayTracingMotionBlurNV = 5341,
 		VulkanMemoryModel = 5345,
@@ -1763,7 +1875,10 @@ namespace nzsl
 		FragmentShaderPixelInterlockEXT = 5378,
 		DemoteToHelperInvocation = 5379,
 		DemoteToHelperInvocationEXT = 5379,
+		RayTracingOpacityMicromapEXT = 5381,
+		ShaderInvocationReorderNV = 5383,
 		BindlessTextureNV = 5390,
+		RayQueryPositionFetchKHR = 5391,
 		SubgroupShuffleINTEL = 5568,
 		SubgroupBufferBlockIOINTEL = 5569,
 		SubgroupImageBlockIOINTEL = 5570,
@@ -1796,10 +1911,13 @@ namespace nzsl
 		FPGAMemoryAccessesINTEL = 5898,
 		FPGAClusterAttributesINTEL = 5904,
 		LoopFuseINTEL = 5906,
+		FPGADSPControlINTEL = 5908,
 		MemoryAccessAliasingINTEL = 5910,
+		FPGAInvocationPipeliningAttributesINTEL = 5916,
 		FPGABufferLocationINTEL = 5920,
 		ArbitraryPrecisionFixedPointINTEL = 5922,
 		USMStorageClassesINTEL = 5935,
+		RuntimeAlignedAttributeINTEL = 5939,
 		IOPipesINTEL = 5943,
 		BlockingPipesINTEL = 5945,
 		FPGARegINTEL = 5948,
@@ -1812,6 +1930,7 @@ namespace nzsl
 		DotProduct = 6019,
 		DotProductKHR = 6019,
 		RayCullMaskKHR = 6020,
+		CooperativeMatrixKHR = 6022,
 		BitInstructions = 6025,
 		GroupNonUniformRotateKHR = 6026,
 		AtomicFloat32AddEXT = 6033,
@@ -1820,7 +1939,11 @@ namespace nzsl
 		OptNoneINTEL = 6094,
 		AtomicFloat16AddEXT = 6095,
 		DebugInfoModuleINTEL = 6114,
+		BFloat16ConversionINTEL = 6115,
 		SplitBarrierINTEL = 6141,
+		FPGAKernelAttributesv2INTEL = 6161,
+		FPGALatencyControlINTEL = 6171,
+		FPGAArgumentInterfacesINTEL = 6174,
 		GroupUniformArithmeticKHR = 6400,
 	};
 
@@ -1847,6 +1970,29 @@ namespace nzsl
 	{
 		PackedVectorFormat4x8Bit = 0,
 		PackedVectorFormat4x8BitKHR = 0,
+	};
+
+	enum class SpirvCooperativeMatrixOperands
+	{
+		None = 0x0000,
+		MatrixASignedComponents = 0x0001,
+		MatrixBSignedComponents = 0x0002,
+		MatrixCSignedComponents = 0x0004,
+		MatrixResultSignedComponents = 0x0008,
+		SaturatingAccumulation = 0x0010,
+	};
+
+	enum class SpirvCooperativeMatrixLayout
+	{
+		RowMajorKHR = 0,
+		ColumnMajorKHR = 1,
+	};
+
+	enum class SpirvCooperativeMatrixUse
+	{
+		MatrixAKHR = 0,
+		MatrixBKHR = 1,
+		MatrixAccumulatorKHR = 2,
 	};
 
 	struct SpirvOperand
@@ -1877,6 +2023,8 @@ namespace nzsl
 	NZSL_API std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands(SpirvAddressingModel kind);
 	NZSL_API std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands(SpirvBuiltIn kind);
 	NZSL_API std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands(SpirvCapability kind);
+	NZSL_API std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands(SpirvCooperativeMatrixLayout kind);
+	NZSL_API std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands(SpirvCooperativeMatrixUse kind);
 	NZSL_API std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands(SpirvDecoration kind);
 	NZSL_API std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands(SpirvDim kind);
 	NZSL_API std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands(SpirvExecutionMode kind);
@@ -1911,6 +2059,8 @@ namespace nzsl
 	NZSL_API std::string_view ToString(SpirvAddressingModel value);
 	NZSL_API std::string_view ToString(SpirvBuiltIn value);
 	NZSL_API std::string_view ToString(SpirvCapability value);
+	NZSL_API std::string_view ToString(SpirvCooperativeMatrixLayout value);
+	NZSL_API std::string_view ToString(SpirvCooperativeMatrixUse value);
 	NZSL_API std::string_view ToString(SpirvDecoration value);
 	NZSL_API std::string_view ToString(SpirvDim value);
 	NZSL_API std::string_view ToString(SpirvExecutionMode value);
@@ -1971,7 +2121,7 @@ namespace Nz
 	template<>
 	struct EnumAsFlags<nzsl::SpirvLoopControl>
 	{
-		static constexpr nzsl::SpirvLoopControl max = nzsl::SpirvLoopControl::NoFusionINTEL;
+		static constexpr nzsl::SpirvLoopControl max = nzsl::SpirvLoopControl::MaxReinvocationDelayINTEL;
 
 		static constexpr bool AutoFlag = false;
 	};
@@ -2016,7 +2166,7 @@ namespace Nz
 	template<>
 	struct EnumAsFlags<nzsl::SpirvRayFlags>
 	{
-		static constexpr nzsl::SpirvRayFlags max = nzsl::SpirvRayFlags::SkipAABBsKHR;
+		static constexpr nzsl::SpirvRayFlags max = nzsl::SpirvRayFlags::ForceOpacityMicromap2StateEXT;
 
 		static constexpr bool AutoFlag = false;
 	};
@@ -2026,6 +2176,15 @@ namespace Nz
 	struct EnumAsFlags<nzsl::SpirvFragmentShadingRate>
 	{
 		static constexpr nzsl::SpirvFragmentShadingRate max = nzsl::SpirvFragmentShadingRate::Horizontal4Pixels;
+
+		static constexpr bool AutoFlag = false;
+	};
+
+
+	template<>
+	struct EnumAsFlags<nzsl::SpirvCooperativeMatrixOperands>
+	{
+		static constexpr nzsl::SpirvCooperativeMatrixOperands max = nzsl::SpirvCooperativeMatrixOperands::SaturatingAccumulation;
 
 		static constexpr bool AutoFlag = false;
 	};

@@ -139,9 +139,6 @@ on_run(function()
 			if instruction.operands then
 				local resultId
 				local firstId = RegisterOperands(instruction.operands)
-				if instruction.opcode == 1 then
-					print(instruction.opname, firstId)
-				end
 				local operandCount = #instruction.operands
 				for i, operand in pairs(instruction.operands) do
 					if operand.kind == "IdResult" then
@@ -193,7 +190,7 @@ on_run(function()
 	io.write("Generating... ")
 	io.flush()
 
-	local headerFile = io.open("include/NZSL/SpirvData.hpp", "w+")
+	local headerFile = io.open("include/NZSL/SpirV/SpirvData.hpp", "w+")
 	assert(headerFile, "failed to open SPIR-V header")
 
 	headerFile:write([[
@@ -205,8 +202,8 @@ on_run(function()
 
 #pragma once
 
-#ifndef NZSL_SPIRVDATA_HPP
-#define NZSL_SPIRVDATA_HPP
+#ifndef NZSL_SPIRV_SPIRVDATA_HPP
+#define NZSL_SPIRV_SPIRVDATA_HPP
 
 #include <NazaraUtils/Flags.hpp>
 #include <NZSL/Config.hpp>
@@ -410,12 +407,12 @@ namespace Nz
 
 	headerFile:write([[
 
-#endif // NZSL_SPIRVDATA_HPP
+#endif // NZSL_SPIRV_SPIRVDATA_HPP
 ]])
 
 	headerFile:close()
 
-	local sourceFile = io.open("src/NZSL/SpirvData.cpp", "w+")
+	local sourceFile = io.open("src/NZSL/SpirV/SpirvData.cpp", "w+")
 	assert(sourceFile, "failed to open SPIR-V source")
 
 	sourceFile:write([[
