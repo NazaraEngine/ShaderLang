@@ -135,6 +135,7 @@ namespace nzsl
 				{
 					std::uint32_t typeId;
 					std::uint32_t varId;
+					SourceLocation sourceLocation;
 				};
 
 				std::size_t funcIndex;
@@ -149,21 +150,22 @@ namespace nzsl
 			};
 
 		private:
+			void HandleSourceLocation(const SourceLocation& sourceLocation);
 			void HandleStatementList(const std::vector<Ast::StatementPtr>& statements);
 
 			void PushResultId(std::uint32_t value);
 			std::uint32_t PopResultId();
 
 			inline void RegisterExternalVariable(std::size_t varIndex, const Ast::ExpressionType& type);
-			inline void RegisterStruct(std::size_t structIndex, Ast::StructDescription* structDesc);
 			inline void RegisterVariable(std::size_t varIndex, std::uint32_t typeId, std::uint32_t pointerId, SpirvStorageClass storageClass);
+
+			void ResetSourceLocation();
 
 			std::optional<std::uint32_t> m_breakTarget;
 			std::optional<std::uint32_t> m_continueTarget;
 			std::size_t m_funcCallIndex;
 			std::size_t m_funcIndex;
 			std::unordered_map<std::size_t, FuncData>& m_funcData;
-			std::unordered_map<std::size_t, Ast::StructDescription*> m_structs;
 			std::unordered_map<std::size_t, SpirvVariable> m_variables;
 			std::vector<std::size_t> m_scopeSizes;
 			std::vector<std::unique_ptr<SpirvBlock>> m_functionBlocks;
@@ -171,6 +173,7 @@ namespace nzsl
 			SpirvBlock* m_currentBlock;
 			SpirvSection& m_instructions;
 			SpirvWriter& m_writer;
+			SourceLocation m_lastLocation;
 	};
 }
 

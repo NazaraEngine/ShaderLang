@@ -6,6 +6,7 @@
 #include <NazaraUtils/CallOnExit.hpp>
 #include <NazaraUtils/StackVector.hpp>
 #include <NZSL/Enums.hpp>
+#include <NZSL/Parser.hpp>
 #include <NZSL/Ast/Cloner.hpp>
 #include <NZSL/Ast/ConstantPropagationVisitor.hpp>
 #include <NZSL/Ast/EliminateUnusedPassVisitor.hpp>
@@ -23,7 +24,8 @@
 #include <tsl/ordered_map.h>
 #include <tsl/ordered_set.h>
 #include <cassert>
-#include <map>
+#include <fstream>
+#include <sstream>
 #include <stdexcept>
 #include <type_traits>
 #include <vector>
@@ -100,6 +102,7 @@ namespace nzsl
 				for (const auto& parameter : node.parameters)
 				{
 					auto& var = func.variables.emplace_back();
+					var.sourceLocation = parameter->sourceLocation;
 					var.typeId = m_constantCache.Register(*m_constantCache.BuildPointerType(*GetExpressionType(*parameter), SpirvStorageClass::Function));
 				}
 			}
@@ -447,6 +450,7 @@ namespace nzsl
 				func.varIndexToVarId[*node.varIndex] = func.variables.size();
 
 				auto& var = func.variables.emplace_back();
+				var.sourceLocation = node.sourceLocation;
 				var.typeId = m_constantCache.Register(*m_constantCache.BuildPointerType(node.varType.GetResultingValue(), SpirvStorageClass::Function));
 			}
 
@@ -586,10 +590,12 @@ namespace nzsl
 			std::uint32_t id;
 		};
 
-		std::unordered_map<std::string, std::uint32_t> extensionInstructionSet;
 		std::unordered_map<std::size_t, SpirvAstVisitor::FuncData> funcs;
+		std::unordered_map<std::string, std::uint32_t> extensionInstructionSet;
+		std::unordered_map<std::shared_ptr<const std::string>, std::uint32_t> sourceFiles;
 		std::vector<std::uint32_t> resultIds;
 		std::uint32_t nextResultId = 1;
+		SourceLocation sourceLocation;
 		SpirvConstantCache constantTypeCache; //< init after nextVarIndex
 		PreVisitor* previsitor;
 
@@ -694,6 +700,69 @@ namespace nzsl
 		}
 		previsitor.funcs.clear(); //< since we moved every value, prevent further usage
 
+		if (states.debugLevel >= DebugLevel::Regular)
+		{
+			auto RegisterSourceFile = [this, &states](const Ast::Module& module)
+			{
+				const SourceLocation& rootLocation = module.rootNode->sourceLocation;
+
+				std::string source;
+				std::uint32_t fileId = 0;
+				if (rootLocation.file)
+				{
+					fileId = m_currentState->constantTypeCache.Register(*rootLocation.file);
+					m_currentState->sourceFiles.emplace(rootLocation.file, fileId);
+
+					if (states.debugLevel >= DebugLevel::Full)
+					{
+						std::ifstream file(Nz::Utf8Path(*rootLocation.file));
+						if (file)
+						{
+							std::stringstream sstream;
+							sstream << file.rdbuf();
+
+							source = std::move(sstream).str();
+						}
+					}
+				}
+
+				m_currentState->constantTypeCache.RegisterSource(SpirvSourceLanguage::NZSL, module.metadata->shaderLangVersion, fileId, source);
+
+				if (!module.metadata->moduleName.empty())
+					m_currentState->constantTypeCache.RegisterSourceExtension("ModuleName: " + module.metadata->moduleName);
+
+				if (!module.metadata->author.empty())
+					m_currentState->constantTypeCache.RegisterSourceExtension("Author: " + module.metadata->author);
+
+				if (!module.metadata->description.empty())
+					m_currentState->constantTypeCache.RegisterSourceExtension("Description: " + module.metadata->description);
+
+				if (!module.metadata->license.empty())
+					m_currentState->constantTypeCache.RegisterSourceExtension("License: " + module.metadata->license);
+
+				if (!module.metadata->enabledFeatures.empty())
+				{
+					std::string features;
+					for (Ast::ModuleFeature feature : module.metadata->enabledFeatures)
+					{
+						if (!features.empty())
+							features += ",";
+					
+						features += Parser::ToString(feature);
+					}
+
+					m_currentState->constantTypeCache.RegisterSourceExtension("Features: " + features);
+				}
+			};
+
+			RegisterSourceFile(module);
+
+			for (const auto& importedModule : targetModule->importedModules)
+				RegisterSourceFile(*importedModule.module);
+		}
+		else if (states.debugLevel >= DebugLevel::Minimal)
+			m_currentState->constantTypeCache.RegisterSource(SpirvSourceLanguage::NZSL, module.metadata->shaderLangVersion);
+
 		SpirvAstVisitor visitor(*this, state.instructions, state.funcs);
 		for (const auto& importedModule : targetModule->importedModules)
 			importedModule.module->rootNode->Visit(visitor);
@@ -716,7 +785,13 @@ namespace nzsl
 		for (auto&& [varId, location] : previsitor.locationDecorations)
 			state.annotations.Append(SpirvOp::OpDecorate, varId, SpirvDecoration::Location, location);
 
-		m_currentState->constantTypeCache.Write(m_currentState->annotations, m_currentState->constants, m_currentState->debugInfo);
+		m_currentState->constantTypeCache.Write(m_currentState->annotations, m_currentState->constants, m_currentState->debugInfo, states.debugLevel);
+
+		if (m_context.states->debugLevel >= DebugLevel::Minimal)
+		{
+			for (auto&& [funcIndex, func] : m_currentState->funcs)
+				m_currentState->debugInfo.Append(SpirvOp::OpName, func.funcId, func.name);
+		}
 
 		std::vector<std::uint32_t> ret;
 		MergeSections(ret, state.header);
@@ -760,12 +835,14 @@ namespace nzsl
 
 	void SpirvWriter::AppendHeader()
 	{
+		constexpr std::uint32_t VendorId = 39; //< NZSLc has been registered!
+
 		m_currentState->header.AppendRaw(SpirvMagicNumber); //< SPIR-V magic number
 
 		std::uint32_t version = MakeSpirvVersion(m_environment.spvMajorVersion, m_environment.spvMinorVersion);
 
 		m_currentState->header.AppendRaw(version); //< SPIR-V version number
-		m_currentState->header.AppendRaw(0); //< Generator identifier (TODO: Register generator to Khronos)
+		m_currentState->header.AppendRaw(VendorId); //< Generator identifier
 
 		m_currentState->header.AppendRaw(m_currentState->nextResultId); //< Bound (ID count)
 		m_currentState->header.AppendRaw(0); //< Instruction schema (required to be 0 for now)
@@ -780,8 +857,6 @@ namespace nzsl
 
 		for (auto&& [funcIndex, func] : m_currentState->funcs)
 		{
-			m_currentState->debugInfo.Append(SpirvOp::OpName, func.funcId, func.name);
-
 			if (func.entryPointData)
 			{
 				auto& entryPointData = func.entryPointData.value();
@@ -896,9 +971,23 @@ namespace nzsl
 		return m_currentState->constantTypeCache.GetId(*m_currentState->constantTypeCache.BuildPointerType(type, storageClass));
 	}
 
+	std::uint32_t SpirvWriter::GetSourceFileId(const std::shared_ptr<const std::string>& filepathPtr)
+	{
+		auto it = m_currentState->sourceFiles.find(filepathPtr);
+		if (it == m_currentState->sourceFiles.end())
+			throw std::runtime_error("unknown source filepath");
+
+		return it->second;
+	}
+
 	std::uint32_t SpirvWriter::GetTypeId(const Ast::ExpressionType& type) const
 	{
 		return m_currentState->constantTypeCache.GetId(*m_currentState->constantTypeCache.BuildType(type));
+	}
+
+	bool SpirvWriter::HasDebugInfo(DebugLevel debugInfo) const
+	{
+		return m_context.states->debugLevel >= debugInfo;
 	}
 
 	bool SpirvWriter::IsVersionGreaterOrEqual(std::uint32_t spvMajor, std::uint32_t spvMinor) const
@@ -916,11 +1005,6 @@ namespace nzsl
 		return m_currentState->constantTypeCache.Register(*m_currentState->constantTypeCache.BuildArrayConstant(value));
 	}
 
-	std::uint32_t SpirvWriter::RegisterSingleConstant(const Ast::ConstantSingleValue& value)
-	{
-		return m_currentState->constantTypeCache.Register(*m_currentState->constantTypeCache.BuildConstant(value));
-	}
-
 	std::uint32_t SpirvWriter::RegisterFunctionType(const Ast::DeclareFunctionStatement& functionNode)
 	{
 		return m_currentState->constantTypeCache.Register({ *BuildFunctionType(functionNode) });
@@ -929,6 +1013,11 @@ namespace nzsl
 	std::uint32_t SpirvWriter::RegisterPointerType(Ast::ExpressionType type, SpirvStorageClass storageClass)
 	{
 		return m_currentState->constantTypeCache.Register(*m_currentState->constantTypeCache.BuildPointerType(type, storageClass));
+	}
+
+	std::uint32_t SpirvWriter::RegisterSingleConstant(const Ast::ConstantSingleValue& value)
+	{
+		return m_currentState->constantTypeCache.Register(*m_currentState->constantTypeCache.BuildConstant(value));
 	}
 
 	std::uint32_t SpirvWriter::RegisterType(Ast::ExpressionType type)

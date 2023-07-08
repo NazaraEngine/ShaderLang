@@ -32,12 +32,6 @@ namespace nzsl
 		RegisterVariable(varIndex, m_writer.GetTypeId(type), pointerId, storageClass);
 	}
 
-	inline void SpirvAstVisitor::RegisterStruct(std::size_t structIndex, Ast::StructDescription* structDesc)
-	{
-		assert(m_structs.find(structIndex) == m_structs.end());
-		m_structs[structIndex] = structDesc;
-	}
-
 	inline void SpirvAstVisitor::RegisterVariable(std::size_t varIndex, std::uint32_t typeId, std::uint32_t pointerId, SpirvStorageClass storageClass)
 	{
 		assert(m_variables.find(varIndex) == m_variables.end());

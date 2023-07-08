@@ -25,6 +25,9 @@ namespace nzsl
 
 		inline bool IsValid() const;
 
+		bool operator==(const SourceLocation& other) const;
+		bool operator!=(const SourceLocation& other) const;
+
 		static inline SourceLocation BuildFromTo(const SourceLocation& leftSource, const SourceLocation& rightSource);
 
 		std::shared_ptr<const std::string> file; //< Since the same file will be used for every node, prevent storing X time the same path

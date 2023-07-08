@@ -236,7 +236,7 @@ fn main()
       OpBranch %24
 %26 = OpLabel
       OpReturn
-      OpFunctionEnd)", {}, true);
+      OpFunctionEnd)", {}, {}, true);
 		}
 	}
 	
@@ -440,7 +440,7 @@ fn main()
       OpBranch %16
 %18 = OpLabel
       OpReturn
-      OpFunctionEnd)", {}, true);
+      OpFunctionEnd)", {}, {}, true);
 		}
 	}
 
@@ -753,7 +753,7 @@ fn main()
       OpBranch %26
 %28 = OpLabel
       OpReturn
-      OpFunctionEnd)", {}, true);
+      OpFunctionEnd)", {}, {}, true);
 		}
 	}
 }

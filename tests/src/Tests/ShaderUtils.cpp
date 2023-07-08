@@ -131,6 +131,21 @@ namespace
 		}
 	};
 
+	inline std::string& ReplaceStr(std::string& str, const std::string_view& from, const std::string_view& to)
+	{
+		if (str.empty())
+			return str;
+
+		std::size_t startPos = 0;
+		while ((startPos = str.find(from, startPos)) != std::string::npos)
+		{
+			str.replace(startPos, from.length(), to);
+			startPos += to.length();
+		}
+
+		return str;
+	}
+
 	std::string_view Trim(std::string_view str)
 	{
 		while (!str.empty() && std::isspace(str.front()))
@@ -143,9 +158,17 @@ namespace
 	}
 }
 
-void ExpectGLSL(const nzsl::Ast::Module& shaderModule, std::string_view expectedOutput, const nzsl::GlslWriter::Environment& env, bool testShaderCompilation)
+std::string SanitizeSource(std::string_view source)
 {
-	expectedOutput = Trim(expectedOutput);
+	std::string str(Trim(source));
+	ReplaceStr(str, "\r\n", "\n");
+
+	return str;
+}
+
+void ExpectGLSL(const nzsl::Ast::Module& shaderModule, std::string_view expectedOutput, const nzsl::ShaderWriter::States& options, const nzsl::GlslWriter::Environment& env, bool testShaderCompilation)
+{
+	std::string source = SanitizeSource(expectedOutput);
 
 	SECTION("Generating GLSL")
 	{
@@ -179,12 +202,15 @@ void ExpectGLSL(const nzsl::Ast::Module& shaderModule, std::string_view expected
 		nzsl::GlslWriter writer;
 		writer.SetEnv(env);
 
-		nzsl::GlslWriter::Output output = writer.Generate(entryShaderStage, targetModule);
+		nzsl::GlslWriter::Output output = writer.Generate(entryShaderStage, targetModule, {}, options);
 
 		SECTION("Validating expected code")
 		{
-			INFO("full GLSL output:\n" << output.code << "\nexcepted output:\n" << expectedOutput);
-			REQUIRE(output.code.find(expectedOutput) != std::string::npos);
+			if (output.code.find(source) == std::string::npos)
+			{
+				INFO("full GLSL output:\n" << output.code << "\nexcepted output:\n" << source);
+				REQUIRE(false);
+			}
 		}
 
 		if (!testShaderCompilation)
@@ -217,8 +243,8 @@ void ExpectGLSL(const nzsl::Ast::Module& shaderModule, std::string_view expected
 			glslangShader.setEntryPoint("main");
 			glslangShader.setAutoMapLocations(true);
 
-			const char* source = output.code.c_str();
-			glslangShader.setStrings(&source, 1);
+			const char* glslSource = output.code.c_str();
+			glslangShader.setStrings(&glslSource, 1);
 
 			if (!glslangShader.parse(&s_minResources, version, false, static_cast<EShMessages>(EShMsgDefault | EShMsgKeepUncalled)))
 			{
@@ -229,9 +255,9 @@ void ExpectGLSL(const nzsl::Ast::Module& shaderModule, std::string_view expected
 	}
 }
 
-void ExpectNZSL(const nzsl::Ast::Module& shaderModule, std::string_view expectedOutput)
+void ExpectNZSL(const nzsl::Ast::Module& shaderModule, std::string_view expectedOutput, const nzsl::ShaderWriter::States& options)
 {
-	expectedOutput = Trim(expectedOutput);
+	std::string source = SanitizeSource(expectedOutput);
 
 	SECTION("Generating NZSL")
 	{
@@ -243,12 +269,12 @@ void ExpectNZSL(const nzsl::Ast::Module& shaderModule, std::string_view expected
 		const nzsl::Ast::Module& targetModule = (sanitizedModule) ? *sanitizedModule : shaderModule;
 
 		nzsl::LangWriter writer;
-		std::string output = writer.Generate(targetModule);
+		std::string output = writer.Generate(targetModule, options);
 
 		SECTION("Validating expected code")
 		{
-			INFO("full NZSL output:\n" << output << "\nexcepted output:\n" << expectedOutput);
-			REQUIRE(output.find(expectedOutput) != std::string::npos);
+			INFO("full NZSL output:\n" << output << "\nexcepted output:\n" << source);
+			REQUIRE(output.find(source) != std::string::npos);
 		}
 
 		WHEN("Validating full NZSL code (by recompiling it)")
@@ -259,9 +285,9 @@ void ExpectNZSL(const nzsl::Ast::Module& shaderModule, std::string_view expected
 	}
 }
 
-void ExpectSPIRV(const nzsl::Ast::Module& shaderModule, std::string_view expectedOutput, const nzsl::SpirvWriter::Environment& env, bool outputParameter)
+void ExpectSPIRV(const nzsl::Ast::Module& shaderModule, std::string_view expectedOutput, const nzsl::ShaderWriter::States& options, const nzsl::SpirvWriter::Environment& env, bool outputParameter)
 {
-	expectedOutput = Trim(expectedOutput);
+	std::string source = SanitizeSource(expectedOutput);
 
 	SECTION("Generating SPIR-V")
 	{
@@ -281,13 +307,13 @@ void ExpectSPIRV(const nzsl::Ast::Module& shaderModule, std::string_view expecte
 		settings.printHeader = false;
 		settings.printParameters = outputParameter;
 
-		auto spirv = writer.Generate(targetModule);
+		auto spirv = writer.Generate(targetModule, options);
 		std::string output = printer.Print(spirv.data(), spirv.size(), settings);
 
 		SECTION("Validating expected code")
 		{
-			INFO("full SPIR-V output:\n" << output << "\nexcepted output:\n" << expectedOutput);
-			REQUIRE(output.find(expectedOutput) != std::string::npos);
+			INFO("full SPIR-V output:\n" << output << "\nexcepted output:\n" << source);
+			REQUIRE(output.find(source) != std::string::npos);
 		}
 
 		SECTION("Validating full SPIR-V code (using libspirv)")
@@ -320,6 +346,20 @@ void ExpectSPIRV(const nzsl::Ast::Module& shaderModule, std::string_view expecte
 			REQUIRE(spirvTools.Validate(spirv));
 		}
 	}
+}
+
+std::filesystem::path GetResourceDir()
+{
+	static std::filesystem::path resourceDir = []
+	{
+		std::filesystem::path dir = "resources";
+		if (!std::filesystem::is_directory(dir) && std::filesystem::is_directory(".." / dir))
+			dir = ".." / dir;
+
+		return dir;
+	}();
+
+	return resourceDir;
 }
 
 nzsl::Ast::ModulePtr SanitizeModule(const nzsl::Ast::Module& module)

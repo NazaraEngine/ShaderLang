@@ -45,6 +45,8 @@ namespace nzsl
 
 			static inline std::uint32_t BuildOpcode(SpirvOp opcode, unsigned int wordCount);
 
+			static constexpr std::size_t MaxWordCount = 0xFFFF;
+
 		protected:
 			inline std::size_t Append(SpirvOp opcode, const OpSize& wordCount);
 			template<typename... Args> std::size_t Append(SpirvOp opcode, const Args&... args);

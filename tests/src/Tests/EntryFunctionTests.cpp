@@ -4,7 +4,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <cctype>
 
-TEST_CASE("entry_points", "[Shader]")
+TEST_CASE("entry points", "[Shader]")
 {
 	SECTION("Fragment entry point")
 	{
@@ -57,7 +57,7 @@ void main()
 	gl_FragDepth = output_.depth;
 	return;
 }
-)", glslEnv);
+)", {}, glslEnv);
 
 				ExpectNZSL(*shaderModule, R"(
 struct FragOut
@@ -79,10 +79,11 @@ fn main() -> FragOut
       OpExecutionMode %11 ExecutionMode(OriginUpperLeft)
       OpExecutionMode %11 ExecutionMode(DepthReplacing)
       OpExecutionMode %11 ExecutionMode(DepthGreater)
-      OpName %11 "main"
+      OpSource SourceLanguage(Unknown) 100
       OpName %2 "FragOut"
       OpMemberName %2 0 "depth"
       OpName %6 "frag_depth"
+      OpName %11 "main"
       OpDecorate %6 Decoration(BuiltIn) BuiltIn(FragDepth)
       OpMemberDecorate %2 0 Decoration(Offset) 0
  %1 = OpTypeFloat 32
@@ -105,7 +106,7 @@ fn main() -> FragOut
 %17 = OpCompositeExtract %1 %16 0
       OpStore %6 %17
       OpReturn
-      OpFunctionEnd)", {}, true);
+      OpFunctionEnd)", {}, {}, true);
 			}
 
 			WHEN("Using depth_write(less)")
@@ -158,7 +159,7 @@ void main()
 	gl_FragDepth = output_.depth;
 	return;
 }
-)", glslEnv, false); //< glslang doesn't seem to support GL_ARB_conservative_depth
+)", {}, glslEnv, false); //< glslang doesn't seem to support GL_ARB_conservative_depth
 
 				ExpectNZSL(*shaderModule, R"(
 struct FragOut
@@ -180,10 +181,11 @@ fn main() -> FragOut
       OpExecutionMode %11 ExecutionMode(OriginUpperLeft)
       OpExecutionMode %11 ExecutionMode(DepthReplacing)
       OpExecutionMode %11 ExecutionMode(DepthLess)
-      OpName %11 "main"
+      OpSource SourceLanguage(Unknown) 100
       OpName %2 "FragOut"
       OpMemberName %2 0 "depth"
       OpName %6 "frag_depth"
+      OpName %11 "main"
       OpDecorate %6 Decoration(BuiltIn) BuiltIn(FragDepth)
       OpMemberDecorate %2 0 Decoration(Offset) 0
  %1 = OpTypeFloat 32
@@ -206,7 +208,7 @@ fn main() -> FragOut
 %17 = OpCompositeExtract %1 %16 0
       OpStore %6 %17
       OpReturn
-      OpFunctionEnd)", {}, true);
+      OpFunctionEnd)", {}, {}, true);
 			}
 
 			WHEN("Using depth_write(replace)")
@@ -264,7 +266,7 @@ void main()
 	gl_FragDepth = output_.depth;
 	return;
 }
-)", glslEnv, false); //< glslang doesn't seem to support GL_EXT_conservative_depth
+)", {}, glslEnv, false); //< glslang doesn't seem to support GL_EXT_conservative_depth
 
 				ExpectNZSL(*shaderModule, R"(
 struct FragOut
@@ -285,10 +287,11 @@ fn main() -> FragOut
       OpEntryPoint ExecutionModel(Fragment) %11 "main" %6
       OpExecutionMode %11 ExecutionMode(OriginUpperLeft)
       OpExecutionMode %11 ExecutionMode(DepthReplacing)
-      OpName %11 "main"
+      OpSource SourceLanguage(Unknown) 100
       OpName %2 "FragOut"
       OpMemberName %2 0 "depth"
       OpName %6 "frag_depth"
+      OpName %11 "main"
       OpDecorate %6 Decoration(BuiltIn) BuiltIn(FragDepth)
       OpMemberDecorate %2 0 Decoration(Offset) 0
  %1 = OpTypeFloat 32
@@ -311,7 +314,7 @@ fn main() -> FragOut
 %17 = OpCompositeExtract %1 %16 0
       OpStore %6 %17
       OpReturn
-      OpFunctionEnd)", {}, true);
+      OpFunctionEnd)", {}, {}, true);
 			}
 
 			WHEN("Using depth_write(unchanged)")
@@ -394,13 +397,14 @@ fn main(input: FragIn) -> FragOut
       OpExecutionMode %17 ExecutionMode(OriginUpperLeft)
       OpExecutionMode %17 ExecutionMode(DepthReplacing)
       OpExecutionMode %17 ExecutionMode(DepthUnchanged)
-      OpName %17 "main"
+      OpSource SourceLanguage(Unknown) 100
       OpName %3 "FragIn"
       OpMemberName %3 0 "fragCoord"
       OpName %4 "FragOut"
       OpMemberName %4 0 "depth"
       OpName %8 "frag_coord"
       OpName %14 "frag_depth"
+      OpName %17 "main"
       OpDecorate %8 Decoration(BuiltIn) BuiltIn(FragCoord)
       OpDecorate %14 Decoration(BuiltIn) BuiltIn(FragDepth)
       OpMemberDecorate %3 0 Decoration(Offset) 0
@@ -437,7 +441,7 @@ fn main(input: FragIn) -> FragOut
 %28 = OpCompositeExtract %1 %27 0
       OpStore %14 %28
       OpReturn
-      OpFunctionEnd)", {}, true);
+      OpFunctionEnd)", {}, {}, true);
 			}
 		}
 
@@ -474,7 +478,7 @@ void main()
 {
 
 }
-)", glslEnv);
+)", {}, glslEnv);
 				}
 				
 
@@ -501,7 +505,7 @@ void main()
 {
 
 }
-)", glslEnv);
+)", {}, glslEnv);
 				}
 				AND_WHEN("OpenGL ES has native support")
 				{
@@ -530,7 +534,7 @@ void main()
 {
 
 }
-)", glslEnv);
+)", {}, glslEnv);
 				}
 				AND_WHEN("OpenGL has no support")
 				{
@@ -557,7 +561,7 @@ void main()
 {
 
 }
-)", glslEnv);
+)", {}, glslEnv);
 				}
 
 				ExpectNZSL(*shaderModule, R"(
@@ -572,13 +576,14 @@ fn main()
      OpEntryPoint ExecutionModel(Fragment) %3 "main"
      OpExecutionMode %3 ExecutionMode(OriginUpperLeft)
      OpExecutionMode %3 ExecutionMode(EarlyFragmentTests)
+     OpSource SourceLanguage(Unknown) 100
      OpName %3 "main"
 %1 = OpTypeVoid
 %2 = OpTypeFunction %1
 %3 = OpFunction %1 FunctionControl(0) %2
 %4 = OpLabel
      OpReturn
-     OpFunctionEnd)", {}, true);
+     OpFunctionEnd)", {}, {}, true);
 			}
 			
 			WHEN("Disabling early fragment tests")
@@ -612,7 +617,7 @@ void main()
 {
 
 }
-)", glslEnv);
+)", {}, glslEnv);
 
 				ExpectNZSL(*shaderModule, R"(
 [entry(frag), early_fragment_tests(false)]
@@ -625,13 +630,14 @@ fn main()
 				ExpectSPIRV(*shaderModule, R"(
      OpEntryPoint ExecutionModel(Fragment) %3 "main"
      OpExecutionMode %3 ExecutionMode(OriginUpperLeft)
+     OpSource SourceLanguage(Unknown) 100
      OpName %3 "main"
 %1 = OpTypeVoid
 %2 = OpTypeFunction %1
 %3 = OpFunction %1 FunctionControl(0) %2
 %4 = OpLabel
      OpReturn
-     OpFunctionEnd)", {}, true);
+     OpFunctionEnd)", {}, {}, true);
 			}
 		}
 	}

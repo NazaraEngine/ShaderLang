@@ -35,6 +35,8 @@ namespace nzsl
 
 	void SpirvAstVisitor::Visit(Ast::AccessIndexExpression& node)
 	{
+		HandleSourceLocation(node.sourceLocation);
+
 		SpirvExpressionLoad accessMemberVisitor(m_writer, *this, *m_currentBlock);
 		PushResultId(accessMemberVisitor.Evaluate(node));
 	}
@@ -45,6 +47,8 @@ namespace nzsl
 			throw std::runtime_error("unexpected assign expression (should have been removed by sanitization)");
 
 		std::uint32_t resultId = EvaluateExpression(*node.right);
+
+		HandleSourceLocation(node.sourceLocation);
 
 		SpirvExpressionStore storeVisitor(m_writer, *this, *m_currentBlock);
 		storeVisitor.Store(node.left, resultId);
@@ -77,6 +81,8 @@ namespace nzsl
 		std::uint32_t leftOperand = EvaluateExpression(*node.left);
 		std::uint32_t rightOperand = EvaluateExpression(*node.right);
 		std::uint32_t resultId = m_writer.AllocateResultId();
+
+		HandleSourceLocation(node.sourceLocation);
 
 		bool compositeVecLeft = false;
 		bool compositeVecRight = false;
@@ -442,6 +448,9 @@ namespace nzsl
 		auto elseBlock = std::make_unique<SpirvBlock>(m_writer);
 
 		std::uint32_t conditionId = EvaluateExpression(*condStatement.condition);
+
+		HandleSourceLocation(node.sourceLocation);
+
 		m_currentBlock->Append(SpirvOp::OpSelectionMerge, mergeBlock->GetLabelId(), SpirvSelectionControl::None);
 		// FIXME: Can we use merge block directly in OpBranchConditional if no else statement?
 		m_currentBlock->Append(SpirvOp::OpBranchConditional, conditionId, contentBlock->GetLabelId(), elseBlock->GetLabelId());
@@ -467,10 +476,12 @@ namespace nzsl
 		m_currentBlock = m_functionBlocks.back().get();
 	}
 
-	void SpirvAstVisitor::Visit(Ast::BreakStatement& /*node*/)
+	void SpirvAstVisitor::Visit(Ast::BreakStatement& node)
 	{
 		if (!m_breakTarget)
 			throw std::runtime_error("break statement outside of while");
+
+		HandleSourceLocation(node.sourceLocation);
 
 		m_currentBlock->Append(SpirvOp::OpBranch, *m_breakTarget);
 	}
@@ -502,6 +513,8 @@ namespace nzsl
 
 			parameterIds[i] = varId;
 		}
+
+		HandleSourceLocation(node.sourceLocation);
 
 		std::uint32_t resultId = AllocateResultId();
 		m_currentBlock->AppendVariadic(SpirvOp::OpFunctionCall, [&](auto&& appender)
@@ -549,6 +562,8 @@ namespace nzsl
 			std::uint32_t fromId = EvaluateExpression(*expression);
 			if (targetBaseType == fromBaseType)
 				return PushResultId(fromId);
+
+			HandleSourceLocation(node.sourceLocation);
 
 			std::optional<SpirvOp> castOp;
 			switch (targetBaseType)
@@ -681,6 +696,8 @@ namespace nzsl
 			for (auto& exprPtr : node.expressions)
 				exprResults.push_back(EvaluateExpression(*exprPtr));
 
+			HandleSourceLocation(node.sourceLocation);
+
 			std::uint32_t resultId = m_writer.AllocateResultId();
 
 			m_currentBlock->AppendVariadic(SpirvOp::OpCompositeConstruct, [&](const auto& appender)
@@ -698,6 +715,8 @@ namespace nzsl
 
 	void SpirvAstVisitor::Visit(Ast::ConstantExpression& node)
 	{
+		HandleSourceLocation(node.sourceLocation);
+
 		SpirvExpressionLoad accessMemberVisitor(m_writer, *this, *m_currentBlock);
 		PushResultId(accessMemberVisitor.Evaluate(node));
 	}
@@ -707,10 +726,12 @@ namespace nzsl
 		PushResultId(m_writer.GetSingleConstantId(node.value));
 	}
 
-	void SpirvAstVisitor::Visit(Ast::ContinueStatement& /*node*/)
+	void SpirvAstVisitor::Visit(Ast::ContinueStatement& node)
 	{
 		if (!m_continueTarget)
 			throw std::runtime_error("continue statement outside of while");
+
+		HandleSourceLocation(node.sourceLocation);
 
 		m_currentBlock->Append(SpirvOp::OpBranch, *m_continueTarget);
 	}
@@ -737,6 +758,8 @@ namespace nzsl
 
 		auto& func = m_funcData[m_funcIndex];
 
+		HandleSourceLocation(node.sourceLocation);
+
 		m_instructions.Append(SpirvOp::OpFunction, func.returnTypeId, func.funcId, 0, func.funcTypeId);
 
 		if (!func.parameters.empty())
@@ -744,6 +767,8 @@ namespace nzsl
 			assert(node.parameters.size() == func.parameters.size());
 			for (std::size_t i = 0; i < func.parameters.size(); ++i)
 			{
+				HandleSourceLocation(node.parameters[i].sourceLocation);
+
 				std::uint32_t paramResultId = m_writer.AllocateResultId();
 				m_instructions.Append(SpirvOp::OpFunctionParameter, func.parameters[i].pointerTypeId, paramResultId);
 
@@ -759,8 +784,12 @@ namespace nzsl
 
 		Nz::CallOnExit resetCurrentBlock([&] { m_currentBlock = nullptr; });
 
+		ResetSourceLocation();
+
 		for (auto& var : func.variables)
 		{
+			HandleSourceLocation(var.sourceLocation);
+
 			var.varId = m_writer.AllocateResultId();
 			m_currentBlock->Append(SpirvOp::OpVariable, var.typeId, var.varId, SpirvStorageClass::Function);
 		}
@@ -803,10 +832,9 @@ namespace nzsl
 		/* nothing to do */
 	}
 
-	void SpirvAstVisitor::Visit(Ast::DeclareStructStatement& node)
+	void SpirvAstVisitor::Visit(Ast::DeclareStructStatement& /*node*/)
 	{
-		assert(node.structIndex);
-		RegisterStruct(*node.structIndex, &node.description);
+		/* nothing to do (handled by pre-visitor) */
 	}
 
 	void SpirvAstVisitor::Visit(Ast::DeclareVariableStatement& node)
@@ -828,8 +856,10 @@ namespace nzsl
 		}
 	}
 
-	void SpirvAstVisitor::Visit(Ast::DiscardStatement& /*node*/)
+	void SpirvAstVisitor::Visit(Ast::DiscardStatement& node)
 	{
+		HandleSourceLocation(node.sourceLocation);
+
 		m_currentBlock->Append(SpirvOp::OpKill);
 	}
 
@@ -867,6 +897,8 @@ namespace nzsl
 				for (std::size_t i = 0; i < node.parameters.size(); ++i)
 					parameterIds[i] = EvaluateExpression(*node.parameters[i]);
 
+				HandleSourceLocation(node.sourceLocation);
+
 				std::uint32_t resultId = m_writer.AllocateResultId();
 
 				m_currentBlock->AppendVariadic(SpirvOp::OpExtInst, [&](auto&& append)
@@ -900,6 +932,8 @@ namespace nzsl
 					resultId = m_writer.AllocateResultId();
 				else
 					resultId = 0;
+
+				HandleSourceLocation(node.sourceLocation);
 
 				m_currentBlock->AppendVariadic(arg, [&](auto&& append)
 				{
@@ -955,13 +989,23 @@ namespace nzsl
 					}
 				}
 
+				HandleSourceLocation(node.sourceLocation);
+
 				m_currentBlock->Append(SpirvOp::OpReturn);
 			}
 			else
+			{
+				HandleSourceLocation(node.sourceLocation);
+
 				m_currentBlock->Append(SpirvOp::OpReturnValue, EvaluateExpression(*node.returnExpr));
+			}
 		}
 		else
+		{
+			HandleSourceLocation(node.sourceLocation);
+
 			m_currentBlock->Append(SpirvOp::OpReturn);
+		}
 	}
 
 	void SpirvAstVisitor::Visit(Ast::ScopedStatement& node)
@@ -978,6 +1022,8 @@ namespace nzsl
 
 		const Ast::ExpressionType* targetExprType = GetExpressionType(node);
 		assert(targetExprType);
+
+		HandleSourceLocation(node.sourceLocation);
 
 		if (node.componentCount > 1)
 		{
@@ -1061,6 +1107,8 @@ namespace nzsl
 					assert(IsPrimitiveType(*exprType));
 					assert(std::get<Ast::PrimitiveType>(*resultType) == Ast::PrimitiveType::Boolean);
 
+					HandleSourceLocation(node.sourceLocation);
+
 					std::uint32_t resultId = m_writer.AllocateResultId();
 					m_currentBlock->Append(SpirvOp::OpLogicalNot, m_writer.GetTypeId(*resultType), resultId, operand);
 
@@ -1076,6 +1124,8 @@ namespace nzsl
 						basicType = std::get<Ast::VectorType>(*exprType).type;
 					else
 						throw std::runtime_error("unexpected expression type");
+
+					HandleSourceLocation(node.sourceLocation);
 
 					std::uint32_t resultId = m_writer.AllocateResultId();
 
@@ -1108,6 +1158,8 @@ namespace nzsl
 
 	void SpirvAstVisitor::Visit(Ast::VariableValueExpression& node)
 	{
+		HandleSourceLocation(node.sourceLocation);
+
 		SpirvExpressionLoad loadVisitor(m_writer, *this, *m_currentBlock);
 		PushResultId(loadVisitor.Evaluate(node));
 	}
@@ -1121,6 +1173,8 @@ namespace nzsl
 		auto bodyBlock = std::make_unique<SpirvBlock>(m_writer);
 		auto mergeBlock = std::make_unique<SpirvBlock>(m_writer);
 		auto continueBlock = std::make_unique<SpirvBlock>(m_writer);
+
+		HandleSourceLocation(node.sourceLocation);
 
 		m_currentBlock->Append(SpirvOp::OpBranch, headerBlock->GetLabelId());
 		m_currentBlock = headerBlock.get();
@@ -1211,6 +1265,8 @@ namespace nzsl
 
 		std::uint32_t arrayMemberIndex = Nz::SafeCast<std::uint32_t>(std::get<std::int32_t>(memberConstant.value));
 
+		HandleSourceLocation(node.sourceLocation);
+
 		std::uint32_t resultId = m_writer.AllocateResultId();
 		m_currentBlock->Append(SpirvOp::OpArrayLength, typeId, resultId, structId, arrayMemberIndex);
 
@@ -1231,6 +1287,8 @@ namespace nzsl
 		const Ast::ExpressionType& condType = ResolveAlias(EnsureExpressionType(*node.parameters[0]));
 		const Ast::ExpressionType& paramType = ResolveAlias(EnsureExpressionType(*node.parameters[1]));
 		assert(paramType == ResolveAlias(EnsureExpressionType(*node.parameters[2])));
+
+		HandleSourceLocation(node.sourceLocation);
 
 		// OpSelect cannot select parameters using a single boolean before SPIR-V 1.4
 		if (!m_writer.IsVersionGreaterOrEqual(1, 4) && IsVectorType(paramType) && !IsVectorType(condType))
@@ -1440,6 +1498,27 @@ namespace nzsl
 		throw std::runtime_error("unexpected type " + ToString(basicType) + " for sign intrinsic");
 	}
 
+	void SpirvAstVisitor::HandleSourceLocation(const SourceLocation& sourceLocation)
+	{
+		if (!m_writer.HasDebugInfo(DebugLevel::Regular))
+			return;
+
+		if (!sourceLocation.IsValid() || !sourceLocation.file)
+			return;
+
+		if (m_lastLocation.file == sourceLocation.file && m_lastLocation.startLine == sourceLocation.startLine && m_lastLocation.startColumn == sourceLocation.startColumn)
+			return;
+
+		std::uint32_t fileId = m_writer.GetSourceFileId(sourceLocation.file);
+
+		if (m_currentBlock)
+			m_currentBlock->Append(SpirvOp::OpLine, fileId, sourceLocation.startLine, sourceLocation.startColumn);
+		else
+			m_instructions.Append(SpirvOp::OpLine, fileId, sourceLocation.startLine, sourceLocation.startColumn);
+
+		m_lastLocation = sourceLocation;
+	}
+
 	void SpirvAstVisitor::HandleStatementList(const std::vector<Ast::StatementPtr>& statements)
 	{
 		for (auto& statement : statements)
@@ -1465,5 +1544,19 @@ namespace nzsl
 		m_resultIds.pop_back();
 
 		return resultId;
+	}
+
+	void SpirvAstVisitor::ResetSourceLocation()
+	{
+		if (!m_writer.HasDebugInfo(DebugLevel::Regular))
+			return;
+
+		if (!m_lastLocation.IsValid())
+			return;
+
+		assert(m_currentBlock);
+		m_currentBlock->Append(SpirvOp::OpNoLine);
+
+		m_lastLocation = SourceLocation{};
 	}
 }
