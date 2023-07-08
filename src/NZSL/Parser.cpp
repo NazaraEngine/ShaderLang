@@ -421,9 +421,9 @@ namespace nzsl
 				moduleName.resize(33);
 				moduleName[0] = '_';
 			
-				const char characterSet[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+				constexpr char characterSet[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 				std::default_random_engine randomEngine(std::random_device{}());
-				std::uniform_int_distribution<std::size_t> dis(0, std::size(characterSet) - 1);
+				std::uniform_int_distribution<std::size_t> dis(0, std::size(characterSet) - 2); //< -2 because of null character and because uniform_int_dis is inclusive
 				
 				for (std::size_t i = 1; i < moduleName.size(); ++i)
 					moduleName[i] = characterSet[dis(randomEngine)];
