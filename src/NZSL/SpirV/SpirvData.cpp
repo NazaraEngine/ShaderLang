@@ -11938,6 +11938,7 @@ namespace nzsl
 			case SpirvSourceLanguage::CPP_for_OpenCL: return R"(CPP_for_OpenCL)";
 			case SpirvSourceLanguage::SYCL: return R"(SYCL)";
 			case SpirvSourceLanguage::HERO_C: return R"(HERO_C)";
+			case SpirvSourceLanguage::NZSL: return R"(NZSL)";
 		}
 
 		return "<unhandled value>";
