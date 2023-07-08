@@ -46,6 +46,12 @@ module;
 [cond(true)]
 )"), "(7, 0): PUnexpectedToken error: unexpected token EndOfStream");
 
+		CHECK_THROWS_WITH(nzsl::Parse(R"(
+[nzsl_version("1.0")]
+[autor("Typo")]
+module;
+)"), "(3,2 -> 6): PUnknownAttribute error: unknown attribute \"autor\"");
+
 		// alias statements don't support attributes
 		CHECK_THROWS_WITH(nzsl::Parse(R"(
 [nzsl_version("1.0")]

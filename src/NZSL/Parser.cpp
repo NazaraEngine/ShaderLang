@@ -255,7 +255,7 @@ namespace nzsl
 
 			auto it = s_attributeMapping.find(identifier);
 			if (it == s_attributeMapping.end())
-				throw ParserUnknownAttributeError{ identifierToken.location };
+				throw ParserUnknownAttributeError{ identifierToken.location, identifier };
 
 			Ast::AttributeType attributeType = it->second;
 
