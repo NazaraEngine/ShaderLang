@@ -107,6 +107,14 @@ namespace nzsl
 			m_context->module->rootNode->statements.push_back(std::move(statement));
 		}
 
+		// Handle source location for the root node of the module
+		Ast::MultiStatementPtr& moduleStatements = m_context->module->rootNode;
+		if (!moduleStatements->statements.empty())
+		{
+			moduleStatements->sourceLocation = moduleStatements->statements.front()->sourceLocation;
+			moduleStatements->sourceLocation.ExtendToRight(moduleStatements->statements.back()->sourceLocation);
+		}
+
 		return std::move(context.module);
 	}
 
