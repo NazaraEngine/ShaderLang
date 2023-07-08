@@ -1,4 +1,7 @@
 [nzsl_version("1.0")]
+[author("SirLynix")]
+[desc("Test color module")]
+[license("MIT")]
 module Color;
 
 [set(0)]

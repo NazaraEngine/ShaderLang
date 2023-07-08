@@ -8,9 +8,9 @@
 #define NZSL_SHADERWRITER_HPP
 
 #include <NZSL/Config.hpp>
+#include <NZSL/Enums.hpp>
 #include <NZSL/Ast/ConstantValue.hpp>
 #include <memory>
-#include <string>
 #include <unordered_map>
 
 namespace nzsl
@@ -31,6 +31,7 @@ namespace nzsl
 			{
 				std::shared_ptr<ModuleResolver> shaderModuleResolver;
 				std::unordered_map<std::uint32_t, Ast::ConstantValue> optionValues;
+				DebugLevel debugLevel = DebugLevel::Minimal;
 				bool optimize = false;
 				bool sanitized = false;
 			};

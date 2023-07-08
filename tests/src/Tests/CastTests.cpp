@@ -61,7 +61,7 @@ void main()
 	double x_8 = double(uVal);
 	int x_9 = int(uVal);
 }
-)", glslEnv);
+)", {}, glslEnv);
 
 		ExpectNZSL(*shaderModule, R"(
 [entry(frag)]
@@ -129,6 +129,6 @@ fn main()
 %45 = OpBitcast %8 %44
       OpStore %26 %45
       OpReturn
-      OpFunctionEnd)", {}, true);
+      OpFunctionEnd)", {}, {}, true);
 	}
 }

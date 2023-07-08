@@ -55,15 +55,17 @@ namespace nzsl
 	{
 		std::size_t offset = GetOutputOffset();
 
-		std::size_t size4 = CountWord(str);
-		for (std::size_t i = 0; i < size4; ++i)
+		std::size_t wordCount = CountWord(str);
+		for (std::size_t i = 0; i < wordCount; ++i)
 		{
 			std::uint32_t codepoint = 0;
 			for (std::size_t j = 0; j < 4; ++j)
 			{
 				std::size_t pos = i * 4 + j;
-				if (pos < str.size())
-					codepoint |= std::uint32_t(str[pos]) << (j * 8);
+				if (pos >= str.size())
+					break;
+
+				codepoint |= std::uint32_t(str[pos]) << (j * 8);
 			}
 
 			AppendRaw(codepoint);

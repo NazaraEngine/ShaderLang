@@ -79,4 +79,14 @@ namespace nzsl
 	{
 		return startLine != 0 || endLine != 0 || endColumn != 0 || startColumn != 0;
 	}
+
+	inline bool SourceLocation::operator==(const SourceLocation& other) const
+	{
+		return file == other.file && endColumn == other.endColumn && endLine == other.endLine && startColumn == other.startColumn && startLine == other.startLine;
+	}
+
+	inline bool SourceLocation::operator!=(const SourceLocation& other) const
+	{
+		return !operator==(other);
+	}
 }

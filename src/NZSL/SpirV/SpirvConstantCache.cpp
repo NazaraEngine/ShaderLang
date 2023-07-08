@@ -414,6 +414,15 @@ namespace nzsl
 
 	struct SpirvConstantCache::Internal
 	{
+		struct Source
+		{
+			SpirvSourceLanguage language;
+			std::string fileSource;
+			std::uint32_t file = 0;
+			std::uint32_t version;
+			std::vector<std::string> extensions;
+		};
+
 		struct StructOffsets
 		{
 			FieldOffsets fieldOffsets;
@@ -425,6 +434,8 @@ namespace nzsl
 		{
 		}
 
+		std::vector<Source> debugSources;
+		tsl::ordered_map<std::string, std::uint32_t /*id*/, std::hash<std::string_view>, std::equal_to<>> debugStrings;
 		tsl::ordered_map<std::variant<AnyConstant, AnyType>, std::uint32_t /*id*/, AnyHasher, Eq> ids;
 		tsl::ordered_map<Variable, std::uint32_t /*id*/, AnyHasher, Eq> variableIds;
 		StructCallback structCallback;
@@ -937,6 +948,15 @@ namespace nzsl
 		return BuildType(type.containedType);
 	}
 
+	std::uint32_t SpirvConstantCache::GetId(std::string_view debugString)
+	{
+		auto it = m_internal->debugStrings.find(debugString);
+		if (it == m_internal->debugStrings.end())
+			throw std::runtime_error("debug string is not registered");
+
+		return it->second;
+	}
+
 	std::uint32_t SpirvConstantCache::GetId(const Constant& c)
 	{
 		auto it = m_internal->ids.find(c.constant);
@@ -962,6 +982,19 @@ namespace nzsl
 			throw std::runtime_error("variable is not registered");
 
 		return it->second;
+	}
+
+	std::uint32_t SpirvConstantCache::Register(std::string str)
+	{
+		std::size_t h = m_internal->debugStrings.hash_function()(str);
+		auto it = m_internal->debugStrings.find(str, h);
+		if (it == m_internal->debugStrings.end())
+		{
+			std::uint32_t resultId = m_internal->nextResultId++;
+			it = m_internal->debugStrings.emplace(std::move(str), resultId).first;
+		}
+
+		return it.value();
 	}
 
 	std::uint32_t SpirvConstantCache::Register(Constant c)
@@ -1014,6 +1047,26 @@ namespace nzsl
 		}
 
 		return it.value();
+	}
+
+	void SpirvConstantCache::RegisterSource(SpirvSourceLanguage sourceLang, std::uint32_t version, std::uint32_t fileNameId, std::string source)
+	{
+		//FIXME: NZSL has been registered to Khronos but tools are not up-to-date (libspirv won't validate a source code using NZSL as a source language)
+		// Keep unknown for now
+		if (sourceLang == SpirvSourceLanguage::NZSL)
+			sourceLang = SpirvSourceLanguage::Unknown;
+
+		auto& sourceData = m_internal->debugSources.emplace_back();
+		sourceData.file = fileNameId;
+		sourceData.fileSource = std::move(source);
+		sourceData.language = sourceLang;
+		sourceData.version = version;
+	}
+
+	void SpirvConstantCache::RegisterSourceExtension(std::string sourceExtension)
+	{
+		assert(!m_internal->debugSources.empty());
+		m_internal->debugSources.back().extensions.emplace_back(std::move(sourceExtension));
 	}
 
 	std::size_t SpirvConstantCache::RegisterArrayField(FieldOffsets& fieldOffsets, const Array& type, std::size_t arrayLength) const
@@ -1098,8 +1151,43 @@ namespace nzsl
 		m_internal->structCallback = std::move(callback);
 	}
 
-	void SpirvConstantCache::Write(SpirvSection& annotations, SpirvSection& constants, SpirvSection& debugInfos)
+	void SpirvConstantCache::Write(SpirvSection& annotations, SpirvSection& constants, SpirvSection& debugInfos, DebugLevel debugLevel)
 	{
+		for (auto&& [str, id] : m_internal->debugStrings)
+			debugInfos.Append(SpirvOp::OpString, id, str);
+
+		for (auto&& sourceInfo : m_internal->debugSources)
+		{
+			constexpr std::size_t maxStringLength = 4 * (SpirvSection::MaxWordCount - 4) - 1; //< -1 for null
+
+			std::string_view remainingSource = sourceInfo.fileSource;
+			debugInfos.AppendVariadic(SpirvOp::OpSource, [&](const auto& appender)
+			{
+				appender(sourceInfo.language);
+				appender(sourceInfo.version);
+				if (sourceInfo.file != 0)
+				{
+					appender(sourceInfo.file);
+					if (!remainingSource.empty())
+					{
+						appender(remainingSource.substr(0, maxStringLength));
+						remainingSource.remove_prefix(std::min(remainingSource.size(), maxStringLength));
+					}
+				}
+			});
+
+			// OpSourceContinued if required
+			while (!remainingSource.empty())
+			{
+				debugInfos.Append(SpirvOp::OpSourceContinued, remainingSource.substr(0, maxStringLength));
+				remainingSource.remove_prefix(std::min(remainingSource.size(), maxStringLength));
+			}
+
+			// OpSourceExtension
+			for (auto&& ext : sourceInfo.extensions)
+				debugInfos.Append(SpirvOp::OpSourceExtension, ext);
+		}
+
 		for (auto&& [object, id] : m_internal->ids)
 		{
 			std::uint32_t resultId = id;
@@ -1107,7 +1195,7 @@ namespace nzsl
 			std::visit(Nz::Overloaded
 			{
 				[&](const AnyConstant& constant) { Write(constant, resultId, constants); },
-				[&](const AnyType& type) { Write(type, resultId, annotations, constants, debugInfos); },
+					[&](const AnyType& type) { Write(type, resultId, annotations, constants, debugInfos, debugLevel); },
 			}, object);
 		}
 
@@ -1116,7 +1204,7 @@ namespace nzsl
 			const auto& var = variable;
 			std::uint32_t resultId = id;
 
-			if (!variable.debugName.empty())
+			if (!variable.debugName.empty() && debugLevel >= DebugLevel::Minimal)
 				debugInfos.Append(SpirvOp::OpName, resultId, variable.debugName);
 
 			constants.AppendVariadic(SpirvOp::OpVariable, [&](const auto& appender)
@@ -1183,7 +1271,7 @@ namespace nzsl
 		}, constant);
 	}
 
-	void SpirvConstantCache::Write(const AnyType& type, std::uint32_t resultId, SpirvSection& annotations, SpirvSection& constants, SpirvSection& debugInfos)
+	void SpirvConstantCache::Write(const AnyType& type, std::uint32_t resultId, SpirvSection& annotations, SpirvSection& constants, SpirvSection& debugInfos, DebugLevel debugLevel)
 	{
 		std::visit([&](auto&& arg)
 		{
@@ -1254,7 +1342,7 @@ namespace nzsl
 			else if constexpr (std::is_same_v<T, SampledImage>)
 				constants.Append(SpirvOp::OpTypeSampledImage, resultId, GetId(*arg.image));
 			else if constexpr (std::is_same_v<T, Structure>)
-				WriteStruct(arg, resultId, annotations, constants, debugInfos);
+				WriteStruct(arg, resultId, annotations, constants, debugInfos, debugLevel);
 			else if constexpr (std::is_same_v<T, Vector>)
 				constants.Append(SpirvOp::OpTypeVector, resultId, GetId(*arg.componentType), arg.componentCount);
 			else if constexpr (std::is_same_v<T, Void>)
@@ -1264,7 +1352,7 @@ namespace nzsl
 		}, type);
 	}
 
-	void SpirvConstantCache::WriteStruct(const Structure& structData, std::uint32_t resultId, SpirvSection& annotations, SpirvSection& constants, SpirvSection& debugInfos)
+	void SpirvConstantCache::WriteStruct(const Structure& structData, std::uint32_t resultId, SpirvSection& annotations, SpirvSection& constants, SpirvSection& debugInfos, DebugLevel debugLevel)
 	{
 		constants.AppendVariadic(SpirvOp::OpTypeStruct, [&](const auto& appender)
 		{
@@ -1274,7 +1362,8 @@ namespace nzsl
 				appender(GetId(*member.type));
 		});
 
-		debugInfos.Append(SpirvOp::OpName, resultId, structData.name);
+		if (debugLevel >= DebugLevel::Minimal)
+			debugInfos.Append(SpirvOp::OpName, resultId, structData.name);
 
 		for (SpirvDecoration decoration : structData.decorations)
 			annotations.Append(SpirvOp::OpDecorate, resultId, decoration);
@@ -1282,7 +1371,8 @@ namespace nzsl
 		for (std::size_t memberIndex = 0; memberIndex < structData.members.size(); ++memberIndex)
 		{
 			const auto& member = structData.members[memberIndex];
-			debugInfos.Append(SpirvOp::OpMemberName, resultId, memberIndex, member.name);
+			if (debugLevel >= DebugLevel::Minimal)
+				debugInfos.Append(SpirvOp::OpMemberName, resultId, memberIndex, member.name);
 
 			std::uint32_t offset = member.offset.value();
 

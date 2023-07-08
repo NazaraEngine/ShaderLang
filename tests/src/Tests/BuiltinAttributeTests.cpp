@@ -100,7 +100,7 @@ void main()
 	gl_Position = output_.position;
 	return;
 }
-)", glslEnv, false); //< glslang doesn't seem to support GL_ARB_shader_draw_parameters
+)", {}, glslEnv, false); //< glslang doesn't seem to support GL_ARB_shader_draw_parameters
 		}
 		
 		WHEN("generating with native draw parameters support")
@@ -145,7 +145,7 @@ void main()
 	gl_Position = output_.position;
 	return;
 }
-)", glslEnv);
+)", {}, glslEnv);
 		}
 		
 		WHEN("generating with fallback draw parameters support")
@@ -194,7 +194,7 @@ void main()
 	gl_Position = output_.position;
 	return;
 }
-)", glslEnv);
+)", {}, glslEnv);
 		}
 
 		ExpectNZSL(*shaderModule, R"(
@@ -244,7 +244,7 @@ fn main(input: Input) -> Output
       OpDecorate %14 Decoration(BuiltIn) BuiltIn(DrawIndex)
       OpDecorate %16 Decoration(BuiltIn) BuiltIn(InstanceIndex)
       OpDecorate %18 Decoration(BuiltIn) BuiltIn(VertexIndex)
-      OpDecorate %22 Decoration(BuiltIn) BuiltIn(Position))", spirvEnv, true);
+      OpDecorate %22 Decoration(BuiltIn) BuiltIn(Position))", {}, spirvEnv, true);
 		}
 	}
 	
@@ -324,7 +324,7 @@ fn main(input: Input) -> Output
 }
 )");
 
-		ExpectSPIRV(*shaderModule, R"(OpDecorate %9 Decoration(BuiltIn) BuiltIn(VertexIndex))", {}, true);
+		ExpectSPIRV(*shaderModule, R"(OpDecorate %9 Decoration(BuiltIn) BuiltIn(VertexIndex))", {}, {}, true);
 	}
 
 	SECTION("vertex position")
@@ -368,7 +368,7 @@ void main()
 	gl_Position = output_.position;
 	return;
 }
-)", env);
+)", {}, env);
 		}
 
 		WHEN("generating GLSL with gl_Position.y flipped")
@@ -392,7 +392,7 @@ void main()
 	gl_Position.y *= _nzslFlipYValue;
 	return;
 }
-)", env);
+)", {}, env);
 		}
 
 		WHEN("generating GLSL with gl_Position.z remapped")
@@ -414,7 +414,7 @@ void main()
 	gl_Position.z = gl_Position.z * 2.0 - gl_Position.w;
 	return;
 }
-)", env);
+)", {}, env);
 		}
 
 		ExpectNZSL(*shaderModule, R"(
@@ -427,6 +427,6 @@ fn main() -> Output
 }
 )");
 
-		ExpectSPIRV(*shaderModule, R"(OpDecorate %7 Decoration(BuiltIn) BuiltIn(Position))", {}, true);
+		ExpectSPIRV(*shaderModule, R"(OpDecorate %7 Decoration(BuiltIn) BuiltIn(Position))", {}, {}, true);
 	}
 }

@@ -8,6 +8,7 @@
 #define NZSL_SPIRV_SPIRVCONSTANTCACHE_HPP
 
 #include <NZSL/Config.hpp>
+#include <NZSL/Enums.hpp>
 #include <NZSL/Ast/ConstantValue.hpp>
 #include <NZSL/Ast/Enums.hpp>
 #include <NZSL/Ast/ExpressionType.hpp>
@@ -195,13 +196,18 @@ namespace nzsl
 			TypePtr BuildType(const Ast::VectorType& type) const;
 			TypePtr BuildType(const Ast::UniformType& type) const;
 
+			std::uint32_t GetId(std::string_view debugString);
 			std::uint32_t GetId(const Constant& c);
 			std::uint32_t GetId(const Type& t);
 			std::uint32_t GetId(const Variable& v);
 
+			std::uint32_t Register(std::string debugString);
 			std::uint32_t Register(Constant c);
 			std::uint32_t Register(Type t);
 			std::uint32_t Register(Variable v);
+			
+			void RegisterSource(SpirvSourceLanguage sourceLang, std::uint32_t version, std::uint32_t fileNameId = 0, std::string source = "");
+			void RegisterSourceExtension(std::string sourceExtension);
 
 			std::size_t RegisterArrayField(FieldOffsets& fieldOffsets, const Array& type, std::size_t arrayLength) const;
 			std::size_t RegisterArrayField(FieldOffsets& fieldOffsets, const Bool& type, std::size_t arrayLength) const;
@@ -219,7 +225,7 @@ namespace nzsl
 
 			void SetStructCallback(StructCallback callback);
 
-			void Write(SpirvSection& annotations, SpirvSection& constants, SpirvSection& debugInfos);
+			void Write(SpirvSection& annotations, SpirvSection& constants, SpirvSection& debugInfos, DebugLevel debugInfo);
 
 			SpirvConstantCache& operator=(const SpirvConstantCache& cache) = delete;
 			SpirvConstantCache& operator=(SpirvConstantCache&& cache) noexcept;
@@ -233,9 +239,9 @@ namespace nzsl
 			template<typename T> static Type BuildSingleType();
 
 			void Write(const AnyConstant& constant, std::uint32_t resultId, SpirvSection& constants);
-			void Write(const AnyType& type, std::uint32_t resultId, SpirvSection& annotations, SpirvSection& constants, SpirvSection& debugInfos);
+			void Write(const AnyType& type, std::uint32_t resultId, SpirvSection& annotations, SpirvSection& constants, SpirvSection& debugInfos, DebugLevel debugInfo);
 
-			void WriteStruct(const Structure& structData, std::uint32_t resultId, SpirvSection& annotations, SpirvSection& constants, SpirvSection& debugInfos);
+			void WriteStruct(const Structure& structData, std::uint32_t resultId, SpirvSection& annotations, SpirvSection& constants, SpirvSection& debugInfos, DebugLevel debugInfo);
 
 			std::unique_ptr<Internal> m_internal;
 	};

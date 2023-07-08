@@ -68,14 +68,16 @@ namespace nzsl
 			std::uint32_t GetExtVarPointerId(std::size_t varIndex) const;
 			std::uint32_t GetFunctionTypeId(const Ast::DeclareFunctionStatement& functionNode);
 			std::uint32_t GetPointerTypeId(const Ast::ExpressionType& type, SpirvStorageClass storageClass) const;
+			std::uint32_t GetSourceFileId(const std::shared_ptr<const std::string>& filepathPtr);
 			std::uint32_t GetTypeId(const Ast::ExpressionType& type) const;
 
+			bool HasDebugInfo(DebugLevel debugInfo) const;
 			bool IsVersionGreaterOrEqual(std::uint32_t spvMajor, std::uint32_t spvMinor) const;
 
 			std::uint32_t RegisterArrayConstant(const Ast::ConstantArrayValue& value);
-			std::uint32_t RegisterSingleConstant(const Ast::ConstantSingleValue& value);
 			std::uint32_t RegisterFunctionType(const Ast::DeclareFunctionStatement& functionNode);
 			std::uint32_t RegisterPointerType(Ast::ExpressionType type, SpirvStorageClass storageClass);
+			std::uint32_t RegisterSingleConstant(const Ast::ConstantSingleValue& value);
 			std::uint32_t RegisterType(Ast::ExpressionType type);
 
 			static void MergeSections(std::vector<std::uint32_t>& output, const SpirvSection& from);

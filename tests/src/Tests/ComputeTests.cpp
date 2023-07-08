@@ -94,7 +94,7 @@ void main()
 
 	vec4 value = imageLoad(input_tex, ivec2(input_.indices.xy));
 	imageStore(output_tex, ivec2(input_.indices.xy), value);
-})", glslEnv);
+})", {}, glslEnv);
 
 		ExpectNZSL(*shaderModule, R"(
 [nzsl_version("1.0")]
@@ -135,7 +135,7 @@ fn main(input: Input)
       OpMemoryModel AddressingModel(Logical) MemoryModel(GLSL450)
       OpEntryPoint ExecutionModel(GLCompute) %27 "main" %17
       OpExecutionMode %27 ExecutionMode(LocalSize) 32 32 1
-      OpName %27 "main"
+      OpSource SourceLanguage(Unknown) 100
       OpName %3 "Data"
       OpMemberName %3 0 "tex_size"
       OpName %9 "Data"
@@ -146,6 +146,7 @@ fn main(input: Input)
       OpName %8 "output_tex"
       OpName %11 "data"
       OpName %17 "global_invocation_indices"
+      OpName %27 "main"
       OpDecorate %7 Decoration(Binding) 0
       OpDecorate %7 Decoration(DescriptorSet) 0
       OpDecorate %8 Decoration(Binding) 1
@@ -227,6 +228,6 @@ fn main(input: Input)
 %62 = OpLoad %25 %29
       OpImageWrite %57 %61 %62
       OpReturn
-      OpFunctionEnd)", {}, true);
+      OpFunctionEnd)", {}, {}, true);
 	}
 }

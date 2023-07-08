@@ -18,6 +18,14 @@ namespace nzsl
 		WriteOnly
 	};
 
+	enum class DebugLevel
+	{
+		Full    = 3, //< Full + Original source code is embed if possible
+		Regular = 2, //< Minimal + lines annotations (SPIR-V OpLine)
+		Minimal = 1, //< Variable names, struct members (SPIR-V OpName and OpMemberName are generated)
+		None    = 0, //< No effort is made to generate debug info (no SPIR-V debug annotation are generated)
+	};
+
 	enum class ImageFormat
 	{
 		Unknown,
