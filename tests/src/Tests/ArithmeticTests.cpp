@@ -305,7 +305,7 @@ fn main()
 %132 = OpAll %19 %131
        OpStore %58 %132
        OpReturn
-       OpFunctionEnd)", {}, true);
+       OpFunctionEnd)", {}, {}, true);
 	}
 
 	SECTION("Matrix/matrix operations")
@@ -509,7 +509,7 @@ fn main()
 %135 = OpMatrixTimesMatrix %5 %133 %134
        OpStore %18 %135
        OpReturn
-       OpFunctionEnd)", {}, true);
+       OpFunctionEnd)", {}, {}, true);
 	}
 	
 	SECTION("Matrix/scalars operations")
@@ -587,7 +587,7 @@ fn main()
 %39 = OpMatrixTimesScalar %5 %38 %37
       OpStore %22 %39
       OpReturn
-      OpFunctionEnd)", {}, true);
+      OpFunctionEnd)", {}, {}, true);
 	}
 	
 	SECTION("Vector/vector operations")
@@ -735,7 +735,7 @@ fn main()
 %71 = OpUMod %14 %69 %70
       OpStore %31 %71
       OpReturn
-      OpFunctionEnd)", {}, true);
+      OpFunctionEnd)", {}, {}, true);
 	}
 	
 	SECTION("Vector/scalars operations")
@@ -901,7 +901,7 @@ fn main()
 %85 = OpFMod %17 %86 %84
       OpStore %38 %85
       OpReturn
-      OpFunctionEnd)", {}, true);
+      OpFunctionEnd)", {}, {}, true);
 	}
 
 	SECTION("Unary operators combined with binary operators")
@@ -1003,7 +1003,7 @@ fn main()
 %25 = OpLogicalOr %1 %23 %24
       OpStore %17 %25
       OpReturn
-      OpFunctionEnd)", {}, true);
+      OpFunctionEnd)", {}, {}, true);
 	}
 
 	SECTION("Unary operators")
@@ -1064,6 +1064,6 @@ fn main()
 %16 = OpFMul %3 %14 %15
       OpStore %11 %16
       OpReturn
-      OpFunctionEnd)", {}, true);
+      OpFunctionEnd)", {}, {}, true);
 	}
 }

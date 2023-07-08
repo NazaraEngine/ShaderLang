@@ -56,7 +56,7 @@ void main()
 	uint arraySize = uint(a.length());
 	uint dynArraySize = uint(data.values.length());
 }
-)", glslEnv);
+)", {}, glslEnv);
 
 		ExpectNZSL(*shaderModule, R"(
 [layout(std140)]
@@ -110,7 +110,7 @@ fn main()
 %26 = OpArrayLength %14 %7 0
       OpStore %24 %26
       OpReturn
-      OpFunctionEnd)", {}, true);
+      OpFunctionEnd)", {}, {}, true);
 	}
 	
 	WHEN("testing texture intrinsics")
@@ -197,7 +197,7 @@ void main()
 	float depthSampleResult4 = texture(tex2DArrayDepth, vec4(uv3f, depth));
 	float depthSampleResult5 = texture(texCubeDepth, vec4(uv3f, depth));
 }
-)", glslEnv);
+)", {}, glslEnv);
 
 		ExpectNZSL(*shaderModule, R"(
 [auto_binding(true)]
@@ -243,7 +243,7 @@ fn main()
        OpMemoryModel AddressingModel(Logical) MemoryModel(GLSL450)
        OpEntryPoint ExecutionModel(Fragment) %59 "main"
        OpExecutionMode %59 ExecutionMode(OriginUpperLeft)
-       OpName %59 "main"
+       OpSource SourceLanguage(Unknown) 100
        OpName %5 "tex1D"
        OpName %9 "tex1DArray"
        OpName %13 "tex2D"
@@ -255,6 +255,7 @@ fn main()
        OpName %37 "tex2DDepth"
        OpName %41 "tex2DArrayDepth"
        OpName %45 "texCubeDepth"
+       OpName %59 "main"
        OpDecorate %5 Decoration(Binding) 0
        OpDecorate %5 Decoration(DescriptorSet) 0
        OpDecorate %9 Decoration(Binding) 1
@@ -408,7 +409,7 @@ fn main()
 %115 = OpImageSampleDrefImplicitLod %1 %112 %113 %114
        OpStore %75 %115
        OpReturn
-       OpFunctionEnd)", {}, true);
+       OpFunctionEnd)", {}, {}, true);
 	}
 	
 	WHEN("testing math intrinsics")
@@ -661,7 +662,7 @@ void main()
 	double truncResult3 = trunc(d1);
 	dvec3 truncResult4 = trunc(dv1);
 }
-)", glslEnv);
+)", {}, glslEnv);
 
 		ExpectNZSL(*shaderModule, R"(
 fn main()
@@ -1080,7 +1081,7 @@ fn main()
 %399 = OpExtInst %25 GLSLstd450 Trunc %398
        OpStore %147 %399
        OpReturn
-       OpFunctionEnd)", {}, true);
+       OpFunctionEnd)", {}, {}, true);
 	}
 	
 	WHEN("testing matrix intrinsics")
@@ -1126,7 +1127,7 @@ void main()
 	mat3x2 transposeResult1 = transpose(m2);
 	mat2x3 transposeResult2 = transpose(m4);
 }
-)", glslEnv);
+)", {}, glslEnv);
 
 		ExpectNZSL(*shaderModule, R"(
 fn main()
@@ -1149,6 +1150,7 @@ fn main()
        OpMemoryModel AddressingModel(Logical) MemoryModel(GLSL450)
        OpEntryPoint ExecutionModel(Fragment) %44 "main"
        OpExecutionMode %44 ExecutionMode(OriginUpperLeft)
+       OpSource SourceLanguage(Unknown) 100
        OpName %44 "main"
   %1 = OpTypeVoid
   %2 = OpTypeFunction %1
@@ -1282,7 +1284,7 @@ fn main()
 %112 = OpTranspose %41 %111
        OpStore %57 %112
        OpReturn
-       OpFunctionEnd)", {}, true);
+       OpFunctionEnd)", {}, {}, true);
 	}
 
 	WHEN("testing trigonometry intrinsics")
@@ -1380,7 +1382,7 @@ void main()
 	float sinhResult1 = sinh(f1);
 	vec3 sinhResult2 = sinh(v1);
 }
-)", glslEnv);
+)", {}, glslEnv);
 
 		ExpectNZSL(*shaderModule, R"(
 fn main()
@@ -1504,7 +1506,7 @@ fn main()
 %118 = OpExtInst %12 GLSLstd450 Sinh %117
        OpStore %52 %118
        OpReturn
-       OpFunctionEnd)", {}, true);
+       OpFunctionEnd)", {}, {}, true);
 	}
 
 	WHEN("testing select intrinsic")
@@ -1606,7 +1608,7 @@ void main()
 	ivec3 result_12 = ivec3((bv2.x) ? iv1.x : iv2.x, (bv2.y) ? iv1.y : iv2.y, (bv2.z) ? iv1.z : iv2.z);
 	uvec3 result_13 = uvec3((bv1.x) ? uv1.x : uv2.x, (bv1.y) ? uv1.y : uv2.y, (bv1.z) ? uv1.z : uv2.z);
 }
-)", glslEnv);
+)", {}, glslEnv);
 		}
 
 		WHEN("GL_EXT_shader_integer_mix is supported")
@@ -1658,7 +1660,7 @@ void main()
 	ivec3 result_12 = mix(iv1, iv2, bv2);
 	uvec3 result_13 = mix(uv1, uv2, bv1);
 }
-)", glslEnv);
+)", {}, glslEnv);
 		}
 		AND_WHEN("GLSL 4.5 is supported")
 		{
@@ -1708,7 +1710,7 @@ void main()
 	ivec3 result_12 = mix(iv1, iv2, bv2);
 	uvec3 result_13 = mix(uv1, uv2, bv1);
 }
-)", glslEnv);
+)", {}, glslEnv);
 		}
 
 		ExpectNZSL(*shaderModule, R"(
@@ -1914,7 +1916,7 @@ fn main()
 %152 = OpSelect %33 %149 %150 %151
        OpStore %69 %152
        OpReturn
-       OpFunctionEnd)", env, true);
+       OpFunctionEnd)", {}, env, true);
 		}
 
 
@@ -2072,7 +2074,7 @@ fn main()
 %147 = OpSelect %33 %144 %145 %146
        OpStore %69 %147
        OpReturn
-       OpFunctionEnd)", env, true);
+       OpFunctionEnd)", {}, env, true);
 		}
 	}
 }

@@ -97,7 +97,7 @@ namespace nzsl
 			void AppendHeader();
 			void AppendLine(std::string_view txt = {});
 			template<typename... Args> void AppendLine(Args&&... params);
-			void AppendModuleComments(const Ast::Module::Metadata& metadata);
+			void AppendModuleComments(const Ast::Module& module);
 			void AppendStatementList(std::vector<Ast::StatementPtr>& statements);
 			template<typename T> void AppendValue(const T& value);
 			void AppendVariableDeclaration(const Ast::ExpressionType& varType, const std::string& varName);
@@ -107,6 +107,7 @@ namespace nzsl
 
 			void HandleEntryPoint(Ast::DeclareFunctionStatement& node);
 			void HandleInOut();
+			void HandleSourceLocation(const SourceLocation& sourceLocation, DebugLevel requiredLevel);
 
 			void RegisterConstant(std::size_t constIndex, std::string constName);
 			void RegisterStruct(std::size_t structIndex, Ast::StructDescription* desc, std::string structName);

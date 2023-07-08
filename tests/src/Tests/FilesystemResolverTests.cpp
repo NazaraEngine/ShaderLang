@@ -7,20 +7,6 @@
 #include <catch2/catch_test_macros.hpp>
 #include <cctype>
 
-std::filesystem::path GetResourceDir()
-{
-	static std::filesystem::path resourceDir = []
-	{
-		std::filesystem::path dir = "resources";
-		if (!std::filesystem::is_directory(dir) && std::filesystem::is_directory(".." / dir))
-			dir = ".." / dir;
-
-		return dir;
-	}();
-
-	return resourceDir;
-}
-
 TEST_CASE("FilesystemModuleResolver", "[Shader]")
 {
 	std::filesystem::path resourceDir = GetResourceDir();
@@ -39,6 +25,9 @@ TEST_CASE("FilesystemModuleResolver", "[Shader]")
 
 	ExpectGLSL(*shaderModule, R"(
 // Module Color
+// Author: SirLynix
+// Description: Test color module
+// License: MIT
 
 uniform sampler2D tex1_Color;
 
@@ -73,6 +62,9 @@ struct Output_OutputStruct
 };
 
 // Main module
+// Author: SirLynix
+// Description: Test module
+// License: MIT
 
 /*************** Outputs ***************/
 layout(location = 0) out vec4 _nzslOut_color;
@@ -91,9 +83,13 @@ void main()
 
 	ExpectNZSL(*shaderModule, R"(
 [nzsl_version("1.0")]
+[author("SirLynix"), desc("Test module")]
+[license("MIT")]
 module Shader;
 
 [nzsl_version("1.0")]
+[author("SirLynix"), desc("Test color module")]
+[license("MIT")]
 module _Color
 {
 	[set(0)]
@@ -198,5 +194,5 @@ fn main() -> Output
 %50 = OpCompositeExtract %6 %49 0
       OpStore %22 %50
       OpReturn
-      OpFunctionEnd)", {}, true);
+      OpFunctionEnd)", {}, {}, true);
 }

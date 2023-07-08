@@ -84,7 +84,7 @@ fn main()
 %17 = OpImageSampleImplicitLod %10 %15 %16
       OpStore %14 %17
       OpReturn
-      OpFunctionEnd)", {}, true);
+      OpFunctionEnd)", {}, {}, true);
 	}
 	
 	SECTION("Arrays of texture")
@@ -169,7 +169,7 @@ fn main()
 %24 = OpImageSampleImplicitLod %15 %22 %23
       OpStore %19 %24
       OpReturn
-      OpFunctionEnd)", {}, true);
+      OpFunctionEnd)", {}, {}, true);
 	}
 
 	SECTION("Uniform buffers")
@@ -262,7 +262,7 @@ fn main()
 %21 = OpLoad %1 %20
       OpStore %18 %21
       OpReturn
-      OpFunctionEnd)", {}, true);
+      OpFunctionEnd)", {}, {}, true);
 	}
 
 	SECTION("Storage buffers")
@@ -307,7 +307,7 @@ void main()
 {
 	float value = data.values[42];
 }
-)", glslEnv);
+)", {}, glslEnv);
 
 			ExpectNZSL(*shaderModule, R"(
 struct Data
@@ -359,7 +359,7 @@ fn main()
 %21 = OpLoad %1 %20
       OpStore %18 %21
       OpReturn
-      OpFunctionEnd)", spirvEnv, true);
+      OpFunctionEnd)", {}, spirvEnv, true);
 			}
 
 			WHEN("Generating SPIR-V 1.3")
@@ -398,7 +398,7 @@ fn main()
 %21 = OpLoad %1 %20
       OpStore %18 %21
       OpReturn
-      OpFunctionEnd)", spirvEnv, true);
+      OpFunctionEnd)", {}, spirvEnv, true);
 			}
 		}
 		
@@ -446,7 +446,7 @@ void main()
 	float value = data.values[42];
 	uint size = uint(data.values.length());
 }
-)", glslEnv);
+)", {}, glslEnv);
 
 			ExpectNZSL(*shaderModule, R"(
 struct Data
@@ -509,7 +509,7 @@ fn main()
 %23 = OpArrayLength %1 %8 1
       OpStore %19 %23
       OpReturn
-      OpFunctionEnd)", spirvEnv, true);
+      OpFunctionEnd)", {}, spirvEnv, true);
 			}
 
 			WHEN("Generating SPIR-V 1.3")
@@ -553,7 +553,7 @@ fn main()
 %23 = OpArrayLength %1 %8 1
       OpStore %19 %23
       OpReturn
-      OpFunctionEnd)", spirvEnv, true);
+      OpFunctionEnd)", {}, spirvEnv, true);
 			}
 		}
 	}
@@ -904,7 +904,7 @@ fn main()
  %8 = OpFunction %6 FunctionControl(0) %7
  %9 = OpLabel
       OpReturn
-      OpFunctionEnd)", spirvEnv, true);
+      OpFunctionEnd)", {}, spirvEnv, true);
 		}
 	}
 }

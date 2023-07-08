@@ -200,6 +200,6 @@ fn main(input: VertIn) -> VertOut
 %70 = OpCompositeExtract %23 %69 0
       OpStore %33 %70
       OpReturn
-      OpFunctionEnd)", {}, true);
+      OpFunctionEnd)", {}, {}, true);
 	}
 }
