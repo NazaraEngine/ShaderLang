@@ -131,7 +131,26 @@ namespace
 		}
 	};
 
-	inline std::string& ReplaceStr(std::string& str, const std::string_view& from, const std::string_view& to)
+	std::string CappedStr(std::string str, std::size_t maxSize)
+	{
+		if (str.size() > maxSize)
+		{
+			str.resize(maxSize);
+			str += "...";
+		}
+
+		return str;
+	}
+
+	std::string_view CappedView(std::string_view view, std::size_t maxSize)
+	{
+		if (view.size() > maxSize)
+			view.remove_suffix(view.size() - maxSize);
+
+		return view;
+	}
+
+	std::string& ReplaceStr(std::string& str, const std::string_view& from, const std::string_view& to)
 	{
 		if (str.empty())
 			return str;
@@ -156,19 +175,50 @@ namespace
 
 		return str;
 	}
-}
 
-std::string SanitizeSource(std::string_view source)
-{
-	std::string str(Trim(source));
-	ReplaceStr(str, "\r\n", "\n");
+	std::string SanitizeSource(std::string_view source)
+	{
+		std::string str(Trim(source));
+		ReplaceStr(str, "\r\n", "\n");
 
-	return str;
+		return str;
+	}
+
+	void HandleSourceError(std::string_view lang, std::string_view expectedCode, std::string_view outputCode)
+	{
+		constexpr std::size_t PartialMatchLength = 20;
+		constexpr std::size_t PartialMatchPrefix = 20;
+		constexpr std::size_t PartialMatchSuffixLength = 50;
+
+		// Find difference byte (only works when expecting full output)
+		if (std::size_t offset = expectedCode.find(CappedView(outputCode, PartialMatchLength)); offset != expectedCode.npos)
+		{
+			std::size_t minSize = std::min(expectedCode.size(), outputCode.size()) - PartialMatchLength;
+			for (; offset < minSize; ++offset)
+			{
+				if (expectedCode[offset] != outputCode[offset])
+					break;
+			}
+
+			std::size_t index = offset;
+			if (index >= PartialMatchPrefix)
+				index -= PartialMatchPrefix;
+
+			INFO("difference happens after " << offset << " bytes");
+			INFO(lang << " output[" << index << ":]:\n\n" << CappedStr(&outputCode[index], PartialMatchSuffixLength) << "\nexcepted output[" << index << ":]:\n\n" << CappedStr(&expectedCode[index], PartialMatchSuffixLength));
+			REQUIRE(false);
+		}
+		else
+		{
+			INFO("full " << lang << " output:\n" << outputCode << "\nexcepted output : \n" << expectedCode);
+			REQUIRE(false);
+		}
+	}
 }
 
 void ExpectGLSL(const nzsl::Ast::Module& shaderModule, std::string_view expectedOutput, const nzsl::ShaderWriter::States& options, const nzsl::GlslWriter::Environment& env, bool testShaderCompilation)
 {
-	std::string source = SanitizeSource(expectedOutput);
+	std::string expectedSource = SanitizeSource(expectedOutput);
 
 	SECTION("Generating GLSL")
 	{
@@ -206,11 +256,10 @@ void ExpectGLSL(const nzsl::Ast::Module& shaderModule, std::string_view expected
 
 		SECTION("Validating expected code")
 		{
-			if (output.code.find(source) == std::string::npos)
-			{
-				INFO("full GLSL output:\n" << output.code << "\nexcepted output:\n" << source);
-				REQUIRE(false);
-			}
+			std::string outputCode = SanitizeSource(output.code);
+
+			if (outputCode.find(expectedSource) == std::string::npos)
+				HandleSourceError("GLSL", expectedOutput, outputCode);
 		}
 
 		if (!testShaderCompilation)
@@ -269,12 +318,12 @@ void ExpectNZSL(const nzsl::Ast::Module& shaderModule, std::string_view expected
 		const nzsl::Ast::Module& targetModule = (sanitizedModule) ? *sanitizedModule : shaderModule;
 
 		nzsl::LangWriter writer;
-		std::string output = writer.Generate(targetModule, options);
+		std::string output = SanitizeSource(writer.Generate(targetModule, options));
 
 		SECTION("Validating expected code")
 		{
-			INFO("full NZSL output:\n" << output << "\nexcepted output:\n" << source);
-			REQUIRE(output.find(source) != std::string::npos);
+			if (output.find(source) == std::string::npos)
+				HandleSourceError("NZSL", source, output);
 		}
 
 		WHEN("Validating full NZSL code (by recompiling it)")
@@ -308,12 +357,12 @@ void ExpectSPIRV(const nzsl::Ast::Module& shaderModule, std::string_view expecte
 		settings.printParameters = outputParameter;
 
 		auto spirv = writer.Generate(targetModule, options);
-		std::string output = printer.Print(spirv.data(), spirv.size(), settings);
+		std::string output = SanitizeSource(printer.Print(spirv.data(), spirv.size(), settings));
 
 		SECTION("Validating expected code")
 		{
-			INFO("full SPIR-V output:\n" << output << "\nexcepted output:\n" << source);
-			REQUIRE(output.find(source) != std::string::npos);
+			if (output.find(source) == std::string::npos)
+				HandleSourceError("SPIR-V", source, output);
 		}
 
 		SECTION("Validating full SPIR-V code (using libspirv)")
