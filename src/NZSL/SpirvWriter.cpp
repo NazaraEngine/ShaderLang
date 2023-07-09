@@ -717,10 +717,12 @@ namespace nzsl
 						std::ifstream file(Nz::Utf8Path(*rootLocation.file));
 						if (file)
 						{
-							std::stringstream sstream;
-							sstream << file.rdbuf();
-
-							source = std::move(sstream).str();
+							std::string line;
+							while (std::getline(file, line))
+							{
+								source += line;
+								source += '\n';
+							}
 						}
 					}
 				}
