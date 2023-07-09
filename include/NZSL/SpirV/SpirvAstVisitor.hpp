@@ -12,6 +12,7 @@
 #include <NZSL/Ast/ExpressionVisitorExcept.hpp>
 #include <NZSL/Ast/StatementVisitorExcept.hpp>
 #include <NZSL/SpirV/SpirvBlock.hpp>
+#include <functional>
 #include <optional>
 #include <unordered_map>
 #include <vector>
@@ -26,7 +27,7 @@ namespace nzsl
 			struct EntryPoint;
 			struct FuncData;
 
-			inline SpirvAstVisitor(SpirvWriter& writer, SpirvSection& instructions, std::unordered_map<std::size_t, FuncData>& funcData);
+			inline SpirvAstVisitor(SpirvWriter& writer, SpirvSection& instructions, std::function<FuncData&(std::size_t)> functionRetriever);
 			SpirvAstVisitor(const SpirvAstVisitor&) = delete;
 			SpirvAstVisitor(SpirvAstVisitor&&) = delete;
 			~SpirvAstVisitor() = default;
@@ -161,15 +162,15 @@ namespace nzsl
 
 			void ResetSourceLocation();
 
+			std::function<FuncData& (std::size_t)> m_functionRetriever;
 			std::optional<std::uint32_t> m_breakTarget;
 			std::optional<std::uint32_t> m_continueTarget;
 			std::size_t m_funcCallIndex;
-			std::size_t m_funcIndex;
-			std::unordered_map<std::size_t, FuncData>& m_funcData;
 			std::unordered_map<std::size_t, SpirvVariable> m_variables;
 			std::vector<std::size_t> m_scopeSizes;
 			std::vector<std::unique_ptr<SpirvBlock>> m_functionBlocks;
 			std::vector<std::uint32_t> m_resultIds;
+			FuncData* m_currentFunc;
 			SpirvBlock* m_currentBlock;
 			SpirvSection& m_instructions;
 			SpirvWriter& m_writer;
