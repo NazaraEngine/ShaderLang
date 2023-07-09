@@ -490,25 +490,15 @@ namespace nzsl
 	{
 		std::size_t functionIndex = std::get<Ast::FunctionType>(*GetExpressionType(*node.targetFunction)).funcIndex;
 
-		std::uint32_t funcId = 0;
-		for (const auto& [funcIndex, func] : m_funcData)
-		{
-			if (funcIndex == functionIndex)
-			{
-				funcId = func.funcId;
-				break;
-			}
-		}
-		assert(funcId != 0);
+		const auto& targetFunc = m_functionRetriever(functionIndex);
 
-		const FuncData& funcData = Nz::Retrieve(m_funcData, m_funcIndex);
-		const auto& funcCall = funcData.funcCalls[m_funcCallIndex++];
+		const auto& funcCall = m_currentFunc->funcCalls[m_funcCallIndex++];
 
 		Nz::StackArray<std::uint32_t> parameterIds = NazaraStackArrayNoInit(std::uint32_t, node.parameters.size());
 		for (std::size_t i = 0; i < node.parameters.size(); ++i)
 		{
 			std::uint32_t resultId = EvaluateExpression(*node.parameters[i]);
-			std::uint32_t varId = funcData.variables[funcCall.firstVarIndex + i].varId;
+			std::uint32_t varId = m_currentFunc->variables[funcCall.firstVarIndex + i].varId;
 			m_currentBlock->Append(SpirvOp::OpStore, varId, resultId);
 
 			parameterIds[i] = varId;
@@ -521,7 +511,7 @@ namespace nzsl
 		{
 			appender(m_writer.GetTypeId(*Ast::GetExpressionType(node)));
 			appender(resultId);
-			appender(funcId);
+			appender(targetFunc.funcId);
 
 			for (std::size_t i = 0; i < node.parameters.size(); ++i)
 				appender(parameterIds[i]);
@@ -753,26 +743,24 @@ namespace nzsl
 	void SpirvAstVisitor::Visit(Ast::DeclareFunctionStatement& node)
 	{
 		assert(node.funcIndex);
-		m_funcIndex = *node.funcIndex;
+		m_currentFunc = &m_functionRetriever(*node.funcIndex);
 		m_funcCallIndex = 0;
-
-		auto& func = m_funcData[m_funcIndex];
 
 		HandleSourceLocation(node.sourceLocation);
 
-		m_instructions.Append(SpirvOp::OpFunction, func.returnTypeId, func.funcId, 0, func.funcTypeId);
+		m_instructions.Append(SpirvOp::OpFunction, m_currentFunc->returnTypeId, m_currentFunc->funcId, 0, m_currentFunc->funcTypeId);
 
-		if (!func.parameters.empty())
+		if (!m_currentFunc->parameters.empty())
 		{
-			assert(node.parameters.size() == func.parameters.size());
-			for (std::size_t i = 0; i < func.parameters.size(); ++i)
+			assert(node.parameters.size() == m_currentFunc->parameters.size());
+			for (std::size_t i = 0; i < m_currentFunc->parameters.size(); ++i)
 			{
 				HandleSourceLocation(node.parameters[i].sourceLocation);
 
 				std::uint32_t paramResultId = m_writer.AllocateResultId();
-				m_instructions.Append(SpirvOp::OpFunctionParameter, func.parameters[i].pointerTypeId, paramResultId);
+				m_instructions.Append(SpirvOp::OpFunctionParameter, m_currentFunc->parameters[i].pointerTypeId, paramResultId);
 
-				RegisterVariable(*node.parameters[i].varIndex, func.parameters[i].typeId, paramResultId, SpirvStorageClass::Function);
+				RegisterVariable(*node.parameters[i].varIndex, m_currentFunc->parameters[i].typeId, paramResultId, SpirvStorageClass::Function);
 			}
 		}
 
@@ -786,7 +774,7 @@ namespace nzsl
 
 		ResetSourceLocation();
 
-		for (auto& var : func.variables)
+		for (auto& var : m_currentFunc->variables)
 		{
 			HandleSourceLocation(var.sourceLocation);
 
@@ -794,9 +782,9 @@ namespace nzsl
 			m_currentBlock->Append(SpirvOp::OpVariable, var.typeId, var.varId, SpirvStorageClass::Function);
 		}
 
-		if (func.entryPointData)
+		if (m_currentFunc->entryPointData)
 		{
-			auto& entryPointData = *func.entryPointData;
+			auto& entryPointData = *m_currentFunc->entryPointData;
 			if (entryPointData.inputStruct)
 			{
 				auto& inputStruct = *entryPointData.inputStruct;
@@ -839,13 +827,11 @@ namespace nzsl
 
 	void SpirvAstVisitor::Visit(Ast::DeclareVariableStatement& node)
 	{
-		const auto& func = m_funcData[m_funcIndex];
-
 		std::uint32_t typeId = m_writer.GetTypeId(node.varType.GetResultingValue());
 
 		assert(node.varIndex);
-		auto varIt = func.varIndexToVarId.find(*node.varIndex);
-		std::uint32_t varId = func.variables[varIt->second].varId;
+		auto varIt = m_currentFunc->varIndexToVarId.find(*node.varIndex);
+		std::uint32_t varId = m_currentFunc->variables[varIt->second].varId;
 
 		RegisterVariable(*node.varIndex, typeId, varId, SpirvStorageClass::Function);
 
@@ -974,10 +960,9 @@ namespace nzsl
 		if (node.returnExpr)
 		{
 			// Handle entry point return
-			const auto& func = m_funcData[m_funcIndex];
-			if (func.entryPointData)
+			if (m_currentFunc->entryPointData)
 			{
-				auto& entryPointData = *func.entryPointData;
+				auto& entryPointData = *m_currentFunc->entryPointData;
 				if (entryPointData.outputStructTypeId)
 				{
 					std::uint32_t paramId = EvaluateExpression(*node.returnExpr);

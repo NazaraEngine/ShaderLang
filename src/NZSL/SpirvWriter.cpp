@@ -25,7 +25,6 @@
 #include <tsl/ordered_set.h>
 #include <cassert>
 #include <fstream>
-#include <sstream>
 #include <stdexcept>
 #include <type_traits>
 #include <vector>
@@ -590,8 +589,8 @@ namespace nzsl
 			std::uint32_t id;
 		};
 
-		std::unordered_map<std::size_t, SpirvAstVisitor::FuncData> funcs;
-		std::unordered_map<std::string, std::uint32_t> extensionInstructionSet;
+		tsl::ordered_map<std::size_t, SpirvAstVisitor::FuncData> funcs;
+		tsl::ordered_map<std::string, std::uint32_t> extensionInstructionSet;
 		std::unordered_map<std::shared_ptr<const std::string>, std::uint32_t> sourceFiles;
 		std::vector<std::uint32_t> resultIds;
 		std::uint32_t nextResultId = 1;
@@ -763,7 +762,16 @@ namespace nzsl
 		else if (states.debugLevel >= DebugLevel::Minimal)
 			m_currentState->constantTypeCache.RegisterSource(SpirvSourceLanguage::NZSL, module.metadata->shaderLangVersion);
 
-		SpirvAstVisitor visitor(*this, state.instructions, state.funcs);
+		auto funcDataRetriever = [&](std::size_t funcIndex) -> SpirvAstVisitor::FuncData&
+		{
+			auto it = m_currentState->funcs.find(funcIndex);
+			if NAZARA_UNLIKELY(it == m_currentState->funcs.end())
+				throw std::runtime_error("internal error");
+
+			return it.value();
+		};
+
+		SpirvAstVisitor visitor(*this, state.instructions, funcDataRetriever);
 		for (const auto& importedModule : targetModule->importedModules)
 			importedModule.module->rootNode->Visit(visitor);
 
