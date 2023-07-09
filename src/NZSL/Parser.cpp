@@ -112,7 +112,8 @@ namespace nzsl
 		if (!moduleStatements->statements.empty())
 		{
 			moduleStatements->sourceLocation = moduleStatements->statements.front()->sourceLocation;
-			moduleStatements->sourceLocation.ExtendToRight(moduleStatements->statements.back()->sourceLocation);
+			if (moduleStatements->statements.back()->sourceLocation.IsValid())
+				moduleStatements->sourceLocation.ExtendToRight(moduleStatements->statements.back()->sourceLocation);
 		}
 
 		return std::move(context.module);
