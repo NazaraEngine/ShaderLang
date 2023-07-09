@@ -1170,6 +1170,7 @@ namespace nzsl::Ast
 
 		auto clone = std::make_unique<BranchStatement>();
 		clone->condStatements.reserve(node.condStatements.size());
+		clone->sourceLocation = node.sourceLocation;
 
 		if (!m_context->currentFunction)
 			throw CompilerBranchOutsideOfFunctionError{ node.sourceLocation };
