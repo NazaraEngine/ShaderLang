@@ -6,9 +6,8 @@
 
 namespace nzsl
 {
-	inline SpirvAstVisitor::SpirvAstVisitor(SpirvWriter& writer, SpirvSection& instructions, std::unordered_map<std::size_t, FuncData>& funcData) :
-	m_funcIndex(0),
-	m_funcData(funcData),
+	inline SpirvAstVisitor::SpirvAstVisitor(SpirvWriter& writer, SpirvSection& instructions, std::function<FuncData& (std::size_t)> functionRetriever) :
+	m_functionRetriever(std::move(functionRetriever)),
 	m_currentBlock(nullptr),
 	m_instructions(instructions),
 	m_writer(writer)
