@@ -1289,14 +1289,14 @@ namespace nzsl
 					std::ifstream file(Nz::Utf8Path(*rootLocation.file));
 					if (file)
 					{
-						std::stringstream sstream;
-						sstream << file.rdbuf();
-
 						AppendLine("#if 0 // Module source code");
 						AppendLine();
 
-						AppendLine(sstream.str());
+						std::string line;
+						while (std::getline(file, line))
+							AppendLine(line);
 
+						AppendLine();
 						AppendLine("#endif // Module source code");
 						AppendLine();
 					}
