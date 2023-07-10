@@ -219,7 +219,6 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 		options.add_options("glsl output")
 			("gl-es", "Generate GLSL ES instead of GLSL", cxxopts::value<bool>()->default_value("false"))
 			("gl-version", "OpenGL version (310 being 3.1)", cxxopts::value<std::uint32_t>(), "version")
-			("gl-entry", "Shader entry point (required for files having multiple entry points)", cxxopts::value<std::string>(), "[frag|vert]")
 			("gl-flipy", "Add code to conditionally flip gl_Position Y value")
 			("gl-remapz", "Add code to remap gl_Position Z value from [0;1] to [-1;1]")
 			("gl-bindingmap", "Add binding support (generates a .binding.json mapping file)");
@@ -364,28 +363,39 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 		nzsl::GlslWriter writer;
 		writer.SetEnv(env);
 
-		std::optional<nzsl::ShaderStageType> entryType;
-		if (m_options.count("gl-entry") > 0)
+		nzsl::ShaderStageTypeFlags entryTypes;
+		nzsl::Ast::ReflectVisitor::Callbacks callbacks;
+		callbacks.onEntryPointDeclaration = [&](nzsl::ShaderStageType shaderStage, const std::string& /*functionName*/)
 		{
-			std::string entryName = m_options["gl-entry"].as<std::string>();
-			if (entryName == "frag")
-				entryType = nzsl::ShaderStageType::Fragment;
-			else if (entryName == "vert")
-				entryType = nzsl::ShaderStageType::Vertex;
-			else
-				throw std::runtime_error("unrecognized gl-entry " + entryName);
-		}
+			entryTypes |= shaderStage;
+		};
 
-		nzsl::GlslWriter::Output output = writer.Generate(entryType, module, bindingMapping, states);
+		nzsl::Ast::ReflectVisitor reflectVisitor;
+		reflectVisitor.Reflect(module, callbacks);
 
-		if (m_outputToStdout)
+		if (entryTypes == 0)
+			throw std::runtime_error("shader has no entry function!");
+
+		for (nzsl::ShaderStageType entryType : entryTypes)
 		{
-			OutputToStdout(output.code);
-			return;
-		}
+			nzsl::GlslWriter::Output output = writer.Generate(entryType, module, bindingMapping, states);
 
-		outputPath.replace_extension("glsl");
-		OutputFile(std::move(outputPath), output.code.data(), output.code.size());
+			if (m_outputToStdout)
+			{
+				OutputToStdout(output.code);
+				return;
+			}
+
+			std::filesystem::path filePath = outputPath;
+			switch (entryType)
+			{
+				case nzsl::ShaderStageType::Compute:  filePath.replace_extension("comp.glsl"); break;
+				case nzsl::ShaderStageType::Fragment: filePath.replace_extension("frag.glsl"); break;
+				case nzsl::ShaderStageType::Vertex:   filePath.replace_extension("vert.glsl"); break;
+			}
+
+			OutputFile(std::move(filePath), output.code.data(), output.code.size());
+		}
 	}
 
 	void Compiler::CompileToNZSL(std::filesystem::path outputPath, const nzsl::Ast::Module& module)
