@@ -87,4 +87,129 @@ OpStore
 OpReturn
 OpFunctionEnd)");
 	}
+
+	SECTION("Unordered functions")
+	{
+		std::string_view nzslSource = R"(
+[nzsl_version("1.0")]
+module;
+
+struct FragOut
+{
+	[location(0)] value: f32
+}
+
+fn bar() -> f32
+{
+	return 42.0;
+}
+
+[entry(frag)]
+fn main() -> FragOut
+{
+	let output: FragOut;
+	output.value = +baz();
+
+	return output;
+}
+
+fn baz() -> f32
+{
+	return foo();
+}
+
+fn foo() -> f32
+{
+	return bar();
+}
+)";
+
+		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
+		shaderModule = SanitizeModule(*shaderModule);
+
+		ExpectGLSL(*shaderModule, R"(
+float bar()
+{
+	return 42.0;
+}
+
+float baz();
+
+/*************** Outputs ***************/
+layout(location = 0) out float _nzslOut_value;
+
+void main()
+{
+	FragOut output_;
+	output_.value = +baz();
+
+	_nzslOut_value = output_.value;
+	return;
+}
+
+float foo();
+
+float baz()
+{
+	return foo();
+}
+
+float foo()
+{
+	return bar();
+}
+)");
+
+		ExpectNZSL(*shaderModule, R"(
+fn bar() -> f32
+{
+	return 42.0;
+}
+
+[entry(frag)]
+fn main() -> FragOut
+{
+	let output: FragOut;
+	output.value = +baz();
+	return output;
+}
+
+fn baz() -> f32
+{
+	return foo();
+}
+
+fn foo() -> f32
+{
+	return bar();
+}
+)");
+
+		ExpectSPIRV(*shaderModule, R"(
+OpFunction
+OpLabel
+OpReturnValue
+OpFunctionEnd
+OpFunction
+OpLabel
+OpVariable
+OpFunctionCall
+OpAccessChain
+OpStore
+OpLoad
+OpCompositeExtract
+OpStore
+OpReturn
+OpFunctionEnd
+OpFunction
+OpLabel
+OpFunctionCall
+OpReturnValue
+OpFunctionEnd
+OpFunction
+OpLabel
+OpFunctionCall
+OpReturnValue
+OpFunctionEnd)");
+	}
 }

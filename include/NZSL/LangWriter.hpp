@@ -37,6 +37,10 @@ namespace nzsl
 			};
 
 		private:
+			struct PreVisitor;
+			friend PreVisitor;
+
+			// Attributes
 			struct AutoBindingAttribute;
 			struct AuthorAttribute;
 			struct BindingAttribute;
