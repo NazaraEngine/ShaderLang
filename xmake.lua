@@ -116,7 +116,7 @@ if has_config("with_nzslc") then
 		add_headerfiles("src/(ShaderCompiler/**.inl)")
 		add_files("src/ShaderCompiler/**.cpp")
 		add_deps("nzsl")
-		add_packages("cxxopts", "fmt", "nlohmann_json")
+		add_packages("cxxopts", "fmt", "frozen", "nlohmann_json")
 end
 
 includes("xmake/**.lua")

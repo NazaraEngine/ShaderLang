@@ -8,6 +8,7 @@
 #define NZSLC_COMPILER_HPP
 
 #include <NZSL/Config.hpp>
+#include <NZSL/ShaderWriter.hpp>
 #include <NZSL/Lang/Errors.hpp>
 #include <NZSL/Ast/Module.hpp>
 #include <cxxopts.hpp>
@@ -47,6 +48,7 @@ namespace nzslc
 			};
 
 		private:
+			nzsl::ShaderWriter::States BuildWriterOptions();
 			void Compile();
 			void CompileToGLSL(std::filesystem::path outputPath, const nzsl::Ast::Module& module);
 			void CompileToNZSL(std::filesystem::path outputPath, const nzsl::Ast::Module& module);
