@@ -20,6 +20,24 @@
 
 namespace nzsl
 {
+	struct LangWriter::PreVisitor : Ast::RecursiveVisitor
+	{
+		PreVisitor(LangWriter& writer) :
+		m_writer(writer)
+		{
+		}
+
+		void Visit(Ast::DeclareFunctionStatement& node) override
+		{
+			if (node.funcIndex)
+				m_writer.RegisterFunction(*node.funcIndex, node.name);
+
+			// Speed up by not visiting function statements, we only need to extract function data
+		}
+
+		LangWriter& m_writer;
+	};
+
 	struct LangWriter::AutoBindingAttribute
 	{
 		const Ast::ExpressionValue<bool>& autoBinding;
@@ -137,7 +155,6 @@ namespace nzsl
 		const Ast::ExpressionValue<Vector3u32>& workgroup;
 
 		bool HasValue() const { return workgroup.HasValue(); }
-
 	};
 
 	struct LangWriter::State
@@ -175,6 +192,21 @@ namespace nzsl
 		state.module = &module;
 
 		AppendHeader();
+
+		// First registration pass (required to register function names)
+		PreVisitor previsitor(*this);
+		{
+			m_currentState->currentModuleIndex = 0;
+			for (const auto& importedModule : module.importedModules)
+			{
+				importedModule.module->rootNode->Visit(previsitor);
+				m_currentState->currentModuleIndex++;
+				m_currentState->moduleNames.push_back(importedModule.identifier);
+			}
+
+			m_currentState->currentModuleIndex = std::numeric_limits<std::size_t>::max();
+			module.rootNode->Visit(previsitor);
+		}
 
 		// Register imported modules
 		m_currentState->currentModuleIndex = 0;
@@ -1300,9 +1332,6 @@ namespace nzsl
 	void LangWriter::Visit(Ast::DeclareFunctionStatement& node)
 	{
 		assert(m_currentState && "This function should only be called while processing an AST");
-
-		if (node.funcIndex)
-			RegisterFunction(*node.funcIndex, node.name);
 
 		AppendAttributes(true, 
 			EntryAttribute{ node.entryStage },
