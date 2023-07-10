@@ -19,6 +19,8 @@
 #include <NZSL/Ast/SanitizeVisitor.hpp>
 #include <fmt/color.h>
 #include <fmt/format.h>
+#include <frozen/string.h>
+#include <frozen/unordered_map.h>
 #include <nlohmann/json.hpp>
 #include <cassert>
 #include <chrono>
@@ -36,6 +38,13 @@ namespace nzslc
 
 			return str.compare(str.size() - s.size(), s.size(), s.data()) == 0;
 		}
+
+		constexpr auto s_debugLevels = frozen::make_unordered_map<frozen::string, nzsl::DebugLevel>({
+			{ "full",    nzsl::DebugLevel::Full },
+			{ "minimal", nzsl::DebugLevel::Minimal },
+			{ "regular", nzsl::DebugLevel::Regular },
+			{ "none",    nzsl::DebugLevel::None }
+		});
 	}
 	
 	Compiler::Compiler(cxxopts::ParseResult& options) :
@@ -212,6 +221,7 @@ namespace nzslc
 Multiple values can be specified using commas (ex: --compile=glsl,nzslb).
 You can also specify -header as a suffix (ex: --compile=glsl-header) to generate an includable header file.
 )", cxxopts::value<std::vector<std::string>>()->implicit_value("nzslb"))
+			("d,debug-level", "Debug level to generate", cxxopts::value<std::string>(), "[none|minimal|regular|full]")
 			("m,module", "Module file or directory", cxxopts::value<std::vector<std::string>>())
 			("optimize", "Optimize shader code")
 			("p,partial", "Allow partial compilation");
@@ -230,6 +240,25 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 		options.positional_help("shader path");
 
 		return options;
+	}
+
+	nzsl::ShaderWriter::States Compiler::BuildWriterOptions()
+	{
+		nzsl::ShaderWriter::States states;
+		states.optimize = (m_options.count("optimize") > 0);
+
+		if (m_options.count("debug-level"))
+		{
+			const std::string& debugLevelStr = m_options["debug-level"].as<std::string>();
+
+			auto it = s_debugLevels.find(frozen::string(debugLevelStr));
+			if (it == s_debugLevels.end())
+				throw cxxopts::exceptions::specification("invalid debug-level " + debugLevelStr);
+
+			states.debugLevel = it->second;
+		}
+
+		return states;
 	}
 
 	void Compiler::Compile()
@@ -274,9 +303,6 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 
 	void Compiler::CompileToGLSL(std::filesystem::path outputPath, const nzsl::Ast::Module& module)
 	{
-		nzsl::ShaderWriter::States states;
-		states.optimize = (m_options.count("optimize") > 0);
-
 		nzsl::GlslWriter::Environment env;
 		if (m_options.count("gl-es") > 0)
 			env.glES = m_options["gl-es"].as<bool>();
@@ -376,6 +402,8 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 		if (entryTypes == 0)
 			throw std::runtime_error("shader has no entry function!");
 
+		nzsl::ShaderWriter::States states = BuildWriterOptions();
+
 		for (nzsl::ShaderStageType entryType : entryTypes)
 		{
 			nzsl::GlslWriter::Output output = writer.Generate(entryType, module, bindingMapping, states);
@@ -400,8 +428,7 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 
 	void Compiler::CompileToNZSL(std::filesystem::path outputPath, const nzsl::Ast::Module& module)
 	{
-		nzsl::ShaderWriter::States states;
-		states.optimize = (m_options.count("optimize") > 0);
+		nzsl::ShaderWriter::States states = BuildWriterOptions();
 
 		nzsl::LangWriter nzslWriter;
 		std::string nzsl = nzslWriter.Generate(module, states);
@@ -439,9 +466,6 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 
 	void Compiler::CompileToSPV(std::filesystem::path outputPath, const nzsl::Ast::Module& module, bool textual)
 	{
-		nzsl::ShaderWriter::States states;
-		states.optimize = (m_options.count("optimize") > 0);
-
 		nzsl::SpirvWriter::Environment env;
 		if (m_options.count("spv-version"))
 		{
@@ -457,6 +481,8 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 
 		nzsl::SpirvWriter writer;
 		writer.SetEnv(env);
+
+		nzsl::ShaderWriter::States states = BuildWriterOptions();
 
 		std::vector<std::uint32_t> spirv = writer.Generate(module, states);
 		std::size_t size = spirv.size() * sizeof(std::uint32_t);
