@@ -125,7 +125,7 @@ namespace nzsl
 		return 1;
 	}
 
-	template<typename T1, typename T2, typename ...Args>
+	template<typename T1, typename T2, typename... Args>
 	unsigned int SpirvSectionBase::CountWord(const T1& value, const T2& value2, const Args&... rest)
 	{
 		return CountWord(value) + CountWord(value2) + (CountWord(rest) + ...);

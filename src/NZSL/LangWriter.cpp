@@ -422,7 +422,7 @@ namespace nzsl
 		Append(secondParam, std::forward<Args>(params)...);
 	}
 
-	template<typename ...Args>
+	template<typename... Args>
 	void LangWriter::AppendAttributes(bool appendLine, Args&&... params)
 	{
 		bool hasAnyAttribute = (params.HasValue() || ...);
