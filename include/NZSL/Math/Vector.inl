@@ -2,6 +2,7 @@
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
+#include <NazaraUtils/Hash.hpp>
 #include <cmath>
 
 namespace nzsl
