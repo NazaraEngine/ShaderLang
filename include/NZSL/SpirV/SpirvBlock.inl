@@ -19,7 +19,7 @@ namespace nzsl
 		return SpirvSectionBase::Append(opcode, wordCount);
 	}
 
-	template<typename ...Args>
+	template<typename... Args>
 	std::size_t SpirvBlock::Append(SpirvOp opcode, Args&&... args)
 	{
 		HandleSpirvOp(opcode);

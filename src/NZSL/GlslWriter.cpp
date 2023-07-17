@@ -791,7 +791,7 @@ namespace nzsl
 		Append(secondParam, std::forward<Args>(params)...);
 	}
 
-	template<typename ...Args>
+	template<typename... Args>
 	void GlslWriter::Append(const std::variant<Args...>& param)
 	{
 		std::visit([&](auto&& arg)
