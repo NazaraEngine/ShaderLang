@@ -259,7 +259,7 @@ void ExpectGLSL(const nzsl::Ast::Module& shaderModule, std::string_view expected
 			std::string outputCode = SanitizeSource(output.code);
 
 			if (outputCode.find(expectedSource) == std::string::npos)
-				HandleSourceError("GLSL", expectedOutput, outputCode);
+				HandleSourceError("GLSL", expectedSource, outputCode);
 		}
 
 		if (!testShaderCompilation)

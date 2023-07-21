@@ -1931,10 +1931,11 @@ namespace nzsl
 				}
 				else
 				{
+					// Beware, order of parameters has to be reversed! select(true, 1, 0) => mix(0, 1, true)
 					Append("mix(");
-					node.parameters[1]->Visit(*this);
-					Append(", ");
 					node.parameters[2]->Visit(*this);
+					Append(", ");
+					node.parameters[1]->Visit(*this);
 					Append(", ");
 
 					// GLSL requires boolean vectors when selecting vectors
