@@ -188,10 +188,9 @@ namespace nzsl
 
 							if (next == '*')
 							{
-								currentPos++;
-								if (Peek() == '/')
+								if (Peek(2) == '/')
 								{
-									currentPos++;
+									currentPos += 2;
 									break;
 								}
 							}
