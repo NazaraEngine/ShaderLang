@@ -27,6 +27,7 @@
 // Lexer errors
 NZSL_SHADERLANG_LEXER_ERROR(BadNumber, "bad number")
 NZSL_SHADERLANG_LEXER_ERROR(NumberOutOfRange, "number is out of range")
+NZSL_SHADERLANG_LEXER_ERROR(UnfinishedComment, "unfinished block comment")
 NZSL_SHADERLANG_LEXER_ERROR(UnfinishedString, "unfinished string")
 NZSL_SHADERLANG_LEXER_ERROR(UnrecognizedChar, "unrecognized character")
 NZSL_SHADERLANG_LEXER_ERROR(UnrecognizedToken, "unrecognized token")

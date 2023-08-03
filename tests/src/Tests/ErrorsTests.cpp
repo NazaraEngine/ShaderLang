@@ -14,6 +14,16 @@ TEST_CASE("errors", "[Shader]")
 		CHECK_THROWS_WITH(nzsl::Tokenize("\"Hello world"), "(1,1 -> 13): LUnfinishedString error: unfinished string");
 		CHECK_THROWS_WITH(nzsl::Tokenize(R"("hello \p")"), "(1,1 -> 9): LUnrecognizedChar error: unrecognized character");
 		CHECK_THROWS_WITH(nzsl::Tokenize("$"), "(1, 1): LUnrecognizedToken error: unrecognized token");
+		CHECK_THROWS_WITH(nzsl::Tokenize(R"(
+[nzsl_version("1.0")]
+module;
+
+fn main()
+{/*
+	let x = 42.0;
+	return;
+}
+)"), "(6,2 -> 3): LUnfinishedComment error: unfinished block comment");
 	}
 
 	SECTION("Checking parser errors")
