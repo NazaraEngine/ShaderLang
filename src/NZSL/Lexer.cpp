@@ -181,7 +181,7 @@ namespace nzsl
 					else if (next == '*')
 					{
 						// Block comment
-						do
+						for (;;)
 						{
 							currentPos++;
 							next = Peek();
@@ -196,8 +196,14 @@ namespace nzsl
 							}
 							else if (next == '\n')
 								HandleNewLine();
+							else if (next == '\0')
+							{
+								token.location.endColumn = token.location.startColumn + 1;
+								token.location.endLine = token.location.startLine;
+
+								throw LexerUnfinishedCommentError{ token.location };
+							}
 						}
-						while (next != '\0');
 					}
 					else if (next == '=')
 					{
