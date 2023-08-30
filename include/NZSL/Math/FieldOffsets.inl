@@ -8,7 +8,7 @@
 
 namespace nzsl
 {
-	inline FieldOffsets::FieldOffsets(StructLayout layout) :
+	constexpr FieldOffsets::FieldOffsets(StructLayout layout) :
 	m_largestFieldAlignment(1),
 	m_offsetRounding(1),
 	m_size(0),
@@ -16,30 +16,120 @@ namespace nzsl
 	{
 	}
 
-	inline std::size_t FieldOffsets::GetLargestFieldAlignement() const
+	constexpr std::size_t FieldOffsets::AddField(StructFieldType type)
+	{
+		std::size_t fieldAlignement = GetAlignement(m_layout, type);
+
+		m_largestFieldAlignment = std::max(m_largestFieldAlignment, fieldAlignement);
+
+		std::size_t offset = Nz::AlignPow2(m_size, Nz::AlignPow2(fieldAlignement, m_offsetRounding));
+		m_size = offset + GetSize(type);
+
+		m_offsetRounding = 1;
+
+		return offset;
+	}
+
+	constexpr std::size_t FieldOffsets::AddFieldArray(StructFieldType type, std::size_t arraySize)
+	{
+		std::size_t fieldAlignement = GetAlignement(m_layout, type);
+		if (m_layout == StructLayout::Std140)
+			fieldAlignement = Nz::AlignPow2(fieldAlignement, GetAlignement(StructLayout::Std140, StructFieldType::Float4));
+
+		m_largestFieldAlignment = std::max(fieldAlignement, m_largestFieldAlignment);
+
+		std::size_t offset = Nz::AlignPow2(m_size, Nz::AlignPow2(fieldAlignement, m_offsetRounding));
+		m_size = offset + fieldAlignement * arraySize;
+
+		m_offsetRounding = 1;
+
+		return offset;
+	}
+
+	constexpr std::size_t FieldOffsets::AddMatrix(StructFieldType cellType, unsigned int columns, unsigned int rows, bool columnMajor)
+	{
+		assert(GetCount(cellType) == 1);
+		assert(columns >= 2 && columns <= 4);
+		assert(rows >= 2 && rows <= 4);
+
+		if (columnMajor)
+			return AddFieldArray(static_cast<StructFieldType>(Nz::UnderlyingCast(cellType) + rows - 1), columns);
+		else
+			return AddFieldArray(static_cast<StructFieldType>(Nz::UnderlyingCast(cellType) + columns - 1), rows);
+	}
+
+	constexpr std::size_t FieldOffsets::AddMatrixArray(StructFieldType cellType, unsigned int columns, unsigned int rows, bool columnMajor, std::size_t arraySize)
+	{
+		assert(GetCount(cellType) == 1);
+		assert(columns >= 2 && columns <= 4);
+		assert(rows >= 2 && rows <= 4);
+
+		if (columnMajor)
+			return AddFieldArray(static_cast<StructFieldType>(Nz::UnderlyingCast(cellType) + rows - 1), columns * arraySize);
+		else
+			return AddFieldArray(static_cast<StructFieldType>(Nz::UnderlyingCast(cellType) + columns - 1), rows * arraySize);
+	}
+
+	constexpr std::size_t FieldOffsets::AddStruct(const FieldOffsets& fieldStruct)
+	{
+		std::size_t fieldAlignement = fieldStruct.GetLargestFieldAlignement();
+		if (m_layout == StructLayout::Std140)
+			fieldAlignement = Nz::AlignPow2(fieldAlignement, GetAlignement(StructLayout::Std140, StructFieldType::Float4));
+
+		m_largestFieldAlignment = std::max(m_largestFieldAlignment, fieldAlignement);
+
+		std::size_t offset = Nz::AlignPow2(m_size, Nz::AlignPow2(fieldAlignement, m_offsetRounding));
+		m_size = offset + fieldStruct.GetAlignedSize();
+
+		m_offsetRounding = std::max<std::size_t>(Nz::AlignPow2(fieldStruct.GetSize(), fieldAlignement) - fieldStruct.GetSize(), 1);
+
+		return offset;
+	}
+
+	constexpr std::size_t FieldOffsets::AddStructArray(const FieldOffsets& fieldStruct, std::size_t arraySize)
+	{
+		assert(arraySize > 0);
+
+		std::size_t fieldAlignement = fieldStruct.GetLargestFieldAlignement();
+		if (m_layout == StructLayout::Std140)
+			fieldAlignement = Nz::AlignPow2(fieldAlignement, GetAlignement(StructLayout::Std140, StructFieldType::Float4));
+
+		m_largestFieldAlignment = std::max(m_largestFieldAlignment, fieldAlignement);
+
+		std::size_t offset = Nz::AlignPow2(m_size, Nz::AlignPow2(fieldAlignement, m_offsetRounding));
+		m_size = offset
+			+ fieldStruct.GetSize() * arraySize
+			+ (Nz::AlignPow2(fieldStruct.GetSize(), fieldAlignement) - fieldStruct.GetSize()) * (arraySize - 1);
+
+		m_offsetRounding = fieldAlignement;
+
+		return offset;
+	}
+
+	constexpr std::size_t FieldOffsets::GetLargestFieldAlignement() const
 	{
 		return m_largestFieldAlignment;
 	}
 
-	inline StructLayout FieldOffsets::GetLayout() const
+	constexpr StructLayout FieldOffsets::GetLayout() const
 	{
 		return m_layout;
 	}
 
-	inline std::size_t FieldOffsets::GetAlignedSize() const
+	constexpr std::size_t FieldOffsets::GetAlignedSize() const
 	{
 		if (m_layout == StructLayout::Std140)
-			return Nz::Align(m_size, m_largestFieldAlignment);
+			return Nz::AlignPow2(m_size, m_largestFieldAlignment);
 		else
 			return m_size;
 	}
 
-	inline std::size_t FieldOffsets::GetSize() const
+	constexpr std::size_t FieldOffsets::GetSize() const
 	{
 		return m_size;
 	}
 
-	inline std::size_t FieldOffsets::GetAlignement(StructLayout layout, StructFieldType fieldType)
+	constexpr std::size_t FieldOffsets::GetAlignement(StructLayout layout, StructFieldType fieldType)
 	{
 		switch (layout)
 		{
@@ -88,7 +178,7 @@ namespace nzsl
 		return 0;
 	}
 
-	inline std::size_t FieldOffsets::GetCount(StructFieldType fieldType)
+	constexpr std::size_t FieldOffsets::GetCount(StructFieldType fieldType)
 	{
 		switch (fieldType)
 		{
@@ -124,7 +214,7 @@ namespace nzsl
 		return 0;
 	}
 
-	inline std::size_t FieldOffsets::GetSize(StructFieldType fieldType)
+	constexpr std::size_t FieldOffsets::GetSize(StructFieldType fieldType)
 	{
 		switch (fieldType)
 		{
