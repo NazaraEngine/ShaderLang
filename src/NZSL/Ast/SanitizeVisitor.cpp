@@ -1943,6 +1943,7 @@ namespace nzsl::Ast
 			Nz::CallOnExit unscoper([&] { PopScope(); });
 
 			auto multi = std::make_unique<MultiStatement>();
+			multi->sourceLocation = node.sourceLocation;
 
 			// Counter variable
 			auto counterVariable = ShaderBuilder::DeclareVariable(node.varName, std::move(fromExpr));
@@ -1976,6 +1977,7 @@ namespace nzsl::Ast
 
 			// While
 			auto whileStatement = std::make_unique<WhileStatement>();
+			whileStatement->sourceLocation = node.sourceLocation;
 			whileStatement->unroll = std::move(unrollValue);
 
 			// While condition
@@ -2018,7 +2020,7 @@ namespace nzsl::Ast
 
 			multi->statements.emplace_back(std::move(whileStatement));
 
-			return multi;
+			return ShaderBuilder::Scoped(std::move(multi));
 		}
 		else
 			return CloneFor();
@@ -2108,8 +2110,10 @@ namespace nzsl::Ast
 		if (m_context->options.reduceLoopsToWhile)
 		{
 			PushScope();
+			Nz::CallOnExit unscoper([&] { PopScope(); });
 
 			auto multi = std::make_unique<MultiStatement>();
+			multi->sourceLocation = node.sourceLocation;
 
 			if (IsArrayType(resolvedExprType))
 			{
@@ -2165,9 +2169,7 @@ namespace nzsl::Ast
 				multi->statements.emplace_back(std::move(whileStatement));
 			}
 
-			PopScope();
-
-			return multi;
+			return ShaderBuilder::Scoped(std::move(multi));
 		}
 		else
 		{

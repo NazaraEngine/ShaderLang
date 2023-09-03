@@ -123,12 +123,15 @@ fn main()
 fn main()
 {
 	let x: f32 = 0.0;
-	let i: u32 = u32(0);
-	while (i < (u32(10)))
 	{
-		let v: f32 = data.value[i];
-		x += v;
-		i += u32(1);
+		let i: u32 = u32(0);
+		while (i < (u32(10)))
+		{
+			let v: f32 = data.value[i];
+			x += v;
+			i += u32(1);
+		}
+
 	}
 
 }
