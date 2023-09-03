@@ -204,7 +204,7 @@ fn main()
       OpBranchConditional %29 %25 %26
 %25 = OpLabel
 %33 = OpLoad %10 %23
-%34 = OpSGreaterThan %14 %33 %15
+%34 = OpSGreaterThanEqual %14 %33 %15
       OpSelectionMerge %30 SelectionControl(0)
       OpBranchConditional %34 %31 %32
 %31 = OpLabel
@@ -424,7 +424,7 @@ fn main()
 %30 = OpIAdd %3 %28 %29
       OpStore %13 %30
 %34 = OpLoad %3 %14
-%35 = OpSGreaterThan %7 %34 %9
+%35 = OpSGreaterThanEqual %7 %34 %9
       OpSelectionMerge %31 SelectionControl(0)
       OpBranchConditional %35 %32 %33
 %32 = OpLabel
@@ -737,7 +737,7 @@ fn main()
 %43 = OpFAdd %1 %41 %42
       OpStore %23 %43
 %47 = OpLoad %1 %23
-%48 = OpFOrdGreaterThan %16 %47 %19
+%48 = OpFOrdGreaterThanEqual %16 %47 %19
       OpSelectionMerge %44 SelectionControl(0)
       OpBranchConditional %48 %45 %46
 %45 = OpLabel
