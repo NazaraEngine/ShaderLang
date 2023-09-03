@@ -75,7 +75,7 @@ OpLabel
 OpVariable
 OpAccessChain
 OpLoad
-OpFOrdGreaterThanEqual
+OpFOrdGreaterThan
 OpSelectionMerge
 OpBranchConditional
 OpLabel
@@ -158,7 +158,7 @@ OpLabel
 OpVariable
 OpAccessChain
 OpLoad
-OpFOrdGreaterThanEqual
+OpFOrdGreaterThan
 OpAccessChain
 OpLoad
 OpFOrdLessThanEqual
@@ -253,7 +253,7 @@ OpLabel
 OpVariable
 OpAccessChain
 OpLoad
-OpFOrdGreaterThanEqual
+OpFOrdGreaterThan
 OpSelectionMerge
 OpBranchConditional
 OpLabel
@@ -353,7 +353,7 @@ external
 fn main()
 {
 	let value: f32;
-	if (data.value > 3.0)
+	if (data.value >= 3.0)
 		value = 3.0;
 	else if (data.value > 2.0)
 		value = 2.0;
@@ -371,7 +371,7 @@ fn main()
 void main()
 {
 	float value;
-	if (data.value > (3.0))
+	if (data.value >= (3.0))
 	{
 		value = 3.0;
 	}
@@ -396,7 +396,7 @@ void main()
 fn main()
 {
 	let value: f32;
-	if (data.value > (3.0))
+	if (data.value >= (3.0))
 	{
 		value = 3.0;
 	}
@@ -431,7 +431,7 @@ OpBranch
 OpLabel
 OpAccessChain
 OpLoad
-OpFOrdGreaterThanEqual
+OpFOrdGreaterThan
 OpSelectionMerge
 OpBranchConditional
 OpLabel
@@ -440,7 +440,7 @@ OpBranch
 OpLabel
 OpAccessChain
 OpLoad
-OpFOrdGreaterThanEqual
+OpFOrdGreaterThan
 OpSelectionMerge
 OpBranchConditional
 OpLabel

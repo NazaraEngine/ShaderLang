@@ -197,14 +197,14 @@ fn main(input: Input)
 %39 = OpAccessChain %38 %11 %19
 %40 = OpLoad %2 %39
 %41 = OpCompositeExtract %1 %40 0
-%42 = OpUGreaterThan %22 %37 %41
+%42 = OpUGreaterThanEqual %22 %37 %41
 %43 = OpAccessChain %20 %30 %19
 %44 = OpLoad %12 %43
 %45 = OpCompositeExtract %1 %44 1
 %46 = OpAccessChain %38 %11 %19
 %47 = OpLoad %2 %46
 %48 = OpCompositeExtract %1 %47 1
-%49 = OpUGreaterThan %22 %45 %48
+%49 = OpUGreaterThanEqual %22 %45 %48
 %50 = OpLogicalOr %22 %42 %49
       OpSelectionMerge %32 SelectionControl(0)
       OpBranchConditional %50 %33 %34

@@ -261,13 +261,13 @@ namespace nzsl
 					{
 						case Ast::PrimitiveType::Float32:
 						case Ast::PrimitiveType::Float64:
-							return SpirvOp::OpFOrdGreaterThan;
+							return SpirvOp::OpFOrdGreaterThanEqual;
 
 						case Ast::PrimitiveType::Int32:
-							return SpirvOp::OpSGreaterThan;
+							return SpirvOp::OpSGreaterThanEqual;
 
 						case Ast::PrimitiveType::UInt32:
-							return SpirvOp::OpUGreaterThan;
+							return SpirvOp::OpUGreaterThanEqual;
 
 						case Ast::PrimitiveType::Boolean:
 						case Ast::PrimitiveType::String:
@@ -283,13 +283,13 @@ namespace nzsl
 					{
 						case Ast::PrimitiveType::Float32:
 						case Ast::PrimitiveType::Float64:
-							return SpirvOp::OpFOrdGreaterThanEqual;
+							return SpirvOp::OpFOrdGreaterThan;
 
 						case Ast::PrimitiveType::Int32:
-							return SpirvOp::OpSGreaterThanEqual;
+							return SpirvOp::OpSGreaterThan;
 
 						case Ast::PrimitiveType::UInt32:
-							return SpirvOp::OpUGreaterThanEqual;
+							return SpirvOp::OpUGreaterThan;
 
 						case Ast::PrimitiveType::Boolean:
 						case Ast::PrimitiveType::String:
