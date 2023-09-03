@@ -113,7 +113,6 @@ namespace nzsl
 			void RegisterStruct(std::size_t structIndex, Ast::StructDescription* desc, std::string structName);
 			void RegisterVariable(std::size_t varIndex, std::string varName);
 
-			std::string SanitizeIdentifier(std::string identifier);
 			void ScopeVisit(Ast::Statement& node);
 
 			void Visit(Ast::ExpressionPtr& expr, bool encloseIfRequired = false);

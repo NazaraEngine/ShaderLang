@@ -129,14 +129,6 @@ namespace nzsl
 				bufferStructs &= usedStructs;
 			}
 
-			void SanitizeIdentifier(std::string& name)
-			{
-				while (reservedIdentifiers.find(name) != reservedIdentifiers.end())
-					name += '_';
-
-				reservedIdentifiers.insert(name);
-			}
-
 			using RecursiveVisitor::Visit;
 
 			void Visit(Ast::CallFunctionExpression& node) override
@@ -303,7 +295,6 @@ namespace nzsl
 			std::string moduleSuffix;
 			std::unordered_map<std::size_t, FunctionData> functions;
 			std::unordered_map<std::size_t, Ast::StructDescription*> structs;
-			std::unordered_set<std::string> reservedIdentifiers;
 			Nz::Bitset<> bufferStructs; //< structs used only in UBO/SSBO that shouldn't be declared as such in GLSL
 			Nz::Bitset<> usedStructs; //< & with bufferStructs, to handle case where a UBO/SSBO struct is declared as a variable (which is allowed) or member of a struct
 			Ast::DeclareFunctionStatement* entryPoint = nullptr;
@@ -316,12 +307,6 @@ namespace nzsl
 		State(const GlslWriter::BindingMapping& bindings) :
 		bindingMapping(bindings)
 		{
-			reservedKeywords = {
-				// All reserved GLSL keywords as of GLSL ES 3.2
-				"active", "asm", "atomic_uint", "attribute", "bool", "break", "buffer", "bvec2", "bvec3", "bvec4", "case", "cast", "centroid", "class", "coherent", "common", "const", "continue", "default", "discard", "dmat2", "dmat2x2", "dmat2x3", "dmat2x4", "dmat3", "dmat3x2", "dmat3x3", "dmat3x4", "dmat4", "dmat4x2", "dmat4x3", "dmat4x4", "do", "double", "dvec2", "dvec3", "dvec4", "else", "enum", "extern", "external", "false", "filter", "fixed", "flat", "float", "for", "fvec2", "fvec3", "fvec4", "goto", "half", "highp", "hvec2", "hvec3", "hvec4", "if", "iimage1D", "iimage1DArray", "iimage2D", "iimage2DArray", "iimage2DMS", "iimage2DMSArray", "iimage2DRect", "iimage3D", "iimageBuffer", "iimageCube", "iimageCubeArray", "image1D", "image1DArray", "image2D", "image2DArray", "image2DMS", "image2DMSArray", "image2DRect", "image3D", "imageBuffer", "imageCube", "imageCubeArray", "in", "inline", "inout", "input", "int", "interface", "invariant", "isampler1D", "isampler1DArray", "isampler2D", "isampler2DArray", "isampler2DMS", "isampler2DMSArray", "isampler2DRect", "isampler3D", "isamplerBuffer", "isamplerCube", "isamplerCubeArray", "isubpassInput", "isubpassInputMS", "itexture2D", "itexture2DArray", "itexture2DMS", "itexture2DMSArray", "itexture3D", "itextureBuffer", "itextureCube", "itextureCubeArray", "ivec2", "ivec3", "ivec4", "layout", "long", "lowp", "mat2", "mat2x2", "mat2x3", "mat2x4", "mat3", "mat3x2", "mat3x3", "mat3x4", "mat4", "mat4x2", "mat4x3", "mat4x4", "mediump", "namespace", "noinline", "noperspective", "out", "output", "partition", "patch", "precise", "precision", "public", "readonly", "resource", "restrict", "return", "sample", "sampler", "sampler1D", "sampler1DArray", "sampler1DArrayShadow", "sampler1DShadow", "sampler2D", "sampler2DArray", "sampler2DArrayShadow", "sampler2DMS", "sampler2DMSArray", "sampler2DRect", "sampler2DRectShadow", "sampler2DShadow", "sampler3D", "sampler3DRect", "samplerBuffer", "samplerCube", "samplerCubeArray", "samplerCubeArrayShadow", "samplerCubeShadow", "samplerShadow", "shared", "short", "sizeof", "smooth", "static", "struct", "subpassInput", "subpassInputMS", "subroutine", "superp", "switch", "template", "texture2D", "texture2DArray", "texture2DMS", "texture2DMSArray", "texture3D", "textureBuffer", "textureCube", "textureCubeArray", "this", "true", "typedef", "uimage1D", "uimage1DArray", "uimage2D", "uimage2DArray", "uimage2DMS", "uimage2DMSArray", "uimage2DRect", "uimage3D", "uimageBuffer", "uimageCube", "uimageCubeArray", "uint", "uniform", "union", "unsigned", "usampler1D", "usampler1DArray", "usampler2D", "usampler2DArray", "usampler2DMS", "usampler2DMSArray", "usampler2DRect", "usampler3D", "usamplerBuffer", "usamplerCube", "usamplerCubeArray", "using", "usubpassInput", "usubpassInputMS", "utexture2D", "utexture2DArray", "utexture2DMS", "utexture2DMSArray", "utexture3D", "utextureBuffer", "utextureCube", "utextureCubeArray", "uvec2", "uvec3", "uvec4", "varying", "vec2", "vec3", "vec4", "void", "volatile", "while", "writeonly",
-				// GLSL intrinsic functions (WIP)
-				"abs", "acos", "acosh", "asin", "asinh", "atan", "atan", "atanh", "ceil", "clamp", "cos", "cosh", "cross", "degrees", "distance", "dot", "exp", "exp2", "floor", "fract", "imageLoad", "imageStore", "inverse", "inversesqrt", "length", "log", "log2", "max", "min", "mix", "normalize", "pow", "radians", "reflect", "round", "roundEven", "sign", "sin", "sinh", "sqrt", "tan", "tanh", "texture", "transpose", "trunc",
-			};
 		}
 
 		struct InOutField
@@ -345,7 +330,6 @@ namespace nzsl
 		std::unordered_map<std::size_t, std::string> variableNames;
 		std::unordered_map<std::string, unsigned int> explicitTextureBinding;
 		std::unordered_map<std::string, unsigned int> explicitUniformBlockBinding;
-		std::unordered_set<std::string> reservedKeywords;
 		Nz::Bitset<> declaredFunctions;
 		const GlslWriter::BindingMapping& bindingMapping;
 		GlslWriterPreVisitor previsitor;
@@ -505,7 +489,13 @@ namespace nzsl
 
 	Ast::SanitizeVisitor::Options GlslWriter::GetSanitizeOptions()
 	{
-		// Always sanitize for reserved identifiers
+		static std::unordered_set<std::string_view> s_reservedKeywords = {
+			// All reserved GLSL keywords as of GLSL ES 3.2
+			"active", "asm", "atomic_uint", "attribute", "bool", "break", "buffer", "bvec2", "bvec3", "bvec4", "case", "cast", "centroid", "class", "coherent", "common", "const", "continue", "default", "discard", "dmat2", "dmat2x2", "dmat2x3", "dmat2x4", "dmat3", "dmat3x2", "dmat3x3", "dmat3x4", "dmat4", "dmat4x2", "dmat4x3", "dmat4x4", "do", "double", "dvec2", "dvec3", "dvec4", "else", "enum", "extern", "external", "false", "filter", "fixed", "flat", "float", "for", "fvec2", "fvec3", "fvec4", "goto", "half", "highp", "hvec2", "hvec3", "hvec4", "if", "iimage1D", "iimage1DArray", "iimage2D", "iimage2DArray", "iimage2DMS", "iimage2DMSArray", "iimage2DRect", "iimage3D", "iimageBuffer", "iimageCube", "iimageCubeArray", "image1D", "image1DArray", "image2D", "image2DArray", "image2DMS", "image2DMSArray", "image2DRect", "image3D", "imageBuffer", "imageCube", "imageCubeArray", "in", "inline", "inout", "input", "int", "interface", "invariant", "isampler1D", "isampler1DArray", "isampler2D", "isampler2DArray", "isampler2DMS", "isampler2DMSArray", "isampler2DRect", "isampler3D", "isamplerBuffer", "isamplerCube", "isamplerCubeArray", "isubpassInput", "isubpassInputMS", "itexture2D", "itexture2DArray", "itexture2DMS", "itexture2DMSArray", "itexture3D", "itextureBuffer", "itextureCube", "itextureCubeArray", "ivec2", "ivec3", "ivec4", "layout", "long", "lowp", "mat2", "mat2x2", "mat2x3", "mat2x4", "mat3", "mat3x2", "mat3x3", "mat3x4", "mat4", "mat4x2", "mat4x3", "mat4x4", "mediump", "namespace", "noinline", "noperspective", "out", "output", "partition", "patch", "precise", "precision", "public", "readonly", "resource", "restrict", "return", "sample", "sampler", "sampler1D", "sampler1DArray", "sampler1DArrayShadow", "sampler1DShadow", "sampler2D", "sampler2DArray", "sampler2DArrayShadow", "sampler2DMS", "sampler2DMSArray", "sampler2DRect", "sampler2DRectShadow", "sampler2DShadow", "sampler3D", "sampler3DRect", "samplerBuffer", "samplerCube", "samplerCubeArray", "samplerCubeArrayShadow", "samplerCubeShadow", "samplerShadow", "shared", "short", "sizeof", "smooth", "static", "struct", "subpassInput", "subpassInputMS", "subroutine", "superp", "switch", "template", "texture2D", "texture2DArray", "texture2DMS", "texture2DMSArray", "texture3D", "textureBuffer", "textureCube", "textureCubeArray", "this", "true", "typedef", "uimage1D", "uimage1DArray", "uimage2D", "uimage2DArray", "uimage2DMS", "uimage2DMSArray", "uimage2DRect", "uimage3D", "uimageBuffer", "uimageCube", "uimageCubeArray", "uint", "uniform", "union", "unsigned", "usampler1D", "usampler1DArray", "usampler2D", "usampler2DArray", "usampler2DMS", "usampler2DMSArray", "usampler2DRect", "usampler3D", "usamplerBuffer", "usamplerCube", "usamplerCubeArray", "using", "usubpassInput", "usubpassInputMS", "utexture2D", "utexture2DArray", "utexture2DMS", "utexture2DMSArray", "utexture3D", "utextureBuffer", "utextureCube", "utextureCubeArray", "uvec2", "uvec3", "uvec4", "varying", "vec2", "vec3", "vec4", "void", "volatile", "while", "writeonly",
+			// GLSL intrinsic functions (WIP)
+			"abs", "acos", "acosh", "asin", "asinh", "atan", "atan", "atanh", "ceil", "clamp", "cos", "cosh", "cross", "degrees", "distance", "dot", "exp", "exp2", "floor", "fract", "imageLoad", "imageStore", "inverse", "inversesqrt", "length", "log", "log2", "max", "min", "mix", "normalize", "pow", "radians", "reflect", "round", "roundEven", "sign", "sin", "sinh", "sqrt", "tan", "tanh", "texture", "transpose", "trunc",
+		};
+
 		Ast::SanitizeVisitor::Options options;
 		options.makeVariableNameUnique = true;
 		options.reduceLoopsToWhile = true;
@@ -514,6 +504,7 @@ namespace nzsl
 		options.removeOptionDeclaration = true;
 		options.removeScalarSwizzling = true;
 		options.removeSingleConstDeclaration = true;
+		options.reservedNames = &s_reservedKeywords;
 
 		return options;
 	}
@@ -871,7 +862,7 @@ namespace nzsl
 
 	void GlslWriter::AppendFunctionDeclaration(const Ast::DeclareFunctionStatement& node, const std::string& nameOverride, bool forward)
 	{
-		Append(node.returnType, " ", SanitizeIdentifier(nameOverride), "(");
+		Append(node.returnType, " ", nameOverride, "(");
 
 		bool first = true;
 		for (const auto& parameter : node.parameters)
@@ -881,7 +872,7 @@ namespace nzsl
 
 			first = false;
 
-			AppendVariableDeclaration(parameter.type.GetResultingValue(), SanitizeIdentifier(parameter.name));
+			AppendVariableDeclaration(parameter.type.GetResultingValue(), parameter.name);
 		}
 		AppendLine((forward) ? ");" : ")");
 	}
@@ -1385,16 +1376,15 @@ namespace nzsl
 				assert(!node.parameters.empty());
 
 				auto& parameter = node.parameters.front();
-				std::string varName = SanitizeIdentifier(parameter.name);
-				RegisterVariable(*parameter.varIndex, varName);
+				RegisterVariable(*parameter.varIndex, parameter.name);
 
 				assert(IsStructType(parameter.type.GetResultingValue()));
 				std::size_t structIndex = std::get<Ast::StructType>(parameter.type.GetResultingValue()).structIndex;
 				const auto& structData = Nz::Retrieve(m_currentState->structs, structIndex);
 
-				AppendLine(structData.nameOverride, " ", varName, ";");
+				AppendLine(structData.nameOverride, " ", parameter.name, ";");
 				for (const auto& [memberName, targetName] : m_currentState->inputFields)
-					AppendLine(varName, ".", memberName, " = ", targetName, ";");
+					AppendLine(parameter.name, ".", memberName, " = ", targetName, ";");
 
 				AppendLine();
 			}
@@ -1439,7 +1429,7 @@ namespace nzsl
 					if (empty && m_currentState->states->debugLevel >= DebugLevel::Minimal)
 						AppendCommentSection((in) ? "Inputs" : "Outputs");
 
-					std::string varName = SanitizeIdentifier(std::string(targetPrefix) + member.name);
+					std::string varName = std::string(targetPrefix) + member.name;
 
 					auto OutputVariable = [&](auto&&... arg)
 					{
@@ -1551,14 +1541,6 @@ namespace nzsl
 	{
 		assert(m_currentState->variableNames.find(varIndex) == m_currentState->variableNames.end());
 		m_currentState->variableNames.emplace(varIndex, std::move(varName));
-	}
-
-	std::string GlslWriter::SanitizeIdentifier(std::string identifier)
-	{
-		while (m_currentState->reservedKeywords.find(identifier) != m_currentState->reservedKeywords.end())
-			identifier += "_";
-
-		return identifier;
 	}
 
 	void GlslWriter::ScopeVisit(Ast::Statement& node)
@@ -2167,7 +2149,7 @@ namespace nzsl
 					AppendComment("struct tag: " + structInfo.desc->tag);
 			}
 
-			std::string varName = SanitizeIdentifier(externalVar.name + m_currentState->moduleSuffix);
+			std::string varName = externalVar.name + m_currentState->moduleSuffix;
 
 			// Layout handling
 			bool hasLayout = false;
@@ -2336,7 +2318,7 @@ namespace nzsl
 		for (const auto& parameter : node.parameters)
 		{
 			assert(parameter.varIndex);
-			RegisterVariable(*parameter.varIndex, SanitizeIdentifier(parameter.name));
+			RegisterVariable(*parameter.varIndex, parameter.name);
 		}
 
 		AppendFunctionDeclaration(node, funcData.name);
@@ -2357,7 +2339,7 @@ namespace nzsl
 
 	void GlslWriter::Visit(Ast::DeclareStructStatement& node)
 	{
-		std::string structName = SanitizeIdentifier(node.description.name + m_currentState->moduleSuffix);
+		std::string structName = node.description.name + m_currentState->moduleSuffix;
 
 		assert(node.structIndex);
 		RegisterStruct(*node.structIndex, &node.description, structName);
@@ -2408,12 +2390,10 @@ namespace nzsl
 
 	void GlslWriter::Visit(Ast::DeclareVariableStatement& node)
 	{
-		std::string varName = SanitizeIdentifier(node.varName);
-
 		assert(node.varIndex);
-		RegisterVariable(*node.varIndex, varName);
+		RegisterVariable(*node.varIndex, node.varName);
 
-		AppendVariableDeclaration(node.varType.GetResultingValue(), varName);
+		AppendVariableDeclaration(node.varType.GetResultingValue(), node.varName);
 		if (node.initialExpression)
 		{
 			Append(" = ");

@@ -20,6 +20,7 @@
 #include <NZSL/Lang/Errors.hpp>
 #include <NZSL/Lang/LangData.hpp>
 #include <frozen/unordered_map.h>
+#include <fmt/format.h>
 #include <numeric>
 #include <sstream>
 #include <stdexcept>
@@ -1437,6 +1438,7 @@ namespace nzsl::Ast
 
 			extVar.type = std::move(resolvedType).value();
 			extVar.varIndex = RegisterVariable(extVar.name, std::move(varType), extVar.varIndex, extVar.sourceLocation);
+			SanitizeIdentifier(extVar.name);
 		}
 
 		// Resolve auto-binding entries when explicit binding are known
@@ -1603,6 +1605,8 @@ namespace nzsl::Ast
 		std::size_t funcIndex = RegisterFunction(clone->name, std::move(funcData), node.funcIndex, node.sourceLocation);
 		clone->funcIndex = funcIndex;
 
+		SanitizeIdentifier(clone->name);
+
 		return clone;
 	}
 
@@ -1750,6 +1754,7 @@ namespace nzsl::Ast
 		clone->description.isConditional = m_context->inConditionalStatement;
 
 		clone->structIndex = RegisterStruct(clone->description.name, &clone->description, clone->structIndex, clone->sourceLocation);
+		SanitizeIdentifier(clone->description.name);
 
 		return clone;
 	}
@@ -1812,7 +1817,10 @@ namespace nzsl::Ast
 			{
 				// We can't register the counter as a variable if we need to unroll the loop later (because the counter will become const)
 				if (fromExprType && wontUnroll)
+				{
 					clone->varIndex = RegisterVariable(node.varName, *fromExprType, node.varIndex, node.sourceLocation);
+					SanitizeIdentifier(node.varName);
+				}
 				else
 				{
 					RegisterUnresolved(node.varName);
@@ -2182,6 +2190,7 @@ namespace nzsl::Ast
 			PushScope();
 			{
 				clone->varIndex = RegisterVariable(node.varName, innerType, node.varIndex, node.sourceLocation);
+				SanitizeIdentifier(node.varName);
 
 				bool wasInLoop = m_context->inLoop;
 				m_context->inLoop = true;
@@ -3657,7 +3666,10 @@ namespace nzsl::Ast
 			for (auto& parameter : pendingFunc.cloneNode->parameters)
 			{
 				if (!m_context->options.partialSanitization || parameter.type.IsResultingValue())
+				{
 					parameter.varIndex = RegisterVariable(parameter.name, parameter.type.GetResultingValue(), parameter.varIndex, parameter.sourceLocation);
+					SanitizeIdentifier(parameter.name);
+				}
 				else
 					RegisterUnresolved(parameter.name);
 			}
@@ -3795,6 +3807,24 @@ namespace nzsl::Ast
 		}
 
 		return output;
+	}
+
+	bool SanitizeVisitor::SanitizeIdentifier(std::string& identifier)
+	{
+		bool nameChanged = false;
+		if (m_context->options.reservedNames)
+		{
+			while (m_context->options.reservedNames->count(identifier) != 0)
+			{
+				identifier += '_';
+				nameChanged = true;
+			}
+
+			if (nameChanged)
+				RegisterReservedName(identifier);
+		}
+
+		return nameChanged;
 	}
 
 	std::string SanitizeVisitor::ToString(const ExpressionType& exprType, const SourceLocation& sourceLocation) const
@@ -4545,6 +4575,7 @@ namespace nzsl::Ast
 		node.varIndex = RegisterVariable(node.varName, resolvedType, node.varIndex, node.sourceLocation);
 		node.varType = std::move(resolvedType);
 
+		bool nameChanged = false;
 		if (m_context->options.makeVariableNameUnique)
 		{
 			// Since we are registered, FindIdentifier will find us
@@ -4563,14 +4594,17 @@ namespace nzsl::Ast
 				std::string candidateName;
 				do
 				{
-					candidateName = node.varName + "_" + std::to_string(cloneIndex++);
+					candidateName = fmt::format("{}_{}", node.varName, cloneIndex++);
 				}
 				while (FindIdentifier(candidateName, IgnoreOurself) != nullptr);
 
 				node.varName = std::move(candidateName);
-				RegisterReservedName(node.varName);
+				nameChanged = true;
 			}
 		}
+
+		if (!SanitizeIdentifier(node.varName) || nameChanged)
+			RegisterReservedName(node.varName);
 
 		return ValidationResult::Validated;
 	}
