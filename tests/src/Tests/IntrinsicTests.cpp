@@ -45,7 +45,7 @@ fn main()
 		ExpectGLSL(*shaderModule, R"(
 // struct DataStruct omitted (used as UBO/SSBO)
 
-layout(std140) buffer _nzslBinding_data
+layout(std140) buffer _nzslBindingdata
 {
 	int values[];
 } data;

@@ -15,7 +15,9 @@
 #include <NZSL/Ast/RecursiveVisitor.hpp>
 #include <NZSL/Ast/Utils.hpp>
 #include <NZSL/Lang/LangData.hpp>
+#include <fmt/format.h>
 #include <frozen/unordered_map.h>
+#include <frozen/unordered_set.h>
 #include <tsl/ordered_set.h>
 #include <cassert>
 #include <fstream>
@@ -31,10 +33,10 @@ namespace nzsl
 		constexpr std::string_view s_glslWriterShaderDrawParametersBaseInstanceName = "_nzslBaseInstance";
 		constexpr std::string_view s_glslWriterShaderDrawParametersBaseVertexName = "_nzslBaseVertex";
 		constexpr std::string_view s_glslWriterShaderDrawParametersDrawIndexName = "_nzslDrawID";
-		constexpr std::string_view s_glslWriterBlockBindingPrefix = "_nzslBinding_";
-		constexpr std::string_view s_glslWriterVaryingPrefix = "_nzslVarying_";
-		constexpr std::string_view s_glslWriterInputPrefix = "_nzslIn_";
-		constexpr std::string_view s_glslWriterOutputPrefix = "_nzslOut_";
+		constexpr std::string_view s_glslWriterBlockBindingPrefix = "_nzslBinding";
+		constexpr std::string_view s_glslWriterVaryingPrefix = "_nzslVarying";
+		constexpr std::string_view s_glslWriterInputPrefix = "_nzslIn";
+		constexpr std::string_view s_glslWriterOutputPrefix = "_nzslOut";
 		constexpr std::string_view s_glslWriterOutputVarName = "_nzslOutput";
 
 		bool IsIntegerMix(Ast::IntrinsicExpression& node)
@@ -489,12 +491,12 @@ namespace nzsl
 
 	Ast::SanitizeVisitor::Options GlslWriter::GetSanitizeOptions()
 	{
-		static std::unordered_set<std::string_view> s_reservedKeywords = {
+		static constexpr auto s_reservedKeywords = frozen::make_unordered_set<frozen::string>({
 			// All reserved GLSL keywords as of GLSL ES 3.2
 			"active", "asm", "atomic_uint", "attribute", "bool", "break", "buffer", "bvec2", "bvec3", "bvec4", "case", "cast", "centroid", "class", "coherent", "common", "const", "continue", "default", "discard", "dmat2", "dmat2x2", "dmat2x3", "dmat2x4", "dmat3", "dmat3x2", "dmat3x3", "dmat3x4", "dmat4", "dmat4x2", "dmat4x3", "dmat4x4", "do", "double", "dvec2", "dvec3", "dvec4", "else", "enum", "extern", "external", "false", "filter", "fixed", "flat", "float", "for", "fvec2", "fvec3", "fvec4", "goto", "half", "highp", "hvec2", "hvec3", "hvec4", "if", "iimage1D", "iimage1DArray", "iimage2D", "iimage2DArray", "iimage2DMS", "iimage2DMSArray", "iimage2DRect", "iimage3D", "iimageBuffer", "iimageCube", "iimageCubeArray", "image1D", "image1DArray", "image2D", "image2DArray", "image2DMS", "image2DMSArray", "image2DRect", "image3D", "imageBuffer", "imageCube", "imageCubeArray", "in", "inline", "inout", "input", "int", "interface", "invariant", "isampler1D", "isampler1DArray", "isampler2D", "isampler2DArray", "isampler2DMS", "isampler2DMSArray", "isampler2DRect", "isampler3D", "isamplerBuffer", "isamplerCube", "isamplerCubeArray", "isubpassInput", "isubpassInputMS", "itexture2D", "itexture2DArray", "itexture2DMS", "itexture2DMSArray", "itexture3D", "itextureBuffer", "itextureCube", "itextureCubeArray", "ivec2", "ivec3", "ivec4", "layout", "long", "lowp", "mat2", "mat2x2", "mat2x3", "mat2x4", "mat3", "mat3x2", "mat3x3", "mat3x4", "mat4", "mat4x2", "mat4x3", "mat4x4", "mediump", "namespace", "noinline", "noperspective", "out", "output", "partition", "patch", "precise", "precision", "public", "readonly", "resource", "restrict", "return", "sample", "sampler", "sampler1D", "sampler1DArray", "sampler1DArrayShadow", "sampler1DShadow", "sampler2D", "sampler2DArray", "sampler2DArrayShadow", "sampler2DMS", "sampler2DMSArray", "sampler2DRect", "sampler2DRectShadow", "sampler2DShadow", "sampler3D", "sampler3DRect", "samplerBuffer", "samplerCube", "samplerCubeArray", "samplerCubeArrayShadow", "samplerCubeShadow", "samplerShadow", "shared", "short", "sizeof", "smooth", "static", "struct", "subpassInput", "subpassInputMS", "subroutine", "superp", "switch", "template", "texture2D", "texture2DArray", "texture2DMS", "texture2DMSArray", "texture3D", "textureBuffer", "textureCube", "textureCubeArray", "this", "true", "typedef", "uimage1D", "uimage1DArray", "uimage2D", "uimage2DArray", "uimage2DMS", "uimage2DMSArray", "uimage2DRect", "uimage3D", "uimageBuffer", "uimageCube", "uimageCubeArray", "uint", "uniform", "union", "unsigned", "usampler1D", "usampler1DArray", "usampler2D", "usampler2DArray", "usampler2DMS", "usampler2DMSArray", "usampler2DRect", "usampler3D", "usamplerBuffer", "usamplerCube", "usamplerCubeArray", "using", "usubpassInput", "usubpassInputMS", "utexture2D", "utexture2DArray", "utexture2DMS", "utexture2DMSArray", "utexture3D", "utextureBuffer", "utextureCube", "utextureCubeArray", "uvec2", "uvec3", "uvec4", "varying", "vec2", "vec3", "vec4", "void", "volatile", "while", "writeonly",
 			// GLSL intrinsic functions (WIP)
-			"abs", "acos", "acosh", "asin", "asinh", "atan", "atan", "atanh", "ceil", "clamp", "cos", "cosh", "cross", "degrees", "distance", "dot", "exp", "exp2", "floor", "fract", "imageLoad", "imageStore", "inverse", "inversesqrt", "length", "log", "log2", "max", "min", "mix", "normalize", "pow", "radians", "reflect", "round", "roundEven", "sign", "sin", "sinh", "sqrt", "tan", "tanh", "texture", "transpose", "trunc",
-		};
+			"abs", "acos", "acosh", "asin", "asinh", "atan", "atanh", "ceil", "clamp", "cos", "cosh", "cross", "degrees", "distance", "dot", "exp", "exp2", "floor", "fract", "imageLoad", "imageStore", "inverse", "inversesqrt", "length", "log", "log2", "max", "min", "mix", "normalize", "pow", "radians", "reflect", "round", "roundEven", "sign", "sin", "sinh", "sqrt", "tan", "tanh", "texture", "transpose", "trunc",
+		});
 
 		Ast::SanitizeVisitor::Options options;
 		options.makeVariableNameUnique = true;
@@ -504,7 +506,44 @@ namespace nzsl
 		options.removeOptionDeclaration = true;
 		options.removeScalarSwizzling = true;
 		options.removeSingleConstDeclaration = true;
-		options.reservedNames = &s_reservedKeywords;
+		options.identifierSanitizer = [](std::string& identifier, Ast::IdentifierScope /*scope*/)
+		{
+			using namespace std::string_view_literals;
+
+			bool nameChanged = false;
+			while (s_reservedKeywords.count(frozen::string(identifier)) != 0)
+			{
+				identifier += '_';
+				nameChanged = true;
+			}
+
+			// Identifier can't start with gl_
+			if (identifier.compare(0, 3, "gl_") == 0)
+			{
+				identifier.replace(0, 3, "_gl_"sv);
+				nameChanged = true;
+			}
+
+			// Identifier can't start with _nzsl
+			if (identifier.compare(0, 5, "_nzsl") == 0)
+			{
+				identifier.replace(0, 5, "_"sv);
+				nameChanged = true;
+			}
+
+			// Replace __ by _X_
+			std::size_t startPos = 0;
+			while ((startPos = identifier.find("__"sv, startPos)) != std::string::npos)
+			{
+				std::size_t endPos = identifier.find_first_not_of("_", startPos);
+				identifier.replace(startPos, endPos - startPos, fmt::format("{}{}_", (startPos == 0) ? "_" : "", endPos - startPos));
+
+				startPos = endPos;
+				nameChanged = true;
+			}
+
+			return nameChanged;
+		};
 
 		return options;
 	}

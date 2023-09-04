@@ -208,6 +208,7 @@ namespace nzsl::Ast
 		{
 			auto& cloneMember = clone->description.members.emplace_back();
 			cloneMember.name = member.name;
+			cloneMember.originalName = member.originalName;
 			cloneMember.type = Clone(member.type);
 			cloneMember.builtin = Clone(member.builtin);
 			cloneMember.cond = Clone(member.cond);

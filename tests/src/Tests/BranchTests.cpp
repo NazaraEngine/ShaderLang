@@ -227,7 +227,7 @@ void main()
 	Output output_;
 	output_.color = vec4(1.0, 1.0, 1.0, 1.0);
 
-	_nzslOut_color = output_.color;
+	_nzslOutcolor = output_.color;
 	return;
 }
 )");
@@ -309,7 +309,7 @@ void main()
 	Output output_;
 	output_.color = vec4(1.0, 1.0, 1.0, 1.0);
 
-	_nzslOut_color = output_.color;
+	_nzslOutcolor = output_.color;
 	return;
 }
 )");

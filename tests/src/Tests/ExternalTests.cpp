@@ -202,7 +202,7 @@ fn main()
 
 		ExpectGLSL(*shaderModule, R"(
 // struct tag: DataStruct
-uniform _nzslBinding_data
+uniform _nzslBindingdata
 {
 	// member tag: Values
 	float values[47];
@@ -298,7 +298,7 @@ fn main()
 			glslEnv.glMinorVersion = 1;
 
 			ExpectGLSL(*shaderModule, R"(
-buffer _nzslBinding_data
+buffer _nzslBindingdata
 {
 	float values[47];
 } data;
@@ -435,7 +435,7 @@ fn main()
 			glslEnv.glMinorVersion = 1;
 
 			ExpectGLSL(*shaderModule, R"(
-buffer _nzslBinding_data
+buffer _nzslBindingdata
 {
 	uint data;
 	float values[];

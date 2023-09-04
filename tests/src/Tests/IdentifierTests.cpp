@@ -8,16 +8,41 @@ TEST_CASE("identifiers", "[Shader]")
 {
 	SECTION("Reserved identifiers check")
 	{
+		// Here's a shader using exclusively GLSL reversed words as identifiers, it should generate proper GLSL
 		std::string_view nzslSource = R"(
 [nzsl_version("1.0")]
 module;
 
-[entry(frag)]
-fn main()
+external
 {
-	// input is a reserved word in GLSL
-	let input = 0;
+	[binding(0)] texture: sampler2D[f32]
+}
+
+fn int() -> i32
+{
+	return 42;
+}
+
+struct output
+{
+	active: vec3[f32],
+	active_: vec2[i32],
+	_nzsl: i32,
+	_: f32
+}
+
+[entry(frag)]
+fn main() -> output
+{
+	let input = int();
 	let input_ = 0;
+
+	let fl__oa________t = 42.0;
+
+	let out: output;
+	out.active = (f32(input) + fl__oa________t).xxx;
+
+	return out;
 }
 )";
 
@@ -25,33 +50,101 @@ fn main()
 		shaderModule = SanitizeModule(*shaderModule);
 
 		ExpectGLSL(*shaderModule, R"(
+uniform sampler2D texture_;
+
+int int_()
+{
+	return 42;
+}
+
+struct output_
+{
+	vec3 active_;
+	ivec2 active2_2;
+	int _;
+	float _2_2;
+};
+
+/*************** Outputs ***************/
+out vec3 _nzslOutactive_;
+out ivec2 _nzslOutactive2_2;
+out int _nzslOut_;
+out float _nzslOut_2_2;
+
 void main()
 {
-	int input_ = 0;
-	int input__2 = 0;
+	int input_ = int_();
+	int input2_2 = 0;
+	float fl2_oa8_t = 42.0;
+	output_ out_;
+	float cachedResult = (float(input_)) + fl2_oa8_t;
+	out_.active_ = vec3(cachedResult, cachedResult, cachedResult);
+
+	_nzslOutactive_ = out_.active_;
+	_nzslOutactive2_2 = out_.active2_2;
+	_nzslOut_ = out_._;
+	_nzslOut_2_2 = out_._2_2;
+	return;
 }
 )");
 
 		ExpectNZSL(*shaderModule, R"(
-[entry(frag)]
-fn main()
+[nzsl_version("1.0")]
+module;
+
+external
 {
-	let input: i32 = 0;
+	[set(0), binding(0)] texture: sampler2D[f32]
+}
+
+fn int() -> i32
+{
+	return 42;
+}
+
+struct output
+{
+	active: vec3[f32],
+	active_: vec2[i32],
+	_nzsl: i32,
+	_: f32
+}
+
+[entry(frag)]
+fn main() -> output
+{
+	let input: i32 = int();
 	let input_: i32 = 0;
+	let fl__oa________t: f32 = 42.0;
+	let out: output;
+	out.active = ((f32(input)) + fl__oa________t).xxx;
+	return out;
 }
 )");
 
 		ExpectSPIRV(*shaderModule, R"(
-OpTypeFunction
-OpTypeInt
-OpConstant
-OpTypePointer
+OpFunction
+OpLabel
+OpReturnValue
+OpFunctionEnd
 OpFunction
 OpLabel
 OpVariable
 OpVariable
+OpVariable
+OpVariable
+OpFunctionCall
 OpStore
 OpStore
+OpStore
+OpLoad
+OpConvertSToF
+OpLoad
+OpFAdd
+OpCompositeConstruct
+OpAccessChain
+OpStore
+OpLoad
 OpReturn
 OpFunctionEnd)");
 	}
