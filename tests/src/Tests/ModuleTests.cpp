@@ -123,27 +123,27 @@ struct OutputData_SimpleModule
 // Description: Main file
 // License: MIT
 
-layout(std140) uniform _nzslBinding_block
+layout(std140) uniform _nzslBindingblock
 {
 	Data_SimpleModule data;
 } block;
 
 /**************** Inputs ****************/
-in float _nzslIn_value;
+in float _nzslInvalue;
 
 /*************** Outputs ***************/
-out float _nzslOut_value;
+out float _nzslOutvalue;
 
 void main()
 {
 	InputData_SimpleModule input_;
-	input_.value = _nzslIn_value;
+	input_.value = _nzslInvalue;
 
 	Data_SimpleModule data = block.data;
 	OutputData_SimpleModule output_;
 	output_.value = ((GetDataValue_SimpleModule(data)) * input_.value) * (3.141592);
 
-	_nzslOut_value = output_.value;
+	_nzslOutvalue = output_.value;
 	return;
 }
 )");
@@ -360,26 +360,26 @@ struct OutputData_Modules_InputOutput
 
 // Main module
 
-layout(std140) uniform _nzslBinding_block
+layout(std140) uniform _nzslBindingblock
 {
 	Data_Modules_Data data;
 } block;
 
 /**************** Inputs ****************/
-in float _nzslIn_value;
+in float _nzslInvalue;
 
 /*************** Outputs ***************/
-out float _nzslOut_value;
+out float _nzslOutvalue;
 
 void main()
 {
 	InputData_Modules_InputOutput input_;
-	input_.value = _nzslIn_value;
+	input_.value = _nzslInvalue;
 
 	OutputData_Modules_InputOutput output_;
 	output_.value = block.data.value * input_.value;
 
-	_nzslOut_value = output_.value;
+	_nzslOutvalue = output_.value;
 	return;
 }
 )");

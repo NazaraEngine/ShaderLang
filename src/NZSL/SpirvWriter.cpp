@@ -546,7 +546,7 @@ namespace nzsl
 				else if (member.locationIndex.HasValue())
 				{
 					SpirvConstantCache::Variable variable;
-					variable.debugName = member.name;
+					variable.debugName = (!member.originalName.empty()) ? member.originalName : member.name;
 					variable.funcId = funcIndex;
 					variable.storageClass = storageClass;
 					variable.type = m_constantCache.BuildPointerType(member.type.GetResultingValue(), storageClass);

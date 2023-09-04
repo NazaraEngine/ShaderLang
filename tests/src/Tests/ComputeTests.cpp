@@ -72,7 +72,7 @@ layout(local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
 
 layout(rgba8) uniform readonly image2D input_tex;
 layout(rgba8) uniform writeonly image2D output_tex;
-uniform _nzslBinding_data
+uniform _nzslBindingdata
 {
 	uvec2 tex_size;
 } data;

@@ -63,7 +63,7 @@ struct Output_OutputStruct
 	vec4 color;
 };
 
-layout(location = 0) out vec4 _nzslOut_color;
+layout(location = 0) out vec4 _nzslOutcolor;
 
 void main()
 {
@@ -72,7 +72,7 @@ void main()
 	Output_OutputStruct output_;
 	output_.color = GetColorFromData_OutputStruct(data);
 
-	_nzslOut_color = output_.color;
+	_nzslOutcolor = output_.color;
 	return;
 })", options);
 
@@ -214,7 +214,7 @@ struct Output_OutputStruct
 // License: MIT
 
 /*************** Outputs ***************/
-layout(location = 0) out vec4 _nzslOut_color;
+layout(location = 0) out vec4 _nzslOutcolor;
 
 void main()
 {
@@ -223,7 +223,7 @@ void main()
 	Output_OutputStruct output_;
 	output_.color = GetColorFromData_OutputStruct(data);
 
-	_nzslOut_color = output_.color;
+	_nzslOutcolor = output_.color;
 	return;
 })", options);
 
@@ -389,7 +389,7 @@ struct Output_OutputStruct
 // License: MIT
 
 /*************** Outputs ***************/
-layout(location = 0) out vec4 _nzslOut_color;
+layout(location = 0) out vec4 _nzslOutcolor;
 
 // @../resources/Shader.nzsl:12:1
 void main()
@@ -399,7 +399,7 @@ void main()
 	Output_OutputStruct output_;
 	output_.color = GetColorFromData_OutputStruct(data);
 
-	_nzslOut_color = output_.color;
+	_nzslOutcolor = output_.color;
 	return;
 })", options);
 
@@ -700,7 +700,7 @@ fn main() -> Output
 // License: MIT
 
 /*************** Outputs ***************/
-layout(location = 0) out vec4 _nzslOut_color;
+layout(location = 0) out vec4 _nzslOutcolor;
 
 // @../resources/Shader.nzsl:12:1
 void main()
@@ -710,7 +710,7 @@ void main()
 	Output_OutputStruct output_;
 	output_.color = GetColorFromData_OutputStruct(data);
 
-	_nzslOut_color = output_.color;
+	_nzslOutcolor = output_.color;
 	return;
 })", options);
 

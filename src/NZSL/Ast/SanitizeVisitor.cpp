@@ -423,11 +423,19 @@ namespace nzsl::Ast
 							continue;
 					}
 
-					if (field.name == identifierEntry.identifier)
+					if (!field.originalName.empty())
 					{
-						fieldPtr = &field;
-						break;
+						if (field.originalName == identifierEntry.identifier)
+							fieldPtr = &field;
 					}
+					else
+					{
+						if (field.name == identifierEntry.identifier)
+							fieldPtr = &field;
+					}
+
+					if (fieldPtr)
+						break;
 
 					fieldIndex++;
 				}
@@ -1438,7 +1446,7 @@ namespace nzsl::Ast
 
 			extVar.type = std::move(resolvedType).value();
 			extVar.varIndex = RegisterVariable(extVar.name, std::move(varType), extVar.varIndex, extVar.sourceLocation);
-			SanitizeIdentifier(extVar.name);
+			SanitizeIdentifier(extVar.name, IdentifierScope::ExternalVariable);
 		}
 
 		// Resolve auto-binding entries when explicit binding are known
@@ -1605,7 +1613,7 @@ namespace nzsl::Ast
 		std::size_t funcIndex = RegisterFunction(clone->name, std::move(funcData), node.funcIndex, node.sourceLocation);
 		clone->funcIndex = funcIndex;
 
-		SanitizeIdentifier(clone->name);
+		SanitizeIdentifier(clone->name, IdentifierScope::Function);
 
 		return clone;
 	}
@@ -1683,7 +1691,8 @@ namespace nzsl::Ast
 		if (clone->description.layout.HasValue())
 			ComputeExprValue(clone->description.layout, node.sourceLocation);
 
-		std::unordered_set<std::string> declaredMembers;
+		std::unordered_set<std::string_view> declaredMembers;
+		std::unordered_set<std::string_view> reservedIdentifiers;
 		for (auto& member : clone->description.members)
 		{
 			if (member.cond.HasValue())
@@ -1709,6 +1718,28 @@ namespace nzsl::Ast
 			}
 
 			declaredMembers.insert(member.name);
+
+			member.originalName = member.name;
+
+			if (reservedIdentifiers.count(member.name) > 0)
+			{
+				unsigned int index = 2;
+				std::string candidateName;
+				do
+				{
+					candidateName = fmt::format("{}_{}", member.name, index++);
+					SanitizeIdentifier(candidateName, IdentifierScope::Field);
+				}
+				while (reservedIdentifiers.count(candidateName) > 0);
+
+				member.name = candidateName;
+				reservedIdentifiers.insert(member.name);
+			}
+			else
+			{
+				if (SanitizeIdentifier(member.name, IdentifierScope::Field))
+					reservedIdentifiers.insert(member.name);
+			}
 
 			if (member.type.HasValue() && member.type.IsExpression())
 			{
@@ -1754,7 +1785,7 @@ namespace nzsl::Ast
 		clone->description.isConditional = m_context->inConditionalStatement;
 
 		clone->structIndex = RegisterStruct(clone->description.name, &clone->description, clone->structIndex, clone->sourceLocation);
-		SanitizeIdentifier(clone->description.name);
+		SanitizeIdentifier(clone->description.name, IdentifierScope::Struct);
 
 		return clone;
 	}
@@ -1819,7 +1850,7 @@ namespace nzsl::Ast
 				if (fromExprType && wontUnroll)
 				{
 					clone->varIndex = RegisterVariable(node.varName, *fromExprType, node.varIndex, node.sourceLocation);
-					SanitizeIdentifier(node.varName);
+					SanitizeIdentifier(node.varName, IdentifierScope::Variable);
 				}
 				else
 				{
@@ -2190,7 +2221,7 @@ namespace nzsl::Ast
 			PushScope();
 			{
 				clone->varIndex = RegisterVariable(node.varName, innerType, node.varIndex, node.sourceLocation);
-				SanitizeIdentifier(node.varName);
+				SanitizeIdentifier(node.varName, IdentifierScope::Variable);
 
 				bool wasInLoop = m_context->inLoop;
 				m_context->inLoop = true;
@@ -3668,7 +3699,7 @@ namespace nzsl::Ast
 				if (!m_context->options.partialSanitization || parameter.type.IsResultingValue())
 				{
 					parameter.varIndex = RegisterVariable(parameter.name, parameter.type.GetResultingValue(), parameter.varIndex, parameter.sourceLocation);
-					SanitizeIdentifier(parameter.name);
+					SanitizeIdentifier(parameter.name, IdentifierScope::Parameter);
 				}
 				else
 					RegisterUnresolved(parameter.name);
@@ -3809,22 +3840,22 @@ namespace nzsl::Ast
 		return output;
 	}
 
-	bool SanitizeVisitor::SanitizeIdentifier(std::string& identifier)
+	bool SanitizeVisitor::SanitizeIdentifier(std::string& identifier, IdentifierScope identifierScope)
 	{
-		bool nameChanged = false;
-		if (m_context->options.reservedNames)
-		{
-			while (m_context->options.reservedNames->count(identifier) != 0)
-			{
-				identifier += '_';
-				nameChanged = true;
-			}
+		if (!m_context->options.identifierSanitizer)
+			return false;
 
-			if (nameChanged)
-				RegisterReservedName(identifier);
-		}
+		// Don't sanitize identifiers when performing partial sanitization (as it could break future compilation)
+		if (m_context->options.partialSanitization)
+			return false;
 
-		return nameChanged;
+		if (!m_context->options.identifierSanitizer(identifier, identifierScope))
+			return false;
+
+		if (identifierScope != IdentifierScope::Field)
+			RegisterReservedName(identifier);
+
+		return true;
 	}
 
 	std::string SanitizeVisitor::ToString(const ExpressionType& exprType, const SourceLocation& sourceLocation) const
@@ -4603,7 +4634,8 @@ namespace nzsl::Ast
 			}
 		}
 
-		if (!SanitizeIdentifier(node.varName) || nameChanged)
+		// SanitizeIdentifier registers the reserved name if its changes it
+		if (!SanitizeIdentifier(node.varName, IdentifierScope::Variable) && nameChanged)
 			RegisterReservedName(node.varName);
 
 		return ValidationResult::Validated;

@@ -66,7 +66,7 @@ namespace nzsl::Ast
 
 	enum class BuiltinEntry
 	{
-		// Next free ID: 13               -- GLSL / SPIR-V
+		// Next free ID: 13           -- GLSL / SPIR-V
 		BaseInstance            =  3, // gl_BaseInstance (GLSL 450) / BaseInstance (SPIR-V 1.3)
 		BaseVertex              =  4, // gl_BaseVertex (GLSL 450) / BaseVertex (SPIR-V 1.3)
 		DrawIndex               =  5, // gl_DrawID (GLSL 450) / DrawIndex (SPIR-V 1.3)
@@ -94,6 +94,16 @@ namespace nzsl::Ast
 	{
 		LValue = 0,
 		RValue = 1
+	};
+
+	enum class IdentifierScope
+	{
+		ExternalVariable,
+		Field,
+		Function,
+		Parameter,
+		Struct,
+		Variable
 	};
 
 	enum class IntrinsicType
