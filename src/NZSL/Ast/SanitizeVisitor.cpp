@@ -4244,8 +4244,6 @@ namespace nzsl::Ast
 
 		ExpressionType targetType = ResolveAlias(*targetTypeOpt);
 
-		auto& firstExprPtr = MandatoryExpr(node.expressions.front(), node.sourceLocation);
-
 		std::size_t expressionCount = node.expressions.size();
 		
 		auto areTypeCompatibles = [&](PrimitiveType from, PrimitiveType to)
@@ -4335,6 +4333,10 @@ namespace nzsl::Ast
 		if (IsMatrixType(targetType))
 		{
 			const MatrixType& targetMatrixType = std::get<MatrixType>(targetType);
+			if (expressionCount == 0)
+				throw CompilerCastComponentMismatchError{ node.sourceLocation, 0, targetMatrixType.columnCount * targetMatrixType.rowCount };
+
+			auto& firstExprPtr = MandatoryExpr(node.expressions.front(), node.sourceLocation);
 
 			const ExpressionType* firstExprType = GetExpressionType(firstExprPtr);
 			if (!firstExprType)
