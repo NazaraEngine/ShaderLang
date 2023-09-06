@@ -122,13 +122,29 @@ module;
 const data = array[f32, 4](1.0, 2.0, 3.0);
 )"), "(5,14 -> 41): CCastComponentMismatch error: component count (3) doesn't match required component count (4)");
 
-			// and more
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+const data = array[f32, 4]();
+)"), "(5,14 -> 28): CCastComponentMismatch error: component count (0) doesn't match required component count (4)");
+
+			// or to give more
 			CHECK_THROWS_WITH(Compile(R"(
 [nzsl_version("1.0")]
 module;
 
 const data = array[f32, 2](1.0, 2.0, 3.0);
 )"), "(5,14 -> 41): CCastComponentMismatch error: component count (3) doesn't match required component count (2)");
+
+			// or to give it incompatible types
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+const data = array[f32, 3](1, 2, 3);
+)"), "(5, 28): CCastIncompatibleTypes error: incompatibles types (f32 and i32)");
+
 
 			// it's an error to declare an unsized array outside of this case
 			CHECK_THROWS_WITH(Compile(R"(
@@ -804,6 +820,26 @@ fn main()
 	let a: mat4[i32];
 }
 )"), "(7,9 -> 17): CMatrixExpectedFloat error: expected floating-point primitive as matrix type, got i32");
+
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+fn main()
+{
+	let a = vec3[f32]();
+}
+)"), "(7,10 -> 20): CCastComponentMismatch error: component count (0) doesn't match required component count (3)");
+
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+fn main()
+{
+	let a = mat4[f32]();
+}
+)"), "(7,10 -> 20): CCastComponentMismatch error: component count (0) doesn't match required component count (16)");
 		}
 	}
 }
