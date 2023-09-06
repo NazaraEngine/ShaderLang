@@ -2964,7 +2964,7 @@ namespace nzsl::Ast
 		auto& funcData = m_context->functions.Retrieve(funcIndex, {});
 		callingFunction.calledByStages |= funcData.calledByStages;
 
-		for (std::size_t i = funcData.calledByFunctions.FindFirst(); i != funcData.calledByFunctions.npos; i = funcData.calledByFunctions.FindNext(i))
+		for (std::size_t i : funcData.calledByFunctions.IterBits())
 			PropagateFunctionRequirements(callingFunction, i, seen);
 	}
 
@@ -3723,7 +3723,7 @@ namespace nzsl::Ast
 			m_context->currentStatementList = previousList;
 			m_context->currentFunction = nullptr;
 
-			for (std::size_t i = funcData.calledFunctions.FindFirst(); i != funcData.calledFunctions.npos; i = funcData.calledFunctions.FindNext(i))
+			for (std::size_t i : funcData.calledFunctions.IterBits())
 			{
 				auto& targetFunc = m_context->functions.Retrieve(i, pendingFunc.cloneNode->sourceLocation);
 				targetFunc.calledByFunctions.UnboundedSet(funcIndex);
@@ -3739,7 +3739,7 @@ namespace nzsl::Ast
 			seen.Clear();
 			seen.UnboundedSet(funcIndex);
 
-			for (std::size_t i = funcData.calledByFunctions.FindFirst(); i != funcData.calledByFunctions.npos; i = funcData.calledByFunctions.FindNext(i))
+			for (std::size_t i : funcData.calledByFunctions.IterBits())
 				PropagateFunctionRequirements(funcData, i, seen);
 
 			for (std::size_t flagIndex = 0; flagIndex <= static_cast<std::size_t>(ShaderStageType::Max); ++flagIndex)

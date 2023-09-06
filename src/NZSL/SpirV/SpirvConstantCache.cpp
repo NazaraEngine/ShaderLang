@@ -697,7 +697,7 @@ namespace nzsl
 		auto typePtr = std::make_shared<Type>(Pointer{
 			BuildType(type),
 			storageClass
-			});
+		});
 
 		m_internal->isInBlockStruct = wasInblockStruct;
 

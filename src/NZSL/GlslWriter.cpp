@@ -2333,17 +2333,17 @@ namespace nzsl
 
 		// Declare functions called by this function which aren't already defined
 		bool hasPredeclaration = false;
-		for (std::size_t i = funcData.calledFunctions.FindFirst(); i != funcData.calledFunctions.npos; i = funcData.calledFunctions.FindNext(i))
+		for (std::size_t i : funcData.calledFunctions.IterBits())
 		{
-			if (!m_currentState->declaredFunctions.UnboundedTest(i))
-			{
-				hasPredeclaration = true;
+			if (m_currentState->declaredFunctions.UnboundedTest(i))
+				continue;
 
-				auto& targetFunc = Nz::Retrieve(m_currentState->previsitor.functions, i);
-				AppendFunctionDeclaration(*targetFunc.node, targetFunc.name, true);
+			hasPredeclaration = true;
 
-				m_currentState->declaredFunctions.UnboundedSet(i);
-			}
+			auto& targetFunc = Nz::Retrieve(m_currentState->previsitor.functions, i);
+			AppendFunctionDeclaration(*targetFunc.node, targetFunc.name, true);
+
+			m_currentState->declaredFunctions.UnboundedSet(i);
 		}
 
 		if (hasPredeclaration)
