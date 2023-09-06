@@ -53,7 +53,7 @@ namespace nzsl::Ast
 		m_resolvedUsage.usedStructs |= usageSet.usedStructs;
 		m_resolvedUsage.usedVariables |= usageSet.usedVariables;
 
-		for (std::size_t aliasIndex = usageSet.usedAliases.FindFirst(); aliasIndex != usageSet.usedAliases.npos; aliasIndex = usageSet.usedAliases.FindNext(aliasIndex))
+		for (std::size_t aliasIndex : usageSet.usedAliases.IterBits())
 		{
 			auto it = m_aliasUsages.find(aliasIndex);
 			if (it != m_aliasUsages.end())
@@ -62,7 +62,7 @@ namespace nzsl::Ast
 				throw std::runtime_error("unknown alias #" + std::to_string(aliasIndex));
 		}
 
-		for (std::size_t constantIndex = usageSet.usedConstants.FindFirst(); constantIndex != usageSet.usedConstants.npos; constantIndex = usageSet.usedConstants.FindNext(constantIndex))
+		for (std::size_t constantIndex : usageSet.usedConstants.IterBits())
 		{
 			auto it = m_constantUsages.find(constantIndex);
 			if (it != m_constantUsages.end())
@@ -71,7 +71,7 @@ namespace nzsl::Ast
 				throw std::runtime_error("unknown constant #" + std::to_string(constantIndex));
 		}
 
-		for (std::size_t funcIndex = usageSet.usedFunctions.FindFirst(); funcIndex != usageSet.usedFunctions.npos; funcIndex = usageSet.usedFunctions.FindNext(funcIndex))
+		for (std::size_t funcIndex : usageSet.usedFunctions.IterBits())
 		{
 			auto it = m_functionUsages.find(funcIndex);
 			if (it != m_functionUsages.end())
@@ -80,7 +80,7 @@ namespace nzsl::Ast
 				throw std::runtime_error("unknown func #" + std::to_string(funcIndex));
 		}
 
-		for (std::size_t structIndex = usageSet.usedStructs.FindFirst(); structIndex != usageSet.usedStructs.npos; structIndex = usageSet.usedStructs.FindNext(structIndex))
+		for (std::size_t structIndex : usageSet.usedStructs.IterBits())
 		{
 			auto it = m_structUsages.find(structIndex);
 			if (it != m_structUsages.end())
@@ -89,7 +89,7 @@ namespace nzsl::Ast
 				throw std::runtime_error("unknown struct #" + std::to_string(structIndex));
 		}
 
-		for (std::size_t varIndex = usageSet.usedVariables.FindFirst(); varIndex != usageSet.usedVariables.npos; varIndex = usageSet.usedVariables.FindNext(varIndex))
+		for (std::size_t varIndex : usageSet.usedVariables.IterBits())
 		{
 			auto it = m_variableUsages.find(varIndex);
 			if (it != m_variableUsages.end())
