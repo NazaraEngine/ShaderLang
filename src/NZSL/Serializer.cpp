@@ -20,54 +20,32 @@ namespace nzsl
 
 	void AbstractSerializer::Serialize(double value)
 	{
-		static_assert(sizeof(double) == sizeof(std::uint64_t));
-
-		std::uint64_t v;
-		std::memcpy(&v, &value, sizeof(v));
-
-		Serialize(v);
+		Serialize(Nz::BitCast<std::uint64_t>(value));
 	}
 
 	void AbstractSerializer::Serialize(float value)
 	{
-		static_assert(sizeof(float) == sizeof(std::uint32_t));
-
-		std::uint32_t v;
-		std::memcpy(&v, &value, sizeof(v));
-
-		Serialize(v);
+		Serialize(Nz::BitCast<std::uint32_t>(value));
 	}
 
 	void AbstractSerializer::Serialize(std::int8_t value)
 	{
-		std::uint8_t v;
-		std::memcpy(&v, &value, sizeof(v));
-
-		Serialize(v);
+		Serialize(Nz::BitCast<std::uint8_t>(value));
 	}
 
 	void AbstractSerializer::Serialize(std::int16_t value)
 	{
-		std::uint16_t v;
-		std::memcpy(&v, &value, sizeof(v));
-
-		Serialize(v);
+		Serialize(Nz::BitCast<std::uint16_t>(value));
 	}
 
 	void AbstractSerializer::Serialize(std::int32_t value)
 	{
-		std::uint32_t v;
-		std::memcpy(&v, &value, sizeof(v));
-
-		Serialize(v);
+		Serialize(Nz::BitCast<std::uint32_t>(value));
 	}
 
 	void AbstractSerializer::Serialize(std::int64_t value)
 	{
-		std::uint64_t v;
-		std::memcpy(&v, &value, sizeof(v));
-
-		Serialize(v);
+		Serialize(Nz::BitCast<std::uint64_t>(value));
 	}
 
 	void AbstractSerializer::Serialize(const std::string& value)
@@ -91,7 +69,7 @@ namespace nzsl
 		std::uint64_t v;
 		Unserialize(v);
 
-		std::memcpy(&value, &v, sizeof(v));
+		value = Nz::BitCast<double>(v);
 	}
 
 	void AbstractUnserializer::Unserialize(float& value)
@@ -99,7 +77,7 @@ namespace nzsl
 		std::uint32_t v;
 		Unserialize(v);
 
-		std::memcpy(&value, &v, sizeof(v));
+		value = Nz::BitCast<float>(v);
 	}
 
 	void AbstractUnserializer::Unserialize(std::int8_t& value)
@@ -107,7 +85,7 @@ namespace nzsl
 		std::uint8_t v;
 		Unserialize(v);
 
-		std::memcpy(&value, &v, sizeof(v));
+		value = Nz::BitCast<std::int8_t>(v);
 	}
 	
 	void AbstractUnserializer::Unserialize(std::int16_t& value)
@@ -115,7 +93,7 @@ namespace nzsl
 		std::uint16_t v;
 		Unserialize(v);
 
-		std::memcpy(&value, &v, sizeof(v));
+		value = Nz::BitCast<std::int16_t>(v);
 	}
 	
 	void AbstractUnserializer::Unserialize(std::int32_t& value)
@@ -123,7 +101,7 @@ namespace nzsl
 		std::uint32_t v;
 		Unserialize(v);
 
-		std::memcpy(&value, &v, sizeof(v));
+		value = Nz::BitCast<std::int32_t>(v);
 	}
 
 	void AbstractUnserializer::Unserialize(std::int64_t& value)
@@ -131,7 +109,7 @@ namespace nzsl
 		std::uint64_t v;
 		Unserialize(v);
 
-		std::memcpy(&value, &v, sizeof(v));
+		value = Nz::BitCast<std::int64_t>(v);
 	}
 
 	void AbstractUnserializer::Unserialize(std::string& value)
@@ -156,9 +134,7 @@ namespace nzsl
 
 	void Serializer::Serialize(std::uint16_t value)
 	{
-#ifdef NAZARA_BIG_ENDIAN
-		value = Nz::SwapBytes(value);
-#endif
+		value = Nz::HostToLittleEndian(value);
 
 		std::uint8_t* ptr = reinterpret_cast<std::uint8_t*>(&value);
 		m_data.insert(m_data.end(), ptr, ptr + sizeof(value));
@@ -166,9 +142,7 @@ namespace nzsl
 
 	void Serializer::Serialize(std::uint32_t value)
 	{
-#ifdef NAZARA_BIG_ENDIAN
-		value = Nz::SwapBytes(value);
-#endif
+		value = Nz::HostToLittleEndian(value);
 
 		std::uint8_t* ptr = reinterpret_cast<std::uint8_t*>(&value);
 		m_data.insert(m_data.end(), ptr, ptr + sizeof(value));
@@ -176,9 +150,7 @@ namespace nzsl
 
 	void Serializer::Serialize(std::uint64_t value)
 	{
-#ifdef NAZARA_BIG_ENDIAN
-		value = Nz::SwapBytes(value);
-#endif
+		value = Nz::HostToLittleEndian(value);
 
 		std::uint8_t* ptr = reinterpret_cast<std::uint8_t*>(&value);
 		m_data.insert(m_data.end(), ptr, ptr + sizeof(value));
@@ -200,9 +172,7 @@ namespace nzsl
 		std::memcpy(&value, m_ptr, sizeof(value));
 		m_ptr += sizeof(value);
 
-#ifdef NAZARA_BIG_ENDIAN
-		value = Nz::SwapBytes(value);
-#endif
+		value = Nz::LittleEndianToHost(value);
 	}
 
 	void Unserializer::Unserialize(std::uint32_t& value)
@@ -213,9 +183,7 @@ namespace nzsl
 		std::memcpy(&value, m_ptr, sizeof(value));
 		m_ptr += sizeof(value);
 
-#ifdef NAZARA_BIG_ENDIAN
-		value = Nz::SwapBytes(value);
-#endif
+		value = Nz::LittleEndianToHost(value);
 	}
 
 	void Unserializer::Unserialize(std::uint64_t& value)
@@ -226,8 +194,6 @@ namespace nzsl
 		std::memcpy(&value, m_ptr, sizeof(value));
 		m_ptr += sizeof(value);
 
-#ifdef NAZARA_BIG_ENDIAN
-		value = Nz::SwapBytes(value);
-#endif
+		value = Nz::LittleEndianToHost(value);
 	}
 }

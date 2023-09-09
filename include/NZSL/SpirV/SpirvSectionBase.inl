@@ -34,13 +34,7 @@ namespace nzsl
 		};
 		callback(appendFunctor);
 
-		std::uint32_t bytecode = BuildOpcode(opcode, wordCount);
-
-#ifdef NAZARA_BIG_ENDIAN
-		// SPIR-V is little endian
-		bytecode = Nz::SwapBytes(bytecode);
-#endif
-
+		std::uint32_t bytecode = Nz::HostToLittleEndian(BuildOpcode(opcode, wordCount)); //< SPIR-V is little endian
 		m_bytecode[offset] = bytecode;
 
 		return offset;
