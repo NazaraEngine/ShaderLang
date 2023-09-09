@@ -408,8 +408,12 @@ namespace nzsl::Ast
 				// Retrieve member index (not counting disabled fields)
 				std::int32_t fieldIndex = 0;
 				const StructDescription::StructMember* fieldPtr = nullptr;
+				bool hasUnresolvedFields = false;
 				for (const auto& field : s->members)
 				{
+					if (field.cond.HasValue() && !field.cond.IsResultingValue())
+						hasUnresolvedFields = true;
+
 					if (!field.originalName.empty())
 					{
 						if (field.originalName == identifierEntry.identifier)
@@ -426,6 +430,9 @@ namespace nzsl::Ast
 
 					fieldIndex++;
 				}
+
+				if (hasUnresolvedFields)
+					fieldIndex = -1; //< field index is not unknown because some fields before it are not resolved
 
 				if (!fieldPtr)
 				{
@@ -493,6 +500,9 @@ namespace nzsl::Ast
 				}
 				else
 				{
+					if (fieldIndex < 0)
+						return Cloner::Clone(node); //< unresolved
+
 					// Transform to AccessIndexExpression
 					std::unique_ptr<AccessIndexExpression> accessIndex = std::make_unique<AccessIndexExpression>();
 					accessIndex->sourceLocation = indexedExpr->sourceLocation;
