@@ -66,6 +66,13 @@ namespace nzsl
 		bool HasValue() const { return builtin.HasValue(); }
 	};
 
+	struct LangWriter::CondAttribute
+	{
+		const Ast::ExpressionValue<bool>& cond;
+
+		bool HasValue() const { return cond.HasValue(); }
+	};
+
 	struct LangWriter::DepthWriteAttribute
 	{
 		const Ast::ExpressionValue<Ast::DepthWriteMode>& writeMode;
@@ -511,6 +518,21 @@ namespace nzsl
 			Append(Parser::ToString(attribute.builtin.GetResultingValue()));
 		else
 			attribute.builtin.GetExpression()->Visit(*this);
+
+		Append(")");
+	}
+
+	void LangWriter::AppendAttribute(CondAttribute attribute)
+	{
+		if (!attribute.HasValue())
+			return;
+
+		Append("cond(");
+
+		if (attribute.cond.IsResultingValue())
+			Append(Ast::ToString(attribute.cond.GetResultingValue()));
+		else
+			attribute.cond.GetExpression()->Visit(*this);
 
 		Append(")");
 	}
@@ -1406,7 +1428,7 @@ namespace nzsl
 
 				first = false;
 
-				AppendAttributes(false, LocationAttribute{ member.locationIndex }, BuiltinAttribute{ member.builtin }, TagAttribute{ member.tag });
+				AppendAttributes(false, CondAttribute{ member.cond }, LocationAttribute{ member.locationIndex }, BuiltinAttribute{ member.builtin }, TagAttribute{ member.tag });
 				Append(member.name, ": ", member.type);
 			}
 		}
