@@ -45,6 +45,7 @@ namespace nzsl
 			struct AuthorAttribute;
 			struct BindingAttribute;
 			struct BuiltinAttribute;
+			struct CondAttribute;
 			struct DepthWriteAttribute;
 			struct DescriptionAttribute;
 			struct EarlyFragmentTestsAttribute;
@@ -87,6 +88,7 @@ namespace nzsl
 			void AppendAttribute(AuthorAttribute attribute);
 			void AppendAttribute(BindingAttribute attribute);
 			void AppendAttribute(BuiltinAttribute attribute);
+			void AppendAttribute(CondAttribute attribute);
 			void AppendAttribute(DepthWriteAttribute attribute);
 			void AppendAttribute(DescriptionAttribute attribute);
 			void AppendAttribute(EarlyFragmentTestsAttribute attribute);
