@@ -12,7 +12,7 @@ namespace nzsl::Ast
 	namespace
 	{
 		constexpr std::uint32_t s_shaderAstMagicNumber = 0x4E534852;
-		constexpr std::uint32_t s_shaderAstCurrentVersion = 7;
+		constexpr std::uint32_t s_shaderAstCurrentVersion = 8;
 
 		class ShaderSerializerVisitor : public ExpressionVisitor, public StatementVisitor
 		{
@@ -634,6 +634,8 @@ namespace nzsl::Ast
 				m_serializer.Serialize(std::uint8_t(8));
 				Value(arg.length);
 				Type(arg.containedType->type);
+				if (IsVersionGreaterOrEqual(8))
+					Value(arg.isWrapped);
 			}
 			else if constexpr (std::is_same_v<T, Ast::Type>)
 			{
@@ -1080,6 +1082,9 @@ namespace nzsl::Ast
 				arrayType.length = length;
 				arrayType.containedType = std::make_unique<ContainedType>();
 				arrayType.containedType->type = std::move(containedType);
+
+				if (IsVersionGreaterOrEqual(8))
+					Value(arrayType.isWrapped);
 
 				type = std::move(arrayType);
 				break;

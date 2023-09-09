@@ -64,6 +64,9 @@ namespace nzsl::Ast
 		assert(containedType);
 		assert(rhs.containedType);
 
+		if (isWrapped != rhs.isWrapped)
+			return false;
+
 		if (containedType->type != rhs.containedType->type)
 			return false;
 

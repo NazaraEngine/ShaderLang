@@ -617,19 +617,9 @@ namespace nzsl
 		const Ast::Module* targetModule;
 		if (!states.sanitized)
 		{
-			Ast::SanitizeVisitor::Options options;
-			options.moduleResolver = states.shaderModuleResolver;
+			Ast::SanitizeVisitor::Options options = GetSanitizeOptions();
 			options.optionValues = states.optionValues;
-			options.reduceLoopsToWhile = true;
-			options.removeAliases = true;
-			options.removeCompoundAssignments = true;
-			options.removeConstArraySize = true;
-			options.removeMatrixBinaryAddSub = true;
-			options.removeMatrixCast = true;
-			options.removeOptionDeclaration = true;
-			options.removeSingleConstDeclaration = true;
-			options.splitMultipleBranches = true;
-			options.useIdentifierAccessesForStructs = false;
+			options.moduleResolver = states.shaderModuleResolver;
 
 			sanitizedModule = Ast::Sanitize(module, options);
 			targetModule = sanitizedModule.get();
@@ -836,6 +826,25 @@ namespace nzsl
 			return { 1, 3 };
 		else
 			return { 1, 0 };
+	}
+
+	Ast::SanitizeVisitor::Options SpirvWriter::GetSanitizeOptions()
+	{
+		Ast::SanitizeVisitor::Options options;
+		options.reduceLoopsToWhile = true;
+		options.removeAliases = true;
+		options.removeCompoundAssignments = true;
+		options.removeConstArraySize = true;
+		options.removeMatrixBinaryAddSub = true;
+		options.removeMatrixCast = true;
+		options.removeOptionDeclaration = true;
+		options.removeSingleConstDeclaration = true;
+		options.splitWrappedArrayAssignation = true;
+		options.splitMultipleBranches = true;
+		options.splitWrappedStructAssignation = true;
+		options.useIdentifierAccessesForStructs = false;
+
+		return options;
 	}
 
 	std::uint32_t SpirvWriter::AllocateResultId()

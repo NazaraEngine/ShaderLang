@@ -42,6 +42,7 @@ namespace nzsl::Ast
 		BaseArrayType& operator=(BaseArrayType&&) noexcept = default;
 
 		std::unique_ptr<ContainedType> containedType;
+		bool isWrapped = false;
 
 		bool operator==(const BaseArrayType& rhs) const;
 		inline bool operator!=(const BaseArrayType& rhs) const;

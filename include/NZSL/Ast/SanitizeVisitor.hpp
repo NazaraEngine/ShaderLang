@@ -56,6 +56,8 @@ namespace nzsl::Ast
 				bool removeScalarSwizzling = false;
 				bool removeSingleConstDeclaration = false;
 				bool splitMultipleBranches = false;
+				bool splitWrappedArrayAssignation = false;
+				bool splitWrappedStructAssignation = false;
 				bool useIdentifierAccessesForStructs = true;
 			};
 
