@@ -4334,7 +4334,7 @@ namespace nzsl::Ast
 		{
 			const MatrixType& targetMatrixType = std::get<MatrixType>(targetType);
 			if (expressionCount == 0)
-				throw CompilerCastComponentMismatchError{ node.sourceLocation, 0, targetMatrixType.columnCount * targetMatrixType.rowCount };
+				throw CompilerCastComponentMismatchError{ node.sourceLocation, 0, Nz::SafeCast<std::uint32_t>(targetMatrixType.columnCount * targetMatrixType.rowCount) };
 
 			auto& firstExprPtr = MandatoryExpr(node.expressions.front(), node.sourceLocation);
 
