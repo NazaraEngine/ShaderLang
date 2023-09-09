@@ -842,7 +842,7 @@ module;
 
 struct Data
 {
-	index : i32
+	index: i32
 }
 
 external
@@ -890,10 +890,7 @@ fn main()
 
 })");
 
-		WHEN("Generating SPIR-V 1.0")
-		{
-			nzsl::SpirvWriter::Environment spirvEnv;
-			ExpectSPIRV(*shaderModule, R"(
+	ExpectSPIRV(*shaderModule, R"(
  %1 = OpTypeInt 32 1
  %2 = OpTypeStruct %1
  %3 = OpTypeStruct %1
@@ -904,7 +901,249 @@ fn main()
  %8 = OpFunction %6 FunctionControl(0) %7
  %9 = OpLabel
       OpReturn
-      OpFunctionEnd)", {}, spirvEnv, true);
+      OpFunctionEnd)", {}, {}, true);
+	}
+
+
+	SECTION("Incompatible structs test")
+	{
+		std::string_view nzslSource = R"(
+[nzsl_version("1.0")]
+module;
+
+const MaxLightCascadeCount = 4;
+const MaxLightCount = 3;
+
+[layout(std140)]
+struct DirectionalLight
+{
+	color: vec3[f32],
+	direction: vec3[f32],
+	invShadowMapSize: vec2[f32],	
+	ambientFactor: f32,
+	diffuseFactor: f32,
+	cascadeCount: u32,
+	cascadeDistances: array[f32, MaxLightCascadeCount],
+	viewProjMatrices: array[mat4[f32], MaxLightCascadeCount],
+}
+
+[layout(std140)]
+struct LightData
+{
+	directionalLights: array[DirectionalLight, MaxLightCount],
+	directionalLightCount: u32
+}
+
+external
+{
+	[binding(0)] lightData: uniform[LightData]
+}
+
+[entry(frag)]
+fn main()
+{
+	for lightIndex in u32(0) -> lightData.directionalLightCount
+	{
+		// light struct is not compatible with DirectionalLight (because of the ArrayStride), this forces a per-member copy in SPIR-V
+		let light = lightData.directionalLights[lightIndex];
+
+		// struct are compatibles, a direct copy is performed
+		let lightCopy = light;
+	}
+}
+)";
+
+		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
+
+		shaderModule = SanitizeModule(*shaderModule);
+
+		ExpectGLSL(*shaderModule, R"(
+struct DirectionalLight
+{
+	vec3 color;
+	vec3 direction;
+	vec2 invShadowMapSize;
+	float ambientFactor;
+	float diffuseFactor;
+	uint cascadeCount;
+	float cascadeDistances[4];
+	mat4 viewProjMatrices[4];
+};
+
+// struct LightData omitted (used as UBO/SSBO)
+
+layout(std140) uniform _nzslBindinglightData
+{
+	DirectionalLight directionalLights[3];
+	uint directionalLightCount;
+} lightData;
+
+void main()
+{
+	{
+		uint lightIndex = uint(0);
+		uint to = lightData.directionalLightCount;
+		while (lightIndex < to)
+		{
+			DirectionalLight light = lightData.directionalLights[lightIndex];
+			DirectionalLight lightCopy = light;
+			lightIndex += 1u;
 		}
+
+	}
+
+}
+)");
+
+		ExpectNZSL(*shaderModule, R"(
+const MaxLightCascadeCount: i32 = 4;
+
+const MaxLightCount: i32 = 3;
+
+[layout(std140)]
+struct DirectionalLight
+{
+	color: vec3[f32],
+	direction: vec3[f32],
+	invShadowMapSize: vec2[f32],
+	ambientFactor: f32,
+	diffuseFactor: f32,
+	cascadeCount: u32,
+	cascadeDistances: array[f32, 4],
+	viewProjMatrices: array[mat4[f32], 4]
+}
+
+[layout(std140)]
+struct LightData
+{
+	directionalLights: array[DirectionalLight, 3],
+	directionalLightCount: u32
+}
+
+external
+{
+	[set(0), binding(0)] lightData: uniform[LightData]
+}
+
+[entry(frag)]
+fn main()
+{
+	for lightIndex in u32(0) -> lightData.directionalLightCount
+	{
+		let light: DirectionalLight = lightData.directionalLights[lightIndex];
+		let lightCopy: DirectionalLight = light;
+	}
+
+})");
+
+		ExpectSPIRV(*shaderModule, R"(
+ %36 = OpFunction %21 FunctionControl(0) %22
+ %37 = OpLabel
+ %38 = OpVariable %25 StorageClass(Function)
+ %39 = OpVariable %25 StorageClass(Function)
+ %40 = OpVariable %28 StorageClass(Function)
+ %41 = OpVariable %28 StorageClass(Function)
+ %42 = OpBitcast %4 %24
+       OpStore %38 %42
+ %44 = OpAccessChain %43 %20 %26
+ %45 = OpLoad %4 %44
+       OpStore %39 %45
+       OpBranch %46
+ %46 = OpLabel
+ %50 = OpLoad %4 %38
+ %51 = OpLoad %4 %39
+ %52 = OpULessThan %27 %50 %51
+       OpLoopMerge %48 %49 LoopControl(0)
+       OpBranchConditional %52 %47 %48
+ %47 = OpLabel
+ %53 = OpLoad %4 %38
+ %55 = OpAccessChain %54 %20 %24 %53 %24
+ %56 = OpLoad %2 %55
+ %57 = OpAccessChain %58 %40 %24
+       OpStore %57 %56
+ %59 = OpLoad %4 %38
+ %60 = OpAccessChain %54 %20 %24 %59 %26
+ %61 = OpLoad %2 %60
+ %62 = OpAccessChain %58 %40 %26
+       OpStore %62 %61
+ %63 = OpLoad %4 %38
+ %65 = OpAccessChain %64 %20 %24 %63 %29
+ %66 = OpLoad %3 %65
+ %67 = OpAccessChain %68 %40 %29
+       OpStore %67 %66
+ %69 = OpLoad %4 %38
+ %71 = OpAccessChain %70 %20 %24 %69 %30
+ %72 = OpLoad %1 %71
+ %73 = OpAccessChain %74 %40 %30
+       OpStore %73 %72
+ %75 = OpLoad %4 %38
+ %76 = OpAccessChain %70 %20 %24 %75 %31
+ %77 = OpLoad %1 %76
+ %78 = OpAccessChain %74 %40 %31
+       OpStore %78 %77
+ %79 = OpLoad %4 %38
+ %80 = OpAccessChain %43 %20 %24 %79 %32
+ %81 = OpLoad %4 %80
+ %82 = OpAccessChain %25 %40 %32
+       OpStore %82 %81
+ %83 = OpLoad %4 %38
+ %84 = OpAccessChain %70 %20 %24 %83 %33 %24
+ %85 = OpLoad %1 %84
+ %86 = OpAccessChain %87 %40 %33
+ %88 = OpAccessChain %74 %86 %24
+       OpStore %88 %85
+ %89 = OpLoad %4 %38
+ %90 = OpAccessChain %70 %20 %24 %89 %33 %26
+ %91 = OpLoad %1 %90
+ %92 = OpAccessChain %87 %40 %33
+ %93 = OpAccessChain %74 %92 %26
+       OpStore %93 %91
+ %94 = OpLoad %4 %38
+ %95 = OpAccessChain %70 %20 %24 %94 %33 %29
+ %96 = OpLoad %1 %95
+ %97 = OpAccessChain %87 %40 %33
+ %98 = OpAccessChain %74 %97 %29
+       OpStore %98 %96
+ %99 = OpLoad %4 %38
+%100 = OpAccessChain %70 %20 %24 %99 %33 %30
+%101 = OpLoad %1 %100
+%102 = OpAccessChain %87 %40 %33
+%103 = OpAccessChain %74 %102 %30
+       OpStore %103 %101
+%104 = OpLoad %4 %38
+%106 = OpAccessChain %105 %20 %24 %104 %34 %24
+%107 = OpLoad %8 %106
+%108 = OpAccessChain %109 %40 %34
+%110 = OpAccessChain %111 %108 %24
+       OpStore %110 %107
+%112 = OpLoad %4 %38
+%113 = OpAccessChain %105 %20 %24 %112 %34 %26
+%114 = OpLoad %8 %113
+%115 = OpAccessChain %109 %40 %34
+%116 = OpAccessChain %111 %115 %26
+       OpStore %116 %114
+%117 = OpLoad %4 %38
+%118 = OpAccessChain %105 %20 %24 %117 %34 %29
+%119 = OpLoad %8 %118
+%120 = OpAccessChain %109 %40 %34
+%121 = OpAccessChain %111 %120 %29
+       OpStore %121 %119
+%122 = OpLoad %4 %38
+%123 = OpAccessChain %105 %20 %24 %122 %34 %30
+%124 = OpLoad %8 %123
+%125 = OpAccessChain %109 %40 %34
+%126 = OpAccessChain %111 %125 %30
+       OpStore %126 %124
+%127 = OpLoad %10 %40
+       OpStore %41 %127
+%128 = OpLoad %4 %38
+%129 = OpIAdd %4 %128 %35
+       OpStore %38 %129
+       OpBranch %49
+ %49 = OpLabel
+       OpBranch %46
+ %48 = OpLabel
+       OpReturn
+       OpFunctionEnd)", {}, {}, true);
 	}
 }

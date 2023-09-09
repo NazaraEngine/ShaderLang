@@ -230,6 +230,7 @@ OpVariable
 OpVariable
 OpAccessChain
 OpLoad
+OpAccessChain
 OpStore
 OpLoad
 OpStore

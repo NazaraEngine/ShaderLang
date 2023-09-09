@@ -469,4 +469,126 @@ fn main()
 )");
 
 	}
+
+	WHEN("splitting field assignation")
+	{
+		std::string_view nzslSource = R"(
+[nzsl_version("1.0")]
+module;
+
+option HasQux: bool = true;
+const HasQuux = false;
+
+[layout(std140)]
+struct Inner
+{
+	pos: vec3[f32],
+	rot: array[f32, 4]
+}
+
+[layout(std140)]
+struct Outer
+{
+	inner: array[Inner, 3],
+	field: f32,
+}
+
+[layout(std140)]
+struct Foo
+{
+	bar: i32,
+	baz: f32,
+	[cond(HasQux)] quz: vec4[f32],
+	outer: Outer,
+	[cond(HasQuux)] quux: bool
+}
+
+external
+{
+	[binding(0)] foo: storage[Foo]
+}
+
+fn main()
+{
+	let f = foo; // per-field copy
+	let f2 = f; // direct copy
+}
+)";
+
+		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
+
+		nzsl::Ast::SanitizeVisitor::Options options;
+		options.partialSanitization = true;
+		options.splitWrappedArrayAssignation = true;
+		options.splitWrappedStructAssignation = true;
+
+		REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(*shaderModule, options));
+
+		ExpectNZSL(*shaderModule, R"(
+[nzsl_version("1.0")]
+module;
+
+option HasQux: bool = true;
+const HasQuux: bool = false;
+
+[layout(std140)]
+struct Inner
+{
+	pos: vec3[f32],
+	rot: array[f32, 4]
+}
+
+[layout(std140)]
+struct Outer
+{
+	inner: array[Inner, 3],
+	field: f32
+}
+
+[layout(std140)]
+struct Foo
+{
+	bar: i32,
+	baz: f32,
+	[cond(HasQux)] quz: vec4[f32],
+	outer: Outer,
+	[cond(false)] quux: bool
+}
+
+external
+{
+	[set(0), binding(0)] foo: storage[Foo]
+}
+
+fn main()
+{
+	let f: Foo;
+	f.bar = foo.bar;
+	f.baz = foo.baz;
+	const if (HasQux)
+	{
+		f.quz = foo.quz;
+	}
+
+	f.outer.inner[0].pos = foo.outer.inner[0].pos;
+	f.outer.inner[0].rot[0] = foo.outer.inner[0].rot[0];
+	f.outer.inner[0].rot[1] = foo.outer.inner[0].rot[1];
+	f.outer.inner[0].rot[2] = foo.outer.inner[0].rot[2];
+	f.outer.inner[0].rot[3] = foo.outer.inner[0].rot[3];
+	f.outer.inner[1].pos = foo.outer.inner[1].pos;
+	f.outer.inner[1].rot[0] = foo.outer.inner[1].rot[0];
+	f.outer.inner[1].rot[1] = foo.outer.inner[1].rot[1];
+	f.outer.inner[1].rot[2] = foo.outer.inner[1].rot[2];
+	f.outer.inner[1].rot[3] = foo.outer.inner[1].rot[3];
+	f.outer.inner[2].pos = foo.outer.inner[2].pos;
+	f.outer.inner[2].rot[0] = foo.outer.inner[2].rot[0];
+	f.outer.inner[2].rot[1] = foo.outer.inner[2].rot[1];
+	f.outer.inner[2].rot[2] = foo.outer.inner[2].rot[2];
+	f.outer.inner[2].rot[3] = foo.outer.inner[2].rot[3];
+	f.outer.field = foo.outer.field;
+	let f2: Foo = f;
+}
+)");
+
+	}
 }

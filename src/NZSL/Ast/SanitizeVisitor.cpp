@@ -410,19 +410,6 @@ namespace nzsl::Ast
 				const StructDescription::StructMember* fieldPtr = nullptr;
 				for (const auto& field : s->members)
 				{
-					if (field.cond.HasValue())
-					{
-						if (!field.cond.IsResultingValue())
-						{
-							if (m_context->options.partialSanitization)
-								return Cloner::Clone(node); //< unresolved
-
-							throw CompilerConstantExpressionRequiredError{ field.cond.GetExpression()->sourceLocation };
-						}
-						else if (!field.cond.GetResultingValue())
-							continue;
-					}
-
 					if (!field.originalName.empty())
 					{
 						if (field.originalName == identifierEntry.identifier)
@@ -446,6 +433,19 @@ namespace nzsl::Ast
 						return Cloner::Clone(node); //< unresolved
 
 					throw CompilerUnknownFieldError{ indexedExpr->sourceLocation, identifierEntry.identifier };
+				}
+
+				if (fieldPtr->cond.HasValue())
+				{
+					if (!fieldPtr->cond.IsResultingValue())
+					{
+						if (m_context->options.partialSanitization)
+							return Cloner::Clone(node); //< unresolved
+
+						throw CompilerConstantExpressionRequiredError{ fieldPtr->cond.GetExpression()->sourceLocation };
+					}
+					else if (!fieldPtr->cond.GetResultingValue())
+						continue;
 				}
 
 				if (fieldPtr->builtin.HasValue() && fieldPtr->builtin.IsResultingValue())
@@ -601,7 +601,87 @@ namespace nzsl::Ast
 		MandatoryExpr(node.right, node.sourceLocation);
 
 		auto clone = Nz::StaticUniquePointerCast<AssignExpression>(Cloner::Clone(node));
-		Validate(*clone);
+		if (Validate(*clone) == ValidationResult::Unresolved)
+			return clone;
+
+		if (m_context->options.splitWrappedStructAssignation || m_context->options.splitWrappedArrayAssignation)
+		{
+			const ExpressionType& targetType = ResolveAlias(GetExpressionTypeSecure(*clone->left));
+			const ExpressionType& sourceType = ResolveAlias(GetExpressionTypeSecure(*clone->right));
+			if (m_context->options.splitWrappedStructAssignation && IsStructType(targetType) && targetType != sourceType)
+			{
+				std::size_t structIndex = std::get<StructType>(targetType).structIndex;
+				const StructDescription* desc = m_context->structs.Retrieve(structIndex, clone->sourceLocation);
+
+				auto dstVar = CacheResult(std::move(clone->left));
+				auto srcVar = CacheResult(std::move(clone->right));
+
+				std::int32_t memberIndex = 0;
+				for (auto& member : desc->members)
+				{
+					if (member.cond.IsResultingValue() && !member.cond.GetResultingValue())
+					{
+						memberIndex++;
+						continue;
+					}
+
+					ExpressionPtr dstAccess;
+					ExpressionPtr srcAccess;
+					if (m_context->options.useIdentifierAccessesForStructs)
+					{
+						dstAccess = ShaderBuilder::AccessMember(CloneExpression(*dstVar), { member.name });
+						srcAccess = ShaderBuilder::AccessMember(CloneExpression(*srcVar), { member.name });
+					}
+					else
+					{
+						dstAccess = ShaderBuilder::AccessIndex(CloneExpression(*dstVar), memberIndex);
+						srcAccess = ShaderBuilder::AccessIndex(CloneExpression(*srcVar), memberIndex);
+					}
+
+					dstAccess->sourceLocation = clone->sourceLocation;
+					srcAccess->sourceLocation = clone->sourceLocation;
+
+					auto assign = ShaderBuilder::Assign(AssignType::Simple, std::move(dstAccess), std::move(srcAccess));
+					assign->sourceLocation = clone->sourceLocation;
+
+					StatementPtr assignStatement = ShaderBuilder::ExpressionStatement(std::move(assign));
+
+					if (member.cond.IsExpression())
+						assignStatement = ShaderBuilder::ConstBranch(CloneExpression(*member.cond.GetExpression()), std::move(assignStatement));
+					
+					m_context->currentStatementList->push_back(CloneStatement(*assignStatement));
+
+					memberIndex++;
+				}
+
+				return dstVar;
+			}
+			else if (m_context->options.splitWrappedArrayAssignation && IsArrayType(targetType) && targetType != sourceType)
+			{
+				const auto& arrayType = std::get<ArrayType>(targetType);
+
+				auto dstVar = CacheResult(std::move(clone->left));
+				auto srcVar = CacheResult(std::move(clone->right));
+
+				for (std::uint32_t i = 0; i < arrayType.length; ++i)
+				{
+					ExpressionPtr dstAccess = ShaderBuilder::AccessIndex(CloneExpression(*dstVar), Nz::SafeCast<std::int32_t>(i));
+					ExpressionPtr srcAccess = ShaderBuilder::AccessIndex(CloneExpression(*srcVar), Nz::SafeCast<std::int32_t>(i));
+
+					dstAccess->sourceLocation = clone->sourceLocation;
+					srcAccess->sourceLocation = clone->sourceLocation;
+
+					auto assign = ShaderBuilder::Assign(AssignType::Simple, std::move(dstAccess), std::move(srcAccess));
+					assign->sourceLocation = clone->sourceLocation;
+
+					StatementPtr assignStatement = ShaderBuilder::ExpressionStatement(std::move(assign));
+
+					m_context->currentStatementList->push_back(CloneStatement(*assignStatement));
+				}
+
+				return dstVar;
+			}
+		}
 
 		return clone;
 	}
@@ -1796,7 +1876,47 @@ namespace nzsl::Ast
 			throw CompilerVarDeclarationOutsideOfFunctionError{ node.sourceLocation };
 
 		auto clone = Nz::StaticUniquePointerCast<DeclareVariableStatement>(Cloner::Clone(node));
-		Validate(*clone);
+		if (Validate(*clone) == ValidationResult::Unresolved)
+			return clone;
+
+		if (clone->initialExpression)
+		{
+			const ExpressionType& resolvedType = ResolveAlias(clone->varType.GetResultingValue());
+
+			auto ShouldSplit = [&]
+			{
+				if (m_context->options.splitWrappedStructAssignation && IsStructType(resolvedType))
+				{
+					return resolvedType != ResolveAlias(GetExpressionTypeSecure(*clone->initialExpression));
+				}
+				else if (m_context->options.splitWrappedArrayAssignation && IsArrayType(resolvedType))
+				{
+					return resolvedType != ResolveAlias(GetExpressionTypeSecure(*clone->initialExpression));
+				}
+
+				return false;
+			};
+
+			if (ShouldSplit())
+			{
+				// Split variable declaration and assignation
+				ExpressionPtr assign = ShaderBuilder::Assign(AssignType::Simple, ShaderBuilder::Variable(*clone->varIndex, clone->varType.GetResultingValue(), clone->sourceLocation), std::move(clone->initialExpression));
+
+				MultiStatementPtr multiStatement = ShaderBuilder::MultiStatement();
+				multiStatement->sourceLocation = clone->sourceLocation;
+				multiStatement->statements.push_back(std::move(clone));
+
+				std::vector<StatementPtr>* previousList = m_context->currentStatementList;
+				m_context->currentStatementList = &multiStatement->statements;
+
+				// Clone assign to replace it with a per-field assignation
+				multiStatement->statements.push_back(CloneStatement(ShaderBuilder::ExpressionStatement(std::move(assign))));
+
+				m_context->currentStatementList = previousList;
+
+				return multiStatement;
+			}
+		}
 
 		return clone;
 	}
@@ -1815,7 +1935,11 @@ namespace nzsl::Ast
 	{
 		MandatoryExpr(node.expression, node.sourceLocation);
 
-		return Cloner::Clone(node);
+		auto exprStatement = Nz::StaticUniquePointerCast<ExpressionStatement>(Cloner::Clone(node));
+		if (GetExpressionCategory(*exprStatement->expression) == ExpressionCategory::LValue)
+			return ShaderBuilder::NoOp();
+
+		return exprStatement;
 	}
 
 	StatementPtr SanitizeVisitor::Clone(ForStatement& node)
@@ -4150,9 +4274,7 @@ namespace nzsl::Ast
 		switch (node.op)
 		{
 			case AssignType::Simple:
-				if (TypeMustMatch(node.left, node.right, node.sourceLocation) == ValidationResult::Unresolved)
-					return ValidationResult::Unresolved;
-
+				TypeMustMatch(*leftExprType, UnwrapExternalType(ResolveAlias(*rightExprType)), node.sourceLocation);
 				break;
 
 			case AssignType::CompoundAdd:        binaryType = BinaryType::Add; break;
@@ -4167,7 +4289,7 @@ namespace nzsl::Ast
 		if (binaryType)
 		{
 			ExpressionType expressionType = ValidateBinaryOp(*binaryType, ResolveAlias(*leftExprType), UnwrapExternalType(ResolveAlias(*rightExprType)), node.sourceLocation);
-			TypeMustMatch(*leftExprType, expressionType, node.sourceLocation);
+			TypeMustMatch(UnwrapExternalType(*leftExprType), expressionType, node.sourceLocation);
 
 			if (m_context->options.removeCompoundAssignments)
 			{
@@ -5770,6 +5892,17 @@ namespace nzsl::Ast
 			return std::get<StorageType>(exprType).containedType;
 		else if (IsUniformType(exprType))
 			return std::get<UniformType>(exprType).containedType;
+		else if (IsArrayType(exprType))
+		{
+			const ArrayType& arrayType = std::get<ArrayType>(exprType);
+
+			ArrayType wrappedArrayType;
+			wrappedArrayType.containedType = std::make_unique<ContainedType>();
+			wrappedArrayType.containedType->type = UnwrapExternalType(arrayType.containedType->type);
+			wrappedArrayType.length = arrayType.length;
+
+			return wrappedArrayType;
+		}
 		else
 			return exprType;
 	}
@@ -5785,12 +5918,12 @@ namespace nzsl::Ast
 		else if (IsArrayType(exprType))
 		{
 			const ArrayType& arrayType = std::get<ArrayType>(exprType);
-			ExpressionType wrapperInnerType = WrapExternalType<T>(arrayType.containedType->type);
 
 			ArrayType wrappedArrayType;
 			wrappedArrayType.containedType = std::make_unique<ContainedType>();
-			wrappedArrayType.containedType->type = wrapperInnerType;
+			wrappedArrayType.containedType->type = WrapExternalType<T>(arrayType.containedType->type);
 			wrappedArrayType.length = arrayType.length;
+			wrappedArrayType.isWrapped = true;
 
 			return wrappedArrayType;
 		}
