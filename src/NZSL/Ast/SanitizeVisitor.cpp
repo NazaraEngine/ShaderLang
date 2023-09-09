@@ -5711,6 +5711,9 @@ namespace nzsl::Ast
 				case BinaryType::CompGt:
 				case BinaryType::CompLe:
 				case BinaryType::CompLt:
+					TypeMustMatch(leftExprType, rightExprType, sourceLocation);
+					return VectorType{ leftType.componentCount, PrimitiveType::Boolean };
+
 				case BinaryType::CompEq:
 				case BinaryType::CompNe:
 					TypeMustMatch(leftExprType, rightExprType, sourceLocation);
