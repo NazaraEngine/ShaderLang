@@ -411,8 +411,16 @@ namespace nzsl::Ast
 				bool hasUnresolvedFields = false;
 				for (const auto& field : s->members)
 				{
-					if (field.cond.HasValue() && !field.cond.IsResultingValue())
-						hasUnresolvedFields = true;
+					if (field.cond.HasValue())
+					{
+						if (field.cond.IsResultingValue())
+						{
+							if (!field.cond.GetResultingValue())
+								continue;
+						}
+						else
+							hasUnresolvedFields = true;
+					}
 
 					if (!field.originalName.empty())
 					{
@@ -452,7 +460,7 @@ namespace nzsl::Ast
 						throw CompilerConstantExpressionRequiredError{ fieldPtr->cond.GetExpression()->sourceLocation };
 					}
 					else if (!fieldPtr->cond.GetResultingValue())
-						continue;
+						throw AstInternalError{ indexedExpr->sourceLocation, "field with a disabled condition was not skipped" };
 				}
 
 				if (fieldPtr->builtin.HasValue() && fieldPtr->builtin.IsResultingValue())
