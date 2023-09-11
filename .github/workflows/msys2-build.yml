@@ -44,7 +44,7 @@ jobs:
       run: git config --global core.autocrlf false
 
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     # Setup MSYS2
     - uses: msys2/setup-msys2@v2
