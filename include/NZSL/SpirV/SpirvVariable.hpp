@@ -15,7 +15,7 @@ namespace nzsl
 	struct SpirvVariable
 	{
 		std::uint32_t pointerId;
-		std::uint32_t pointerTypeId;
+		std::uint32_t typeId;
 		SpirvStorageClass storageClass;
 	};
 }

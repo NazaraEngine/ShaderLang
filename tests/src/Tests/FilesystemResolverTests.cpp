@@ -177,7 +177,7 @@ fn main() -> Output
 %39 = OpFMul %6 %38 %17
       OpReturnValue %39
       OpFunctionEnd
-%27 = OpFunction %19 FunctionControl(0) %20
+%27 = OpFunction %18 FunctionControl(0) %19
 %40 = OpLabel
 %41 = OpVariable %13 StorageClass(Function)
 %42 = OpVariable %23 StorageClass(Function)
@@ -190,9 +190,9 @@ fn main() -> Output
 %47 = OpFunctionCall %6 %26 %43
 %48 = OpAccessChain %36 %42 %10
       OpStore %48 %47
-%49 = OpLoad %18 %42
+%49 = OpLoad %22 %42
 %50 = OpCompositeExtract %6 %49 0
-      OpStore %22 %50
+      OpStore %21 %50
       OpReturn
       OpFunctionEnd)", {}, {}, true);
 }

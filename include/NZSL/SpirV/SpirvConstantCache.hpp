@@ -184,6 +184,7 @@ namespace nzsl
 			TypePtr BuildType(const Ast::ArrayType& type) const;
 			TypePtr BuildType(const Ast::DynArrayType& type) const;
 			TypePtr BuildType(const Ast::ExpressionType& type) const;
+			TypePtr BuildType(const Ast::ExpressionType& type, SpirvStorageClass storageClass) const;
 			TypePtr BuildType(const Ast::MatrixType& type) const;
 			TypePtr BuildType(const Ast::NoType& type) const;
 			TypePtr BuildType(const Ast::PrimitiveType& type) const;
@@ -199,7 +200,6 @@ namespace nzsl
 			std::uint32_t GetId(std::string_view debugString);
 			std::uint32_t GetId(const Constant& c);
 			std::uint32_t GetId(const Type& t);
-			std::uint32_t GetId(const Variable& v);
 
 			std::uint32_t Register(std::string debugString);
 			std::uint32_t Register(Constant c);

@@ -79,13 +79,13 @@ void main()
 			ExpectSPIRV(*shaderModule, R"(
       OpCapability Capability(Shader)
       OpMemoryModel AddressingModel(Logical) MemoryModel(GLSL450)
-      OpEntryPoint ExecutionModel(Fragment) %27 "main" %22
+      OpEntryPoint ExecutionModel(Fragment) %27 "main" %21
       OpExecutionMode %27 ExecutionMode(OriginUpperLeft)
       OpDecorate %5 Decoration(Binding) 0
       OpDecorate %5 Decoration(DescriptorSet) 0
-      OpDecorate %22 Decoration(Location) 0
+      OpDecorate %21 Decoration(Location) 0
       OpMemberDecorate %12 0 Decoration(Offset) 0
-      OpMemberDecorate %18 0 Decoration(Offset) 0
+      OpMemberDecorate %22 0 Decoration(Offset) 0
  %1 = OpTypeFloat 32
  %2 = OpTypeImage %1 Dim(Dim2D) 0 0 0 1 ImageFormat(Unknown)
  %3 = OpTypeSampledImage %2
@@ -102,14 +102,14 @@ void main()
 %15 = OpConstant %1 f32(0.5)
 %16 = OpConstant %1 f32(1)
 %17 = OpConstantComposite %6 %15 %15 %15 %16
-%18 = OpTypeStruct %6
-%19 = OpTypeVoid
-%20 = OpTypeFunction %19
-%21 = OpTypePointer StorageClass(Output) %6
-%23 = OpTypePointer StorageClass(Function) %18
+%18 = OpTypeVoid
+%19 = OpTypeFunction %18
+%20 = OpTypePointer StorageClass(Output) %6
+%22 = OpTypeStruct %6
+%23 = OpTypePointer StorageClass(Function) %22
 %36 = OpTypePointer StorageClass(Function) %6
  %5 = OpVariable %4 StorageClass(UniformConstant)
-%22 = OpVariable %21 StorageClass(Output)
+%21 = OpVariable %20 StorageClass(Output)
 %24 = OpFunction %6 FunctionControl(0) %7
 %28 = OpLabel
 %29 = OpLoad %3 %5
@@ -130,7 +130,7 @@ void main()
 %39 = OpFMul %6 %38 %17
       OpReturnValue %39
       OpFunctionEnd
-%27 = OpFunction %19 FunctionControl(0) %20
+%27 = OpFunction %18 FunctionControl(0) %19
 %40 = OpLabel
 %41 = OpVariable %13 StorageClass(Function)
 %42 = OpVariable %23 StorageClass(Function)
@@ -143,9 +143,9 @@ void main()
 %47 = OpFunctionCall %6 %26 %43
 %48 = OpAccessChain %36 %42 %10
       OpStore %48 %47
-%49 = OpLoad %18 %42
+%49 = OpLoad %22 %42
 %50 = OpCompositeExtract %6 %49 0
-      OpStore %22 %50
+      OpStore %21 %50
       OpReturn
       OpFunctionEnd)", options, {}, true);
 		}
@@ -230,24 +230,24 @@ void main()
 			ExpectSPIRV(*shaderModule, R"(
       OpCapability Capability(Shader)
       OpMemoryModel AddressingModel(Logical) MemoryModel(GLSL450)
-      OpEntryPoint ExecutionModel(Fragment) %27 "main" %22
+      OpEntryPoint ExecutionModel(Fragment) %27 "main" %21
       OpExecutionMode %27 ExecutionMode(OriginUpperLeft)
       OpSource SourceLanguage(Unknown) 100
       OpName %12 "Data"
       OpMemberName %12 0 "color"
-      OpName %18 "Output"
-      OpMemberName %18 0 "color"
+      OpName %22 "Output"
+      OpMemberName %22 0 "color"
       OpName %5 "tex1"
-      OpName %22 "color"
+      OpName %21 "color"
       OpName %24 "GenerateColor"
       OpName %25 "GetColor"
       OpName %26 "GetColorFromData"
       OpName %27 "main"
       OpDecorate %5 Decoration(Binding) 0
       OpDecorate %5 Decoration(DescriptorSet) 0
-      OpDecorate %22 Decoration(Location) 0
+      OpDecorate %21 Decoration(Location) 0
       OpMemberDecorate %12 0 Decoration(Offset) 0
-      OpMemberDecorate %18 0 Decoration(Offset) 0
+      OpMemberDecorate %22 0 Decoration(Offset) 0
  %1 = OpTypeFloat 32
  %2 = OpTypeImage %1 Dim(Dim2D) 0 0 0 1 ImageFormat(Unknown)
  %3 = OpTypeSampledImage %2
@@ -264,14 +264,14 @@ void main()
 %15 = OpConstant %1 f32(0.5)
 %16 = OpConstant %1 f32(1)
 %17 = OpConstantComposite %6 %15 %15 %15 %16
-%18 = OpTypeStruct %6
-%19 = OpTypeVoid
-%20 = OpTypeFunction %19
-%21 = OpTypePointer StorageClass(Output) %6
-%23 = OpTypePointer StorageClass(Function) %18
+%18 = OpTypeVoid
+%19 = OpTypeFunction %18
+%20 = OpTypePointer StorageClass(Output) %6
+%22 = OpTypeStruct %6
+%23 = OpTypePointer StorageClass(Function) %22
 %36 = OpTypePointer StorageClass(Function) %6
  %5 = OpVariable %4 StorageClass(UniformConstant)
-%22 = OpVariable %21 StorageClass(Output)
+%21 = OpVariable %20 StorageClass(Output)
 %24 = OpFunction %6 FunctionControl(0) %7
 %28 = OpLabel
 %29 = OpLoad %3 %5
@@ -292,7 +292,7 @@ void main()
 %39 = OpFMul %6 %38 %17
       OpReturnValue %39
       OpFunctionEnd
-%27 = OpFunction %19 FunctionControl(0) %20
+%27 = OpFunction %18 FunctionControl(0) %19
 %40 = OpLabel
 %41 = OpVariable %13 StorageClass(Function)
 %42 = OpVariable %23 StorageClass(Function)
@@ -305,9 +305,9 @@ void main()
 %47 = OpFunctionCall %6 %26 %43
 %48 = OpAccessChain %36 %42 %10
       OpStore %48 %47
-%49 = OpLoad %18 %42
+%49 = OpLoad %22 %42
 %50 = OpCompositeExtract %6 %49 0
-      OpStore %22 %50
+      OpStore %21 %50
       OpReturn
       OpFunctionEnd)", options, {}, true);
 		}
@@ -406,7 +406,7 @@ void main()
 			ExpectSPIRV(*shaderModule, R"(
       OpCapability Capability(Shader)
       OpMemoryModel AddressingModel(Logical) MemoryModel(GLSL450)
-      OpEntryPoint ExecutionModel(Fragment) %27 "main" %22
+      OpEntryPoint ExecutionModel(Fragment) %27 "main" %21
       OpExecutionMode %27 ExecutionMode(OriginUpperLeft)
 %28 = OpString "../resources/Shader.nzsl"
 %29 = OpString "../resources/modules/Color.nzsl"
@@ -427,19 +427,19 @@ void main()
       OpSourceExtension "ModuleName: OutputStruct"
       OpName %12 "Data"
       OpMemberName %12 0 "color"
-      OpName %18 "Output"
-      OpMemberName %18 0 "color"
+      OpName %22 "Output"
+      OpMemberName %22 0 "color"
       OpName %5 "tex1"
-      OpName %22 "color"
+      OpName %21 "color"
       OpName %24 "GenerateColor"
       OpName %25 "GetColor"
       OpName %26 "GetColorFromData"
       OpName %27 "main"
       OpDecorate %5 Decoration(Binding) 0
       OpDecorate %5 Decoration(DescriptorSet) 0
-      OpDecorate %22 Decoration(Location) 0
+      OpDecorate %21 Decoration(Location) 0
       OpMemberDecorate %12 0 Decoration(Offset) 0
-      OpMemberDecorate %18 0 Decoration(Offset) 0
+      OpMemberDecorate %22 0 Decoration(Offset) 0
  %1 = OpTypeFloat 32
  %2 = OpTypeImage %1 Dim(Dim2D) 0 0 0 1 ImageFormat(Unknown)
  %3 = OpTypeSampledImage %2
@@ -456,14 +456,14 @@ void main()
 %15 = OpConstant %1 f32(0.5)
 %16 = OpConstant %1 f32(1)
 %17 = OpConstantComposite %6 %15 %15 %15 %16
-%18 = OpTypeStruct %6
-%19 = OpTypeVoid
-%20 = OpTypeFunction %19
-%21 = OpTypePointer StorageClass(Output) %6
-%23 = OpTypePointer StorageClass(Function) %18
+%18 = OpTypeVoid
+%19 = OpTypeFunction %18
+%20 = OpTypePointer StorageClass(Output) %6
+%22 = OpTypeStruct %6
+%23 = OpTypePointer StorageClass(Function) %22
 %39 = OpTypePointer StorageClass(Function) %6
  %5 = OpVariable %4 StorageClass(UniformConstant)
-%22 = OpVariable %21 StorageClass(Output)
+%21 = OpVariable %20 StorageClass(Output)
       OpLine %29 13 1
 %24 = OpFunction %6 FunctionControl(0) %7
 %31 = OpLabel
@@ -498,7 +498,7 @@ void main()
       OpReturnValue %42
       OpFunctionEnd
       OpLine %28 12 1
-%27 = OpFunction %19 FunctionControl(0) %20
+%27 = OpFunction %18 FunctionControl(0) %19
 %43 = OpLabel
       OpNoLine
       OpLine %28 14 5
@@ -521,9 +521,9 @@ void main()
 %51 = OpAccessChain %39 %45 %10
       OpStore %51 %50
       OpLine %28 20 12
-%52 = OpLoad %18 %45
+%52 = OpLoad %22 %45
 %53 = OpCompositeExtract %6 %52 0
-      OpStore %22 %53
+      OpStore %21 %53
       OpLine %28 20 5
       OpReturn
       OpFunctionEnd)", options, {}, true);
@@ -717,7 +717,7 @@ void main()
 			ExpectSPIRV(*shaderModule, R"(
       OpCapability Capability(Shader)
       OpMemoryModel AddressingModel(Logical) MemoryModel(GLSL450)
-      OpEntryPoint ExecutionModel(Fragment) %27 "main" %22
+      OpEntryPoint ExecutionModel(Fragment) %27 "main" %21
       OpExecutionMode %27 ExecutionMode(OriginUpperLeft)
 %28 = OpString "../resources/Shader.nzsl"
 %29 = OpString "../resources/modules/Color.nzsl"
@@ -818,19 +818,19 @@ struct Output
       OpSourceExtension "ModuleName: OutputStruct"
       OpName %12 "Data"
       OpMemberName %12 0 "color"
-      OpName %18 "Output"
-      OpMemberName %18 0 "color"
+      OpName %22 "Output"
+      OpMemberName %22 0 "color"
       OpName %5 "tex1"
-      OpName %22 "color"
+      OpName %21 "color"
       OpName %24 "GenerateColor"
       OpName %25 "GetColor"
       OpName %26 "GetColorFromData"
       OpName %27 "main"
       OpDecorate %5 Decoration(Binding) 0
       OpDecorate %5 Decoration(DescriptorSet) 0
-      OpDecorate %22 Decoration(Location) 0
+      OpDecorate %21 Decoration(Location) 0
       OpMemberDecorate %12 0 Decoration(Offset) 0
-      OpMemberDecorate %18 0 Decoration(Offset) 0
+      OpMemberDecorate %22 0 Decoration(Offset) 0
  %1 = OpTypeFloat 32
  %2 = OpTypeImage %1 Dim(Dim2D) 0 0 0 1 ImageFormat(Unknown)
  %3 = OpTypeSampledImage %2
@@ -847,14 +847,14 @@ struct Output
 %15 = OpConstant %1 f32(0.5)
 %16 = OpConstant %1 f32(1)
 %17 = OpConstantComposite %6 %15 %15 %15 %16
-%18 = OpTypeStruct %6
-%19 = OpTypeVoid
-%20 = OpTypeFunction %19
-%21 = OpTypePointer StorageClass(Output) %6
-%23 = OpTypePointer StorageClass(Function) %18
+%18 = OpTypeVoid
+%19 = OpTypeFunction %18
+%20 = OpTypePointer StorageClass(Output) %6
+%22 = OpTypeStruct %6
+%23 = OpTypePointer StorageClass(Function) %22
 %39 = OpTypePointer StorageClass(Function) %6
  %5 = OpVariable %4 StorageClass(UniformConstant)
-%22 = OpVariable %21 StorageClass(Output)
+%21 = OpVariable %20 StorageClass(Output)
       OpLine %29 13 1
 %24 = OpFunction %6 FunctionControl(0) %7
 %31 = OpLabel
@@ -889,7 +889,7 @@ struct Output
       OpReturnValue %42
       OpFunctionEnd
       OpLine %28 12 1
-%27 = OpFunction %19 FunctionControl(0) %20
+%27 = OpFunction %18 FunctionControl(0) %19
 %43 = OpLabel
       OpNoLine
       OpLine %28 14 5
@@ -912,9 +912,9 @@ struct Output
 %51 = OpAccessChain %39 %45 %10
       OpStore %51 %50
       OpLine %28 20 12
-%52 = OpLoad %18 %45
+%52 = OpLoad %22 %45
 %53 = OpCompositeExtract %6 %52 0
-      OpStore %22 %53
+      OpStore %21 %53
       OpLine %28 20 5
       OpReturn
       OpFunctionEnd)", options, {}, true);

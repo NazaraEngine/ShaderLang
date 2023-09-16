@@ -133,100 +133,96 @@ fn main(input: Input)
 		ExpectSPIRV(*shaderModule, R"(
       OpCapability Capability(Shader)
       OpMemoryModel AddressingModel(Logical) MemoryModel(GLSL450)
-      OpEntryPoint ExecutionModel(GLCompute) %27 "main" %17
-      OpExecutionMode %27 ExecutionMode(LocalSize) 32 32 1
+      OpEntryPoint ExecutionModel(GLCompute) %26 "main" %15
+      OpExecutionMode %26 ExecutionMode(LocalSize) 32 32 1
       OpSource SourceLanguage(Unknown) 100
-      OpName %3 "Data"
-      OpMemberName %3 0 "tex_size"
-      OpName %9 "Data"
-      OpMemberName %9 0 "tex_size"
-      OpName %13 "Input"
-      OpMemberName %13 0 "indices"
-      OpName %7 "input_tex"
-      OpName %8 "output_tex"
-      OpName %11 "data"
-      OpName %17 "global_invocation_indices"
-      OpName %27 "main"
-      OpDecorate %7 Decoration(Binding) 0
-      OpDecorate %7 Decoration(DescriptorSet) 0
-      OpDecorate %8 Decoration(Binding) 1
-      OpDecorate %8 Decoration(DescriptorSet) 0
-      OpDecorate %11 Decoration(Binding) 2
-      OpDecorate %11 Decoration(DescriptorSet) 0
-      OpDecorate %17 Decoration(BuiltIn) BuiltIn(GlobalInvocationId)
-      OpMemberDecorate %3 0 Decoration(Offset) 0
-      OpDecorate %9 Decoration(Block)
-      OpMemberDecorate %9 0 Decoration(Offset) 0
-      OpMemberDecorate %13 0 Decoration(Offset) 0
- %1 = OpTypeInt 32 0
- %2 = OpTypeVector %1 2
- %3 = OpTypeStruct %2
- %4 = OpTypeFloat 32
- %5 = OpTypeImage %4 Dim(Dim2D) 2 0 0 2 ImageFormat(Rgba8)
- %6 = OpTypePointer StorageClass(UniformConstant) %5
- %9 = OpTypeStruct %2
-%10 = OpTypePointer StorageClass(Uniform) %9
-%12 = OpTypeVector %1 3
-%13 = OpTypeStruct %12
-%14 = OpTypeVoid
-%15 = OpTypeFunction %14
-%16 = OpTypePointer StorageClass(Input) %12
-%18 = OpTypeInt 32 1
-%19 = OpConstant %18 i32(0)
-%20 = OpTypePointer StorageClass(Function) %12
-%21 = OpTypePointer StorageClass(Function) %13
-%22 = OpTypeBool
-%23 = OpConstant %18 i32(1)
-%24 = OpTypeVector %18 2
-%25 = OpTypeVector %4 4
-%26 = OpTypePointer StorageClass(Function) %25
-%38 = OpTypePointer StorageClass(Uniform) %2
- %7 = OpVariable %6 StorageClass(UniformConstant)
- %8 = OpVariable %6 StorageClass(UniformConstant)
-%11 = OpVariable %10 StorageClass(Uniform)
-%17 = OpVariable %16 StorageClass(Input)
-%27 = OpFunction %14 FunctionControl(0) %15
-%28 = OpLabel
-%29 = OpVariable %26 StorageClass(Function)
-%30 = OpVariable %21 StorageClass(Function)
-%31 = OpAccessChain %20 %30 %19
-      OpCopyMemory %31 %17
-%35 = OpAccessChain %20 %30 %19
-%36 = OpLoad %12 %35
-%37 = OpCompositeExtract %1 %36 0
-%39 = OpAccessChain %38 %11 %19
-%40 = OpLoad %2 %39
-%41 = OpCompositeExtract %1 %40 0
-%42 = OpUGreaterThanEqual %22 %37 %41
-%43 = OpAccessChain %20 %30 %19
-%44 = OpLoad %12 %43
-%45 = OpCompositeExtract %1 %44 1
-%46 = OpAccessChain %38 %11 %19
-%47 = OpLoad %2 %46
-%48 = OpCompositeExtract %1 %47 1
-%49 = OpUGreaterThanEqual %22 %45 %48
-%50 = OpLogicalOr %22 %42 %49
-      OpSelectionMerge %32 SelectionControl(0)
-      OpBranchConditional %50 %33 %34
-%33 = OpLabel
-      OpReturn
-%34 = OpLabel
-      OpBranch %32
+      OpName %8 "Data"
+      OpMemberName %8 0 "tex_size"
+      OpName %19 "Input"
+      OpMemberName %19 0 "indices"
+      OpName %4 "input_tex"
+      OpName %5 "output_tex"
+      OpName %10 "data"
+      OpName %15 "global_invocation_indices"
+      OpName %26 "main"
+      OpDecorate %4 Decoration(Binding) 0
+      OpDecorate %4 Decoration(DescriptorSet) 0
+      OpDecorate %5 Decoration(Binding) 1
+      OpDecorate %5 Decoration(DescriptorSet) 0
+      OpDecorate %10 Decoration(Binding) 2
+      OpDecorate %10 Decoration(DescriptorSet) 0
+      OpDecorate %15 Decoration(BuiltIn) BuiltIn(GlobalInvocationId)
+      OpDecorate %8 Decoration(Block)
+      OpMemberDecorate %8 0 Decoration(Offset) 0
+      OpMemberDecorate %19 0 Decoration(Offset) 0
+ %1 = OpTypeFloat 32
+ %2 = OpTypeImage %1 Dim(Dim2D) 2 0 0 2 ImageFormat(Rgba8)
+ %3 = OpTypePointer StorageClass(UniformConstant) %2
+ %6 = OpTypeInt 32 0
+ %7 = OpTypeVector %6 2
+ %8 = OpTypeStruct %7
+ %9 = OpTypePointer StorageClass(Uniform) %8
+%11 = OpTypeVoid
+%12 = OpTypeFunction %11
+%13 = OpTypeVector %6 3
+%14 = OpTypePointer StorageClass(Input) %13
+%16 = OpTypeInt 32 1
+%17 = OpConstant %16 i32(0)
+%18 = OpTypePointer StorageClass(Function) %13
+%19 = OpTypeStruct %13
+%20 = OpTypePointer StorageClass(Function) %19
+%21 = OpTypeBool
+%22 = OpConstant %16 i32(1)
+%23 = OpTypeVector %16 2
+%24 = OpTypeVector %1 4
+%25 = OpTypePointer StorageClass(Function) %24
+%37 = OpTypePointer StorageClass(Uniform) %7
+ %4 = OpVariable %3 StorageClass(UniformConstant)
+ %5 = OpVariable %3 StorageClass(UniformConstant)
+%10 = OpVariable %9 StorageClass(Uniform)
+%15 = OpVariable %14 StorageClass(Input)
+%26 = OpFunction %11 FunctionControl(0) %12
+%27 = OpLabel
+%28 = OpVariable %25 StorageClass(Function)
+%29 = OpVariable %20 StorageClass(Function)
+%30 = OpAccessChain %18 %29 %17
+      OpCopyMemory %30 %15
+%34 = OpAccessChain %18 %29 %17
+%35 = OpLoad %13 %34
+%36 = OpCompositeExtract %6 %35 0
+%38 = OpAccessChain %37 %10 %17
+%39 = OpLoad %7 %38
+%40 = OpCompositeExtract %6 %39 0
+%41 = OpUGreaterThanEqual %21 %36 %40
+%42 = OpAccessChain %18 %29 %17
+%43 = OpLoad %13 %42
+%44 = OpCompositeExtract %6 %43 1
+%45 = OpAccessChain %37 %10 %17
+%46 = OpLoad %7 %45
+%47 = OpCompositeExtract %6 %46 1
+%48 = OpUGreaterThanEqual %21 %44 %47
+%49 = OpLogicalOr %21 %41 %48
+      OpSelectionMerge %31 SelectionControl(0)
+      OpBranchConditional %49 %32 %33
 %32 = OpLabel
-%51 = OpLoad %5 %7
-%52 = OpAccessChain %20 %30 %19
-%53 = OpLoad %12 %52
-%54 = OpVectorShuffle %2 %53 %53 0 1
-%55 = OpBitcast %24 %54
-%56 = OpImageRead %25 %51 %55
-      OpStore %29 %56
-%57 = OpLoad %5 %8
-%58 = OpAccessChain %20 %30 %19
-%59 = OpLoad %12 %58
-%60 = OpVectorShuffle %2 %59 %59 0 1
-%61 = OpBitcast %24 %60
-%62 = OpLoad %25 %29
-      OpImageWrite %57 %61 %62
+      OpReturn
+%33 = OpLabel
+      OpBranch %31
+%31 = OpLabel
+%50 = OpLoad %2 %4
+%51 = OpAccessChain %18 %29 %17
+%52 = OpLoad %13 %51
+%53 = OpVectorShuffle %7 %52 %52 0 1
+%54 = OpBitcast %23 %53
+%55 = OpImageRead %24 %50 %54
+      OpStore %28 %55
+%56 = OpLoad %2 %5
+%57 = OpAccessChain %18 %29 %17
+%58 = OpLoad %13 %57
+%59 = OpVectorShuffle %7 %58 %58 0 1
+%60 = OpBitcast %23 %59
+%61 = OpLoad %24 %28
+      OpImageWrite %56 %60 %61
       OpReturn
       OpFunctionEnd)", {}, {}, true);
 	}

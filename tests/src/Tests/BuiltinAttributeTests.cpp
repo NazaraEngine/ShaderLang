@@ -239,12 +239,12 @@ fn main(input: Input) -> Output
 			spirvEnv.spvMinorVersion = 3;
 
 			ExpectSPIRV(*shaderModule, R"(
-      OpDecorate %9 Decoration(BuiltIn) BuiltIn(BaseInstance)
-      OpDecorate %12 Decoration(BuiltIn) BuiltIn(BaseVertex)
-      OpDecorate %14 Decoration(BuiltIn) BuiltIn(DrawIndex)
-      OpDecorate %16 Decoration(BuiltIn) BuiltIn(InstanceIndex)
-      OpDecorate %18 Decoration(BuiltIn) BuiltIn(VertexIndex)
-      OpDecorate %22 Decoration(BuiltIn) BuiltIn(Position))", {}, spirvEnv, true);
+      OpDecorate %5 Decoration(BuiltIn) BuiltIn(BaseInstance)
+      OpDecorate %8 Decoration(BuiltIn) BuiltIn(BaseVertex)
+      OpDecorate %10 Decoration(BuiltIn) BuiltIn(DrawIndex)
+      OpDecorate %12 Decoration(BuiltIn) BuiltIn(InstanceIndex)
+      OpDecorate %14 Decoration(BuiltIn) BuiltIn(VertexIndex)
+      OpDecorate %21 Decoration(BuiltIn) BuiltIn(Position))", {}, spirvEnv, true);
 		}
 	}
 	
@@ -324,7 +324,7 @@ fn main(input: Input) -> Output
 }
 )");
 
-		ExpectSPIRV(*shaderModule, R"(OpDecorate %9 Decoration(BuiltIn) BuiltIn(VertexIndex))", {}, {}, true);
+		ExpectSPIRV(*shaderModule, R"(OpDecorate %5 Decoration(BuiltIn) BuiltIn(VertexIndex))", {}, {}, true);
 	}
 
 	SECTION("vertex position")
@@ -427,6 +427,6 @@ fn main() -> Output
 }
 )");
 
-		ExpectSPIRV(*shaderModule, R"(OpDecorate %7 Decoration(BuiltIn) BuiltIn(Position))", {}, {}, true);
+		ExpectSPIRV(*shaderModule, R"(OpDecorate %6 Decoration(BuiltIn) BuiltIn(Position))", {}, {}, true);
 	}
 }

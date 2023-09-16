@@ -43,18 +43,18 @@ namespace nzsl
 	class SpirvWriter::PreVisitor : public Ast::RecursiveVisitor
 	{
 		public:
-			struct UniformVar
+			struct ExternalVar
 			{
 				std::optional<std::uint32_t> bindingIndex;
 				std::optional<std::uint32_t> descriptorSet;
-				std::uint32_t pointerId;
+				SpirvVariable varData;
 			};
 
 			using BuiltinDecoration = tsl::ordered_map<std::uint32_t, SpirvBuiltIn>;
 			using ConstantVariables = std::unordered_map<std::size_t /*constIndex*/, SpirvVariable /*variable*/>;
 			using LocationDecoration = tsl::ordered_map<std::uint32_t, std::uint32_t>;
 			using ExtInstList = tsl::ordered_set<std::string>;
-			using ExtVarContainer = tsl::ordered_map<std::size_t /*varIndex*/, UniformVar>;
+			using ExtVarContainer = tsl::ordered_map<std::size_t /*varIndex*/, ExternalVar>;
 			using FunctionContainer = tsl::ordered_map<std::size_t, SpirvAstVisitor::FuncData>;
 			using LocalContainer = tsl::ordered_set<Ast::ExpressionType>;
 			using StructContainer = std::vector<Ast::StructDescription*>;
@@ -184,6 +184,7 @@ namespace nzsl
 
 					const Ast::ExpressionType& extVarType = extVar.type.GetResultingValue();
 
+					SpirvConstantCache::TypePtr typePtr;
 					if (Ast::IsStorageType(extVarType) || Ast::IsUniformType(extVarType) || Ast::IsPushConstantType(extVarType))
 					{
 						SpirvDecoration decoration;
@@ -228,8 +229,8 @@ namespace nzsl
 							variable.storageClass = SpirvStorageClass::PushConstant;
 						}
 
-						const auto& type = m_constantCache.BuildType(*declaredStructs[structIndex], { decoration });
-						variable.type = m_constantCache.BuildPointerType(type, variable.storageClass);
+						typePtr = m_constantCache.BuildType(*declaredStructs[structIndex], { decoration });
+						variable.type = m_constantCache.BuildPointerType(typePtr, variable.storageClass);
 					}
 					else if (Ast::IsSamplerType(extVarType) || Ast::IsArrayType(extVarType) || Ast::IsTextureType(extVarType))
 					{
@@ -242,8 +243,11 @@ namespace nzsl
 					assert(Ast::IsPushConstantType(extVarType) || extVar.bindingIndex.IsResultingValue());
 
 					assert(extVar.varIndex);
-					UniformVar& uniformVar = extVars[*extVar.varIndex];
-					uniformVar.pointerId = m_constantCache.Register(variable);
+					ExternalVar& uniformVar = extVars[*extVar.varIndex];
+					uniformVar.varData.typeId = m_constantCache.Register((typePtr) ? *typePtr : *m_constantCache.BuildType(extVarType, variable.storageClass));
+					uniformVar.varData.storageClass = variable.storageClass;
+					uniformVar.varData.pointerId = m_constantCache.Register(std::move(variable));
+
 					if (!Ast::IsPushConstantType(extVarType))
 					{
 						uniformVar.bindingIndex = extVar.bindingIndex.GetResultingValue();
@@ -432,8 +436,6 @@ namespace nzsl
 					declaredStructs.resize(structIndex + 1);
 
 				declaredStructs[structIndex] = &node.description;
-
-				m_constantCache.Register(*m_constantCache.BuildType(node.description));
 			}
 
 			void Visit(Ast::DeclareVariableStatement& node) override
@@ -774,9 +776,9 @@ namespace nzsl
 		for (auto&& [varIndex, extVar] : previsitor.extVars)
 		{
 			if (extVar.bindingIndex.has_value())
-				state.annotations.Append(SpirvOp::OpDecorate, extVar.pointerId, SpirvDecoration::Binding, extVar.bindingIndex.value());
+				state.annotations.Append(SpirvOp::OpDecorate, extVar.varData.pointerId, SpirvDecoration::Binding, extVar.bindingIndex.value());
 			if (extVar.descriptorSet.has_value())
-				state.annotations.Append(SpirvOp::OpDecorate, extVar.pointerId, SpirvDecoration::DescriptorSet, extVar.descriptorSet.value());
+				state.annotations.Append(SpirvOp::OpDecorate, extVar.varData.pointerId, SpirvDecoration::DescriptorSet, extVar.descriptorSet.value());
 		}
 
 		for (auto&& [varId, builtin] : previsitor.builtinDecorations)
@@ -972,12 +974,12 @@ namespace nzsl
 		return it->second;
 	}
 
-	std::uint32_t SpirvWriter::GetExtVarPointerId(std::size_t extVarIndex) const
+	const SpirvVariable& SpirvWriter::GetExtVar(std::size_t extVarIndex) const
 	{
 		auto it = m_currentState->previsitor->extVars.find(extVarIndex);
 		assert(it != m_currentState->previsitor->extVars.end());
 
-		return it->second.pointerId;
+		return it->second.varData;
 	}
 
 	std::uint32_t SpirvWriter::GetFunctionTypeId(const Ast::DeclareFunctionStatement& functionNode)

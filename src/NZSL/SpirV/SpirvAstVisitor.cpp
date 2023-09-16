@@ -30,7 +30,10 @@ namespace nzsl
 
 	auto SpirvAstVisitor::GetVariable(std::size_t varIndex) const -> const SpirvVariable&
 	{
-		return Nz::Retrieve(m_variables, varIndex);
+		if (auto it = m_variables.find(varIndex); it != m_variables.end())
+			return it->second;
+		else
+			return m_writer.GetExtVar(varIndex);
 	}
 
 	void SpirvAstVisitor::Visit(Ast::AccessIndexExpression& node)
@@ -731,13 +734,9 @@ namespace nzsl
 		/* Handled by the previsitor - nothing to do */
 	}
 
-	void SpirvAstVisitor::Visit(Ast::DeclareExternalStatement& node)
+	void SpirvAstVisitor::Visit(Ast::DeclareExternalStatement& /*node*/)
 	{
-		for (auto&& extVar : node.externalVars)
-		{
-			assert(extVar.varIndex);
-			RegisterExternalVariable(*extVar.varIndex, extVar.type.GetResultingValue());
-		}
+		/* Handled by the previsitor - nothing to do */
 	}
 
 	void SpirvAstVisitor::Visit(Ast::DeclareFunctionStatement& node)
@@ -1242,7 +1241,7 @@ namespace nzsl
 
 		const Ast::VariableValueExpression& structVar = static_cast<const Ast::VariableValueExpression&>(*accessIndex.expr);
 
-		std::uint32_t structId = GetVariable(structVar.variableId).pointerId;
+		std::uint32_t structId = m_writer.GetExtVar(structVar.variableId).pointerId;
 
 		const Ast::ConstantValueExpression& memberConstant = Nz::SafeCast<const Ast::ConstantValueExpression&>(*accessIndex.indices[0]);
 		if (!std::holds_alternative<std::int32_t>(memberConstant.value))

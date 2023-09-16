@@ -139,66 +139,66 @@ fn main(input: VertIn) -> VertOut
 %17 = OpConstant %1 f32(9)
 %18 = OpConstantComposite %2 %15 %16 %17
 %19 = OpConstantComposite %5 %10 %14 %18
-%21 = OpTypeInt 32 1
-%22 = OpTypeStruct %21
-%23 = OpTypeVector %1 4
-%24 = OpTypeStruct %23
-%25 = OpTypeVoid
-%26 = OpTypeFunction %25
-%27 = OpTypePointer StorageClass(Input) %21
-%29 = OpConstant %21 i32(0)
-%30 = OpTypePointer StorageClass(Function) %21
-%31 = OpTypePointer StorageClass(Function) %22
-%32 = OpTypePointer StorageClass(Output) %23
-%34 = OpTypePointer StorageClass(Function) %24
+%21 = OpTypeVoid
+%22 = OpTypeFunction %21
+%23 = OpTypeInt 32 1
+%24 = OpTypePointer StorageClass(Input) %23
+%26 = OpConstant %23 i32(0)
+%27 = OpTypePointer StorageClass(Function) %23
+%28 = OpTypeStruct %23
+%29 = OpTypePointer StorageClass(Function) %28
+%30 = OpTypeVector %1 4
+%31 = OpTypePointer StorageClass(Output) %30
+%33 = OpTypeStruct %30
+%34 = OpTypePointer StorageClass(Function) %33
 %35 = OpTypeBool
 %36 = OpConstant %1 f32(0)
-%37 = OpConstant %21 i32(1)
-%38 = OpConstant %21 i32(2)
-%39 = OpConstant %21 i32(3)
-%40 = OpConstant %21 i32(4)
-%41 = OpConstant %21 i32(5)
+%37 = OpConstant %23 i32(1)
+%38 = OpConstant %23 i32(2)
+%39 = OpConstant %23 i32(3)
+%40 = OpConstant %23 i32(4)
+%41 = OpConstant %23 i32(5)
 %42 = OpConstant %3 u32(5)
-%43 = OpTypeArray %21 %42
+%43 = OpTypeArray %23 %42
 %44 = OpTypePointer StorageClass(Function) %43
 %60 = OpTypePointer StorageClass(Private) %2
-%65 = OpTypePointer StorageClass(Function) %23
+%65 = OpTypePointer StorageClass(Function) %30
 %20 = OpVariable %6 StorageClass(Private) %19
-%28 = OpVariable %27 StorageClass(Input)
-%33 = OpVariable %32 StorageClass(Output)
-%45 = OpFunction %25 FunctionControl(0) %26
+%25 = OpVariable %24 StorageClass(Input)
+%32 = OpVariable %31 StorageClass(Output)
+%45 = OpFunction %21 FunctionControl(0) %22
 %46 = OpLabel
 %47 = OpVariable %34 StorageClass(Function)
 %48 = OpVariable %44 StorageClass(Function)
-%49 = OpVariable %31 StorageClass(Function)
-%50 = OpAccessChain %30 %49 %29
-      OpCopyMemory %50 %28
-%54 = OpAccessChain %30 %49 %29
-%55 = OpLoad %21 %54
+%49 = OpVariable %29 StorageClass(Function)
+%50 = OpAccessChain %27 %49 %26
+      OpCopyMemory %50 %25
+%54 = OpAccessChain %27 %49 %26
+%55 = OpLoad %23 %54
 %56 = OpBitcast %3 %55
 %57 = OpULessThan %35 %56 %4
       OpSelectionMerge %51 SelectionControl(0)
       OpBranchConditional %57 %52 %53
 %52 = OpLabel
-%58 = OpAccessChain %30 %49 %29
-%59 = OpLoad %21 %58
+%58 = OpAccessChain %27 %49 %26
+%59 = OpLoad %23 %58
 %61 = OpAccessChain %60 %20 %59
 %62 = OpLoad %2 %61
-%63 = OpCompositeConstruct %23 %62 %7
-%64 = OpAccessChain %65 %47 %29
+%63 = OpCompositeConstruct %30 %62 %7
+%64 = OpAccessChain %65 %47 %26
       OpStore %64 %63
       OpBranch %51
 %53 = OpLabel
-%66 = OpCompositeConstruct %23 %36 %36 %36 %36
-%67 = OpAccessChain %65 %47 %29
+%66 = OpCompositeConstruct %30 %36 %36 %36 %36
+%67 = OpAccessChain %65 %47 %26
       OpStore %67 %66
       OpBranch %51
 %51 = OpLabel
 %68 = OpCompositeConstruct %43 %37 %38 %39 %40 %41
       OpStore %48 %68
-%69 = OpLoad %24 %47
-%70 = OpCompositeExtract %23 %69 0
-      OpStore %33 %70
+%69 = OpLoad %33 %47
+%70 = OpCompositeExtract %30 %69 0
+      OpStore %32 %70
       OpReturn
       OpFunctionEnd)", {}, {}, true);
 	}
