@@ -157,7 +157,6 @@ namespace nzsl
 			void PushResultId(std::uint32_t value);
 			std::uint32_t PopResultId();
 
-			inline void RegisterExternalVariable(std::size_t varIndex, const Ast::ExpressionType& type);
 			inline void RegisterVariable(std::size_t varIndex, std::uint32_t typeId, std::uint32_t pointerId, SpirvStorageClass storageClass);
 
 			void ResetSourceLocation();

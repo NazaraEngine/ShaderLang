@@ -75,36 +75,37 @@ fn main() -> FragOut
 )");
 
 				ExpectSPIRV(*shaderModule, R"(
-      OpEntryPoint ExecutionModel(Fragment) %11 "main" %6
+      OpMemoryModel AddressingModel(Logical) MemoryModel(GLSL450)
+      OpEntryPoint ExecutionModel(Fragment) %11 "main" %5
       OpExecutionMode %11 ExecutionMode(OriginUpperLeft)
       OpExecutionMode %11 ExecutionMode(DepthReplacing)
       OpExecutionMode %11 ExecutionMode(DepthGreater)
       OpSource SourceLanguage(Unknown) 100
-      OpName %2 "FragOut"
-      OpMemberName %2 0 "depth"
-      OpName %6 "frag_depth"
+      OpName %6 "FragOut"
+      OpMemberName %6 0 "depth"
+      OpName %5 "frag_depth"
       OpName %11 "main"
-      OpDecorate %6 Decoration(BuiltIn) BuiltIn(FragDepth)
-      OpMemberDecorate %2 0 Decoration(Offset) 0
- %1 = OpTypeFloat 32
- %2 = OpTypeStruct %1
- %3 = OpTypeVoid
- %4 = OpTypeFunction %3
- %5 = OpTypePointer StorageClass(Output) %1
- %7 = OpTypePointer StorageClass(Function) %2
+      OpDecorate %5 Decoration(BuiltIn) BuiltIn(FragDepth)
+      OpMemberDecorate %6 0 Decoration(Offset) 0
+ %1 = OpTypeVoid
+ %2 = OpTypeFunction %1
+ %3 = OpTypeFloat 32
+ %4 = OpTypePointer StorageClass(Output) %3
+ %6 = OpTypeStruct %3
+ %7 = OpTypePointer StorageClass(Function) %6
  %8 = OpTypeInt 32 1
  %9 = OpConstant %8 i32(0)
-%10 = OpConstant %1 f32(1)
-%15 = OpTypePointer StorageClass(Function) %1
- %6 = OpVariable %5 StorageClass(Output)
-%11 = OpFunction %3 FunctionControl(0) %4
+%10 = OpConstant %3 f32(1)
+%15 = OpTypePointer StorageClass(Function) %3
+ %5 = OpVariable %4 StorageClass(Output)
+%11 = OpFunction %1 FunctionControl(0) %2
 %12 = OpLabel
 %13 = OpVariable %7 StorageClass(Function)
 %14 = OpAccessChain %15 %13 %9
       OpStore %14 %10
-%16 = OpLoad %2 %13
-%17 = OpCompositeExtract %1 %16 0
-      OpStore %6 %17
+%16 = OpLoad %6 %13
+%17 = OpCompositeExtract %3 %16 0
+      OpStore %5 %17
       OpReturn
       OpFunctionEnd)", {}, {}, true);
 			}
@@ -177,36 +178,36 @@ fn main() -> FragOut
 )");
 
 				ExpectSPIRV(*shaderModule, R"(
-      OpEntryPoint ExecutionModel(Fragment) %11 "main" %6
+      OpEntryPoint ExecutionModel(Fragment) %11 "main" %5
       OpExecutionMode %11 ExecutionMode(OriginUpperLeft)
       OpExecutionMode %11 ExecutionMode(DepthReplacing)
       OpExecutionMode %11 ExecutionMode(DepthLess)
       OpSource SourceLanguage(Unknown) 100
-      OpName %2 "FragOut"
-      OpMemberName %2 0 "depth"
-      OpName %6 "frag_depth"
+      OpName %6 "FragOut"
+      OpMemberName %6 0 "depth"
+      OpName %5 "frag_depth"
       OpName %11 "main"
-      OpDecorate %6 Decoration(BuiltIn) BuiltIn(FragDepth)
-      OpMemberDecorate %2 0 Decoration(Offset) 0
- %1 = OpTypeFloat 32
- %2 = OpTypeStruct %1
- %3 = OpTypeVoid
- %4 = OpTypeFunction %3
- %5 = OpTypePointer StorageClass(Output) %1
- %7 = OpTypePointer StorageClass(Function) %2
+      OpDecorate %5 Decoration(BuiltIn) BuiltIn(FragDepth)
+      OpMemberDecorate %6 0 Decoration(Offset) 0
+ %1 = OpTypeVoid
+ %2 = OpTypeFunction %1
+ %3 = OpTypeFloat 32
+ %4 = OpTypePointer StorageClass(Output) %3
+ %6 = OpTypeStruct %3
+ %7 = OpTypePointer StorageClass(Function) %6
  %8 = OpTypeInt 32 1
  %9 = OpConstant %8 i32(0)
-%10 = OpConstant %1 f32(0)
-%15 = OpTypePointer StorageClass(Function) %1
- %6 = OpVariable %5 StorageClass(Output)
-%11 = OpFunction %3 FunctionControl(0) %4
+%10 = OpConstant %3 f32(0)
+%15 = OpTypePointer StorageClass(Function) %3
+ %5 = OpVariable %4 StorageClass(Output)
+%11 = OpFunction %1 FunctionControl(0) %2
 %12 = OpLabel
 %13 = OpVariable %7 StorageClass(Function)
 %14 = OpAccessChain %15 %13 %9
       OpStore %14 %10
-%16 = OpLoad %2 %13
-%17 = OpCompositeExtract %1 %16 0
-      OpStore %6 %17
+%16 = OpLoad %6 %13
+%17 = OpCompositeExtract %3 %16 0
+      OpStore %5 %17
       OpReturn
       OpFunctionEnd)", {}, {}, true);
 			}
@@ -284,35 +285,35 @@ fn main() -> FragOut
 )");
 
 				ExpectSPIRV(*shaderModule, R"(
-      OpEntryPoint ExecutionModel(Fragment) %11 "main" %6
+      OpEntryPoint ExecutionModel(Fragment) %11 "main" %5
       OpExecutionMode %11 ExecutionMode(OriginUpperLeft)
       OpExecutionMode %11 ExecutionMode(DepthReplacing)
       OpSource SourceLanguage(Unknown) 100
-      OpName %2 "FragOut"
-      OpMemberName %2 0 "depth"
-      OpName %6 "frag_depth"
+      OpName %6 "FragOut"
+      OpMemberName %6 0 "depth"
+      OpName %5 "frag_depth"
       OpName %11 "main"
-      OpDecorate %6 Decoration(BuiltIn) BuiltIn(FragDepth)
-      OpMemberDecorate %2 0 Decoration(Offset) 0
- %1 = OpTypeFloat 32
- %2 = OpTypeStruct %1
- %3 = OpTypeVoid
- %4 = OpTypeFunction %3
- %5 = OpTypePointer StorageClass(Output) %1
- %7 = OpTypePointer StorageClass(Function) %2
+      OpDecorate %5 Decoration(BuiltIn) BuiltIn(FragDepth)
+      OpMemberDecorate %6 0 Decoration(Offset) 0
+ %1 = OpTypeVoid
+ %2 = OpTypeFunction %1
+ %3 = OpTypeFloat 32
+ %4 = OpTypePointer StorageClass(Output) %3
+ %6 = OpTypeStruct %3
+ %7 = OpTypePointer StorageClass(Function) %6
  %8 = OpTypeInt 32 1
  %9 = OpConstant %8 i32(0)
-%10 = OpConstant %1 f32(0.5)
-%15 = OpTypePointer StorageClass(Function) %1
- %6 = OpVariable %5 StorageClass(Output)
-%11 = OpFunction %3 FunctionControl(0) %4
+%10 = OpConstant %3 f32(0.5)
+%15 = OpTypePointer StorageClass(Function) %3
+ %5 = OpVariable %4 StorageClass(Output)
+%11 = OpFunction %1 FunctionControl(0) %2
 %12 = OpLabel
 %13 = OpVariable %7 StorageClass(Function)
 %14 = OpAccessChain %15 %13 %9
       OpStore %14 %10
-%16 = OpLoad %2 %13
-%17 = OpCompositeExtract %1 %16 0
-      OpStore %6 %17
+%16 = OpLoad %6 %13
+%17 = OpCompositeExtract %3 %16 0
+      OpStore %5 %17
       OpReturn
       OpFunctionEnd)", {}, {}, true);
 			}
@@ -393,53 +394,53 @@ fn main(input: FragIn) -> FragOut
 )");
 
 				ExpectSPIRV(*shaderModule, R"(
-      OpEntryPoint ExecutionModel(Fragment) %17 "main" %8 %14
+      OpEntryPoint ExecutionModel(Fragment) %17 "main" %6 %13
       OpExecutionMode %17 ExecutionMode(OriginUpperLeft)
       OpExecutionMode %17 ExecutionMode(DepthReplacing)
       OpExecutionMode %17 ExecutionMode(DepthUnchanged)
       OpSource SourceLanguage(Unknown) 100
-      OpName %3 "FragIn"
-      OpMemberName %3 0 "fragCoord"
-      OpName %4 "FragOut"
-      OpMemberName %4 0 "depth"
-      OpName %8 "frag_coord"
-      OpName %14 "frag_depth"
+      OpName %10 "FragIn"
+      OpMemberName %10 0 "fragCoord"
+      OpName %14 "FragOut"
+      OpMemberName %14 0 "depth"
+      OpName %6 "frag_coord"
+      OpName %13 "frag_depth"
       OpName %17 "main"
-      OpDecorate %8 Decoration(BuiltIn) BuiltIn(FragCoord)
-      OpDecorate %14 Decoration(BuiltIn) BuiltIn(FragDepth)
-      OpMemberDecorate %3 0 Decoration(Offset) 0
-      OpMemberDecorate %4 0 Decoration(Offset) 0
- %1 = OpTypeFloat 32
- %2 = OpTypeVector %1 4
- %3 = OpTypeStruct %2
- %4 = OpTypeStruct %1
- %5 = OpTypeVoid
- %6 = OpTypeFunction %5
- %7 = OpTypePointer StorageClass(Input) %2
- %9 = OpTypeInt 32 1
-%10 = OpConstant %9 i32(0)
-%11 = OpTypePointer StorageClass(Function) %2
-%12 = OpTypePointer StorageClass(Function) %3
-%13 = OpTypePointer StorageClass(Output) %1
-%15 = OpTypePointer StorageClass(Function) %4
-%16 = OpConstant %9 i32(2)
-%26 = OpTypePointer StorageClass(Function) %1
- %8 = OpVariable %7 StorageClass(Input)
-%14 = OpVariable %13 StorageClass(Output)
-%17 = OpFunction %5 FunctionControl(0) %6
+      OpDecorate %6 Decoration(BuiltIn) BuiltIn(FragCoord)
+      OpDecorate %13 Decoration(BuiltIn) BuiltIn(FragDepth)
+      OpMemberDecorate %10 0 Decoration(Offset) 0
+      OpMemberDecorate %14 0 Decoration(Offset) 0
+ %1 = OpTypeVoid
+ %2 = OpTypeFunction %1
+ %3 = OpTypeFloat 32
+ %4 = OpTypeVector %3 4
+ %5 = OpTypePointer StorageClass(Input) %4
+ %7 = OpTypeInt 32 1
+ %8 = OpConstant %7 i32(0)
+ %9 = OpTypePointer StorageClass(Function) %4
+%10 = OpTypeStruct %4
+%11 = OpTypePointer StorageClass(Function) %10
+%12 = OpTypePointer StorageClass(Output) %3
+%14 = OpTypeStruct %3
+%15 = OpTypePointer StorageClass(Function) %14
+%16 = OpConstant %7 i32(2)
+%26 = OpTypePointer StorageClass(Function) %3
+ %6 = OpVariable %5 StorageClass(Input)
+%13 = OpVariable %12 StorageClass(Output)
+%17 = OpFunction %1 FunctionControl(0) %2
 %18 = OpLabel
 %19 = OpVariable %15 StorageClass(Function)
-%20 = OpVariable %12 StorageClass(Function)
-%21 = OpAccessChain %11 %20 %10
-      OpCopyMemory %21 %8
-%22 = OpAccessChain %11 %20 %10
-%23 = OpLoad %2 %22
-%24 = OpCompositeExtract %1 %23 2
-%25 = OpAccessChain %26 %19 %10
+%20 = OpVariable %11 StorageClass(Function)
+%21 = OpAccessChain %9 %20 %8
+      OpCopyMemory %21 %6
+%22 = OpAccessChain %9 %20 %8
+%23 = OpLoad %4 %22
+%24 = OpCompositeExtract %3 %23 2
+%25 = OpAccessChain %26 %19 %8
       OpStore %25 %24
-%27 = OpLoad %4 %19
-%28 = OpCompositeExtract %1 %27 0
-      OpStore %14 %28
+%27 = OpLoad %14 %19
+%28 = OpCompositeExtract %3 %27 0
+      OpStore %13 %28
       OpReturn
       OpFunctionEnd)", {}, {}, true);
 			}

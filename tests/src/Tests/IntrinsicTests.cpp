@@ -83,32 +83,31 @@ fn main()
  %1 = OpTypeInt 32 1
  %2 = OpTypeRuntimeArray %1
  %3 = OpTypeStruct %2
- %4 = OpTypeRuntimeArray %1
- %5 = OpTypeStruct %4
- %6 = OpTypePointer StorageClass(Uniform) %5
- %8 = OpTypeVoid
- %9 = OpTypeFunction %8
-%10 = OpTypeFloat 32
-%11 = OpConstant %10 f32(1)
-%12 = OpConstant %10 f32(2)
-%13 = OpConstant %10 f32(3)
-%14 = OpTypeInt 32 0
-%15 = OpConstant %14 u32(3)
-%16 = OpTypeArray %10 %15
-%17 = OpTypePointer StorageClass(Function) %16
-%18 = OpTypePointer StorageClass(Function) %14
-%19 = OpConstant %1 i32(0)
- %7 = OpVariable %6 StorageClass(Uniform)
-%20 = OpFunction %8 FunctionControl(0) %9
-%21 = OpLabel
-%22 = OpVariable %17 StorageClass(Function)
-%23 = OpVariable %18 StorageClass(Function)
-%24 = OpVariable %18 StorageClass(Function)
-%25 = OpCompositeConstruct %16 %11 %12 %13
-      OpStore %22 %25
-      OpStore %23 %15
-%26 = OpArrayLength %14 %7 0
-      OpStore %24 %26
+ %4 = OpTypePointer StorageClass(Uniform) %3
+ %6 = OpTypeVoid
+ %7 = OpTypeFunction %6
+ %8 = OpTypeFloat 32
+ %9 = OpConstant %8 f32(1)
+%10 = OpConstant %8 f32(2)
+%11 = OpConstant %8 f32(3)
+%12 = OpTypeInt 32 0
+%13 = OpConstant %12 u32(3)
+%14 = OpTypeArray %8 %13
+%15 = OpTypePointer StorageClass(Function) %14
+%16 = OpTypePointer StorageClass(Function) %12
+%17 = OpConstant %1 i32(0)
+%18 = OpTypeRuntimeArray %1
+ %5 = OpVariable %4 StorageClass(Uniform)
+%19 = OpFunction %6 FunctionControl(0) %7
+%20 = OpLabel
+%21 = OpVariable %15 StorageClass(Function)
+%22 = OpVariable %16 StorageClass(Function)
+%23 = OpVariable %16 StorageClass(Function)
+%24 = OpCompositeConstruct %14 %9 %10 %11
+      OpStore %21 %24
+      OpStore %22 %13
+%25 = OpArrayLength %12 %5 0
+      OpStore %23 %25
       OpReturn
       OpFunctionEnd)", {}, {}, true);
 	}

@@ -14,23 +14,6 @@ namespace nzsl
 	{
 	}
 
-	void SpirvAstVisitor::RegisterExternalVariable(std::size_t varIndex, const Ast::ExpressionType& type)
-	{
-		std::uint32_t pointerId = m_writer.GetExtVarPointerId(varIndex);
-		SpirvStorageClass storageClass;
-		if (IsSamplerType(type) || IsArrayType(type))
-			storageClass = SpirvStorageClass::UniformConstant;
-		else if (IsStorageType(type) && m_writer.IsVersionGreaterOrEqual(1, 3))
-			// Starting from SPIR-V 1.3, Storage Buffer have their own separate storage class
-			storageClass = SpirvStorageClass::StorageBuffer;
-		else if (IsPushConstantType(type))
-			storageClass = SpirvStorageClass::PushConstant;
-		else
-			storageClass = SpirvStorageClass::Uniform;
-
-		RegisterVariable(varIndex, m_writer.GetTypeId(type), pointerId, storageClass);
-	}
-
 	inline void SpirvAstVisitor::RegisterVariable(std::size_t varIndex, std::uint32_t typeId, std::uint32_t pointerId, SpirvStorageClass storageClass)
 	{
 		assert(m_variables.find(varIndex) == m_variables.end());

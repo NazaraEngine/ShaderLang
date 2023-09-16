@@ -188,53 +188,53 @@ fn main()
 )");
 
 			ExpectSPIRV(*shaderModule2, R"(
-%19 = OpFunction %6 FunctionControl(0) %7
-%20 = OpLabel
-%21 = OpVariable %9 StorageClass(Function)
-%22 = OpVariable %9 StorageClass(Function)
-%23 = OpVariable %12 StorageClass(Function)
-      OpStore %21 %8
-      OpStore %22 %8
-      OpStore %23 %11
-      OpBranch %24
+%18 = OpFunction %5 FunctionControl(0) %6
+%19 = OpLabel
+%20 = OpVariable %8 StorageClass(Function)
+%21 = OpVariable %8 StorageClass(Function)
+%22 = OpVariable %11 StorageClass(Function)
+      OpStore %20 %7
+      OpStore %21 %7
+      OpStore %22 %10
+      OpBranch %23
+%23 = OpLabel
+%27 = OpLoad %9 %22
+%28 = OpSLessThan %13 %27 %12
+      OpLoopMerge %25 %26 LoopControl(0)
+      OpBranchConditional %28 %24 %25
 %24 = OpLabel
-%28 = OpLoad %10 %23
-%29 = OpSLessThan %14 %28 %13
-      OpLoopMerge %26 %27 LoopControl(0)
-      OpBranchConditional %29 %25 %26
-%25 = OpLabel
-%33 = OpLoad %10 %23
-%34 = OpSGreaterThanEqual %14 %33 %15
-      OpSelectionMerge %30 SelectionControl(0)
-      OpBranchConditional %34 %31 %32
-%31 = OpLabel
-      OpBranch %26
-%32 = OpLabel
-      OpBranch %30
+%32 = OpLoad %9 %22
+%33 = OpSGreaterThanEqual %13 %32 %14
+      OpSelectionMerge %29 SelectionControl(0)
+      OpBranchConditional %33 %30 %31
 %30 = OpLabel
-%35 = OpLoad %1 %21
-%36 = OpFAdd %1 %35 %16
-      OpStore %21 %36
-%37 = OpLoad %10 %23
-%38 = OpIAdd %10 %37 %17
-      OpStore %23 %38
-%42 = OpLoad %10 %23
-%43 = OpIEqual %14 %42 %18
-      OpSelectionMerge %39 SelectionControl(0)
-      OpBranchConditional %43 %40 %41
-%40 = OpLabel
-      OpBranch %27
-%41 = OpLabel
-      OpBranch %39
+      OpBranch %25
+%31 = OpLabel
+      OpBranch %29
+%29 = OpLabel
+%34 = OpLoad %1 %20
+%35 = OpFAdd %1 %34 %15
+      OpStore %20 %35
+%36 = OpLoad %9 %22
+%37 = OpIAdd %9 %36 %16
+      OpStore %22 %37
+%41 = OpLoad %9 %22
+%42 = OpIEqual %13 %41 %17
+      OpSelectionMerge %38 SelectionControl(0)
+      OpBranchConditional %42 %39 %40
 %39 = OpLabel
-%44 = OpLoad %1 %22
-%45 = OpLoad %1 %21
-%46 = OpFAdd %1 %44 %45
-      OpStore %22 %46
-      OpBranch %27
-%27 = OpLabel
-      OpBranch %24
+      OpBranch %26
+%40 = OpLabel
+      OpBranch %38
+%38 = OpLabel
+%43 = OpLoad %1 %21
+%44 = OpLoad %1 %20
+%45 = OpFAdd %1 %43 %44
+      OpStore %21 %45
+      OpBranch %26
 %26 = OpLabel
+      OpBranch %23
+%25 = OpLabel
       OpReturn
       OpFunctionEnd)", {}, {}, true);
 		}
@@ -807,53 +807,53 @@ fn main()
 )");
 
 			ExpectSPIRV(*shaderModule2, R"(
-%21 = OpFunction %10 FunctionControl(0) %11
-%22 = OpLabel
+%20 = OpFunction %8 FunctionControl(0) %9
+%21 = OpLabel
+%22 = OpVariable %11 StorageClass(Function)
 %23 = OpVariable %13 StorageClass(Function)
-%24 = OpVariable %15 StorageClass(Function)
-%25 = OpVariable %13 StorageClass(Function)
+%24 = OpVariable %11 StorageClass(Function)
+      OpStore %22 %10
       OpStore %23 %12
-      OpStore %24 %14
-      OpBranch %26
+      OpBranch %25
+%25 = OpLabel
+%29 = OpLoad %2 %23
+%30 = OpULessThan %14 %29 %3
+      OpLoopMerge %27 %28 LoopControl(0)
+      OpBranchConditional %30 %26 %27
 %26 = OpLabel
-%30 = OpLoad %2 %24
-%31 = OpULessThan %16 %30 %3
-      OpLoopMerge %28 %29 LoopControl(0)
-      OpBranchConditional %31 %27 %28
-%27 = OpLabel
-%32 = OpLoad %2 %24
-%34 = OpAccessChain %33 %9 %18 %32
-%35 = OpLoad %1 %34
-      OpStore %25 %35
-%39 = OpLoad %1 %25
-%40 = OpFOrdLessThan %16 %39 %12
-      OpSelectionMerge %36 SelectionControl(0)
-      OpBranchConditional %40 %37 %38
-%37 = OpLabel
-      OpBranch %29
-%38 = OpLabel
-      OpBranch %36
+%31 = OpLoad %2 %23
+%33 = OpAccessChain %32 %7 %16 %31
+%34 = OpLoad %1 %33
+      OpStore %24 %34
+%38 = OpLoad %1 %24
+%39 = OpFOrdLessThan %14 %38 %10
+      OpSelectionMerge %35 SelectionControl(0)
+      OpBranchConditional %39 %36 %37
 %36 = OpLabel
-%41 = OpLoad %1 %23
-%42 = OpLoad %1 %25
-%43 = OpFAdd %1 %41 %42
-      OpStore %23 %43
-%47 = OpLoad %1 %23
-%48 = OpFOrdGreaterThanEqual %16 %47 %19
-      OpSelectionMerge %44 SelectionControl(0)
-      OpBranchConditional %48 %45 %46
-%45 = OpLabel
       OpBranch %28
-%46 = OpLabel
-      OpBranch %44
+%37 = OpLabel
+      OpBranch %35
+%35 = OpLabel
+%40 = OpLoad %1 %22
+%41 = OpLoad %1 %24
+%42 = OpFAdd %1 %40 %41
+      OpStore %22 %42
+%46 = OpLoad %1 %22
+%47 = OpFOrdGreaterThanEqual %14 %46 %18
+      OpSelectionMerge %43 SelectionControl(0)
+      OpBranchConditional %47 %44 %45
 %44 = OpLabel
-%49 = OpLoad %2 %24
-%50 = OpIAdd %2 %49 %20
-      OpStore %24 %50
-      OpBranch %29
-%29 = OpLabel
-      OpBranch %26
+      OpBranch %27
+%45 = OpLabel
+      OpBranch %43
+%43 = OpLabel
+%48 = OpLoad %2 %23
+%49 = OpIAdd %2 %48 %19
+      OpStore %23 %49
+      OpBranch %28
 %28 = OpLabel
+      OpBranch %25
+%27 = OpLabel
       OpReturn
       OpFunctionEnd)", {}, {}, true);
 		}

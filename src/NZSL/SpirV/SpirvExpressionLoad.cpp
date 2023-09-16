@@ -187,12 +187,12 @@ namespace nzsl
 	void SpirvExpressionLoad::Visit(Ast::ConstantExpression& node)
 	{
 		const auto& var = m_writer.GetConstantVariable(node.constantId);
-		m_value = Pointer{ var.storageClass, var.pointerId, var.pointerTypeId };
+		m_value = Pointer{ var.storageClass, var.pointerId, var.typeId };
 	}
 
 	void SpirvExpressionLoad::Visit(Ast::VariableValueExpression& node)
 	{
 		const auto& var = m_visitor.GetVariable(node.variableId);
-		m_value = Pointer{ var.storageClass, var.pointerId, var.pointerTypeId };
+		m_value = Pointer{ var.storageClass, var.pointerId, var.typeId };
 	}
 }

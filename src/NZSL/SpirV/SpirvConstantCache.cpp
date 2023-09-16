@@ -437,7 +437,7 @@ namespace nzsl
 		std::vector<Source> debugSources;
 		tsl::ordered_map<std::string, std::uint32_t /*id*/, std::hash<std::string_view>, std::equal_to<>> debugStrings;
 		tsl::ordered_map<std::variant<AnyConstant, AnyType>, std::uint32_t /*id*/, AnyHasher, Eq> ids;
-		tsl::ordered_map<Variable, std::uint32_t /*id*/, AnyHasher, Eq> variableIds;
+		std::vector<std::pair<Variable, std::uint32_t /*id*/>> variables;
 		StructCallback structCallback;
 		std::uint32_t& nextResultId;
 		bool isInBlockStruct = false;
@@ -658,18 +658,10 @@ namespace nzsl
 
 	auto SpirvConstantCache::BuildPointerType(const Ast::ExpressionType& type, SpirvStorageClass storageClass) const -> TypePtr
 	{
-		bool wasInblockStruct = m_internal->isInBlockStruct;
-		if (storageClass == SpirvStorageClass::Uniform || storageClass == SpirvStorageClass::StorageBuffer)
-			m_internal->isInBlockStruct = true;
-
-		auto typePtr = std::make_shared<Type>(Pointer{
-			BuildType(type),
+		return std::make_shared<Type>(Pointer{
+			BuildType(type, storageClass),
 			storageClass
 		});
-
-		m_internal->isInBlockStruct = wasInblockStruct;
-
-		return typePtr;
 	}
 
 	auto SpirvConstantCache::BuildPointerType(const TypePtr& type, SpirvStorageClass storageClass) const -> TypePtr
@@ -764,6 +756,22 @@ namespace nzsl
 		{
 			return BuildType(arg);
 		}, type);
+	}
+
+	auto SpirvConstantCache::BuildType(const Ast::ExpressionType& type, SpirvStorageClass storageClass) const -> TypePtr
+	{
+		bool wasInblockStruct = m_internal->isInBlockStruct;
+		if (storageClass == SpirvStorageClass::Uniform || storageClass == SpirvStorageClass::StorageBuffer)
+			m_internal->isInBlockStruct = true;
+
+		auto typePtr = std::visit([&](auto&& arg) -> TypePtr
+		{
+			return BuildType(arg);
+		}, type);
+
+		m_internal->isInBlockStruct = wasInblockStruct;
+
+		return typePtr;
 	}
 
 	auto SpirvConstantCache::BuildType(const Ast::MatrixType& type) const -> TypePtr
@@ -975,15 +983,6 @@ namespace nzsl
 		return it->second;
 	}
 
-	std::uint32_t SpirvConstantCache::GetId(const Variable& v)
-	{
-		auto it = m_internal->variableIds.find(v);
-		if (it == m_internal->variableIds.end())
-			throw std::runtime_error("variable is not registered");
-
-		return it->second;
-	}
-
 	std::uint32_t SpirvConstantCache::Register(std::string str)
 	{
 		std::size_t h = m_internal->debugStrings.hash_function()(str);
@@ -1038,15 +1037,10 @@ namespace nzsl
 		DepRegisterer registerer(*this);
 		registerer.Register(v);
 
-		std::size_t h = m_internal->variableIds.hash_function()(v);
-		auto it = m_internal->variableIds.find(v, h);
-		if (it == m_internal->variableIds.end())
-		{
-			std::uint32_t resultId = m_internal->nextResultId++;
-			it = m_internal->variableIds.emplace(std::move(v), resultId).first;
-		}
+		std::uint32_t resultId = m_internal->nextResultId++;
+		m_internal->variables.emplace_back(std::move(v), resultId);
 
-		return it.value();
+		return resultId;
 	}
 
 	void SpirvConstantCache::RegisterSource(SpirvSourceLanguage sourceLang, std::uint32_t version, std::uint32_t fileNameId, std::string source)
@@ -1199,7 +1193,7 @@ namespace nzsl
 			}, object);
 		}
 
-		for (auto&& [variable, id] : m_internal->variableIds)
+		for (auto&& [variable, id] : m_internal->variables)
 		{
 			const auto& var = variable;
 			std::uint32_t resultId = id;

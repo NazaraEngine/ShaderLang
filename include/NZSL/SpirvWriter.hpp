@@ -67,7 +67,7 @@ namespace nzsl
 			std::uint32_t GetArrayConstantId(const Ast::ConstantArrayValue& values) const;
 			std::uint32_t GetSingleConstantId(const Ast::ConstantSingleValue& value) const;
 			std::uint32_t GetExtendedInstructionSet(const std::string& instructionSetName) const;
-			std::uint32_t GetExtVarPointerId(std::size_t varIndex) const;
+			const SpirvVariable& GetExtVar(std::size_t varIndex) const;
 			std::uint32_t GetFunctionTypeId(const Ast::DeclareFunctionStatement& functionNode);
 			std::uint32_t GetPointerTypeId(const Ast::ExpressionType& type, SpirvStorageClass storageClass) const;
 			std::uint32_t GetSourceFileId(const std::shared_ptr<const std::string>& filepathPtr);
