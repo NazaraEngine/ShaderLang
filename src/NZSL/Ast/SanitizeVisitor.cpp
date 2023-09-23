@@ -5655,15 +5655,6 @@ namespace nzsl::Ast
 			const MatrixType& leftType = std::get<MatrixType>(leftExprType);
 			switch (op)
 			{
-				case BinaryType::CompGe:
-				case BinaryType::CompGt:
-				case BinaryType::CompLe:
-				case BinaryType::CompLt:
-				case BinaryType::CompEq:
-				case BinaryType::CompNe:
-					TypeMustMatch(leftExprType, rightExprType, sourceLocation);
-					return PrimitiveType::Boolean;
-
 				case BinaryType::Add:
 				case BinaryType::Subtract:
 					TypeMustMatch(leftExprType, rightExprType, sourceLocation);
@@ -5695,6 +5686,12 @@ namespace nzsl::Ast
 						throw CompilerBinaryIncompatibleTypesError{ sourceLocation, ToString(leftExprType, sourceLocation), ToString(rightExprType, sourceLocation) };
 				}
 
+				case BinaryType::CompGe:
+				case BinaryType::CompGt:
+				case BinaryType::CompLe:
+				case BinaryType::CompLt:
+				case BinaryType::CompEq:
+				case BinaryType::CompNe:
 				case BinaryType::Divide:
 				case BinaryType::Modulo:
 				case BinaryType::LogicalAnd:
@@ -5707,17 +5704,14 @@ namespace nzsl::Ast
 			const VectorType& leftType = std::get<VectorType>(leftExprType);
 			switch (op)
 			{
+				case BinaryType::CompEq:
+				case BinaryType::CompNe:
 				case BinaryType::CompGe:
 				case BinaryType::CompGt:
 				case BinaryType::CompLe:
 				case BinaryType::CompLt:
 					TypeMustMatch(leftExprType, rightExprType, sourceLocation);
 					return VectorType{ leftType.componentCount, PrimitiveType::Boolean };
-
-				case BinaryType::CompEq:
-				case BinaryType::CompNe:
-					TypeMustMatch(leftExprType, rightExprType, sourceLocation);
-					return PrimitiveType::Boolean;
 
 				case BinaryType::Add:
 				case BinaryType::Subtract:

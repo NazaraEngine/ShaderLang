@@ -238,21 +238,75 @@ namespace nzsl
 	}
 
 	template<typename T, std::size_t N>
-	bool Vector<T, N>::operator==(const Vector& vec) const
+	Vector<bool, N> Vector<T, N>::operator==(const Vector& vec) const
 	{
+		Vector<bool, N> result;
 		for (std::size_t i = 0; i < N; ++i)
-		{
-			if (!Nz::NumberEquals(values[i], vec.values[i]))
-				return false;
-		}
+			result.values[i] = (values[i] == vec.values[i]);
 		
-		return true;
+		return result;
 	}
 
 	template<typename T, std::size_t N>
-	bool Vector<T, N>::operator!=(const Vector& vec) const
+	Vector<bool, N> Vector<T, N>::operator!=(const Vector& vec) const
 	{
-		return !operator==(vec);
+		Vector<bool, N> result;
+		for (std::size_t i = 0; i < N; ++i)
+			result.values[i] = (values[i] != vec.values[i]);
+
+		return result;
+	}
+
+	template<typename T, std::size_t N>
+	Vector<bool, N> Vector<T, N>::operator<(const Vector& vec) const
+	{
+		Vector<bool, N> result;
+		for (std::size_t i = 0; i < N; ++i)
+			result.values[i] = (values[i] < vec.values[i]);
+
+		return result;
+	}
+
+	template<typename T, std::size_t N>
+	Vector<bool, N> Vector<T, N>::operator<=(const Vector& vec) const
+	{
+		Vector<bool, N> result;
+		for (std::size_t i = 0; i < N; ++i)
+			result.values[i] = (values[i] <= vec.values[i]);
+
+		return result;
+	}
+
+	template<typename T, std::size_t N>
+	Vector<bool, N> Vector<T, N>::operator>(const Vector& vec) const
+	{
+		Vector<bool, N> result;
+		for (std::size_t i = 0; i < N; ++i)
+			result.values[i] = (values[i] > vec.values[i]);
+
+		return result;
+	}
+
+	template<typename T, std::size_t N>
+	Vector<bool, N> Vector<T, N>::operator>=(const Vector& vec) const
+	{
+		Vector<bool, N> result;
+		for (std::size_t i = 0; i < N; ++i)
+			result.values[i] = (values[i] >= vec.values[i]);
+
+		return result;
+	}
+
+	template<typename T, std::size_t N>
+	bool Vector<T, N>::ApproxEqual(const Vector& lhs, const Vector& rhs, T maxDifference)
+	{
+		for (std::size_t i = 0; i < N; ++i)
+		{
+			if (!Nz::NumberEquals(lhs.values[i], rhs.values[i], maxDifference))
+				return false;
+		}
+
+		return true;
 	}
 
 	template<typename T, std::size_t N>
@@ -365,6 +419,24 @@ namespace nzsl
 
 namespace std
 {
+	template<typename T, std::size_t N>
+	struct equal_to<nzsl::Vector<T, N>>
+	{
+		bool operator()(const nzsl::Vector<T, N>& lhs, const nzsl::Vector<T, N>& rhs) const
+		{
+			return nzsl::Vector<T, N>::ApproxEqual(lhs, rhs, 0);
+		}
+	};
+
+	template<typename T, std::size_t N>
+	struct not_equal_to<nzsl::Vector<T, N>>
+	{
+		bool operator()(const nzsl::Vector<T, N>& lhs, const nzsl::Vector<T, N>& rhs) const
+		{
+			return !nzsl::Vector<T, N>::ApproxEqual(lhs, rhs, 0);
+		}
+	};
+
 	template<typename T, std::size_t N>
 	struct hash<nzsl::Vector<T, N>>
 	{

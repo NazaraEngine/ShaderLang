@@ -10,6 +10,8 @@
 #include <NazaraUtils/Algorithm.hpp>
 #include <NZSL/Config.hpp>
 #include <array>
+#include <functional>
+#include <limits>
 #include <ostream>
 #include <type_traits>
 
@@ -58,9 +60,14 @@ namespace nzsl
 		Vector operator/(const Vector& vec) const;
 		Vector operator%(const Vector& vec) const;
 
-		bool operator==(const Vector& vec) const;
-		bool operator!=(const Vector& vec) const;
+		Vector<bool, N> operator==(const Vector& vec) const;
+		Vector<bool, N> operator!=(const Vector& vec) const;
+		Vector<bool, N> operator<(const Vector& vec) const;
+		Vector<bool, N> operator<=(const Vector& vec) const;
+		Vector<bool, N> operator>(const Vector& vec) const;
+		Vector<bool, N> operator>=(const Vector& vec) const;
 
+		static bool ApproxEqual(const Vector& lhs, const Vector& rhs, T maxDifference = std::numeric_limits<T>::epsilon());
 		static Vector CrossProduct(const Vector& lhs, const Vector& rhs);
 		static T Distance(const Vector& lhs, const Vector& rhs);
 		static T DotProduct(const Vector& lhs, const Vector& rhs);

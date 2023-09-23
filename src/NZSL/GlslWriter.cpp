@@ -1695,47 +1695,87 @@ namespace nzsl
 
 	void GlslWriter::Visit(Ast::BinaryExpression& node)
 	{
-		// Special case, GLSL modulo on floating point requires a call to the mod intrinsic
-		if (node.op == Ast::BinaryType::Modulo)
+		switch (node.op)
 		{
-			auto BuildFmod = [&]
+			case Ast::BinaryType::CompEq:
+			case Ast::BinaryType::CompNe:
+			case Ast::BinaryType::CompGe:
+			case Ast::BinaryType::CompGt:
+			case Ast::BinaryType::CompLe:
+			case Ast::BinaryType::CompLt:
 			{
-				Append("mod(");
-				Visit(node.left);
-				Append(", ");
-				Visit(node.right);
-				Append(")");
-			};
-
-			if (IsPrimitiveType(*node.cachedExpressionType))
-			{
-				Ast::PrimitiveType primitiveType = std::get<Ast::PrimitiveType>(*node.cachedExpressionType);
-				if (primitiveType == Ast::PrimitiveType::Float32 || primitiveType == Ast::PrimitiveType::Float64)
-					return BuildFmod();
-			}
-			else if (IsVectorType(*node.cachedExpressionType))
-			{
-				const Ast::VectorType& vecType = std::get<Ast::VectorType>(*node.cachedExpressionType);
-				Ast::PrimitiveType primitiveType = vecType.type;
-				if (primitiveType == Ast::PrimitiveType::Float32 || primitiveType == Ast::PrimitiveType::Float64)
+				if (IsVectorType(*node.cachedExpressionType))
 				{
-					// Special case: primitive % vector, this isn't supported by mod intrinsic, turn primitive into a vec
-					if (IsPrimitiveType(*node.left->cachedExpressionType))
-					{
-						Append("mod(");
-						Append(vecType, "(");
-						Visit(node.left);
-						Append("), ");
-						Visit(node.right);
-						Append(")");
-						return;
-					}
+					constexpr auto s_vecComparison = frozen::make_unordered_map<Ast::BinaryType, std::string_view>({
+						{ Ast::BinaryType::CompEq, "equal" },
+						{ Ast::BinaryType::CompNe, "notEqual" },
+						{ Ast::BinaryType::CompGe, "greaterThanEqual" },
+						{ Ast::BinaryType::CompGt, "greaterThan" },
+						{ Ast::BinaryType::CompLe, "lessThanEqual" },
+						{ Ast::BinaryType::CompLt, "lessThan" }
+					});
 
-					return BuildFmod();
+					auto it = s_vecComparison.find(node.op);
+					assert(it != s_vecComparison.end());
+
+					Append(it->second, "(");
+					Visit(node.left);
+					Append(", ");
+					Visit(node.right, true);
+					Append(")");
+					return;
 				}
+
+				break;
 			}
-			else
-				throw std::runtime_error("unexpected type for modulo");
+
+			case Ast::BinaryType::Modulo:
+			{
+				// Special case, GLSL modulo on floating point requires a call to the mod intrinsic
+				auto BuildFmod = [&]
+				{
+					Append("mod(");
+					Visit(node.left);
+					Append(", ");
+					Visit(node.right);
+					Append(")");
+				};
+
+				if (IsPrimitiveType(*node.cachedExpressionType))
+				{
+					Ast::PrimitiveType primitiveType = std::get<Ast::PrimitiveType>(*node.cachedExpressionType);
+					if (primitiveType == Ast::PrimitiveType::Float32 || primitiveType == Ast::PrimitiveType::Float64)
+						return BuildFmod();
+				}
+				else if (IsVectorType(*node.cachedExpressionType))
+				{
+					const Ast::VectorType& vecType = std::get<Ast::VectorType>(*node.cachedExpressionType);
+					Ast::PrimitiveType primitiveType = vecType.type;
+					if (primitiveType == Ast::PrimitiveType::Float32 || primitiveType == Ast::PrimitiveType::Float64)
+					{
+						// Special case: primitive % vector, this isn't supported by mod intrinsic, turn primitive into a vec
+						if (IsPrimitiveType(*node.left->cachedExpressionType))
+						{
+							Append("mod(");
+							Append(vecType, "(");
+							Visit(node.left);
+							Append("), ");
+							Visit(node.right);
+							Append(")");
+							return;
+						}
+
+						return BuildFmod();
+					}
+				}
+				else
+					throw std::runtime_error("unexpected type for modulo");
+
+				break;
+			}
+
+			default:
+				break;
 		}
 
 		Visit(node.left, true);
