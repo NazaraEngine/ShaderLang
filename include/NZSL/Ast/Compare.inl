@@ -102,6 +102,19 @@ namespace nzsl::Ast
 		return lhs == rhs;
 	}
 
+	template<typename T, std::size_t N>
+	bool Compare(const Vector<T, N>& lhs, const Vector<T, N>& rhs, const ComparisonParams& /*params*/)
+	{
+		Vector<bool, N> comp = (lhs == rhs);
+		for (std::size_t i = 0; i < N; ++i)
+		{
+			if (!comp[i])
+				return false;
+		}
+
+		return true;
+	}
+
 	template<typename T, std::size_t S>
 	bool Compare(const std::array<T, S>& lhs, const std::array<T, S>& rhs, const ComparisonParams& params)
 	{
@@ -123,6 +136,30 @@ namespace nzsl::Ast
 			return false;
 
 		return Compare(*lhs, *rhs, params);
+	}
+
+	namespace Detail
+	{
+		template<typename T, std::size_t Index>
+		bool CompareVariant(const T& lhs, const T& rhs, const ComparisonParams& params)
+		{
+			return lhs.index() == Index && Compare(std::get<Index>(lhs), std::get<Index>(rhs), params);
+		}
+
+		template<typename T, std::size_t... Indices>
+		bool CompareVariant(const T& lhs, const T& rhs, const ComparisonParams& params, std::integer_sequence<std::size_t, Indices...>)
+		{
+			return ((CompareVariant<T, Indices>(lhs, rhs, params)) || ...);
+		}
+	}
+
+	template<typename... T>
+	bool Compare(const std::variant<T...>& lhs, const std::variant<T...>& rhs, const ComparisonParams& params)
+	{
+		if (lhs.index() != rhs.index())
+			return false;
+
+		return Detail::CompareVariant(lhs, rhs, params, std::index_sequence_for<T...>{});
 	}
 
 	template<typename T>
