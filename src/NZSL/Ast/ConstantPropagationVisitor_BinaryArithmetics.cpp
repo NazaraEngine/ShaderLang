@@ -3,6 +3,7 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <NZSL/ShaderBuilder.hpp>
+#include <NazaraUtils/Algorithm.hpp>
 #include <NZSL/Ast/ConstantPropagationVisitor.hpp>
 #include <NZSL/Lang/Errors.hpp>
 #include <cassert>
@@ -13,8 +14,8 @@ namespace nzsl::Ast
 {
 	namespace NAZARA_ANONYMOUS_NAMESPACE
 	{
-		template <typename T>
-		struct is_complete_helper
+		template<typename T>
+		struct IsCompleteHelper
 		{
 			// SFINAE: sizeof in an incomplete type is an error, but since there's another specialization it won't result in a compilation error
 			template <typename U>
@@ -27,10 +28,10 @@ namespace nzsl::Ast
 		};
 
 		template <typename T>
-		struct is_complete : is_complete_helper<T>::type {};
+		struct IsComplete : IsCompleteHelper<T>::type {};
 
 		template<typename T>
-		inline constexpr bool is_complete_v = is_complete<T>::value;
+		inline constexpr bool IsComplete_v = IsComplete<T>::value;
 
 		/*************************************************************************************************/
 
@@ -398,10 +399,10 @@ namespace nzsl::Ast
 			using T2 = std::decay_t<decltype(arg2)>;
 			using PCType = BinaryConstantPropagation<Type, T1, T2>;
 
-			if constexpr (is_complete_v<PCType>)
+			if constexpr (IsComplete_v<PCType>)
 			{
 				using Op = typename PCType::Op;
-				if constexpr (is_complete_v<Op>)
+				if constexpr (IsComplete_v<Op>)
 					optimized = Op{}(arg1, arg2, sourceLocation);
 			}
 		}, lhs.value, rhs.value);
