@@ -23,59 +23,62 @@ namespace nzsl
 		static constexpr std::size_t Dimensions = N;
 		using Base = T;
 
-		Vector() = default;
-		explicit Vector(T x);
-		explicit Vector(T x, T y);
-		explicit Vector(T x, T y, T z);
-		explicit Vector(T x, T y, T z, T w);
+		constexpr Vector() = default;
+		constexpr explicit Vector(T x);
+		constexpr explicit Vector(T x, T y);
+		constexpr explicit Vector(T x, T y, T z);
+		constexpr explicit Vector(T x, T y, T z, T w);
+
+		constexpr Vector<bool, N> ComponentEq(const Vector& vec) const;
+		constexpr Vector<bool, N> ComponentGe(const Vector& vec) const;
+		constexpr Vector<bool, N> ComponentGt(const Vector& vec) const;
+		constexpr Vector<bool, N> ComponentLe(const Vector& vec) const;
+		constexpr Vector<bool, N> ComponentLt(const Vector& vec) const;
+		constexpr Vector<bool, N> ComponentNe(const Vector& vec) const;
 
 		T Length() const;
 
-		T SquaredLength() const;
+		constexpr T SquaredLength() const;
 
-		T& x();
-		T x() const;
+		constexpr T& x();
+		constexpr T x() const;
 		
-		T& y();
-		T y() const;
+		constexpr T& y();
+		constexpr T y() const;
 
-		T& z();
-		T z() const;
+		constexpr T& z();
+		constexpr T z() const;
 
-		T& w();
-		T w() const;
+		constexpr T& w();
+		constexpr T w() const;
 
-		T& operator[](std::size_t i);
-		T operator[](std::size_t i) const;
+		constexpr T& operator[](std::size_t i);
+		constexpr T operator[](std::size_t i) const;
 
-		Vector operator-() const;
+		constexpr Vector operator-() const;
 
-		Vector operator*(T rhs) const;
-		Vector operator/(T rhs) const;
-		Vector operator%(T rhs) const;
+		constexpr Vector operator*(T rhs) const;
+		constexpr Vector operator/(T rhs) const;
+		constexpr Vector operator%(T rhs) const;
 
-		Vector operator+(const Vector& vec) const;
-		Vector operator-(const Vector& vec) const;
-		Vector operator*(const Vector& vec) const;
-		Vector operator/(const Vector& vec) const;
-		Vector operator%(const Vector& vec) const;
+		constexpr Vector operator+(const Vector& vec) const;
+		constexpr Vector operator-(const Vector& vec) const;
+		constexpr Vector operator*(const Vector& vec) const;
+		constexpr Vector operator/(const Vector& vec) const;
+		constexpr Vector operator%(const Vector& vec) const;
 
-		Vector<bool, N> operator==(const Vector& vec) const;
-		Vector<bool, N> operator!=(const Vector& vec) const;
-		Vector<bool, N> operator<(const Vector& vec) const;
-		Vector<bool, N> operator<=(const Vector& vec) const;
-		Vector<bool, N> operator>(const Vector& vec) const;
-		Vector<bool, N> operator>=(const Vector& vec) const;
+		constexpr bool operator==(const Vector& vec) const;
+		constexpr bool operator!=(const Vector& vec) const;
 
-		static bool ApproxEqual(const Vector& lhs, const Vector& rhs, T maxDifference = std::numeric_limits<T>::epsilon());
-		static Vector CrossProduct(const Vector& lhs, const Vector& rhs);
+		static constexpr bool ApproxEqual(const Vector& lhs, const Vector& rhs, T maxDifference = std::numeric_limits<T>::epsilon());
+		static constexpr Vector CrossProduct(const Vector& lhs, const Vector& rhs);
 		static T Distance(const Vector& lhs, const Vector& rhs);
-		static T DotProduct(const Vector& lhs, const Vector& rhs);
+		static constexpr T DotProduct(const Vector& lhs, const Vector& rhs);
 		static Vector Normalize(const Vector& vec);
-		static Vector Reflect(const Vector& incident, const Vector& normal);
+		static constexpr Vector Reflect(const Vector& incident, const Vector& normal);
 		static Vector Refract(const Vector& incident, const Vector& normal, T eta);
-		static T SquaredDistance(const Vector& lhs, const Vector& rhs);
-		static Vector Zero();
+		static constexpr T SquaredDistance(const Vector& lhs, const Vector& rhs);
+		static constexpr Vector Zero();
 
 		std::array<T, N> values;
 	};
@@ -84,13 +87,13 @@ namespace nzsl
 	std::ostream& operator<<(std::ostream& os, const Vector<T, N>& vec);
 
 	template<typename T, std::size_t N>
-	Vector<T, N> operator*(T lhs, const Vector<T, N>& rhs);
+	constexpr Vector<T, N> operator*(T lhs, const Vector<T, N>& rhs);
 
 	template<typename T, std::size_t N>
-	Vector<T, N> operator/(T lhs, const Vector<T, N>& rhs);
+	constexpr Vector<T, N> operator/(T lhs, const Vector<T, N>& rhs);
 
 	template<typename T, std::size_t N>
-	Vector<T, N> operator%(T lhs, const Vector<T, N>& rhs);
+	constexpr Vector<T, N> operator%(T lhs, const Vector<T, N>& rhs);
 
 	template<typename T> using Vector2 = Vector<T, 2>;
 	using Vector2f32 = Vector<float, 2>;

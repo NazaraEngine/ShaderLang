@@ -29,10 +29,8 @@ namespace nzsl::Ast
 	inline bool Compare(const Statement& lhs, const Statement& rhs, const ComparisonParams& params = {});
 
 	template<typename T> bool Compare(const T& lhs, const T& rhs, const ComparisonParams& params = {});
-	template<typename T, std::size_t N> bool Compare(const Vector<T, N>& lhs, const Vector<T, N>& rhs, const ComparisonParams& params = {});
 	template<typename T, std::size_t S> bool Compare(const std::array<T, S>& lhs, const std::array<T, S>& rhs, const ComparisonParams& params = {});
 	template<typename T> bool Compare(const std::shared_ptr<T>& lhs, const std::shared_ptr<T>& rhs, const ComparisonParams& params = {});
-	template<typename... T> bool Compare(const std::variant<T...>& lhs, const std::variant<T...>& rhs, const ComparisonParams& params = {});
 	template<typename T> bool Compare(const std::vector<T>& lhs, const std::vector<T>& rhs, const ComparisonParams& params = {});
 	template<typename T> bool Compare(const std::unique_ptr<T>& lhs, const std::unique_ptr<T>& rhs, const ComparisonParams& params = {});
 	template<typename T> bool Compare(const ExpressionValue<T>& lhs, const ExpressionValue<T>& rhs, const ComparisonParams& params = {});

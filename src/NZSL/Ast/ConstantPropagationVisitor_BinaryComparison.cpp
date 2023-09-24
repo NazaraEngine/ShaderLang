@@ -14,7 +14,7 @@ namespace nzsl::Ast
 	namespace NAZARA_ANONYMOUS_NAMESPACE
 	{
 		template <typename T>
-		struct is_complete_helper
+		struct IsCompleteHelper
 		{
 			// SFINAE: sizeof in an incomplete type is an error, but since there's another specialization it won't result in a compilation error
 			template <typename U>
@@ -27,10 +27,25 @@ namespace nzsl::Ast
 		};
 
 		template <typename T>
-		struct is_complete : is_complete_helper<T>::type {};
+		struct IsComplete : IsCompleteHelper<T>::type {};
 
 		template<typename T>
-		inline constexpr bool is_complete_v = is_complete<T>::value;
+		inline constexpr bool IsComplete_v = IsComplete<T>::value;
+
+		/*************************************************************************************************/
+
+		template<typename T>
+		struct IsVector : std::false_type
+		{
+		};
+
+		template<typename T, std::size_t N>
+		struct IsVector<Vector<T, N>> : std::true_type
+		{
+		};
+
+		template<typename T>
+		inline constexpr bool IsVector_v = IsVector<T>::value;
 
 		/*************************************************************************************************/
 
@@ -43,7 +58,10 @@ namespace nzsl::Ast
 		{
 			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
 			{
-				return ShaderBuilder::ConstantValue(lhs == rhs);
+				if constexpr (IsVector_v<T1>)
+					return ShaderBuilder::ConstantValue(lhs.ComponentEq(rhs));
+				else
+					return ShaderBuilder::ConstantValue(lhs == rhs);
 			}
 		};
 
@@ -62,7 +80,10 @@ namespace nzsl::Ast
 		{
 			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
 			{
-				return ShaderBuilder::ConstantValue(lhs >= rhs);
+				if constexpr (IsVector_v<T1>)
+					return ShaderBuilder::ConstantValue(lhs.ComponentGe(rhs));
+				else
+					return ShaderBuilder::ConstantValue(lhs >= rhs);
 			}
 		};
 
@@ -81,7 +102,10 @@ namespace nzsl::Ast
 		{
 			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
 			{
-				return ShaderBuilder::ConstantValue(lhs > rhs);
+				if constexpr (IsVector_v<T1>)
+					return ShaderBuilder::ConstantValue(lhs.ComponentGt(rhs));
+				else
+					return ShaderBuilder::ConstantValue(lhs > rhs);
 			}
 		};
 
@@ -100,7 +124,10 @@ namespace nzsl::Ast
 		{
 			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
 			{
-				return ShaderBuilder::ConstantValue(lhs <= rhs);
+				if constexpr (IsVector_v<T1>)
+					return ShaderBuilder::ConstantValue(lhs.ComponentLe(rhs));
+				else
+					return ShaderBuilder::ConstantValue(lhs <= rhs);
 			}
 		};
 
@@ -119,7 +146,10 @@ namespace nzsl::Ast
 		{
 			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
 			{
-				return ShaderBuilder::ConstantValue(lhs < rhs);
+				if constexpr (IsVector_v<T1>)
+					return ShaderBuilder::ConstantValue(lhs.ComponentLt(rhs));
+				else
+					return ShaderBuilder::ConstantValue(lhs < rhs);
 			}
 		};
 
@@ -138,7 +168,10 @@ namespace nzsl::Ast
 		{
 			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
 			{
-				return ShaderBuilder::ConstantValue(lhs != rhs);
+				if constexpr (IsVector_v<T1>)
+					return ShaderBuilder::ConstantValue(lhs.ComponentNe(rhs));
+				else
+					return ShaderBuilder::ConstantValue(lhs != rhs);
 			}
 		};
 
@@ -338,10 +371,10 @@ namespace nzsl::Ast
 			using T2 = std::decay_t<decltype(arg2)>;
 			using PCType = BinaryConstantPropagation<Type, T1, T2>;
 
-			if constexpr (is_complete_v<PCType>)
+			if constexpr (IsComplete_v<PCType>)
 			{
 				using Op = typename PCType::Op;
-				if constexpr (is_complete_v<Op>)
+				if constexpr (IsComplete_v<Op>)
 					optimized = Op{}(arg1, arg2, sourceLocation);
 			}
 		}, lhs.value, rhs.value);
