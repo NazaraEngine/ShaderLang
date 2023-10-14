@@ -202,6 +202,44 @@ namespace nzsl::Ast
 		return clone;
 	}
 
+	StatementPtr IndexRemapperVisitor::Clone(ForStatement& node)
+	{
+		// We have to handle the for each var index before its content
+		std::optional<std::size_t> varIndex = node.varIndex;
+		if (varIndex)
+		{
+			std::size_t newVarIndex = m_context->options->varIndexGenerator(*varIndex);
+			UniqueInsert(m_context->newVarIndices, *varIndex, newVarIndex);
+			varIndex = newVarIndex;
+		}
+		else if (m_context->options->forceIndexGeneration)
+			varIndex = m_context->options->varIndexGenerator(std::numeric_limits<std::size_t>::max());
+
+		ForStatementPtr clone = Nz::StaticUniquePointerCast<ForStatement>(Cloner::Clone(node));
+		clone->varIndex = varIndex;
+
+		return clone;
+	}
+
+	StatementPtr IndexRemapperVisitor::Clone(ForEachStatement& node)
+	{
+		// We have to handle the for each var index before its content
+		std::optional<std::size_t> varIndex = node.varIndex;
+		if (varIndex)
+		{
+			std::size_t newVarIndex = m_context->options->varIndexGenerator(*varIndex);
+			UniqueInsert(m_context->newVarIndices, *varIndex, newVarIndex);
+			varIndex = newVarIndex;
+		}
+		else if (m_context->options->forceIndexGeneration)
+			varIndex = m_context->options->varIndexGenerator(std::numeric_limits<std::size_t>::max());
+
+		ForEachStatementPtr clone = Nz::StaticUniquePointerCast<ForEachStatement>(Cloner::Clone(node));
+		clone->varIndex = varIndex;
+
+		return clone;
+	}
+
 	ExpressionPtr IndexRemapperVisitor::Clone(AliasValueExpression& node)
 	{
 		auto it = m_context->newAliasIndices.find(node.aliasId);

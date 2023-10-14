@@ -262,6 +262,7 @@ namespace nzsl::Ast
 		clone->toExpr = CloneExpression(node.toExpr);
 		clone->statement = CloneStatement(node.statement);
 		clone->unroll = Clone(node.unroll);
+		clone->varIndex = node.varIndex;
 		clone->varName = node.varName;
 
 		clone->sourceLocation = node.sourceLocation;
@@ -275,6 +276,7 @@ namespace nzsl::Ast
 		clone->expression = CloneExpression(node.expression);
 		clone->statement = CloneStatement(node.statement);
 		clone->unroll = Clone(node.unroll);
+		clone->varIndex = node.varIndex;
 		clone->varName = node.varName;
 
 		clone->sourceLocation = node.sourceLocation;

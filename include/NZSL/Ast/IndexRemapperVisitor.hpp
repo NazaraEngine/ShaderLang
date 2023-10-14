@@ -51,6 +51,8 @@ namespace nzsl::Ast
 			StatementPtr Clone(DeclareOptionStatement& node) override;
 			StatementPtr Clone(DeclareStructStatement& node) override;
 			StatementPtr Clone(DeclareVariableStatement& node) override;
+			StatementPtr Clone(ForStatement& node) override;
+			StatementPtr Clone(ForEachStatement& node) override;
 
 			ExpressionPtr Clone(AliasValueExpression& node) override;
 			ExpressionPtr Clone(ConstantExpression& node) override;
