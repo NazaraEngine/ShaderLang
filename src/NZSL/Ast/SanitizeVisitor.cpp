@@ -4236,7 +4236,31 @@ namespace nzsl::Ast
 					std::size_t structIndex = ResolveStructIndex(resolvedExprType, indexExpr->sourceLocation);
 					const StructDescription* s = m_context->structs.Retrieve(structIndex, indexExpr->sourceLocation);
 
-					std::optional<ExpressionType> resolvedFieldTypeOpt = ResolveTypeExpr(s->members[fieldIndex].type, true, indexExpr->sourceLocation);
+					// We can't manually index field using fieldIndex because some fields may be disabled
+					const StructDescription::StructMember* fieldPtr = nullptr;
+					for (const auto& field : s->members)
+					{
+						if (field.cond.HasValue())
+						{
+							if (field.cond.IsResultingValue())
+							{
+								if (!field.cond.GetResultingValue())
+									continue;
+							}
+							else
+								return ValidationResult::Unresolved;
+						}
+
+						if (fieldIndex == 0)
+						{
+							fieldPtr = &field;
+							break;
+						}
+
+						fieldIndex--;
+					}
+
+					std::optional<ExpressionType> resolvedFieldTypeOpt = ResolveTypeExpr(fieldPtr->type, true, indexExpr->sourceLocation);
 					if (!resolvedFieldTypeOpt.has_value())
 						return ValidationResult::Unresolved;
 
