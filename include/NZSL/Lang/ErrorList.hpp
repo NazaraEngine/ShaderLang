@@ -158,6 +158,7 @@ NZSL_SHADERLANG_AST_ERROR(AttributeRequiresValue, "index {} is already used", st
 NZSL_SHADERLANG_AST_ERROR(AlreadyUsedIndexPreregister, "cannot preregister used index {} as its already used", std::size_t)
 NZSL_SHADERLANG_AST_ERROR(EmptyIdentifier, "identifier cannot be empty")
 NZSL_SHADERLANG_AST_ERROR(EmptyImport, "no identifiers found in import statement")
+NZSL_SHADERLANG_AST_ERROR(IndexOutOfBounds, "{} index {} is out of bounds", std::string_view, std::int32_t)
 NZSL_SHADERLANG_AST_ERROR(Internal, "internal error: {}", std::string)
 NZSL_SHADERLANG_AST_ERROR(InvalidConstantIndex, "invalid constant index #{}", std::size_t)
 NZSL_SHADERLANG_AST_ERROR(InvalidMethodIndex, "invalid method index #{} for type {}", std::size_t, std::string)
