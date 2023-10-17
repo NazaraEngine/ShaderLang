@@ -4232,11 +4232,14 @@ namespace nzsl::Ast
 						throw AstInternalError{ indexExpr->sourceLocation, "node index typed as i32 yield a non-i32 value (of type " + Ast::ToString(GetConstantType(*constantValue)) + ")" };
 
 					std::int32_t fieldIndex = std::get<std::int32_t>(*constantValue);
+					if (fieldIndex < 0)
+						throw AstIndexOutOfBoundsError{ node.sourceLocation, "struct", fieldIndex };
 
 					std::size_t structIndex = ResolveStructIndex(resolvedExprType, indexExpr->sourceLocation);
 					const StructDescription* s = m_context->structs.Retrieve(structIndex, indexExpr->sourceLocation);
 
 					// We can't manually index field using fieldIndex because some fields may be disabled
+					std::int32_t remainingIndex = fieldIndex;
 					const StructDescription::StructMember* fieldPtr = nullptr;
 					for (const auto& field : s->members)
 					{
@@ -4251,14 +4254,17 @@ namespace nzsl::Ast
 								return ValidationResult::Unresolved;
 						}
 
-						if (fieldIndex == 0)
+						if (remainingIndex == 0)
 						{
 							fieldPtr = &field;
 							break;
 						}
 
-						fieldIndex--;
+						remainingIndex--;
 					}
+
+					if (!fieldPtr)
+						throw AstIndexOutOfBoundsError{ node.sourceLocation, "struct", fieldIndex };
 
 					std::optional<ExpressionType> resolvedFieldTypeOpt = ResolveTypeExpr(fieldPtr->type, true, indexExpr->sourceLocation);
 					if (!resolvedFieldTypeOpt.has_value())
