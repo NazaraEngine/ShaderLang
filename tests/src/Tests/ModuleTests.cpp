@@ -7,6 +7,25 @@
 #include <catch2/catch_test_macros.hpp>
 #include <cctype>
 
+void RegisterModule(const std::shared_ptr<nzsl::FilesystemModuleResolver>& moduleResolver, std::string_view source)
+{
+	nzsl::Ast::ModulePtr compiledModule;
+
+	WHEN("Compiling module")
+	{
+		nzsl::Ast::SanitizeVisitor::Options sanitizeOpt;
+		sanitizeOpt.partialSanitization = true;
+
+		compiledModule = nzsl::Parse(source);
+		compiledModule = nzsl::Ast::Sanitize(*compiledModule, sanitizeOpt);
+	}
+
+	if (compiledModule)
+		moduleResolver->RegisterModule(std::move(compiledModule));
+	else
+		moduleResolver->RegisterModule(source);
+}
+
 TEST_CASE("Modules", "[Shader]")
 {
 	WHEN("using a simple module")
@@ -83,7 +102,7 @@ fn main(input: InputData) -> OutputData
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(shaderSource);
 
 		auto directoryModuleResolver = std::make_shared<nzsl::FilesystemModuleResolver>();
-		directoryModuleResolver->RegisterModule(importedSource);
+		RegisterModule(directoryModuleResolver, importedSource);
 
 		nzsl::Ast::SanitizeVisitor::Options sanitizeOpt;
 		sanitizeOpt.moduleResolver = directoryModuleResolver;
@@ -327,9 +346,9 @@ fn main(input: Input) -> OutputData
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(shaderSource);
 
 		auto directoryModuleResolver = std::make_shared<nzsl::FilesystemModuleResolver>();
-		directoryModuleResolver->RegisterModule(dataModule);
-		directoryModuleResolver->RegisterModule(blockModule);
-		directoryModuleResolver->RegisterModule(inputOutputModule);
+		RegisterModule(directoryModuleResolver, dataModule);
+		RegisterModule(directoryModuleResolver, blockModule);
+		RegisterModule(directoryModuleResolver, inputOutputModule);
 
 		nzsl::Ast::SanitizeVisitor::Options sanitizeOpt;
 		sanitizeOpt.moduleResolver = directoryModuleResolver;
@@ -461,6 +480,348 @@ OpFMul
 OpAccessChain
 OpStore
 OpLoad
+OpReturn
+OpFunctionEnd)");
+	}
+
+	WHEN("Testing AST variable indices remapping")
+	{
+		std::string_view dataModule = R"(
+[nzsl_version("1.0")]
+module Modules.Data;
+
+[export]
+[layout(std140)]
+struct Light
+{
+	color: vec4[f32],
+	intensities: vec2[i32]
+}
+
+[export]
+[layout(std140)]
+struct Lights
+{
+	lights: array[Light, 3]
+}
+)";
+
+		std::string_view funcModule = R"(
+[nzsl_version("1.0")]
+module Modules.Func;
+
+import Lights from Modules.Data;
+
+[export]
+fn SumLightColor(lightData: Lights) -> vec4[f32]
+{
+	let color = vec4[f32](0.0, 0.0, 0.0, 0.0);
+	for index in u32(0) -> lightData.lights.Size()
+		color += lightData.lights[index].color;
+
+	return color;
+}
+
+[export]
+fn SumLightIntensities(lightData: Lights) -> vec2[i32]
+{
+	let intensities = vec2[i32](0, 0);
+	for light in lightData.lights
+		intensities += light.intensities;
+
+	return intensities;
+}
+)";
+
+		std::string_view shaderSource = R"(
+[nzsl_version("1.0")]
+module;
+
+import Lights as LightData from Modules.Data;
+import * from Modules.Func;
+
+external
+{
+	[binding(0)] lightData: uniform[LightData]
+}
+
+[entry(frag)]
+fn main()
+{
+	let data = lightData;
+	let color = SumLightColor(data);
+	let intensities = SumLightIntensities(data);
+}
+)";
+
+		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(shaderSource);
+
+		auto directoryModuleResolver = std::make_shared<nzsl::FilesystemModuleResolver>();
+		directoryModuleResolver->RegisterModule(dataModule);
+		directoryModuleResolver->RegisterModule(funcModule);
+
+		nzsl::Ast::SanitizeVisitor::Options sanitizeOpt;
+		sanitizeOpt.moduleResolver = directoryModuleResolver;
+
+		shaderModule = SanitizeModule(*shaderModule, sanitizeOpt);
+
+		ExpectGLSL(*shaderModule, R"(
+// Module Modules.Data
+
+struct Light_Modules_Data
+{
+	vec4 color;
+	ivec2 intensities;
+};
+
+struct Lights_Modules_Data
+{
+	Light_Modules_Data lights[3];
+};
+
+// Module Modules.Func
+
+vec4 SumLightColor_Modules_Func(Lights_Modules_Data lightData)
+{
+	vec4 color = vec4(0.0, 0.0, 0.0, 0.0);
+	{
+		uint index = uint(0);
+		uint to = uint(lightData.lights.length());
+		while (index < to)
+		{
+			color += lightData.lights[index].color;
+			index += 1u;
+		}
+
+	}
+
+	return color;
+}
+
+ivec2 SumLightIntensities_Modules_Func(Lights_Modules_Data lightData)
+{
+	ivec2 intensities = ivec2(0, 0);
+	{
+		uint i = 0u;
+		while (i < (3u))
+		{
+			Light_Modules_Data light = lightData.lights[i];
+			intensities += light.intensities;
+			i += 1u;
+		}
+
+	}
+
+	return intensities;
+}
+
+// Main module
+
+layout(std140) uniform _nzslBindinglightData
+{
+	Light_Modules_Data lights[3];
+} lightData;
+
+void main()
+{
+	Lights_Modules_Data data;
+	data.lights = lightData.lights;
+	vec4 color = SumLightColor_Modules_Func(data);
+	ivec2 intensities = SumLightIntensities_Modules_Func(data);
+}
+)");
+
+		ExpectNZSL(*shaderModule, R"(
+[nzsl_version("1.0")]
+module;
+
+[nzsl_version("1.0")]
+module _Modules_Data
+{
+	[layout(std140)]
+	struct Light
+	{
+		color: vec4[f32],
+		intensities: vec2[i32]
+	}
+
+	[layout(std140)]
+	struct Lights
+	{
+		lights: array[Light, 3]
+	}
+
+}
+[nzsl_version("1.0")]
+module _Modules_Func
+{
+	alias Lights = _Modules_Data.Lights;
+
+	fn SumLightColor(lightData: Lights) -> vec4[f32]
+	{
+		let color: vec4[f32] = vec4[f32](0.0, 0.0, 0.0, 0.0);
+		for index in u32(0) -> lightData.lights.Size()
+		{
+			color += lightData.lights[index].color;
+		}
+
+		return color;
+	}
+
+	fn SumLightIntensities(lightData: Lights) -> vec2[i32]
+	{
+		let intensities: vec2[i32] = vec2[i32](0, 0);
+		for light in lightData.lights
+		{
+			intensities += light.intensities;
+		}
+
+		return intensities;
+	}
+
+}
+alias LightData = _Modules_Data.Lights;
+
+alias SumLightColor = _Modules_Func.SumLightColor;
+
+alias SumLightIntensities = _Modules_Func.SumLightIntensities;
+
+external
+{
+	[set(0), binding(0)] lightData: uniform[_Modules_Data.Lights]
+}
+
+[entry(frag)]
+fn main()
+{
+	let data: _Modules_Data.Lights = lightData;
+	let color: vec4[f32] = SumLightColor(data);
+	let intensities: vec2[i32] = SumLightIntensities(data);
+}
+)");
+
+		ExpectSPIRV(*shaderModule, R"(
+OpFunction
+OpFunctionParameter
+OpLabel
+OpVariable
+OpVariable
+OpVariable
+OpCompositeConstruct
+OpStore
+OpBitcast
+OpStore
+OpStore
+OpBranch
+OpLabel
+OpLoad
+OpLoad
+OpULessThan
+OpLoopMerge
+OpBranchConditional
+OpLabel
+OpLoad
+OpLoad
+OpAccessChain
+OpLoad
+OpFAdd
+OpStore
+OpLoad
+OpIAdd
+OpStore
+OpBranch
+OpLabel
+OpBranch
+OpLabel
+OpLoad
+OpReturnValue
+OpFunctionEnd
+OpFunction
+OpFunctionParameter
+OpLabel
+OpVariable
+OpVariable
+OpVariable
+OpCompositeConstruct
+OpStore
+OpStore
+OpBranch
+OpLabel
+OpLoad
+OpULessThan
+OpLoopMerge
+OpBranchConditional
+OpLabel
+OpLoad
+OpAccessChain
+OpLoad
+OpStore
+OpLoad
+OpAccessChain
+OpLoad
+OpIAdd
+OpStore
+OpLoad
+OpIAdd
+OpStore
+OpBranch
+OpLabel
+OpBranch
+OpLabel
+OpLoad
+OpReturnValue
+OpFunctionEnd
+OpFunction
+OpLabel
+OpVariable
+OpVariable
+OpVariable
+OpVariable
+OpVariable
+OpAccessChain
+OpLoad
+OpAccessChain
+OpAccessChain
+OpAccessChain
+OpStore
+OpAccessChain
+OpLoad
+OpAccessChain
+OpAccessChain
+OpAccessChain
+OpStore
+OpAccessChain
+OpLoad
+OpAccessChain
+OpAccessChain
+OpAccessChain
+OpStore
+OpAccessChain
+OpLoad
+OpAccessChain
+OpAccessChain
+OpAccessChain
+OpStore
+OpAccessChain
+OpLoad
+OpAccessChain
+OpAccessChain
+OpAccessChain
+OpStore
+OpAccessChain
+OpLoad
+OpAccessChain
+OpAccessChain
+OpAccessChain
+OpStore
+OpLoad
+OpStore
+OpFunctionCall
+OpStore
+OpLoad
+OpStore
+OpFunctionCall
+OpStore
 OpReturn
 OpFunctionEnd)");
 	}
