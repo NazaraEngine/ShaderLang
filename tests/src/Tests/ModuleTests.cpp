@@ -139,7 +139,8 @@ void main()
 	InputData_SimpleModule input_;
 	input_.value = _nzslInvalue;
 
-	Data_SimpleModule data = block.data;
+	Data_SimpleModule data;
+	data.value = block.data.value;
 	OutputData_SimpleModule output_;
 	output_.value = ((GetDataValue_SimpleModule(data)) * input_.value) * (3.141592);
 

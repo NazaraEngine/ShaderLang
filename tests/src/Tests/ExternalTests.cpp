@@ -1003,7 +1003,15 @@ void main()
 		uint to = lightData.directionalLightCount;
 		while (lightIndex < to)
 		{
-			DirectionalLight light = lightData.directionalLights[lightIndex];
+			DirectionalLight light;
+			light.color = lightData.directionalLights[lightIndex].color;
+			light.direction = lightData.directionalLights[lightIndex].direction;
+			light.invShadowMapSize = lightData.directionalLights[lightIndex].invShadowMapSize;
+			light.ambientFactor = lightData.directionalLights[lightIndex].ambientFactor;
+			light.diffuseFactor = lightData.directionalLights[lightIndex].diffuseFactor;
+			light.cascadeCount = lightData.directionalLights[lightIndex].cascadeCount;
+			light.cascadeDistances = lightData.directionalLights[lightIndex].cascadeDistances;
+			light.viewProjMatrices = lightData.directionalLights[lightIndex].viewProjMatrices;
 			DirectionalLight lightCopy = light;
 			lightIndex += 1u;
 		}
