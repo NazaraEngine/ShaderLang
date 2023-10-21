@@ -269,6 +269,8 @@ namespace nzsl
 					usedStructs.UnboundedSet(std::get<Ast::StorageType>(type).containedType.structIndex);
 				else if (IsUniformType(type))
 					usedStructs.UnboundedSet(std::get<Ast::UniformType>(type).containedType.structIndex);
+				else if (IsStructType(type))
+					usedStructs.UnboundedSet(std::get<Ast::StructType>(type).structIndex);
 
 				RecursiveVisitor::Visit(node);
 			}
@@ -506,6 +508,7 @@ namespace nzsl
 		options.removeOptionDeclaration = true;
 		options.removeScalarSwizzling = true;
 		options.removeSingleConstDeclaration = true;
+		options.splitWrappedStructAssignation = true; //< TODO: Only split for base uniforms/storage
 		options.identifierSanitizer = [](std::string& identifier, Ast::IdentifierScope /*scope*/)
 		{
 			using namespace std::string_view_literals;
