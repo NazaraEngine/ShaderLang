@@ -557,8 +557,8 @@ fn main()
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(shaderSource);
 
 		auto directoryModuleResolver = std::make_shared<nzsl::FilesystemModuleResolver>();
-		directoryModuleResolver->RegisterModule(dataModule);
-		directoryModuleResolver->RegisterModule(funcModule);
+		RegisterModule(directoryModuleResolver, dataModule);
+		RegisterModule(directoryModuleResolver, funcModule);
 
 		nzsl::Ast::SanitizeVisitor::Options sanitizeOpt;
 		sanitizeOpt.moduleResolver = directoryModuleResolver;
