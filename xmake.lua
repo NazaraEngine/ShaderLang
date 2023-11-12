@@ -8,6 +8,21 @@ option("fs_watcher", { default = true, description = "Compiles with filesystem w
 option("unitybuild", { default = false, description = "Build the library using unity build"})
 option("with_nzslc", { default = true, description = "Builds the standalone command-line compiler (nzslc)"})
 
+-- Sanitizers
+local sanitizers = {
+	asan = "address",
+	lsan = "leak",
+	tsan = "thread",
+}
+
+for opt, policy in table.orderpairs(sanitizers) do
+	option(opt, { description = "Enable " .. opt, default = false })
+
+	if has_config(opt) then
+		set_policy("build.sanitizer." .. policy, true)
+	end
+end
+
 ----------------------- Dependencies -----------------------
 
 add_repositories("nazara-engine-repo https://github.com/NazaraEngine/xmake-repo")
@@ -24,7 +39,7 @@ end
 
 ----------------------- Global config -----------------------
 
-add_rules("mode.asan", "mode.tsan", "mode.ubsan", "mode.coverage", "mode.debug", "mode.releasedbg", "mode.release")
+add_rules("mode.coverage", "mode.debug", "mode.releasedbg", "mode.release")
 add_rules("plugin.vsxmake.autoupdate")
 
 add_includedirs("include", "src")
@@ -44,12 +59,28 @@ if is_plat("mingw", "linux") then
 end
 
 if is_plat("windows") then
-	add_defines("_CRT_SECURE_NO_WARNINGS")
-	add_cxxflags("/bigobj", "/permissive-", "/Zc:__cplusplus", "/Zc:externConstexpr", "/Zc:inline", "/Zc:lambda", "/Zc:preprocessor", "/Zc:referenceBinding", "/Zc:strictStrings", "/Zc:throwingNew")
-	add_cxflags("/w44062") -- Enable warning: switch case not handled
-	add_cxflags("/wd4251") -- Disable warning: class needs to have dll-interface to be used by clients of class blah blah blah
-	add_cxflags("/wd4275") -- Disable warning: DLL-interface class 'class_1' used as base for DLL-interface blah
-elseif is_plat("mingw") then
+	-- MSVC
+	add_cxxflags("/bigobj", "/permissive-", "/Zc:__cplusplus", "/Zc:externConstexpr", "/Zc:inline", "/Zc:lambda", "/Zc:preprocessor", "/Zc:referenceBinding", "/Zc:strictStrings", "/Zc:throwingNew", {tools = "cl"})
+	add_defines("_CRT_SECURE_NO_WARNINGS", "_ENABLE_EXTENDED_ALIGNED_STORAGE")
+
+	-- Enable the following additional warnings:
+	add_cxflags("/we4062", {tools = "cl"}) -- Switch case not handled (warning as error)
+	add_cxflags("/we4426", {tools = "cl"}) -- Optimization flags changed after including header, may be due to #pragma optimize() (warning as error)
+	add_cxflags("/we5038", {tools = "cl"}) -- Data member will be initialized after data member (warning as error)
+
+	-- Disable the following warnings:
+	add_cxflags("/wd4251", {tools = "cl"}) -- class needs to have dll-interface to be used by clients of class blah blah blah
+	add_cxflags("/wd4275", {tools = "cl"}) -- DLL-interface class 'class_1' used as base for DLL-interface blah
+else
+	-- GCC-compatible (GCC, Clang, ...)
+	add_cxflags("-Wtrampolines")
+	add_cxflags("-Werror=inconsistent-missing-override", {tools = "clang"})
+	add_cxflags("-Werror=reorder")
+	add_cxflags("-Werror=suggest-override", {tools = "gcc"})
+	add_cxflags("-Werror=switch")
+end
+
+if is_plat("mingw") then
 	add_cxflags("-Wa,-mbig-obj")
 	add_ldflags("-Wa,-mbig-obj")
 	-- Always enable at least -Os optimization with MinGW to fix "string table overflow" error
@@ -68,8 +99,6 @@ end
 
 if is_mode("debug") then
 	add_rules("debug_suffix")
-elseif is_mode("asan", "tsan", "ubsan") then
-	set_optimize("none") -- by default xmake will optimize asan builds
 elseif is_mode("coverage") then
 	if not is_plat("windows") then
 		add_links("gcov")
@@ -85,7 +114,7 @@ end
 
 ----------------------- Targets -----------------------
 
-target("nzsl")
+target("nzsl", function ()
 	set_kind("$(kind)")
 	set_group("Libraries")
 	add_defines("NZSL_BUILD")
@@ -107,9 +136,10 @@ target("nzsl")
 			target:add("defines", "NZSL_STATIC", { public = true })
 		end
 	end)
+end)
 
 if has_config("with_nzslc") then
-	target("nzslc")
+	target("nzslc", function ()
 		set_kind("binary")
 		set_group("Executables")
 		add_headerfiles("src/(ShaderCompiler/**.hpp)")
@@ -117,6 +147,7 @@ if has_config("with_nzslc") then
 		add_files("src/ShaderCompiler/**.cpp")
 		add_deps("nzsl")
 		add_packages("cxxopts", "fmt", "frozen", "nlohmann_json")
+	end)
 end
 
 includes("xmake/**.lua")

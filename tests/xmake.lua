@@ -1,22 +1,17 @@
-option("tests")
-	set_default(false)
-	set_showmenu(true)
-	set_description("Build unit tests")
-
-option_end()
+option("tests", { description = "Build unit tests", default = false })
 
 if has_config("tests") then
-	if is_mode("asan") then
+	if has_config("asan") then
 		add_defines("CATCH_CONFIG_NO_WINDOWS_SEH")
 		add_defines("CATCH_CONFIG_NO_POSIX_SIGNALS")
 	end
 
 	add_requires("catch2 3", "spirv-tools", "tiny-process-library")
-	add_requires("glslang", { configs = { rtti = is_mode("ubsan") } }) -- ubsan requires rtti
+	add_requires("glslang", { configs = { rtti = has_config("ubsan") } }) -- ubsan requires rtti
 
 	add_includedirs("src")
 
-	target("UnitTests")
+	target("UnitTests", function ()
 		set_kind("binary")
 		set_group("Tests")
 		add_headerfiles("src/**.hpp")
@@ -32,4 +27,5 @@ if has_config("tests") then
 		else
 			remove_files("src/Tests/NzslcTests.cpp")
 		end
+	end)
 end
