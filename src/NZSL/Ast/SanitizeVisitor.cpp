@@ -194,6 +194,7 @@ namespace nzsl::Ast
 		std::unordered_map<std::string, std::size_t> moduleByName;
 		std::unordered_map<std::uint64_t, UsedExternalData> usedBindingIndexes;
 		std::unordered_map<std::string, UsedExternalData> declaredExternalVar;
+		std::unordered_map<OptionHash, std::string> declaredOptions;
 		std::shared_ptr<Environment> globalEnv;
 		std::shared_ptr<Environment> currentEnv;
 		std::shared_ptr<Environment> moduleEnv;
@@ -1750,7 +1751,16 @@ namespace nzsl::Ast
 
 		clone->optType = std::move(resolvedType);
 
-		std::uint32_t optionHash = Nz::CRC32(reinterpret_cast<const std::uint8_t*>(clone->optName.data()), clone->optName.size());
+		OptionHash optionHash = HashOption(clone->optName.data());
+
+		// Detect hash collisions
+		if (auto it = m_context->declaredOptions.find(optionHash); it != m_context->declaredOptions.end())
+		{
+			if (it->second != clone->optName)
+				throw CompilerOptionHashCollisionError{ node.sourceLocation, clone->optName, it->second };
+		}
+		else
+			m_context->declaredOptions.emplace(optionHash, clone->optName);
 
 		if (auto optionValueIt = m_context->options.optionValues.find(optionHash); optionValueIt != m_context->options.optionValues.end())
 			clone->optIndex = RegisterConstant(clone->optName, optionValueIt->second, node.optIndex, node.sourceLocation);

@@ -20,6 +20,15 @@
 
 namespace nzsl::Ast
 {
+	using OptionHash = std::uint32_t;
+
+	template<typename... Args> constexpr OptionHash HashOption(Args&&... args);
+
+	namespace Literals
+	{
+		constexpr OptionHash operator ""_opt(const char* str, std::size_t length);
+	}
+
 	class NZSL_API SanitizeVisitor final : Cloner
 	{
 		friend class AstTypeExpressionVisitor;
@@ -42,7 +51,7 @@ namespace nzsl::Ast
 			{
 				std::function<bool(std::string& identifier, IdentifierScope identifierScope)> identifierSanitizer; //< ignored when performing partial sanitization
 				std::shared_ptr<ModuleResolver> moduleResolver;
-				std::unordered_map<std::uint32_t, ConstantValue> optionValues;
+				std::unordered_map<OptionHash, ConstantValue> optionValues;
 				bool forceAutoBindingResolve = false;
 				bool makeVariableNameUnique = false;
 				bool partialSanitization = false;
