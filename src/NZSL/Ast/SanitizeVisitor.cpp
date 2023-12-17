@@ -19,8 +19,8 @@
 #include <NZSL/Ast/Utils.hpp>
 #include <NZSL/Lang/Errors.hpp>
 #include <NZSL/Lang/LangData.hpp>
-#include <frozen/unordered_map.h>
 #include <fmt/format.h>
+#include <frozen/unordered_map.h>
 #include <numeric>
 #include <sstream>
 #include <stdexcept>
