@@ -12,6 +12,7 @@
 #include <NZSL/ModuleResolver.hpp>
 #include <NZSL/Ast/Cloner.hpp>
 #include <NZSL/Ast/Module.hpp>
+#include <NZSL/Ast/Option.hpp>
 #include <NZSL/Ast/Types.hpp>
 #include <functional>
 #include <unordered_map>
@@ -20,15 +21,6 @@
 
 namespace nzsl::Ast
 {
-	using OptionHash = std::uint32_t;
-
-	template<typename... Args> constexpr OptionHash HashOption(Args&&... args);
-
-	namespace Literals
-	{
-		constexpr OptionHash operator ""_opt(const char* str, std::size_t length);
-	}
-
 	class NZSL_API SanitizeVisitor final : Cloner
 	{
 		friend class AstTypeExpressionVisitor;
