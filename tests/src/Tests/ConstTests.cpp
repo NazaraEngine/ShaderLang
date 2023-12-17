@@ -99,7 +99,9 @@ fn main()
 
 		WHEN("Enabling option")
 		{
-			options.optionValues[Nz::CRC32("UseInt")] = true;
+			using namespace nzsl::Ast::Literals;
+
+			options.optionValues["UseInt"_opt] = true;
 
 			ExpectOutput(*shaderModule, options, R"(
 struct inputStruct
@@ -123,7 +125,9 @@ fn main()
 
 		WHEN("Disabling option")
 		{
-			options.optionValues[Nz::CRC32("UseInt")] = false;
+			using namespace nzsl::Ast::Literals;
+			
+			options.optionValues["UseInt"_opt] = false;
 
 			ExpectOutput(*shaderModule, options, R"(
 struct inputStruct
