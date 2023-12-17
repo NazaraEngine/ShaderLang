@@ -455,10 +455,10 @@ namespace nzsl
 
 				case '"':
 				{
-					// string litteral
+					// string literal
 					currentPos++;
 
-					std::string litteral;
+					std::string literal;
 
 					char current;
 					while ((current = Peek(0)) != '"')
@@ -497,12 +497,12 @@ namespace nzsl
 								break;
 						}
 
-						litteral.push_back(character);
+						literal.push_back(character);
 						currentPos++;
 					}
 
 					tokenType = TokenType::StringValue;
-					token.data = std::move(litteral);
+					token.data = std::move(literal);
 					break;
 				}
 
