@@ -25,7 +25,7 @@ namespace nzsl::Ast
 		return CloneType(expressionValue);
 	}
 
-	ExpressionPtr Cloner::CloneExpression(const ExpressionPtr& expr)
+	inline ExpressionPtr Cloner::CloneExpression(const ExpressionPtr& expr)
 	{
 		if (!expr)
 			return nullptr;
@@ -33,7 +33,7 @@ namespace nzsl::Ast
 		return CloneExpression(*expr);
 	}
 
-	StatementPtr Cloner::CloneStatement(const StatementPtr& statement)
+	inline StatementPtr Cloner::CloneStatement(const StatementPtr& statement)
 	{
 		if (!statement)
 			return nullptr;
