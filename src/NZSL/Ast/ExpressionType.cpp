@@ -321,9 +321,9 @@ namespace nzsl::Ast
 	std::string ToString(const AliasType& type, const Stringifier& stringifier)
 	{
 		if (stringifier.aliasStringifier)
-			return fmt::format("alias {} -> {}", stringifier.aliasStringifier(type.aliasIndex), ToString(type.targetType->type));
+			return fmt::format("alias {} -> {}", stringifier.aliasStringifier(type.aliasIndex), ToString(type.targetType->type, stringifier));
 		else
-			return fmt::format("alias #{} -> {}", type.aliasIndex, ToString(type.targetType->type));
+			return fmt::format("alias #{} -> {}", type.aliasIndex, ToString(type.targetType->type, stringifier));
 	}
 
 	std::string ToString(const ArrayType& type, const Stringifier& stringifier)
