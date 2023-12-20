@@ -293,7 +293,19 @@ module;
 const Pi: f32 = 3;
 
 )"), "(5, 17): CVarDeclarationTypeUnmatching error: initial expression type (i32) doesn't match specified type (f32)");
+
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+struct foo {}
+alias bar = foo;
+
+const WrongType: bar = 42;
+
+)"), "(8,1 -> 26): CExpectedConstantType error: const and options type can only be scalars/vectors (or arrays of scalars/vectors), got alias bar -> struct foo");
 		}
+
 		/************************************************************************/
 
 		SECTION("Constant propagation")
@@ -796,7 +808,20 @@ module;
 option test: bool = 42;
 
 )"), "(5,1 -> 23): CVarDeclarationTypeUnmatching error: initial expression type (bool) doesn't match specified type (i32)");
+
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+struct foo {}
+alias bar = foo;
+alias baz = bar;
+
+option WrongType: array[baz];
+
+)"), "(9,1 -> 29): CExpectedConstantType error: const and options type can only be scalars/vectors (or arrays of scalars/vectors), got array[alias baz -> struct foo]");
 		}
+
 		/************************************************************************/
 
 		SECTION("Variables")

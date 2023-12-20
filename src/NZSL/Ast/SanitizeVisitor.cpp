@@ -1735,6 +1735,8 @@ namespace nzsl::Ast
 
 		ExpressionType resolvedType = ResolveType(*resolvedOptionType, false, node.sourceLocation);
 		const ExpressionType& targetType = ResolveAlias(resolvedType);
+		if (!IsConstantType(targetType))
+			throw CompilerExpectedConstantTypeError{ node.sourceLocation, ToString(resolvedType, node.sourceLocation) };
 
 		if (clone->defaultValue)
 		{
@@ -4707,6 +4709,16 @@ namespace nzsl::Ast
 		if (!node.expression)
 			throw CompilerConstMissingExpressionError{ node.sourceLocation };
 
+		std::optional<ExpressionType> constType;
+		if (node.type.HasValue())
+			constType = ResolveTypeExpr(node.type, false, node.sourceLocation);
+
+		if (constType.has_value())
+		{
+			if (!IsConstantType(ResolveAlias(*constType)))
+				throw CompilerExpectedConstantTypeError{ node.sourceLocation, ToString(*constType, node.sourceLocation) };
+		}
+
 		ExpressionPtr constantExpr = PropagateConstants(*node.expression);
 
 		NodeType constantType = constantExpr->GetType();
@@ -4737,9 +4749,7 @@ namespace nzsl::Ast
 			node.expression = std::move(constantExpr); //< FIXME: Should const arrays be allowed?
 		}
 
-		std::optional<ExpressionType> constType = ResolveTypeExpr(node.type, true, node.sourceLocation);
-
-		if (node.type.HasValue() && constType.has_value() && *constType != ResolveAlias(expressionType))
+		if (constType.has_value() && ResolveAlias(*constType) != ResolveAlias(expressionType))
 			throw CompilerVarDeclarationTypeUnmatchingError{ node.expression->sourceLocation, ToString(expressionType, node.sourceLocation), ToString(*constType, node.expression->sourceLocation) };
 
 		node.type = expressionType;
