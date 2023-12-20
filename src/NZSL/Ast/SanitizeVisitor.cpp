@@ -1155,7 +1155,7 @@ namespace nzsl::Ast
 	{
 		auto clone = Nz::StaticUniquePointerCast<IntrinsicExpression>(Cloner::Clone(node));
 		
-		if (ValidationResult result = Validate(*clone); result == ValidationResult::Validated)
+		if (Validate(*clone) == ValidationResult::Validated)
 		{
 			if (clone->intrinsic == IntrinsicType::ArraySize && m_context->options.removeConstArraySize)
 			{
@@ -4166,31 +4166,35 @@ namespace nzsl::Ast
 						if (!indexExprType)
 							return ValidationResult::Unresolved;
 
-						ExpressionType resolvedType = ResolveType(*indexExprType, true, node.sourceLocation);
+						ExpressionType resolvedType = ResolveType(*indexExprType, typeCategory != TypeParameterCategory::FullType, node.sourceLocation);
 
 						switch (partialType.type.parameters[i])
 						{
 							case TypeParameterCategory::PrimitiveType:
 							{
-								if (!IsPrimitiveType(resolvedType))
+								const ExpressionType& resolvedAlias = ResolveAlias(resolvedType);
+								if (!IsPrimitiveType(resolvedAlias))
 									throw CompilerPartialTypeExpectError{ indexExpr->sourceLocation, "primitive", Nz::SafeCast<std::uint32_t>(i) };
 
+								parameters.push_back(resolvedAlias);
 								break;
 							}
 
 							case TypeParameterCategory::StructType:
 							{
-								if (!IsStructType(resolvedType))
+								const ExpressionType& resolvedAlias = ResolveAlias(resolvedType);
+								if (!IsStructType(resolvedAlias))
 									throw CompilerPartialTypeExpectError{ indexExpr->sourceLocation, "struct", Nz::SafeCast<std::uint32_t>(i) };
 
+								parameters.push_back(resolvedAlias);
 								break;
 							}
 
 							default:
+								parameters.push_back(resolvedType);
 								break;
 						}
 
-						parameters.push_back(resolvedType);
 						break;
 					}
 				}
