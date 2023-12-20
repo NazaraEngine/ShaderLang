@@ -78,6 +78,7 @@ NZSL_SHADERLANG_COMPILER_ERROR(DiscardEarlyFragmentTests, "discard is not compat
 NZSL_SHADERLANG_COMPILER_ERROR(DiscardOutsideOfFunction, "discard can only be used inside a function")
 NZSL_SHADERLANG_COMPILER_ERROR(EntryFunctionParameter, "entry functions can either take one struct parameter or no parameter")
 NZSL_SHADERLANG_COMPILER_ERROR(EntryPointAlreadyDefined, "the {} entry type has been defined multiple times", ShaderStageType)
+NZSL_SHADERLANG_COMPILER_ERROR(ExpectedConstantType, "const and options type can only be scalars/vectors (or arrays of scalars/vectors), got {}", std::string)
 NZSL_SHADERLANG_COMPILER_ERROR(ExpectedFunction, "expected function expression")
 NZSL_SHADERLANG_COMPILER_ERROR(ExpectedIntrinsicFunction, "expected intrinsic function expression")
 NZSL_SHADERLANG_COMPILER_ERROR(ExpectedPartialType, "only partial types can be specialized, got {}", std::string)

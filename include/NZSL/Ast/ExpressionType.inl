@@ -266,6 +266,21 @@ namespace nzsl::Ast
 		return std::holds_alternative<VectorType>(type);
 	}
 
+	bool IsConstantType(const ExpressionType& exprType)
+	{
+		if (IsArrayType(exprType))
+		{
+			const ArrayType& arrayType = std::get<ArrayType>(exprType);
+			if (arrayType.isWrapped)
+				return false;
+
+			const ExpressionType& innerType = arrayType.containedType->type;
+			return IsPrimitiveType(innerType) || IsVectorType(innerType);
+		}
+		else
+			return IsPrimitiveType(exprType) || IsVectorType(exprType);
+	}
+
 	bool IsStructAddressible(const ExpressionType& exprType)
 	{
 		return ResolveStructIndex(exprType) != std::numeric_limits<std::size_t>::max();
