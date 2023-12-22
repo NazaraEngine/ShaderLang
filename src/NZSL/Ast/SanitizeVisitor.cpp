@@ -5591,6 +5591,13 @@ namespace nzsl::Ast
 
 				break;
 			}
+			case UnaryType::BinaryNot:
+			{
+				if(resolvedExprType != ExpressionType(PrimitiveType::Int32) && resolvedExprType != ExpressionType(PrimitiveType::UInt32))
+					throw CompilerUnaryUnsupportedError{ node.sourceLocation, ToString(*exprType, node.sourceLocation) };
+
+				break;
+			}
 
 			case UnaryType::Minus:
 			case UnaryType::Plus:

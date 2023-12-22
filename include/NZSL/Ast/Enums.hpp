@@ -250,6 +250,7 @@ namespace nzsl::Ast
 		LogicalNot = 0, //< !v
 		Minus      = 1, //< -v
 		Plus       = 2, //< +v
+		BinaryNot = 3, //< !v
 	};
 }
 

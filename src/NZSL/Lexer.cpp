@@ -362,6 +362,11 @@ namespace nzsl
 					tokenType = TokenType::BinaryXor;
 					break;
 				}
+				case '~':
+				{
+					tokenType = TokenType::BinaryNot;
+					break;
+				}
 				case '<':
 				{
 					char next = Peek();

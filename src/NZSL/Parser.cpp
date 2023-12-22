@@ -1657,6 +1657,7 @@ namespace nzsl
 			case TokenType::Minus:
 			case TokenType::Not:
 			case TokenType::Plus:
+			case TokenType::BinaryNot:
 			{
 				Consume();
 				Ast::ExpressionPtr expr = ParseExpression(GetUnaryTokenPrecedence(token.type));
@@ -1665,9 +1666,10 @@ namespace nzsl
 				{
 					switch (token.type)
 					{
-						case TokenType::Minus: return BuildUnary(Ast::UnaryType::Minus, std::move(expr));
-						case TokenType::Not:   return BuildUnary(Ast::UnaryType::LogicalNot, std::move(expr));
-						case TokenType::Plus:  return BuildUnary(Ast::UnaryType::Plus, std::move(expr));
+						case TokenType::Minus:		return BuildUnary(Ast::UnaryType::Minus, std::move(expr));
+						case TokenType::Not:		return BuildUnary(Ast::UnaryType::LogicalNot, std::move(expr));
+						case TokenType::Plus:		return BuildUnary(Ast::UnaryType::Plus, std::move(expr));
+						case TokenType::BinaryNot:	return BuildUnary(Ast::UnaryType::BinaryNot, std::move(expr));
 						default:
 							throw ParserUnexpectedTokenError{ token.location, token.type };
 					}
@@ -1852,6 +1854,7 @@ namespace nzsl
 		{
 			case TokenType::Minus:             return 90;
 			case TokenType::Not:               return 90;
+			case TokenType::BinaryNot:         return 90;
 			case TokenType::Plus:              return 90;
 			default: return -1;
 		}

@@ -1081,6 +1081,11 @@ namespace nzsl
 					return resultId;
 				}
 
+				case Ast::UnaryType::BinaryNot: 
+				{
+					throw std::runtime_error("Ast::UnaryType::BinaryNot is not implemented yet for spirv");
+				}
+
 				case Ast::UnaryType::Minus:
 				{
 					Ast::PrimitiveType basicType;

@@ -25,7 +25,7 @@ struct Output
 [entry(frag)]
 fn main(input: Input) -> Output
 {
-	let a: i32 = 31 | 84 & 36 ^ 10;
+	let a: i32 = ~31 | 84 & 36 ^ 10;
 
 	let coords = input.fragcoord.xy / screen_size;
 

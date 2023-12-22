@@ -919,6 +919,9 @@ namespace nzsl::Ast
 				case UnaryType::LogicalNot:
 					optimized = PropagateUnaryConstant<UnaryType::LogicalNot>(constantExpr, node.sourceLocation);
 					break;
+				case UnaryType::BinaryNot:
+					optimized = PropagateUnaryConstant<UnaryType::BinaryNot>(constantExpr, node.sourceLocation);
+					break;
 
 				case UnaryType::Minus:
 					optimized = PropagateUnaryConstant<UnaryType::Minus>(constantExpr, node.sourceLocation);

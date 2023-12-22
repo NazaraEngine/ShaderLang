@@ -1238,6 +1238,9 @@ namespace nzsl
 		case Ast::UnaryType::LogicalNot:
 			Append("!");
 			break;
+		case Ast::UnaryType::BinaryNot:
+			Append("~");
+			break;
 
 		case Ast::UnaryType::Minus:
 			Append("-");

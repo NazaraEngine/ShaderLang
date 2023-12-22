@@ -2122,6 +2122,10 @@ namespace nzsl
 				Append("!");
 				break;
 
+			case Ast::UnaryType::BinaryNot:
+				Append("~");
+				break;
+
 			case Ast::UnaryType::Minus:
 				Append("-");
 				break;
