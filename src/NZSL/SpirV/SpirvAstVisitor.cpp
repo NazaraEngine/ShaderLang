@@ -374,6 +374,10 @@ namespace nzsl
 					return SpirvOp::OpBitwiseOr;
 				case Ast::BinaryType::BinaryXor:
 					return SpirvOp::OpBitwiseXor;
+				case Ast::BinaryType::LeftShift:
+					return SpirvOp::OpShiftLeftLogical;
+				case Ast::BinaryType::RightShift:
+					return SpirvOp::OpShiftRightArithmetic;
 			}
 
 			assert(false);

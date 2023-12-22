@@ -1479,6 +1479,8 @@ namespace nzsl
 					case TokenType::BinaryAnd:         return BuildBinary(Ast::BinaryType::BinaryAnd,  std::move(lhs), std::move(rhs));
 					case TokenType::BinaryOr:          return BuildBinary(Ast::BinaryType::BinaryOr,   std::move(lhs), std::move(rhs));
 					case TokenType::BinaryXor:         return BuildBinary(Ast::BinaryType::BinaryXor,  std::move(lhs), std::move(rhs));
+					case TokenType::LeftShift:		   return BuildBinary(Ast::BinaryType::LeftShift,  std::move(lhs), std::move(rhs));
+					case TokenType::RightShift:		   return BuildBinary(Ast::BinaryType::RightShift, std::move(lhs), std::move(rhs));
 					case TokenType::GreaterThan:       return BuildBinary(Ast::BinaryType::CompGt,     std::move(lhs), std::move(rhs));
 					case TokenType::GreaterThanEqual:  return BuildBinary(Ast::BinaryType::CompGe,     std::move(lhs), std::move(rhs));
 					case TokenType::Modulo:            return BuildBinary(Ast::BinaryType::Modulo,     std::move(lhs), std::move(rhs));
@@ -1835,6 +1837,8 @@ namespace nzsl
 			case TokenType::BinaryAnd:         return 20;
 			case TokenType::BinaryOr:          return 10;
 			case TokenType::BinaryXor:         return 10;
+			case TokenType::LeftShift:         return 10;
+			case TokenType::RightShift:        return 10;
 			case TokenType::GreaterThan:       return 40;
 			case TokenType::GreaterThanEqual:  return 40;
 			case TokenType::Modulo:            return 80;

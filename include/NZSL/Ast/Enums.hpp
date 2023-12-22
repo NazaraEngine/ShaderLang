@@ -65,6 +65,8 @@ namespace nzsl::Ast
 		BinaryAnd  = 13, //< &
 		BinaryOr   = 14, //< |
 		BinaryXor  = 15, //< ~
+		LeftShift  = 16, //< <<
+		RightShift = 17, //< >>
 	};
 
 	enum class BuiltinEntry

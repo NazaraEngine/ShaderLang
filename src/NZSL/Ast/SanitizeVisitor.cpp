@@ -5713,8 +5713,10 @@ namespace nzsl::Ast
 				case BinaryType::BinaryAnd:
 				case BinaryType::BinaryOr:
 				case BinaryType::BinaryXor:
+				case BinaryType::LeftShift:
+				case BinaryType::RightShift:
 				{
-					if(leftType == PrimitiveType::String || leftType == PrimitiveType::Float32 || leftType == PrimitiveType::Float64) // Maybe dont allow bitwise operation with integers and boolean
+					if(leftType == PrimitiveType::String || leftType == PrimitiveType::Float32 || leftType == PrimitiveType::Float64 || leftType == PrimitiveType::Boolean)
 						throw CompilerBinaryUnsupportedError{ sourceLocation, "left", ToString(leftExprType, sourceLocation) };
 					
 					return leftExprType; // We know that the type here is either integer or boolean
@@ -5770,6 +5772,8 @@ namespace nzsl::Ast
 				case BinaryType::BinaryAnd:
 				case BinaryType::BinaryOr:
 				case BinaryType::BinaryXor:
+				case BinaryType::LeftShift:
+				case BinaryType::RightShift:
 					throw CompilerBinaryUnsupportedError{ sourceLocation, "left", ToString(leftExprType, sourceLocation) };
 			}
 		}
@@ -5817,6 +5821,8 @@ namespace nzsl::Ast
 				case BinaryType::BinaryAnd:
 				case BinaryType::BinaryOr:
 				case BinaryType::BinaryXor:
+				case BinaryType::LeftShift:
+				case BinaryType::RightShift:
 					throw CompilerBinaryUnsupportedError{ sourceLocation, "left", ToString(leftExprType, sourceLocation) };
 			}
 		}

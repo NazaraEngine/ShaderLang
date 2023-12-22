@@ -437,6 +437,8 @@ namespace nzsl::Ast
 				case BinaryType::BinaryAnd:
 				case BinaryType::BinaryOr:
 				case BinaryType::BinaryXor:
+				case BinaryType::LeftShift:
+				case BinaryType::RightShift:
 				case BinaryType::Modulo:
 				case BinaryType::Multiply:
 				case BinaryType::Subtract:
