@@ -171,6 +171,25 @@ namespace nzsl::Ast
 			using Op = UnaryLogicalNot<T>;
 		};
 
+		// BinaryNot
+		template<typename T>
+		struct UnaryBinaryNotBase
+		{
+			std::unique_ptr<ConstantValueExpression> operator()(const T& arg, const SourceLocation& /*sourceLocation*/)
+			{
+				return ShaderBuilder::ConstantValue(~arg);
+			}
+		};
+
+		template<typename T>
+		struct UnaryBinaryNot;
+
+		template<typename T>
+		struct UnaryConstantPropagation<UnaryType::BinaryNot, T>
+		{
+			using Op = UnaryBinaryNot<T>;
+		};
+
 		// Minus
 		template<typename T>
 		struct UnaryMinusBase
@@ -379,6 +398,9 @@ namespace nzsl::Ast
 		// Unary
 
 		EnableOptimisation(UnaryLogicalNot, bool);
+
+		EnableOptimisation(UnaryBinaryNot, std::uint32_t);
+		EnableOptimisation(UnaryBinaryNot, std::int32_t);
 
 		EnableOptimisation(UnaryMinus, double);
 		EnableOptimisation(UnaryMinus, float);

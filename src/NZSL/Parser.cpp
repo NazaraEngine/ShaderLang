@@ -1834,11 +1834,11 @@ namespace nzsl
 			case TokenType::LessThanEqual:     return 40;
 			case TokenType::LogicalAnd:        return 20;
 			case TokenType::LogicalOr:         return 10;
-			case TokenType::BinaryAnd:         return 20;
-			case TokenType::BinaryOr:          return 10;
-			case TokenType::BinaryXor:         return 10;
-			case TokenType::LeftShift:         return 10;
-			case TokenType::RightShift:        return 10;
+			case TokenType::BinaryAnd:         return 35;
+			case TokenType::BinaryOr:          return 25;
+			case TokenType::BinaryXor:         return 30;
+			case TokenType::LeftShift:         return 55;
+			case TokenType::RightShift:        return 55;
 			case TokenType::GreaterThan:       return 40;
 			case TokenType::GreaterThanEqual:  return 40;
 			case TokenType::Modulo:            return 80;
