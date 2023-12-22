@@ -997,6 +997,10 @@ namespace nzsl
 
 			case Ast::BinaryType::LogicalAnd: Append(" && "); break;
 			case Ast::BinaryType::LogicalOr:  Append(" || "); break;
+			
+			case Ast::BinaryType::BinaryAnd: Append(" & "); break;
+			case Ast::BinaryType::BinaryOr:  Append(" | "); break;
+			case Ast::BinaryType::BinaryXor: Append(" ^ "); break;
 		}
 
 		Visit(node.right, true);

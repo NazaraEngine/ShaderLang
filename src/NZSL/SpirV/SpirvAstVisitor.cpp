@@ -367,6 +367,11 @@ namespace nzsl
 
 				case Ast::BinaryType::LogicalOr:
 					return SpirvOp::OpLogicalOr;
+
+				case Ast::BinaryType::BinaryAnd:
+				case Ast::BinaryType::BinaryOr:
+				case Ast::BinaryType::BinaryXor:
+					throw std::runtime_error("Binary operations are not yet implemented in spirv");
 			}
 
 			assert(false);

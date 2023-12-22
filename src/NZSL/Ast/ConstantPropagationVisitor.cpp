@@ -434,6 +434,9 @@ namespace nzsl::Ast
 				case BinaryType::Divide:
 				case BinaryType::LogicalAnd:
 				case BinaryType::LogicalOr:
+				case BinaryType::BinaryAnd:
+				case BinaryType::BinaryOr:
+				case BinaryType::BinaryXor:
 				case BinaryType::Modulo:
 				case BinaryType::Multiply:
 				case BinaryType::Subtract:

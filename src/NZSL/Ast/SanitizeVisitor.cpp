@@ -5702,6 +5702,16 @@ namespace nzsl::Ast
 					TypeMustMatch(leftExprType, rightExprType, sourceLocation);
 					return PrimitiveType::Boolean;
 				}
+
+				case BinaryType::BinaryAnd:
+				case BinaryType::BinaryOr:
+				case BinaryType::BinaryXor:
+				{
+					if(leftType == PrimitiveType::String || leftType == PrimitiveType::Float32 || leftType == PrimitiveType::Float64) // Maybe dont allow bitwise operation with integers and boolean
+						throw CompilerBinaryUnsupportedError{ sourceLocation, "left", ToString(leftExprType, sourceLocation) };
+					
+					return leftExprType; // We know that the type here is either integer or boolean
+				}
 			}
 		}
 		else if (IsMatrixType(leftExprType))
@@ -5750,6 +5760,9 @@ namespace nzsl::Ast
 				case BinaryType::Modulo:
 				case BinaryType::LogicalAnd:
 				case BinaryType::LogicalOr:
+				case BinaryType::BinaryAnd:
+				case BinaryType::BinaryOr:
+				case BinaryType::BinaryXor:
 					throw CompilerBinaryUnsupportedError{ sourceLocation, "left", ToString(leftExprType, sourceLocation) };
 			}
 		}
@@ -5794,6 +5807,9 @@ namespace nzsl::Ast
 
 				case BinaryType::LogicalAnd:
 				case BinaryType::LogicalOr:
+				case BinaryType::BinaryAnd:
+				case BinaryType::BinaryOr:
+				case BinaryType::BinaryXor:
 					throw CompilerBinaryUnsupportedError{ sourceLocation, "left", ToString(leftExprType, sourceLocation) };
 			}
 		}

@@ -332,7 +332,7 @@ namespace nzsl
 							tokenType = TokenType::LogicalOr;
 					}
 					else
-						throw LexerUnrecognizedTokenError{ token.location }; //< TODO: Add BOR (a | b)
+						tokenType = TokenType::BinaryOr;
 
 					break;
 				}
@@ -353,11 +353,15 @@ namespace nzsl
 							tokenType = TokenType::LogicalAnd;
 					}
 					else
-						throw LexerUnrecognizedTokenError{ token.location }; //< TODO: Add BAND (a & b)
+						tokenType = TokenType::BinaryAnd;
 
 					break;
 				}
-
+				case '^':
+				{
+					tokenType = TokenType::BinaryXor;
+					break;
+				}
 				case '<':
 				{
 					char next = Peek();
@@ -365,6 +369,10 @@ namespace nzsl
 					{
 						currentPos++;
 						tokenType = TokenType::LessThanEqual;
+					}
+					else if(next == '<') {
+						currentPos++;
+						tokenType = TokenType::LeftShift;
 					}
 					else
 						tokenType = TokenType::LessThan;
@@ -379,6 +387,10 @@ namespace nzsl
 					{
 						currentPos++;
 						tokenType = TokenType::GreaterThanEqual;
+					}
+					else if(next == '>') {
+						currentPos++;
+						tokenType = TokenType::RightShift;
 					}
 					else
 						tokenType = TokenType::GreaterThan;
@@ -441,7 +453,6 @@ namespace nzsl
 
 					break;
 				}
-
 				case ':': tokenType = TokenType::Colon; break;
 				case ';': tokenType = TokenType::Semicolon; break;
 				case '.': tokenType = TokenType::Dot; break;

@@ -14,6 +14,8 @@ int main()
 	nzsl::GlslWriter glslWriter;
 	auto glslShader = glslWriter.Generate(*mandelbrotShader);
 
+	std::cout << glslShader.code << std::endl;
+
 	sf::Shader shader;
 	if (!shader.loadFromMemory(glslShader.code, sf::Shader::Fragment))
 	{
