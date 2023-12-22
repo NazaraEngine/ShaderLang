@@ -369,9 +369,11 @@ namespace nzsl
 					return SpirvOp::OpLogicalOr;
 
 				case Ast::BinaryType::BinaryAnd:
+					return SpirvOp::OpBitwiseAnd;
 				case Ast::BinaryType::BinaryOr:
+					return SpirvOp::OpBitwiseOr;
 				case Ast::BinaryType::BinaryXor:
-					throw std::runtime_error("Binary operations are not yet implemented in spirv");
+					return SpirvOp::OpBitwiseXor;
 			}
 
 			assert(false);
@@ -1083,7 +1085,14 @@ namespace nzsl
 
 				case Ast::UnaryType::BinaryNot: 
 				{
-					throw std::runtime_error("Ast::UnaryType::BinaryNot is not implemented yet for spirv");
+					assert(IsPrimitiveType(*exprType));
+					assert(std::get<Ast::PrimitiveType>(*resultType) == Ast::PrimitiveType::Int32 || std::get<Ast::PrimitiveType>(*resultType) == Ast::PrimitiveType::UInt32);
+					
+					HandleSourceLocation(node.sourceLocation);
+					std::uint32_t resultId = m_writer.AllocateResultId();
+					m_currentBlock->Append(SpirvOp::OpNot, m_writer.GetTypeId(*resultType), resultId, operand);
+
+					return resultId;
 				}
 
 				case Ast::UnaryType::Minus:
