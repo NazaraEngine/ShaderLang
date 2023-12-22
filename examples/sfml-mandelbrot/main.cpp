@@ -14,8 +14,6 @@ int main()
 	nzsl::GlslWriter glslWriter;
 	auto glslShader = glslWriter.Generate(*mandelbrotShader);
 
-	std::cout << glslShader.code << std::endl;
-
 	sf::Shader shader;
 	if (!shader.loadFromMemory(glslShader.code, sf::Shader::Fragment))
 	{
@@ -56,55 +54,55 @@ int main()
 		{
 			switch (event.type)
 			{
-				case sf::Event::Closed:
-				{
+			case sf::Event::Closed:
+			{
+				window.close();
+				break;
+			}
+
+			case sf::Event::KeyPressed:
+			{
+				if (event.key.code == sf::Keyboard::Escape)
 					window.close();
-					break;
-				}
+				break;
+			}
 
-				case sf::Event::KeyPressed:
+			case sf::Event::MouseMoved:
+			{
+				sf::Vector2i newPos(event.mouseMove.x, event.mouseMove.y);
+				sf::Vector2i delta = newPos - mousePos;
+				mousePos = newPos;
+
+				if (sf::Mouse::isButtonPressed(sf::Mouse::Left))
 				{
-					if (event.key.code == sf::Keyboard::Escape)
-						window.close();
+					center += scale * sf::Vector2f(sf::Vector2i(delta.x, -delta.y));
+					shader.setUniform("center", center);
 					break;
 				}
 
-				case sf::Event::MouseMoved:
-				{
-					sf::Vector2i newPos(event.mouseMove.x, event.mouseMove.y);
-					sf::Vector2i delta = newPos - mousePos;
-					mousePos = newPos;
+				break;
+			}
 
-					if (sf::Mouse::isButtonPressed(sf::Mouse::Left))
-					{
-						center += scale * sf::Vector2f(sf::Vector2i(delta.x, -delta.y));
-						shader.setUniform("center", center);
-						break;
-					}
+			case sf::Event::MouseWheelScrolled:
+			{
+				targetScale = std::clamp(targetScale - targetScale * 0.1f * event.mouseWheelScroll.delta, 0.000001f, 3.f);
+				break;
+			}
 
-					break;
-				}
+			case sf::Event::Resized:
+			{
+				sf::Vector2f newSize(float(event.size.width), float(event.size.height));
 
-				case sf::Event::MouseWheelScrolled:
-				{
-					targetScale = std::clamp(targetScale - targetScale * 0.1f * event.mouseWheelScroll.delta, 0.000001f, 3.f);
-					break;
-				}
+				shader.setUniform("screen_size", newSize);
+				fullscreenShape.setSize(newSize);
 
-				case sf::Event::Resized:
-				{
-					sf::Vector2f newSize(float(event.size.width), float(event.size.height));
+				sf::FloatRect visibleArea(0.f, 0.f, newSize.x, newSize.y);
+				window.setView(sf::View(visibleArea));
+				break;
+			}
 
-					shader.setUniform("screen_size", newSize);
-					fullscreenShape.setSize(newSize);
-
-					sf::FloatRect visibleArea(0.f, 0.f, newSize.x, newSize.y);
-					window.setView(sf::View(visibleArea));
-					break;
-				}
-
-				default:
-					break;
+			default:
+				break;
 			}
 		}
 
