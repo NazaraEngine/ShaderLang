@@ -62,6 +62,11 @@ namespace nzsl::Ast
 		Modulo     = 12, //< %
 		Multiply   = 8,  //< *
 		Subtract   = 11, //< -
+		BinaryAnd  = 13, //< &
+		BinaryOr   = 14, //< |
+		BinaryXor  = 15, //< ~
+		LeftShift  = 16, //< <<
+		RightShift = 17, //< >>
 	};
 
 	enum class BuiltinEntry
@@ -247,6 +252,7 @@ namespace nzsl::Ast
 		LogicalNot = 0, //< !v
 		Minus      = 1, //< -v
 		Plus       = 2, //< +v
+		BinaryNot = 3, //< !v
 	};
 }
 
