@@ -100,6 +100,7 @@ namespace nzsl
 
 		std::uint32_t currentLine = 1;
 		std::size_t lineStartPos = 0;
+		std::string literalTemp;
 		std::vector<Token> tokens;
 
 		auto HandleNewLine = [&]
@@ -227,23 +228,51 @@ namespace nzsl
 				case '8':
 				case '9':
 				{
-					bool floatingPoint = false;
+					literalTemp.clear();
 
 					std::size_t start = currentPos;
 					char next = Peek();
 
-					bool hexadecimal = false;
+					int base = 10;
 					if (next == 'x' || next == 'X')
 					{
-						hexadecimal = true;
+						base = 16;
 						currentPos++;
 					}
+					else if (next == 'b' || next == 'B')
+					{
+						base = 2;
+						currentPos++;
+					}
+					else
+						literalTemp.push_back(c);
 
+					bool floatingPoint = false;
 					for (;;)
 					{
+						auto IsDigitOrSep = [=](char c)
+						{
+							if (c == '_')
+								return true;
+
+							if (c >= '0' && c <= '9')
+								return true;
+
+							if (base > 10)
+							{
+								if (c >= 'a' && c <= 'f')
+									return true;
+
+								if (c >= 'A' && c <= 'F')
+									return true;
+							}
+
+							return false;
+						};
+
 						next = Peek();
 
-						if (!isxdigit(next))
+						if (!IsDigitOrSep(next))
 						{
 							if (next != '.')
 								break;
@@ -254,23 +283,27 @@ namespace nzsl
 							floatingPoint = true;
 						}
 
+						if (next != '_')
+							literalTemp.push_back(next);
+
 						currentPos++;
 					}
 
 					token.location.endColumn = Nz::SafeCast<std::uint32_t>(currentPos - lineStartPos) + 1;
 					token.location.endLine = currentLine;
 
-					// avoid std::string_view operator[] assertions (if &str[currentPos + 1] is out of the string)
-					const char* first = &str[start];
-					const char* last = first + (currentPos - start + 1);
-
-					if (hexadecimal)
+					if (base != 10)
 					{
-						if (*first != '0')
+						if (str[start] != '0')
 							throw LexerBadNumberError{ token.location };
 
-						first += 2;
+						if (floatingPoint)
+							throw LexerUnexpectedFloatingPointBaseError{ token.location, base };
 					}
+
+					// avoid std::string operator[] assertions (as &literalTemp[literalTemp.size()] is out of the string)
+					const char* first = literalTemp.data();
+					const char* last = first + literalTemp.size();
 
 					if (floatingPoint)
 					{
@@ -290,7 +323,7 @@ namespace nzsl
 						tokenType = TokenType::IntegerValue;
 
 						long long value;
-						std::from_chars_result r = std::from_chars(first, last, value, (hexadecimal) ? 16 : 10);
+						std::from_chars_result r = std::from_chars(first, last, value, base);
 						if (r.ptr == last && r.ec == std::errc{})
 							token.data = value;
 						else if (r.ec == std::errc::result_out_of_range)
