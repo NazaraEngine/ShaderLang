@@ -152,6 +152,25 @@ namespace nzsl::Ast
 		template<UnaryType Type, typename T>
 		struct UnaryConstantPropagation;
 
+		// BitwiseNot
+		template<typename T>
+		struct UnaryBinaryNotBase
+		{
+			std::unique_ptr<ConstantValueExpression> operator()(const T& arg, const SourceLocation& /*sourceLocation*/)
+			{
+				return ShaderBuilder::ConstantValue(~arg);
+			}
+		};
+
+		template<typename T>
+		struct UnaryBinaryNot;
+
+		template<typename T>
+		struct UnaryConstantPropagation<UnaryType::BitwiseNot, T>
+		{
+			using Op = UnaryBinaryNot<T>;
+		};
+
 		// LogicalNot
 		template<typename T>
 		struct UnaryLogicalNotBase
@@ -169,25 +188,6 @@ namespace nzsl::Ast
 		struct UnaryConstantPropagation<UnaryType::LogicalNot, T>
 		{
 			using Op = UnaryLogicalNot<T>;
-		};
-
-		// BinaryNot
-		template<typename T>
-		struct UnaryBinaryNotBase
-		{
-			std::unique_ptr<ConstantValueExpression> operator()(const T& arg, const SourceLocation& /*sourceLocation*/)
-			{
-				return ShaderBuilder::ConstantValue(~arg);
-			}
-		};
-
-		template<typename T>
-		struct UnaryBinaryNot;
-
-		template<typename T>
-		struct UnaryConstantPropagation<UnaryType::BinaryNot, T>
-		{
-			using Op = UnaryBinaryNot<T>;
 		};
 
 		// Minus
@@ -397,10 +397,10 @@ namespace nzsl::Ast
 
 		// Unary
 
-		EnableOptimisation(UnaryLogicalNot, bool);
-
 		EnableOptimisation(UnaryBinaryNot, std::uint32_t);
 		EnableOptimisation(UnaryBinaryNot, std::int32_t);
+
+		EnableOptimisation(UnaryLogicalNot, bool);
 
 		EnableOptimisation(UnaryMinus, double);
 		EnableOptimisation(UnaryMinus, float);
@@ -453,16 +453,16 @@ namespace nzsl::Ast
 			switch (node.op)
 			{
 				case BinaryType::Add:
+				case BinaryType::BitwiseAnd:
+				case BinaryType::BitwiseOr:
+				case BinaryType::BitwiseXor:
 				case BinaryType::Divide:
+				case BinaryType::ShiftLeft:
 				case BinaryType::LogicalAnd:
 				case BinaryType::LogicalOr:
-				case BinaryType::BinaryAnd:
-				case BinaryType::BinaryOr:
-				case BinaryType::BinaryXor:
-				case BinaryType::LeftShift:
-				case BinaryType::RightShift:
 				case BinaryType::Modulo:
 				case BinaryType::Multiply:
+				case BinaryType::ShiftRight:
 				case BinaryType::Subtract:
 					optimized = PropagateBinaryArithmeticsConstant(node.op, lhsConstant, rhsConstant, node.sourceLocation);
 					break;
@@ -940,11 +940,12 @@ namespace nzsl::Ast
 			ExpressionPtr optimized;
 			switch (node.op)
 			{
+				case UnaryType::BitwiseNot:
+					optimized = PropagateUnaryConstant<UnaryType::BitwiseNot>(constantExpr, node.sourceLocation);
+					break;
+
 				case UnaryType::LogicalNot:
 					optimized = PropagateUnaryConstant<UnaryType::LogicalNot>(constantExpr, node.sourceLocation);
-					break;
-				case UnaryType::BinaryNot:
-					optimized = PropagateUnaryConstant<UnaryType::BinaryNot>(constantExpr, node.sourceLocation);
 					break;
 
 				case UnaryType::Minus:

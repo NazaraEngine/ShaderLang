@@ -38,6 +38,115 @@ namespace nzsl::Ast
 		template<BinaryType Type, typename T1, typename T2>
 		struct BinaryConstantPropagation;
 
+		// Addition
+		template<typename T1, typename T2>
+		struct BinaryAdditionBase
+		{
+			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
+			{
+				return ShaderBuilder::ConstantValue(lhs + rhs);
+			}
+		};
+
+		template<typename T1, typename T2>
+		struct BinaryAddition;
+
+		template<typename T1, typename T2>
+		struct BinaryConstantPropagation<BinaryType::Add, T1, T2>
+		{
+			using Op = BinaryAddition<T1, T2>;
+		};
+
+		// BitwiseAnd
+		template<typename T1, typename T2>
+		struct BinaryBitwiseAndBase
+		{
+			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
+			{
+				return ShaderBuilder::ConstantValue(lhs & rhs);
+			}
+		};
+
+		template<typename T1, typename T2>
+		struct BinaryBitwiseAnd;
+
+		template<typename T1, typename T2>
+		struct BinaryConstantPropagation<BinaryType::BitwiseAnd, T1, T2>
+		{
+			using Op = BinaryBitwiseAnd<T1, T2>;
+		};
+
+		// BitwiseOr
+		template<typename T1, typename T2>
+		struct BinaryBitwiseOrBase
+		{
+			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
+			{
+				return ShaderBuilder::ConstantValue(lhs | rhs);
+			}
+		};
+
+		template<typename T1, typename T2>
+		struct BinaryBitwiseOr;
+
+		template<typename T1, typename T2>
+		struct BinaryConstantPropagation<BinaryType::BitwiseOr, T1, T2>
+		{
+			using Op = BinaryBitwiseOr<T1, T2>;
+		};
+
+		// BitwiseXor
+		template<typename T1, typename T2>
+		struct BinaryBitwiseXorBase
+		{
+			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
+			{
+				return ShaderBuilder::ConstantValue(lhs ^ rhs);
+			}
+		};
+
+		template<typename T1, typename T2>
+		struct BinaryBitwiseXor;
+
+		template<typename T1, typename T2>
+		struct BinaryConstantPropagation<BinaryType::BitwiseXor, T1, T2>
+		{
+			using Op = BinaryBitwiseXor<T1, T2>;
+		};
+
+		// Division
+		template<typename T1, typename T2>
+		struct BinaryDivisionBase
+		{
+			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs, const SourceLocation& sourceLocation)
+			{
+				if constexpr (std::is_integral_v<T2>)
+				{
+					if (rhs == 0)
+						throw CompilerIntegralDivisionByZeroError{ sourceLocation, ConstantToString(lhs), ConstantToString(rhs) };
+				}
+				else if constexpr (IsVector_v<T2>)
+				{
+					for (std::size_t i = 0; i < T2::Dimensions; ++i)
+					{
+						if (rhs[i] == 0)
+							throw CompilerIntegralDivisionByZeroError{ sourceLocation, ConstantToString(lhs), ConstantToString(rhs) };
+					}
+				}
+
+				return ShaderBuilder::ConstantValue(lhs / rhs);
+			}
+		};
+
+		template<typename T1, typename T2>
+		struct BinaryDivision;
+
+		template<typename T1, typename T2>
+		struct BinaryConstantPropagation<BinaryType::Divide, T1, T2>
+		{
+			using Op = BinaryDivision<T1, T2>;
+		};
+
 		// LogicalAnd
 		template<typename T1, typename T2>
 		struct BinaryLogicalAndBase
@@ -75,148 +184,7 @@ namespace nzsl::Ast
 		{
 			using Op = BinaryLogicalOr<T1, T2>;
 		};
-		// BinaryOr
-		template<typename T1, typename T2>
-		struct BinaryBinaryOrBase
-		{
-			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
-			{
-				return ShaderBuilder::ConstantValue(lhs | rhs);
-			}
-		};
 
-		template<typename T1, typename T2>
-		struct BinaryBinaryOr;
-
-		template<typename T1, typename T2>
-		struct BinaryConstantPropagation<BinaryType::BinaryOr, T1, T2>
-		{
-			using Op = BinaryBinaryOr<T1, T2>;
-		};
-		// BinaryXor
-		template<typename T1, typename T2>
-		struct BinaryBinaryXorBase
-		{
-			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
-			{
-				return ShaderBuilder::ConstantValue(lhs ^ rhs);
-			}
-		};
-
-		template<typename T1, typename T2>
-		struct BinaryBinaryXor;
-
-		template<typename T1, typename T2>
-		struct BinaryConstantPropagation<BinaryType::BinaryXor, T1, T2>
-		{
-			using Op = BinaryBinaryXor<T1, T2>;
-		};
-		// BinaryAnd
-		template<typename T1, typename T2>
-		struct BinaryBinaryAndBase
-		{
-			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
-			{
-				return ShaderBuilder::ConstantValue(lhs & rhs);
-			}
-		};
-
-		template<typename T1, typename T2>
-		struct BinaryBinaryAnd;
-
-		template<typename T1, typename T2>
-		struct BinaryConstantPropagation<BinaryType::BinaryAnd, T1, T2>
-		{
-			using Op = BinaryBinaryAnd<T1, T2>;
-		};
-		// LeftShift
-		template<typename T1, typename T2>
-		struct BinaryLeftShiftBase
-		{
-			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
-			{
-				return ShaderBuilder::ConstantValue(lhs << rhs);
-			}
-		};
-
-		template<typename T1, typename T2>
-		struct BinaryLeftShift;
-
-		template<typename T1, typename T2>
-		struct BinaryConstantPropagation<BinaryType::LeftShift, T1, T2>
-		{
-			using Op = BinaryLeftShift<T1, T2>;
-		};
-		// RigthShift
-		template<typename T1, typename T2>
-		struct BinaryRightShiftBase
-		{
-			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
-			{
-				return ShaderBuilder::ConstantValue(lhs >> rhs);
-			}
-		};
-
-		template<typename T1, typename T2>
-		struct BinaryRightShift;
-
-		template<typename T1, typename T2>
-		struct BinaryConstantPropagation<BinaryType::RightShift, T1, T2>
-		{
-			using Op = BinaryRightShift<T1, T2>;
-		};
-		// Addition
-		template<typename T1, typename T2>
-		struct BinaryAdditionBase
-		{
-			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
-			{
-				return ShaderBuilder::ConstantValue(lhs + rhs);
-			}
-		};
-
-		template<typename T1, typename T2>
-		struct BinaryAddition;
-
-		template<typename T1, typename T2>
-		struct BinaryConstantPropagation<BinaryType::Add, T1, T2>
-		{
-			using Op = BinaryAddition<T1, T2>;
-		};
-
-		// Division
-		template<typename T1, typename T2>
-		struct BinaryDivisionBase
-		{
-			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs, const SourceLocation& sourceLocation)
-			{
-				if constexpr (std::is_integral_v<T2>)
-				{
-					if (rhs == 0)
-						throw CompilerIntegralDivisionByZeroError{ sourceLocation, ConstantToString(lhs), ConstantToString(rhs) };
-				}
-				else if constexpr (IsVector_v<T2>)
-				{
-					for (std::size_t i = 0; i < T2::Dimensions; ++i)
-					{
-						if (rhs[i] == 0)
-							throw CompilerIntegralDivisionByZeroError{ sourceLocation, ConstantToString(lhs), ConstantToString(rhs) };
-					}
-				}
-
-				return ShaderBuilder::ConstantValue(lhs / rhs);
-			}
-		};
-
-		template<typename T1, typename T2>
-		struct BinaryDivision;
-
-		template<typename T1, typename T2>
-		struct BinaryConstantPropagation<BinaryType::Divide, T1, T2>
-		{
-			using Op = BinaryDivision<T1, T2>;
-		};
-		
 		// Modulo
 		template<typename T1, typename T2>
 		struct BinaryModuloBase
@@ -272,6 +240,44 @@ namespace nzsl::Ast
 			using Op = BinaryMultiplication<T1, T2>;
 		};
 
+		// ShiftLeft
+		template<typename T1, typename T2>
+		struct BinaryShiftLeftBase
+		{
+			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
+			{
+				return ShaderBuilder::ConstantValue(lhs << rhs);
+			}
+		};
+
+		template<typename T1, typename T2>
+		struct BinaryShiftLeft;
+
+		template<typename T1, typename T2>
+		struct BinaryConstantPropagation<BinaryType::ShiftLeft, T1, T2>
+		{
+			using Op = BinaryShiftLeft<T1, T2>;
+		};
+
+		// ShiftRight
+		template<typename T1, typename T2>
+		struct BinaryShiftRightBase
+		{
+			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
+			{
+				return ShaderBuilder::ConstantValue(lhs >> rhs);
+			}
+		};
+
+		template<typename T1, typename T2>
+		struct BinaryShiftRight;
+
+		template<typename T1, typename T2>
+		struct BinaryConstantPropagation<BinaryType::ShiftRight, T1, T2>
+		{
+			using Op = BinaryShiftRight<T1, T2>;
+		};
+
 		// Subtraction
 		template<typename T1, typename T2>
 		struct BinarySubtractionBase
@@ -297,36 +303,6 @@ namespace nzsl::Ast
 
 		// Binary
 
-		EnableOptimisation(BinaryLogicalAnd, bool, bool);
-		EnableOptimisation(BinaryLogicalOr, bool, bool);
-
-		EnableOptimisation(BinaryBinaryOr, std::int32_t,  std::uint32_t);
-		EnableOptimisation(BinaryBinaryOr, std::uint32_t, std::int32_t);
-		EnableOptimisation(BinaryBinaryOr, std::uint32_t, std::uint32_t);
-		EnableOptimisation(BinaryBinaryOr, std::int32_t, std::int32_t);
-		
-		EnableOptimisation(BinaryBinaryXor, std::int32_t, std::uint32_t);
-		EnableOptimisation(BinaryBinaryXor, std::uint32_t, std::int32_t);
-		EnableOptimisation(BinaryBinaryXor, std::uint32_t, std::uint32_t);
-		EnableOptimisation(BinaryBinaryXor, std::int32_t, std::int32_t);
-		
-		EnableOptimisation(BinaryBinaryAnd, std::int32_t, std::uint32_t);
-		EnableOptimisation(BinaryBinaryAnd, std::uint32_t, std::int32_t);
-		EnableOptimisation(BinaryBinaryAnd, std::uint32_t, std::uint32_t);
-		EnableOptimisation(BinaryBinaryAnd, std::int32_t, std::int32_t);
-		
-		EnableOptimisation(BinaryLeftShift, std::int32_t, std::uint32_t);
-		EnableOptimisation(BinaryLeftShift, std::uint32_t, std::int32_t);
-		EnableOptimisation(BinaryLeftShift, std::uint32_t, std::uint32_t);
-		EnableOptimisation(BinaryLeftShift, std::int32_t, std::int32_t);
-		
-		EnableOptimisation(BinaryRightShift, std::int32_t, std::uint32_t);
-		EnableOptimisation(BinaryRightShift, std::uint32_t, std::int32_t);
-		EnableOptimisation(BinaryRightShift, std::uint32_t, std::uint32_t);
-		EnableOptimisation(BinaryRightShift, std::int32_t, std::int32_t);
-
-
-
 		EnableOptimisation(BinaryAddition, double, double);
 		EnableOptimisation(BinaryAddition, float, float);
 		EnableOptimisation(BinaryAddition, std::int32_t, std::int32_t);
@@ -343,6 +319,21 @@ namespace nzsl::Ast
 		EnableOptimisation(BinaryAddition, Vector2u32, Vector2u32);
 		EnableOptimisation(BinaryAddition, Vector3u32, Vector3u32);
 		EnableOptimisation(BinaryAddition, Vector4u32, Vector4u32);
+
+		EnableOptimisation(BinaryBitwiseAnd, std::int32_t, std::uint32_t);
+		EnableOptimisation(BinaryBitwiseAnd, std::uint32_t, std::int32_t);
+		EnableOptimisation(BinaryBitwiseAnd, std::uint32_t, std::uint32_t);
+		EnableOptimisation(BinaryBitwiseAnd, std::int32_t, std::int32_t);
+
+		EnableOptimisation(BinaryBitwiseOr, std::int32_t, std::uint32_t);
+		EnableOptimisation(BinaryBitwiseOr, std::uint32_t, std::int32_t);
+		EnableOptimisation(BinaryBitwiseOr, std::uint32_t, std::uint32_t);
+		EnableOptimisation(BinaryBitwiseOr, std::int32_t, std::int32_t);
+
+		EnableOptimisation(BinaryBitwiseXor, std::int32_t, std::uint32_t);
+		EnableOptimisation(BinaryBitwiseXor, std::uint32_t, std::int32_t);
+		EnableOptimisation(BinaryBitwiseXor, std::uint32_t, std::uint32_t);
+		EnableOptimisation(BinaryBitwiseXor, std::int32_t, std::int32_t);
 
 		EnableOptimisation(BinaryDivision, double, double);
 		EnableOptimisation(BinaryDivision, double, Vector2f64);
@@ -384,7 +375,10 @@ namespace nzsl::Ast
 		EnableOptimisation(BinaryDivision, Vector3u32, Vector3u32);
 		EnableOptimisation(BinaryDivision, Vector4u32, std::uint32_t);
 		EnableOptimisation(BinaryDivision, Vector4u32, Vector4u32);
-		
+
+		EnableOptimisation(BinaryLogicalAnd, bool, bool);
+		EnableOptimisation(BinaryLogicalOr, bool, bool);
+
 		EnableOptimisation(BinaryModulo, double, double);
 		EnableOptimisation(BinaryModulo, double, Vector2f64);
 		EnableOptimisation(BinaryModulo, double, Vector3f64);
@@ -467,6 +461,16 @@ namespace nzsl::Ast
 		EnableOptimisation(BinaryMultiplication, Vector4u32, std::uint32_t);
 		EnableOptimisation(BinaryMultiplication, Vector4u32, Vector4u32);
 
+		EnableOptimisation(BinaryShiftLeft, std::int32_t, std::int32_t);
+		EnableOptimisation(BinaryShiftLeft, std::int32_t, std::uint32_t);
+		EnableOptimisation(BinaryShiftLeft, std::uint32_t, std::int32_t);
+		EnableOptimisation(BinaryShiftLeft, std::uint32_t, std::uint32_t);
+
+		EnableOptimisation(BinaryShiftRight, std::int32_t, std::int32_t);
+		EnableOptimisation(BinaryShiftRight, std::int32_t, std::uint32_t);
+		EnableOptimisation(BinaryShiftRight, std::uint32_t, std::int32_t);
+		EnableOptimisation(BinaryShiftRight, std::uint32_t, std::uint32_t);
+
 		EnableOptimisation(BinarySubtraction, double, double);
 		EnableOptimisation(BinarySubtraction, float, float);
 		EnableOptimisation(BinarySubtraction, std::int32_t, std::int32_t);
@@ -491,18 +495,18 @@ namespace nzsl::Ast
 	{
 		switch (type)
 		{
-			case BinaryType::Add:        return PropagateBinaryArithmeticsConstant<BinaryType::Add>		  (lhs, rhs, sourceLocation);
-			case BinaryType::Divide:     return PropagateBinaryArithmeticsConstant<BinaryType::Divide>    (lhs, rhs, sourceLocation);
+			case BinaryType::Add:        return PropagateBinaryArithmeticsConstant<BinaryType::Add>(lhs, rhs, sourceLocation);
+			case BinaryType::BitwiseAnd: return PropagateBinaryArithmeticsConstant<BinaryType::BitwiseAnd>(lhs, rhs, sourceLocation);
+			case BinaryType::BitwiseOr:  return PropagateBinaryArithmeticsConstant<BinaryType::BitwiseOr>(lhs, rhs, sourceLocation);
+			case BinaryType::BitwiseXor: return PropagateBinaryArithmeticsConstant<BinaryType::BitwiseXor>(lhs, rhs, sourceLocation);
+			case BinaryType::Divide:     return PropagateBinaryArithmeticsConstant<BinaryType::Divide>(lhs, rhs, sourceLocation);
 			case BinaryType::LogicalAnd: return PropagateBinaryArithmeticsConstant<BinaryType::LogicalAnd>(lhs, rhs, sourceLocation);
-			case BinaryType::LogicalOr:  return PropagateBinaryArithmeticsConstant<BinaryType::LogicalOr> (lhs, rhs, sourceLocation);
-			case BinaryType::BinaryAnd:  return PropagateBinaryArithmeticsConstant<BinaryType::BinaryAnd> (lhs, rhs, sourceLocation);
-			case BinaryType::BinaryOr:   return PropagateBinaryArithmeticsConstant<BinaryType::BinaryOr>  (lhs, rhs, sourceLocation);
-			case BinaryType::BinaryXor:  return PropagateBinaryArithmeticsConstant<BinaryType::BinaryXor> (lhs, rhs, sourceLocation);
-			case BinaryType::LeftShift:  return PropagateBinaryArithmeticsConstant<BinaryType::LeftShift> (lhs, rhs, sourceLocation);
-			case BinaryType::RightShift: return PropagateBinaryArithmeticsConstant<BinaryType::RightShift>(lhs, rhs, sourceLocation);
-			case BinaryType::Modulo:     return PropagateBinaryArithmeticsConstant<BinaryType::Modulo>	  (lhs, rhs, sourceLocation);
-			case BinaryType::Multiply:   return PropagateBinaryArithmeticsConstant<BinaryType::Multiply>  (lhs, rhs, sourceLocation);
-			case BinaryType::Subtract:   return PropagateBinaryArithmeticsConstant<BinaryType::Subtract>  (lhs, rhs, sourceLocation);
+			case BinaryType::LogicalOr:  return PropagateBinaryArithmeticsConstant<BinaryType::LogicalOr>(lhs, rhs, sourceLocation);
+			case BinaryType::Modulo:     return PropagateBinaryArithmeticsConstant<BinaryType::Modulo>(lhs, rhs, sourceLocation);
+			case BinaryType::Multiply:   return PropagateBinaryArithmeticsConstant<BinaryType::Multiply>(lhs, rhs, sourceLocation);
+			case BinaryType::ShiftLeft:  return PropagateBinaryArithmeticsConstant<BinaryType::ShiftLeft>(lhs, rhs, sourceLocation);
+			case BinaryType::ShiftRight: return PropagateBinaryArithmeticsConstant<BinaryType::ShiftRight>(lhs, rhs, sourceLocation);
+			case BinaryType::Subtract:   return PropagateBinaryArithmeticsConstant<BinaryType::Subtract>(lhs, rhs, sourceLocation);
 			default:
 				throw std::runtime_error("unexpected binary op");
 		}

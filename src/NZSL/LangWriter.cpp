@@ -998,11 +998,11 @@ namespace nzsl
 			case Ast::BinaryType::LogicalAnd: Append(" && "); break;
 			case Ast::BinaryType::LogicalOr:  Append(" || "); break;
 			
-			case Ast::BinaryType::BinaryAnd:  Append(" & ");  break;
-			case Ast::BinaryType::BinaryOr:   Append(" | ");  break;
-			case Ast::BinaryType::BinaryXor:  Append(" ^ ");  break;
-			case Ast::BinaryType::LeftShift:  Append(" << "); break;
-			case Ast::BinaryType::RightShift: Append(" >> "); break;
+			case Ast::BinaryType::BitwiseAnd:  Append(" & ");  break;
+			case Ast::BinaryType::BitwiseOr:   Append(" | ");  break;
+			case Ast::BinaryType::BitwiseXor:  Append(" ^ ");  break;
+			case Ast::BinaryType::ShiftLeft:   Append(" << "); break;
+			case Ast::BinaryType::ShiftRight:  Append(" >> "); break;
 		}
 
 		Visit(node.right, true);
@@ -1237,20 +1237,20 @@ namespace nzsl
 	{
 		switch (node.op)
 		{
-		case Ast::UnaryType::LogicalNot:
-			Append("!");
-			break;
-		case Ast::UnaryType::BinaryNot:
-			Append("~");
-			break;
+			case Ast::UnaryType::BitwiseNot:
+				Append("~");
+				break;
 
-		case Ast::UnaryType::Minus:
-			Append("-");
-			break;
+			case Ast::UnaryType::LogicalNot:
+				Append("!");
+				break;
+			case Ast::UnaryType::Minus:
+				Append("-");
+				break;
 
-		case Ast::UnaryType::Plus:
-			Append("+");
-			break;
+			case Ast::UnaryType::Plus:
+				Append("+");
+				break;
 		}
 
 		node.expression->Visit(*this);

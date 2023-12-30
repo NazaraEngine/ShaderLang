@@ -332,7 +332,7 @@ namespace nzsl
 							tokenType = TokenType::LogicalOr;
 					}
 					else
-						tokenType = TokenType::BinaryOr;
+						tokenType = TokenType::BitwiseOr;
 
 					break;
 				}
@@ -353,20 +353,23 @@ namespace nzsl
 							tokenType = TokenType::LogicalAnd;
 					}
 					else
-						tokenType = TokenType::BinaryAnd;
+						tokenType = TokenType::BitwiseAnd;
 
 					break;
 				}
+
 				case '^':
 				{
-					tokenType = TokenType::BinaryXor;
+					tokenType = TokenType::BitwiseXor;
 					break;
 				}
+
 				case '~':
 				{
-					tokenType = TokenType::BinaryNot;
+					tokenType = TokenType::BitwiseNot;
 					break;
 				}
+
 				case '<':
 				{
 					char next = Peek();
@@ -375,9 +378,10 @@ namespace nzsl
 						currentPos++;
 						tokenType = TokenType::LessThanEqual;
 					}
-					else if(next == '<') {
+					else if(next == '<')
+					{
 						currentPos++;
-						tokenType = TokenType::LeftShift;
+						tokenType = TokenType::ShiftLeft;
 					}
 					else
 						tokenType = TokenType::LessThan;
@@ -393,9 +397,10 @@ namespace nzsl
 						currentPos++;
 						tokenType = TokenType::GreaterThanEqual;
 					}
-					else if(next == '>') {
+					else if(next == '>')
+					{
 						currentPos++;
-						tokenType = TokenType::RightShift;
+						tokenType = TokenType::ShiftRight;
 					}
 					else
 						tokenType = TokenType::GreaterThan;
@@ -458,6 +463,7 @@ namespace nzsl
 
 					break;
 				}
+
 				case ':': tokenType = TokenType::Colon; break;
 				case ';': tokenType = TokenType::Semicolon; break;
 				case '.': tokenType = TokenType::Dot; break;
