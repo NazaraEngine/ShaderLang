@@ -270,6 +270,154 @@ fn main()
        OpFunctionEnd)", {}, {}, true);
 	}
 
+	SECTION("Bitwise operations")
+	{
+		std::string_view nzslSource = R"(
+[nzsl_version("1.0")]
+module;
+
+[entry(frag)]
+fn main()
+{
+	let x = 5;
+	let y = 2;
+
+	let r = x & y;
+	let r = x | y;
+	let r = x ^ y;
+	let r = x << y;
+	let r = x >> y;
+	
+	let x = u32(5);
+	let y = u32(2);
+
+	let r = x & y;
+	let r = x | y;
+	let r = x ^ y;
+	let r = x << y;
+	let r = x >> y;
+}
+)";
+
+		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
+		shaderModule = SanitizeModule(*shaderModule);
+
+		ExpectGLSL(*shaderModule, R"(
+void main()
+{
+	int x = 5;
+	int y = 2;
+	int r = x & y;
+	int r_2 = x | y;
+	int r_3 = x ^ y;
+	int r_4 = x << y;
+	int r_5 = x >> y;
+	uint x_2 = uint(5);
+	uint y_2 = uint(2);
+	uint r_6 = x_2 & y_2;
+	uint r_7 = x_2 | y_2;
+	uint r_8 = x_2 ^ y_2;
+	uint r_9 = x_2 << y_2;
+	uint r_10 = x_2 >> y_2;
+}
+)");
+
+		ExpectNZSL(*shaderModule, R"(
+[entry(frag)]
+fn main()
+{
+	let x: i32 = 5;
+	let y: i32 = 2;
+	let r: i32 = x & y;
+	let r: i32 = x | y;
+	let r: i32 = x ^ y;
+	let r: i32 = x << y;
+	let r: i32 = x >> y;
+	let x: u32 = u32(5);
+	let y: u32 = u32(2);
+	let r: u32 = x & y;
+	let r: u32 = x | y;
+	let r: u32 = x ^ y;
+	let r: u32 = x << y;
+	let r: u32 = x >> y;
+}
+)");
+
+		ExpectSPIRV(*shaderModule, R"(
+ %1 = OpTypeVoid
+ %2 = OpTypeFunction %1
+ %3 = OpTypeInt 32 1
+ %4 = OpConstant %3 i32(5)
+ %5 = OpTypePointer StorageClass(Function) %3
+ %6 = OpConstant %3 i32(2)
+ %7 = OpTypeInt 32 0
+ %8 = OpTypePointer StorageClass(Function) %7
+ %9 = OpFunction %1 FunctionControl(0) %2
+%10 = OpLabel
+%11 = OpVariable %5 StorageClass(Function)
+%12 = OpVariable %5 StorageClass(Function)
+%13 = OpVariable %5 StorageClass(Function)
+%14 = OpVariable %5 StorageClass(Function)
+%15 = OpVariable %5 StorageClass(Function)
+%16 = OpVariable %5 StorageClass(Function)
+%17 = OpVariable %5 StorageClass(Function)
+%18 = OpVariable %8 StorageClass(Function)
+%19 = OpVariable %8 StorageClass(Function)
+%20 = OpVariable %8 StorageClass(Function)
+%21 = OpVariable %8 StorageClass(Function)
+%22 = OpVariable %8 StorageClass(Function)
+%23 = OpVariable %8 StorageClass(Function)
+%24 = OpVariable %8 StorageClass(Function)
+      OpStore %11 %4
+      OpStore %12 %6
+%25 = OpLoad %3 %11
+%26 = OpLoad %3 %12
+%27 = OpBitwiseAnd %3 %25 %26
+      OpStore %13 %27
+%28 = OpLoad %3 %11
+%29 = OpLoad %3 %12
+%30 = OpBitwiseOr %3 %28 %29
+      OpStore %14 %30
+%31 = OpLoad %3 %11
+%32 = OpLoad %3 %12
+%33 = OpBitwiseXor %3 %31 %32
+      OpStore %15 %33
+%34 = OpLoad %3 %11
+%35 = OpLoad %3 %12
+%36 = OpShiftLeftLogical %3 %34 %35
+      OpStore %16 %36
+%37 = OpLoad %3 %11
+%38 = OpLoad %3 %12
+%39 = OpShiftRightArithmetic %3 %37 %38
+      OpStore %17 %39
+%40 = OpBitcast %7 %4
+      OpStore %18 %40
+%41 = OpBitcast %7 %6
+      OpStore %19 %41
+%42 = OpLoad %7 %18
+%43 = OpLoad %7 %19
+%44 = OpBitwiseAnd %7 %42 %43
+      OpStore %20 %44
+%45 = OpLoad %7 %18
+%46 = OpLoad %7 %19
+%47 = OpBitwiseOr %7 %45 %46
+      OpStore %21 %47
+%48 = OpLoad %7 %18
+%49 = OpLoad %7 %19
+%50 = OpBitwiseXor %7 %48 %49
+      OpStore %22 %50
+%51 = OpLoad %7 %18
+%52 = OpLoad %7 %19
+%53 = OpShiftLeftLogical %7 %51 %52
+      OpStore %23 %53
+%54 = OpLoad %7 %18
+%55 = OpLoad %7 %19
+%56 = OpShiftRightLogical %7 %54 %55
+      OpStore %24 %56
+      OpReturn
+      OpFunctionEnd)", {}, {}, true);
+	}
+
 	SECTION("Matrix/matrix operations")
 	{
 		std::string_view nzslSource = R"(
@@ -875,9 +1023,11 @@ module;
 [entry(frag)]
 fn main()
 {
-	let x = 42.0;
-	let y = -6.0;
-	let z = -y * +x;
+	let r = 42.0;
+	let r = -6.0;
+	let r = -r * +r;
+	let r = ~42;
+	let r = ~u32(42);
 }
 )";
 
@@ -887,9 +1037,11 @@ fn main()
 		ExpectGLSL(*shaderModule, R"(
 void main()
 {
-	float x = 42.0;
-	float y = -6.0;
-	float z = (-y) * (+x);
+	float r = 42.0;
+	float r_2 = -6.0;
+	float r_3 = (-r_2) * (+r_2);
+	int r_4 = ~42;
+	uint r_5 = ~uint(42);
 }
 )");
 
@@ -897,9 +1049,11 @@ void main()
 [entry(frag)]
 fn main()
 {
-	let x: f32 = 42.0;
-	let y: f32 = -6.0;
-	let z: f32 = (-y) * (+x);
+	let r: f32 = 42.0;
+	let r: f32 = -6.0;
+	let r: f32 = (-r) * (+r);
+	let r: i32 = ~42;
+	let r: u32 = ~u32(42);
 }
 )");
 
@@ -910,19 +1064,31 @@ fn main()
  %4 = OpConstant %3 f32(42)
  %5 = OpTypePointer StorageClass(Function) %3
  %6 = OpConstant %3 f32(6)
- %7 = OpFunction %1 FunctionControl(0) %2
- %8 = OpLabel
- %9 = OpVariable %5 StorageClass(Function)
-%10 = OpVariable %5 StorageClass(Function)
-%11 = OpVariable %5 StorageClass(Function)
-      OpStore %9 %4
-%12 = OpFNegate %3 %6
-      OpStore %10 %12
-%13 = OpLoad %3 %10
-%14 = OpFNegate %3 %13
-%15 = OpLoad %3 %9
-%16 = OpFMul %3 %14 %15
-      OpStore %11 %16
+ %7 = OpTypeInt 32 1
+ %8 = OpConstant %7 i32(42)
+ %9 = OpTypePointer StorageClass(Function) %7
+%10 = OpTypeInt 32 0
+%11 = OpTypePointer StorageClass(Function) %10
+%12 = OpFunction %1 FunctionControl(0) %2
+%13 = OpLabel
+%14 = OpVariable %5 StorageClass(Function)
+%15 = OpVariable %5 StorageClass(Function)
+%16 = OpVariable %5 StorageClass(Function)
+%17 = OpVariable %9 StorageClass(Function)
+%18 = OpVariable %11 StorageClass(Function)
+      OpStore %14 %4
+%19 = OpFNegate %3 %6
+      OpStore %15 %19
+%20 = OpLoad %3 %15
+%21 = OpFNegate %3 %20
+%22 = OpLoad %3 %15
+%23 = OpFMul %3 %21 %22
+      OpStore %16 %23
+%24 = OpNot %7 %8
+      OpStore %17 %24
+%25 = OpBitcast %10 %8
+%26 = OpNot %10 %25
+      OpStore %18 %26
       OpReturn
       OpFunctionEnd)", {}, {}, true);
 	}
