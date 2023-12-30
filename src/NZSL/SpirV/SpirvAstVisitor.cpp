@@ -367,6 +367,17 @@ namespace nzsl
 
 				case Ast::BinaryType::LogicalOr:
 					return SpirvOp::OpLogicalOr;
+
+				case Ast::BinaryType::BinaryAnd:
+					return SpirvOp::OpBitwiseAnd;
+				case Ast::BinaryType::BinaryOr:
+					return SpirvOp::OpBitwiseOr;
+				case Ast::BinaryType::BinaryXor:
+					return SpirvOp::OpBitwiseXor;
+				case Ast::BinaryType::LeftShift:
+					return SpirvOp::OpShiftLeftLogical;
+				case Ast::BinaryType::RightShift:
+					return SpirvOp::OpShiftRightArithmetic;
 			}
 
 			assert(false);
@@ -1072,6 +1083,18 @@ namespace nzsl
 
 					std::uint32_t resultId = m_writer.AllocateResultId();
 					m_currentBlock->Append(SpirvOp::OpLogicalNot, m_writer.GetTypeId(*resultType), resultId, operand);
+
+					return resultId;
+				}
+
+				case Ast::UnaryType::BinaryNot: 
+				{
+					assert(IsPrimitiveType(*exprType));
+					assert(std::get<Ast::PrimitiveType>(*resultType) == Ast::PrimitiveType::Int32 || std::get<Ast::PrimitiveType>(*resultType) == Ast::PrimitiveType::UInt32);
+					
+					HandleSourceLocation(node.sourceLocation);
+					std::uint32_t resultId = m_writer.AllocateResultId();
+					m_currentBlock->Append(SpirvOp::OpNot, m_writer.GetTypeId(*resultType), resultId, operand);
 
 					return resultId;
 				}
