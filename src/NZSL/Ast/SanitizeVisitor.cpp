@@ -5584,16 +5584,17 @@ namespace nzsl::Ast
 
 		switch (node.op)
 		{
-			case UnaryType::LogicalNot:
+			case UnaryType::BitwiseNot:
 			{
-				if (resolvedExprType != ExpressionType(PrimitiveType::Boolean))
+				if (resolvedExprType != ExpressionType(PrimitiveType::Int32) && resolvedExprType != ExpressionType(PrimitiveType::UInt32))
 					throw CompilerUnaryUnsupportedError{ node.sourceLocation, ToString(*exprType, node.sourceLocation) };
 
 				break;
 			}
-			case UnaryType::BinaryNot:
+
+			case UnaryType::LogicalNot:
 			{
-				if(resolvedExprType != ExpressionType(PrimitiveType::Int32) && resolvedExprType != ExpressionType(PrimitiveType::UInt32))
+				if (resolvedExprType != ExpressionType(PrimitiveType::Boolean))
 					throw CompilerUnaryUnsupportedError{ node.sourceLocation, ToString(*exprType, node.sourceLocation) };
 
 				break;
@@ -5700,6 +5701,18 @@ namespace nzsl::Ast
 					}
 				}
 
+				case BinaryType::BitwiseAnd:
+				case BinaryType::BitwiseOr:
+				case BinaryType::BitwiseXor:
+				case BinaryType::ShiftLeft:
+				case BinaryType::ShiftRight:
+				{
+					if (leftType != PrimitiveType::Int32 && leftType != PrimitiveType::UInt32)
+						throw CompilerBinaryUnsupportedError{ sourceLocation, "left", ToString(leftExprType, sourceLocation) };
+
+					return leftExprType;
+				}
+
 				case BinaryType::LogicalAnd:
 				case BinaryType::LogicalOr:
 				{
@@ -5708,18 +5721,6 @@ namespace nzsl::Ast
 
 					TypeMustMatch(leftExprType, rightExprType, sourceLocation);
 					return PrimitiveType::Boolean;
-				}
-
-				case BinaryType::BinaryAnd:
-				case BinaryType::BinaryOr:
-				case BinaryType::BinaryXor:
-				case BinaryType::LeftShift:
-				case BinaryType::RightShift:
-				{
-					if(leftType == PrimitiveType::String || leftType == PrimitiveType::Float32 || leftType == PrimitiveType::Float64 || leftType == PrimitiveType::Boolean)
-						throw CompilerBinaryUnsupportedError{ sourceLocation, "left", ToString(leftExprType, sourceLocation) };
-					
-					return leftExprType; // We know that the type here is either integer or boolean
 				}
 			}
 		}
@@ -5759,6 +5760,9 @@ namespace nzsl::Ast
 						throw CompilerBinaryIncompatibleTypesError{ sourceLocation, ToString(leftExprType, sourceLocation), ToString(rightExprType, sourceLocation) };
 				}
 
+				case BinaryType::BitwiseAnd:
+				case BinaryType::BitwiseOr:
+				case BinaryType::BitwiseXor:
 				case BinaryType::CompGe:
 				case BinaryType::CompGt:
 				case BinaryType::CompLe:
@@ -5766,14 +5770,11 @@ namespace nzsl::Ast
 				case BinaryType::CompEq:
 				case BinaryType::CompNe:
 				case BinaryType::Divide:
-				case BinaryType::Modulo:
 				case BinaryType::LogicalAnd:
 				case BinaryType::LogicalOr:
-				case BinaryType::BinaryAnd:
-				case BinaryType::BinaryOr:
-				case BinaryType::BinaryXor:
-				case BinaryType::LeftShift:
-				case BinaryType::RightShift:
+				case BinaryType::Modulo:
+				case BinaryType::ShiftLeft:
+				case BinaryType::ShiftRight:
 					throw CompilerBinaryUnsupportedError{ sourceLocation, "left", ToString(leftExprType, sourceLocation) };
 			}
 		}
@@ -5816,13 +5817,13 @@ namespace nzsl::Ast
 					break;
 				}
 
+				case BinaryType::BitwiseAnd:
+				case BinaryType::BitwiseOr:
+				case BinaryType::BitwiseXor:
 				case BinaryType::LogicalAnd:
 				case BinaryType::LogicalOr:
-				case BinaryType::BinaryAnd:
-				case BinaryType::BinaryOr:
-				case BinaryType::BinaryXor:
-				case BinaryType::LeftShift:
-				case BinaryType::RightShift:
+				case BinaryType::ShiftLeft:
+				case BinaryType::ShiftRight:
 					throw CompilerBinaryUnsupportedError{ sourceLocation, "left", ToString(leftExprType, sourceLocation) };
 			}
 		}
