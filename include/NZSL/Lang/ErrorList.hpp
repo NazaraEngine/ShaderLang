@@ -60,6 +60,8 @@ NZSL_SHADERLANG_COMPILER_ERROR(AttributeUnexpectedExpression, "unexpected expres
 NZSL_SHADERLANG_COMPILER_ERROR(AttributeUnexpectedNegative, "attribute value cannot be negative, got {}", std::string)
 NZSL_SHADERLANG_COMPILER_ERROR(AttributeUnexpectedType, "unexpected attribute type (expected {}, got {})", std::string, std::string)
 NZSL_SHADERLANG_COMPILER_ERROR(BinaryIncompatibleTypes, "incompatibles types ({} and {})", std::string, std::string)
+NZSL_SHADERLANG_COMPILER_ERROR(BinaryNegativeShift, "negative shift in expression ({0} {1} {2})", std::string, std::string, std::string)
+NZSL_SHADERLANG_COMPILER_ERROR(BinaryTooLargeShift, "shift is too large in expression ({0} {1} {2}) for type {3}", std::string, std::string, std::string, std::string)
 NZSL_SHADERLANG_COMPILER_ERROR(BinaryUnsupported, "{} type ({}) does not support this binary operation", std::string, std::string)
 NZSL_SHADERLANG_COMPILER_ERROR(BuiltinUnexpectedType, "builtin {} expected type {}, got type {}", Ast::BuiltinEntry, std::string, std::string)
 NZSL_SHADERLANG_COMPILER_ERROR(BuiltinUnsupportedStage, "builtin {} is not available in {} stage", Ast::BuiltinEntry, ShaderStageType)

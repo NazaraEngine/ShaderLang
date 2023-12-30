@@ -244,8 +244,20 @@ namespace nzsl::Ast
 		template<typename T1, typename T2>
 		struct BinaryShiftLeftBase
 		{
-			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
+			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs, const SourceLocation& sourceLocation)
 			{
+				if constexpr (std::is_integral_v<T2>)
+				{
+					if constexpr (std::is_signed_v<T2>)
+					{
+						if (rhs < 0)
+							throw CompilerBinaryNegativeShiftError{ sourceLocation, ConstantToString(lhs), "<<", ConstantToString(rhs)};
+					}
+
+					if (rhs >= Nz::BitCount<T2>())
+						throw CompilerBinaryTooLargeShiftError{ sourceLocation, ConstantToString(lhs), "<<", ConstantToString(rhs), ToString(GetConstantExpressionType<T1>()) };
+				}
+
 				return ShaderBuilder::ConstantValue(lhs << rhs);
 			}
 		};
@@ -263,9 +275,36 @@ namespace nzsl::Ast
 		template<typename T1, typename T2>
 		struct BinaryShiftRightBase
 		{
-			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
+			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs, const SourceLocation& sourceLocation)
 			{
-				return ShaderBuilder::ConstantValue(lhs >> rhs);
+				if constexpr (std::is_integral_v<T2>)
+				{
+					if constexpr (std::is_signed_v<T2>)
+					{
+						if (rhs < 0)
+							throw CompilerBinaryNegativeShiftError{ sourceLocation, ConstantToString(lhs), ">>", ConstantToString(rhs) };
+					}
+
+					if (rhs >= Nz::BitCount<T2>())
+						throw CompilerBinaryTooLargeShiftError{ sourceLocation, ConstantToString(lhs), ">>", ConstantToString(rhs), ToString(GetConstantExpressionType<T1>()) };
+				}
+
+				T1 result;
+#if NAZARA_CHECK_CPP_VER(NAZARA_CPP20)
+				// C++20 ensures that right shift performs an arthmetic shift on signed integers
+				result = lhs >> rhs;
+#else
+				// Implement arithmetic shift on C++ <=17
+				if constexpr (std::is_signed_v<T2>)
+				{
+					if (lhs < 0 && rhs > 0)
+						result = (lhs >> rhs) | ~(~static_cast<std::make_unsigned_t<T1>>(0u) >> rhs);
+				}
+				else
+					result = lhs >> rhs;
+#endif
+
+				return ShaderBuilder::ConstantValue(result);
 			}
 		};
 
