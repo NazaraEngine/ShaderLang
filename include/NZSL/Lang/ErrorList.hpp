@@ -31,6 +31,7 @@ NZSL_SHADERLANG_LEXER_ERROR(UnfinishedComment, "unfinished block comment")
 NZSL_SHADERLANG_LEXER_ERROR(UnfinishedString, "unfinished string")
 NZSL_SHADERLANG_LEXER_ERROR(UnrecognizedChar, "unrecognized character")
 NZSL_SHADERLANG_LEXER_ERROR(UnrecognizedToken, "unrecognized token")
+NZSL_SHADERLANG_LEXER_ERROR(UnexpectedFloatingPointBase, "floating-point number can only be specified using base 10 (got base {})", int)
 
 // Parser errors
 NZSL_SHADERLANG_PARSER_ERROR(AttributeExpectString, "attribute {} requires a string parameter", Ast::AttributeType)
