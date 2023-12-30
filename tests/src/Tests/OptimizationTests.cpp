@@ -59,6 +59,47 @@ fn main()
 )");
 	}
 
+	WHEN("propagating bitwise constants")
+	{
+		PropagateConstantAndExpect(R"(
+[nzsl_version("1.0")]
+[feature(float64)]
+module;
+
+[entry(frag)]
+fn main()
+{
+	let output1 = -26666 & 0b1111_1111;
+	let output2 = 0b100000 | 0b1010;
+	let output3 = 0b1111_0000 ^ 0b0101_1010;
+	
+	let output4 = u32(26666) & u32(0b1111_1111);
+	let output5 = u32(0b100000) | u32(0b1010);
+	let output6 = u32(0b1111_0000) ^ u32(0b0101_1010);
+
+	let output7 = -42 << 10;
+	let output8 = -42 >> 10;
+	let output9 = u32(1) << 10;
+	let output10 = u32(1024) >> 10;
+}
+)", R"(
+[entry(frag)]
+fn main()
+{
+	let output1: i32 = 214;
+	let output2: i32 = 42;
+	let output3: i32 = 170;
+	let output4: u32 = u32(42);
+	let output5: u32 = u32(42);
+	let output6: u32 = u32(170);
+	let output7: i32 = -43008;
+	let output8: i32 = -1;
+	let output9: u32 = u32(1024);
+	let output10: u32 = u32(1);
+}
+)");
+	}
+
 	WHEN("propagating vector constants")
 	{
 		PropagateConstantAndExpect(R"(
