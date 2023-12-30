@@ -341,6 +341,38 @@ module;
 const V = vec4[i32](7, 6, 5, 4) % vec4[i32](3, 2, 1, 0);
 
 )"), "(5,11 -> 55): CIntegralModuloByZero error: integral modulo by zero in expression (vec4[i32](7, 6, 5, 4) % vec4[i32](3, 2, 1, 0))");
+
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+const V = 42 << -1;
+
+)"), "(5,11 -> 18): CBinaryNegativeShift error: negative shift in expression (42 << -1)");
+
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+const V = 42 >> -1;
+
+)"), "(5,11 -> 18): CBinaryNegativeShift error: negative shift in expression (42 >> -1)");
+
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+const V = u32(42) << u32(32);
+
+)"), "(5,11 -> 28): CBinaryTooLargeShift error: shift is too large in expression (u32(42) << u32(32)) for type u32");
+
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+const V = u32(42) >> u32(82);
+
+)"), "(5,11 -> 28): CBinaryTooLargeShift error: shift is too large in expression (u32(42) >> u32(82)) for type u32");
 		}
 
 		/************************************************************************/
