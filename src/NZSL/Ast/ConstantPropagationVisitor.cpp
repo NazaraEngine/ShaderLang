@@ -171,6 +171,25 @@ namespace nzsl::Ast
 			using Op = UnaryLogicalNot<T>;
 		};
 
+		// BinaryNot
+		template<typename T>
+		struct UnaryBinaryNotBase
+		{
+			std::unique_ptr<ConstantValueExpression> operator()(const T& arg, const SourceLocation& /*sourceLocation*/)
+			{
+				return ShaderBuilder::ConstantValue(~arg);
+			}
+		};
+
+		template<typename T>
+		struct UnaryBinaryNot;
+
+		template<typename T>
+		struct UnaryConstantPropagation<UnaryType::BinaryNot, T>
+		{
+			using Op = UnaryBinaryNot<T>;
+		};
+
 		// Minus
 		template<typename T>
 		struct UnaryMinusBase
@@ -380,6 +399,9 @@ namespace nzsl::Ast
 
 		EnableOptimisation(UnaryLogicalNot, bool);
 
+		EnableOptimisation(UnaryBinaryNot, std::uint32_t);
+		EnableOptimisation(UnaryBinaryNot, std::int32_t);
+
 		EnableOptimisation(UnaryMinus, double);
 		EnableOptimisation(UnaryMinus, float);
 		EnableOptimisation(UnaryMinus, std::int32_t);
@@ -434,6 +456,11 @@ namespace nzsl::Ast
 				case BinaryType::Divide:
 				case BinaryType::LogicalAnd:
 				case BinaryType::LogicalOr:
+				case BinaryType::BinaryAnd:
+				case BinaryType::BinaryOr:
+				case BinaryType::BinaryXor:
+				case BinaryType::LeftShift:
+				case BinaryType::RightShift:
 				case BinaryType::Modulo:
 				case BinaryType::Multiply:
 				case BinaryType::Subtract:
@@ -915,6 +942,9 @@ namespace nzsl::Ast
 			{
 				case UnaryType::LogicalNot:
 					optimized = PropagateUnaryConstant<UnaryType::LogicalNot>(constantExpr, node.sourceLocation);
+					break;
+				case UnaryType::BinaryNot:
+					optimized = PropagateUnaryConstant<UnaryType::BinaryNot>(constantExpr, node.sourceLocation);
 					break;
 
 				case UnaryType::Minus:

@@ -1476,6 +1476,11 @@ namespace nzsl
 					case TokenType::LessThanEqual:     return BuildBinary(Ast::BinaryType::CompLe,     std::move(lhs), std::move(rhs));
 					case TokenType::LogicalAnd:        return BuildBinary(Ast::BinaryType::LogicalAnd, std::move(lhs), std::move(rhs));
 					case TokenType::LogicalOr:         return BuildBinary(Ast::BinaryType::LogicalOr,  std::move(lhs), std::move(rhs));
+					case TokenType::BinaryAnd:         return BuildBinary(Ast::BinaryType::BinaryAnd,  std::move(lhs), std::move(rhs));
+					case TokenType::BinaryOr:          return BuildBinary(Ast::BinaryType::BinaryOr,   std::move(lhs), std::move(rhs));
+					case TokenType::BinaryXor:         return BuildBinary(Ast::BinaryType::BinaryXor,  std::move(lhs), std::move(rhs));
+					case TokenType::LeftShift:		   return BuildBinary(Ast::BinaryType::LeftShift,  std::move(lhs), std::move(rhs));
+					case TokenType::RightShift:		   return BuildBinary(Ast::BinaryType::RightShift, std::move(lhs), std::move(rhs));
 					case TokenType::GreaterThan:       return BuildBinary(Ast::BinaryType::CompGt,     std::move(lhs), std::move(rhs));
 					case TokenType::GreaterThanEqual:  return BuildBinary(Ast::BinaryType::CompGe,     std::move(lhs), std::move(rhs));
 					case TokenType::Modulo:            return BuildBinary(Ast::BinaryType::Modulo,     std::move(lhs), std::move(rhs));
@@ -1654,6 +1659,7 @@ namespace nzsl
 			case TokenType::Minus:
 			case TokenType::Not:
 			case TokenType::Plus:
+			case TokenType::BinaryNot:
 			{
 				Consume();
 				Ast::ExpressionPtr expr = ParseExpression(GetUnaryTokenPrecedence(token.type));
@@ -1662,9 +1668,10 @@ namespace nzsl
 				{
 					switch (token.type)
 					{
-						case TokenType::Minus: return BuildUnary(Ast::UnaryType::Minus, std::move(expr));
-						case TokenType::Not:   return BuildUnary(Ast::UnaryType::LogicalNot, std::move(expr));
-						case TokenType::Plus:  return BuildUnary(Ast::UnaryType::Plus, std::move(expr));
+						case TokenType::Minus:		return BuildUnary(Ast::UnaryType::Minus, std::move(expr));
+						case TokenType::Not:		return BuildUnary(Ast::UnaryType::LogicalNot, std::move(expr));
+						case TokenType::Plus:		return BuildUnary(Ast::UnaryType::Plus, std::move(expr));
+						case TokenType::BinaryNot:	return BuildUnary(Ast::UnaryType::BinaryNot, std::move(expr));
 						default:
 							throw ParserUnexpectedTokenError{ token.location, token.type };
 					}
@@ -1827,6 +1834,11 @@ namespace nzsl
 			case TokenType::LessThanEqual:     return 40;
 			case TokenType::LogicalAnd:        return 20;
 			case TokenType::LogicalOr:         return 10;
+			case TokenType::BinaryAnd:         return 35;
+			case TokenType::BinaryOr:          return 25;
+			case TokenType::BinaryXor:         return 30;
+			case TokenType::LeftShift:         return 55;
+			case TokenType::RightShift:        return 55;
 			case TokenType::GreaterThan:       return 40;
 			case TokenType::GreaterThanEqual:  return 40;
 			case TokenType::Modulo:            return 80;
@@ -1846,6 +1858,7 @@ namespace nzsl
 		{
 			case TokenType::Minus:             return 90;
 			case TokenType::Not:               return 90;
+			case TokenType::BinaryNot:         return 90;
 			case TokenType::Plus:              return 90;
 			default: return -1;
 		}
