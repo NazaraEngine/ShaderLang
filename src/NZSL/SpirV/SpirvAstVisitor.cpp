@@ -368,16 +368,20 @@ namespace nzsl
 				case Ast::BinaryType::LogicalOr:
 					return SpirvOp::OpLogicalOr;
 
-				case Ast::BinaryType::BinaryAnd:
+				case Ast::BinaryType::BitwiseAnd:
 					return SpirvOp::OpBitwiseAnd;
-				case Ast::BinaryType::BinaryOr:
+
+				case Ast::BinaryType::BitwiseOr:
 					return SpirvOp::OpBitwiseOr;
-				case Ast::BinaryType::BinaryXor:
+
+				case Ast::BinaryType::BitwiseXor:
 					return SpirvOp::OpBitwiseXor;
-				case Ast::BinaryType::LeftShift:
+
+				case Ast::BinaryType::ShiftLeft:
 					return SpirvOp::OpShiftLeftLogical;
-				case Ast::BinaryType::RightShift:
-					return SpirvOp::OpShiftRightArithmetic;
+
+				case Ast::BinaryType::ShiftRight:
+					return (leftTypeBase == Ast::PrimitiveType::Int32) ? SpirvOp::OpShiftRightArithmetic : SpirvOp::OpShiftRightLogical;
 			}
 
 			assert(false);
@@ -1074,6 +1078,18 @@ namespace nzsl
 		{
 			switch (node.op)
 			{
+				case Ast::UnaryType::BitwiseNot: 
+				{
+					assert(IsPrimitiveType(*exprType));
+					assert(std::get<Ast::PrimitiveType>(*resultType) == Ast::PrimitiveType::Int32 || std::get<Ast::PrimitiveType>(*resultType) == Ast::PrimitiveType::UInt32);
+
+					HandleSourceLocation(node.sourceLocation);
+					std::uint32_t resultId = m_writer.AllocateResultId();
+					m_currentBlock->Append(SpirvOp::OpNot, m_writer.GetTypeId(*resultType), resultId, operand);
+
+					return resultId;
+				}
+
 				case Ast::UnaryType::LogicalNot:
 				{
 					assert(IsPrimitiveType(*exprType));
@@ -1083,18 +1099,6 @@ namespace nzsl
 
 					std::uint32_t resultId = m_writer.AllocateResultId();
 					m_currentBlock->Append(SpirvOp::OpLogicalNot, m_writer.GetTypeId(*resultType), resultId, operand);
-
-					return resultId;
-				}
-
-				case Ast::UnaryType::BinaryNot: 
-				{
-					assert(IsPrimitiveType(*exprType));
-					assert(std::get<Ast::PrimitiveType>(*resultType) == Ast::PrimitiveType::Int32 || std::get<Ast::PrimitiveType>(*resultType) == Ast::PrimitiveType::UInt32);
-					
-					HandleSourceLocation(node.sourceLocation);
-					std::uint32_t resultId = m_writer.AllocateResultId();
-					m_currentBlock->Append(SpirvOp::OpNot, m_writer.GetTypeId(*resultType), resultId, operand);
 
 					return resultId;
 				}

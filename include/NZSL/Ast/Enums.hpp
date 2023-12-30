@@ -49,7 +49,11 @@ namespace nzsl::Ast
 
 	enum class BinaryType
 	{
+		// Next free ID: 18
 		Add        = 0,  //< +
+		BitwiseAnd = 13, //< &
+		BitwiseOr  = 14, //< |
+		BitwiseXor = 15, //< ^
 		CompEq     = 1,  //< ==
 		CompGe     = 2,  //< >=
 		CompGt     = 3,  //< >
@@ -61,12 +65,9 @@ namespace nzsl::Ast
 		LogicalOr  = 10, //< ||
 		Modulo     = 12, //< %
 		Multiply   = 8,  //< *
+		ShiftLeft  = 16, //< <<
+		ShiftRight = 17, //< >>
 		Subtract   = 11, //< -
-		BinaryAnd  = 13, //< &
-		BinaryOr   = 14, //< |
-		BinaryXor  = 15, //< ~
-		LeftShift  = 16, //< <<
-		RightShift = 17, //< >>
 	};
 
 	enum class BuiltinEntry
@@ -249,10 +250,10 @@ namespace nzsl::Ast
 
 	enum class UnaryType
 	{
+		BitwiseNot = 3, //< ~v
 		LogicalNot = 0, //< !v
 		Minus      = 1, //< -v
 		Plus       = 2, //< +v
-		BinaryNot = 3, //< !v
 	};
 }
 
