@@ -54,55 +54,55 @@ int main()
 		{
 			switch (event.type)
 			{
-			case sf::Event::Closed:
-			{
-				window.close();
-				break;
-			}
-
-			case sf::Event::KeyPressed:
-			{
-				if (event.key.code == sf::Keyboard::Escape)
-					window.close();
-				break;
-			}
-
-			case sf::Event::MouseMoved:
-			{
-				sf::Vector2i newPos(event.mouseMove.x, event.mouseMove.y);
-				sf::Vector2i delta = newPos - mousePos;
-				mousePos = newPos;
-
-				if (sf::Mouse::isButtonPressed(sf::Mouse::Left))
+				case sf::Event::Closed:
 				{
-					center += scale * sf::Vector2f(sf::Vector2i(delta.x, -delta.y));
-					shader.setUniform("center", center);
+					window.close();
 					break;
 				}
 
-				break;
-			}
+				case sf::Event::KeyPressed:
+				{
+					if (event.key.code == sf::Keyboard::Escape)
+						window.close();
+					break;
+				}
 
-			case sf::Event::MouseWheelScrolled:
-			{
-				targetScale = std::clamp(targetScale - targetScale * 0.1f * event.mouseWheelScroll.delta, 0.000001f, 3.f);
-				break;
-			}
+				case sf::Event::MouseMoved:
+				{
+					sf::Vector2i newPos(event.mouseMove.x, event.mouseMove.y);
+					sf::Vector2i delta = newPos - mousePos;
+					mousePos = newPos;
 
-			case sf::Event::Resized:
-			{
-				sf::Vector2f newSize(float(event.size.width), float(event.size.height));
+					if (sf::Mouse::isButtonPressed(sf::Mouse::Left))
+					{
+						center += scale * sf::Vector2f(sf::Vector2i(delta.x, -delta.y));
+						shader.setUniform("center", center);
+						break;
+					}
 
-				shader.setUniform("screen_size", newSize);
-				fullscreenShape.setSize(newSize);
+					break;
+				}
 
-				sf::FloatRect visibleArea(0.f, 0.f, newSize.x, newSize.y);
-				window.setView(sf::View(visibleArea));
-				break;
-			}
+				case sf::Event::MouseWheelScrolled:
+				{
+					targetScale = std::clamp(targetScale - targetScale * 0.1f * event.mouseWheelScroll.delta, 0.000001f, 3.f);
+					break;
+				}
 
-			default:
-				break;
+				case sf::Event::Resized:
+				{
+					sf::Vector2f newSize(float(event.size.width), float(event.size.height));
+
+					shader.setUniform("screen_size", newSize);
+					fullscreenShape.setSize(newSize);
+
+					sf::FloatRect visibleArea(0.f, 0.f, newSize.x, newSize.y);
+					window.setView(sf::View(visibleArea));
+					break;
+				}
+
+				default:
+					break;
 			}
 		}
 
