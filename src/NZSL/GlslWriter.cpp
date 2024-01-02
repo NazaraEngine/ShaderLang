@@ -25,6 +25,7 @@
 #include <optional>
 #include <sstream>
 #include <stdexcept>
+#include <unordered_map>
 
 namespace nzsl
 {
@@ -294,12 +295,12 @@ namespace nzsl
 
 			FunctionData* currentFunction = nullptr;
 
-			tsl::ordered_set<GlslCapability> capabilities;
-			tsl::ordered_set<Ast::ExpressionType> requiredPrecisionQualifiers;
 			std::optional<ShaderStageType> selectedStage;
 			std::string moduleSuffix;
 			std::unordered_map<std::size_t, FunctionData> functions;
 			std::unordered_map<std::size_t, Ast::StructDescription*> structs;
+			tsl::ordered_set<GlslCapability> capabilities;
+			tsl::ordered_set<Ast::ExpressionType> requiredPrecisionQualifiers;
 			Nz::Bitset<> bufferStructs; //< structs used only in UBO/SSBO that shouldn't be declared as such in GLSL
 			Nz::Bitset<> usedStructs; //< & with bufferStructs, to handle case where a UBO/SSBO struct is declared as a variable (which is allowed) or member of a struct
 			Ast::DeclareFunctionStatement* entryPoint = nullptr;

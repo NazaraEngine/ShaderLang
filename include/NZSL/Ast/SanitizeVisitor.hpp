@@ -15,9 +15,9 @@
 #include <NZSL/Ast/Option.hpp>
 #include <NZSL/Ast/Types.hpp>
 #include <functional>
+#include <memory>
+#include <variant>
 #include <unordered_map>
-#include <unordered_set>
-#include <vector>
 
 namespace nzsl::Ast
 {

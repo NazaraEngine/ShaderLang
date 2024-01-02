@@ -47,10 +47,10 @@ namespace nzsl
 
 			static bool CheckExtension(std::string_view filename);
 
+			std::recursive_mutex m_moduleLock;
 			std::unordered_map<std::string, std::string> m_moduleByFilepath;
 			std::unordered_map<std::string, Ast::ModulePtr> m_modules;
 			Nz::MovablePtr<void> m_fileWatcher;
-			std::recursive_mutex m_moduleLock;
 	};
 }
 

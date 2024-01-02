@@ -17,6 +17,7 @@
 #include <cassert>
 #include <optional>
 #include <stdexcept>
+#include <unordered_map>
 
 namespace nzsl
 {
@@ -172,8 +173,6 @@ namespace nzsl
 			std::string name;
 		};
 
-		const States* states = nullptr;
-		const Ast::Module* module;
 		std::size_t currentModuleIndex;
 		std::stringstream stream;
 		std::unordered_map<std::size_t, Identifier> aliases;
@@ -182,6 +181,8 @@ namespace nzsl
 		std::unordered_map<std::size_t, Identifier> structs;
 		std::unordered_map<std::size_t, Identifier> variables;
 		std::vector<std::string> moduleNames;
+		const States* states = nullptr;
+		const Ast::Module* module;
 		bool isInEntryPoint = false;
 		int streamEmptyLine = 1;
 		unsigned int indentLevel = 0;
