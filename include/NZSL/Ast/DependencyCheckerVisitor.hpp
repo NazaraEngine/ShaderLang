@@ -10,6 +10,7 @@
 #include <NazaraUtils/Bitset.hpp>
 #include <NZSL/Config.hpp>
 #include <NZSL/Ast/RecursiveVisitor.hpp>
+#include <unordered_map>
 
 namespace nzsl::Ast
 {

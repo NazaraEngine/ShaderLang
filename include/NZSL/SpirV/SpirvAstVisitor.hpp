@@ -141,10 +141,10 @@ namespace nzsl
 
 				std::size_t funcIndex;
 				std::string name;
+				std::unordered_map<std::size_t, std::size_t> varIndexToVarId;
 				std::vector<FuncCall> funcCalls;
 				std::vector<Parameter> parameters;
 				std::vector<Variable> variables;
-				std::unordered_map<std::size_t, std::size_t> varIndexToVarId;
 				std::uint32_t funcId;
 				std::uint32_t funcTypeId;
 				std::uint32_t returnTypeId;

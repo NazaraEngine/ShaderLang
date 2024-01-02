@@ -11,6 +11,7 @@
 #include <NZSL/Serializer.hpp>
 #include <NZSL/Ast/Module.hpp>
 #include <NZSL/Lang/SourceLocation.hpp>
+#include <unordered_map>
 
 namespace nzsl::Ast
 {
