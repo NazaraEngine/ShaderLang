@@ -301,7 +301,7 @@ on_run(function ()
 		end
 	})
 
-	-- Every source file should include its header first
+	-- Every source file should include its header first, except .inl files
 	table.insert(checks, {
 		Name = "inclusion",
 		Check = function ()
@@ -351,7 +351,7 @@ on_run(function ()
 
 						-- Add header inclusion if it's missing
 						local isInl = path.extension(filePath) == ".inl"
-						if not headerInclude then
+						if not headerInclude and not isInl then
 							print(filePath .. " is missing corresponding header inclusion")
 
 							table.insert(fixes, {
@@ -537,7 +537,7 @@ on_run(function ()
 			)
 
 			local currentYear = os.date("%Y")
-			local engineAuthor = "Jérôme \"Lynix\" Leclercq (lynix680@gmail.com)"
+			local engineAuthor = "Jérôme \"SirLynix\" Leclercq (lynix680@gmail.com)"
 			local prevAuthor = "Jérôme Leclercq"
 			local fixes = {}
 
