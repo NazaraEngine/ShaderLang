@@ -3,7 +3,7 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <NZSL/FilesystemModuleResolver.hpp>
-#include <NazaraUtils/Algorithm.hpp>
+#include <NazaraUtils/PathUtils.hpp>
 #include <NZSL/Parser.hpp>
 #include <NZSL/Ast/AstSerializer.hpp>
 #ifdef NZSL_EFSW

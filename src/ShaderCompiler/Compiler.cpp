@@ -5,6 +5,7 @@
 #include <ShaderCompiler/Compiler.hpp>
 #include <NazaraUtils/Algorithm.hpp>
 #include <NazaraUtils/CallOnExit.hpp>
+#include <NazaraUtils/PathUtils.hpp>
 #include <NZSL/FilesystemModuleResolver.hpp>
 #include <NZSL/GlslWriter.hpp>
 #include <NZSL/LangWriter.hpp>

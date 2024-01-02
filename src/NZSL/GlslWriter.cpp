@@ -6,6 +6,7 @@
 #include <NazaraUtils/Algorithm.hpp>
 #include <NazaraUtils/Bitset.hpp>
 #include <NazaraUtils/CallOnExit.hpp>
+#include <NazaraUtils/PathUtils.hpp>
 #include <NZSL/Enums.hpp>
 #include <NZSL/ShaderBuilder.hpp>
 #include <NZSL/Ast/Cloner.hpp>

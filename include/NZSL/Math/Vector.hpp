@@ -7,7 +7,7 @@
 #ifndef NZSL_MATH_VECTOR_HPP
 #define NZSL_MATH_VECTOR_HPP
 
-#include <NazaraUtils/Algorithm.hpp>
+#include <NazaraUtils/MathUtils.hpp>
 #include <NZSL/Config.hpp>
 #include <array>
 #include <functional>

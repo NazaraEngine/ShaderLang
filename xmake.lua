@@ -27,7 +27,7 @@ end
 
 add_repositories("nazara-engine-repo https://github.com/NazaraEngine/xmake-repo")
 add_requires("fmt", { configs = { header_only = true }, system = false })
-add_requires("nazarautils >=2023.12.28", "fast_float", "frozen", "ordered_map")
+add_requires("nazarautils >=2024.01.02", "fast_float", "frozen", "ordered_map")
 
 if has_config("fs_watcher") then
 	add_requires("efsw")

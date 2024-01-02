@@ -4,6 +4,7 @@
 
 #include <NZSL/SpirvWriter.hpp>
 #include <NazaraUtils/CallOnExit.hpp>
+#include <NazaraUtils/PathUtils.hpp>
 #include <NazaraUtils/StackVector.hpp>
 #include <NZSL/Enums.hpp>
 #include <NZSL/Parser.hpp>
