@@ -2,8 +2,8 @@
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
-#include <NZSL/ShaderBuilder.hpp>
 #include <NZSL/Ast/ConstantPropagationVisitor.hpp>
+#include <NZSL/ShaderBuilder.hpp>
 #include <NZSL/Lang/Errors.hpp>
 #include <cassert>
 #include <cmath>
