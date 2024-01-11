@@ -303,6 +303,143 @@ namespace nzsl
 	}
 
 	template<typename T, std::size_t N>
+	constexpr Vector<T, N> Vector<T, N>::operator~() const
+	{
+		Vector<T, N> result;
+		for (std::size_t i = 0; i < N; ++i)
+			result.values[i] = ~values[i];
+
+		return result;
+	}
+
+	template<typename T, std::size_t N>
+	constexpr Vector<T, N> Vector<T, N>::operator&(const Vector<T, N>& vec) const
+	{
+		Vector<T, N> result;
+		for (std::size_t i = 0; i < N; ++i)
+			result.values[i] = values[i] & vec.values[i];
+
+		return result;
+	}
+
+	template<typename T, std::size_t N>
+	constexpr Vector<T, N> Vector<T, N>::operator|(const Vector& vec) const
+	{
+		Vector<T, N> result;
+		for (std::size_t i = 0; i < N; ++i)
+			result.values[i] = values[i] | vec.values[i];
+
+		return result;
+	}
+
+	template<typename T, std::size_t N>
+	inline constexpr Vector<T, N> Vector<T, N>::operator^(const Vector& vec) const
+	{
+		Vector<T, N> result;
+		for (std::size_t i = 0; i < N; ++i)
+			result.values[i] = values[i] ^ vec.values[i];
+
+		return result;
+	}
+
+	template<typename T, std::size_t N>
+	inline constexpr Vector<T, N> Vector<T, N>::operator<<(const Vector& vec) const
+	{
+		Vector<T, N> result;
+		for (std::size_t i = 0; i < N; ++i)
+			result.values[i] = values[i] << vec.values[i];
+
+		return result;
+	}
+
+	template<typename T, std::size_t N>
+	inline constexpr Vector<T, N> Vector<T, N>::operator>>(const Vector& vec) const
+	{
+		Vector<T, N> result;
+		for (std::size_t i = 0; i < N; ++i)
+		{
+#if NAZARA_CHECK_CPP_VER(NAZARA_CPP20)
+			// C++20 ensures that right shift performs an arthmetic shift on signed integers
+			result.values[i] = values[i] >> vec.values[i];
+#else
+			// Implement arithmetic shift on C++ <=17
+			if constexpr (std::is_signed_v<T>)
+			{
+				if (values[i] < 0 && vec.values[i] > 0)
+					result.values[i] = (values[i] >> vec.values[i]) | ~(~static_cast<std::make_unsigned_t<T>>(0u) >> vec.values[i]);
+				else
+					result.values[i] = values[i] >> vec.values[i];
+			}
+			else
+				result.values[i] = values[i] >> vec.values[i];
+#endif
+		}
+
+		return result;
+	}
+
+	template<typename T, std::size_t N>
+	inline constexpr Vector<T, N> Vector<T, N>::operator&=(const Vector& vec)
+	{
+		for (std::size_t i = 0; i < N; ++i)
+			values[i] &= vec.values[i];
+
+		return this;
+	}
+
+	template<typename T, std::size_t N>
+	inline constexpr Vector<T, N> Vector<T, N>::operator|=(const Vector& vec)
+	{
+		for (std::size_t i = 0; i < N; ++i)
+			values[i] |= vec.values[i];
+
+		return this;
+	}
+
+	template<typename T, std::size_t N>
+	inline constexpr Vector<T, N> Vector<T, N>::operator^=(const Vector& vec)
+	{
+		for (std::size_t i = 0; i < N; ++i)
+			values[i] ^= vec.values[i];
+
+		return this;
+	}
+
+	template<typename T, std::size_t N>
+	inline constexpr Vector<T, N> Vector<T, N>::operator<<=(const Vector& vec)
+	{
+		for (std::size_t i = 0; i < N; ++i)
+			values[i] <<= vec.values[i];
+
+		return this;
+	}
+
+	template<typename T, std::size_t N>
+	inline constexpr Vector<T, N> Vector<T, N>::operator>>=(const Vector& vec)
+	{
+		for (std::size_t i = 0; i < N; ++i)
+		{
+#if NAZARA_CHECK_CPP_VER(NAZARA_CPP20)
+			// C++20 ensures that right shift performs an arthmetic shift on signed integers
+			values[i] = values[i] >> vec.values[i];
+#else
+			// Implement arithmetic shift on C++ <=17
+			if constexpr (std::is_signed_v<T>)
+			{
+				if (values[i] < 0 && vec.values[i] > 0)
+					values[i] = (values[i] >> vec.values[i]) | ~(~static_cast<std::make_unsigned_t<T>>(0u) >> vec.values[i]);
+				else
+					values[i] = values[i] >> vec.values[i];
+			}
+			else
+				values[i] = values[i] >> vec.values[i];
+#endif
+		}
+
+		return this;
+	}
+
+	template<typename T, std::size_t N>
 	constexpr bool Vector<T, N>::ApproxEqual(const Vector& lhs, const Vector& rhs, T maxDifference)
 	{
 		for (std::size_t i = 0; i < N; ++i)

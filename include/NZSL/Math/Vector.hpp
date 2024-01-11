@@ -70,6 +70,19 @@ namespace nzsl
 		constexpr bool operator==(const Vector& vec) const;
 		constexpr bool operator!=(const Vector& vec) const;
 
+		constexpr Vector operator~() const;
+		constexpr Vector operator&(const Vector& vec) const;
+		constexpr Vector operator|(const Vector& vec) const;
+		constexpr Vector operator^(const Vector& vec) const;
+		constexpr Vector operator<<(const Vector& vec) const;
+		constexpr Vector operator>>(const Vector& vec) const;	
+		
+		constexpr Vector operator&=(const Vector& vec);
+		constexpr Vector operator|=(const Vector& vec);
+		constexpr Vector operator^=(const Vector& vec);
+		constexpr Vector operator<<=(const Vector& vec);
+		constexpr Vector operator>>=(const Vector& vec);
+
 		static constexpr bool ApproxEqual(const Vector& lhs, const Vector& rhs, T maxDifference = std::numeric_limits<T>::epsilon());
 		static constexpr Vector CrossProduct(const Vector& lhs, const Vector& rhs);
 		static T Distance(const Vector& lhs, const Vector& rhs);
