@@ -3,6 +3,7 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <NazaraUtils/Algorithm.hpp>
+#include <NazaraUtils/MathUtils.hpp>
 #include <NZSL/ShaderBuilder.hpp>
 #include <NZSL/Ast/ConstantPropagationVisitor.hpp>
 #include <NZSL/Lang/Errors.hpp>
@@ -289,24 +290,7 @@ namespace nzsl::Ast
 						throw CompilerBinaryTooLargeShiftError{ sourceLocation, ConstantToString(lhs), ">>", ConstantToString(rhs), ToString(GetConstantExpressionType<T1>()) };
 				}
 
-				T1 result;
-#if NAZARA_CHECK_CPP_VER(NAZARA_CPP20)
-				// C++20 ensures that right shift performs an arthmetic shift on signed integers
-				result = lhs >> rhs;
-#else
-				// Implement arithmetic shift on C++ <=17
-				if constexpr (std::is_signed_v<T2>)
-				{
-					if (lhs < 0 && rhs > 0)
-						result = (lhs >> rhs) | ~(~static_cast<std::make_unsigned_t<T1>>(0u) >> rhs);
-					else
-						result = lhs >> rhs;
-				}
-				else
-					result = lhs >> rhs;
-#endif
-
-				return ShaderBuilder::ConstantValue(result);
+				return ShaderBuilder::ConstantValue(Nz::ArithmeticRightShift(lhs, rhs));
 			}
 		};
 
