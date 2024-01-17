@@ -5712,6 +5712,7 @@ namespace nzsl::Ast
 					if (leftType != PrimitiveType::Int32 && leftType != PrimitiveType::UInt32)
 						throw CompilerBinaryUnsupportedError{ sourceLocation, "left", ToString(leftExprType, sourceLocation) };
 
+					TypeMustMatch(leftExprType, rightExprType, sourceLocation);
 					return leftExprType;
 				}
 
