@@ -5823,11 +5823,25 @@ namespace nzsl::Ast
 				case BinaryType::BitwiseAnd:
 				case BinaryType::BitwiseOr:
 				case BinaryType::BitwiseXor:
-				case BinaryType::LogicalAnd:
-				case BinaryType::LogicalOr:
 				case BinaryType::ShiftLeft:
 				case BinaryType::ShiftRight:
-					throw CompilerBinaryUnsupportedError{ sourceLocation, "left", ToString(leftExprType, sourceLocation) };
+				{
+					if (leftType.type != PrimitiveType::Int32 && leftType.type != PrimitiveType::UInt32)
+						throw CompilerBinaryUnsupportedError{ sourceLocation, "left", ToString(leftExprType, sourceLocation) };
+
+					TypeMustMatch(leftExprType, rightExprType, sourceLocation);
+					return leftExprType;
+				}
+
+				case BinaryType::LogicalAnd:
+				case BinaryType::LogicalOr:
+				{
+					if (leftType.type != PrimitiveType::Boolean)
+						throw CompilerBinaryUnsupportedError{ sourceLocation, "left", ToString(leftExprType, sourceLocation) };
+
+					TypeMustMatch(leftExprType, rightExprType, sourceLocation);
+					return PrimitiveType::Boolean;
+				}
 			}
 		}
 
