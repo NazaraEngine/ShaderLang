@@ -3,6 +3,7 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <NazaraUtils/Hash.hpp>
+#include <NazaraUtils/MathUtils.hpp>
 
 namespace nzsl
 {
@@ -357,23 +358,7 @@ namespace nzsl
 	{
 		Vector<T, N> result;
 		for (std::size_t i = 0; i < N; ++i)
-		{
-#if NAZARA_CHECK_CPP_VER(NAZARA_CPP20)
-			// C++20 ensures that right shift performs an arthmetic shift on signed integers
-			result.values[i] = values[i] >> vec.values[i];
-#else
-			// Implement arithmetic shift on C++ <=17
-			if constexpr (std::is_signed_v<T>)
-			{
-				if (values[i] < 0 && vec.values[i] > 0)
-					result.values[i] = (values[i] >> vec.values[i]) | ~(~static_cast<std::make_unsigned_t<T>>(0u) >> vec.values[i]);
-				else
-					result.values[i] = values[i] >> vec.values[i];
-			}
-			else
-				result.values[i] = values[i] >> vec.values[i];
-#endif
-		}
+			result.values[i] = Nz::ArithmeticRightShift(values[i], vec.values[i]);
 
 		return result;
 	}
@@ -418,23 +403,7 @@ namespace nzsl
 	inline constexpr Vector<T, N> Vector<T, N>::operator>>=(const Vector& vec)
 	{
 		for (std::size_t i = 0; i < N; ++i)
-		{
-#if NAZARA_CHECK_CPP_VER(NAZARA_CPP20)
-			// C++20 ensures that right shift performs an arthmetic shift on signed integers
-			values[i] = values[i] >> vec.values[i];
-#else
-			// Implement arithmetic shift on C++ <=17
-			if constexpr (std::is_signed_v<T>)
-			{
-				if (values[i] < 0 && vec.values[i] > 0)
-					values[i] = (values[i] >> vec.values[i]) | ~(~static_cast<std::make_unsigned_t<T>>(0u) >> vec.values[i]);
-				else
-					values[i] = values[i] >> vec.values[i];
-			}
-			else
-				values[i] = values[i] >> vec.values[i];
-#endif
-		}
+			values[i] = Nz::ArithmeticRightShift(values[i], vec.values[i]);
 
 		return this;
 	}
