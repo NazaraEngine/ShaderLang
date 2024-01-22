@@ -82,7 +82,7 @@ jobs:
     # Cache xmake dependencies
     - name: Retrieve cached xmake dependencies (Linux)
       if: runner.os == 'Linux'
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: ${{ env.XMAKE_GLOBALDIR }}/.xmake/packages
         key: Linux-${{ matrix.config.arch }}-coverage-${{ steps.dep_hash_linux.outputs.hash }}-W${{ steps.cache_key.outputs.key }}
@@ -90,7 +90,7 @@ jobs:
     # Cache xmake dependencies
     - name: Retrieve cached xmake dependencies (Windows)
       if: runner.os == 'Windows'
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: ${{ env.XMAKE_GLOBALDIR }}\.xmake\packages
         key: MSVC-${{ matrix.config.arch }}-coverage-${{ steps.dep_hash_windows.outputs.hash }}-W${{ steps.cache_key.outputs.key }}
