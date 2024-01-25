@@ -1,5 +1,5 @@
 set_project("NZSL")
-set_xmakever("2.6.8")
+set_xmakever("2.7.3")
 
 ----------------------- Global options -----------------------
 
@@ -43,6 +43,7 @@ add_rules("mode.coverage", "mode.debug", "mode.releasedbg", "mode.release")
 add_rules("plugin.vsxmake.autoupdate")
 
 add_includedirs("include", "src")
+set_exceptions("cxx")
 set_languages("c89", "c++17")
 set_rundir("./bin/$(plat)_$(arch)_$(mode)")
 set_targetdir("./bin/$(plat)_$(arch)_$(mode)")
