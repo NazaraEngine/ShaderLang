@@ -79,8 +79,8 @@ fn main()
 
 	let output7 = -42 << 10;
 	let output8 = -42 >> 10;
-	let output9 = u32(1) << 10;
-	let output10 = u32(1024) >> 10;
+	let output9 = u32(1) << u32(10);
+	let output10 = u32(1024) >> u32(10);
 }
 )", R"(
 [entry(frag)]
