@@ -19,13 +19,15 @@ on:
 jobs:
   build:
     strategy:
+      fail-fast: false
       matrix:
-        os: [macOS-latest]
-        arch: [x86_64]
         mode: [debug, releasedbg]
         kind: [static, shared]
+        confs:
+          - { runner: macOS-latest, arch: x86_64 }
+          - { runner: macOS-14,     arch: arm64 }
 
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.confs.runner }}
     if: ${{ !contains(github.event.head_commit.message, 'ci skip') }}
 
     steps:
@@ -60,11 +62,11 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ${{ env.XMAKE_GLOBALDIR }}/.xmake/packages
-        key: macOS-${{ matrix.arch }}-${{ matrix.mode }}-${{ steps.dep_hash.outputs.hash }}-W${{ steps.cache_key.outputs.key }}
+        key: macOS-${{ matrix.confs.arch }}-${{ matrix.mode }}-${{ steps.dep_hash.outputs.hash }}-W${{ steps.cache_key.outputs.key }}
 
     # Setup compilation mode and install project dependencies
     - name: Configure xmake and install dependencies
-      run: xmake config --arch=${{ matrix.arch }} --mode=${{ matrix.mode }} --kind=${{ matrix.kind }} --ccache=n --examples=y --tests=y --unitybuild=y --yes
+      run: xmake config --arch=${{ matrix.confs.arch }} --mode=${{ matrix.mode }} --kind=${{ matrix.kind }} --ccache=n --examples=y --tests=y --unitybuild=y --yes
 
     # Build library and tests
     - name: Build library
@@ -81,5 +83,5 @@ jobs:
     # Upload artifacts
     - uses: actions/upload-artifact@v4
       with:
-        name: nzsl-${{ matrix.os }}-${{ matrix.arch }}-${{ matrix.kind }}-${{ matrix.mode }}
+        name: nzsl-macOS-${{ matrix.confs.arch }}-${{ matrix.kind }}-${{ matrix.mode }}
         path: package
