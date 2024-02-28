@@ -7,6 +7,7 @@ on:
       - '.github/workflows/android-build.yml'
       - '.github/workflows/coverage.yml'
       - '.github/workflows/linux-build.yml'
+      - '.github/workflows/macos-build.yml'
       - '.github/workflows/msys2-build.yml'
       - '.github/workflows/windows-build.yml'
       - '.github/workflows/wasm-build.yml'
@@ -23,7 +24,7 @@ jobs:
         mode: [debug, releasedbg]
 
     runs-on: ${{ matrix.os }}
-    if: "!contains(github.event.head_commit.message, 'ci skip')"
+    if: ${{ !contains(github.event.head_commit.message, 'ci skip') }}
 
     steps:
     - name: Get current date as package key

@@ -102,6 +102,12 @@ namespace nzsl
 
 	constexpr std::size_t ShaderStageTypeCount = static_cast<std::size_t>(ShaderStageType::Max) + 1;
 
+	constexpr bool EnableEnumAsNzFlags(ShaderStageType) { return true; }
+
+	using ShaderStageTypeFlags = Nz::Flags<ShaderStageType>;
+
+	constexpr ShaderStageTypeFlags ShaderStageType_All = ShaderStageType::Compute | ShaderStageType::Fragment | ShaderStageType::Vertex;
+
 	enum class StructFieldType
 	{
 		Bool1,
@@ -135,22 +141,6 @@ namespace nzsl
 
 		Max = Std140
 	};
-}
-
-namespace Nz
-{
-	template<>
-	struct EnumAsFlags<nzsl::ShaderStageType>
-	{
-		static constexpr nzsl::ShaderStageType max = nzsl::ShaderStageType::Max;
-	};
-}
-
-namespace nzsl
-{
-	using ShaderStageTypeFlags = Nz::Flags<nzsl::ShaderStageType>;
-
-	constexpr ShaderStageTypeFlags ShaderStageType_All = nzsl::ShaderStageType::Compute | nzsl::ShaderStageType::Fragment | nzsl::ShaderStageType::Vertex;
 }
 
 #endif // NZSL_ENUMS_HPP
