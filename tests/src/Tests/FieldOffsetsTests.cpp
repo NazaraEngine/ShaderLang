@@ -20,6 +20,23 @@ TEST_CASE("Field offsets", "[FieldOffsets]")
 		REQUIRE(fieldOffsets.AddField(nzsl::StructFieldType::Float3) == 416);
 		REQUIRE(fieldOffsets.GetAlignedSize() == 432);
 	}
+
+	// From https://github.com/shader-slang/slang/blob/master/tests/reflection/std430-layout.glsl
+	SECTION("std430")
+	{
+		nzsl::FieldOffsets innerStruct(nzsl::StructLayout::Std430);
+		innerStruct.AddField(nzsl::StructFieldType::Float2);
+
+		nzsl::FieldOffsets fieldOffsets(nzsl::StructLayout::Std430);
+		REQUIRE(fieldOffsets.AddField(nzsl::StructFieldType::Float1) == 0);
+		REQUIRE(fieldOffsets.AddField(nzsl::StructFieldType::Float3) == 16);
+		REQUIRE(fieldOffsets.AddFieldArray(nzsl::StructFieldType::Float1, 4) == 28);
+		REQUIRE(fieldOffsets.AddField(nzsl::StructFieldType::Float2) == 48);
+		REQUIRE(fieldOffsets.AddStruct(innerStruct) == 56);
+		REQUIRE(fieldOffsets.AddField(nzsl::StructFieldType::Float3) == 64);
+		REQUIRE(fieldOffsets.AddField(nzsl::StructFieldType::Float1) == 76);
+		REQUIRE(fieldOffsets.GetAlignedSize() == 80);
+	}
 }
 
 TEST_CASE("RegisterStructField", "[FieldOffsets]")

@@ -742,6 +742,40 @@ fn main()
 
 		/************************************************************************/
 
+		SECTION("Layouts")
+		{
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+[layout(std140)]
+struct Foo
+{
+	a: bool
+}
+)"), "(8, 2): CStructLayoutTypeNotAllowed error: bool type is not allowed in std140 layout");
+
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+[layout(std140)]
+struct Foo
+{
+	a: i32
+}
+
+[layout(std430)]
+struct Bar
+{
+	a: Foo
+}
+)"), "(14, 2): CStructLayoutInnerMismatch error: inner struct layout mismatch, struct is declared with std430 but field has layout std140");
+
+		}
+
+		/************************************************************************/
+
 		SECTION("Loops")
 		{
 			CHECK_THROWS_WITH(Compile(R"(

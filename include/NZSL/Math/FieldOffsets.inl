@@ -137,6 +137,7 @@ namespace nzsl
 				return 1;
 
 			case StructLayout::Std140:
+			case StructLayout::Std430:
 			{
 				switch (fieldType)
 				{
