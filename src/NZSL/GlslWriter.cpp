@@ -792,9 +792,8 @@ namespace nzsl
 	{
 		switch (layout)
 		{
-			case Ast::MemoryLayout::Std140:
-				Append("std140");
-				break;
+			case Ast::MemoryLayout::Std140: Append("std140"); break;
+			case Ast::MemoryLayout::Std430: Append("std430"); break;
 		}
 	}
 
@@ -2222,7 +2221,7 @@ namespace nzsl
 			
 			bool isUniformOrStorageBuffer = IsStorageType(exprType) || IsUniformType(exprType);
 
-			bool isStd140 = false;
+			const char* memoryLayout = nullptr;
 			if (isUniformOrStorageBuffer)
 			{
 				std::size_t structIndex;
@@ -2237,7 +2236,13 @@ namespace nzsl
 				
 				const auto& structInfo = Nz::Retrieve(m_currentState->structs, structIndex);
 				if (structInfo.desc->layout.HasValue())
-					isStd140 = structInfo.desc->layout.GetResultingValue() == Ast::MemoryLayout::Std140;
+				{
+					switch (structInfo.desc->layout.GetResultingValue())
+					{
+						case Ast::MemoryLayout::Std140: memoryLayout = "std140"; break;
+						case Ast::MemoryLayout::Std430: memoryLayout = "std430"; break;
+					}
+				}
 
 				if (!structInfo.desc->tag.empty() && m_currentState->states->debugLevel >= DebugLevel::Minimal)
 					AppendComment("struct tag: " + structInfo.desc->tag);
@@ -2309,10 +2314,10 @@ namespace nzsl
 				}
 			}
 
-			if (isStd140)
+			if (memoryLayout)
 			{
 				BeginLayout();
-				Append("std140");
+				Append(memoryLayout);
 			}
 
 			EndLayout();
