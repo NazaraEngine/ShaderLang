@@ -138,8 +138,9 @@ namespace nzsl
 	{
 		Packed,
 		Std140,
+		Std430,
 
-		Max = Std140
+		Max = Std430
 	};
 }
 

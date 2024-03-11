@@ -1860,18 +1860,33 @@ namespace nzsl::Ast
 			}
 
 			const ExpressionType& memberType = member.type.GetResultingValue();
-			if (clone->description.layout.IsResultingValue() && clone->description.layout.GetResultingValue() == Ast::MemoryLayout::Std140)
+			if (clone->description.layout.IsResultingValue())
 			{
+				Ast::MemoryLayout structLayout = clone->description.layout.GetResultingValue();
+				auto LayoutName = [&](Ast::MemoryLayout layout)
+				{
+					auto it = LangData::s_memoryLayouts.find(layout);
+					if (it == LangData::s_memoryLayouts.end())
+						throw AstInternalError{ node.sourceLocation, "missing layout data" };
+
+					return it->second.identifier;
+				};
+
 				const ExpressionType& targetType = ResolveAlias(member.type.GetResultingValue());
 
-				if (IsPrimitiveType(targetType) && std::get<PrimitiveType>(targetType) == PrimitiveType::Boolean)
-					throw CompilerStructLayoutTypeNotAllowedError{ member.sourceLocation, "bool", "std140" };
+				if (IsPrimitiveType(targetType))
+				{
+					if (std::get<PrimitiveType>(targetType) == PrimitiveType::Boolean)
+						throw CompilerStructLayoutTypeNotAllowedError{ member.sourceLocation, "bool", LayoutName(structLayout) };
+				}
 				else if (IsStructType(targetType))
 				{
 					std::size_t structIndex = std::get<StructType>(targetType).structIndex;
 					const StructDescription* desc = m_context->structs.Retrieve(structIndex, member.sourceLocation);
-					if (!desc->layout.HasValue() || desc->layout.GetResultingValue() != clone->description.layout.GetResultingValue())
-						throw CompilerStructLayoutInnerMismatchError{ member.sourceLocation, "std140", "<TODO>" };
+					if (!desc->layout.HasValue())
+						throw CompilerStructLayoutInnerMismatchError{ member.sourceLocation, LayoutName(structLayout), "<no layout>" };
+					else if (Ast::MemoryLayout memberLayout = desc->layout.GetResultingValue(); memberLayout != structLayout)
+						throw CompilerStructLayoutInnerMismatchError{ member.sourceLocation, LayoutName(structLayout), LayoutName(memberLayout) };
 				}
 			}
 

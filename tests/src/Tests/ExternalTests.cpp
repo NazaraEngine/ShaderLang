@@ -417,6 +417,7 @@ fn main()
 [nzsl_version("1.0")]
 module;
 
+[layout(std430)]
 struct Data
 {
 	data: u32,
@@ -444,7 +445,7 @@ fn main()
 			glslEnv.glMinorVersion = 1;
 
 			ExpectGLSL(*shaderModule, R"(
-buffer _nzslBindingdata
+layout(std430) buffer _nzslBindingdata
 {
 	uint data;
 	float values[];
@@ -458,6 +459,7 @@ void main()
 )", {}, glslEnv);
 
 			ExpectNZSL(*shaderModule, R"(
+[layout(std430)]
 struct Data
 {
 	data: u32,
