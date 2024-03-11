@@ -193,7 +193,6 @@ fn main()
 )");
 	}
 
-
 	WHEN("eliminating multiple split branches")
 	{
 		PropagateConstantAndExpect(R"(
