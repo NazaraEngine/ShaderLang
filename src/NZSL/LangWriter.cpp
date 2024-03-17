@@ -11,6 +11,7 @@
 #include <NZSL/Ast/RecursiveVisitor.hpp>
 #include <NZSL/Ast/Utils.hpp>
 #include <NZSL/Lang/LangData.hpp>
+#include <NZSL/Lang/Version.hpp>
 #include <cassert>
 #include <optional>
 #include <sstream>
@@ -197,6 +198,7 @@ namespace nzsl
 		std::vector<std::string> moduleNames;
 		const Ast::Module* module;
 		bool isInEntryPoint = false;
+		bool shouldEnforceTypes = false;
 		int streamEmptyLine = 1;
 		unsigned int indentLevel = 0;
 	};
@@ -338,12 +340,14 @@ namespace nzsl
 	{
 		switch (type)
 		{
-			case Ast::PrimitiveType::Boolean: return Append("bool");
-			case Ast::PrimitiveType::Float32: return Append("f32");
-			case Ast::PrimitiveType::Float64: return Append("f64");
-			case Ast::PrimitiveType::Int32:   return Append("i32");
-			case Ast::PrimitiveType::UInt32:  return Append("u32");
-			case Ast::PrimitiveType::String:  return Append("string");
+			case Ast::PrimitiveType::Boolean:      return Append("bool");
+			case Ast::PrimitiveType::Float32:      return Append("f32");
+			case Ast::PrimitiveType::Float64:      return Append("f64");
+			case Ast::PrimitiveType::Int32:        return Append("i32");
+			case Ast::PrimitiveType::UInt32:       return Append("u32");
+			case Ast::PrimitiveType::String:       return Append("string");
+			case Ast::PrimitiveType::FloatLiteral: return Append("FloatLiteral");
+			case Ast::PrimitiveType::IntLiteral:   return Append("IntLiteral");
 		}
 	}
 
@@ -652,21 +656,8 @@ namespace nzsl
 
 	void LangWriter::AppendAttribute(LangVersionAttribute attribute)
 	{
-		std::uint32_t shaderLangVersion = attribute.version;
-		std::uint32_t majorVersion = shaderLangVersion / 100;
-		shaderLangVersion -= majorVersion * 100;
-
-		std::uint32_t minorVersion = shaderLangVersion / 10;
-		shaderLangVersion -= minorVersion * 100;
-
-		std::uint32_t patchVersion = shaderLangVersion;
-
 		// nzsl_version
-		Append("nzsl_version(\"", majorVersion, ".", minorVersion);
-		if (patchVersion != 0)
-			Append(".", patchVersion);
-
-		Append("\")");
+		Append("nzsl_version(\"", Version::ToString(attribute.version), "\")");
 	}
 
 	void LangWriter::AppendAttribute(LayoutAttribute attribute)
@@ -848,6 +839,8 @@ namespace nzsl
 			bool v = value;
 			return AppendValue(v);
 		}
+		else if constexpr (std::is_same_v<T, double> || std::is_same_v<T, std::uint32_t>)
+			Append(Ast::ToString(value, m_currentState->shouldEnforceTypes));
 		else
 			Append(Ast::ConstantToString(value));
 	}
@@ -1190,7 +1183,6 @@ namespace nzsl
 		}, node.value);
 	}
 
-
 	void LangWriter::Visit(Ast::ConstantExpression& node)
 	{
 		AppendIdentifier(m_currentState->constants, node.constantId);
@@ -1301,6 +1293,10 @@ namespace nzsl
 				break;
 		}
 
+		// We have to enforce constant types for intrinsics for the right overload to be used
+		bool prevShouldEnforceTypes = m_currentState->shouldEnforceTypes;
+		m_currentState->shouldEnforceTypes = true;
+
 		Append("(");
 		bool first = true;
 		for (std::size_t i = (method) ? 1 : 0; i < node.parameters.size(); ++i)
@@ -1313,6 +1309,8 @@ namespace nzsl
 			node.parameters[i]->Visit(*this);
 		}
 		Append(")");
+
+		m_currentState->shouldEnforceTypes = prevShouldEnforceTypes;
 	}
 
 	void LangWriter::Visit(Ast::ModuleExpression& node)
@@ -1441,7 +1439,7 @@ namespace nzsl
 			RegisterConstant(*node.constIndex, node.name);
 
 		Append("const ", node.name);
-		if (node.type.HasValue())
+		if (node.type.HasValue() && (!node.type.IsResultingValue() || !IsLiteralType(node.type.GetResultingValue())))
 			Append(": ", node.type);
 
 		if (node.expression)
@@ -1592,7 +1590,7 @@ namespace nzsl
 			RegisterVariable(*node.varIndex, node.varName);
 
 		Append("let ", node.varName);
-		if (node.varType.HasValue())
+		if (node.varType.HasValue() && (!node.varType.IsResultingValue() || !IsLiteralType(node.varType.GetResultingValue())))
 			Append(": ", node.varType);
 
 		if (node.initialExpression)

@@ -46,6 +46,8 @@ namespace nzsl
 	{
 		if constexpr (std::is_same_v<T, Ast::NoValue>)
 			throw std::runtime_error("invalid type (value expected)");
+		else if constexpr (Ast::IsLiteral_v<T>)
+			throw std::runtime_error("unexpected untyped");
 		else if constexpr (std::is_same_v<T, std::string>)
 			throw std::runtime_error("unexpected string literal");
 		else

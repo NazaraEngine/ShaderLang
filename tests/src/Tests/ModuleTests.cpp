@@ -594,7 +594,7 @@ vec4 SumLightColor_Modules_Func(Lights_Modules_Data lightData)
 {
 	vec4 color = vec4(0.0, 0.0, 0.0, 0.0);
 	{
-		uint index = uint(0);
+		uint index = 0u;
 		uint _nzsl_to = uint(lightData.lights.length());
 		while (index < _nzsl_to)
 		{
@@ -718,7 +718,6 @@ OpVariable
 OpVariable
 OpCompositeConstruct
 OpStore
-OpBitcast
 OpStore
 OpStore
 OpBranch

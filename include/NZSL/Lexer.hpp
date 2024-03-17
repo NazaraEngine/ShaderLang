@@ -28,7 +28,7 @@ namespace nzsl
 	{
 		SourceLocation location;
 		TokenType type;
-		std::variant<double, long long, std::string> data;
+		std::variant<double, std::int64_t, std::string> data;
 	};
 
 	NZSL_API std::string EscapeString(std::string_view str, bool quote = true);

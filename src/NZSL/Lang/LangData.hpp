@@ -146,22 +146,22 @@ namespace nzsl::LangData
 			TextureData,        // texture content
 
 			// Constraints
-			SameType,
+			SameType,                     // Checks that all types since the last SameTypeBarrier (or first parameter) are the same (note that literal types are taken into account, i.e. FloatLiteral is compatible with f32 and f64)
 			SameTypeBarrier,
-			SameVecComponentCount,
-			SameVecComponentCountBarrier,
+			SameVecComponentCount,        // Checks that all vectors since the last SameVecComponentCountBarrier (or first parameter) have the same component count
+			SameVecComponentCountBarrier
 		};
 
 		enum class ReturnType
 		{
-			Param0SampledValue,
-			Param0TextureValue,
-			Param0Transposed,
-			Param0Type,
-			Param0VecComponent,
-			Param1Type,
-			U32,
-			Void
+			None,               // ()
+			Param0SampledValue, // Assuming first parameter is a sampler, this represents the return type of a Sample operation on it
+			Param0TextureValue, // Assuming first parameter is a texture, this represents the return type of a Read operation on it
+			Param0Transposed,   // Assuming first parameter is a matrix, this represents the transposed matrix type
+			Param0Type,         // Same type as the first parameter (after same type resolving)
+			Param0VecComponent, // Assuming first parameter is a vector, this represents the component type of this vector
+			Param1Type,         // Same type as the second parameter (after same type resolving)
+			U32                 // u32
 		};
 
 		struct IntrinsicData
@@ -234,7 +234,7 @@ namespace nzsl::LangData
 			{ Ast::IntrinsicType::TextureRead,                       Build("",          ReturnType::Param0TextureValue, Params<ParameterType::Texture, ParameterType::TextureCoordinates>{}) },
 			{ Ast::IntrinsicType::TextureSampleImplicitLod,          Build("",          ReturnType::Param0SampledValue, Params<ParameterType::Sampler, ParameterType::SampleCoordinates>{}) },
 			{ Ast::IntrinsicType::TextureSampleImplicitLodDepthComp, Build("",          ReturnType::Param0SampledValue, Params<ParameterType::Sampler, ParameterType::SampleCoordinates, ParameterType::F32>{}) },
-			{ Ast::IntrinsicType::TextureWrite,                      Build("",          ReturnType::Void,               Params<ParameterType::Texture, ParameterType::TextureCoordinates, ParameterType::TextureData>{}) },
+			{ Ast::IntrinsicType::TextureWrite,                      Build("",          ReturnType::None,               Params<ParameterType::Texture, ParameterType::TextureCoordinates, ParameterType::TextureData>{}) },
 			{ Ast::IntrinsicType::Trunc,                             Build("trunc",     ReturnType::Param0Type,         Params<ParameterType::FValVec>{}) },
 		});
 	}

@@ -163,22 +163,6 @@ namespace nzsl::Ast
 			Type(optType.value());
 	}
 
-	inline void SerializerBase::Metadata(Module::Metadata& metadata)
-	{
-		Value(metadata.moduleName);
-		Value(metadata.shaderLangVersion);
-		if (IsVersionGreaterOrEqual(2))
-		{
-			Value(metadata.author);
-			Value(metadata.description);
-			Value(metadata.license);
-
-			Container(metadata.enabledFeatures);
-			for (ModuleFeature& feature : metadata.enabledFeatures)
-				Enum(feature);
-		}
-	}
-
 	template<typename T>
 	void SerializerBase::OptVal(std::optional<T>& optVal)
 	{
@@ -218,6 +202,12 @@ namespace nzsl::Ast
 		Value(sourceLoc.endLine);
 		Value(sourceLoc.startColumn);
 		Value(sourceLoc.startLine);
+	}
+
+	template<typename T> 
+	void SerializerBase::Value(Literal<T>& val)
+	{
+		Value(static_cast<T&>(val));
 	}
 
 	template<typename T, std::size_t N>

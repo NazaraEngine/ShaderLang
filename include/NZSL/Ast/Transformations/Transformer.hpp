@@ -56,6 +56,8 @@ namespace nzsl::Ast
 			DeclareVariableStatement* DeclareVariable(std::string_view name, ExpressionPtr initialExpr);
 			DeclareVariableStatement* DeclareVariable(std::string_view name, Ast::ExpressionType type, SourceLocation sourceLocation);
 
+			virtual void FinishExpressionHandling();
+
 			ExpressionPtr& GetCurrentExpressionPtr();
 			StatementPtr& GetCurrentStatementPtr();
 
@@ -117,9 +119,6 @@ namespace nzsl::Ast
 			void HandleChildren(ReturnStatement& node);
 			void HandleChildren(ScopedStatement& node);
 			void HandleChildren(WhileStatement& node);
-
-			Expression& MandatoryExpr(const ExpressionPtr& node, const SourceLocation& sourceLocation);
-			Statement& MandatoryStatement(const StatementPtr& node, const SourceLocation& sourceLocation);
 
 			virtual void PopScope();
 			virtual void PushScope();
