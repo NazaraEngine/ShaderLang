@@ -18,6 +18,47 @@ namespace nzsl::Ast
 {
 	using NoValue = std::monostate;
 
+	template<typename T>
+	struct Untyped
+	{
+		operator T&()
+		{
+			return value;
+		}
+
+		operator const T&() const
+		{
+			return value;
+		}
+
+		Untyped& operator=(T v)
+		{
+			value = v;
+			return *this;
+		}
+
+		T value;
+	};
+
+	using UntypedFloat = Untyped<double>;
+	using UntypedInteger = Untyped<std::int64_t>;
+
+	template<typename T>
+	struct UntypedTraits
+	{
+		static constexpr bool IsLiteral = false;
+	};
+
+	template<typename T>
+	struct UntypedTraits<Untyped<T>>
+	{
+		static constexpr bool IsLiteral = true;
+		using Inner = T;
+	};
+
+	template<typename T> constexpr bool IsUntyped_v = UntypedTraits<T>::IsLiteral;
+	template<typename T> using UntypedInnerType_t = typename UntypedTraits<T>::Inner;
+
 	using ConstantSingleTypes = Nz::TypeList<
 		bool,
 		float,
@@ -39,7 +80,9 @@ namespace nzsl::Ast
 		Vector4u32,
 		Vector2<bool>,
 		Vector3<bool>,
-		Vector4<bool>
+		Vector4<bool>,
+		UntypedFloat,
+		UntypedInteger
 	>;
 
 	template<typename T>
@@ -65,10 +108,12 @@ namespace nzsl::Ast
 	NZSL_API std::string ConstantToString(const ConstantSingleValue& value);
 
 	NZSL_API std::string ToString(bool value);
-	NZSL_API std::string ToString(double value);
-	NZSL_API std::string ToString(float value);
-	NZSL_API std::string ToString(std::int32_t value);
-	NZSL_API std::string ToString(std::uint32_t value);
+	NZSL_API std::string ToString(double value, bool suffixType = true);
+	NZSL_API std::string ToString(float value, bool suffixType = true);
+	NZSL_API std::string ToString(std::int32_t value, bool suffixType = true);
+	NZSL_API std::string ToString(std::uint32_t value, bool suffixType = true);
+	NZSL_API std::string ToString(UntypedFloat value);
+	NZSL_API std::string ToString(UntypedInteger value);
 
 	inline ConstantValue ToConstantValue(ConstantSingleValue value);
 	inline ConstantValue ToConstantValue(ConstantArrayValue value);

@@ -288,8 +288,8 @@ fn main()
 	let r = x << y;
 	let r = x >> y;
 	
-	let x = u32(5);
-	let y = u32(2);
+	let x: u32 = 5;
+	let y: u32 = 2;
 
 	let r = x & y;
 	let r = x | y;
@@ -333,8 +333,8 @@ fn main()
 	let r: i32 = x ^ y;
 	let r: i32 = x << y;
 	let r: i32 = x >> y;
-	let x: u32 = u32(5);
-	let y: u32 = u32(2);
+	let x: u32 = 5;
+	let y: u32 = 2;
 	let r: u32 = x & y;
 	let r: u32 = x | y;
 	let r: u32 = x ^ y;
@@ -718,8 +718,8 @@ fn main()
 	let r = x / y;
 	let r = x % y;
 
-	let x = vec3[u32](u32(0), u32(1), u32(2));
-	let y = vec3[u32](u32(2), u32(1), u32(0));
+	let x = vec3[u32](0, 1, 2);
+	let y = vec3[u32](2, 1, 0);
 
 	let r = x + y;
 	let r = x - y;
@@ -763,8 +763,8 @@ fn main()
 	let r: vec3[f32] = x * y;
 	let r: vec3[f32] = x / y;
 	let r: vec3[f32] = x % y;
-	let x: vec3[u32] = vec3[u32](u32(0), u32(1), u32(2));
-	let y: vec3[u32] = vec3[u32](u32(2), u32(1), u32(0));
+	let x: vec3[u32] = vec3[u32](0, 1, 2);
+	let y: vec3[u32] = vec3[u32](2, 1, 0);
 	let r: vec3[u32] = x + y;
 	let r: vec3[u32] = x - y;
 	let r: vec3[u32] = x * y;

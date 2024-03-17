@@ -195,7 +195,7 @@ namespace nzsl::Ast
 							throw CompilerBinaryNegativeShiftError{ sourceLocation, ConstantToString(lhs), ">>", ConstantToString(rhs) };
 					}
 
-					if (rhs >= Nz::BitCount<T2>)
+					if (static_cast<std::size_t>(rhs) >= Nz::BitCount<T2>)
 						throw CompilerBinaryTooLargeShiftError{ sourceLocation, ConstantToString(lhs), ">>", ConstantToString(rhs), ToString(GetConstantExpressionType<T1>()) };
 				}
 

@@ -53,8 +53,8 @@ fn main()
 {
 	let output: f32 = 42.0;
 	let output2: i32 = 42;
-	let output3: f64 = f64(42.0);
-	let output4: u32 = u32(42);
+	let output3: f64 = 42.0;
+	let output4: u32 = 42;
 }
 )");
 	}

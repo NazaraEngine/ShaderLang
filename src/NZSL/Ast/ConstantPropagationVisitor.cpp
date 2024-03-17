@@ -498,12 +498,14 @@ namespace nzsl::Ast
 
 				switch (std::get<PrimitiveType>(targetType))
 				{
-					case PrimitiveType::Boolean: optimized = PropagateSingleValueCast<bool>(constantExpr, node.sourceLocation); break;
-					case PrimitiveType::Float32: optimized = PropagateSingleValueCast<float>(constantExpr, node.sourceLocation); break;
-					case PrimitiveType::Float64: optimized = PropagateSingleValueCast<double>(constantExpr, node.sourceLocation); break;
-					case PrimitiveType::Int32:   optimized = PropagateSingleValueCast<std::int32_t>(constantExpr, node.sourceLocation); break;
-					case PrimitiveType::UInt32:  optimized = PropagateSingleValueCast<std::uint32_t>(constantExpr, node.sourceLocation); break;
-					case PrimitiveType::String: break;
+					case PrimitiveType::Boolean:        optimized = PropagateSingleValueCast<bool>(constantExpr, node.sourceLocation); break;
+					case PrimitiveType::Float32:        optimized = PropagateSingleValueCast<float>(constantExpr, node.sourceLocation); break;
+					case PrimitiveType::Float64:        optimized = PropagateSingleValueCast<double>(constantExpr, node.sourceLocation); break;
+					case PrimitiveType::Int32:          optimized = PropagateSingleValueCast<std::int32_t>(constantExpr, node.sourceLocation); break;
+					case PrimitiveType::UInt32:         optimized = PropagateSingleValueCast<std::uint32_t>(constantExpr, node.sourceLocation); break;
+					case PrimitiveType::String:         break;
+					case PrimitiveType::UntypedFloat:   break;
+					case PrimitiveType::UntypedInteger: break;
 				}
 			}
 		}
@@ -536,7 +538,7 @@ namespace nzsl::Ast
 
 					if constexpr (std::is_same_v<T, NoValue>)
 						throw std::runtime_error("invalid type (value expected)");
-					else if constexpr (std::is_same_v<T, bool> || std::is_same_v<T, double> || std::is_same_v<T, float> || std::is_same_v<T, std::int32_t> || std::is_same_v<T, std::uint32_t> || std::is_same_v<T, std::string>)
+					else if constexpr (std::is_same_v<T, bool> || std::is_same_v<T, double> || std::is_same_v<T, float> || std::is_same_v<T, std::int32_t> || std::is_same_v<T, std::uint32_t> || std::is_same_v<T, std::string> || IsUntyped_v<T>)
 						constantValues.push_back(arg);
 					else if constexpr (IsVector_v<T> && T::Dimensions == 2)
 					{
@@ -557,7 +559,7 @@ namespace nzsl::Ast
 						constantValues.push_back(arg.w());
 					}
 					else
-						static_assert(Nz::AlwaysFalse<T>::value, "non-exhaustive visitor");
+						static_assert(Nz::AlwaysFalse<T>(), "non-exhaustive visitor");
 				}, constantExpr.value);
 			}
 

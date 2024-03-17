@@ -161,7 +161,7 @@ namespace nzsl::Ast
 			}
 		};
 
-		static_assert(std::variant_size_v<decltype(node.values)> == 22);
+		static_assert(std::variant_size_v<decltype(node.values)> == 24);
 		switch (typeIndex)
 		{
 			case 0:  break;
@@ -186,6 +186,8 @@ namespace nzsl::Ast
 			case 19: SerializeValue(Vector2<bool>()); break;
 			case 20: SerializeValue(Vector3<bool>()); break;
 			case 21: SerializeValue(Vector4<bool>()); break;
+			case 22: SerializeValue(UntypedFloat()); break;
+			case 23: SerializeValue(UntypedInteger()); break;
 			default: throw std::runtime_error("unexpected data type");
 		}
 	}
@@ -207,7 +209,7 @@ namespace nzsl::Ast
 			Value(value);
 		};
 
-		static_assert(std::variant_size_v<decltype(node.value)> == 22);
+		static_assert(std::variant_size_v<decltype(node.value)> == 24);
 		switch (typeIndex)
 		{
 			case 0:  break;
@@ -232,6 +234,8 @@ namespace nzsl::Ast
 			case 19: SerializeValue(Vector2<bool>()); break;
 			case 20: SerializeValue(Vector3<bool>()); break;
 			case 21: SerializeValue(Vector4<bool>()); break;
+			case 22: SerializeValue(UntypedFloat()); break;
+			case 23: SerializeValue(UntypedInteger()); break;
 			default: throw std::runtime_error("unexpected data type");
 		}
 	}
@@ -746,6 +750,11 @@ namespace nzsl::Ast
 	}
 
 	void ShaderAstSerializer::Value(std::int32_t& val)
+	{
+		m_serializer.Serialize(val);
+	}
+
+	void ShaderAstSerializer::Value(std::int64_t& val)
 	{
 		m_serializer.Serialize(val);
 	}
@@ -1303,6 +1312,11 @@ NAZARA_WARNING_POP()
 	void ShaderAstDeserializer::Value(std::int32_t& val)
 	{
 		m_deserializer.Deserialize(val);
+	}
+
+	void ShaderAstUnserializer::Value(std::int64_t& val)
+	{
+		m_unserializer.Unserialize(val);
 	}
 
 	void ShaderAstDeserializer::Value(Vector2<bool>& val)
