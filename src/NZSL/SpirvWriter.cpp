@@ -987,8 +987,8 @@ namespace nzsl
 						appender(func.funcId);
 						appender(execMode.mode);
 
-						for (std::uint32_t litteral : execMode.params)
-							appender(litteral);
+						for (std::uint32_t literal : execMode.params)
+							appender(literal);
 					});
 				}
 			}

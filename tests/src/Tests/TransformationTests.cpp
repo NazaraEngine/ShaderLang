@@ -186,12 +186,12 @@ fn main()
 {
 	let x: f32 = 0.0;
 	{
-		let _nzsl_counter: u32 = u32(0);
-		while (_nzsl_counter < (u32(10)))
+		let _nzsl_counter: u32 = 0;
+		while (_nzsl_counter < 10)
 		{
 			let v: f32 = data.value[_nzsl_counter];
 			x += v;
-			_nzsl_counter += u32(1);
+			_nzsl_counter += 1;
 		}
 
 	}
