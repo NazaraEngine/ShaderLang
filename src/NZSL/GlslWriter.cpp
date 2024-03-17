@@ -68,6 +68,8 @@ namespace nzsl
 				case Ast::PrimitiveType::Float32:
 				case Ast::PrimitiveType::Float64:
 				case Ast::PrimitiveType::String:
+				case Ast::PrimitiveType::UntypedFloat:
+				case Ast::PrimitiveType::UntypedInteger:
 					break;
 
 				case Ast::PrimitiveType::Boolean:
@@ -745,7 +747,10 @@ namespace nzsl
 			case Ast::PrimitiveType::Float64: return Append("double");
 			case Ast::PrimitiveType::Int32:   return Append("int");
 			case Ast::PrimitiveType::UInt32:  return Append("uint");
-			case Ast::PrimitiveType::String:  throw std::runtime_error("unexpected string constant");
+
+			case Ast::PrimitiveType::UntypedFloat:   throw std::runtime_error("unexpected untyped float");
+			case Ast::PrimitiveType::UntypedInteger: throw std::runtime_error("unexpected untyped integer");
+			case Ast::PrimitiveType::String:         throw std::runtime_error("unexpected string type");
 		}
 	}
 
@@ -771,6 +776,10 @@ namespace nzsl
 
 			case Ast::PrimitiveType::String:
 				throw std::runtime_error("unexpected string type for sampler");
+
+			case Ast::PrimitiveType::UntypedFloat:
+			case Ast::PrimitiveType::UntypedInteger:
+				throw std::runtime_error("unexpected untyped for sampler");
 		}
 
 		Append("sampler");
@@ -817,6 +826,10 @@ namespace nzsl
 
 			case Ast::PrimitiveType::String:
 				throw std::runtime_error("unexpected string type for texture");
+
+			case Ast::PrimitiveType::UntypedFloat:
+			case Ast::PrimitiveType::UntypedInteger:
+				throw std::runtime_error("unexpected untyped for texture");
 		}
 
 		Append("image");
@@ -851,7 +864,10 @@ namespace nzsl
 			case Ast::PrimitiveType::Float64: Append("d"); break;
 			case Ast::PrimitiveType::Int32:   Append("i"); break;
 			case Ast::PrimitiveType::UInt32:  Append("u"); break;
-			case Ast::PrimitiveType::String:  throw std::runtime_error("unexpected string type");
+
+			case Ast::PrimitiveType::UntypedFloat: throw std::runtime_error("unexpected literal type");
+			case Ast::PrimitiveType::UntypedInteger:       throw std::runtime_error("unexpected literal type");
+			case Ast::PrimitiveType::String:               throw std::runtime_error("unexpected string type");
 		}
 
 		Append("vec");
@@ -1365,8 +1381,10 @@ namespace nzsl
 
 		if constexpr (std::is_same_v<T, Ast::NoValue>)
 			throw std::runtime_error("invalid type (value expected)");
+		else if constexpr (Ast::IsUntyped_v<T>)
+			throw std::runtime_error("unexpected untyped");
 		else if constexpr (std::is_same_v<T, std::string>)
-			throw std::runtime_error("unexpected string litteral");
+			throw std::runtime_error("unexpected string literal");
 		else if constexpr (std::is_same_v<T, bool> || std::is_same_v<T, std::vector<bool>::reference>)
 			Append((value) ? "true" : "false");
 		else if constexpr (std::is_same_v<T, double> || std::is_same_v<T, float> || std::is_same_v<T, std::int32_t> || std::is_same_v<T, std::uint32_t>)

@@ -648,6 +648,8 @@ namespace nzsl::Ast
 			{
 				case PrimitiveType::Boolean:
 				case PrimitiveType::String:
+				case PrimitiveType::UntypedFloat:
+				case PrimitiveType::UntypedInteger:
 					return false;
 
 				case PrimitiveType::Float32:
@@ -662,6 +664,8 @@ namespace nzsl::Ast
 						case PrimitiveType::Float64:
 						case PrimitiveType::Int32:
 						case PrimitiveType::UInt32:
+						case PrimitiveType::UntypedFloat:
+						case PrimitiveType::UntypedInteger:
 							return true;
 					}
 
@@ -680,6 +684,8 @@ namespace nzsl::Ast
 						case PrimitiveType::Float64:
 						case PrimitiveType::Int32:
 						case PrimitiveType::UInt32:
+						case PrimitiveType::UntypedFloat:
+						case PrimitiveType::UntypedInteger:
 							return true;
 					}
 
@@ -698,6 +704,8 @@ namespace nzsl::Ast
 						case PrimitiveType::Float64:
 						case PrimitiveType::Int32:
 						case PrimitiveType::UInt32:
+						case PrimitiveType::UntypedFloat:
+						case PrimitiveType::UntypedInteger:
 							return true;
 					}
 
@@ -716,6 +724,8 @@ namespace nzsl::Ast
 						case PrimitiveType::Float64:
 						case PrimitiveType::Int32:
 						case PrimitiveType::UInt32:
+						case PrimitiveType::UntypedFloat:
+						case PrimitiveType::UntypedInteger:
 							return true;
 					}
 
@@ -1765,6 +1775,8 @@ namespace nzsl::Ast
 							case PrimitiveType::Float64:
 							case PrimitiveType::Int32:
 							case PrimitiveType::UInt32:
+							case PrimitiveType::UntypedFloat:
+							case PrimitiveType::UntypedInteger:
 								return true;
 						}
 
@@ -1806,6 +1818,8 @@ namespace nzsl::Ast
 							case PrimitiveType::Float64:
 							case PrimitiveType::Int32:
 							case PrimitiveType::UInt32:
+							case PrimitiveType::UntypedFloat:
+							case PrimitiveType::UntypedInteger:
 								return true;
 						}
 
@@ -1936,6 +1950,8 @@ namespace nzsl::Ast
 							case PrimitiveType::Float64:
 							case PrimitiveType::Int32:
 							case PrimitiveType::UInt32:
+							case PrimitiveType::UntypedFloat:
+							case PrimitiveType::UntypedInteger:
 								return true;
 						}
 
@@ -1977,6 +1993,8 @@ namespace nzsl::Ast
 							case PrimitiveType::Float64:
 							case PrimitiveType::Int32:
 							case PrimitiveType::UInt32:
+							case PrimitiveType::UntypedFloat:
+							case PrimitiveType::UntypedInteger:
 								return true;
 						}
 
@@ -2016,6 +2034,8 @@ namespace nzsl::Ast
 							case PrimitiveType::Float32:
 							case PrimitiveType::Float64:
 							case PrimitiveType::Int32:
+							case PrimitiveType::UntypedFloat:
+							case PrimitiveType::UntypedInteger:
 								return true;
 						}
 
@@ -2057,6 +2077,8 @@ namespace nzsl::Ast
 							case PrimitiveType::Float32:
 							case PrimitiveType::Float64:
 							case PrimitiveType::Int32:
+							case PrimitiveType::UntypedFloat:
+							case PrimitiveType::UntypedInteger:
 								return true;
 						}
 

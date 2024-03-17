@@ -105,6 +105,7 @@ namespace nzsl::Ast
 			virtual void Value(float& val) = 0;
 			virtual void Value(std::string& val) = 0;
 			virtual void Value(std::int32_t& val) = 0;
+			virtual void Value(std::int64_t& val) = 0;
 			virtual void Value(std::uint8_t& val) = 0;
 			virtual void Value(std::uint16_t& val) = 0;
 			virtual void Value(std::uint32_t& val) = 0;
@@ -135,6 +136,7 @@ namespace nzsl::Ast
 			void Value(float& val) override;
 			void Value(std::string& val) override;
 			void Value(std::int32_t& val) override;
+			void Value(std::int64_t& val) override;
 			void Value(std::uint8_t& val) override;
 			void Value(std::uint16_t& val) override;
 			void Value(std::uint32_t& val) override;
@@ -167,6 +169,7 @@ namespace nzsl::Ast
 			void Value(float& val) override;
 			void Value(std::string& val) override;
 			void Value(std::int32_t& val) override;
+			void Value(std::int64_t& val) override;
 			void Value(std::uint8_t& val) override;
 			void Value(std::uint16_t& val) override;
 			void Value(std::uint32_t& val) override;

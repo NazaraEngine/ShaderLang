@@ -331,7 +331,7 @@ namespace nzsl
 					{
 						tokenType = TokenType::IntegerValue;
 
-						long long value;
+						std::int64_t value;
 						std::from_chars_result r = std::from_chars(first, last, value, base);
 						if (r.ptr == last && r.ec == std::errc{})
 							token.data = value;
@@ -659,7 +659,7 @@ namespace nzsl
 					break;
 
 				case TokenType::IntegerValue:
-					ss << "(" << std::get<long long>(token.data) << ")";
+					ss << "(" << std::get<std::int64_t>(token.data) << ")";
 					break;
 
 				case TokenType::StringValue:
