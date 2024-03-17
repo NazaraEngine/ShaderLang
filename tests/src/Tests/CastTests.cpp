@@ -56,7 +56,7 @@ void main()
 	float x_4 = float(iVal);
 	double x_5 = double(iVal);
 	uint x_6 = uint(iVal);
-	uint uVal = uint(42);
+	uint uVal = 42u;
 	float x_7 = float(uVal);
 	double x_8 = double(uVal);
 	int x_9 = int(uVal);
@@ -83,51 +83,50 @@ fn main()
 )");
 
 		ExpectSPIRV(*shaderModule, R"(
-%13 = OpFunction %1 FunctionControl(0) %2
-%14 = OpLabel
-%15 = OpVariable %5 StorageClass(Function)
-%16 = OpVariable %7 StorageClass(Function)
-%17 = OpVariable %9 StorageClass(Function)
-%18 = OpVariable %11 StorageClass(Function)
-%19 = OpVariable %9 StorageClass(Function)
-%20 = OpVariable %5 StorageClass(Function)
-%21 = OpVariable %7 StorageClass(Function)
-%22 = OpVariable %11 StorageClass(Function)
+%14 = OpFunction %1 FunctionControl(0) %2
+%15 = OpLabel
+%16 = OpVariable %5 StorageClass(Function)
+%17 = OpVariable %7 StorageClass(Function)
+%18 = OpVariable %9 StorageClass(Function)
+%19 = OpVariable %11 StorageClass(Function)
+%20 = OpVariable %9 StorageClass(Function)
+%21 = OpVariable %5 StorageClass(Function)
+%22 = OpVariable %7 StorageClass(Function)
 %23 = OpVariable %11 StorageClass(Function)
-%24 = OpVariable %5 StorageClass(Function)
-%25 = OpVariable %7 StorageClass(Function)
-%26 = OpVariable %9 StorageClass(Function)
-      OpStore %15 %4
-%27 = OpLoad %3 %15
-%28 = OpFConvert %6 %27
-      OpStore %16 %28
-%29 = OpLoad %3 %15
-%30 = OpConvertFToS %8 %29
-      OpStore %17 %30
-%31 = OpLoad %3 %15
-%32 = OpConvertFToU %10 %31
-      OpStore %18 %32
-      OpStore %19 %12
-%33 = OpLoad %8 %19
-%34 = OpConvertSToF %3 %33
-      OpStore %20 %34
-%35 = OpLoad %8 %19
-%36 = OpConvertSToF %6 %35
-      OpStore %21 %36
-%37 = OpLoad %8 %19
-%38 = OpBitcast %10 %37
-      OpStore %22 %38
-%39 = OpBitcast %10 %12
+%24 = OpVariable %11 StorageClass(Function)
+%25 = OpVariable %5 StorageClass(Function)
+%26 = OpVariable %7 StorageClass(Function)
+%27 = OpVariable %9 StorageClass(Function)
+      OpStore %16 %4
+%28 = OpLoad %3 %16
+%29 = OpFConvert %6 %28
+      OpStore %17 %29
+%30 = OpLoad %3 %16
+%31 = OpConvertFToS %8 %30
+      OpStore %18 %31
+%32 = OpLoad %3 %16
+%33 = OpConvertFToU %10 %32
+      OpStore %19 %33
+      OpStore %20 %12
+%34 = OpLoad %8 %20
+%35 = OpConvertSToF %3 %34
+      OpStore %21 %35
+%36 = OpLoad %8 %20
+%37 = OpConvertSToF %6 %36
+      OpStore %22 %37
+%38 = OpLoad %8 %20
+%39 = OpBitcast %10 %38
       OpStore %23 %39
-%40 = OpLoad %10 %23
+      OpStore %24 %13
+%40 = OpLoad %10 %24
 %41 = OpConvertUToF %3 %40
-      OpStore %24 %41
-%42 = OpLoad %10 %23
+      OpStore %25 %41
+%42 = OpLoad %10 %24
 %43 = OpConvertUToF %6 %42
-      OpStore %25 %43
-%44 = OpLoad %10 %23
+      OpStore %26 %43
+%44 = OpLoad %10 %24
 %45 = OpBitcast %8 %44
-      OpStore %26 %45
+      OpStore %27 %45
       OpReturn
       OpFunctionEnd)", {}, {}, true);
 	}

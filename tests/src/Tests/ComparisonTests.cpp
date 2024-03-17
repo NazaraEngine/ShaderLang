@@ -6,7 +6,7 @@
 
 TEST_CASE("Comparison", "[Shader]")
 {
-	SECTION("Scalar arithmetic operations")
+	SECTION("Scalar arithmetic comparisons")
 	{
 		std::string_view nzslSource = R"(
 [nzsl_version("1.0")]

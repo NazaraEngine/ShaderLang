@@ -539,8 +539,12 @@ namespace nzsl::Ast
 		switch (node.op)
 		{
 			case AssignType::Simple:
-				TypeMustMatch(*leftExprType, UnwrapExternalType(ResolveAlias(*rightExprType)), node.sourceLocation);
+			{
+				if (!ValidateMatchingTypes(*leftExprType, UnwrapExternalType(ResolveAlias(*rightExprType))))
+					throw CompilerUnmatchingTypesError{ node.sourceLocation, ToString(*leftExprType, node.sourceLocation), ToString(*rightExprType, node.sourceLocation) };
+
 				break;
+			}
 
 			case AssignType::CompoundAdd:        binaryType = BinaryType::Add; break;
 			case AssignType::CompoundDivide:     binaryType = BinaryType::Divide; break;
@@ -554,7 +558,8 @@ namespace nzsl::Ast
 		if (binaryType)
 		{
 			ExpressionType expressionType = ValidateBinaryOp(*binaryType, ResolveAlias(*leftExprType), UnwrapExternalType(ResolveAlias(*rightExprType)), node.sourceLocation);
-			TypeMustMatch(UnwrapExternalType(*leftExprType), expressionType, node.sourceLocation);
+			if (!ValidateMatchingTypes(UnwrapExternalType(*leftExprType), expressionType))
+				throw CompilerUnmatchingTypesError{ node.sourceLocation, ToString(*leftExprType, node.sourceLocation), ToString(expressionType, node.sourceLocation) };
 		}
 
 		return DontVisitChildren{};
@@ -606,7 +611,9 @@ namespace nzsl::Ast
 			if (!parameterType)
 				continue;
 
-			if (ResolveAlias(*parameterType) != ResolveAlias(referenceDeclaration->parameters[i].type.GetResultingValue()))
+			const ExpressionType& expectedType = referenceDeclaration->parameters[i].type.GetResultingValue();
+
+			if (!ValidateMatchingTypes(expectedType, *parameterType))
 				throw CompilerFunctionCallUnmatchingParameterTypeError{ node.parameters[i].expr->sourceLocation, referenceDeclaration->name, Nz::SafeCast<std::uint32_t>(i), ToString(referenceDeclaration->parameters[i].type.GetResultingValue(), referenceDeclaration->parameters[i].sourceLocation), ToString(*parameterType, node.parameters[i].expr->sourceLocation) };
 
 			if (node.parameters[i].semantic != referenceDeclaration->parameters[i].semantic)
@@ -649,6 +656,8 @@ namespace nzsl::Ast
 			{
 				case PrimitiveType::Boolean:
 				case PrimitiveType::String:
+				case PrimitiveType::FloatLiteral:
+				case PrimitiveType::IntLiteral:
 					return false;
 
 				case PrimitiveType::Float32:
@@ -663,6 +672,8 @@ namespace nzsl::Ast
 						case PrimitiveType::Float64:
 						case PrimitiveType::Int32:
 						case PrimitiveType::UInt32:
+						case PrimitiveType::FloatLiteral:
+						case PrimitiveType::IntLiteral:
 							return true;
 					}
 
@@ -681,6 +692,8 @@ namespace nzsl::Ast
 						case PrimitiveType::Float64:
 						case PrimitiveType::Int32:
 						case PrimitiveType::UInt32:
+						case PrimitiveType::FloatLiteral:
+						case PrimitiveType::IntLiteral:
 							return true;
 					}
 
@@ -699,6 +712,8 @@ namespace nzsl::Ast
 						case PrimitiveType::Float64:
 						case PrimitiveType::Int32:
 						case PrimitiveType::UInt32:
+						case PrimitiveType::FloatLiteral:
+						case PrimitiveType::IntLiteral:
 							return true;
 					}
 
@@ -717,6 +732,8 @@ namespace nzsl::Ast
 						case PrimitiveType::Float64:
 						case PrimitiveType::Int32:
 						case PrimitiveType::UInt32:
+						case PrimitiveType::FloatLiteral:
+						case PrimitiveType::IntLiteral:
 							return true;
 					}
 
@@ -771,7 +788,7 @@ namespace nzsl::Ast
 					if (vecType.componentCount != targetMatrixType.rowCount)
 						throw CompilerCastMatrixVectorComponentMismatchError{ node.expressions[i]->sourceLocation, Nz::SafeCast<std::uint32_t>(vecType.componentCount), Nz::SafeCast<std::uint32_t>(targetMatrixType.rowCount) };
 
-					if (vecType.type != targetMatrixType.type)
+					if (!ValidateMatchingTypes(targetMatrixType.type, vecType.type))
 						throw CompilerCastIncompatibleBaseTypesError{ node.expressions[i]->sourceLocation, ToString(targetMatrixType.type, node.sourceLocation), ToString(vecType.type, node.sourceLocation) };
 				}
 			}
@@ -796,8 +813,8 @@ namespace nzsl::Ast
 					if (!IsPrimitiveType(resolvedExprType))
 						throw CompilerCastMatrixExpectedVectorOrScalarError{ node.sourceLocation, ToString(resolvedExprType, node.expressions[i]->sourceLocation) };
 
-					const PrimitiveType& baseType = std::get<PrimitiveType>(resolvedExprType);
-					if (baseType != targetMatrixType.type)
+					PrimitiveType baseType = std::get<PrimitiveType>(resolvedExprType);
+					if (!ValidateMatchingTypes(targetMatrixType.type, baseType))
 						throw CompilerCastIncompatibleBaseTypesError{ node.expressions[exprIndex]->sourceLocation, ToString(targetMatrixType.type, node.sourceLocation), ToString(baseType, node.sourceLocation) };
 				}
 			}
@@ -852,8 +869,8 @@ namespace nzsl::Ast
 				if (IsPrimitiveType(resolvedExprType))
 				{
 					PrimitiveType primitiveType = std::get<PrimitiveType>(resolvedExprType);
-					if (primitiveType != targetBaseType)
-						throw CompilerCastIncompatibleBaseTypesError{ exprPtr->sourceLocation, ToString(targetBaseType, node.sourceLocation), ToString(primitiveType, exprPtr->sourceLocation) };
+					if (!ValidateMatchingTypes(targetBaseType, primitiveType))
+						throw CompilerCastIncompatibleBaseTypesError{ exprPtr->sourceLocation, ToString(targetBaseType, node.sourceLocation), ToString(primitiveType, node.sourceLocation) };
 				}
 				else if (IsVectorType(resolvedExprType))
 				{
@@ -866,11 +883,8 @@ namespace nzsl::Ast
 						if (!areTypeCompatibles(primitiveType, targetBaseType))
 							throw CompilerCastIncompatibleTypesError{ exprPtr->sourceLocation, ToString(targetType, node.sourceLocation), ToString(resolvedExprType, node.sourceLocation) };
 					}
-					else
-					{
-						if (primitiveType != targetBaseType)
-							throw CompilerCastIncompatibleBaseTypesError{ exprPtr->sourceLocation, ToString(targetBaseType, node.sourceLocation), ToString(primitiveType, exprPtr->sourceLocation) };
-					}
+					else if (!ValidateMatchingTypes(targetBaseType, primitiveType))
+						throw CompilerCastIncompatibleBaseTypesError{ exprPtr->sourceLocation, ToString(targetBaseType, node.sourceLocation), ToString(primitiveType, node.sourceLocation) };
 				}
 				else
 					throw CompilerCastIncompatibleTypesError{ exprPtr->sourceLocation, ToString(targetType, node.sourceLocation), ToString(resolvedExprType, exprPtr->sourceLocation) };
@@ -902,8 +916,8 @@ namespace nzsl::Ast
 				if (!exprType)
 					return DontVisitChildren{};
 
-				if (innerType != *exprType)
-					throw CompilerCastIncompatibleTypesError{ exprPtr->sourceLocation, ToString(innerType, node.sourceLocation), ToString(*exprType, exprPtr->sourceLocation) };
+				if (!ValidateMatchingTypes(innerType, *exprType))
+					throw CompilerCastIncompatibleTypesError{ exprPtr->sourceLocation, ToString(innerType, node.sourceLocation), ToString(*exprType, node.sourceLocation) };
 			}
 		}
 		else
@@ -1219,8 +1233,8 @@ namespace nzsl::Ast
 				const ExpressionType* defaultValueType = GetExpressionType(*node.defaultValue);
 				if (defaultValueType)
 				{
-					if (ResolveAlias(optionType) != ResolveAlias(*defaultValueType))
-						throw CompilerVarDeclarationTypeUnmatchingError{ node.sourceLocation, ToString(optionType, node.sourceLocation), ToString(*defaultValueType, node.defaultValue->sourceLocation) };
+					if (!ValidateMatchingTypes(optionType, *defaultValueType))
+						throw CompilerVarDeclarationTypeUnmatchingError{ node.sourceLocation, ToString(optionType, node.sourceLocation), ToString(*defaultValueType, node.sourceLocation) };
 				}
 				else if (!m_context->partialCompilation)
 					throw AstMissingExpressionTypeError{ node.defaultValue->sourceLocation };
@@ -1318,6 +1332,35 @@ namespace nzsl::Ast
 	{
 		HandleChildren(node);
 
+		const ExpressionType* fromExprType = GetExpressionType(*node.fromExpr);
+		if (fromExprType)
+		{
+			const ExpressionType& resolvedFromExprType = ResolveAlias(*fromExprType);
+			if (!IsPrimitiveType(resolvedFromExprType))
+				throw CompilerForFromTypeExpectIntegerTypeError{ node.fromExpr->sourceLocation, ToString(*fromExprType, node.fromExpr->sourceLocation) };
+
+			PrimitiveType counterType = std::get<PrimitiveType>(resolvedFromExprType);
+			if (counterType != PrimitiveType::Int32 && counterType != PrimitiveType::UInt32 && counterType != PrimitiveType::IntLiteral)
+				throw CompilerForFromTypeExpectIntegerTypeError{ node.fromExpr->sourceLocation, ToString(*fromExprType, node.fromExpr->sourceLocation) };
+
+			const ExpressionType* toExprType = GetExpressionType(*node.toExpr);
+			if (toExprType)
+			{
+				if (!ValidateMatchingTypes(*fromExprType, *toExprType))
+					throw CompilerForToUnmatchingTypeError{ node.toExpr->sourceLocation, ToString(*toExprType, node.toExpr->sourceLocation), ToString(*fromExprType, node.fromExpr->sourceLocation) };
+			}
+
+			if (node.stepExpr)
+			{
+				const ExpressionType* stepExprType = GetExpressionType(*node.stepExpr);
+				if (stepExprType)
+				{
+					if (!ValidateMatchingTypes(*fromExprType, *stepExprType))
+						throw CompilerForStepUnmatchingTypeError{ node.stepExpr->sourceLocation, ToString(*stepExprType, node.stepExpr->sourceLocation), ToString(*fromExprType, node.fromExpr->sourceLocation) };
+				}
+			}
+		}
+
 		if (node.varIndex && m_options->checkIndices)
 			RegisterVariable(*node.varIndex, node.sourceLocation);
 
@@ -1392,7 +1435,7 @@ namespace nzsl::Ast
 		const ExpressionType* returnTypeOpt = GetExpressionType(MandatoryExpr(node.returnExpr, node.sourceLocation));
 		if (returnTypeOpt)
 		{
-			if (ResolveAlias(*returnTypeOpt) != ResolveAlias(functionReturnType))
+			if (!ValidateMatchingTypes(*returnTypeOpt, functionReturnType))
 				throw CompilerFunctionReturnUnmatchingTypesError{ node.sourceLocation, ToString(*returnTypeOpt, node.sourceLocation), ToString(functionReturnType, node.sourceLocation) };
 		}
 		else
@@ -1433,12 +1476,6 @@ namespace nzsl::Ast
 		return DontVisitChildren{};
 	}
 
-	void ValidationTransformer::TypeMustMatch(const ExpressionType& left, const ExpressionType& right, const SourceLocation& sourceLocation) const
-	{
-		if (ResolveAlias(left) != ResolveAlias(right))
-			throw CompilerUnmatchingTypesError{ sourceLocation, ToString(left, sourceLocation), ToString(right, sourceLocation) };
-	}
-
 	bool ValidationTransformer::TransformModule(Module& module, TransformerContext& context, std::string* error, Nz::FunctionRef<void()> postCallback)
 	{
 		m_states->pendingFunctions.clear();
@@ -1450,16 +1487,6 @@ namespace nzsl::Ast
 		return true;
 	}
 
-	void ValidationTransformer::TypeMustMatch(const ExpressionPtr& left, const ExpressionPtr& right, const SourceLocation& sourceLocation) const
-	{
-		const ExpressionType* leftType = GetExpressionType(*left);
-		const ExpressionType* rightType = GetExpressionType(*right);
-		if (!leftType || !rightType)
-			return;
-
-		return TypeMustMatch(*leftType, *rightType, sourceLocation);
-	}
-
 	void ValidationTransformer::ValidateConcreteType(const ExpressionType& exprType, const SourceLocation& sourceLocation)
 	{
 		if (IsArrayType(exprType))
@@ -1468,6 +1495,8 @@ namespace nzsl::Ast
 			if (arrayType.length == 0)
 				throw CompilerArrayLengthRequiredError{ sourceLocation };
 		}
+		else if (IsLiteralType(exprType))
+			throw AstUnexpectedUntypedError{ sourceLocation };
 	}
 
 	void ValidationTransformer::ValidateIntrinsicParameters(IntrinsicExpression& node)
@@ -1542,7 +1571,7 @@ namespace nzsl::Ast
 				{
 					auto Check = [](const ExpressionType& type)
 					{
-						return type == ExpressionType{ PrimitiveType::Float32 };
+						return type == ExpressionType{ PrimitiveType::Float32 } || type == ExpressionType{ PrimitiveType::FloatLiteral };
 					};
 
 					if (ValidateIntrinsicParameterType(node, Check, "f32", paramIndex) == ValidationResult::Unresolved)
@@ -1568,7 +1597,7 @@ namespace nzsl::Ast
 						else
 							return false;
 
-						if (primitiveType != PrimitiveType::Float32 && primitiveType != PrimitiveType::Float64)
+						if (primitiveType != PrimitiveType::Float32 && primitiveType != PrimitiveType::Float64 && primitiveType != PrimitiveType::FloatLiteral)
 							return false;
 
 						return true;
@@ -1600,7 +1629,7 @@ namespace nzsl::Ast
 							return false;
 
 						// no float16 for now
-						if (primitiveType != PrimitiveType::Float32 && primitiveType != PrimitiveType::Float64)
+						if (primitiveType != PrimitiveType::Float32 && primitiveType != PrimitiveType::Float64 && primitiveType != PrimitiveType::FloatLiteral)
 							return false;
 
 						return true;
@@ -1661,7 +1690,7 @@ namespace nzsl::Ast
 						else
 							return false;
 
-						if (primitiveType != PrimitiveType::Float32 && primitiveType != PrimitiveType::Float64)
+						if (primitiveType != PrimitiveType::Float32 && primitiveType != PrimitiveType::Float64 && primitiveType != PrimitiveType::FloatLiteral)
 							return false;
 
 						return true;
@@ -1691,7 +1720,7 @@ namespace nzsl::Ast
 						if (vectorType.componentCount != 3)
 							return false;
 
-						return vectorType.type == PrimitiveType::Float32 || vectorType.type == PrimitiveType::Float64;
+						return vectorType.type == PrimitiveType::Float32 || vectorType.type == PrimitiveType::Float64 || vectorType.type == PrimitiveType::FloatLiteral;
 					};
 
 					if (ValidateIntrinsicParameterType(node, Check, "floating-point vec3", paramIndex) == ValidationResult::Unresolved)
@@ -1766,6 +1795,8 @@ namespace nzsl::Ast
 							case PrimitiveType::Float64:
 							case PrimitiveType::Int32:
 							case PrimitiveType::UInt32:
+							case PrimitiveType::FloatLiteral:
+							case PrimitiveType::IntLiteral:
 								return true;
 						}
 
@@ -1807,6 +1838,8 @@ namespace nzsl::Ast
 							case PrimitiveType::Float64:
 							case PrimitiveType::Int32:
 							case PrimitiveType::UInt32:
+							case PrimitiveType::FloatLiteral:
+							case PrimitiveType::IntLiteral:
 								return true;
 						}
 
@@ -1875,7 +1908,7 @@ namespace nzsl::Ast
 							if (vectorType.componentCount != requiredComponentCount)
 								return false;
 
-							return vectorType.type == PrimitiveType::Float32 || vectorType.type == PrimitiveType::Float64;
+							return vectorType.type == PrimitiveType::Float32 || vectorType.type == PrimitiveType::Float64 || vectorType.type == PrimitiveType::FloatLiteral;
 						};
 
 						char errMessage[] = "floating-point vector of X components";
@@ -1937,6 +1970,8 @@ namespace nzsl::Ast
 							case PrimitiveType::Float64:
 							case PrimitiveType::Int32:
 							case PrimitiveType::UInt32:
+							case PrimitiveType::FloatLiteral:
+							case PrimitiveType::IntLiteral:
 								return true;
 						}
 
@@ -1978,6 +2013,8 @@ namespace nzsl::Ast
 							case PrimitiveType::Float64:
 							case PrimitiveType::Int32:
 							case PrimitiveType::UInt32:
+							case PrimitiveType::FloatLiteral:
+							case PrimitiveType::IntLiteral:
 								return true;
 						}
 
@@ -2017,6 +2054,8 @@ namespace nzsl::Ast
 							case PrimitiveType::Float32:
 							case PrimitiveType::Float64:
 							case PrimitiveType::Int32:
+							case PrimitiveType::FloatLiteral:
+							case PrimitiveType::IntLiteral:
 								return true;
 						}
 
@@ -2058,6 +2097,8 @@ namespace nzsl::Ast
 							case PrimitiveType::Float32:
 							case PrimitiveType::Float64:
 							case PrimitiveType::Int32:
+							case PrimitiveType::FloatLiteral:
+							case PrimitiveType::IntLiteral:
 								return true;
 						}
 
@@ -2192,7 +2233,7 @@ namespace nzsl::Ast
 							if (vectorType.componentCount != requiredComponentCount)
 								return false;
 
-							return vectorType.type == PrimitiveType::Int32;
+							return vectorType.type == PrimitiveType::Int32 || vectorType.type == PrimitiveType::IntLiteral;
 						};
 
 						char errMessage[] = "integer vector of X components";
@@ -2216,7 +2257,7 @@ namespace nzsl::Ast
 								return false;
 
 							PrimitiveType primitiveType = std::get<PrimitiveType>(type);
-							return primitiveType == PrimitiveType::Int32;
+							return primitiveType == PrimitiveType::Int32 || primitiveType == PrimitiveType::IntLiteral;
 						};
 
 						if (ValidateIntrinsicParameterType(node, Check, "integer value", paramIndex) == ValidationResult::Unresolved)
@@ -2295,7 +2336,7 @@ namespace nzsl::Ast
 			if (!parameterType)
 				return ValidationResult::Unresolved;
 
-			if (matchingType != ResolveAlias(*parameterType))
+			if (!ValidateMatchingTypes(matchingType, *parameterType))
 				throw CompilerIntrinsicUnmatchingParameterTypeError{ node.parameters[i]->sourceLocation, Nz::SafeCast<std::uint32_t>(from), Nz::SafeCast<std::uint32_t>(to) };
 		}
 
@@ -2304,7 +2345,7 @@ namespace nzsl::Ast
 
 	auto ValidationTransformer::ValidateIntrinsicParamMatchingVecComponent(IntrinsicExpression& node, std::size_t from, std::size_t to) -> ValidationResult
 	{
-		// Check if all types prior to this one matches their type
+		// Check if all vector types prior to this one matches their component count
 		std::size_t componentCount = 0;
 		for (; from < to; ++from)
 		{

@@ -29,6 +29,8 @@ namespace nzsl
 		constexpr explicit Vector(T x, T y, T z);
 		constexpr explicit Vector(T x, T y, T z, T w);
 
+		template<typename U> constexpr Vector<U, N> Cast() const;
+
 		constexpr Vector<bool, N> ComponentEq(const Vector& vec) const;
 		constexpr Vector<bool, N> ComponentGe(const Vector& vec) const;
 		constexpr Vector<bool, N> ComponentGt(const Vector& vec) const;
@@ -54,6 +56,8 @@ namespace nzsl
 
 		constexpr T& operator[](std::size_t i);
 		constexpr T operator[](std::size_t i) const;
+
+		template<typename U, typename = std::enable_if_t<!std::is_same_v<T, U>>> constexpr explicit operator Vector<U, N>() const;
 
 		constexpr Vector operator-() const;
 

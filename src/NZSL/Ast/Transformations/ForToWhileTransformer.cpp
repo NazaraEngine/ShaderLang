@@ -102,8 +102,16 @@ namespace nzsl::Ast
 			throw CompilerForFromTypeExpectIntegerTypeError{ fromExpr.sourceLocation, ToString(*fromExprType, fromExpr.sourceLocation) };
 
 		PrimitiveType counterType = std::get<PrimitiveType>(*fromExprType);
-		if (counterType != PrimitiveType::Int32 && counterType != PrimitiveType::UInt32)
+		if (counterType != PrimitiveType::Int32 && counterType != PrimitiveType::UInt32 && counterType != PrimitiveType::IntLiteral)
 			throw CompilerForFromTypeExpectIntegerTypeError{ fromExpr.sourceLocation, ToString(*fromExprType, fromExpr.sourceLocation) };
+
+		auto BuildCounterExprType = [&]() -> Ast::ExpressionValue<Ast::ExpressionType>
+		{
+			if (counterType == PrimitiveType::IntLiteral)
+				return {};
+
+			return ExpressionType{ counterType };
+		};
 
 		HandleStatement(forStatement.statement);
 
@@ -111,7 +119,7 @@ namespace nzsl::Ast
 		multi->sourceLocation = forStatement.sourceLocation;
 
 		// Counter variable
-		auto counterVariable = ShaderBuilder::DeclareVariable(forStatement.varName, ExpressionType{ counterType }, std::move(forStatement.fromExpr));
+		auto counterVariable = ShaderBuilder::DeclareVariable(forStatement.varName, BuildCounterExprType(), std::move(forStatement.fromExpr));
 		counterVariable->sourceLocation = forStatement.sourceLocation;
 		counterVariable->varIndex = forStatement.varIndex;
 
@@ -119,7 +127,7 @@ namespace nzsl::Ast
 		multi->statements.emplace_back(std::move(counterVariable));
 
 		// Target variable
-		auto targetVariable = ShaderBuilder::DeclareVariable("_nzsl_to", ExpressionType{ counterType }, std::move(forStatement.toExpr));
+		auto targetVariable = ShaderBuilder::DeclareVariable("_nzsl_to", BuildCounterExprType(), std::move(forStatement.toExpr));
 		targetVariable->sourceLocation = forStatement.sourceLocation;
 		targetVariable->varIndex = m_context->variables.RegisterNewIndex();
 
@@ -131,7 +139,7 @@ namespace nzsl::Ast
 
 		if (forStatement.stepExpr)
 		{
-			auto stepVariable = ShaderBuilder::DeclareVariable("_nzsl_step", ExpressionType{ counterType }, std::move(forStatement.stepExpr));
+			auto stepVariable = ShaderBuilder::DeclareVariable("_nzsl_step", BuildCounterExprType(), std::move(forStatement.stepExpr));
 			stepVariable->sourceLocation = forStatement.sourceLocation;
 			stepVariable->varIndex = m_context->variables.RegisterNewIndex();
 

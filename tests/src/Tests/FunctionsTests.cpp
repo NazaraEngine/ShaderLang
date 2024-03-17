@@ -401,8 +401,7 @@ fn main() -> FragOut
 		ExpectGLSL(*shaderModule, R"(
 vec4 sample_center(sampler2D tex)
 {
-	float _nzsl_cachedResult = 0.5;
-	return texture(tex, vec2(_nzsl_cachedResult, _nzsl_cachedResult));
+	return texture(tex, vec2(0.5, 0.5));
 }
 
 uniform sampler2D ExtData_texture_;
@@ -457,37 +456,37 @@ fn main() -> FragOut
  %4 = OpTypeSampledImage %3
  %5 = OpTypePointer StorageClass(UniformConstant) %4
  %6 = OpTypeFunction %2 %5
- %7 = OpConstant %1 f32(0.5)
- %8 = OpTypeInt 32 1
- %9 = OpConstant %8 i32(0)
-%10 = OpTypeVector %1 2
-%12 = OpTypeVoid
-%13 = OpTypeFunction %12
-%14 = OpTypePointer StorageClass(Output) %2
-%16 = OpTypeStruct %2
-%17 = OpTypePointer StorageClass(Function) %16
-%18 = OpTypePointer StorageClass(Function) %4
+ %7 = OpTypeVector %1 2
+ %8 = OpConstant %1 f32(0.5)
+ %9 = OpConstantComposite %7 %8 %8
+%11 = OpTypeVoid
+%12 = OpTypeFunction %11
+%13 = OpTypePointer StorageClass(Output) %2
+%15 = OpTypeStruct %2
+%16 = OpTypePointer StorageClass(Function) %15
+%17 = OpTypeInt 32 1
+%18 = OpConstant %17 i32(0)
+%19 = OpTypePointer StorageClass(Function) %4
 %31 = OpTypePointer StorageClass(Function) %2
-%11 = OpVariable %5 StorageClass(UniformConstant)
-%15 = OpVariable %14 StorageClass(Output)
-%19 = OpFunction %2 FunctionControl(0) %6
-%21 = OpFunctionParameter %5
-%22 = OpLabel
-%23 = OpLoad %4 %21
-%24 = OpCompositeConstruct %10 %7 %7
-%25 = OpImageSampleImplicitLod %2 %23 %24
+%10 = OpVariable %5 StorageClass(UniformConstant)
+%14 = OpVariable %13 StorageClass(Output)
+%20 = OpFunction %2 FunctionControl(0) %6
+%22 = OpFunctionParameter %5
+%23 = OpLabel
+%24 = OpLoad %4 %22
+%25 = OpImageSampleImplicitLod %2 %24 %9
       OpReturnValue %25
       OpFunctionEnd
-%20 = OpFunction %12 FunctionControl(0) %13
+%21 = OpFunction %11 FunctionControl(0) %12
 %26 = OpLabel
-%27 = OpVariable %17 StorageClass(Function)
-%28 = OpVariable %18 StorageClass(Function)
-%29 = OpFunctionCall %2 %19 %11
-%30 = OpAccessChain %31 %27 %9
+%27 = OpVariable %16 StorageClass(Function)
+%28 = OpVariable %19 StorageClass(Function)
+%29 = OpFunctionCall %2 %20 %10
+%30 = OpAccessChain %31 %27 %18
       OpStore %30 %29
-%32 = OpLoad %16 %27
+%32 = OpLoad %15 %27
 %33 = OpCompositeExtract %2 %32 0
-      OpStore %15 %33
+      OpStore %14 %33
       OpReturn
       OpFunctionEnd)", {}, {}, true);
 	}
@@ -529,8 +528,7 @@ fn main() -> FragOut
 		ExpectGLSL(*shaderModule, R"(
 vec4 sample_center(sampler2D tex[3])
 {
-	float _nzsl_cachedResult = 0.5;
-	return texture(tex[1], vec2(_nzsl_cachedResult, _nzsl_cachedResult));
+	return texture(tex[1], vec2(0.5, 0.5));
 }
 
 uniform sampler2D ExtData_texture_[3];
@@ -590,34 +588,34 @@ fn main() -> FragOut
  %9 = OpTypeFunction %2 %8
 %10 = OpTypeInt 32 1
 %11 = OpConstant %10 i32(1)
-%12 = OpConstant %1 f32(0.5)
-%13 = OpConstant %10 i32(0)
-%14 = OpTypeVector %1 2
+%12 = OpTypeVector %1 2
+%13 = OpConstant %1 f32(0.5)
+%14 = OpConstantComposite %12 %13 %13
 %16 = OpTypeVoid
 %17 = OpTypeFunction %16
 %18 = OpTypePointer StorageClass(Output) %2
 %20 = OpTypeStruct %2
 %21 = OpTypePointer StorageClass(Function) %20
-%22 = OpTypePointer StorageClass(Function) %7
-%27 = OpTypePointer StorageClass(UniformConstant) %4
+%22 = OpConstant %10 i32(0)
+%23 = OpTypePointer StorageClass(Function) %7
+%28 = OpTypePointer StorageClass(UniformConstant) %4
 %37 = OpTypePointer StorageClass(Function) %2
 %15 = OpVariable %8 StorageClass(UniformConstant)
 %19 = OpVariable %18 StorageClass(Output)
-%23 = OpFunction %2 FunctionControl(0) %9
-%25 = OpFunctionParameter %8
-%26 = OpLabel
-%28 = OpAccessChain %27 %25 %11
-%29 = OpLoad %4 %28
-%30 = OpCompositeConstruct %14 %12 %12
-%31 = OpImageSampleImplicitLod %2 %29 %30
+%24 = OpFunction %2 FunctionControl(0) %9
+%26 = OpFunctionParameter %8
+%27 = OpLabel
+%29 = OpAccessChain %28 %26 %11
+%30 = OpLoad %4 %29
+%31 = OpImageSampleImplicitLod %2 %30 %14
       OpReturnValue %31
       OpFunctionEnd
-%24 = OpFunction %16 FunctionControl(0) %17
+%25 = OpFunction %16 FunctionControl(0) %17
 %32 = OpLabel
 %33 = OpVariable %21 StorageClass(Function)
-%34 = OpVariable %22 StorageClass(Function)
-%35 = OpFunctionCall %2 %23 %15
-%36 = OpAccessChain %37 %33 %13
+%34 = OpVariable %23 StorageClass(Function)
+%35 = OpFunctionCall %2 %24 %15
+%36 = OpAccessChain %37 %33 %22
       OpStore %36 %35
 %38 = OpLoad %20 %33
 %39 = OpCompositeExtract %2 %38 0

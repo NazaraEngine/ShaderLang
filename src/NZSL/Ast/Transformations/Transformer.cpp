@@ -98,6 +98,10 @@ namespace nzsl::Ast
 		return varPtr;
 	}
 
+	void Transformer::FinishExpressionHandling()
+	{
+	}
+
 	ExpressionPtr& Transformer::GetCurrentExpressionPtr()
 	{
 		assert(!m_expressionStack.empty());
@@ -349,13 +353,16 @@ namespace nzsl::Ast
 
 	void Transformer::HandleChildren(BranchStatement& node)
 	{
-		for (auto& cond : node.condStatements)
+		if (!m_flags.Test(TransformerFlag::IgnoreExpressions))
 		{
-			if (!m_flags.Test(TransformerFlag::IgnoreExpressions))
+			for (auto& cond : node.condStatements)
 				HandleExpression(cond.condition);
 
-			HandleStatement(cond.statement);
+			FinishExpressionHandling();
 		}
+
+		for (auto& cond : node.condStatements)
+			HandleStatement(cond.statement);
 
 		if (node.elseStatement)
 			HandleStatement(node.elseStatement);
@@ -368,7 +375,10 @@ namespace nzsl::Ast
 	void Transformer::HandleChildren(ConditionalStatement& node)
 	{
 		if (!m_flags.Test(TransformerFlag::IgnoreExpressions))
+		{
 			HandleExpression(node.condition);
+			FinishExpressionHandling();
+		}
 
 		PushScope();
 		HandleStatement(node.statement);
@@ -382,7 +392,10 @@ namespace nzsl::Ast
 	void Transformer::HandleChildren(DeclareAliasStatement& node)
 	{
 		if (!m_flags.Test(TransformerFlag::IgnoreExpressions))
+		{
 			HandleExpression(node.expression);
+			FinishExpressionHandling();
+		}
 	}
 
 	void Transformer::HandleChildren(DeclareConstStatement& node)
@@ -393,6 +406,8 @@ namespace nzsl::Ast
 			HandleExpressionValue(node.type);
 
 			HandleExpression(node.expression);
+
+			FinishExpressionHandling();
 		}
 	}
 
@@ -409,6 +424,8 @@ namespace nzsl::Ast
 				HandleExpressionValue(externalVar.bindingSet);
 				HandleExpressionValue(externalVar.type);
 			}
+
+			FinishExpressionHandling();
 		}
 	}
 
@@ -427,6 +444,8 @@ namespace nzsl::Ast
 
 			for (auto& param : node.parameters)
 				HandleExpressionValue(param.type);
+
+			FinishExpressionHandling();
 		}
 
 		if (!m_flags.Test(TransformerFlag::IgnoreFunctionContent))
@@ -448,6 +467,8 @@ namespace nzsl::Ast
 
 			if (node.defaultValue)
 				HandleExpression(node.defaultValue);
+
+			FinishExpressionHandling();
 		}
 	}
 
@@ -466,6 +487,8 @@ namespace nzsl::Ast
 				HandleExpressionValue(member.locationIndex);
 				HandleExpressionValue(member.type);
 			}
+
+			FinishExpressionHandling();
 		}
 	}
 
@@ -477,6 +500,8 @@ namespace nzsl::Ast
 
 			if (node.initialExpression)
 				HandleExpression(node.initialExpression);
+
+			FinishExpressionHandling();
 		}
 	}
 
@@ -487,7 +512,10 @@ namespace nzsl::Ast
 	void Transformer::HandleChildren(ExpressionStatement& node)
 	{
 		if (!m_flags.Test(TransformerFlag::IgnoreExpressions))
+		{
 			HandleExpression(node.expression);
+			FinishExpressionHandling();
+		}
 	}
 
 	void Transformer::HandleChildren(ForStatement& node)
@@ -501,6 +529,8 @@ namespace nzsl::Ast
 				HandleExpression(node.stepExpr);
 
 			HandleExpressionValue(node.unroll);
+
+			FinishExpressionHandling();
 		}
 
 		if (node.statement && !m_flags.Test(TransformerFlag::IgnoreLoopContent))
@@ -518,6 +548,8 @@ namespace nzsl::Ast
 			HandleExpression(node.expression);
 
 			HandleExpressionValue(node.unroll);
+
+			FinishExpressionHandling();
 		}
 
 		if (node.statement && !m_flags.Test(TransformerFlag::IgnoreLoopContent))
@@ -547,7 +579,10 @@ namespace nzsl::Ast
 	void Transformer::HandleChildren(ReturnStatement& node)
 	{
 		if (!m_flags.Test(TransformerFlag::IgnoreExpressions) && node.returnExpr)
+		{
 			HandleExpression(node.returnExpr);
+			FinishExpressionHandling();
+		}
 	}
 
 	void Transformer::HandleChildren(ScopedStatement& node)
@@ -581,6 +616,8 @@ namespace nzsl::Ast
 			HandleExpression(node.condition);
 
 			HandleExpressionValue(node.unroll);
+
+			FinishExpressionHandling();
 		}
 
 		if (node.body && !m_flags.Test(TransformerFlag::IgnoreLoopContent))
@@ -589,22 +626,6 @@ namespace nzsl::Ast
 			HandleStatement(node.body);
 			PopScope();
 		}
-	}
-
-	Expression& Transformer::MandatoryExpr(const ExpressionPtr& node, const SourceLocation& sourceLocation)
-	{
-		if (!node)
-			throw AstMissingExpressionError{ sourceLocation };
-
-		return *node;
-	}
-
-	Statement& Transformer::MandatoryStatement(const StatementPtr& node, const SourceLocation& sourceLocation)
-	{
-		if (!node)
-			throw AstMissingStatementError{ sourceLocation };
-
-		return *node;
 	}
 
 	void Transformer::PopScope()

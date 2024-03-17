@@ -242,7 +242,7 @@ fn main()
        OpMemoryModel AddressingModel(Logical) MemoryModel(GLSL450)
        OpEntryPoint ExecutionModel(Fragment) %59 "main"
        OpExecutionMode %59 ExecutionMode(OriginUpperLeft)
-       OpSource SourceLanguage(NZSL) 100
+       OpSource SourceLanguage(NZSL) 4194304
        OpName %5 "tex1D"
        OpName %9 "tex1DArray"
        OpName %13 "tex2D"
@@ -422,31 +422,31 @@ module;
 fn main()
 {
 	// values don't matter here
-	let d1 = f64(4.2);
-	let d2 = f64(133.7);
-	let d3 = f64(-123.4);
+	let d1: f64 = 4.2;
+	let d2: f64 = 133.7;
+	let d3: f64 = -123.4;
 	let f1 = 4.2;
 	let f2 = 133.7;
 	let f3 = -123.4;
 	let i1 = 42;
 	let i2 = 1337;
-	let i3 = -1234.0;
-	let u1 = u32(42);
-	let u2 = u32(1337);
-	let u3 = u32(123456789);
+	let i3 = -1234;
+	let u1: u32 = 42;
+	let u2: u32 = 1337;
+	let u3: u32 = 123456789;
 	let uv = vec2[f32](0.0, 1.0);
 	let v1 = vec3[f32](0.0, 1.0, 2.0);
 	let v2 = vec3[f32](2.0, 1.0, 0.0);
 	let v3 = vec3[f32](1.0, 0.0, 2.0);
-	let dv1 = vec3[f64](f64(0.0), f64(1.0), f64(2.0));
-	let dv2 = vec3[f64](f64(2.0), f64(1.0), f64(0.0));
-	let dv3 = vec3[f64](f64(1.0), f64(0.0), f64(2.0));
+	let dv1 = vec3[f64](0.0, 1.0, 2.0);
+	let dv2 = vec3[f64](2.0, 1.0, 0.0);
+	let dv3 = vec3[f64](1.0, 0.0, 2.0);
 	let iv1 = vec3[i32](0, 1, 2);
 	let iv2 = vec3[i32](2, 1, 0);
 	let iv3 = vec3[i32](1, 0, 2);
-	let uv1 = vec3[u32](u32(0), u32(1), u32(2));
-	let uv2 = vec3[u32](u32(2), u32(1), u32(0));
-	let uv3 = vec3[u32](u32(1), u32(0), u32(2));
+	let uv1 = vec3[u32](0, 1, 2);
+	let uv2 = vec3[u32](2, 1, 0);
+	let uv3 = vec3[u32](1, 0, 2);
 
 	let absResult1 = abs(f1);
 	let absResult2 = abs(v1);
@@ -549,31 +549,31 @@ fn main()
 		ExpectGLSL(*shaderModule, R"(
 void main()
 {
-	double d1 = double(4.2);
-	double d2 = double(133.699997);
-	double d3 = double(-123.400002);
+	double d1 = 4.2lf;
+	double d2 = 133.699999999999989lf;
+	double d3 = -123.400000000000006lf;
 	float f1 = 4.2;
 	float f2 = 133.699997;
 	float f3 = -123.400002;
 	int i1 = 42;
 	int i2 = 1337;
-	float i3 = -1234.0;
-	uint u1 = uint(42);
-	uint u2 = uint(1337);
-	uint u3 = uint(123456789);
+	int i3 = -1234;
+	uint u1 = 42u;
+	uint u2 = 1337u;
+	uint u3 = 123456789u;
 	vec2 uv = vec2(0.0, 1.0);
 	vec3 v1 = vec3(0.0, 1.0, 2.0);
 	vec3 v2 = vec3(2.0, 1.0, 0.0);
 	vec3 v3 = vec3(1.0, 0.0, 2.0);
-	dvec3 dv1 = dvec3(double(0.0), double(1.0), double(2.0));
-	dvec3 dv2 = dvec3(double(2.0), double(1.0), double(0.0));
-	dvec3 dv3 = dvec3(double(1.0), double(0.0), double(2.0));
+	dvec3 dv1 = dvec3(0.0lf, 1.0lf, 2.0lf);
+	dvec3 dv2 = dvec3(2.0lf, 1.0lf, 0.0lf);
+	dvec3 dv3 = dvec3(1.0lf, 0.0lf, 2.0lf);
 	ivec3 iv1 = ivec3(0, 1, 2);
 	ivec3 iv2 = ivec3(2, 1, 0);
 	ivec3 iv3 = ivec3(1, 0, 2);
-	uvec3 uv1 = uvec3(uint(0), uint(1), uint(2));
-	uvec3 uv2 = uvec3(uint(2), uint(1), uint(0));
-	uvec3 uv3 = uvec3(uint(1), uint(0), uint(2));
+	uvec3 uv1 = uvec3(0u, 1u, 2u);
+	uvec3 uv2 = uvec3(2u, 1u, 0u);
+	uvec3 uv3 = uvec3(1u, 0u, 2u);
 	float absResult1 = abs(f1);
 	vec3 absResult2 = abs(v1);
 	double absResult3 = abs(d1);
@@ -666,31 +666,31 @@ void main()
 		ExpectNZSL(*shaderModule, R"(
 fn main()
 {
-	let d1: f64 = f64(4.2);
-	let d2: f64 = f64(133.699997);
-	let d3: f64 = f64(-123.400002);
+	let d1: f64 = 4.2;
+	let d2: f64 = 133.699999999999989;
+	let d3: f64 = -123.400000000000006;
 	let f1: f32 = 4.2;
-	let f2: f32 = 133.699997;
-	let f3: f32 = -123.400002;
+	let f2: f32 = 133.699999999999989;
+	let f3: f32 = -123.400000000000006;
 	let i1: i32 = 42;
 	let i2: i32 = 1337;
-	let i3: f32 = -1234.0;
-	let u1: u32 = u32(42);
-	let u2: u32 = u32(1337);
-	let u3: u32 = u32(123456789);
+	let i3: i32 = -1234;
+	let u1: u32 = 42;
+	let u2: u32 = 1337;
+	let u3: u32 = 123456789;
 	let uv: vec2[f32] = vec2[f32](0.0, 1.0);
 	let v1: vec3[f32] = vec3[f32](0.0, 1.0, 2.0);
 	let v2: vec3[f32] = vec3[f32](2.0, 1.0, 0.0);
 	let v3: vec3[f32] = vec3[f32](1.0, 0.0, 2.0);
-	let dv1: vec3[f64] = vec3[f64](f64(0.0), f64(1.0), f64(2.0));
-	let dv2: vec3[f64] = vec3[f64](f64(2.0), f64(1.0), f64(0.0));
-	let dv3: vec3[f64] = vec3[f64](f64(1.0), f64(0.0), f64(2.0));
+	let dv1: vec3[f64] = vec3[f64](0.0, 1.0, 2.0);
+	let dv2: vec3[f64] = vec3[f64](2.0, 1.0, 0.0);
+	let dv3: vec3[f64] = vec3[f64](1.0, 0.0, 2.0);
 	let iv1: vec3[i32] = vec3[i32](0, 1, 2);
 	let iv2: vec3[i32] = vec3[i32](2, 1, 0);
 	let iv3: vec3[i32] = vec3[i32](1, 0, 2);
-	let uv1: vec3[u32] = vec3[u32](u32(0), u32(1), u32(2));
-	let uv2: vec3[u32] = vec3[u32](u32(2), u32(1), u32(0));
-	let uv3: vec3[u32] = vec3[u32](u32(1), u32(0), u32(2));
+	let uv1: vec3[u32] = vec3[u32](0, 1, 2);
+	let uv2: vec3[u32] = vec3[u32](2, 1, 0);
+	let uv3: vec3[u32] = vec3[u32](1, 0, 2);
 	let absResult1: f32 = abs(f1);
 	let absResult2: vec3[f32] = abs(v1);
 	let absResult3: f64 = abs(d1);
@@ -781,304 +781,304 @@ fn main()
 )");
 
 		ExpectSPIRV(*shaderModule, R"(
-%188 = OpLoad %3 %40
-%189 = OpExtInst %3 GLSLstd450 FAbs %188
-       OpStore %62 %189
-%190 = OpLoad %23 %50
-%191 = OpExtInst %23 GLSLstd450 FAbs %190
-       OpStore %63 %191
-%192 = OpLoad %5 %37
-%193 = OpExtInst %5 GLSLstd450 FAbs %192
-       OpStore %64 %193
-%194 = OpLoad %25 %53
-%195 = OpExtInst %25 GLSLstd450 FAbs %194
-       OpStore %65 %195
-%196 = OpLoad %3 %40
-%197 = OpExtInst %3 GLSLstd450 Ceil %196
-       OpStore %66 %197
-%198 = OpLoad %23 %50
-%199 = OpExtInst %23 GLSLstd450 Ceil %198
-       OpStore %67 %199
-%200 = OpLoad %5 %37
-%201 = OpExtInst %5 GLSLstd450 Ceil %200
-       OpStore %68 %201
-%202 = OpLoad %25 %53
-%203 = OpExtInst %25 GLSLstd450 Ceil %202
-       OpStore %69 %203
-%204 = OpLoad %3 %40
-%205 = OpLoad %3 %42
-%206 = OpLoad %3 %41
-%207 = OpExtInst %3 GLSLstd450 FClamp %204 %205 %206
-       OpStore %70 %207
-%208 = OpLoad %23 %50
-%209 = OpLoad %23 %52
-%210 = OpLoad %23 %51
-%211 = OpExtInst %23 GLSLstd450 FClamp %208 %209 %210
-       OpStore %71 %211
-%212 = OpLoad %5 %37
-%213 = OpLoad %5 %39
-%214 = OpLoad %5 %38
-%215 = OpExtInst %5 GLSLstd450 FClamp %212 %213 %214
-       OpStore %72 %215
-%216 = OpLoad %25 %53
-%217 = OpLoad %25 %55
-%218 = OpLoad %25 %54
-%219 = OpExtInst %25 GLSLstd450 FClamp %216 %217 %218
-       OpStore %73 %219
-%220 = OpLoad %23 %50
-%221 = OpLoad %23 %51
-%222 = OpExtInst %23 GLSLstd450 Cross %220 %221
-       OpStore %74 %222
-%223 = OpLoad %25 %53
-%224 = OpLoad %25 %54
-%225 = OpExtInst %25 GLSLstd450 Cross %223 %224
-       OpStore %75 %225
-%226 = OpLoad %23 %50
-%227 = OpLoad %23 %51
-%228 = OpExtInst %3 GLSLstd450 Distance %226 %227
-       OpStore %76 %228
-%229 = OpLoad %25 %53
-%230 = OpLoad %25 %54
-%231 = OpExtInst %5 GLSLstd450 Distance %229 %230
-       OpStore %77 %231
-%232 = OpLoad %23 %50
-%233 = OpLoad %23 %51
-%234 = OpDot %3 %232 %233
-       OpStore %78 %234
-%235 = OpLoad %25 %53
-%236 = OpLoad %25 %54
-%237 = OpDot %5 %235 %236
-       OpStore %79 %237
-%238 = OpLoad %23 %50
-%239 = OpExtInst %23 GLSLstd450 Exp %238
-       OpStore %80 %239
-%240 = OpLoad %3 %40
-%241 = OpExtInst %3 GLSLstd450 Exp %240
-       OpStore %81 %241
-%242 = OpLoad %23 %50
-%243 = OpExtInst %23 GLSLstd450 Exp2 %242
-       OpStore %82 %243
-%244 = OpLoad %3 %40
-%245 = OpExtInst %3 GLSLstd450 Exp2 %244
-       OpStore %83 %245
-%246 = OpLoad %3 %40
-%247 = OpExtInst %3 GLSLstd450 Floor %246
-       OpStore %84 %247
-%248 = OpLoad %23 %50
-%249 = OpExtInst %23 GLSLstd450 Floor %248
-       OpStore %85 %249
-%250 = OpLoad %5 %37
-%251 = OpExtInst %5 GLSLstd450 Floor %250
-       OpStore %86 %251
-%252 = OpLoad %25 %53
-%253 = OpExtInst %25 GLSLstd450 Floor %252
-       OpStore %87 %253
-%254 = OpLoad %3 %40
-%255 = OpExtInst %3 GLSLstd450 Fract %254
-       OpStore %88 %255
-%256 = OpLoad %23 %50
-%257 = OpExtInst %23 GLSLstd450 Fract %256
-       OpStore %89 %257
-%258 = OpLoad %5 %37
-%259 = OpExtInst %5 GLSLstd450 Fract %258
-       OpStore %90 %259
-%260 = OpLoad %25 %53
-%261 = OpExtInst %25 GLSLstd450 Fract %260
-       OpStore %91 %261
-%262 = OpLoad %3 %40
-%263 = OpExtInst %3 GLSLstd450 InverseSqrt %262
-       OpStore %92 %263
-%264 = OpLoad %23 %50
-%265 = OpExtInst %23 GLSLstd450 InverseSqrt %264
-       OpStore %93 %265
-%266 = OpLoad %5 %37
-%267 = OpExtInst %5 GLSLstd450 InverseSqrt %266
-       OpStore %94 %267
-%268 = OpLoad %25 %53
-%269 = OpExtInst %25 GLSLstd450 InverseSqrt %268
-       OpStore %95 %269
-%270 = OpLoad %23 %50
-%271 = OpExtInst %3 GLSLstd450 Length %270
-       OpStore %96 %271
-%272 = OpLoad %25 %53
-%273 = OpExtInst %5 GLSLstd450 Length %272
-       OpStore %97 %273
-%274 = OpLoad %3 %40
-%275 = OpLoad %3 %42
-%276 = OpLoad %3 %41
-%277 = OpExtInst %3 GLSLstd450 FMix %274 %275 %276
-       OpStore %98 %277
-%278 = OpLoad %23 %50
-%279 = OpLoad %23 %52
-%280 = OpLoad %23 %51
-%281 = OpExtInst %23 GLSLstd450 FMix %278 %279 %280
-       OpStore %99 %281
-%282 = OpLoad %5 %37
-%283 = OpLoad %5 %39
-%284 = OpLoad %5 %38
-%285 = OpExtInst %5 GLSLstd450 FMix %282 %283 %284
-       OpStore %100 %285
-%286 = OpLoad %25 %53
-%287 = OpLoad %25 %55
-%288 = OpLoad %25 %54
-%289 = OpExtInst %25 GLSLstd450 FMix %286 %287 %288
-       OpStore %101 %289
-%290 = OpLoad %23 %50
-%291 = OpExtInst %23 GLSLstd450 Log %290
-       OpStore %102 %291
-%292 = OpLoad %3 %40
-%293 = OpExtInst %3 GLSLstd450 Log %292
-       OpStore %103 %293
-%294 = OpLoad %23 %50
-%295 = OpExtInst %23 GLSLstd450 Log2 %294
-       OpStore %104 %295
-%296 = OpLoad %3 %40
-%297 = OpExtInst %3 GLSLstd450 Log2 %296
-       OpStore %105 %297
-%298 = OpLoad %3 %40
-%299 = OpLoad %3 %41
-%300 = OpExtInst %3 GLSLstd450 FMax %298 %299
-       OpStore %106 %300
-%301 = OpLoad %10 %43
-%302 = OpLoad %10 %44
-%303 = OpExtInst %10 GLSLstd450 SMax %301 %302
-       OpStore %107 %303
-%304 = OpLoad %15 %46
-%305 = OpLoad %15 %47
-%306 = OpExtInst %15 GLSLstd450 UMax %304 %305
-       OpStore %108 %306
-%307 = OpLoad %23 %50
-%308 = OpLoad %23 %51
-%309 = OpExtInst %23 GLSLstd450 FMax %307 %308
-       OpStore %109 %309
-%310 = OpLoad %25 %53
-%311 = OpLoad %25 %54
-%312 = OpExtInst %25 GLSLstd450 FMax %310 %311
-       OpStore %110 %312
-%313 = OpLoad %30 %56
-%314 = OpLoad %30 %57
-%315 = OpExtInst %30 GLSLstd450 SMax %313 %314
-       OpStore %111 %315
-%316 = OpLoad %32 %59
-%317 = OpLoad %32 %60
-%318 = OpExtInst %32 GLSLstd450 UMax %316 %317
-       OpStore %112 %318
-%319 = OpLoad %3 %40
-%320 = OpLoad %3 %41
-%321 = OpExtInst %3 GLSLstd450 FMin %319 %320
-       OpStore %113 %321
-%322 = OpLoad %10 %43
-%323 = OpLoad %10 %44
-%324 = OpExtInst %10 GLSLstd450 SMin %322 %323
-       OpStore %114 %324
-%325 = OpLoad %15 %46
-%326 = OpLoad %15 %47
-%327 = OpExtInst %15 GLSLstd450 UMin %325 %326
-       OpStore %115 %327
-%328 = OpLoad %23 %50
-%329 = OpLoad %23 %51
-%330 = OpExtInst %23 GLSLstd450 FMin %328 %329
-       OpStore %116 %330
-%331 = OpLoad %25 %53
-%332 = OpLoad %25 %54
-%333 = OpExtInst %25 GLSLstd450 FMin %331 %332
-       OpStore %117 %333
-%334 = OpLoad %30 %56
-%335 = OpLoad %30 %57
-%336 = OpExtInst %30 GLSLstd450 SMin %334 %335
-       OpStore %118 %336
-%337 = OpLoad %32 %59
-%338 = OpLoad %32 %60
-%339 = OpExtInst %32 GLSLstd450 UMin %337 %338
-       OpStore %119 %339
-%340 = OpLoad %23 %50
-%341 = OpExtInst %23 GLSLstd450 Normalize %340
-       OpStore %120 %341
-%342 = OpLoad %25 %53
-%343 = OpExtInst %25 GLSLstd450 Normalize %342
-       OpStore %121 %343
-%344 = OpLoad %3 %40
-%345 = OpLoad %3 %41
-%346 = OpExtInst %3 GLSLstd450 Pow %344 %345
-       OpStore %122 %346
-%347 = OpLoad %23 %50
-%348 = OpLoad %23 %51
-%349 = OpExtInst %23 GLSLstd450 Pow %347 %348
-       OpStore %123 %349
-%350 = OpLoad %23 %50
-%351 = OpLoad %23 %51
-%352 = OpExtInst %23 GLSLstd450 Reflect %350 %351
-       OpStore %124 %352
-%353 = OpLoad %25 %53
-%354 = OpLoad %25 %54
-%355 = OpExtInst %25 GLSLstd450 Reflect %353 %354
-       OpStore %125 %355
-%356 = OpLoad %3 %40
-%357 = OpExtInst %3 GLSLstd450 Round %356
-       OpStore %126 %357
-%358 = OpLoad %23 %50
-%359 = OpExtInst %23 GLSLstd450 Round %358
-       OpStore %127 %359
-%360 = OpLoad %5 %37
-%361 = OpExtInst %5 GLSLstd450 Round %360
-       OpStore %128 %361
-%362 = OpLoad %25 %53
-%363 = OpExtInst %25 GLSLstd450 Round %362
-       OpStore %129 %363
-%364 = OpLoad %3 %40
-%365 = OpExtInst %3 GLSLstd450 RoundEven %364
-       OpStore %130 %365
-%366 = OpLoad %23 %50
-%367 = OpExtInst %23 GLSLstd450 RoundEven %366
-       OpStore %131 %367
-%368 = OpLoad %5 %37
-%369 = OpExtInst %5 GLSLstd450 RoundEven %368
-       OpStore %132 %369
-%370 = OpLoad %25 %53
-%371 = OpExtInst %25 GLSLstd450 RoundEven %370
-       OpStore %133 %371
-%372 = OpLoad %3 %40
-%373 = OpExtInst %3 GLSLstd450 FSign %372
-       OpStore %134 %373
-%374 = OpLoad %10 %43
-%375 = OpExtInst %10 GLSLstd450 SSign %374
-       OpStore %135 %375
-%376 = OpLoad %5 %37
-%377 = OpExtInst %5 GLSLstd450 FSign %376
-       OpStore %136 %377
-%378 = OpLoad %23 %50
-%379 = OpExtInst %23 GLSLstd450 FSign %378
-       OpStore %137 %379
-%380 = OpLoad %25 %53
-%381 = OpExtInst %25 GLSLstd450 FSign %380
-       OpStore %138 %381
-%382 = OpLoad %30 %56
-%383 = OpExtInst %30 GLSLstd450 SSign %382
-       OpStore %139 %383
-%384 = OpLoad %3 %40
-%385 = OpExtInst %3 GLSLstd450 Sqrt %384
-       OpStore %140 %385
-%386 = OpLoad %23 %50
-%387 = OpExtInst %23 GLSLstd450 Sqrt %386
-       OpStore %141 %387
-%388 = OpLoad %5 %37
-%389 = OpExtInst %5 GLSLstd450 Sqrt %388
-       OpStore %142 %389
-%390 = OpLoad %25 %53
-%391 = OpExtInst %25 GLSLstd450 Sqrt %390
-       OpStore %143 %391
-%392 = OpLoad %3 %40
-%393 = OpExtInst %3 GLSLstd450 Trunc %392
-       OpStore %144 %393
-%394 = OpLoad %23 %50
-%395 = OpExtInst %23 GLSLstd450 Trunc %394
-       OpStore %145 %395
-%396 = OpLoad %5 %37
-%397 = OpExtInst %5 GLSLstd450 Trunc %396
-       OpStore %146 %397
-%398 = OpLoad %25 %53
-%399 = OpExtInst %25 GLSLstd450 Trunc %398
-       OpStore %147 %399
+%172 = OpLoad %8 %51
+%173 = OpExtInst %8 GLSLstd450 FAbs %172
+       OpStore %73 %173
+%174 = OpLoad %28 %61
+%175 = OpExtInst %28 GLSLstd450 FAbs %174
+       OpStore %74 %175
+%176 = OpLoad %3 %48
+%177 = OpExtInst %3 GLSLstd450 FAbs %176
+       OpStore %75 %177
+%178 = OpLoad %33 %64
+%179 = OpExtInst %33 GLSLstd450 FAbs %178
+       OpStore %76 %179
+%180 = OpLoad %8 %51
+%181 = OpExtInst %8 GLSLstd450 Ceil %180
+       OpStore %77 %181
+%182 = OpLoad %28 %61
+%183 = OpExtInst %28 GLSLstd450 Ceil %182
+       OpStore %78 %183
+%184 = OpLoad %3 %48
+%185 = OpExtInst %3 GLSLstd450 Ceil %184
+       OpStore %79 %185
+%186 = OpLoad %33 %64
+%187 = OpExtInst %33 GLSLstd450 Ceil %186
+       OpStore %80 %187
+%188 = OpLoad %8 %51
+%189 = OpLoad %8 %53
+%190 = OpLoad %8 %52
+%191 = OpExtInst %8 GLSLstd450 FClamp %188 %189 %190
+       OpStore %81 %191
+%192 = OpLoad %28 %61
+%193 = OpLoad %28 %63
+%194 = OpLoad %28 %62
+%195 = OpExtInst %28 GLSLstd450 FClamp %192 %193 %194
+       OpStore %82 %195
+%196 = OpLoad %3 %48
+%197 = OpLoad %3 %50
+%198 = OpLoad %3 %49
+%199 = OpExtInst %3 GLSLstd450 FClamp %196 %197 %198
+       OpStore %83 %199
+%200 = OpLoad %33 %64
+%201 = OpLoad %33 %66
+%202 = OpLoad %33 %65
+%203 = OpExtInst %33 GLSLstd450 FClamp %200 %201 %202
+       OpStore %84 %203
+%204 = OpLoad %28 %61
+%205 = OpLoad %28 %62
+%206 = OpExtInst %28 GLSLstd450 Cross %204 %205
+       OpStore %85 %206
+%207 = OpLoad %33 %64
+%208 = OpLoad %33 %65
+%209 = OpExtInst %33 GLSLstd450 Cross %207 %208
+       OpStore %86 %209
+%210 = OpLoad %28 %61
+%211 = OpLoad %28 %62
+%212 = OpExtInst %8 GLSLstd450 Distance %210 %211
+       OpStore %87 %212
+%213 = OpLoad %33 %64
+%214 = OpLoad %33 %65
+%215 = OpExtInst %3 GLSLstd450 Distance %213 %214
+       OpStore %88 %215
+%216 = OpLoad %28 %61
+%217 = OpLoad %28 %62
+%218 = OpDot %8 %216 %217
+       OpStore %89 %218
+%219 = OpLoad %33 %64
+%220 = OpLoad %33 %65
+%221 = OpDot %3 %219 %220
+       OpStore %90 %221
+%222 = OpLoad %28 %61
+%223 = OpExtInst %28 GLSLstd450 Exp %222
+       OpStore %91 %223
+%224 = OpLoad %8 %51
+%225 = OpExtInst %8 GLSLstd450 Exp %224
+       OpStore %92 %225
+%226 = OpLoad %28 %61
+%227 = OpExtInst %28 GLSLstd450 Exp2 %226
+       OpStore %93 %227
+%228 = OpLoad %8 %51
+%229 = OpExtInst %8 GLSLstd450 Exp2 %228
+       OpStore %94 %229
+%230 = OpLoad %8 %51
+%231 = OpExtInst %8 GLSLstd450 Floor %230
+       OpStore %95 %231
+%232 = OpLoad %28 %61
+%233 = OpExtInst %28 GLSLstd450 Floor %232
+       OpStore %96 %233
+%234 = OpLoad %3 %48
+%235 = OpExtInst %3 GLSLstd450 Floor %234
+       OpStore %97 %235
+%236 = OpLoad %33 %64
+%237 = OpExtInst %33 GLSLstd450 Floor %236
+       OpStore %98 %237
+%238 = OpLoad %8 %51
+%239 = OpExtInst %8 GLSLstd450 Fract %238
+       OpStore %99 %239
+%240 = OpLoad %28 %61
+%241 = OpExtInst %28 GLSLstd450 Fract %240
+       OpStore %100 %241
+%242 = OpLoad %3 %48
+%243 = OpExtInst %3 GLSLstd450 Fract %242
+       OpStore %101 %243
+%244 = OpLoad %33 %64
+%245 = OpExtInst %33 GLSLstd450 Fract %244
+       OpStore %102 %245
+%246 = OpLoad %8 %51
+%247 = OpExtInst %8 GLSLstd450 InverseSqrt %246
+       OpStore %103 %247
+%248 = OpLoad %28 %61
+%249 = OpExtInst %28 GLSLstd450 InverseSqrt %248
+       OpStore %104 %249
+%250 = OpLoad %3 %48
+%251 = OpExtInst %3 GLSLstd450 InverseSqrt %250
+       OpStore %105 %251
+%252 = OpLoad %33 %64
+%253 = OpExtInst %33 GLSLstd450 InverseSqrt %252
+       OpStore %106 %253
+%254 = OpLoad %28 %61
+%255 = OpExtInst %8 GLSLstd450 Length %254
+       OpStore %107 %255
+%256 = OpLoad %33 %64
+%257 = OpExtInst %3 GLSLstd450 Length %256
+       OpStore %108 %257
+%258 = OpLoad %8 %51
+%259 = OpLoad %8 %53
+%260 = OpLoad %8 %52
+%261 = OpExtInst %8 GLSLstd450 FMix %258 %259 %260
+       OpStore %109 %261
+%262 = OpLoad %28 %61
+%263 = OpLoad %28 %63
+%264 = OpLoad %28 %62
+%265 = OpExtInst %28 GLSLstd450 FMix %262 %263 %264
+       OpStore %110 %265
+%266 = OpLoad %3 %48
+%267 = OpLoad %3 %50
+%268 = OpLoad %3 %49
+%269 = OpExtInst %3 GLSLstd450 FMix %266 %267 %268
+       OpStore %111 %269
+%270 = OpLoad %33 %64
+%271 = OpLoad %33 %66
+%272 = OpLoad %33 %65
+%273 = OpExtInst %33 GLSLstd450 FMix %270 %271 %272
+       OpStore %112 %273
+%274 = OpLoad %28 %61
+%275 = OpExtInst %28 GLSLstd450 Log %274
+       OpStore %113 %275
+%276 = OpLoad %8 %51
+%277 = OpExtInst %8 GLSLstd450 Log %276
+       OpStore %114 %277
+%278 = OpLoad %28 %61
+%279 = OpExtInst %28 GLSLstd450 Log2 %278
+       OpStore %115 %279
+%280 = OpLoad %8 %51
+%281 = OpExtInst %8 GLSLstd450 Log2 %280
+       OpStore %116 %281
+%282 = OpLoad %8 %51
+%283 = OpLoad %8 %52
+%284 = OpExtInst %8 GLSLstd450 FMax %282 %283
+       OpStore %117 %284
+%285 = OpLoad %13 %54
+%286 = OpLoad %13 %55
+%287 = OpExtInst %13 GLSLstd450 SMax %285 %286
+       OpStore %118 %287
+%288 = OpLoad %18 %57
+%289 = OpLoad %18 %58
+%290 = OpExtInst %18 GLSLstd450 UMax %288 %289
+       OpStore %119 %290
+%291 = OpLoad %28 %61
+%292 = OpLoad %28 %62
+%293 = OpExtInst %28 GLSLstd450 FMax %291 %292
+       OpStore %120 %293
+%294 = OpLoad %33 %64
+%295 = OpLoad %33 %65
+%296 = OpExtInst %33 GLSLstd450 FMax %294 %295
+       OpStore %121 %296
+%297 = OpLoad %38 %67
+%298 = OpLoad %38 %68
+%299 = OpExtInst %38 GLSLstd450 SMax %297 %298
+       OpStore %122 %299
+%300 = OpLoad %43 %70
+%301 = OpLoad %43 %71
+%302 = OpExtInst %43 GLSLstd450 UMax %300 %301
+       OpStore %123 %302
+%303 = OpLoad %8 %51
+%304 = OpLoad %8 %52
+%305 = OpExtInst %8 GLSLstd450 FMin %303 %304
+       OpStore %124 %305
+%306 = OpLoad %13 %54
+%307 = OpLoad %13 %55
+%308 = OpExtInst %13 GLSLstd450 SMin %306 %307
+       OpStore %125 %308
+%309 = OpLoad %18 %57
+%310 = OpLoad %18 %58
+%311 = OpExtInst %18 GLSLstd450 UMin %309 %310
+       OpStore %126 %311
+%312 = OpLoad %28 %61
+%313 = OpLoad %28 %62
+%314 = OpExtInst %28 GLSLstd450 FMin %312 %313
+       OpStore %127 %314
+%315 = OpLoad %33 %64
+%316 = OpLoad %33 %65
+%317 = OpExtInst %33 GLSLstd450 FMin %315 %316
+       OpStore %128 %317
+%318 = OpLoad %38 %67
+%319 = OpLoad %38 %68
+%320 = OpExtInst %38 GLSLstd450 SMin %318 %319
+       OpStore %129 %320
+%321 = OpLoad %43 %70
+%322 = OpLoad %43 %71
+%323 = OpExtInst %43 GLSLstd450 UMin %321 %322
+       OpStore %130 %323
+%324 = OpLoad %28 %61
+%325 = OpExtInst %28 GLSLstd450 Normalize %324
+       OpStore %131 %325
+%326 = OpLoad %33 %64
+%327 = OpExtInst %33 GLSLstd450 Normalize %326
+       OpStore %132 %327
+%328 = OpLoad %8 %51
+%329 = OpLoad %8 %52
+%330 = OpExtInst %8 GLSLstd450 Pow %328 %329
+       OpStore %133 %330
+%331 = OpLoad %28 %61
+%332 = OpLoad %28 %62
+%333 = OpExtInst %28 GLSLstd450 Pow %331 %332
+       OpStore %134 %333
+%334 = OpLoad %28 %61
+%335 = OpLoad %28 %62
+%336 = OpExtInst %28 GLSLstd450 Reflect %334 %335
+       OpStore %135 %336
+%337 = OpLoad %33 %64
+%338 = OpLoad %33 %65
+%339 = OpExtInst %33 GLSLstd450 Reflect %337 %338
+       OpStore %136 %339
+%340 = OpLoad %8 %51
+%341 = OpExtInst %8 GLSLstd450 Round %340
+       OpStore %137 %341
+%342 = OpLoad %28 %61
+%343 = OpExtInst %28 GLSLstd450 Round %342
+       OpStore %138 %343
+%344 = OpLoad %3 %48
+%345 = OpExtInst %3 GLSLstd450 Round %344
+       OpStore %139 %345
+%346 = OpLoad %33 %64
+%347 = OpExtInst %33 GLSLstd450 Round %346
+       OpStore %140 %347
+%348 = OpLoad %8 %51
+%349 = OpExtInst %8 GLSLstd450 RoundEven %348
+       OpStore %141 %349
+%350 = OpLoad %28 %61
+%351 = OpExtInst %28 GLSLstd450 RoundEven %350
+       OpStore %142 %351
+%352 = OpLoad %3 %48
+%353 = OpExtInst %3 GLSLstd450 RoundEven %352
+       OpStore %143 %353
+%354 = OpLoad %33 %64
+%355 = OpExtInst %33 GLSLstd450 RoundEven %354
+       OpStore %144 %355
+%356 = OpLoad %8 %51
+%357 = OpExtInst %8 GLSLstd450 FSign %356
+       OpStore %145 %357
+%358 = OpLoad %13 %54
+%359 = OpExtInst %13 GLSLstd450 SSign %358
+       OpStore %146 %359
+%360 = OpLoad %3 %48
+%361 = OpExtInst %3 GLSLstd450 FSign %360
+       OpStore %147 %361
+%362 = OpLoad %28 %61
+%363 = OpExtInst %28 GLSLstd450 FSign %362
+       OpStore %148 %363
+%364 = OpLoad %33 %64
+%365 = OpExtInst %33 GLSLstd450 FSign %364
+       OpStore %149 %365
+%366 = OpLoad %38 %67
+%367 = OpExtInst %38 GLSLstd450 SSign %366
+       OpStore %150 %367
+%368 = OpLoad %8 %51
+%369 = OpExtInst %8 GLSLstd450 Sqrt %368
+       OpStore %151 %369
+%370 = OpLoad %28 %61
+%371 = OpExtInst %28 GLSLstd450 Sqrt %370
+       OpStore %152 %371
+%372 = OpLoad %3 %48
+%373 = OpExtInst %3 GLSLstd450 Sqrt %372
+       OpStore %153 %373
+%374 = OpLoad %33 %64
+%375 = OpExtInst %33 GLSLstd450 Sqrt %374
+       OpStore %154 %375
+%376 = OpLoad %8 %51
+%377 = OpExtInst %8 GLSLstd450 Trunc %376
+       OpStore %155 %377
+%378 = OpLoad %28 %61
+%379 = OpExtInst %28 GLSLstd450 Trunc %378
+       OpStore %156 %379
+%380 = OpLoad %3 %48
+%381 = OpExtInst %3 GLSLstd450 Trunc %380
+       OpStore %157 %381
+%382 = OpLoad %33 %64
+%383 = OpExtInst %33 GLSLstd450 Trunc %382
+       OpStore %158 %383
        OpReturn
        OpFunctionEnd)", {}, {}, true);
 	}
@@ -1095,8 +1095,8 @@ fn main()
 {
 	let m1 = mat4[f32](0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0);
 	let m2 = mat2x3[f32](0.0, 1.0, 2.0, 3.0, 4.0, 5.0);
-	let m3 = mat3[f64](f64(0.0), f64(1.0), f64(2.0), f64(3.0), f64(4.0), f64(5.0), f64(6.0), f64(7.0), f64(8.0));
-	let m4 = mat3x2[f64](f64(0.0), f64(1.0), f64(2.0), f64(3.0), f64(4.0), f64(5.0));
+	let m3 = mat3[f64](0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0);
+	let m4 = mat3x2[f64](0.0, 1.0, 2.0, 3.0, 4.0, 5.0);
 
 	let inverseResult1 = inverse(m1);
 	let inverseResult2 = inverse(m3);
@@ -1119,12 +1119,12 @@ void main()
 {
 	mat4 m1 = mat4(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0);
 	mat2x3 m2 = mat2x3(0.0, 1.0, 2.0, 3.0, 4.0, 5.0);
-	mat3 m3 = mat3(double(0.0), double(1.0), double(2.0), double(3.0), double(4.0), double(5.0), double(6.0), double(7.0), double(8.0));
-	mat3x2 m4 = mat3x2(double(0.0), double(1.0), double(2.0), double(3.0), double(4.0), double(5.0));
+	dmat3 m3 = dmat3(0.0lf, 1.0lf, 2.0lf, 3.0lf, 4.0lf, 5.0lf, 6.0lf, 7.0lf, 8.0lf);
+	dmat3x2 m4 = dmat3x2(0.0lf, 1.0lf, 2.0lf, 3.0lf, 4.0lf, 5.0lf);
 	mat4 inverseResult1 = inverse(m1);
-	mat3 inverseResult2 = inverse(m3);
+	dmat3 inverseResult2 = inverse(m3);
 	mat3x2 transposeResult1 = transpose(m2);
-	mat2x3 transposeResult2 = transpose(m4);
+	dmat2x3 transposeResult2 = transpose(m4);
 }
 )", {}, glslEnv);
 
@@ -1133,8 +1133,8 @@ fn main()
 {
 	let m1: mat4[f32] = mat4[f32](0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0);
 	let m2: mat2x3[f32] = mat2x3[f32](0.0, 1.0, 2.0, 3.0, 4.0, 5.0);
-	let m3: mat3[f64] = mat3[f64](f64(0.0), f64(1.0), f64(2.0), f64(3.0), f64(4.0), f64(5.0), f64(6.0), f64(7.0), f64(8.0));
-	let m4: mat3x2[f64] = mat3x2[f64](f64(0.0), f64(1.0), f64(2.0), f64(3.0), f64(4.0), f64(5.0));
+	let m3: mat3[f64] = mat3[f64](0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0);
+	let m4: mat3x2[f64] = mat3x2[f64](0.0, 1.0, 2.0, 3.0, 4.0, 5.0);
 	let inverseResult1: mat4[f32] = inverse(m1);
 	let inverseResult2: mat3[f64] = inverse(m3);
 	let transposeResult1: mat3x2[f32] = transpose(m2);
@@ -1145,12 +1145,12 @@ fn main()
 		ExpectSPIRV(*shaderModule, R"(
        OpCapability Capability(Shader)
        OpCapability Capability(Float64)
- %43 = OpExtInstImport "GLSL.std.450"
+ %52 = OpExtInstImport "GLSL.std.450"
        OpMemoryModel AddressingModel(Logical) MemoryModel(GLSL450)
-       OpEntryPoint ExecutionModel(Fragment) %44 "main"
-       OpExecutionMode %44 ExecutionMode(OriginUpperLeft)
-       OpSource SourceLanguage(NZSL) 100
-       OpName %44 "main"
+       OpEntryPoint ExecutionModel(Fragment) %53 "main"
+       OpExecutionMode %53 ExecutionMode(OriginUpperLeft)
+       OpSource SourceLanguage(NZSL) 4194304
+       OpName %53 "main"
   %1 = OpTypeVoid
   %2 = OpTypeFunction %1
   %3 = OpTypeFloat 32
@@ -1185,103 +1185,97 @@ fn main()
  %32 = OpTypeVector %31 3
  %33 = OpTypeMatrix %32 3
  %34 = OpTypePointer StorageClass(Function) %33
- %35 = OpTypeVector %31 2
- %36 = OpTypeMatrix %35 3
- %37 = OpTypePointer StorageClass(Function) %36
- %38 = OpTypeVector %3 2
- %39 = OpTypeMatrix %38 3
- %40 = OpTypePointer StorageClass(Function) %39
- %41 = OpTypeMatrix %32 2
- %42 = OpTypePointer StorageClass(Function) %41
- %60 = OpTypePointer StorageClass(Function) %4
- %70 = OpTypePointer StorageClass(Function) %28
- %79 = OpTypePointer StorageClass(Function) %32
- %95 = OpTypePointer StorageClass(Function) %35
- %44 = OpFunction %1 FunctionControl(0) %2
- %45 = OpLabel
- %46 = OpVariable %6 StorageClass(Function)
- %47 = OpVariable %6 StorageClass(Function)
- %48 = OpVariable %30 StorageClass(Function)
- %49 = OpVariable %30 StorageClass(Function)
- %50 = OpVariable %34 StorageClass(Function)
- %51 = OpVariable %34 StorageClass(Function)
- %52 = OpVariable %37 StorageClass(Function)
- %53 = OpVariable %37 StorageClass(Function)
- %54 = OpVariable %6 StorageClass(Function)
- %55 = OpVariable %34 StorageClass(Function)
- %56 = OpVariable %40 StorageClass(Function)
- %57 = OpVariable %42 StorageClass(Function)
- %58 = OpCompositeConstruct %4 %9 %10 %11 %12
- %59 = OpAccessChain %60 %46 %8
-       OpStore %59 %58
- %61 = OpCompositeConstruct %4 %14 %15 %16 %17
- %62 = OpAccessChain %60 %46 %13
-       OpStore %62 %61
- %63 = OpCompositeConstruct %4 %19 %20 %21 %22
- %64 = OpAccessChain %60 %46 %18
-       OpStore %64 %63
- %65 = OpCompositeConstruct %4 %24 %25 %26 %27
- %66 = OpAccessChain %60 %46 %23
-       OpStore %66 %65
- %67 = OpLoad %5 %46
-       OpStore %47 %67
- %68 = OpCompositeConstruct %28 %9 %10 %11
- %69 = OpAccessChain %70 %48 %8
-       OpStore %69 %68
- %71 = OpCompositeConstruct %28 %12 %14 %15
- %72 = OpAccessChain %70 %48 %13
-       OpStore %72 %71
- %73 = OpLoad %29 %48
-       OpStore %49 %73
- %74 = OpFConvert %31 %9
- %75 = OpFConvert %31 %10
- %76 = OpFConvert %31 %11
- %77 = OpCompositeConstruct %32 %74 %75 %76
- %78 = OpAccessChain %79 %50 %8
+ %35 = OpConstant %31 f64(0)
+ %36 = OpConstant %31 f64(1)
+ %37 = OpConstant %31 f64(2)
+ %38 = OpConstant %31 f64(3)
+ %39 = OpConstant %31 f64(4)
+ %40 = OpConstant %31 f64(5)
+ %41 = OpConstant %31 f64(6)
+ %42 = OpConstant %31 f64(7)
+ %43 = OpConstant %31 f64(8)
+ %44 = OpTypeVector %31 2
+ %45 = OpTypeMatrix %44 3
+ %46 = OpTypePointer StorageClass(Function) %45
+ %47 = OpTypeVector %3 2
+ %48 = OpTypeMatrix %47 3
+ %49 = OpTypePointer StorageClass(Function) %48
+ %50 = OpTypeMatrix %32 2
+ %51 = OpTypePointer StorageClass(Function) %50
+ %69 = OpTypePointer StorageClass(Function) %4
+ %79 = OpTypePointer StorageClass(Function) %28
+ %85 = OpTypePointer StorageClass(Function) %32
+ %93 = OpTypePointer StorageClass(Function) %44
+ %53 = OpFunction %1 FunctionControl(0) %2
+ %54 = OpLabel
+ %55 = OpVariable %6 StorageClass(Function)
+ %56 = OpVariable %6 StorageClass(Function)
+ %57 = OpVariable %30 StorageClass(Function)
+ %58 = OpVariable %30 StorageClass(Function)
+ %59 = OpVariable %34 StorageClass(Function)
+ %60 = OpVariable %34 StorageClass(Function)
+ %61 = OpVariable %46 StorageClass(Function)
+ %62 = OpVariable %46 StorageClass(Function)
+ %63 = OpVariable %6 StorageClass(Function)
+ %64 = OpVariable %34 StorageClass(Function)
+ %65 = OpVariable %49 StorageClass(Function)
+ %66 = OpVariable %51 StorageClass(Function)
+ %67 = OpCompositeConstruct %4 %9 %10 %11 %12
+ %68 = OpAccessChain %69 %55 %8
+       OpStore %68 %67
+ %70 = OpCompositeConstruct %4 %14 %15 %16 %17
+ %71 = OpAccessChain %69 %55 %13
+       OpStore %71 %70
+ %72 = OpCompositeConstruct %4 %19 %20 %21 %22
+ %73 = OpAccessChain %69 %55 %18
+       OpStore %73 %72
+ %74 = OpCompositeConstruct %4 %24 %25 %26 %27
+ %75 = OpAccessChain %69 %55 %23
+       OpStore %75 %74
+ %76 = OpLoad %5 %55
+       OpStore %56 %76
+ %77 = OpCompositeConstruct %28 %9 %10 %11
+ %78 = OpAccessChain %79 %57 %8
        OpStore %78 %77
- %80 = OpFConvert %31 %12
- %81 = OpFConvert %31 %14
- %82 = OpFConvert %31 %15
- %83 = OpCompositeConstruct %32 %80 %81 %82
- %84 = OpAccessChain %79 %50 %13
+ %80 = OpCompositeConstruct %28 %12 %14 %15
+ %81 = OpAccessChain %79 %57 %13
+       OpStore %81 %80
+ %82 = OpLoad %29 %57
+       OpStore %58 %82
+ %83 = OpCompositeConstruct %32 %35 %36 %37
+ %84 = OpAccessChain %85 %59 %8
        OpStore %84 %83
- %85 = OpFConvert %31 %16
- %86 = OpFConvert %31 %17
- %87 = OpFConvert %31 %19
- %88 = OpCompositeConstruct %32 %85 %86 %87
- %89 = OpAccessChain %79 %50 %18
+ %86 = OpCompositeConstruct %32 %38 %39 %40
+ %87 = OpAccessChain %85 %59 %13
+       OpStore %87 %86
+ %88 = OpCompositeConstruct %32 %41 %42 %43
+ %89 = OpAccessChain %85 %59 %18
        OpStore %89 %88
- %90 = OpLoad %33 %50
-       OpStore %51 %90
- %91 = OpFConvert %31 %9
- %92 = OpFConvert %31 %10
- %93 = OpCompositeConstruct %35 %91 %92
- %94 = OpAccessChain %95 %52 %8
-       OpStore %94 %93
- %96 = OpFConvert %31 %11
- %97 = OpFConvert %31 %12
- %98 = OpCompositeConstruct %35 %96 %97
- %99 = OpAccessChain %95 %52 %13
-       OpStore %99 %98
-%100 = OpFConvert %31 %14
-%101 = OpFConvert %31 %15
-%102 = OpCompositeConstruct %35 %100 %101
-%103 = OpAccessChain %95 %52 %18
-       OpStore %103 %102
-%104 = OpLoad %36 %52
-       OpStore %53 %104
-%105 = OpLoad %5 %47
-%106 = OpExtInst %5 GLSLstd450 MatrixInverse %105
-       OpStore %54 %106
-%107 = OpLoad %33 %51
-%108 = OpExtInst %33 GLSLstd450 MatrixInverse %107
-       OpStore %55 %108
-%109 = OpLoad %29 %49
-%110 = OpTranspose %39 %109
-       OpStore %56 %110
-%111 = OpLoad %36 %53
-%112 = OpTranspose %41 %111
-       OpStore %57 %112
+ %90 = OpLoad %33 %59
+       OpStore %60 %90
+ %91 = OpCompositeConstruct %44 %35 %36
+ %92 = OpAccessChain %93 %61 %8
+       OpStore %92 %91
+ %94 = OpCompositeConstruct %44 %37 %38
+ %95 = OpAccessChain %93 %61 %13
+       OpStore %95 %94
+ %96 = OpCompositeConstruct %44 %39 %40
+ %97 = OpAccessChain %93 %61 %18
+       OpStore %97 %96
+ %98 = OpLoad %45 %61
+       OpStore %62 %98
+ %99 = OpLoad %5 %56
+%100 = OpExtInst %5 GLSLstd450 MatrixInverse %99
+       OpStore %63 %100
+%101 = OpLoad %33 %60
+%102 = OpExtInst %33 GLSLstd450 MatrixInverse %101
+       OpStore %64 %102
+%103 = OpLoad %29 %58
+%104 = OpTranspose %48 %103
+       OpStore %65 %104
+%105 = OpLoad %45 %62
+%106 = OpTranspose %50 %105
+       OpStore %66 %106
        OpReturn
        OpFunctionEnd)", {}, {}, true);
 	}
@@ -1296,14 +1290,14 @@ module;
 [entry(frag)]
 fn main()
 {
-	let d1 = f64(42.0);
-	let d2 = f64(1337.0);
+	let d1: f64 = 42.0;
+	let d2: f64 = 1337.0;
 	let f1 = 42.0;
 	let f2 = 1337.0;
 	let v1 = vec3[f32](0.0, 1.0, 2.0);
 	let v2 = vec3[f32](2.0, 1.0, 0.0);
-	let dv1 = vec3[f64](f64(0.0), f64(1.0), f64(2.0));
-	let dv2 = vec3[f64](f64(2.0), f64(1.0), f64(0.0));
+	let dv1 = vec3[f64](0.0, 1.0, 2.0);
+	let dv2 = vec3[f64](2.0, 1.0, 0.0);
 
 	let acosResult1 = acos(f1);
 	let acosResult2 = acos(v1);
@@ -1346,14 +1340,14 @@ fn main()
 		ExpectGLSL(*shaderModule, R"(
 void main()
 {
-	double d1 = double(42.0);
-	double d2 = double(1337.0);
+	double d1 = 42.0lf;
+	double d2 = 1337.0lf;
 	float f1 = 42.0;
 	float f2 = 1337.0;
 	vec3 v1 = vec3(0.0, 1.0, 2.0);
 	vec3 v2 = vec3(2.0, 1.0, 0.0);
-	dvec3 dv1 = dvec3(double(0.0), double(1.0), double(2.0));
-	dvec3 dv2 = dvec3(double(2.0), double(1.0), double(0.0));
+	dvec3 dv1 = dvec3(0.0lf, 1.0lf, 2.0lf);
+	dvec3 dv2 = dvec3(2.0lf, 1.0lf, 0.0lf);
 	float acosResult1 = acos(f1);
 	vec3 acosResult2 = acos(v1);
 	float acoshResult1 = acosh(f1);
@@ -1386,14 +1380,14 @@ void main()
 		ExpectNZSL(*shaderModule, R"(
 fn main()
 {
-	let d1: f64 = f64(42.0);
-	let d2: f64 = f64(1337.0);
+	let d1: f64 = 42.0;
+	let d2: f64 = 1337.0;
 	let f1: f32 = 42.0;
 	let f2: f32 = 1337.0;
 	let v1: vec3[f32] = vec3[f32](0.0, 1.0, 2.0);
 	let v2: vec3[f32] = vec3[f32](2.0, 1.0, 0.0);
-	let dv1: vec3[f64] = vec3[f64](f64(0.0), f64(1.0), f64(2.0));
-	let dv2: vec3[f64] = vec3[f64](f64(2.0), f64(1.0), f64(0.0));
+	let dv1: vec3[f64] = vec3[f64](0.0, 1.0, 2.0);
+	let dv2: vec3[f64] = vec3[f64](2.0, 1.0, 0.0);
 	let acosResult1: f32 = acos(f1);
 	let acosResult2: vec3[f32] = acos(v1);
 	let acoshResult1: f32 = acosh(f1);
@@ -1424,86 +1418,86 @@ fn main()
 )");
 
 		ExpectSPIRV(*shaderModule, R"(
- %65 = OpLoad %3 %21
- %66 = OpExtInst %3 GLSLstd450 Acos %65
-       OpStore %27 %66
- %67 = OpLoad %12 %23
- %68 = OpExtInst %12 GLSLstd450 Acos %67
-       OpStore %28 %68
- %69 = OpLoad %3 %21
- %70 = OpExtInst %3 GLSLstd450 Acosh %69
-       OpStore %29 %70
- %71 = OpLoad %12 %23
- %72 = OpExtInst %12 GLSLstd450 Acosh %71
-       OpStore %30 %72
- %73 = OpLoad %3 %21
- %74 = OpExtInst %3 GLSLstd450 Asinh %73
-       OpStore %31 %74
- %75 = OpLoad %12 %23
- %76 = OpExtInst %12 GLSLstd450 Asinh %75
-       OpStore %32 %76
- %77 = OpLoad %3 %21
- %78 = OpExtInst %3 GLSLstd450 Asinh %77
-       OpStore %33 %78
- %79 = OpLoad %12 %23
- %80 = OpExtInst %12 GLSLstd450 Asinh %79
-       OpStore %34 %80
- %81 = OpLoad %3 %21
- %82 = OpExtInst %3 GLSLstd450 Atan %81
-       OpStore %35 %82
- %83 = OpLoad %12 %23
- %84 = OpExtInst %12 GLSLstd450 Atan %83
-       OpStore %36 %84
- %85 = OpLoad %3 %21
- %86 = OpLoad %3 %22
- %87 = OpExtInst %3 GLSLstd450 Atan2 %85 %86
-       OpStore %37 %87
- %88 = OpLoad %12 %23
- %89 = OpLoad %12 %24
- %90 = OpExtInst %12 GLSLstd450 Atan2 %88 %89
-       OpStore %38 %90
- %91 = OpLoad %3 %21
- %92 = OpExtInst %3 GLSLstd450 Atanh %91
-       OpStore %39 %92
- %93 = OpLoad %12 %23
- %94 = OpExtInst %12 GLSLstd450 Atanh %93
-       OpStore %40 %94
- %95 = OpLoad %3 %21
- %96 = OpExtInst %3 GLSLstd450 Cos %95
-       OpStore %41 %96
- %97 = OpLoad %12 %23
- %98 = OpExtInst %12 GLSLstd450 Cos %97
-       OpStore %42 %98
- %99 = OpLoad %3 %21
-%100 = OpExtInst %3 GLSLstd450 Cosh %99
-       OpStore %43 %100
-%101 = OpLoad %12 %23
-%102 = OpExtInst %12 GLSLstd450 Cosh %101
-       OpStore %44 %102
-%103 = OpLoad %3 %21
-%104 = OpExtInst %3 GLSLstd450 Degrees %103
-       OpStore %45 %104
-%105 = OpLoad %12 %23
-%106 = OpExtInst %12 GLSLstd450 Degrees %105
-       OpStore %46 %106
-%107 = OpLoad %3 %21
-%108 = OpExtInst %3 GLSLstd450 Radians %107
-       OpStore %47 %108
-%109 = OpLoad %12 %23
-%110 = OpExtInst %12 GLSLstd450 Radians %109
-       OpStore %48 %110
-%111 = OpLoad %3 %21
-%112 = OpExtInst %3 GLSLstd450 Sin %111
-       OpStore %49 %112
-%113 = OpLoad %12 %23
-%114 = OpExtInst %12 GLSLstd450 Sin %113
-       OpStore %50 %114
-%115 = OpLoad %3 %21
-%116 = OpExtInst %3 GLSLstd450 Sinh %115
-       OpStore %51 %116
-%117 = OpLoad %12 %23
-%118 = OpExtInst %12 GLSLstd450 Sinh %117
-       OpStore %52 %118
+ %62 = OpLoad %7 %26
+ %63 = OpExtInst %7 GLSLstd450 Acos %62
+       OpStore %32 %63
+ %64 = OpLoad %14 %28
+ %65 = OpExtInst %14 GLSLstd450 Acos %64
+       OpStore %33 %65
+ %66 = OpLoad %7 %26
+ %67 = OpExtInst %7 GLSLstd450 Acosh %66
+       OpStore %34 %67
+ %68 = OpLoad %14 %28
+ %69 = OpExtInst %14 GLSLstd450 Acosh %68
+       OpStore %35 %69
+ %70 = OpLoad %7 %26
+ %71 = OpExtInst %7 GLSLstd450 Asinh %70
+       OpStore %36 %71
+ %72 = OpLoad %14 %28
+ %73 = OpExtInst %14 GLSLstd450 Asinh %72
+       OpStore %37 %73
+ %74 = OpLoad %7 %26
+ %75 = OpExtInst %7 GLSLstd450 Asinh %74
+       OpStore %38 %75
+ %76 = OpLoad %14 %28
+ %77 = OpExtInst %14 GLSLstd450 Asinh %76
+       OpStore %39 %77
+ %78 = OpLoad %7 %26
+ %79 = OpExtInst %7 GLSLstd450 Atan %78
+       OpStore %40 %79
+ %80 = OpLoad %14 %28
+ %81 = OpExtInst %14 GLSLstd450 Atan %80
+       OpStore %41 %81
+ %82 = OpLoad %7 %26
+ %83 = OpLoad %7 %27
+ %84 = OpExtInst %7 GLSLstd450 Atan2 %82 %83
+       OpStore %42 %84
+ %85 = OpLoad %14 %28
+ %86 = OpLoad %14 %29
+ %87 = OpExtInst %14 GLSLstd450 Atan2 %85 %86
+       OpStore %43 %87
+ %88 = OpLoad %7 %26
+ %89 = OpExtInst %7 GLSLstd450 Atanh %88
+       OpStore %44 %89
+ %90 = OpLoad %14 %28
+ %91 = OpExtInst %14 GLSLstd450 Atanh %90
+       OpStore %45 %91
+ %92 = OpLoad %7 %26
+ %93 = OpExtInst %7 GLSLstd450 Cos %92
+       OpStore %46 %93
+ %94 = OpLoad %14 %28
+ %95 = OpExtInst %14 GLSLstd450 Cos %94
+       OpStore %47 %95
+ %96 = OpLoad %7 %26
+ %97 = OpExtInst %7 GLSLstd450 Cosh %96
+       OpStore %48 %97
+ %98 = OpLoad %14 %28
+ %99 = OpExtInst %14 GLSLstd450 Cosh %98
+       OpStore %49 %99
+%100 = OpLoad %7 %26
+%101 = OpExtInst %7 GLSLstd450 Degrees %100
+       OpStore %50 %101
+%102 = OpLoad %14 %28
+%103 = OpExtInst %14 GLSLstd450 Degrees %102
+       OpStore %51 %103
+%104 = OpLoad %7 %26
+%105 = OpExtInst %7 GLSLstd450 Radians %104
+       OpStore %52 %105
+%106 = OpLoad %14 %28
+%107 = OpExtInst %14 GLSLstd450 Radians %106
+       OpStore %53 %107
+%108 = OpLoad %7 %26
+%109 = OpExtInst %7 GLSLstd450 Sin %108
+       OpStore %54 %109
+%110 = OpLoad %14 %28
+%111 = OpExtInst %14 GLSLstd450 Sin %110
+       OpStore %55 %111
+%112 = OpLoad %7 %26
+%113 = OpExtInst %7 GLSLstd450 Sinh %112
+       OpStore %56 %113
+%114 = OpLoad %14 %28
+%115 = OpExtInst %14 GLSLstd450 Sinh %114
+       OpStore %57 %115
        OpReturn
        OpFunctionEnd)", {}, {}, true);
 	}
@@ -1533,12 +1527,12 @@ fn main()
 	let v2 = vec3[f32](2.0, 1.0, 0.0);
 	let bv1 = vec3[bool](true, false, true);
 	let bv2 = vec3[bool](false, false, true);
-	let dv1 = vec3[f64](f64(0.0), f64(1.0), f64(2.0));
-	let dv2 = vec3[f64](f64(2.0), f64(1.0), f64(0.0));
+	let dv1 = vec3[f64](0.0, 1.0, 2.0);
+	let dv2 = vec3[f64](2.0, 1.0, 0.0);
 	let iv1 = vec3[i32](0, 1, 2);
 	let iv2 = vec3[i32](2, 1, 0);
-	let uv1 = vec3[u32](u32(0), u32(1), u32(2));
-	let uv2 = vec3[u32](u32(2), u32(1), u32(0));
+	let uv1 = vec3[u32](0, 1, 2);
+	let uv2 = vec3[u32](2, 1, 0);
 
 	// Scalar / vector selection
 	let result = select(b1, d1, d2);
@@ -1576,24 +1570,24 @@ void main()
 {
 	bool b1 = false;
 	bool b2 = true;
-	double d1 = double(4.2);
-	double d2 = double(133.699997);
+	double d1 = 4.2lf;
+	double d2 = 133.699999999999989lf;
 	float f1 = 4.2;
 	float f2 = 133.699997;
 	int i1 = 42;
 	int i2 = 1337;
-	uint u1 = uint(42);
-	uint u2 = uint(1337);
+	uint u1 = 42u;
+	uint u2 = 1337u;
 	vec3 v1 = vec3(0.0, 1.0, 2.0);
 	vec3 v2 = vec3(2.0, 1.0, 0.0);
 	bvec3 bv1 = bvec3(true, false, true);
 	bvec3 bv2 = bvec3(false, false, true);
-	dvec3 dv1 = dvec3(double(0.0), double(1.0), double(2.0));
-	dvec3 dv2 = dvec3(double(2.0), double(1.0), double(0.0));
+	dvec3 dv1 = dvec3(0.0lf, 1.0lf, 2.0lf);
+	dvec3 dv2 = dvec3(2.0lf, 1.0lf, 0.0lf);
 	ivec3 iv1 = ivec3(0, 1, 2);
 	ivec3 iv2 = ivec3(2, 1, 0);
-	uvec3 uv1 = uvec3(uint(0), uint(1), uint(2));
-	uvec3 uv2 = uvec3(uint(2), uint(1), uint(0));
+	uvec3 uv1 = uvec3(0u, 1u, 2u);
+	uvec3 uv2 = uvec3(2u, 1u, 0u);
 	double result = mix(d2, d1, b1);
 	float result_2 = mix(f2, f1, b2);
 	int result_3 = (b1) ? i1 : i2;
@@ -1629,24 +1623,24 @@ void main()
 {
 	bool b1 = false;
 	bool b2 = true;
-	double d1 = double(4.2);
-	double d2 = double(133.699997);
+	double d1 = 4.2lf;
+	double d2 = 133.699999999999989lf;
 	float f1 = 4.2;
 	float f2 = 133.699997;
 	int i1 = 42;
 	int i2 = 1337;
-	uint u1 = uint(42);
-	uint u2 = uint(1337);
+	uint u1 = 42u;
+	uint u2 = 1337u;
 	vec3 v1 = vec3(0.0, 1.0, 2.0);
 	vec3 v2 = vec3(2.0, 1.0, 0.0);
 	bvec3 bv1 = bvec3(true, false, true);
 	bvec3 bv2 = bvec3(false, false, true);
-	dvec3 dv1 = dvec3(double(0.0), double(1.0), double(2.0));
-	dvec3 dv2 = dvec3(double(2.0), double(1.0), double(0.0));
+	dvec3 dv1 = dvec3(0.0lf, 1.0lf, 2.0lf);
+	dvec3 dv2 = dvec3(2.0lf, 1.0lf, 0.0lf);
 	ivec3 iv1 = ivec3(0, 1, 2);
 	ivec3 iv2 = ivec3(2, 1, 0);
-	uvec3 uv1 = uvec3(uint(0), uint(1), uint(2));
-	uvec3 uv2 = uvec3(uint(2), uint(1), uint(0));
+	uvec3 uv1 = uvec3(0u, 1u, 2u);
+	uvec3 uv2 = uvec3(2u, 1u, 0u);
 	double result = mix(d2, d1, b1);
 	float result_2 = mix(f2, f1, b2);
 	int result_3 = mix(i2, i1, b1);
@@ -1680,24 +1674,24 @@ void main()
 {
 	bool b1 = false;
 	bool b2 = true;
-	double d1 = double(4.2);
-	double d2 = double(133.699997);
+	double d1 = 4.2lf;
+	double d2 = 133.699999999999989lf;
 	float f1 = 4.2;
 	float f2 = 133.699997;
 	int i1 = 42;
 	int i2 = 1337;
-	uint u1 = uint(42);
-	uint u2 = uint(1337);
+	uint u1 = 42u;
+	uint u2 = 1337u;
 	vec3 v1 = vec3(0.0, 1.0, 2.0);
 	vec3 v2 = vec3(2.0, 1.0, 0.0);
 	bvec3 bv1 = bvec3(true, false, true);
 	bvec3 bv2 = bvec3(false, false, true);
-	dvec3 dv1 = dvec3(double(0.0), double(1.0), double(2.0));
-	dvec3 dv2 = dvec3(double(2.0), double(1.0), double(0.0));
+	dvec3 dv1 = dvec3(0.0lf, 1.0lf, 2.0lf);
+	dvec3 dv2 = dvec3(2.0lf, 1.0lf, 0.0lf);
 	ivec3 iv1 = ivec3(0, 1, 2);
 	ivec3 iv2 = ivec3(2, 1, 0);
-	uvec3 uv1 = uvec3(uint(0), uint(1), uint(2));
-	uvec3 uv2 = uvec3(uint(2), uint(1), uint(0));
+	uvec3 uv1 = uvec3(0u, 1u, 2u);
+	uvec3 uv2 = uvec3(2u, 1u, 0u);
 	double result = mix(d2, d1, b1);
 	float result_2 = mix(f2, f1, b2);
 	int result_3 = mix(i2, i1, b1);
@@ -1727,9 +1721,9 @@ fn main()
 	let b1: bool = false;
 	let b2: bool = true;
 	let d1: f64 = f64(4.2);
-	let d2: f64 = f64(133.699997);
+	let d2: f64 = f64(133.699999999999989);
 	let f1: f32 = 4.2;
-	let f2: f32 = 133.699997;
+	let f2: f32 = 133.699999999999989;
 	let i1: i32 = 42;
 	let i2: i32 = 1337;
 	let u1: u32 = u32(42);
@@ -1738,12 +1732,12 @@ fn main()
 	let v2: vec3[f32] = vec3[f32](2.0, 1.0, 0.0);
 	let bv1: vec3[bool] = vec3[bool](true, false, true);
 	let bv2: vec3[bool] = vec3[bool](false, false, true);
-	let dv1: vec3[f64] = vec3[f64](f64(0.0), f64(1.0), f64(2.0));
-	let dv2: vec3[f64] = vec3[f64](f64(2.0), f64(1.0), f64(0.0));
+	let dv1: vec3[f64] = vec3[f64](0.0, 1.0, 2.0);
+	let dv2: vec3[f64] = vec3[f64](2.0, 1.0, 0.0);
 	let iv1: vec3[i32] = vec3[i32](0, 1, 2);
 	let iv2: vec3[i32] = vec3[i32](2, 1, 0);
-	let uv1: vec3[u32] = vec3[u32](u32(0), u32(1), u32(2));
-	let uv2: vec3[u32] = vec3[u32](u32(2), u32(1), u32(0));
+	let uv1: vec3[u32] = vec3[u32](0, 1, 2);
+	let uv2: vec3[u32] = vec3[u32](2, 1, 0);
 	let result: f64 = select(b1, d1, d2);
 	let result: f32 = select(b2, f1, f2);
 	let result: i32 = select(b1, i1, i2);
@@ -1768,163 +1762,147 @@ fn main()
 			env.spvMinorVersion = 0;
 
 			ExpectSPIRV(*shaderModule, R"(
- %35 = OpFunction %1 FunctionControl(0) %2
- %36 = OpLabel
- %37 = OpVariable %5 StorageClass(Function)
- %38 = OpVariable %5 StorageClass(Function)
- %39 = OpVariable %10 StorageClass(Function)
- %40 = OpVariable %10 StorageClass(Function)
- %41 = OpVariable %12 StorageClass(Function)
- %42 = OpVariable %12 StorageClass(Function)
- %43 = OpVariable %15 StorageClass(Function)
- %44 = OpVariable %15 StorageClass(Function)
- %45 = OpVariable %18 StorageClass(Function)
- %46 = OpVariable %18 StorageClass(Function)
- %47 = OpVariable %23 StorageClass(Function)
- %48 = OpVariable %23 StorageClass(Function)
- %49 = OpVariable %25 StorageClass(Function)
- %50 = OpVariable %25 StorageClass(Function)
- %51 = OpVariable %27 StorageClass(Function)
- %52 = OpVariable %27 StorageClass(Function)
- %53 = OpVariable %32 StorageClass(Function)
- %54 = OpVariable %32 StorageClass(Function)
- %55 = OpVariable %34 StorageClass(Function)
- %56 = OpVariable %34 StorageClass(Function)
- %57 = OpVariable %10 StorageClass(Function)
- %58 = OpVariable %12 StorageClass(Function)
- %59 = OpVariable %15 StorageClass(Function)
- %60 = OpVariable %18 StorageClass(Function)
- %61 = OpVariable %23 StorageClass(Function)
- %62 = OpVariable %25 StorageClass(Function)
- %63 = OpVariable %27 StorageClass(Function)
- %64 = OpVariable %32 StorageClass(Function)
- %65 = OpVariable %34 StorageClass(Function)
- %66 = OpVariable %23 StorageClass(Function)
- %67 = OpVariable %25 StorageClass(Function)
- %68 = OpVariable %27 StorageClass(Function)
- %69 = OpVariable %32 StorageClass(Function)
- %70 = OpVariable %34 StorageClass(Function)
-       OpStore %37 %4
-       OpStore %38 %6
- %71 = OpFConvert %9 %8
-       OpStore %39 %71
- %72 = OpFConvert %9 %11
-       OpStore %40 %72
-       OpStore %41 %8
-       OpStore %42 %11
-       OpStore %43 %14
-       OpStore %44 %16
- %73 = OpBitcast %17 %14
-       OpStore %45 %73
- %74 = OpBitcast %17 %16
-       OpStore %46 %74
- %75 = OpCompositeConstruct %22 %19 %20 %21
-       OpStore %47 %75
- %76 = OpCompositeConstruct %22 %21 %20 %19
-       OpStore %48 %76
- %77 = OpCompositeConstruct %24 %6 %4 %6
-       OpStore %49 %77
- %78 = OpCompositeConstruct %24 %4 %4 %6
-       OpStore %50 %78
- %79 = OpFConvert %9 %19
- %80 = OpFConvert %9 %20
- %81 = OpFConvert %9 %21
- %82 = OpCompositeConstruct %26 %79 %80 %81
-       OpStore %51 %82
- %83 = OpFConvert %9 %21
- %84 = OpFConvert %9 %20
- %85 = OpFConvert %9 %19
- %86 = OpCompositeConstruct %26 %83 %84 %85
-       OpStore %52 %86
- %87 = OpCompositeConstruct %31 %28 %29 %30
-       OpStore %53 %87
- %88 = OpCompositeConstruct %31 %30 %29 %28
-       OpStore %54 %88
- %89 = OpBitcast %17 %28
- %90 = OpBitcast %17 %29
- %91 = OpBitcast %17 %30
- %92 = OpCompositeConstruct %33 %89 %90 %91
-       OpStore %55 %92
- %93 = OpBitcast %17 %30
- %94 = OpBitcast %17 %29
- %95 = OpBitcast %17 %28
- %96 = OpCompositeConstruct %33 %93 %94 %95
-       OpStore %56 %96
- %97 = OpLoad %3 %37
- %98 = OpLoad %9 %39
- %99 = OpLoad %9 %40
-%100 = OpSelect %9 %97 %98 %99
-       OpStore %57 %100
-%101 = OpLoad %3 %38
-%102 = OpLoad %7 %41
-%103 = OpLoad %7 %42
-%104 = OpSelect %7 %101 %102 %103
-       OpStore %58 %104
-%105 = OpLoad %3 %37
-%106 = OpLoad %13 %43
-%107 = OpLoad %13 %44
-%108 = OpSelect %13 %105 %106 %107
-       OpStore %59 %108
-%109 = OpLoad %3 %38
-%110 = OpLoad %17 %45
-%111 = OpLoad %17 %46
-%112 = OpSelect %17 %109 %110 %111
-       OpStore %60 %112
-%113 = OpLoad %3 %37
-%114 = OpLoad %22 %47
-%115 = OpLoad %22 %48
-%116 = OpCompositeConstruct %24 %113 %113 %113
-%117 = OpSelect %22 %116 %114 %115
-       OpStore %61 %117
-%118 = OpLoad %3 %38
-%119 = OpLoad %24 %49
-%120 = OpLoad %24 %50
-%121 = OpCompositeConstruct %24 %118 %118 %118
-%122 = OpSelect %24 %121 %119 %120
-       OpStore %62 %122
-%123 = OpLoad %3 %37
-%124 = OpLoad %26 %51
-%125 = OpLoad %26 %52
-%126 = OpCompositeConstruct %24 %123 %123 %123
-%127 = OpSelect %26 %126 %124 %125
-       OpStore %63 %127
-%128 = OpLoad %3 %38
-%129 = OpLoad %31 %53
-%130 = OpLoad %31 %54
-%131 = OpCompositeConstruct %24 %128 %128 %128
-%132 = OpSelect %31 %131 %129 %130
-       OpStore %64 %132
-%133 = OpLoad %3 %37
-%134 = OpLoad %33 %55
-%135 = OpLoad %33 %56
-%136 = OpCompositeConstruct %24 %133 %133 %133
-%137 = OpSelect %33 %136 %134 %135
-       OpStore %65 %137
-%138 = OpLoad %24 %49
-%139 = OpLoad %22 %47
-%140 = OpLoad %22 %48
-%141 = OpSelect %22 %138 %139 %140
-       OpStore %66 %141
-%142 = OpLoad %24 %50
-%143 = OpLoad %24 %49
-%144 = OpLoad %24 %50
-%145 = OpSelect %24 %142 %143 %144
-       OpStore %67 %145
-%146 = OpLoad %24 %49
-%147 = OpLoad %26 %51
-%148 = OpLoad %26 %52
-%149 = OpSelect %26 %146 %147 %148
-       OpStore %68 %149
-%150 = OpLoad %24 %50
-%151 = OpLoad %31 %53
-%152 = OpLoad %31 %54
-%153 = OpSelect %31 %150 %151 %152
-       OpStore %69 %153
-%154 = OpLoad %24 %49
-%155 = OpLoad %33 %55
-%156 = OpLoad %33 %56
-%157 = OpSelect %33 %154 %155 %156
-       OpStore %70 %157
+ %45 = OpFunction %1 FunctionControl(0) %2
+ %46 = OpLabel
+ %47 = OpVariable %5 StorageClass(Function)
+ %48 = OpVariable %5 StorageClass(Function)
+ %49 = OpVariable %9 StorageClass(Function)
+ %50 = OpVariable %9 StorageClass(Function)
+ %51 = OpVariable %13 StorageClass(Function)
+ %52 = OpVariable %13 StorageClass(Function)
+ %53 = OpVariable %17 StorageClass(Function)
+ %54 = OpVariable %17 StorageClass(Function)
+ %55 = OpVariable %21 StorageClass(Function)
+ %56 = OpVariable %21 StorageClass(Function)
+ %57 = OpVariable %27 StorageClass(Function)
+ %58 = OpVariable %27 StorageClass(Function)
+ %59 = OpVariable %29 StorageClass(Function)
+ %60 = OpVariable %29 StorageClass(Function)
+ %61 = OpVariable %34 StorageClass(Function)
+ %62 = OpVariable %34 StorageClass(Function)
+ %63 = OpVariable %39 StorageClass(Function)
+ %64 = OpVariable %39 StorageClass(Function)
+ %65 = OpVariable %44 StorageClass(Function)
+ %66 = OpVariable %44 StorageClass(Function)
+ %67 = OpVariable %9 StorageClass(Function)
+ %68 = OpVariable %13 StorageClass(Function)
+ %69 = OpVariable %17 StorageClass(Function)
+ %70 = OpVariable %21 StorageClass(Function)
+ %71 = OpVariable %27 StorageClass(Function)
+ %72 = OpVariable %29 StorageClass(Function)
+ %73 = OpVariable %34 StorageClass(Function)
+ %74 = OpVariable %39 StorageClass(Function)
+ %75 = OpVariable %44 StorageClass(Function)
+ %76 = OpVariable %27 StorageClass(Function)
+ %77 = OpVariable %29 StorageClass(Function)
+ %78 = OpVariable %34 StorageClass(Function)
+ %79 = OpVariable %39 StorageClass(Function)
+ %80 = OpVariable %44 StorageClass(Function)
+       OpStore %47 %4
+       OpStore %48 %6
+       OpStore %49 %8
+       OpStore %50 %10
+       OpStore %51 %12
+       OpStore %52 %14
+       OpStore %53 %16
+       OpStore %54 %18
+       OpStore %55 %20
+       OpStore %56 %22
+ %81 = OpCompositeConstruct %26 %23 %24 %25
+       OpStore %57 %81
+ %82 = OpCompositeConstruct %26 %25 %24 %23
+       OpStore %58 %82
+ %83 = OpCompositeConstruct %28 %6 %4 %6
+       OpStore %59 %83
+ %84 = OpCompositeConstruct %28 %4 %4 %6
+       OpStore %60 %84
+ %85 = OpCompositeConstruct %33 %30 %31 %32
+       OpStore %61 %85
+ %86 = OpCompositeConstruct %33 %32 %31 %30
+       OpStore %62 %86
+ %87 = OpCompositeConstruct %38 %35 %36 %37
+       OpStore %63 %87
+ %88 = OpCompositeConstruct %38 %37 %36 %35
+       OpStore %64 %88
+ %89 = OpCompositeConstruct %43 %40 %41 %42
+       OpStore %65 %89
+ %90 = OpCompositeConstruct %43 %42 %41 %40
+       OpStore %66 %90
+ %91 = OpLoad %3 %47
+ %92 = OpLoad %7 %49
+ %93 = OpLoad %7 %50
+ %94 = OpSelect %7 %91 %92 %93
+       OpStore %67 %94
+ %95 = OpLoad %3 %48
+ %96 = OpLoad %11 %51
+ %97 = OpLoad %11 %52
+ %98 = OpSelect %11 %95 %96 %97
+       OpStore %68 %98
+ %99 = OpLoad %3 %47
+%100 = OpLoad %15 %53
+%101 = OpLoad %15 %54
+%102 = OpSelect %15 %99 %100 %101
+       OpStore %69 %102
+%103 = OpLoad %3 %48
+%104 = OpLoad %19 %55
+%105 = OpLoad %19 %56
+%106 = OpSelect %19 %103 %104 %105
+       OpStore %70 %106
+%107 = OpLoad %3 %47
+%108 = OpLoad %26 %57
+%109 = OpLoad %26 %58
+%110 = OpCompositeConstruct %28 %107 %107 %107
+%111 = OpSelect %26 %110 %108 %109
+       OpStore %71 %111
+%112 = OpLoad %3 %48
+%113 = OpLoad %28 %59
+%114 = OpLoad %28 %60
+%115 = OpCompositeConstruct %28 %112 %112 %112
+%116 = OpSelect %28 %115 %113 %114
+       OpStore %72 %116
+%117 = OpLoad %3 %47
+%118 = OpLoad %33 %61
+%119 = OpLoad %33 %62
+%120 = OpCompositeConstruct %28 %117 %117 %117
+%121 = OpSelect %33 %120 %118 %119
+       OpStore %73 %121
+%122 = OpLoad %3 %48
+%123 = OpLoad %38 %63
+%124 = OpLoad %38 %64
+%125 = OpCompositeConstruct %28 %122 %122 %122
+%126 = OpSelect %38 %125 %123 %124
+       OpStore %74 %126
+%127 = OpLoad %3 %47
+%128 = OpLoad %43 %65
+%129 = OpLoad %43 %66
+%130 = OpCompositeConstruct %28 %127 %127 %127
+%131 = OpSelect %43 %130 %128 %129
+       OpStore %75 %131
+%132 = OpLoad %28 %59
+%133 = OpLoad %26 %57
+%134 = OpLoad %26 %58
+%135 = OpSelect %26 %132 %133 %134
+       OpStore %76 %135
+%136 = OpLoad %28 %60
+%137 = OpLoad %28 %59
+%138 = OpLoad %28 %60
+%139 = OpSelect %28 %136 %137 %138
+       OpStore %77 %139
+%140 = OpLoad %28 %59
+%141 = OpLoad %33 %61
+%142 = OpLoad %33 %62
+%143 = OpSelect %33 %140 %141 %142
+       OpStore %78 %143
+%144 = OpLoad %28 %60
+%145 = OpLoad %38 %63
+%146 = OpLoad %38 %64
+%147 = OpSelect %38 %144 %145 %146
+       OpStore %79 %147
+%148 = OpLoad %28 %59
+%149 = OpLoad %43 %65
+%150 = OpLoad %43 %66
+%151 = OpSelect %43 %148 %149 %150
+       OpStore %80 %151
        OpReturn
        OpFunctionEnd)", {}, env, true);
 		}
@@ -1937,158 +1915,142 @@ fn main()
 			env.spvMinorVersion = 4;
 
 			ExpectSPIRV(*shaderModule, R"(
- %35 = OpFunction %1 FunctionControl(0) %2
- %36 = OpLabel
- %37 = OpVariable %5 StorageClass(Function)
- %38 = OpVariable %5 StorageClass(Function)
- %39 = OpVariable %10 StorageClass(Function)
- %40 = OpVariable %10 StorageClass(Function)
- %41 = OpVariable %12 StorageClass(Function)
- %42 = OpVariable %12 StorageClass(Function)
- %43 = OpVariable %15 StorageClass(Function)
- %44 = OpVariable %15 StorageClass(Function)
- %45 = OpVariable %18 StorageClass(Function)
- %46 = OpVariable %18 StorageClass(Function)
- %47 = OpVariable %23 StorageClass(Function)
- %48 = OpVariable %23 StorageClass(Function)
- %49 = OpVariable %25 StorageClass(Function)
- %50 = OpVariable %25 StorageClass(Function)
- %51 = OpVariable %27 StorageClass(Function)
- %52 = OpVariable %27 StorageClass(Function)
- %53 = OpVariable %32 StorageClass(Function)
- %54 = OpVariable %32 StorageClass(Function)
- %55 = OpVariable %34 StorageClass(Function)
- %56 = OpVariable %34 StorageClass(Function)
- %57 = OpVariable %10 StorageClass(Function)
- %58 = OpVariable %12 StorageClass(Function)
- %59 = OpVariable %15 StorageClass(Function)
- %60 = OpVariable %18 StorageClass(Function)
- %61 = OpVariable %23 StorageClass(Function)
- %62 = OpVariable %25 StorageClass(Function)
- %63 = OpVariable %27 StorageClass(Function)
- %64 = OpVariable %32 StorageClass(Function)
- %65 = OpVariable %34 StorageClass(Function)
- %66 = OpVariable %23 StorageClass(Function)
- %67 = OpVariable %25 StorageClass(Function)
- %68 = OpVariable %27 StorageClass(Function)
- %69 = OpVariable %32 StorageClass(Function)
- %70 = OpVariable %34 StorageClass(Function)
-       OpStore %37 %4
-       OpStore %38 %6
- %71 = OpFConvert %9 %8
-       OpStore %39 %71
- %72 = OpFConvert %9 %11
-       OpStore %40 %72
-       OpStore %41 %8
-       OpStore %42 %11
-       OpStore %43 %14
-       OpStore %44 %16
- %73 = OpBitcast %17 %14
-       OpStore %45 %73
- %74 = OpBitcast %17 %16
-       OpStore %46 %74
- %75 = OpCompositeConstruct %22 %19 %20 %21
-       OpStore %47 %75
- %76 = OpCompositeConstruct %22 %21 %20 %19
-       OpStore %48 %76
- %77 = OpCompositeConstruct %24 %6 %4 %6
-       OpStore %49 %77
- %78 = OpCompositeConstruct %24 %4 %4 %6
-       OpStore %50 %78
- %79 = OpFConvert %9 %19
- %80 = OpFConvert %9 %20
- %81 = OpFConvert %9 %21
- %82 = OpCompositeConstruct %26 %79 %80 %81
-       OpStore %51 %82
- %83 = OpFConvert %9 %21
- %84 = OpFConvert %9 %20
- %85 = OpFConvert %9 %19
- %86 = OpCompositeConstruct %26 %83 %84 %85
-       OpStore %52 %86
- %87 = OpCompositeConstruct %31 %28 %29 %30
-       OpStore %53 %87
- %88 = OpCompositeConstruct %31 %30 %29 %28
-       OpStore %54 %88
- %89 = OpBitcast %17 %28
- %90 = OpBitcast %17 %29
- %91 = OpBitcast %17 %30
- %92 = OpCompositeConstruct %33 %89 %90 %91
-       OpStore %55 %92
- %93 = OpBitcast %17 %30
- %94 = OpBitcast %17 %29
- %95 = OpBitcast %17 %28
- %96 = OpCompositeConstruct %33 %93 %94 %95
-       OpStore %56 %96
- %97 = OpLoad %3 %37
- %98 = OpLoad %9 %39
- %99 = OpLoad %9 %40
-%100 = OpSelect %9 %97 %98 %99
-       OpStore %57 %100
-%101 = OpLoad %3 %38
-%102 = OpLoad %7 %41
-%103 = OpLoad %7 %42
-%104 = OpSelect %7 %101 %102 %103
-       OpStore %58 %104
-%105 = OpLoad %3 %37
-%106 = OpLoad %13 %43
-%107 = OpLoad %13 %44
-%108 = OpSelect %13 %105 %106 %107
-       OpStore %59 %108
-%109 = OpLoad %3 %38
-%110 = OpLoad %17 %45
-%111 = OpLoad %17 %46
-%112 = OpSelect %17 %109 %110 %111
-       OpStore %60 %112
-%113 = OpLoad %3 %37
-%114 = OpLoad %22 %47
-%115 = OpLoad %22 %48
-%116 = OpSelect %22 %113 %114 %115
-       OpStore %61 %116
-%117 = OpLoad %3 %38
-%118 = OpLoad %24 %49
-%119 = OpLoad %24 %50
-%120 = OpSelect %24 %117 %118 %119
-       OpStore %62 %120
-%121 = OpLoad %3 %37
-%122 = OpLoad %26 %51
-%123 = OpLoad %26 %52
-%124 = OpSelect %26 %121 %122 %123
-       OpStore %63 %124
-%125 = OpLoad %3 %38
-%126 = OpLoad %31 %53
-%127 = OpLoad %31 %54
-%128 = OpSelect %31 %125 %126 %127
-       OpStore %64 %128
-%129 = OpLoad %3 %37
-%130 = OpLoad %33 %55
-%131 = OpLoad %33 %56
-%132 = OpSelect %33 %129 %130 %131
-       OpStore %65 %132
-%133 = OpLoad %24 %49
-%134 = OpLoad %22 %47
-%135 = OpLoad %22 %48
-%136 = OpSelect %22 %133 %134 %135
-       OpStore %66 %136
-%137 = OpLoad %24 %50
-%138 = OpLoad %24 %49
-%139 = OpLoad %24 %50
-%140 = OpSelect %24 %137 %138 %139
-       OpStore %67 %140
-%141 = OpLoad %24 %49
-%142 = OpLoad %26 %51
-%143 = OpLoad %26 %52
-%144 = OpSelect %26 %141 %142 %143
-       OpStore %68 %144
-%145 = OpLoad %24 %50
-%146 = OpLoad %31 %53
-%147 = OpLoad %31 %54
-%148 = OpSelect %31 %145 %146 %147
-       OpStore %69 %148
-%149 = OpLoad %24 %49
-%150 = OpLoad %33 %55
-%151 = OpLoad %33 %56
-%152 = OpSelect %33 %149 %150 %151
-       OpStore %70 %152
+ %45 = OpFunction %1 FunctionControl(0) %2
+ %46 = OpLabel
+ %47 = OpVariable %5 StorageClass(Function)
+ %48 = OpVariable %5 StorageClass(Function)
+ %49 = OpVariable %9 StorageClass(Function)
+ %50 = OpVariable %9 StorageClass(Function)
+ %51 = OpVariable %13 StorageClass(Function)
+ %52 = OpVariable %13 StorageClass(Function)
+ %53 = OpVariable %17 StorageClass(Function)
+ %54 = OpVariable %17 StorageClass(Function)
+ %55 = OpVariable %21 StorageClass(Function)
+ %56 = OpVariable %21 StorageClass(Function)
+ %57 = OpVariable %27 StorageClass(Function)
+ %58 = OpVariable %27 StorageClass(Function)
+ %59 = OpVariable %29 StorageClass(Function)
+ %60 = OpVariable %29 StorageClass(Function)
+ %61 = OpVariable %34 StorageClass(Function)
+ %62 = OpVariable %34 StorageClass(Function)
+ %63 = OpVariable %39 StorageClass(Function)
+ %64 = OpVariable %39 StorageClass(Function)
+ %65 = OpVariable %44 StorageClass(Function)
+ %66 = OpVariable %44 StorageClass(Function)
+ %67 = OpVariable %9 StorageClass(Function)
+ %68 = OpVariable %13 StorageClass(Function)
+ %69 = OpVariable %17 StorageClass(Function)
+ %70 = OpVariable %21 StorageClass(Function)
+ %71 = OpVariable %27 StorageClass(Function)
+ %72 = OpVariable %29 StorageClass(Function)
+ %73 = OpVariable %34 StorageClass(Function)
+ %74 = OpVariable %39 StorageClass(Function)
+ %75 = OpVariable %44 StorageClass(Function)
+ %76 = OpVariable %27 StorageClass(Function)
+ %77 = OpVariable %29 StorageClass(Function)
+ %78 = OpVariable %34 StorageClass(Function)
+ %79 = OpVariable %39 StorageClass(Function)
+ %80 = OpVariable %44 StorageClass(Function)
+       OpStore %47 %4
+       OpStore %48 %6
+       OpStore %49 %8
+       OpStore %50 %10
+       OpStore %51 %12
+       OpStore %52 %14
+       OpStore %53 %16
+       OpStore %54 %18
+       OpStore %55 %20
+       OpStore %56 %22
+ %81 = OpCompositeConstruct %26 %23 %24 %25
+       OpStore %57 %81
+ %82 = OpCompositeConstruct %26 %25 %24 %23
+       OpStore %58 %82
+ %83 = OpCompositeConstruct %28 %6 %4 %6
+       OpStore %59 %83
+ %84 = OpCompositeConstruct %28 %4 %4 %6
+       OpStore %60 %84
+ %85 = OpCompositeConstruct %33 %30 %31 %32
+       OpStore %61 %85
+ %86 = OpCompositeConstruct %33 %32 %31 %30
+       OpStore %62 %86
+ %87 = OpCompositeConstruct %38 %35 %36 %37
+       OpStore %63 %87
+ %88 = OpCompositeConstruct %38 %37 %36 %35
+       OpStore %64 %88
+ %89 = OpCompositeConstruct %43 %40 %41 %42
+       OpStore %65 %89
+ %90 = OpCompositeConstruct %43 %42 %41 %40
+       OpStore %66 %90
+ %91 = OpLoad %3 %47
+ %92 = OpLoad %7 %49
+ %93 = OpLoad %7 %50
+ %94 = OpSelect %7 %91 %92 %93
+       OpStore %67 %94
+ %95 = OpLoad %3 %48
+ %96 = OpLoad %11 %51
+ %97 = OpLoad %11 %52
+ %98 = OpSelect %11 %95 %96 %97
+       OpStore %68 %98
+ %99 = OpLoad %3 %47
+%100 = OpLoad %15 %53
+%101 = OpLoad %15 %54
+%102 = OpSelect %15 %99 %100 %101
+       OpStore %69 %102
+%103 = OpLoad %3 %48
+%104 = OpLoad %19 %55
+%105 = OpLoad %19 %56
+%106 = OpSelect %19 %103 %104 %105
+       OpStore %70 %106
+%107 = OpLoad %3 %47
+%108 = OpLoad %26 %57
+%109 = OpLoad %26 %58
+%110 = OpSelect %26 %107 %108 %109
+       OpStore %71 %110
+%111 = OpLoad %3 %48
+%112 = OpLoad %28 %59
+%113 = OpLoad %28 %60
+%114 = OpSelect %28 %111 %112 %113
+       OpStore %72 %114
+%115 = OpLoad %3 %47
+%116 = OpLoad %33 %61
+%117 = OpLoad %33 %62
+%118 = OpSelect %33 %115 %116 %117
+       OpStore %73 %118
+%119 = OpLoad %3 %48
+%120 = OpLoad %38 %63
+%121 = OpLoad %38 %64
+%122 = OpSelect %38 %119 %120 %121
+       OpStore %74 %122
+%123 = OpLoad %3 %47
+%124 = OpLoad %43 %65
+%125 = OpLoad %43 %66
+%126 = OpSelect %43 %123 %124 %125
+       OpStore %75 %126
+%127 = OpLoad %28 %59
+%128 = OpLoad %26 %57
+%129 = OpLoad %26 %58
+%130 = OpSelect %26 %127 %128 %129
+       OpStore %76 %130
+%131 = OpLoad %28 %60
+%132 = OpLoad %28 %59
+%133 = OpLoad %28 %60
+%134 = OpSelect %28 %131 %132 %133
+       OpStore %77 %134
+%135 = OpLoad %28 %59
+%136 = OpLoad %33 %61
+%137 = OpLoad %33 %62
+%138 = OpSelect %33 %135 %136 %137
+       OpStore %78 %138
+%139 = OpLoad %28 %60
+%140 = OpLoad %38 %63
+%141 = OpLoad %38 %64
+%142 = OpSelect %38 %139 %140 %141
+       OpStore %79 %142
+%143 = OpLoad %28 %59
+%144 = OpLoad %43 %65
+%145 = OpLoad %43 %66
+%146 = OpSelect %43 %143 %144 %145
+       OpStore %80 %146
        OpReturn
        OpFunctionEnd)", {}, env, true);
 		}

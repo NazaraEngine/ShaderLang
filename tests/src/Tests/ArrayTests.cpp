@@ -37,7 +37,7 @@ fn main(input: VertIn) -> VertOut
 	else
 		output.pos = vec4[f32](0.0, 0.0, 0.0, 0.0);
 
-	let customData = array[i32, vertices.Size() + u32(2)](
+	let customData = array[i32, vertices.Size() + 2](
 		1, 2, 3, 4, 5
 	);
 
