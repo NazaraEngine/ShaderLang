@@ -17,6 +17,7 @@
 #include <NZSL/Ast/ReflectVisitor.hpp>
 #include <NZSL/Ast/Types.hpp>
 #include <NZSL/Ast/Utils.hpp>
+#include <NZSL/Lang/Constants.hpp>
 #include <NZSL/Lang/Errors.hpp>
 #include <NZSL/Lang/LangData.hpp>
 #include <NZSL/Ast/Transformations/ConstantPropagationTransformer.hpp>
@@ -135,7 +136,8 @@ namespace nzsl::Ast
 			}
 
 			m_states->currentEnv = m_states->globalEnv;
-			RegisterModule(importedModule.identifier, TransformerContext::ModuleData{ moduleId }, std::nullopt, {});
+
+			RegisterModule(importedModule.identifier, TransformerContext::ModuleData{ moduleId, moduleData.moduleName }, std::nullopt, {});
 		}
 
 		m_states->currentEnv = m_states->moduleEnv;
@@ -203,33 +205,6 @@ namespace nzsl::Ast
 		}
 	}
 
-	ExpressionType ResolveTransformer::ComputeSwizzleType(const ExpressionType& type, std::size_t componentCount, const SourceLocation& sourceLocation) const
-	{
-		assert(IsPrimitiveType(type) || IsVectorType(type));
-
-		PrimitiveType baseType;
-		if (IsPrimitiveType(type))
-			baseType = std::get<PrimitiveType>(type);
-		else
-		{
-			const VectorType& vecType = std::get<VectorType>(type);
-			baseType = vecType.type;
-		}
-
-		if (componentCount > 1)
-		{
-			if (componentCount > 4)
-				throw CompilerInvalidSwizzleError{ sourceLocation };
-
-			return VectorType{
-				componentCount,
-				baseType
-			};
-		}
-		else
-			return baseType;
-	}
-
 	template<typename T>
 	bool ResolveTransformer::ComputeExprValue(ExpressionValue<T>& attribute, const SourceLocation& sourceLocation)
 	{
@@ -247,11 +222,61 @@ namespace nzsl::Ast
 
 			if constexpr (Nz::TypeListHas<ConstantTypes, T>)
 			{
-				if (!std::holds_alternative<T>(*value))
+				if (std::holds_alternative<T>(*value))
 				{
-					if constexpr (std::is_same_v<T, std::uint32_t>)
+					// exact type matched, no conversion required
+					attribute = std::get<T>(*value);
+					return true;
+				}
+
+				// not exact type, maybe constant is untyped
+				if constexpr (std::is_same_v<T, float>)
+				{
+					if (std::holds_alternative<FloatLiteral>(*value))
 					{
-						// HAAAAAX
+						attribute = static_cast<float>(std::get<FloatLiteral>(*value));
+						return true;
+					}
+				}
+				else if constexpr (std::is_same_v<T, double>)
+				{
+					if (std::holds_alternative<FloatLiteral>(*value))
+					{
+						attribute = static_cast<double>(std::get<FloatLiteral>(*value));
+						return true;
+					}
+				}
+				else if constexpr (std::is_same_v<T, std::int32_t>)
+				{
+					if (std::holds_alternative<IntLiteral>(*value))
+					{
+						std::int64_t iValue = std::get<IntLiteral>(*value);
+						if (iValue > std::numeric_limits<std::int32_t>::max())
+							throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::Int32), std::to_string(iValue) };
+
+						if (iValue < std::numeric_limits<std::int32_t>::min())
+							throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::Int32), std::to_string(iValue) };
+
+						attribute = static_cast<std::int32_t>(iValue);
+						return true;
+					}
+				}
+				else if constexpr (std::is_same_v<T, std::uint32_t>)
+				{
+					if (std::holds_alternative<IntLiteral>(*value))
+					{
+						std::int64_t iValue = std::get<IntLiteral>(*value);
+						if (iValue < 0)
+							throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::UInt32), std::to_string(iValue) };
+
+						if (static_cast<std::uint64_t>(iValue) > std::numeric_limits<std::uint32_t>::max())
+							throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::UInt32), std::to_string(iValue) };
+
+						attribute = static_cast<std::uint32_t>(iValue);
+						return true;
+					}
+					else if (m_states->currentModule->metadata->shaderLangVersion < Version::UntypedLiterals)
+					{
 						if (std::holds_alternative<std::int32_t>(*value))
 						{
 							std::int32_t intVal = std::get<std::int32_t>(*value);
@@ -259,15 +284,14 @@ namespace nzsl::Ast
 								throw CompilerAttributeUnexpectedNegativeError{ expr->sourceLocation, Ast::ToString(intVal) };
 
 							attribute = static_cast<std::uint32_t>(intVal);
+							return true;
 						}
 						else
 							throw CompilerAttributeUnexpectedTypeError{ expr->sourceLocation, ToString(GetConstantExpressionType<T>(), sourceLocation), ToString(EnsureExpressionType(*expr), sourceLocation) };
 					}
-					else
-						throw CompilerAttributeUnexpectedTypeError{ expr->sourceLocation, ToString(GetConstantExpressionType<T>(), sourceLocation), ToString(EnsureExpressionType(*expr), sourceLocation) };
 				}
-				else
-					attribute = std::get<T>(*value);
+
+				throw CompilerAttributeUnexpectedTypeError{ expr->sourceLocation, ToString(GetConstantExpressionType<T>(), sourceLocation), ToString(EnsureExpressionType(*expr), sourceLocation) };
 			}
 			else
 				throw CompilerAttributeUnexpectedExpressionError{ expr->sourceLocation };
@@ -563,7 +587,20 @@ namespace nzsl::Ast
 					assert(std::holds_alternative<ConstantValue>(parameters[1]));
 					const ConstantValue& length = std::get<ConstantValue>(parameters[1]);
 
-					if (std::holds_alternative<std::int32_t>(length))
+					if (std::holds_alternative<IntLiteral>(length))
+					{
+						IntLiteral untypedValue = std::get<IntLiteral>(length);
+
+						std::int64_t value = untypedValue;
+						if (value <= 0)
+							throw CompilerArrayLengthError{ sourceLocation, Ast::ToString(untypedValue) };
+
+						if (static_cast<std::uint64_t>(value) > std::numeric_limits<std::uint32_t>::max())
+							throw CompilerArrayLengthError{ sourceLocation, Ast::ToString(untypedValue) };
+
+						lengthValue = Nz::SafeCast<std::uint32_t>(value);
+					}
+					else if (std::holds_alternative<std::int32_t>(length))
 					{
 						std::int32_t value = std::get<std::int32_t>(length);
 						if (value <= 0)
@@ -1182,6 +1219,9 @@ namespace nzsl::Ast
 				unresolved = true; //< right variable isn't know from this point
 		}
 
+		if (typeData && IsLiteralType(typeData->type))
+			NazaraDebugBreak();
+
 		std::size_t varIndex;
 		if (typeData)
 			varIndex = m_context->variables.Register(std::move(*typeData), index, sourceLocation);
@@ -1318,6 +1358,133 @@ namespace nzsl::Ast
 		//  throw AstError{ "type expected" };
 
 		return ResolveType(*exprType, resolveAlias, sourceLocation);
+	}
+
+	void ResolveTransformer::ResolveUntyped(const ExpressionType& expressionType, ConstantValue& constantValue, const SourceLocation& sourceLocation)
+	{
+		std::visit([&](auto& value)
+		{
+			using T = std::decay_t<decltype(value)>;
+
+			if constexpr (std::is_same_v<T, FloatLiteral>)
+			{
+				if (expressionType == ExpressionType{ PrimitiveType::Float32 })
+					constantValue = static_cast<float>(value);
+				else if (expressionType == ExpressionType{ PrimitiveType::Float64 })
+					constantValue = static_cast<double>(value);
+			}
+			else if constexpr (std::is_same_v<T, IntLiteral>)
+			{
+				if (expressionType == ExpressionType{ PrimitiveType::Int32 })
+				{
+					if (value > std::numeric_limits<std::int32_t>::max())
+						throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::Int32), std::to_string(value) };
+
+					if (value < std::numeric_limits<std::int32_t>::min())
+						throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::Int32), std::to_string(value) };
+
+					constantValue = static_cast<std::int32_t>(value);
+				}
+				else if (expressionType == ExpressionType{ PrimitiveType::UInt32 })
+				{
+					if (value < 0)
+						throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::UInt32), std::to_string(value) };
+
+					if (static_cast<std::uint64_t>(value) > std::numeric_limits<std::uint32_t>::max())
+						throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::UInt32), std::to_string(value) };
+
+					constantValue = static_cast<std::uint32_t>(value);
+				}
+			}
+			else if constexpr (IsVector_v<T>)
+			{
+				using VecBase = typename T::Base;
+
+				ExpressionType baseType;
+				if constexpr (std::is_same_v<VecBase, FloatLiteral>)
+				{
+					if (expressionType == ExpressionType{ VectorType{ T::Dimensions, PrimitiveType::Float32 } })
+					{
+						Vector<float, T::Dimensions> vec;
+						for (std::size_t i = 0; i < T::Dimensions; ++i)
+							vec[i] = static_cast<float>(value[i]);
+
+						constantValue = vec;
+					}
+					else if (expressionType == ExpressionType{ VectorType{ T::Dimensions, PrimitiveType::Float32 } })
+					{
+						Vector<double, T::Dimensions> vec;
+						for (std::size_t i = 0; i < T::Dimensions; ++i)
+							vec[i] = static_cast<double>(value[i]);
+
+						constantValue = vec;
+					}
+				}
+				else if constexpr (std::is_same_v<VecBase, IntLiteral>)
+				{
+					if (expressionType == ExpressionType{ VectorType{ T::Dimensions, PrimitiveType::Int32 } })
+					{
+						Vector<std::int32_t, T::Dimensions> vec;
+						for (std::size_t i = 0; i < T::Dimensions; ++i)
+						{
+							if (value[i] > std::numeric_limits<std::int32_t>::max())
+								throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::Int32), std::to_string(value[i]) };
+
+							if (value[i] < std::numeric_limits<std::int32_t>::min())
+								throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::Int32), std::to_string(value[i]) };
+
+							vec[i] = static_cast<std::int32_t>(value[i]);
+						}
+					}
+					else if (expressionType == ExpressionType{ VectorType{ T::Dimensions, PrimitiveType::Float32 } })
+					{
+						Vector<std::uint32_t, T::Dimensions> vec;
+						for (std::size_t i = 0; i < T::Dimensions; ++i)
+						{
+							if (value[i] < 0)
+								throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::UInt32), std::to_string(value[i]) };
+
+							if (static_cast<std::uint64_t>(value[i]) > std::numeric_limits<std::uint32_t>::max())
+								throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::UInt32), std::to_string(value[i]) };
+
+							vec[i] = static_cast<std::uint32_t>(value[i]);
+						}
+					}
+				}
+			}
+		}, constantValue);
+	}
+
+	void ResolveTransformer::ResolveUntyped(ExpressionType& expressionType, const SourceLocation& sourceLocation)
+	{
+		if (!IsLiteralType(expressionType))
+			return;
+
+		if (IsPrimitiveType(expressionType))
+		{
+			PrimitiveType& primitiveType = std::get<PrimitiveType>(expressionType);
+
+			if (primitiveType == PrimitiveType::FloatLiteral)
+				primitiveType = PrimitiveType::Float32;
+			else if (primitiveType == PrimitiveType::IntLiteral)
+				primitiveType = PrimitiveType::Int32;
+		}
+		else if (IsVectorType(expressionType))
+		{
+			VectorType& vecType = std::get<VectorType>(expressionType);
+
+			if (vecType.type == PrimitiveType::FloatLiteral)
+				vecType.type = PrimitiveType::Float32;
+			else if (vecType.type == PrimitiveType::IntLiteral)
+				vecType.type = PrimitiveType::Int32;
+		}
+		else if (IsArrayType(expressionType))
+		{
+			ArrayType& arrayType = std::get<ArrayType>(expressionType);
+			ResolveUntyped(arrayType.containedType->type, sourceLocation);
+		}
+		else
+			throw AstInternalError{ sourceLocation, "unexpected untyped type " + ToString(expressionType, sourceLocation) };
 	}
 
 	auto ResolveTransformer::Transform(AccessIdentifierExpression&& accessIdentifier) -> ExpressionTransformation
@@ -1775,7 +1942,7 @@ namespace nzsl::Ast
 					throw CompilerIndexRequiresIntegerIndicesError{ accessIndexExpr.sourceLocation, ToString(*indexType, indexExpr->sourceLocation) };
 
 				PrimitiveType primitiveIndexType = std::get<PrimitiveType>(*indexType);
-				if (primitiveIndexType != PrimitiveType::Int32 && primitiveIndexType != PrimitiveType::UInt32)
+				if (primitiveIndexType != PrimitiveType::Int32 && primitiveIndexType != PrimitiveType::UInt32 && primitiveIndexType != PrimitiveType::IntLiteral)
 					throw CompilerIndexRequiresIntegerIndicesError{ accessIndexExpr.sourceLocation, ToString(*indexType, indexExpr->sourceLocation) };
 
 				if (IsArrayType(resolvedExprType))
@@ -2161,111 +2328,7 @@ namespace nzsl::Ast
 	{
 		HandleChildren(intrinsicExpr);
 
-		auto intrinsicIt = LangData::s_intrinsicData.find(intrinsicExpr.intrinsic);
-		if (intrinsicIt == LangData::s_intrinsicData.end())
-			throw AstInternalError{ intrinsicExpr.sourceLocation, fmt::format("missing intrinsic data for intrinsic {}", Nz::UnderlyingCast(intrinsicExpr.intrinsic)) };
-
-		const auto& intrinsicData = intrinsicIt->second;
-
-		// return type attribution
-		switch (intrinsicData.returnType)
-		{
-			using namespace LangData::IntrinsicHelper;
-
-			case ReturnType::Param0SampledValue:
-			{
-				const ExpressionType* expressionType = GetExpressionType(*intrinsicExpr.parameters[0]);
-				if (!expressionType)
-					return DontVisitChildren{}; //< unresolved type
-
-				const ExpressionType& paramType = ResolveAlias(*expressionType);
-				if (!IsSamplerType(paramType))
-					throw AstInternalError{ intrinsicExpr.sourceLocation, fmt::format("intrinsic {} first parameter is not a sampler", intrinsicData.functionName) };
-
-				const SamplerType& samplerType = std::get<SamplerType>(paramType);
-				if (samplerType.depth)
-					intrinsicExpr.cachedExpressionType = PrimitiveType::Float32;
-				else
-					intrinsicExpr.cachedExpressionType = VectorType{ 4, samplerType.sampledType };
-				break;
-			}
-
-			case ReturnType::Param0TextureValue:
-			{
-				const ExpressionType* expressionType = GetExpressionType(*intrinsicExpr.parameters[0]);
-				if (!expressionType)
-					return DontVisitChildren{}; //< unresolved type
-
-				const ExpressionType& paramType = ResolveAlias(*expressionType);
-				if (!IsTextureType(paramType))
-					throw AstInternalError{ intrinsicExpr.sourceLocation, fmt::format("intrinsic {} first parameter is not a sampler", intrinsicData.functionName) };
-
-				const TextureType& textureType = std::get<TextureType>(paramType);
-				intrinsicExpr.cachedExpressionType = VectorType{ 4, textureType.baseType };
-				break;
-			}
-
-			case ReturnType::Param0Transposed:
-			{
-				const ExpressionType* expressionType = GetExpressionType(*intrinsicExpr.parameters[0]);
-				if (!expressionType)
-					return DontVisitChildren{}; //< unresolved type
-
-				const ExpressionType& paramType = ResolveAlias(*expressionType);
-				if (!IsMatrixType(paramType))
-					throw AstInternalError{ intrinsicExpr.sourceLocation, fmt::format("intrinsic {} first parameter is not a matrix", intrinsicData.functionName) };
-
-				MatrixType matrixType = std::get<MatrixType>(paramType);
-				std::swap(matrixType.columnCount, matrixType.rowCount);
-
-				intrinsicExpr.cachedExpressionType = matrixType;
-				break;
-			}
-
-			case ReturnType::Param0Type:
-			{
-				const ExpressionType* expressionType = GetExpressionType(*intrinsicExpr.parameters[0]);
-				if (!expressionType)
-					return DontVisitChildren{}; //< unresolved type
-
-				intrinsicExpr.cachedExpressionType = *expressionType;
-				break;
-			}
-
-			case ReturnType::Param1Type:
-			{
-				const ExpressionType* expressionType = GetExpressionType(*intrinsicExpr.parameters[1]);
-				if (!expressionType)
-					return DontVisitChildren{}; //< unresolved type
-
-				intrinsicExpr.cachedExpressionType = *expressionType;
-				break;
-			}
-
-			case ReturnType::Param0VecComponent:
-			{
-				const ExpressionType* expressionType = GetExpressionType(*intrinsicExpr.parameters[0]);
-				if (!expressionType)
-					return DontVisitChildren{}; //< unresolved type
-
-				const ExpressionType& paramType = ResolveAlias(*expressionType);
-				if (!IsVectorType(paramType))
-					throw AstInternalError{ intrinsicExpr.sourceLocation, fmt::format("intrinsic {} first parameter is not a vector", intrinsicData.functionName) };
-
-				const VectorType& vecType = std::get<VectorType>(paramType);
-				intrinsicExpr.cachedExpressionType = vecType.type;
-				break;
-			}
-
-			case ReturnType::U32:
-				intrinsicExpr.cachedExpressionType = ExpressionType{ PrimitiveType::UInt32 };
-				break;
-
-			case ReturnType::Void:
-				intrinsicExpr.cachedExpressionType = ExpressionType{ NoType{} };
-				break;
-		}
-
+		intrinsicExpr.cachedExpressionType = ComputeExpressionType(intrinsicExpr, BuildStringifier(intrinsicExpr.sourceLocation));
 		return DontVisitChildren{};
 	}
 
@@ -2274,17 +2337,8 @@ namespace nzsl::Ast
 		MandatoryExpr(swizzleExpr.expression, swizzleExpr.sourceLocation);
 
 		HandleChildren(swizzleExpr);
-		const ExpressionType* exprType = GetExpressionType(*swizzleExpr.expression);
-		if (!exprType)
-			return DontVisitChildren{}; //< unresolved
 
-		const ExpressionType& resolvedExprType = ResolveAlias(*exprType);
-
-		if (!IsPrimitiveType(resolvedExprType) && !IsVectorType(resolvedExprType))
-			throw CompilerSwizzleUnexpectedTypeError{ swizzleExpr.sourceLocation, ToString(*exprType, swizzleExpr.expression->sourceLocation) };
-
-		swizzleExpr.cachedExpressionType = ComputeSwizzleType(resolvedExprType, swizzleExpr.componentCount, swizzleExpr.sourceLocation);
-
+		swizzleExpr.cachedExpressionType = ComputeExpressionType(swizzleExpr, BuildStringifier(swizzleExpr.sourceLocation));
 		return DontVisitChildren{};
 	}
 
@@ -2333,6 +2387,8 @@ namespace nzsl::Ast
 					case PrimitiveType::Float64:
 					case PrimitiveType::Int32:
 					case PrimitiveType::UInt32:
+					case PrimitiveType::FloatLiteral:
+					case PrimitiveType::IntLiteral:
 						break;
 
 					default:
@@ -2542,13 +2598,30 @@ namespace nzsl::Ast
 			}
 
 			expressionType = GetConstantType(*value);
+
+			if (constType.has_value())
+				ResolveUntyped(*constType, *value, declConst.sourceLocation);
+			else
+				ResolveUntyped(expressionType, declConst.sourceLocation);
+
+			ResolveUntyped(expressionType, *value, declConst.sourceLocation);
+
 			declConst.constIndex = RegisterConstant(declConst.name, TransformerContext::ConstantData{ m_states->currentModuleId, *value }, declConst.constIndex, declConst.sourceLocation);
 		}
 
-		if (constType.has_value() && ResolveAlias(*constType) != ResolveAlias(expressionType))
-			throw CompilerVarDeclarationTypeUnmatchingError{ declConst.expression->sourceLocation, ToString(expressionType, declConst.sourceLocation), ToString(*constType, declConst.expression->sourceLocation) };
+		if (constType.has_value())
+		{
+			ValidateConcreteType(*constType, declConst.sourceLocation);
 
-		declConst.type = expressionType;
+			if (!ValidateMatchingTypes(expressionType, *constType))
+				throw CompilerVarDeclarationTypeUnmatchingError{ declConst.sourceLocation, ToString(expressionType, declConst.sourceLocation), ToString(*constType, declConst.sourceLocation) };
+		}
+		else
+			ResolveUntyped(expressionType, declConst.sourceLocation);
+
+		if (!IsLiteralType(expressionType))
+			declConst.type = expressionType;
+
 		return DontVisitChildren{};
 	}
 
@@ -2753,7 +2826,11 @@ namespace nzsl::Ast
 				if (!declOption.defaultValue)
 					throw CompilerMissingOptionValueError{ declOption.sourceLocation, declOption.optName };
 
-				declOption.optIndex = RegisterConstant(declOption.optName, TransformerContext::ConstantData{ m_states->currentModuleId, ComputeConstantValue(declOption.defaultValue) }, declOption.optIndex, declOption.sourceLocation);
+				std::optional<ConstantValue> value = ComputeConstantValue(declOption.defaultValue);
+				if (value)
+					ResolveUntyped(optType, *value, declOption.sourceLocation);
+
+				declOption.optIndex = RegisterConstant(declOption.optName, TransformerContext::ConstantData{ m_states->currentModuleId, std::move(value) }, declOption.optIndex, declOption.sourceLocation);
 			}
 		}
 
@@ -2881,6 +2958,8 @@ namespace nzsl::Ast
 			if (!declVariable.initialExpression)
 				throw CompilerVarDeclarationMissingTypeAndValueError{ declVariable.sourceLocation };
 
+			ResolveUntyped(initialExprType, declVariable.sourceLocation);
+
 			resolvedType = initialExprType;
 		}
 		else
@@ -2893,17 +2972,16 @@ namespace nzsl::Ast
 			}
 
 			resolvedType = std::move(varType).value();
-			if (!std::holds_alternative<NoType>(initialExprType))
-			{
-				if (resolvedType != initialExprType)
-					throw CompilerVarDeclarationTypeUnmatchingError{ declVariable.sourceLocation, ToString(resolvedType, declVariable.sourceLocation), ToString(initialExprType, declVariable.initialExpression->sourceLocation) };
-			}
+			if (!std::holds_alternative<NoType>(initialExprType) && !ValidateMatchingTypes(resolvedType, initialExprType))
+				throw CompilerVarDeclarationTypeUnmatchingError{ declVariable.sourceLocation, ToString(resolvedType, declVariable.sourceLocation), ToString(initialExprType, declVariable.sourceLocation) };
 		}
 
 		ValidateConcreteType(resolvedType, declVariable.sourceLocation);
 
 		declVariable.varIndex = RegisterVariable(declVariable.varName, TransformerContext::VariableData{ resolvedType }, declVariable.varIndex, declVariable.sourceLocation);
-		declVariable.varType = std::move(resolvedType);
+		if (!IsLiteralType(resolvedType))
+			declVariable.varType = std::move(resolvedType);
+
 		return DontVisitChildren{};
 	}
 
@@ -3040,6 +3118,7 @@ namespace nzsl::Ast
 				if (fromExprType && wontUnroll)
 				{
 					ExpressionType varType = *fromExprType;
+					ResolveUntyped(varType, forStatement.sourceLocation);
 
 					forStatement.varIndex = RegisterVariable(forStatement.varName, TransformerContext::VariableData{ std::move(varType) }, forStatement.varIndex, forStatement.sourceLocation);
 				}
@@ -3078,9 +3157,39 @@ namespace nzsl::Ast
 				{
 					using T = std::decay_t<decltype(dummy)>;
 
-					T counter = std::get<T>(*fromValue);
-					T to = std::get<T>(*toValue);
-					T step = (forStatement.stepExpr) ? std::get<T>(*stepValue) : T(1);
+					auto GetValue = [](const ConstantValue& constantValue, const SourceLocation& sourceLocation) -> T
+					{
+						if (const IntLiteral* literal = std::get_if<IntLiteral>(&constantValue))
+						{
+							std::int64_t iValue = *literal;
+							if constexpr (std::is_same_v<T, std::int32_t>)
+							{
+								if (iValue > std::numeric_limits<std::int32_t>::max())
+									throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::Int32), std::to_string(iValue) };
+
+								if (iValue < std::numeric_limits<std::int32_t>::min())
+									throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::Int32), std::to_string(iValue) };
+
+								return static_cast<T>(iValue);
+							}
+							else if constexpr (std::is_same_v<T, std::uint32_t>)
+							{
+								if (iValue < 0)
+									throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::UInt32), std::to_string(iValue) };
+
+								if (static_cast<std::uint64_t>(iValue) > std::numeric_limits<std::uint32_t>::max())
+									throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::UInt32), std::to_string(iValue) };
+
+								return static_cast<T>(iValue);
+							}
+						}
+
+						return std::get<T>(constantValue);
+					};
+
+					T counter = GetValue(*fromValue, forStatement.fromExpr->sourceLocation);
+					T to = GetValue(*toValue, forStatement.toExpr->sourceLocation);
+					T step = (forStatement.stepExpr) ? GetValue(*stepValue, forStatement.stepExpr->sourceLocation) : T{ 1 };
 
 					for (; counter < to; counter += step)
 					{
@@ -3123,8 +3232,25 @@ namespace nzsl::Ast
 					throw CompilerForFromTypeExpectIntegerTypeError{ forStatement.fromExpr->sourceLocation, ToString(fromExprType, forStatement.fromExpr->sourceLocation) };
 
 				PrimitiveType counterType = std::get<PrimitiveType>(fromExprType);
-				if (counterType != PrimitiveType::Int32 && counterType != PrimitiveType::UInt32)
+				if (counterType != PrimitiveType::Int32 && counterType != PrimitiveType::UInt32 && counterType != PrimitiveType::IntLiteral)
 					throw CompilerForFromTypeExpectIntegerTypeError{ forStatement.fromExpr->sourceLocation, ToString(fromExprType, forStatement.fromExpr->sourceLocation) };
+
+				if (counterType == PrimitiveType::IntLiteral)
+				{
+					// Fallback to "to" type
+					ExpressionType toExprType = GetConstantType(*toValue);
+					if (!IsPrimitiveType(toExprType))
+						throw CompilerForToUnmatchingTypeError{ forStatement.toExpr->sourceLocation, ToString(fromExprType, forStatement.fromExpr->sourceLocation), ToString(toExprType, forStatement.toExpr->sourceLocation) };
+
+					PrimitiveType toCounterType = std::get<PrimitiveType>(toExprType);
+					if (toCounterType != PrimitiveType::Int32 && toCounterType != PrimitiveType::UInt32 && toCounterType != PrimitiveType::IntLiteral)
+						throw CompilerForToUnmatchingTypeError{ forStatement.toExpr->sourceLocation, ToString(fromExprType, forStatement.fromExpr->sourceLocation), ToString(toExprType, forStatement.toExpr->sourceLocation) };
+
+					counterType = toCounterType;
+				}
+
+				if (counterType == PrimitiveType::IntLiteral)
+					counterType = PrimitiveType::Int32;
 
 				switch (counterType)
 				{
@@ -3289,7 +3415,7 @@ namespace nzsl::Ast
 
 			m_states->currentEnv = std::move(previousEnv);
 
-			RegisterModule(identifier, TransformerContext::ModuleData{ moduleIndex }, {}, importStatement.sourceLocation);
+			RegisterModule(identifier, TransformerContext::ModuleData{ moduleIndex, moduleName }, {}, importStatement.sourceLocation);
 
 			m_states->moduleByName[moduleName] = moduleIndex;
 		}
@@ -3531,6 +3657,8 @@ namespace nzsl::Ast
 			if (arrayType.length == 0)
 				throw CompilerArrayLengthRequiredError{ sourceLocation };
 		}
+		else if (IsLiteralType(exprType))
+			throw AstUnexpectedUntypedError{ sourceLocation };
 	}
 
 	std::uint32_t ResolveTransformer::ToSwizzleIndex(char c, const SourceLocation& sourceLocation)

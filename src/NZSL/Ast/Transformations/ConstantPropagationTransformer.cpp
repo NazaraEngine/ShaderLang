@@ -7,7 +7,6 @@
 #include <NZSL/ShaderBuilder.hpp>
 #include <NZSL/Ast/Utils.hpp>
 #include <NZSL/Lang/Errors.hpp>
-#include <NZSL/Ast/Transformations/CompoundAssignmentTransformer.hpp>
 #include <NZSL/Ast/Transformations/TransformerContext.hpp>
 #include <cassert>
 #include <cmath>
@@ -66,7 +65,7 @@ namespace nzsl::Ast
 		template<typename T>
 		struct ArrayBuilderBase
 		{
-			std::unique_ptr<ConstantArrayValueExpression> operator()(const std::vector<ExpressionPtr>& expressions, const SourceLocation& /*sourceLocation*/)
+			ConstantArrayValueExpressionPtr operator()(const std::vector<ExpressionPtr>& expressions, const SourceLocation& /*sourceLocation*/)
 			{
 				std::vector<T> values;
 				values.reserve(expressions.size());
@@ -87,50 +86,19 @@ namespace nzsl::Ast
 
 		/*************************************************************************************************/
 
-		template<typename T, typename... Args>
+		template<typename T, typename From>
 		struct CastConstantBase
 		{
-			ConstantValueExpressionPtr operator()(const Args&... args, const SourceLocation& /*sourceLocation*/)
+			ConstantValueExpressionPtr operator()(From value, const SourceLocation& /*sourceLocation*/)
 			{
-				return ShaderBuilder::ConstantValue(T(args...));
+				using AriT = LiteralInnerType_t<T>;
+				using AriFrom = LiteralInnerType_t<From>;
+				return ShaderBuilder::ConstantValue(T{ AriT{ static_cast<T>(AriFrom{ value }) } });
 			}
 		};
 
-		template<typename T, typename... Args>
+		template<typename T, typename From>
 		struct CastConstant;
-
-		/*************************************************************************************************/
-
-		template<typename T, std::size_t TargetComponentCount, std::size_t FromComponentCount>
-		struct SwizzlePropagationBase
-		{
-			using ValueType = std::conditional_t<FromComponentCount == 1, T, Vector<T, FromComponentCount>>;
-
-			static T Access(const ValueType& value, [[maybe_unused]] std::size_t index)
-			{
-				if constexpr (std::is_same_v<ValueType, T>)
-					return value;
-				else
-					return value[index];
-			}
-
-			ConstantValueExpressionPtr operator()(const std::array<std::uint32_t, 4>& components, const ValueType& value, const SourceLocation& /*sourceLocation*/)
-			{
-				if constexpr (TargetComponentCount == 4)
-					return ShaderBuilder::ConstantValue(Vector4<T>{ Access(value, components[0]), Access(value, components[1]), Access(value, components[2]), Access(value, components[3]) });
-				else if constexpr (TargetComponentCount == 3)
-					return ShaderBuilder::ConstantValue(Vector3<T>{ Access(value, components[0]), Access(value, components[1]), Access(value, components[2]) });
-				else if constexpr (TargetComponentCount == 2)
-					return ShaderBuilder::ConstantValue(Vector2<T>{ Access(value, components[0]), Access(value, components[1]) });
-				else if constexpr (TargetComponentCount == 1)
-					return ShaderBuilder::ConstantValue(Access(value, components[0]));
-				else
-					static_assert(Nz::AlwaysFalse<T>(), "unexpected TargetComponentCount");
-			}
-		};
-
-		template<typename T, std::size_t... Args>
-		struct SwizzlePropagation;
 
 		/*************************************************************************************************/
 
@@ -141,9 +109,10 @@ namespace nzsl::Ast
 		template<typename T>
 		struct UnaryBinaryNotBase
 		{
-			ConstantValueExpressionPtr operator()(const T& arg, const SourceLocation& /*sourceLocation*/)
+			ConstantValueExpressionPtr operator()(T arg, const SourceLocation& /*sourceLocation*/)
 			{
-				return ShaderBuilder::ConstantValue(~arg);
+				using AriT = LiteralInnerType_t<T>;
+				return ShaderBuilder::ConstantValue(T{ ~AriT{ arg } });
 			}
 		};
 
@@ -160,9 +129,10 @@ namespace nzsl::Ast
 		template<typename T>
 		struct UnaryLogicalNotBase
 		{
-			ConstantValueExpressionPtr operator()(const T& arg, const SourceLocation& /*sourceLocation*/)
+			ConstantValueExpressionPtr operator()(T arg, const SourceLocation& /*sourceLocation*/)
 			{
-				return ShaderBuilder::ConstantValue(!arg);
+				using AriT = LiteralInnerType_t<T>;
+				return ShaderBuilder::ConstantValue(T{ !AriT{ arg } });
 			}
 		};
 
@@ -179,9 +149,10 @@ namespace nzsl::Ast
 		template<typename T>
 		struct UnaryMinusBase
 		{
-			ConstantValueExpressionPtr operator()(const T& arg, const SourceLocation& /*sourceLocation*/)
+			ConstantValueExpressionPtr operator()(T arg, const SourceLocation& /*sourceLocation*/)
 			{
-				return ShaderBuilder::ConstantValue(-arg);
+				using AriT = LiteralInnerType_t<T>;
+				return ShaderBuilder::ConstantValue(T{ -AriT{ arg } });
 			}
 		};
 
@@ -196,16 +167,13 @@ namespace nzsl::Ast
 
 		// Plus
 		template<typename T>
-		struct UnaryPlusBase
+		struct UnaryPlus
 		{
 			ConstantValueExpressionPtr operator()(const T& arg, const SourceLocation& /*sourceLocation*/)
 			{
 				return ShaderBuilder::ConstantValue(arg);
 			}
 		};
-
-		template<typename T>
-		struct UnaryPlus;
 
 		template<typename T>
 		struct UnaryConstantPropagation<UnaryType::Plus, T>
@@ -217,9 +185,12 @@ namespace nzsl::Ast
 
 		// Array
 		EnableOptimisation(ArrayBuilder, bool);
+		EnableOptimisation(ArrayBuilder, double);
 		EnableOptimisation(ArrayBuilder, float);
 		EnableOptimisation(ArrayBuilder, std::int32_t);
 		EnableOptimisation(ArrayBuilder, std::uint32_t);
+		EnableOptimisation(ArrayBuilder, FloatLiteral);
+		EnableOptimisation(ArrayBuilder, IntLiteral);
 		EnableOptimisation(ArrayBuilder, Vector2f32);
 		EnableOptimisation(ArrayBuilder, Vector3f32);
 		EnableOptimisation(ArrayBuilder, Vector4f32);
@@ -232,180 +203,60 @@ namespace nzsl::Ast
 		EnableOptimisation(ArrayBuilder, Vector2u32);
 		EnableOptimisation(ArrayBuilder, Vector3u32);
 		EnableOptimisation(ArrayBuilder, Vector4u32);
+		EnableOptimisation(ArrayBuilder, Vector2<FloatLiteral>);
+		EnableOptimisation(ArrayBuilder, Vector3<FloatLiteral>);
+		EnableOptimisation(ArrayBuilder, Vector4<FloatLiteral>);
+		EnableOptimisation(ArrayBuilder, Vector2<IntLiteral>);
+		EnableOptimisation(ArrayBuilder, Vector3<IntLiteral>);
+		EnableOptimisation(ArrayBuilder, Vector4<IntLiteral>);
 
 		// Cast
 
 		EnableOptimisation(CastConstant, bool, bool);
 		EnableOptimisation(CastConstant, bool, std::int32_t);
 		EnableOptimisation(CastConstant, bool, std::uint32_t);
+		EnableOptimisation(CastConstant, bool, FloatLiteral);
+		EnableOptimisation(CastConstant, bool, IntLiteral);
 
 		EnableOptimisation(CastConstant, double, double);
 		EnableOptimisation(CastConstant, double, float);
 		EnableOptimisation(CastConstant, double, std::int32_t);
 		EnableOptimisation(CastConstant, double, std::uint32_t);
+		EnableOptimisation(CastConstant, double, FloatLiteral);
+		EnableOptimisation(CastConstant, double, IntLiteral);
 
 		EnableOptimisation(CastConstant, float, double);
 		EnableOptimisation(CastConstant, float, float);
 		EnableOptimisation(CastConstant, float, std::int32_t);
 		EnableOptimisation(CastConstant, float, std::uint32_t);
+		EnableOptimisation(CastConstant, float, FloatLiteral);
+		EnableOptimisation(CastConstant, float, IntLiteral);
 
 		EnableOptimisation(CastConstant, std::int32_t, double);
 		EnableOptimisation(CastConstant, std::int32_t, float);
-		EnableOptimisation(CastConstant, std::int32_t, std::int32_t);
 		EnableOptimisation(CastConstant, std::int32_t, std::uint32_t);
+		EnableOptimisation(CastConstant, std::int32_t, FloatLiteral);
+		EnableOptimisation(CastConstant, std::int32_t, IntLiteral);
 
 		EnableOptimisation(CastConstant, std::uint32_t, double);
 		EnableOptimisation(CastConstant, std::uint32_t, float);
 		EnableOptimisation(CastConstant, std::uint32_t, std::int32_t);
-		EnableOptimisation(CastConstant, std::uint32_t, std::uint32_t);
-
-		EnableOptimisation(CastConstant, Vector2<bool>, bool, bool);
-		EnableOptimisation(CastConstant, Vector3<bool>, bool, bool, bool);
-		EnableOptimisation(CastConstant, Vector4<bool>, bool, bool, bool, bool);
-
-		EnableOptimisation(CastConstant, Vector2f64, double, double);
-		EnableOptimisation(CastConstant, Vector3f64, double, double, double);
-		EnableOptimisation(CastConstant, Vector4f64, double, double, double, double);
-
-		EnableOptimisation(CastConstant, Vector2f32, float, float);
-		EnableOptimisation(CastConstant, Vector3f32, float, float, float);
-		EnableOptimisation(CastConstant, Vector4f32, float, float, float, float);
-
-		EnableOptimisation(CastConstant, Vector2i32, std::int32_t, std::int32_t);
-		EnableOptimisation(CastConstant, Vector3i32, std::int32_t, std::int32_t, std::int32_t);
-		EnableOptimisation(CastConstant, Vector4i32, std::int32_t, std::int32_t, std::int32_t, std::int32_t);
-
-		EnableOptimisation(CastConstant, Vector2u32, std::uint32_t, std::uint32_t);
-		EnableOptimisation(CastConstant, Vector3u32, std::uint32_t, std::uint32_t, std::uint32_t);
-		EnableOptimisation(CastConstant, Vector4u32, std::uint32_t, std::uint32_t, std::uint32_t, std::uint32_t);
-
-		// Swizzle
-		EnableOptimisation(SwizzlePropagation, bool, 1, 1);
-		EnableOptimisation(SwizzlePropagation, bool, 1, 2);
-		EnableOptimisation(SwizzlePropagation, bool, 1, 3);
-		EnableOptimisation(SwizzlePropagation, bool, 1, 4);
-
-		EnableOptimisation(SwizzlePropagation, bool, 2, 1);
-		EnableOptimisation(SwizzlePropagation, bool, 2, 2);
-		EnableOptimisation(SwizzlePropagation, bool, 2, 3);
-		EnableOptimisation(SwizzlePropagation, bool, 2, 4);
-
-		EnableOptimisation(SwizzlePropagation, bool, 3, 1);
-		EnableOptimisation(SwizzlePropagation, bool, 3, 2);
-		EnableOptimisation(SwizzlePropagation, bool, 3, 3);
-		EnableOptimisation(SwizzlePropagation, bool, 3, 4);
-
-		EnableOptimisation(SwizzlePropagation, bool, 4, 1);
-		EnableOptimisation(SwizzlePropagation, bool, 4, 2);
-		EnableOptimisation(SwizzlePropagation, bool, 4, 3);
-		EnableOptimisation(SwizzlePropagation, bool, 4, 4);
-
-		EnableOptimisation(SwizzlePropagation, double, 1, 1);
-		EnableOptimisation(SwizzlePropagation, double, 1, 2);
-		EnableOptimisation(SwizzlePropagation, double, 1, 3);
-		EnableOptimisation(SwizzlePropagation, double, 1, 4);
-
-		EnableOptimisation(SwizzlePropagation, double, 2, 1);
-		EnableOptimisation(SwizzlePropagation, double, 2, 2);
-		EnableOptimisation(SwizzlePropagation, double, 2, 3);
-		EnableOptimisation(SwizzlePropagation, double, 2, 4);
-
-		EnableOptimisation(SwizzlePropagation, double, 3, 1);
-		EnableOptimisation(SwizzlePropagation, double, 3, 2);
-		EnableOptimisation(SwizzlePropagation, double, 3, 3);
-		EnableOptimisation(SwizzlePropagation, double, 3, 4);
-
-		EnableOptimisation(SwizzlePropagation, double, 4, 1);
-		EnableOptimisation(SwizzlePropagation, double, 4, 2);
-		EnableOptimisation(SwizzlePropagation, double, 4, 3);
-		EnableOptimisation(SwizzlePropagation, double, 4, 4);
-
-		EnableOptimisation(SwizzlePropagation, float, 1, 1);
-		EnableOptimisation(SwizzlePropagation, float, 1, 2);
-		EnableOptimisation(SwizzlePropagation, float, 1, 3);
-		EnableOptimisation(SwizzlePropagation, float, 1, 4);
-
-		EnableOptimisation(SwizzlePropagation, float, 2, 1);
-		EnableOptimisation(SwizzlePropagation, float, 2, 2);
-		EnableOptimisation(SwizzlePropagation, float, 2, 3);
-		EnableOptimisation(SwizzlePropagation, float, 2, 4);
-
-		EnableOptimisation(SwizzlePropagation, float, 3, 1);
-		EnableOptimisation(SwizzlePropagation, float, 3, 2);
-		EnableOptimisation(SwizzlePropagation, float, 3, 3);
-		EnableOptimisation(SwizzlePropagation, float, 3, 4);
-
-		EnableOptimisation(SwizzlePropagation, float, 4, 1);
-		EnableOptimisation(SwizzlePropagation, float, 4, 2);
-		EnableOptimisation(SwizzlePropagation, float, 4, 3);
-		EnableOptimisation(SwizzlePropagation, float, 4, 4);
-
-		EnableOptimisation(SwizzlePropagation, std::int32_t, 1, 1);
-		EnableOptimisation(SwizzlePropagation, std::int32_t, 1, 2);
-		EnableOptimisation(SwizzlePropagation, std::int32_t, 1, 3);
-		EnableOptimisation(SwizzlePropagation, std::int32_t, 1, 4);
-
-		EnableOptimisation(SwizzlePropagation, std::int32_t, 2, 1);
-		EnableOptimisation(SwizzlePropagation, std::int32_t, 2, 2);
-		EnableOptimisation(SwizzlePropagation, std::int32_t, 2, 3);
-		EnableOptimisation(SwizzlePropagation, std::int32_t, 2, 4);
-
-		EnableOptimisation(SwizzlePropagation, std::int32_t, 3, 1);
-		EnableOptimisation(SwizzlePropagation, std::int32_t, 3, 2);
-		EnableOptimisation(SwizzlePropagation, std::int32_t, 3, 3);
-		EnableOptimisation(SwizzlePropagation, std::int32_t, 3, 4);
-
-		EnableOptimisation(SwizzlePropagation, std::int32_t, 4, 1);
-		EnableOptimisation(SwizzlePropagation, std::int32_t, 4, 2);
-		EnableOptimisation(SwizzlePropagation, std::int32_t, 4, 3);
-		EnableOptimisation(SwizzlePropagation, std::int32_t, 4, 4);
-
-		EnableOptimisation(SwizzlePropagation, std::uint32_t, 1, 1);
-		EnableOptimisation(SwizzlePropagation, std::uint32_t, 1, 2);
-		EnableOptimisation(SwizzlePropagation, std::uint32_t, 1, 3);
-		EnableOptimisation(SwizzlePropagation, std::uint32_t, 1, 4);
-
-		EnableOptimisation(SwizzlePropagation, std::uint32_t, 2, 1);
-		EnableOptimisation(SwizzlePropagation, std::uint32_t, 2, 2);
-		EnableOptimisation(SwizzlePropagation, std::uint32_t, 2, 3);
-		EnableOptimisation(SwizzlePropagation, std::uint32_t, 2, 4);
-
-		EnableOptimisation(SwizzlePropagation, std::uint32_t, 3, 1);
-		EnableOptimisation(SwizzlePropagation, std::uint32_t, 3, 2);
-		EnableOptimisation(SwizzlePropagation, std::uint32_t, 3, 3);
-		EnableOptimisation(SwizzlePropagation, std::uint32_t, 3, 4);
-
-		EnableOptimisation(SwizzlePropagation, std::uint32_t, 4, 1);
-		EnableOptimisation(SwizzlePropagation, std::uint32_t, 4, 2);
-		EnableOptimisation(SwizzlePropagation, std::uint32_t, 4, 3);
-		EnableOptimisation(SwizzlePropagation, std::uint32_t, 4, 4);
+		EnableOptimisation(CastConstant, std::uint32_t, FloatLiteral);
+		EnableOptimisation(CastConstant, std::uint32_t, IntLiteral);
 
 		// Unary
 
 		EnableOptimisation(UnaryBinaryNot, std::uint32_t);
 		EnableOptimisation(UnaryBinaryNot, std::int32_t);
+		EnableOptimisation(UnaryBinaryNot, IntLiteral);
 
 		EnableOptimisation(UnaryLogicalNot, bool);
 
 		EnableOptimisation(UnaryMinus, double);
 		EnableOptimisation(UnaryMinus, float);
 		EnableOptimisation(UnaryMinus, std::int32_t);
-		EnableOptimisation(UnaryMinus, Vector2f32);
-		EnableOptimisation(UnaryMinus, Vector3f32);
-		EnableOptimisation(UnaryMinus, Vector4f32);
-		EnableOptimisation(UnaryMinus, Vector2i32);
-		EnableOptimisation(UnaryMinus, Vector3i32);
-		EnableOptimisation(UnaryMinus, Vector4i32);
-
-		EnableOptimisation(UnaryPlus, double);
-		EnableOptimisation(UnaryPlus, float);
-		EnableOptimisation(UnaryPlus, std::int32_t);
-		EnableOptimisation(UnaryPlus, Vector2f32);
-		EnableOptimisation(UnaryPlus, Vector3f32);
-		EnableOptimisation(UnaryPlus, Vector4f32);
-		EnableOptimisation(UnaryPlus, Vector2i32);
-		EnableOptimisation(UnaryPlus, Vector3i32);
-		EnableOptimisation(UnaryPlus, Vector4i32);
+		EnableOptimisation(UnaryMinus, FloatLiteral);
+		EnableOptimisation(UnaryMinus, IntLiteral);
 
 #undef EnableOptimisation
 	}
@@ -479,12 +330,14 @@ namespace nzsl::Ast
 
 				switch (std::get<PrimitiveType>(targetType))
 				{
-					case PrimitiveType::Boolean: optimized = PropagateSingleValueCast<bool>(constantExpr, node.sourceLocation); break;
-					case PrimitiveType::Float32: optimized = PropagateSingleValueCast<float>(constantExpr, node.sourceLocation); break;
-					case PrimitiveType::Float64: optimized = PropagateSingleValueCast<double>(constantExpr, node.sourceLocation); break;
-					case PrimitiveType::Int32:   optimized = PropagateSingleValueCast<std::int32_t>(constantExpr, node.sourceLocation); break;
-					case PrimitiveType::UInt32:  optimized = PropagateSingleValueCast<std::uint32_t>(constantExpr, node.sourceLocation); break;
-					case PrimitiveType::String: break;
+					case PrimitiveType::Boolean:        optimized = PropagateSingleValueCast<bool>(constantExpr, node.sourceLocation); break;
+					case PrimitiveType::Float32:        optimized = PropagateSingleValueCast<float>(constantExpr, node.sourceLocation); break;
+					case PrimitiveType::Float64:        optimized = PropagateSingleValueCast<double>(constantExpr, node.sourceLocation); break;
+					case PrimitiveType::Int32:          optimized = PropagateSingleValueCast<std::int32_t>(constantExpr, node.sourceLocation); break;
+					case PrimitiveType::UInt32:         optimized = PropagateSingleValueCast<std::uint32_t>(constantExpr, node.sourceLocation); break;
+					case PrimitiveType::String:         break;
+					case PrimitiveType::FloatLiteral:   optimized = PropagateSingleValueCast<FloatLiteral>(constantExpr, node.sourceLocation); break;
+					case PrimitiveType::IntLiteral:     optimized = PropagateSingleValueCast<IntLiteral>(constantExpr, node.sourceLocation); break;
 				}
 			}
 		}
@@ -504,41 +357,75 @@ namespace nzsl::Ast
 
 				const auto& constantExpr = static_cast<ConstantValueExpression&>(*node.expressions[i]);
 
-				if (!constantValues.empty() && GetConstantType(constantValues.front()) != GetConstantType(constantExpr.value))
+				if (!constantValues.empty() && !ValidateMatchingTypes(GetConstantType(constantValues.front()), GetConstantType(constantExpr.value)))
 				{
 					// Unhandled case, all cast parameters are expected to be of the same type
 					constantValues.clear();
 					break;
 				}
 
-				std::visit([&](auto&& arg)
+				std::visit([&](auto&& value)
 				{
-					using T = std::decay_t<decltype(arg)>;
+					using T = std::decay_t<decltype(value)>;
 
 					if constexpr (std::is_same_v<T, NoValue>)
 						throw std::runtime_error("invalid type (value expected)");
 					else if constexpr (std::is_same_v<T, bool> || std::is_same_v<T, double> || std::is_same_v<T, float> || std::is_same_v<T, std::int32_t> || std::is_same_v<T, std::uint32_t> || std::is_same_v<T, std::string>)
-						constantValues.push_back(arg);
+						constantValues.push_back(value);
+					else if constexpr (IsLiteral_v<T>)
+					{
+						// Convert untyped
+						if constexpr (std::is_same_v<T, FloatLiteral>)
+						{
+							if (vecType.type == PrimitiveType::Float32)
+								constantValues.push_back(static_cast<float>(value));
+							else if (vecType.type == PrimitiveType::Float64)
+								constantValues.push_back(static_cast<double>(value));
+						}
+						else if constexpr (std::is_same_v<T, IntLiteral>)
+						{
+							if (vecType.type == PrimitiveType::Int32)
+							{
+								if (value > std::numeric_limits<std::int32_t>::max())
+									throw CompilerLiteralOutOfRangeError{ node.expressions[i]->sourceLocation, Ast::ToString(PrimitiveType::Int32), std::to_string(value) };
+
+								if (value < std::numeric_limits<std::int32_t>::min())
+									throw CompilerLiteralOutOfRangeError{ node.expressions[i]->sourceLocation, Ast::ToString(PrimitiveType::Int32), std::to_string(value) };
+
+								constantValues.push_back(static_cast<std::int32_t>(value));
+							}
+							else if (vecType.type == PrimitiveType::UInt32)
+							{
+								if (value < 0)
+									throw CompilerLiteralOutOfRangeError{ node.expressions[i]->sourceLocation, Ast::ToString(PrimitiveType::UInt32), std::to_string(value) };
+
+								if (static_cast<std::uint64_t>(value) > std::numeric_limits<std::uint32_t>::max())
+									throw CompilerLiteralOutOfRangeError{ node.expressions[i]->sourceLocation, Ast::ToString(PrimitiveType::UInt32), std::to_string(value) };
+
+								constantValues.push_back(static_cast<std::uint32_t>(value));
+							}
+						}
+					}
 					else if constexpr (IsVector_v<T> && T::Dimensions == 2)
 					{
-						constantValues.push_back(arg.x());
-						constantValues.push_back(arg.y());
+						constantValues.push_back(value.x());
+						constantValues.push_back(value.y());
 					}
 					else if constexpr (IsVector_v<T> && T::Dimensions == 3)
 					{
-						constantValues.push_back(arg.x());
-						constantValues.push_back(arg.y());
-						constantValues.push_back(arg.z());
+						constantValues.push_back(value.x());
+						constantValues.push_back(value.y());
+						constantValues.push_back(value.z());
 					}
 					else if constexpr (IsVector_v<T> && T::Dimensions == 4)
 					{
-						constantValues.push_back(arg.x());
-						constantValues.push_back(arg.y());
-						constantValues.push_back(arg.z());
-						constantValues.push_back(arg.w());
+						constantValues.push_back(value.x());
+						constantValues.push_back(value.y());
+						constantValues.push_back(value.z());
+						constantValues.push_back(value.w());
 					}
 					else
-						static_assert(Nz::AlwaysFalse<T>::value, "non-exhaustive visitor");
+						static_assert(Nz::AlwaysFalse<T>(), "non-exhaustive visitor");
 				}, constantExpr.value);
 			}
 
@@ -550,19 +437,22 @@ namespace nzsl::Ast
 				{
 					using T = std::decay_t<decltype(arg)>;
 
-					switch (vecType.componentCount)
+					if constexpr (Nz::TypeListHas<ConstantPrimitiveTypes, T> && !std::is_same_v<T, std::string>)
 					{
-						case 2:
-							optimized = PropagateVec2Cast(std::get<T>(constantValues[0]), std::get<T>(constantValues[1]), node.sourceLocation);
-							break;
+						switch (vecType.componentCount)
+						{
+							case 2:
+								optimized = ShaderBuilder::ConstantValue(Vector2<T>{ std::get<T>(constantValues[0]), std::get<T>(constantValues[1]) }, node.sourceLocation);
+								break;
 
-						case 3:
-							optimized = PropagateVec3Cast(std::get<T>(constantValues[0]), std::get<T>(constantValues[1]), std::get<T>(constantValues[2]), node.sourceLocation);
-							break;
+							case 3:
+								optimized = ShaderBuilder::ConstantValue(Vector3<T>{ std::get<T>(constantValues[0]), std::get<T>(constantValues[1]), std::get<T>(constantValues[2]) }, node.sourceLocation);
+								break;
 
-						case 4:
-							optimized = PropagateVec4Cast(std::get<T>(constantValues[0]), std::get<T>(constantValues[1]), std::get<T>(constantValues[2]), std::get<T>(constantValues[3]), node.sourceLocation);
-							break;
+							case 4:
+								optimized = ShaderBuilder::ConstantValue(Vector4<T>{ std::get<T>(constantValues[0]), std::get<T>(constantValues[1]), std::get<T>(constantValues[2]), std::get<T>(constantValues[3]) }, node.sourceLocation);
+								break;
+						}
 					}
 				}, constantValues.front());
 			}
@@ -588,7 +478,7 @@ namespace nzsl::Ast
 					}
 
 					const auto& constantValExpr = static_cast<ConstantValueExpression&>(*expr);
-					if (GetConstantType(constantValExpr.value) != innerType)
+					if (!ValidateMatchingTypes(GetConstantType(constantValExpr.value), innerType))
 					{
 						canOptimize = false;
 						break;
@@ -843,26 +733,7 @@ namespace nzsl::Ast
 		{
 			const ConstantValueExpression& constantExpr = static_cast<const ConstantValueExpression&>(*node.expression);
 
-			ExpressionPtr optimized;
-			switch (node.componentCount)
-			{
-				case 1:
-					optimized = PropagateConstantSwizzle<1>(node.components, constantExpr, node.sourceLocation);
-					break;
-
-				case 2:
-					optimized = PropagateConstantSwizzle<2>(node.components, constantExpr, node.sourceLocation);
-					break;
-
-				case 3:
-					optimized = PropagateConstantSwizzle<3>(node.components, constantExpr, node.sourceLocation);
-					break;
-
-				case 4:
-					optimized = PropagateConstantSwizzle<4>(node.components, constantExpr, node.sourceLocation);
-					break;
-			}
-
+			ExpressionPtr optimized = PropagateConstantSwizzle(node.componentCount, node.components, constantExpr, node.sourceLocation);
 			if (optimized)
 			{
 				optimized->sourceLocation = node.sourceLocation;
@@ -912,7 +783,8 @@ namespace nzsl::Ast
 					break;
 
 				case UnaryType::Plus:
-					optimized = PropagateUnaryConstant<UnaryType::Plus>(constantExpr, node.sourceLocation);
+					// Unary plus is a no-op, avoid template instanciation
+					optimized = std::move(node.expression);
 					break;
 			}
 
@@ -965,17 +837,23 @@ namespace nzsl::Ast
 		std::visit([&](auto&& arg)
 		{
 			using T = std::decay_t<decltype(arg)>;
-			using CCType = CastConstant<TargetType, T>;
 
-			if constexpr (Nz::IsComplete_v<CCType>)
-				optimized = CCType{}(arg, sourceLocation);
+			if constexpr (!std::is_same_v<TargetType, T>)
+			{
+				using CCType = CastConstant<TargetType, T>;
+
+				if constexpr (Nz::IsComplete_v<CCType>)
+					optimized = CCType{}(arg, sourceLocation);
+			}
+			else
+				optimized = ShaderBuilder::ConstantValue(arg);
+
 		}, operand.value);
 
 		return optimized;
 	}
 
-	template<std::size_t TargetComponentCount>
-	ExpressionPtr ConstantPropagationTransformer::PropagateConstantSwizzle(const std::array<std::uint32_t, 4>& components, const ConstantValueExpression& operand, const SourceLocation& sourceLocation)
+	ExpressionPtr ConstantPropagationTransformer::PropagateConstantSwizzle(std::size_t targetComponentCount, const std::array<std::uint32_t, 4>& components, const ConstantValueExpression& operand, const SourceLocation& sourceLocation)
 	{
 		NAZARA_USE_ANONYMOUS_NAMESPACE
 
@@ -985,12 +863,27 @@ namespace nzsl::Ast
 			using T = std::decay_t<decltype(arg)>;
 
 			using BaseType = typename VectorInfo<T>::Base;
-			constexpr std::size_t FromComponentCount = VectorInfo<T>::Dimensions;
 
-			using SPType = SwizzlePropagation<BaseType, TargetComponentCount, FromComponentCount>;
+			if constexpr (Nz::TypeListHas<ConstantPrimitiveTypes, BaseType> && !std::is_same_v<BaseType, std::string>)
+			{
+				auto Access = [](const auto& value, [[maybe_unused]] std::size_t index) -> BaseType
+				{
+					if constexpr (std::is_same_v<BaseType, T>)
+						return value;
+					else
+						return value[index];
+				};
 
-			if constexpr (Nz::IsComplete_v<SPType>)
-				optimized = SPType{}(components, arg, sourceLocation);
+				switch (targetComponentCount)
+				{
+					case 1: optimized = ShaderBuilder::ConstantValue(Access(arg, components[0]), sourceLocation); break;
+					case 2: optimized = ShaderBuilder::ConstantValue(Vector2<BaseType>{ Access(arg, components[0]), Access(arg, components[1]) }, sourceLocation); break;
+					case 3: optimized = ShaderBuilder::ConstantValue(Vector3<BaseType>{ Access(arg, components[0]), Access(arg, components[1]), Access(arg, components[2]) }, sourceLocation); break;
+					case 4: optimized = ShaderBuilder::ConstantValue(Vector4<BaseType>{ Access(arg, components[0]), Access(arg, components[1]), Access(arg, components[2]), Access(arg, components[3]) }, sourceLocation); break;
+					default:
+						throw std::runtime_error("unexpected target component count " + std::to_string(targetComponentCount));
+				}
+			}
 		}, operand.value);
 
 		return optimized;
@@ -1013,67 +906,23 @@ namespace nzsl::Ast
 				if constexpr (Nz::IsComplete_v<Op>)
 					optimized = Op{}(arg, sourceLocation);
 			}
+			else if constexpr (IsVector_v<T>)
+			{
+				using TBase = typename T::Base;
+
+				using SubOp = UnaryConstantPropagation<Type, TBase>;
+				if constexpr (Nz::IsComplete_v<SubOp>)
+				{
+					using RetType = Vector<TBase, T::Dimensions>;
+
+					RetType value;
+					for (std::size_t i = 0; i < T::Dimensions; ++i)
+						value[i] = SubOp{}(arg[i], sourceLocation);
+
+					optimized = ShaderBuilder::ConstantValue(value);
+				}
+			}
 		}, operand.value);
-
-		return optimized;
-	}
-
-	template<typename TargetType>
-	ExpressionPtr ConstantPropagationTransformer::PropagateVec2Cast(TargetType v1, TargetType v2, const SourceLocation& sourceLocation)
-	{
-		NAZARA_USE_ANONYMOUS_NAMESPACE
-
-		NazaraUnused(v1);
-		NazaraUnused(v2);
-		NazaraUnused(sourceLocation);
-
-		ConstantValueExpressionPtr optimized;
-
-		using CCType = CastConstant<Vector2<TargetType>, TargetType, TargetType>;
-
-		if constexpr (Nz::IsComplete_v<CCType>)
-			optimized = CCType{}(v1, v2, sourceLocation);
-
-		return optimized;
-	}
-
-	template<typename TargetType>
-	ExpressionPtr ConstantPropagationTransformer::PropagateVec3Cast(TargetType v1, TargetType v2, TargetType v3, const SourceLocation& sourceLocation)
-	{
-		NAZARA_USE_ANONYMOUS_NAMESPACE
-
-		NazaraUnused(v1);
-		NazaraUnused(v2);
-		NazaraUnused(v3);
-		NazaraUnused(sourceLocation);
-
-		ConstantValueExpressionPtr optimized;
-
-		using CCType = CastConstant<Vector3<TargetType>, TargetType, TargetType, TargetType>;
-
-		if constexpr (Nz::IsComplete_v<CCType>)
-			optimized = CCType{}(v1, v2, v3, sourceLocation);
-
-		return optimized;
-	}
-
-	template<typename TargetType>
-	ExpressionPtr ConstantPropagationTransformer::PropagateVec4Cast(TargetType v1, TargetType v2, TargetType v3, TargetType v4, const SourceLocation& sourceLocation)
-	{
-		NAZARA_USE_ANONYMOUS_NAMESPACE
-
-		NazaraUnused(v1);
-		NazaraUnused(v2);
-		NazaraUnused(v3);
-		NazaraUnused(v4);
-		NazaraUnused(sourceLocation);
-
-		ConstantValueExpressionPtr optimized;
-
-		using CCType = CastConstant<Vector4<TargetType>, TargetType, TargetType, TargetType, TargetType>;
-
-		if constexpr (Nz::IsComplete_v<CCType>)
-			optimized = CCType{}(v1, v2, v3, v4, sourceLocation);
 
 		return optimized;
 	}

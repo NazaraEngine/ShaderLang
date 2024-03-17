@@ -80,7 +80,7 @@ fn main() -> FragOut
       OpExecutionMode %11 ExecutionMode(OriginUpperLeft)
       OpExecutionMode %11 ExecutionMode(DepthReplacing)
       OpExecutionMode %11 ExecutionMode(DepthGreater)
-      OpSource SourceLanguage(NZSL) 100
+      OpSource SourceLanguage(NZSL) 4194304
       OpName %6 "FragOut"
       OpMemberName %6 0 "depth"
       OpName %5 "frag_depth"
@@ -182,7 +182,7 @@ fn main() -> FragOut
       OpExecutionMode %11 ExecutionMode(OriginUpperLeft)
       OpExecutionMode %11 ExecutionMode(DepthReplacing)
       OpExecutionMode %11 ExecutionMode(DepthLess)
-      OpSource SourceLanguage(NZSL) 100
+      OpSource SourceLanguage(NZSL) 4194304
       OpName %6 "FragOut"
       OpMemberName %6 0 "depth"
       OpName %5 "frag_depth"
@@ -288,7 +288,7 @@ fn main() -> FragOut
       OpEntryPoint ExecutionModel(Fragment) %11 "main" %5
       OpExecutionMode %11 ExecutionMode(OriginUpperLeft)
       OpExecutionMode %11 ExecutionMode(DepthReplacing)
-      OpSource SourceLanguage(NZSL) 100
+      OpSource SourceLanguage(NZSL) 4194304
       OpName %6 "FragOut"
       OpMemberName %6 0 "depth"
       OpName %5 "frag_depth"
@@ -398,7 +398,7 @@ fn main(input: FragIn) -> FragOut
       OpExecutionMode %17 ExecutionMode(OriginUpperLeft)
       OpExecutionMode %17 ExecutionMode(DepthReplacing)
       OpExecutionMode %17 ExecutionMode(DepthUnchanged)
-      OpSource SourceLanguage(NZSL) 100
+      OpSource SourceLanguage(NZSL) 4194304
       OpName %10 "FragIn"
       OpMemberName %10 0 "fragCoord"
       OpName %14 "FragOut"
@@ -577,7 +577,7 @@ fn main()
      OpEntryPoint ExecutionModel(Fragment) %3 "main"
      OpExecutionMode %3 ExecutionMode(OriginUpperLeft)
      OpExecutionMode %3 ExecutionMode(EarlyFragmentTests)
-     OpSource SourceLanguage(NZSL) 100
+     OpSource SourceLanguage(NZSL) 4194304
      OpName %3 "main"
 %1 = OpTypeVoid
 %2 = OpTypeFunction %1
@@ -631,7 +631,7 @@ fn main()
 				ExpectSPIRV(*shaderModule, R"(
      OpEntryPoint ExecutionModel(Fragment) %3 "main"
      OpExecutionMode %3 ExecutionMode(OriginUpperLeft)
-     OpSource SourceLanguage(NZSL) 100
+     OpSource SourceLanguage(NZSL) 4194304
      OpName %3 "main"
 %1 = OpTypeVoid
 %2 = OpTypeFunction %1

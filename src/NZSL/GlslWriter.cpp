@@ -14,12 +14,14 @@
 #include <NZSL/Ast/RecursiveVisitor.hpp>
 #include <NZSL/Ast/Utils.hpp>
 #include <NZSL/Lang/LangData.hpp>
+#include <NZSL/Lang/Version.hpp>
 #include <NZSL/Ast/Transformations/BindingResolverTransformer.hpp>
 #include <NZSL/Ast/Transformations/ConstantPropagationTransformer.hpp>
 #include <NZSL/Ast/Transformations/ConstantRemovalTransformer.hpp>
 #include <NZSL/Ast/Transformations/EliminateUnusedTransformer.hpp>
 #include <NZSL/Ast/Transformations/ForToWhileTransformer.hpp>
 #include <NZSL/Ast/Transformations/IdentifierTransformer.hpp>
+#include <NZSL/Ast/Transformations/LiteralTransformer.hpp>
 #include <NZSL/Ast/Transformations/ResolveTransformer.hpp>
 #include <NZSL/Ast/Transformations/StructAssignmentTransformer.hpp>
 #include <NZSL/Ast/Transformations/SwizzleTransformer.hpp>
@@ -68,6 +70,8 @@ namespace nzsl
 				case Ast::PrimitiveType::Float32:
 				case Ast::PrimitiveType::Float64:
 				case Ast::PrimitiveType::String:
+				case Ast::PrimitiveType::FloatLiteral:
+				case Ast::PrimitiveType::IntLiteral:
 					break;
 
 				case Ast::PrimitiveType::Boolean:
@@ -594,6 +598,7 @@ namespace nzsl
 			return nameChanged;
 		};
 
+		executor.AddPass<Ast::LiteralTransformer>();
 		executor.AddPass<Ast::IdentifierTransformer>(firstIdentifierPassOptions);
 		executor.AddPass<Ast::ForToWhileTransformer>();
 		executor.AddPass<Ast::StructAssignmentTransformer>({ false, true }); //< TODO: Only split for base uniforms/storage
@@ -707,6 +712,9 @@ namespace nzsl
 
 	void GlslWriter::Append(const Ast::MatrixType& matrixType)
 	{
+		if (matrixType.type == Ast::PrimitiveType::Float64)
+			Append("d");
+
 		if (matrixType.columnCount == matrixType.rowCount)
 		{
 			Append("mat");
@@ -745,7 +753,10 @@ namespace nzsl
 			case Ast::PrimitiveType::Float64: return Append("double");
 			case Ast::PrimitiveType::Int32:   return Append("int");
 			case Ast::PrimitiveType::UInt32:  return Append("uint");
-			case Ast::PrimitiveType::String:  throw std::runtime_error("unexpected string constant");
+
+			case Ast::PrimitiveType::FloatLiteral: throw std::runtime_error("unexpected untyped float");
+			case Ast::PrimitiveType::IntLiteral:   throw std::runtime_error("unexpected untyped integer");
+			case Ast::PrimitiveType::String:       throw std::runtime_error("unexpected string type");
 		}
 	}
 
@@ -771,6 +782,10 @@ namespace nzsl
 
 			case Ast::PrimitiveType::String:
 				throw std::runtime_error("unexpected string type for sampler");
+
+			case Ast::PrimitiveType::FloatLiteral:
+			case Ast::PrimitiveType::IntLiteral:
+				throw std::runtime_error("unexpected untyped for sampler");
 		}
 
 		Append("sampler");
@@ -817,6 +832,10 @@ namespace nzsl
 
 			case Ast::PrimitiveType::String:
 				throw std::runtime_error("unexpected string type for texture");
+
+			case Ast::PrimitiveType::FloatLiteral:
+			case Ast::PrimitiveType::IntLiteral:
+				throw std::runtime_error("unexpected untyped for texture");
 		}
 
 		Append("image");
@@ -851,7 +870,10 @@ namespace nzsl
 			case Ast::PrimitiveType::Float64: Append("d"); break;
 			case Ast::PrimitiveType::Int32:   Append("i"); break;
 			case Ast::PrimitiveType::UInt32:  Append("u"); break;
-			case Ast::PrimitiveType::String:  throw std::runtime_error("unexpected string type");
+
+			case Ast::PrimitiveType::FloatLiteral: throw std::runtime_error("unexpected FloatLiteral type");
+			case Ast::PrimitiveType::IntLiteral:   throw std::runtime_error("unexpected IntLiteral type");
+			case Ast::PrimitiveType::String:       throw std::runtime_error("unexpected string type");
 		}
 
 		Append("vec");
@@ -1365,8 +1387,10 @@ namespace nzsl
 
 		if constexpr (std::is_same_v<T, Ast::NoValue>)
 			throw std::runtime_error("invalid type (value expected)");
+		else if constexpr (Ast::IsLiteral_v<T>)
+			throw std::runtime_error("unexpected untyped");
 		else if constexpr (std::is_same_v<T, std::string>)
-			throw std::runtime_error("unexpected string litteral");
+			throw std::runtime_error("unexpected string literal");
 		else if constexpr (std::is_same_v<T, bool> || std::is_same_v<T, std::vector<bool>::reference>)
 			Append((value) ? "true" : "false");
 		else if constexpr (std::is_same_v<T, double> || std::is_same_v<T, float> || std::is_same_v<T, std::int32_t> || std::is_same_v<T, std::uint32_t>)
@@ -1374,13 +1398,22 @@ namespace nzsl
 			Append(Ast::ToString(value));
 			if constexpr (std::is_same_v<T, std::uint32_t>)
 				Append("u");
+			else if constexpr (std::is_same_v<T, double>)
+				Append("lf");
 		}
-		else if constexpr (IsVector_v<T> && T::Dimensions == 2)
-			Append("vec2(" + Ast::ToString(value.x()) + ", " + Ast::ToString(value.y()) + ")");
-		else if constexpr (IsVector_v<T> && T::Dimensions == 3)
-			Append("vec3(" + Ast::ToString(value.x()) + ", " + Ast::ToString(value.y()) + ", " + Ast::ToString(value.z()) + ")");
-		else if constexpr (IsVector_v<T> && T::Dimensions == 4)
-			Append("vec4(" + Ast::ToString(value.x()) + ", " + Ast::ToString(value.y()) + ", " + Ast::ToString(value.z()) + ", " + Ast::ToString(value.w()) + ")");
+		else if constexpr (IsVector_v<T>)
+		{
+			Append("vec", T::Dimensions, "(");
+			for (std::size_t i = 0; i < T::Dimensions; ++i)
+			{
+				if (i != 0)
+					Append(", ");
+
+				AppendValue(value[i]);
+			}
+
+			Append(")");
+		}
 		else
 			static_assert(Nz::AlwaysFalse<T>(), "non-exhaustive visitor");
 	}
@@ -1393,7 +1426,7 @@ namespace nzsl
 		{
 			const SourceLocation& rootLocation = module.rootNode->sourceLocation;
 
-			AppendComment("NZSL version: " + std::to_string(metadata.shaderLangVersion / 100) + "." + std::to_string((metadata.shaderLangVersion % 100) / 10));
+			AppendComment("NZSL version: " + Version::ToString(metadata.shaderLangVersion));
 			if (rootLocation.file)
 			{
 				AppendComment("from " + *rootLocation.file);

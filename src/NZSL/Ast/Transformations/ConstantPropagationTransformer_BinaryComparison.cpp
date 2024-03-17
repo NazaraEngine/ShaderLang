@@ -16,100 +16,100 @@ namespace nzsl::Ast
 	{
 		/*************************************************************************************************/
 
-		template<BinaryType Type, typename T1, typename T2>
+		template<BinaryType Type, typename T>
 		struct BinaryConstantPropagation;
 
 		// CompEq
-		template<typename T1, typename T2>
+		template<typename T>
 		struct BinaryCompEq
 		{
 			static constexpr BinaryType Type = BinaryType::CompEq;
 
-			NAZARA_FORCEINLINE bool operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
+			NAZARA_FORCEINLINE bool operator()(const T& lhs, const T& rhs, const SourceLocation& /*sourceLocation*/)
 			{
 				return lhs == rhs;
 			}
 		};
 
 		// CompGe
-		template<typename T1, typename T2>
+		template<typename T>
 		struct BinaryCompGe
 		{
 			static constexpr BinaryType Type = BinaryType::CompGe;
 
-			NAZARA_FORCEINLINE bool operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
+			NAZARA_FORCEINLINE bool operator()(const T& lhs, const T& rhs, const SourceLocation& /*sourceLocation*/)
 			{
 				return lhs >= rhs;
 			}
 		};
 
 		// CompGt
-		template<typename T1, typename T2>
+		template<typename T>
 		struct BinaryCompGt
 		{
 			static constexpr BinaryType Type = BinaryType::CompGt;
 
-			NAZARA_FORCEINLINE bool operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
+			NAZARA_FORCEINLINE bool operator()(const T& lhs, const T& rhs, const SourceLocation& /*sourceLocation*/)
 			{
 				return lhs > rhs;
 			}
 		};
 
 		// CompLe
-		template<typename T1, typename T2>
+		template<typename T>
 		struct BinaryCompLe
 		{
 			static constexpr BinaryType Type = BinaryType::CompLe;
 
-			NAZARA_FORCEINLINE bool operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
+			NAZARA_FORCEINLINE bool operator()(const T& lhs, const T& rhs, const SourceLocation& /*sourceLocation*/)
 			{
 				return lhs <= rhs;
 			}
 		};
 
 		// CompLt
-		template<typename T1, typename T2>
+		template<typename T>
 		struct BinaryCompLt
 		{
 			static constexpr BinaryType Type = BinaryType::CompLt;
 
-			NAZARA_FORCEINLINE bool operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
+			NAZARA_FORCEINLINE bool operator()(const T& lhs, const T& rhs, const SourceLocation& /*sourceLocation*/)
 			{
 				return lhs < rhs;
 			}
 		};
 
 		// CompNe
-		template<typename T1, typename T2>
+		template<typename T>
 		struct BinaryCompNe
 		{
 			static constexpr BinaryType Type = BinaryType::CompNe;
 
-			NAZARA_FORCEINLINE bool operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
+			NAZARA_FORCEINLINE bool operator()(const T& lhs, const T& rhs, const SourceLocation& /*sourceLocation*/)
 			{
 				return lhs != rhs;
 			}
 		};
 
 		// LogicalAnd
-		template<typename T1, typename T2>
+		template<typename T>
 		struct BinaryLogicalAnd
 		{
 			static constexpr BinaryType Type = BinaryType::LogicalAnd;
 
-			NAZARA_FORCEINLINE bool operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
+			NAZARA_FORCEINLINE bool operator()(const T& lhs, const T& rhs, const SourceLocation& /*sourceLocation*/)
 			{
 				return lhs && rhs;
 			}
 		};
 
 		// LogicalOr
-		template<typename T1, typename T2>
+		template<typename T>
 		struct BinaryLogicalOr
 		{
 			static constexpr BinaryType Type = BinaryType::LogicalOr;
 
-			NAZARA_FORCEINLINE bool operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
+			NAZARA_FORCEINLINE bool operator()(const T& lhs, const T& rhs, const SourceLocation& /*sourceLocation*/)
 			{
 				return lhs || rhs;
 			}
@@ -121,40 +121,55 @@ namespace nzsl::Ast
 
 		// Binary
 
-		EnableOptimisation(BinaryCompEq, bool, bool);
-		EnableOptimisation(BinaryCompEq, double, double);
-		EnableOptimisation(BinaryCompEq, float, float);
-		EnableOptimisation(BinaryCompEq, std::int32_t, std::int32_t);
-		EnableOptimisation(BinaryCompEq, std::uint32_t, std::uint32_t);
+		EnableOptimisation(BinaryCompEq, bool);
+		EnableOptimisation(BinaryCompEq, double);
+		EnableOptimisation(BinaryCompEq, float);
+		EnableOptimisation(BinaryCompEq, std::int32_t);
+		EnableOptimisation(BinaryCompEq, std::uint32_t);
+		EnableOptimisation(BinaryCompEq, FloatLiteral);
+		EnableOptimisation(BinaryCompEq, IntLiteral);
 
-		EnableOptimisation(BinaryCompGe, double, double);
-		EnableOptimisation(BinaryCompGe, float, float);
-		EnableOptimisation(BinaryCompGe, std::int32_t, std::int32_t);
-		EnableOptimisation(BinaryCompGe, std::uint32_t, std::uint32_t);
+		EnableOptimisation(BinaryCompGe, double);
+		EnableOptimisation(BinaryCompGe, float);
+		EnableOptimisation(BinaryCompGe, std::int32_t);
+		EnableOptimisation(BinaryCompGe, std::int64_t);
+		EnableOptimisation(BinaryCompGe, std::uint32_t);
+		EnableOptimisation(BinaryCompGe, FloatLiteral);
+		EnableOptimisation(BinaryCompGe, IntLiteral);
 
-		EnableOptimisation(BinaryCompGt, double, double);
-		EnableOptimisation(BinaryCompGt, float, float);
-		EnableOptimisation(BinaryCompGt, std::int32_t, std::int32_t);
-		EnableOptimisation(BinaryCompGt, std::uint32_t, std::uint32_t);
+		EnableOptimisation(BinaryCompGt, double);
+		EnableOptimisation(BinaryCompGt, float);
+		EnableOptimisation(BinaryCompGt, std::int32_t);
+		EnableOptimisation(BinaryCompGt, std::int64_t);
+		EnableOptimisation(BinaryCompGt, std::uint32_t);
+		EnableOptimisation(BinaryCompGt, FloatLiteral);
+		EnableOptimisation(BinaryCompGt, IntLiteral);
 
-		EnableOptimisation(BinaryCompLe, double, double);
-		EnableOptimisation(BinaryCompLe, float, float);
-		EnableOptimisation(BinaryCompLe, std::int32_t, std::int32_t);
-		EnableOptimisation(BinaryCompLe, std::uint32_t, std::uint32_t);
+		EnableOptimisation(BinaryCompLe, double);
+		EnableOptimisation(BinaryCompLe, float);
+		EnableOptimisation(BinaryCompLe, std::int32_t);
+		EnableOptimisation(BinaryCompLe, std::int64_t);
+		EnableOptimisation(BinaryCompLe, std::uint32_t);
+		EnableOptimisation(BinaryCompLe, FloatLiteral);
+		EnableOptimisation(BinaryCompLe, IntLiteral);
 
-		EnableOptimisation(BinaryCompLt, double, double);
-		EnableOptimisation(BinaryCompLt, float, float);
-		EnableOptimisation(BinaryCompLt, std::int32_t, std::int32_t);
-		EnableOptimisation(BinaryCompLt, std::uint32_t, std::uint32_t);
+		EnableOptimisation(BinaryCompLt, double);
+		EnableOptimisation(BinaryCompLt, float);
+		EnableOptimisation(BinaryCompLt, std::int32_t);
+		EnableOptimisation(BinaryCompLt, std::uint32_t);
+		EnableOptimisation(BinaryCompLt, FloatLiteral);
+		EnableOptimisation(BinaryCompLt, IntLiteral);
 
-		EnableOptimisation(BinaryCompNe, bool, bool);
-		EnableOptimisation(BinaryCompNe, double, double);
-		EnableOptimisation(BinaryCompNe, float, float);
-		EnableOptimisation(BinaryCompNe, std::int32_t, std::int32_t);
-		EnableOptimisation(BinaryCompNe, std::uint32_t, std::uint32_t);
+		EnableOptimisation(BinaryCompNe, bool);
+		EnableOptimisation(BinaryCompNe, double);
+		EnableOptimisation(BinaryCompNe, float);
+		EnableOptimisation(BinaryCompNe, std::int32_t);
+		EnableOptimisation(BinaryCompNe, std::uint32_t);
+		EnableOptimisation(BinaryCompNe, FloatLiteral);
+		EnableOptimisation(BinaryCompNe, IntLiteral);
 
-		EnableOptimisation(BinaryLogicalAnd, bool, bool);
-		EnableOptimisation(BinaryLogicalOr,  bool, bool);
+		EnableOptimisation(BinaryLogicalAnd, bool);
+		EnableOptimisation(BinaryLogicalOr,  bool);
 
 #undef EnableOptimisation
 	}
@@ -184,22 +199,32 @@ namespace nzsl::Ast
 		{
 			using T1 = std::decay_t<decltype(arg1)>;
 			using T2 = std::decay_t<decltype(arg2)>;
-			using Op = BinaryConstantPropagation<Type, T1, T2>;
 
-			if constexpr (Nz::IsComplete_v<Op>)
-				optimized = ShaderBuilder::ConstantValue(Op{}(arg1, arg2, sourceLocation));
-			else if constexpr (IsVector_v<T1> && IsVector_v<T2>)
+			auto val1 = ResolveUntypedIfNecessary<T1, T2>(arg1);
+			auto val2 = ResolveUntypedIfNecessary<T2, T1>(arg2);
+			using T1Resolved = decltype(val1);
+			using T2Resolved = decltype(val2);
+
+			if constexpr (std::is_same_v<T1Resolved, T2Resolved>)
 			{
-				using SubOp = BinaryConstantPropagation<Type, typename T1::Base, typename T2::Base>;
-				if constexpr (Nz::IsComplete_v<SubOp> && T1::Dimensions == T2::Dimensions)
+				using Op = BinaryConstantPropagation<Type, T1Resolved>;
+				if constexpr (Nz::IsComplete_v<Op>)
+					optimized = ShaderBuilder::ConstantValue(Op{}(val1, val2, sourceLocation));
+				else if constexpr (IsVector_v<T1Resolved> && IsVector_v<T2Resolved>)
 				{
-					using RetType = Vector<bool, T1::Dimensions>;
+					using TBase = typename T1Resolved::Base;
 
-					RetType value;
-					for (std::size_t i = 0; i < T1::Dimensions; ++i)
-						value[i] = SubOp{}(arg1[i], arg2[i], sourceLocation);
+					using SubOp = BinaryConstantPropagation<Type, TBase>;
+					if constexpr (Nz::IsComplete_v<SubOp>)
+					{
+						using RetType = Vector<TBase, T1Resolved::Dimensions>;
 
-					optimized = ShaderBuilder::ConstantValue(value);
+						RetType value;
+						for (std::size_t i = 0; i < T1Resolved::Dimensions; ++i)
+							value[i] = SubOp{}(val1[i], val2[i], sourceLocation);
+
+						optimized = ShaderBuilder::ConstantValue(value);
+					}
 				}
 			}
 		}, lhs.value, rhs.value);

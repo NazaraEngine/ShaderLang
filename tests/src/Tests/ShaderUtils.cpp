@@ -11,6 +11,7 @@
 #include <glslang/Public/ShaderLang.h>
 #include <spirv-tools/libspirv.hpp>
 #include <NZSL/Ast/Transformations/BindingResolverTransformer.hpp>
+#include <NZSL/Ast/Transformations/LiteralTransformer.hpp>
 #include <NZSL/Ast/Cloner.hpp>
 
 namespace NAZARA_ANONYMOUS_NAMESPACE
@@ -131,17 +132,6 @@ namespace NAZARA_ANONYMOUS_NAMESPACE
 			true, //< generalConstantMatrixVectorIndexing
 		}
 	};
-
-	std::string CappedStr(std::string str, std::size_t maxSize)
-	{
-		if (str.size() > maxSize)
-		{
-			str.resize(maxSize);
-			str += "...";
-		}
-
-		return str;
-	}
 
 	std::string_view CappedView(std::string_view view, std::size_t maxSize)
 	{
@@ -468,6 +458,9 @@ void ResolveModule(nzsl::Ast::Module& module, const ResolveOptions& resolveOptio
 		if (resolveOptions.identifierResolverOptions)
 			executor.AddPass<nzsl::Ast::ResolveTransformer>(*resolveOptions.identifierResolverOptions);
 
+		if (resolveOptions.literalOptions)
+			executor.AddPass<nzsl::Ast::LiteralTransformer>(*resolveOptions.literalOptions);
+
 		if (resolveOptions.constantRemovalOptions)
 			executor.AddPass<nzsl::Ast::ConstantRemovalTransformer>(*resolveOptions.constantRemovalOptions);
 
@@ -543,3 +536,4 @@ void ResolveModule(nzsl::Ast::Module& module, const ResolveOptions& resolveOptio
 
 const nzsl::Ast::BindingResolverTransformer::Options ResolveOptions::defaultBindingResolverOptions;
 const nzsl::Ast::ResolveTransformer::Options ResolveOptions::defaultIdentifierResolveOptions;
+const nzsl::Ast::LiteralTransformer::Options ResolveOptions::defaultLiteralOptions;
