@@ -363,17 +363,17 @@ const V = 42 >> -1;
 [nzsl_version("1.0")]
 module;
 
-const V = u32(42) << u32(32);
+const V = u32(42) << 32;
 
-)"), "(5,11 -> 28): CBinaryTooLargeShift error: shift is too large in expression (u32(42) << u32(32)) for type u32");
+)"), "(5,11 -> 28): CBinaryTooLargeShift error: shift is too large in expression (u32(42) << 32) for type u32");
 
 			CHECK_THROWS_WITH(Compile(R"(
 [nzsl_version("1.0")]
 module;
 
-const V = u32(42) >> u32(82);
+const V = u32(42) >> 82;
 
-)"), "(5,11 -> 28): CBinaryTooLargeShift error: shift is too large in expression (u32(42) >> u32(82)) for type u32");
+)"), "(5,11 -> 28): CBinaryTooLargeShift error: shift is too large in expression (u32(42) >> 82) for type u32");
 		}
 
 		/************************************************************************/

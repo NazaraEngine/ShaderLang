@@ -492,6 +492,8 @@ namespace nzsl
 
 			if constexpr (std::is_same_v<T, Ast::NoValue>)
 				throw std::runtime_error("invalid type (value expected)");
+			else if constexpr (Ast::IsUntyped_v<T>)
+				throw std::runtime_error("unexpected untyped");
 			else if constexpr (std::is_same_v<T, std::string>)
 				throw std::runtime_error("unexpected string literal");
 			else if constexpr (std::is_same_v<T, bool>)
@@ -811,6 +813,8 @@ namespace nzsl
 				case Ast::PrimitiveType::UInt32:
 					return Integer{ 32, false };
 
+				case Ast::PrimitiveType::UntypedFloat:
+				case Ast::PrimitiveType::UntypedInteger:
 				case Ast::PrimitiveType::String:
 					break;
 			}

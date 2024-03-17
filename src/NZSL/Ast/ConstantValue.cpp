@@ -97,53 +97,35 @@ namespace nzsl::Ast
 				throw std::runtime_error("invalid type (value expected)");
 			else if constexpr (std::is_same_v<T, bool>)
 				return (arg) ? "true" : "false";
-			else if constexpr (std::is_same_v<T, double> || std::is_same_v<T, float> || std::is_same_v<T, std::int32_t> || std::is_same_v<T, std::uint32_t>)
-			{
-				// temporary fix until unsized literal float/int are supported
-				if constexpr (std::is_same_v<T, double>)
-					return "f64(" + ToString(arg) + ")";
-				else if constexpr (std::is_same_v<T, std::uint32_t>)
-					return "u32(" + ToString(arg) + ")";
-				else
-					return ToString(arg);
-			}
+			else if constexpr (std::is_same_v<T, double> || std::is_same_v<T, float> || std::is_same_v<T, std::int32_t> || std::is_same_v<T, std::uint32_t> || IsUntyped_v<T>)
+				return ToString(arg);
 			else if constexpr (std::is_same_v<T, std::string>)
 				return EscapeString(arg, true);
 			else if constexpr (IsVector_v<T>)
 			{
 				std::string_view vecTypeStr;
 
-				// temporary fix until unsized literal float/int are supported
-				std::string_view litPrefix;
-				std::string_view litSuffix;
-
 				if constexpr (std::is_same_v<typename T::Base, bool>)
-					vecTypeStr = "bool";
+					vecTypeStr = "[bool]";
 				else if constexpr (std::is_same_v<typename T::Base, double>)
-				{
-					litPrefix = "f64(";
-					vecTypeStr = "f64";
-					litSuffix = ")";
-				}
+					vecTypeStr = "[f64]";
 				else if constexpr (std::is_same_v<typename T::Base, float>)
-					vecTypeStr = "f32";
+					vecTypeStr = "[f32]";
 				else if constexpr (std::is_same_v<typename T::Base, std::int32_t>)
-					vecTypeStr = "i32";
+					vecTypeStr = "[i32]";
 				else if constexpr (std::is_same_v<typename T::Base, std::uint32_t>)
-				{
-					litPrefix = "u32(";
-					vecTypeStr = "u32";
-					litSuffix = ")";
-				}
+					vecTypeStr = "[u32]";
+				else if constexpr (IsUntyped_v<typename T::Base>)
+					vecTypeStr = "";
 				else
 					static_assert(Nz::AlwaysFalse<T>(), "unhandled vector base type");
 
 				if constexpr (T::Dimensions == 2)
-					return fmt::format("vec2[{}]({}{}{}, {}{}{})", vecTypeStr, litPrefix, ToString(arg.x()), litSuffix, litPrefix, ToString(arg.y()), litSuffix);
+					return fmt::format("vec2{0}({1}, {2})", vecTypeStr, ToString(arg.x()), ToString(arg.y()));
 				else if constexpr (T::Dimensions == 3)
-					return fmt::format("vec3[{}]({}{}{}, {}{}{}, {}{}{})", vecTypeStr, litPrefix, ToString(arg.x()), litSuffix, litPrefix, ToString(arg.y()), litSuffix, litPrefix, ToString(arg.z()), litSuffix);
+					return fmt::format("vec3{0}({1}, {2}, {3})", vecTypeStr, ToString(arg.x()), ToString(arg.y()), ToString(arg.z()));
 				else if constexpr (T::Dimensions == 4)
-					return fmt::format("vec4[{}]({}{}{}, {}{}{}, {}{}{}, {}{}{})", vecTypeStr, litPrefix, ToString(arg.x()), litSuffix, litPrefix, ToString(arg.y()), litSuffix, litPrefix, ToString(arg.z()), litSuffix, litPrefix, ToString(arg.w()), litSuffix);
+					return fmt::format("vec4{0}({1}, {2}, {3}, {4})", vecTypeStr, ToString(arg.x()), ToString(arg.y()), ToString(arg.z()), ToString(arg.w()));
 				else
 					static_assert(Nz::AlwaysFalse<T>(), "unhandled vector size");
 			}
@@ -157,7 +139,7 @@ namespace nzsl::Ast
 		return (value) ? "true" : "false";
 	}
 
-	std::string ToString(double value)
+	std::string ToString(double value, bool suffixType)
 	{
 		std::string str = fmt::format("{:.15f}", value);
 
@@ -171,10 +153,10 @@ namespace nzsl::Ast
 			str.pop_back();
 		}
 
-		return str;
+		return suffixType ? str + "_f64" : str;
 	}
 
-	std::string ToString(float value)
+	std::string ToString(float value, bool suffixType)
 	{
 		std::string str = fmt::format("{:.6f}", value);
 
@@ -188,16 +170,26 @@ namespace nzsl::Ast
 			str.pop_back();
 		}
 
-		return str;
+		return suffixType ? str + "_f32" : str;
 	}
 
-	std::string ToString(std::int32_t value)
+	std::string ToString(std::int32_t value, bool suffixType)
 	{
-		return fmt::format("{}", value);
+		return fmt::format("{}{}", value, suffixType ? "_i32" : "");
 	}
 
-	std::string ToString(std::uint32_t value)
+	std::string ToString(std::uint32_t value, bool suffixType)
 	{
-		return fmt::format("{}", value);
+		return fmt::format("{}{}", value, suffixType ? "_u32" : "");
+	}
+
+	std::string ToString(UntypedFloat value)
+	{
+		return ToString(value.value, false);
+	}
+
+	std::string ToString(UntypedInteger value)
+	{
+		return fmt::format("{}", value.value);
 	}
 }

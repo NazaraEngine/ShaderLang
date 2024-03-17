@@ -1584,7 +1584,7 @@ namespace nzsl
 	Ast::ExpressionPtr Parser::ParseFloatingPointExpression()
 	{
 		const Token& floatingPointToken = Expect(Advance(), TokenType::FloatingPointValue);
-		auto constantExpr = ShaderBuilder::ConstantValue(float(std::get<double>(floatingPointToken.data))); //< FIXME
+		auto constantExpr = ShaderBuilder::ConstantValue(Ast::UntypedFloat{ std::get<double>(floatingPointToken.data) });
 		constantExpr->sourceLocation = floatingPointToken.location;
 
 		return constantExpr;
@@ -1604,7 +1604,7 @@ namespace nzsl
 	Ast::ExpressionPtr Parser::ParseIntegerExpression()
 	{
 		const Token& integerToken = Expect(Advance(), TokenType::IntegerValue);
-		auto constantExpr = ShaderBuilder::ConstantValue(Nz::SafeCast<std::int32_t>(std::get<long long>(integerToken.data))); //< FIXME
+		auto constantExpr = ShaderBuilder::ConstantValue(Ast::UntypedInteger{ std::get<std::int64_t>(integerToken.data) });
 		constantExpr->sourceLocation = integerToken.location;
 
 		return constantExpr;
@@ -1700,9 +1700,9 @@ namespace nzsl
 
 	Ast::ExpressionPtr Parser::ParseStringExpression()
 	{
-		const Token& litteralToken = Expect(Advance(), TokenType::StringValue);
-		auto constantExpr = ShaderBuilder::ConstantValue(std::get<std::string>(litteralToken.data));
-		constantExpr->sourceLocation = litteralToken.location;
+		const Token& literalToken = Expect(Advance(), TokenType::StringValue);
+		auto constantExpr = ShaderBuilder::ConstantValue(std::get<std::string>(literalToken.data));
+		constantExpr->sourceLocation = literalToken.location;
 
 		return constantExpr;
 	}
