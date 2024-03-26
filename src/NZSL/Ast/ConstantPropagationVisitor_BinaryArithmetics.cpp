@@ -2,10 +2,11 @@
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
+#include <NZSL/Ast/ConstantPropagationVisitor.hpp>
 #include <NazaraUtils/Algorithm.hpp>
 #include <NazaraUtils/MathUtils.hpp>
+#include <NazaraUtils/TypeTraits.hpp>
 #include <NZSL/ShaderBuilder.hpp>
-#include <NZSL/Ast/ConstantPropagationVisitor.hpp>
 #include <NZSL/Lang/Errors.hpp>
 #include <cassert>
 #include <cmath>
@@ -15,25 +16,6 @@ namespace nzsl::Ast
 {
 	namespace NAZARA_ANONYMOUS_NAMESPACE
 	{
-		template<typename T>
-		struct IsCompleteHelper
-		{
-			// SFINAE: sizeof in an incomplete type is an error, but since there's another specialization it won't result in a compilation error
-			template <typename U>
-			static auto test(U*) -> std::bool_constant<sizeof(U) == sizeof(U)>;
-
-			// less specialized overload
-			static auto test(...) -> std::false_type;
-
-			using type = decltype(test(static_cast<T*>(nullptr)));
-		};
-
-		template <typename T>
-		struct IsComplete : IsCompleteHelper<T>::type {};
-
-		template<typename T>
-		inline constexpr bool IsComplete_v = IsComplete<T>::value;
-
 		/*************************************************************************************************/
 
 		template<BinaryType Type, typename T1, typename T2>
@@ -41,211 +23,144 @@ namespace nzsl::Ast
 
 		// Addition
 		template<typename T1, typename T2>
-		struct BinaryAdditionBase
+		struct BinaryAddition
 		{
-			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
+			static constexpr BinaryType Type = BinaryType::Add;
+			static constexpr bool AllowSingleOperand = false;
+
+			NAZARA_FORCEINLINE auto operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
 			{
-				return ShaderBuilder::ConstantValue(lhs + rhs);
+				return lhs + rhs;
 			}
-		};
-
-		template<typename T1, typename T2>
-		struct BinaryAddition;
-
-		template<typename T1, typename T2>
-		struct BinaryConstantPropagation<BinaryType::Add, T1, T2>
-		{
-			using Op = BinaryAddition<T1, T2>;
 		};
 
 		// BitwiseAnd
 		template<typename T1, typename T2>
-		struct BinaryBitwiseAndBase
+		struct BinaryBitwiseAnd
 		{
-			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
+			static constexpr BinaryType Type = BinaryType::BitwiseAnd;
+			static constexpr bool AllowSingleOperand = false;
+
+			NAZARA_FORCEINLINE auto operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
 			{
-				return ShaderBuilder::ConstantValue(lhs & rhs);
+				return lhs & rhs;
 			}
-		};
-
-		template<typename T1, typename T2>
-		struct BinaryBitwiseAnd;
-
-		template<typename T1, typename T2>
-		struct BinaryConstantPropagation<BinaryType::BitwiseAnd, T1, T2>
-		{
-			using Op = BinaryBitwiseAnd<T1, T2>;
 		};
 
 		// BitwiseOr
 		template<typename T1, typename T2>
-		struct BinaryBitwiseOrBase
+		struct BinaryBitwiseOr
 		{
-			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
+			static constexpr BinaryType Type = BinaryType::BitwiseOr;
+			static constexpr bool AllowSingleOperand = false;
+
+			NAZARA_FORCEINLINE auto operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
 			{
-				return ShaderBuilder::ConstantValue(lhs | rhs);
+				return lhs | rhs;
 			}
-		};
-
-		template<typename T1, typename T2>
-		struct BinaryBitwiseOr;
-
-		template<typename T1, typename T2>
-		struct BinaryConstantPropagation<BinaryType::BitwiseOr, T1, T2>
-		{
-			using Op = BinaryBitwiseOr<T1, T2>;
 		};
 
 		// BitwiseXor
 		template<typename T1, typename T2>
-		struct BinaryBitwiseXorBase
+		struct BinaryBitwiseXor
 		{
-			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
+			static constexpr BinaryType Type = BinaryType::BitwiseXor;
+			static constexpr bool AllowSingleOperand = false;
+
+			NAZARA_FORCEINLINE auto operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
 			{
-				return ShaderBuilder::ConstantValue(lhs ^ rhs);
+				return lhs ^ rhs;
 			}
-		};
-
-		template<typename T1, typename T2>
-		struct BinaryBitwiseXor;
-
-		template<typename T1, typename T2>
-		struct BinaryConstantPropagation<BinaryType::BitwiseXor, T1, T2>
-		{
-			using Op = BinaryBitwiseXor<T1, T2>;
 		};
 
 		// Division
 		template<typename T1, typename T2>
-		struct BinaryDivisionBase
+		struct BinaryDivision
 		{
-			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs, const SourceLocation& sourceLocation)
+			static constexpr BinaryType Type = BinaryType::Divide;
+			static constexpr bool AllowSingleOperand = true;
+
+			NAZARA_FORCEINLINE auto operator()(const T1& lhs, const T2& rhs, const SourceLocation& sourceLocation)
 			{
 				if constexpr (std::is_integral_v<T2>)
 				{
 					if (rhs == 0)
 						throw CompilerIntegralDivisionByZeroError{ sourceLocation, ConstantToString(lhs), ConstantToString(rhs) };
 				}
-				else if constexpr (IsVector_v<T2>)
-				{
-					for (std::size_t i = 0; i < T2::Dimensions; ++i)
-					{
-						if (rhs[i] == 0)
-							throw CompilerIntegralDivisionByZeroError{ sourceLocation, ConstantToString(lhs), ConstantToString(rhs) };
-					}
-				}
 
-				return ShaderBuilder::ConstantValue(lhs / rhs);
+				return lhs / rhs;
 			}
-		};
-
-		template<typename T1, typename T2>
-		struct BinaryDivision;
-
-		template<typename T1, typename T2>
-		struct BinaryConstantPropagation<BinaryType::Divide, T1, T2>
-		{
-			using Op = BinaryDivision<T1, T2>;
 		};
 
 		// LogicalAnd
 		template<typename T1, typename T2>
-		struct BinaryLogicalAndBase
+		struct BinaryLogicalAnd
 		{
-			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
+			static constexpr BinaryType Type = BinaryType::LogicalAnd;
+			static constexpr bool AllowSingleOperand = false;
+
+			NAZARA_FORCEINLINE auto operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
 			{
-				return ShaderBuilder::ConstantValue(lhs && rhs);
+				return lhs && rhs;
 			}
-		};
-
-		template<typename T1, typename T2>
-		struct BinaryLogicalAnd;
-
-		template<typename T1, typename T2>
-		struct BinaryConstantPropagation<BinaryType::LogicalAnd, T1, T2>
-		{
-			using Op = BinaryLogicalAnd<T1, T2>;
 		};
 
 		// LogicalOr
 		template<typename T1, typename T2>
-		struct BinaryLogicalOrBase
+		struct BinaryLogicalOr
 		{
-			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
+			static constexpr BinaryType Type = BinaryType::LogicalOr;
+			static constexpr bool AllowSingleOperand = false;
+
+			NAZARA_FORCEINLINE auto operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
 			{
-				return ShaderBuilder::ConstantValue(lhs || rhs);
+				return lhs || rhs;
 			}
-		};
-
-		template<typename T1, typename T2>
-		struct BinaryLogicalOr;
-
-		template<typename T1, typename T2>
-		struct BinaryConstantPropagation<BinaryType::LogicalOr, T1, T2>
-		{
-			using Op = BinaryLogicalOr<T1, T2>;
 		};
 
 		// Modulo
 		template<typename T1, typename T2>
-		struct BinaryModuloBase
+		struct BinaryModulo
 		{
-			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs, const SourceLocation& sourceLocation)
+			static constexpr BinaryType Type = BinaryType::Modulo;
+			static constexpr bool AllowSingleOperand = true;
+
+			NAZARA_FORCEINLINE auto operator()(const T1& lhs, const T2& rhs, const SourceLocation& sourceLocation)
 			{
 				if constexpr (std::is_integral_v<T2>)
 				{
 					if (rhs == 0)
 						throw CompilerIntegralModuloByZeroError{ sourceLocation, ConstantToString(lhs), ConstantToString(rhs) };
 				}
-				else if constexpr (IsVector_v<T2>)
-				{
-					for (std::size_t i = 0; i < T2::Dimensions; ++i)
-					{
-						if (rhs[i] == 0)
-							throw CompilerIntegralModuloByZeroError{ sourceLocation, ConstantToString(lhs), ConstantToString(rhs) };
-					}
-				}
 
 				if constexpr (std::is_floating_point_v<T1> && std::is_floating_point_v<T2>)
-					return ShaderBuilder::ConstantValue(std::fmod(lhs, rhs));
+					return std::fmod(lhs, rhs);
 				else
-					return ShaderBuilder::ConstantValue(lhs % rhs);
+					return lhs % rhs;
 			}
-		};
-
-		template<typename T1, typename T2>
-		struct BinaryModulo;
-
-		template<typename T1, typename T2>
-		struct BinaryConstantPropagation<BinaryType::Modulo, T1, T2>
-		{
-			using Op = BinaryModulo<T1, T2>;
 		};
 
 		// Multiplication
 		template<typename T1, typename T2>
-		struct BinaryMultiplicationBase
+		struct BinaryMultiplication
 		{
-			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
+			static constexpr BinaryType Type = BinaryType::Multiply;
+			static constexpr bool AllowSingleOperand = true;
+
+			NAZARA_FORCEINLINE auto operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
 			{
-				return ShaderBuilder::ConstantValue(lhs * rhs);
+				return lhs * rhs;
 			}
-		};
-
-		template<typename T1, typename T2>
-		struct BinaryMultiplication;
-
-		template<typename T1, typename T2>
-		struct BinaryConstantPropagation<BinaryType::Multiply, T1, T2>
-		{
-			using Op = BinaryMultiplication<T1, T2>;
 		};
 
 		// ShiftLeft
 		template<typename T1, typename T2>
-		struct BinaryShiftLeftBase
+		struct BinaryShiftLeft
 		{
-			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs, const SourceLocation& sourceLocation)
+			static constexpr BinaryType Type = BinaryType::ShiftLeft;
+			static constexpr bool AllowSingleOperand = false;
+
+			NAZARA_FORCEINLINE auto operator()(const T1& lhs, const T2& rhs, const SourceLocation& sourceLocation)
 			{
 				if constexpr (std::is_integral_v<T2>)
 				{
@@ -259,24 +174,18 @@ namespace nzsl::Ast
 						throw CompilerBinaryTooLargeShiftError{ sourceLocation, ConstantToString(lhs), "<<", ConstantToString(rhs), ToString(GetConstantExpressionType<T1>()) };
 				}
 
-				return ShaderBuilder::ConstantValue(lhs << rhs);
+				return lhs << rhs;
 			}
-		};
-
-		template<typename T1, typename T2>
-		struct BinaryShiftLeft;
-
-		template<typename T1, typename T2>
-		struct BinaryConstantPropagation<BinaryType::ShiftLeft, T1, T2>
-		{
-			using Op = BinaryShiftLeft<T1, T2>;
 		};
 
 		// ShiftRight
 		template<typename T1, typename T2>
-		struct BinaryShiftRightBase
+		struct BinaryShiftRight
 		{
-			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs, const SourceLocation& sourceLocation)
+			static constexpr BinaryType Type = BinaryType::ShiftRight;
+			static constexpr bool AllowSingleOperand = false;
+
+			NAZARA_FORCEINLINE auto operator()(const T1& lhs, const T2& rhs, const SourceLocation& sourceLocation)
 			{
 				if constexpr (std::is_integral_v<T2>)
 				{
@@ -290,60 +199,31 @@ namespace nzsl::Ast
 						throw CompilerBinaryTooLargeShiftError{ sourceLocation, ConstantToString(lhs), ">>", ConstantToString(rhs), ToString(GetConstantExpressionType<T1>()) };
 				}
 
-				return ShaderBuilder::ConstantValue(Nz::ArithmeticRightShift(lhs, rhs));
+				return Nz::ArithmeticRightShift(lhs, rhs);
 			}
-		};
-
-		template<typename T1, typename T2>
-		struct BinaryShiftRight;
-
-		template<typename T1, typename T2>
-		struct BinaryConstantPropagation<BinaryType::ShiftRight, T1, T2>
-		{
-			using Op = BinaryShiftRight<T1, T2>;
 		};
 
 		// Subtraction
 		template<typename T1, typename T2>
-		struct BinarySubtractionBase
+		struct BinarySubtraction
 		{
-			std::unique_ptr<ConstantValueExpression> operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
+			static constexpr BinaryType Type = BinaryType::Subtract;
+			static constexpr bool AllowSingleOperand = false;
+
+			NAZARA_FORCEINLINE auto operator()(const T1& lhs, const T2& rhs, const SourceLocation& /*sourceLocation*/)
 			{
-				return ShaderBuilder::ConstantValue(lhs - rhs);
+				return lhs - rhs;
 			}
-		};
-
-		template<typename T1, typename T2>
-		struct BinarySubtraction;
-
-		template<typename T1, typename T2>
-		struct BinaryConstantPropagation<BinaryType::Subtract, T1, T2>
-		{
-			using Op = BinarySubtraction<T1, T2>;
 		};
 
 		/*************************************************************************************************/
 
-#define EnableOptimisation(Op, ...) template<> struct Op<__VA_ARGS__> : Op##Base<__VA_ARGS__> {}
-
-		// Binary
+#define EnableOptimisation(Impl, ...) template<> struct BinaryConstantPropagation<Impl<__VA_ARGS__>::Type, __VA_ARGS__> : Impl<__VA_ARGS__> {}
 
 		EnableOptimisation(BinaryAddition, double, double);
 		EnableOptimisation(BinaryAddition, float, float);
 		EnableOptimisation(BinaryAddition, std::int32_t, std::int32_t);
 		EnableOptimisation(BinaryAddition, std::uint32_t, std::uint32_t);
-		EnableOptimisation(BinaryAddition, Vector2f32, Vector2f32);
-		EnableOptimisation(BinaryAddition, Vector3f32, Vector3f32);
-		EnableOptimisation(BinaryAddition, Vector4f32, Vector4f32);
-		EnableOptimisation(BinaryAddition, Vector2f64, Vector2f64);
-		EnableOptimisation(BinaryAddition, Vector3f64, Vector3f64);
-		EnableOptimisation(BinaryAddition, Vector4f64, Vector4f64);
-		EnableOptimisation(BinaryAddition, Vector2i32, Vector2i32);
-		EnableOptimisation(BinaryAddition, Vector3i32, Vector3i32);
-		EnableOptimisation(BinaryAddition, Vector4i32, Vector4i32);
-		EnableOptimisation(BinaryAddition, Vector2u32, Vector2u32);
-		EnableOptimisation(BinaryAddition, Vector3u32, Vector3u32);
-		EnableOptimisation(BinaryAddition, Vector4u32, Vector4u32);
 
 		EnableOptimisation(BinaryBitwiseAnd, std::int32_t, std::uint32_t);
 		EnableOptimisation(BinaryBitwiseAnd, std::uint32_t, std::int32_t);
@@ -361,130 +241,22 @@ namespace nzsl::Ast
 		EnableOptimisation(BinaryBitwiseXor, std::int32_t, std::int32_t);
 
 		EnableOptimisation(BinaryDivision, double, double);
-		EnableOptimisation(BinaryDivision, double, Vector2f64);
-		EnableOptimisation(BinaryDivision, double, Vector3f64);
-		EnableOptimisation(BinaryDivision, double, Vector4f64);
 		EnableOptimisation(BinaryDivision, float, float);
-		EnableOptimisation(BinaryDivision, float, Vector2f32);
-		EnableOptimisation(BinaryDivision, float, Vector3f32);
-		EnableOptimisation(BinaryDivision, float, Vector4f32);
 		EnableOptimisation(BinaryDivision, std::int32_t, std::int32_t);
-		EnableOptimisation(BinaryDivision, std::int32_t, Vector2i32);
-		EnableOptimisation(BinaryDivision, std::int32_t, Vector3i32);
-		EnableOptimisation(BinaryDivision, std::int32_t, Vector4i32);
 		EnableOptimisation(BinaryDivision, std::uint32_t, std::uint32_t);
-		EnableOptimisation(BinaryDivision, std::uint32_t, Vector2u32);
-		EnableOptimisation(BinaryDivision, std::uint32_t, Vector3u32);
-		EnableOptimisation(BinaryDivision, std::uint32_t, Vector4u32);
-		EnableOptimisation(BinaryDivision, Vector2f32, float);
-		EnableOptimisation(BinaryDivision, Vector2f32, Vector2f32);
-		EnableOptimisation(BinaryDivision, Vector3f32, float);
-		EnableOptimisation(BinaryDivision, Vector3f32, Vector3f32);
-		EnableOptimisation(BinaryDivision, Vector4f32, float);
-		EnableOptimisation(BinaryDivision, Vector4f32, Vector4f32);
-		EnableOptimisation(BinaryDivision, Vector2f64, double);
-		EnableOptimisation(BinaryDivision, Vector2f64, Vector2f64);
-		EnableOptimisation(BinaryDivision, Vector3f64, double);
-		EnableOptimisation(BinaryDivision, Vector3f64, Vector3f64);
-		EnableOptimisation(BinaryDivision, Vector4f64, double);
-		EnableOptimisation(BinaryDivision, Vector4f64, Vector4f64);
-		EnableOptimisation(BinaryDivision, Vector2i32, std::int32_t);
-		EnableOptimisation(BinaryDivision, Vector2i32, Vector2i32);
-		EnableOptimisation(BinaryDivision, Vector3i32, std::int32_t);
-		EnableOptimisation(BinaryDivision, Vector3i32, Vector3i32);
-		EnableOptimisation(BinaryDivision, Vector4i32, std::int32_t);
-		EnableOptimisation(BinaryDivision, Vector4i32, Vector4i32);
-		EnableOptimisation(BinaryDivision, Vector2u32, std::uint32_t);
-		EnableOptimisation(BinaryDivision, Vector2u32, Vector2u32);
-		EnableOptimisation(BinaryDivision, Vector3u32, std::uint32_t);
-		EnableOptimisation(BinaryDivision, Vector3u32, Vector3u32);
-		EnableOptimisation(BinaryDivision, Vector4u32, std::uint32_t);
-		EnableOptimisation(BinaryDivision, Vector4u32, Vector4u32);
 
 		EnableOptimisation(BinaryLogicalAnd, bool, bool);
 		EnableOptimisation(BinaryLogicalOr, bool, bool);
 
 		EnableOptimisation(BinaryModulo, double, double);
-		EnableOptimisation(BinaryModulo, double, Vector2f64);
-		EnableOptimisation(BinaryModulo, double, Vector3f64);
-		EnableOptimisation(BinaryModulo, double, Vector4f64);
 		EnableOptimisation(BinaryModulo, float, float);
-		EnableOptimisation(BinaryModulo, float, Vector2f32);
-		EnableOptimisation(BinaryModulo, float, Vector3f32);
-		EnableOptimisation(BinaryModulo, float, Vector4f32);
 		EnableOptimisation(BinaryModulo, std::int32_t, std::int32_t);
-		EnableOptimisation(BinaryModulo, std::int32_t, Vector2i32);
-		EnableOptimisation(BinaryModulo, std::int32_t, Vector3i32);
-		EnableOptimisation(BinaryModulo, std::int32_t, Vector4i32);
 		EnableOptimisation(BinaryModulo, std::uint32_t, std::uint32_t);
-		EnableOptimisation(BinaryModulo, std::uint32_t, Vector2u32);
-		EnableOptimisation(BinaryModulo, std::uint32_t, Vector3u32);
-		EnableOptimisation(BinaryModulo, std::uint32_t, Vector4u32);
-		EnableOptimisation(BinaryModulo, Vector2f32, float);
-		EnableOptimisation(BinaryModulo, Vector2f32, Vector2f32);
-		EnableOptimisation(BinaryModulo, Vector3f32, float);
-		EnableOptimisation(BinaryModulo, Vector3f32, Vector3f32);
-		EnableOptimisation(BinaryModulo, Vector4f32, float);
-		EnableOptimisation(BinaryModulo, Vector4f32, Vector4f32);
-		EnableOptimisation(BinaryModulo, Vector2f64, double);
-		EnableOptimisation(BinaryModulo, Vector2f64, Vector2f64);
-		EnableOptimisation(BinaryModulo, Vector3f64, double);
-		EnableOptimisation(BinaryModulo, Vector3f64, Vector3f64);
-		EnableOptimisation(BinaryModulo, Vector4f64, double);
-		EnableOptimisation(BinaryModulo, Vector4f64, Vector4f64);
-		EnableOptimisation(BinaryModulo, Vector2i32, std::int32_t);
-		EnableOptimisation(BinaryModulo, Vector2i32, Vector2i32);
-		EnableOptimisation(BinaryModulo, Vector3i32, std::int32_t);
-		EnableOptimisation(BinaryModulo, Vector3i32, Vector3i32);
-		EnableOptimisation(BinaryModulo, Vector4i32, std::int32_t);
-		EnableOptimisation(BinaryModulo, Vector4i32, Vector4i32);
-		EnableOptimisation(BinaryModulo, Vector2u32, std::uint32_t);
-		EnableOptimisation(BinaryModulo, Vector2u32, Vector2u32);
-		EnableOptimisation(BinaryModulo, Vector3u32, std::uint32_t);
-		EnableOptimisation(BinaryModulo, Vector3u32, Vector3u32);
-		EnableOptimisation(BinaryModulo, Vector4u32, std::uint32_t);
-		EnableOptimisation(BinaryModulo, Vector4u32, Vector4u32);
 
 		EnableOptimisation(BinaryMultiplication, double, double);
-		EnableOptimisation(BinaryMultiplication, double, Vector2f64);
-		EnableOptimisation(BinaryMultiplication, double, Vector3f64);
-		EnableOptimisation(BinaryMultiplication, double, Vector4f64);
 		EnableOptimisation(BinaryMultiplication, float, float);
-		EnableOptimisation(BinaryMultiplication, float, Vector2f32);
-		EnableOptimisation(BinaryMultiplication, float, Vector3f32);
-		EnableOptimisation(BinaryMultiplication, float, Vector4f32);
 		EnableOptimisation(BinaryMultiplication, std::int32_t, std::int32_t);
-		EnableOptimisation(BinaryMultiplication, std::int32_t, Vector2i32);
-		EnableOptimisation(BinaryMultiplication, std::int32_t, Vector3i32);
-		EnableOptimisation(BinaryMultiplication, std::int32_t, Vector4i32);
 		EnableOptimisation(BinaryMultiplication, std::uint32_t, std::uint32_t);
-		EnableOptimisation(BinaryMultiplication, std::uint32_t, Vector2u32);
-		EnableOptimisation(BinaryMultiplication, std::uint32_t, Vector3u32);
-		EnableOptimisation(BinaryMultiplication, std::uint32_t, Vector4u32);
-		EnableOptimisation(BinaryMultiplication, Vector2f32, float);
-		EnableOptimisation(BinaryMultiplication, Vector2f32, Vector2f32);
-		EnableOptimisation(BinaryMultiplication, Vector3f32, float);
-		EnableOptimisation(BinaryMultiplication, Vector3f32, Vector3f32);
-		EnableOptimisation(BinaryMultiplication, Vector4f32, float);
-		EnableOptimisation(BinaryMultiplication, Vector4f32, Vector4f32);
-		EnableOptimisation(BinaryMultiplication, Vector2f64, double);
-		EnableOptimisation(BinaryMultiplication, Vector2f64, Vector2f64);
-		EnableOptimisation(BinaryMultiplication, Vector3f64, double);
-		EnableOptimisation(BinaryMultiplication, Vector3f64, Vector3f64);
-		EnableOptimisation(BinaryMultiplication, Vector4f64, double);
-		EnableOptimisation(BinaryMultiplication, Vector4f64, Vector4f64);
-		EnableOptimisation(BinaryMultiplication, Vector2i32, std::int32_t);
-		EnableOptimisation(BinaryMultiplication, Vector2i32, Vector2i32);
-		EnableOptimisation(BinaryMultiplication, Vector3i32, std::int32_t);
-		EnableOptimisation(BinaryMultiplication, Vector3i32, Vector3i32);
-		EnableOptimisation(BinaryMultiplication, Vector4i32, std::int32_t);
-		EnableOptimisation(BinaryMultiplication, Vector4i32, Vector4i32);
-		EnableOptimisation(BinaryMultiplication, Vector2u32, std::uint32_t);
-		EnableOptimisation(BinaryMultiplication, Vector2u32, Vector2u32);
-		EnableOptimisation(BinaryMultiplication, Vector3u32, std::uint32_t);
-		EnableOptimisation(BinaryMultiplication, Vector3u32, Vector3u32);
-		EnableOptimisation(BinaryMultiplication, Vector4u32, std::uint32_t);
-		EnableOptimisation(BinaryMultiplication, Vector4u32, Vector4u32);
 
 		EnableOptimisation(BinaryShiftLeft, std::int32_t, std::int32_t);
 		EnableOptimisation(BinaryShiftLeft, std::int32_t, std::uint32_t);
@@ -500,18 +272,6 @@ namespace nzsl::Ast
 		EnableOptimisation(BinarySubtraction, float, float);
 		EnableOptimisation(BinarySubtraction, std::int32_t, std::int32_t);
 		EnableOptimisation(BinarySubtraction, std::uint32_t, std::uint32_t);
-		EnableOptimisation(BinarySubtraction, Vector2f32, Vector2f32);
-		EnableOptimisation(BinarySubtraction, Vector3f32, Vector3f32);
-		EnableOptimisation(BinarySubtraction, Vector4f32, Vector4f32);
-		EnableOptimisation(BinarySubtraction, Vector2f64, Vector2f64);
-		EnableOptimisation(BinarySubtraction, Vector3f64, Vector3f64);
-		EnableOptimisation(BinarySubtraction, Vector4f64, Vector4f64);
-		EnableOptimisation(BinarySubtraction, Vector2i32, Vector2i32);
-		EnableOptimisation(BinarySubtraction, Vector3i32, Vector3i32);
-		EnableOptimisation(BinarySubtraction, Vector4i32, Vector4i32);
-		EnableOptimisation(BinarySubtraction, Vector2u32, Vector2u32);
-		EnableOptimisation(BinarySubtraction, Vector3u32, Vector3u32);
-		EnableOptimisation(BinarySubtraction, Vector4u32, Vector4u32);
 
 #undef EnableOptimisation
 	}
@@ -547,13 +307,60 @@ namespace nzsl::Ast
 		{
 			using T1 = std::decay_t<decltype(arg1)>;
 			using T2 = std::decay_t<decltype(arg2)>;
-			using PCType = BinaryConstantPropagation<Type, T1, T2>;
+			using Op = BinaryConstantPropagation<Type, T1, T2>;
 
-			if constexpr (IsComplete_v<PCType>)
+			if constexpr (Nz::IsComplete_v<Op>)
+				optimized = ShaderBuilder::ConstantValue(Op{}(arg1, arg2, sourceLocation));
+			else if constexpr (IsVector_v<T1> && IsVector_v<T2>)
 			{
-				using Op = typename PCType::Op;
-				if constexpr (IsComplete_v<Op>)
-					optimized = Op{}(arg1, arg2, sourceLocation);
+				using SubOp = BinaryConstantPropagation<Type, typename T1::Base, typename T2::Base>;
+				if constexpr (Nz::IsComplete_v<SubOp> && T1::Dimensions == T2::Dimensions)
+				{
+					using RetBaseType = std::decay_t<std::invoke_result_t<SubOp, typename T1::Base, typename T2::Base, const SourceLocation&>>;
+					using RetType = Vector<RetBaseType, T1::Dimensions>;
+
+					RetType value;
+					for (std::size_t i = 0; i < T1::Dimensions; ++i)
+						value[i] = SubOp{}(arg1[i], arg2[i], sourceLocation);
+
+					optimized = ShaderBuilder::ConstantValue(value);
+				}
+			}
+			else if constexpr (IsVector_v<T1>)
+			{
+				using SubOp = BinaryConstantPropagation<Type, typename T1::Base, T2>;
+				if constexpr (Nz::IsComplete_v<SubOp>)
+				{
+					if constexpr (SubOp::AllowSingleOperand)
+					{
+						using RetBaseType = std::decay_t<std::invoke_result_t<SubOp, typename T1::Base, T2, const SourceLocation&>>;
+						using RetType = Vector<RetBaseType, T1::Dimensions>;
+
+						RetType value;
+						for (std::size_t i = 0; i < T1::Dimensions; ++i)
+							value[i] = SubOp{}(arg1[i], arg2, sourceLocation);
+
+						optimized = ShaderBuilder::ConstantValue(value);
+					}
+				}
+			}
+			else if constexpr (IsVector_v<T2>)
+			{
+				using SubOp = BinaryConstantPropagation<Type, T1, typename T2::Base>;
+				if constexpr (Nz::IsComplete_v<SubOp>)
+				{
+					if constexpr (SubOp::AllowSingleOperand)
+					{
+						using RetBaseType = std::decay_t<std::invoke_result_t<SubOp, T1, typename T2::Base, const SourceLocation&>>;
+						using RetType = Vector<RetBaseType, T2::Dimensions>;
+
+						RetType value;
+						for (std::size_t i = 0; i < T2::Dimensions; ++i)
+							value[i] = SubOp{}(arg1, arg2[i], sourceLocation);
+
+						optimized = ShaderBuilder::ConstantValue(value);
+					}
+				}
 			}
 		}, lhs.value, rhs.value);
 

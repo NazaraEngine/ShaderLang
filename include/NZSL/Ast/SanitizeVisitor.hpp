@@ -16,8 +16,8 @@
 #include <NZSL/Ast/Types.hpp>
 #include <functional>
 #include <memory>
-#include <variant>
 #include <unordered_map>
+#include <variant>
 
 namespace nzsl::Ast
 {

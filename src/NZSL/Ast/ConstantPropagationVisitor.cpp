@@ -3,6 +3,7 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <NZSL/Ast/ConstantPropagationVisitor.hpp>
+#include <NazaraUtils/TypeTraits.hpp>
 #include <NZSL/ShaderBuilder.hpp>
 #include <NZSL/Lang/Errors.hpp>
 #include <cassert>
@@ -13,25 +14,6 @@ namespace nzsl::Ast
 {
 	namespace NAZARA_ANONYMOUS_NAMESPACE
 	{
-		template <typename T>
-		struct IsCompleteHelper
-		{
-			// SFINAE: sizeof of an incomplete type is an error, but since there's another specialization it won't result in a compilation error
-			template <typename U>
-			static auto test(U*) -> std::bool_constant<sizeof(U) == sizeof(U)>;
-
-			// less specialized overload
-			static auto test(...) -> std::false_type;
-
-			using type = decltype(test(static_cast<T*>(nullptr)));
-		};
-
-		template <typename T>
-		struct IsComplete : IsCompleteHelper<T>::type {};
-
-		template<typename T>
-		inline constexpr bool IsComplete_v = IsComplete<T>::value;
-
 		template<typename T>
 		struct VectorInfo
 		{
@@ -639,7 +621,7 @@ namespace nzsl::Ast
 					{
 						using T = std::decay_t<decltype(arg)>;
 
-						if constexpr (IsComplete_v<ArrayBuilder<T>>)
+						if constexpr (Nz::IsComplete_v<ArrayBuilder<T>>)
 						{
 							ArrayBuilder<T> builder;
 							optimized = builder(expressions, node.sourceLocation);
@@ -1004,7 +986,7 @@ namespace nzsl::Ast
 			using T = std::decay_t<decltype(arg)>;
 			using CCType = CastConstant<TargetType, T>;
 
-			if constexpr (IsComplete_v<CCType>)
+			if constexpr (Nz::IsComplete_v<CCType>)
 				optimized = CCType{}(arg, sourceLocation);
 		}, operand.value);
 
@@ -1026,7 +1008,7 @@ namespace nzsl::Ast
 
 			using SPType = SwizzlePropagation<BaseType, TargetComponentCount, FromComponentCount>;
 
-			if constexpr (IsComplete_v<SPType>)
+			if constexpr (Nz::IsComplete_v<SPType>)
 				optimized = SPType{}(components, arg, sourceLocation);
 		}, operand.value);
 
@@ -1044,10 +1026,10 @@ namespace nzsl::Ast
 			using T = std::decay_t<decltype(arg)>;
 			using PCType = UnaryConstantPropagation<Type, T>;
 
-			if constexpr (IsComplete_v<PCType>)
+			if constexpr (Nz::IsComplete_v<PCType>)
 			{
 				using Op = typename PCType::Op;
-				if constexpr (IsComplete_v<Op>)
+				if constexpr (Nz::IsComplete_v<Op>)
 					optimized = Op{}(arg, sourceLocation);
 			}
 		}, operand.value);
@@ -1068,7 +1050,7 @@ namespace nzsl::Ast
 
 		using CCType = CastConstant<Vector2<TargetType>, TargetType, TargetType>;
 
-		if constexpr (IsComplete_v<CCType>)
+		if constexpr (Nz::IsComplete_v<CCType>)
 			optimized = CCType{}(v1, v2, sourceLocation);
 
 		return optimized;
@@ -1088,7 +1070,7 @@ namespace nzsl::Ast
 
 		using CCType = CastConstant<Vector3<TargetType>, TargetType, TargetType, TargetType>;
 
-		if constexpr (IsComplete_v<CCType>)
+		if constexpr (Nz::IsComplete_v<CCType>)
 			optimized = CCType{}(v1, v2, v3, sourceLocation);
 
 		return optimized;
@@ -1109,7 +1091,7 @@ namespace nzsl::Ast
 
 		using CCType = CastConstant<Vector4<TargetType>, TargetType, TargetType, TargetType, TargetType>;
 
-		if constexpr (IsComplete_v<CCType>)
+		if constexpr (Nz::IsComplete_v<CCType>)
 			optimized = CCType{}(v1, v2, v3, v4, sourceLocation);
 
 		return optimized;
