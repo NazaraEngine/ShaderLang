@@ -58,7 +58,7 @@ NZSL is designed to be embedded in a game engine / game / graphics application t
 
 You can use it to generate GLSL, GLSL ES and SPIR-V in two non-exclusive ways:
 
-1) Using the offline NZSL compiler (nzslc) ahead of time, in a way similar to glslangValidator or glslc today.
+1) Using the offline NZSL compiler (nzslc) ahead of time, in a way similar to glslang or glslc today.
 2) Use NZSL as a library in your application to compile shaders in a dynamic way, just as they're needed (which can be used to benefit from supported extensions to improve generation).
 
 ### Offline compilation

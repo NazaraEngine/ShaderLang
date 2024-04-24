@@ -129,7 +129,7 @@ TEST_CASE("Standalone compiler", "[NZSLC]")
 		// Validate generated files
 		ExecuteCommand("./nzslc test_files/Shader.nzsl");
 		ExecuteCommand("./nzslc test_files/Shader.nzslb");
-		ExecuteCommand("glslangValidator -S frag test_files/Shader.frag.glsl");
+		ExecuteCommand("glslang -S frag test_files/Shader.frag.glsl");
 		ExecuteCommand("spirv-val test_files/Shader.spv");
 
 		// Check that header version matches original files
