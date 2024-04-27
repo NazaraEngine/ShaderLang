@@ -10,7 +10,12 @@
 #include <string>
 #include <CNZSL/Config.h>
 
-namespace cnzsl {
+namespace cnzsl
+{
+	/** Set the error string in the curent thread
+	 *
+	 * @param error
+	 */
 	void NZSL_API setError(std::string error);
 }
 

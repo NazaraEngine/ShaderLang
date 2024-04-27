@@ -11,29 +11,34 @@
 using namespace std::literals;
 
 extern "C" {
-
-
-NZSLLangWriter NZSL_API nzslLangWriterCreate(void) {
+NZSLLangWriter NZSL_API nzslLangWriterCreate(void)
+{
 	nzsl::LangWriter* writer = nullptr;
 
-	try {
+	try
+	{
 		writer = new nzsl::LangWriter;
-	} catch (std::exception& e) {
+	}
+	catch (std::exception& e)
+	{
 		cnzsl::setError("nzslLangWriterCreate failed: "s + e.what());
-	} catch (...) {
+	} catch (...)
+	{
 		cnzsl::setError("nzslLangWriterCreate failed with unknown error");
 	}
 
 	return reinterpret_cast<NZSLLangWriter>(writer);
 }
 
-NZSLLangWriterOutput NZSL_API nzslLangWriterGenerate(NZSLLangWriter writer, NZSLModule module) {
+NZSLLangWriterOutput NZSL_API nzslLangWriterGenerate(NZSLLangWriter writer, NZSLModule module)
+{
 	auto writerPtr = reinterpret_cast<nzsl::LangWriter*>(writer);
-	auto modulePtr = reinterpret_cast<nzsl::Ast::ModulePtr *>(module);
+	auto modulePtr = reinterpret_cast<nzsl::Ast::ModulePtr*>(module);
 
 	NZSLLangWriterOutput output = nullptr;
 
-	try {
+	try
+	{
 		auto generated = new std::string{writerPtr->Generate(**modulePtr)};
 
 		try
@@ -43,31 +48,37 @@ NZSLLangWriterOutput NZSL_API nzslLangWriterGenerate(NZSLLangWriter writer, NZSL
 				.code = generated->data(),
 				.codeLen = generated->size()
 			};
-		} catch(...) {
+		}
+		catch (...)
+		{
 			delete generated;
 
 			throw;
 		}
-	} catch (std::exception& e) {
+	}
+	catch (std::exception& e)
+	{
 		cnzsl::setError("nzslLangWriterGenerate failed: "s + e.what());
-	} catch (...) {
+	} catch (...)
+	{
 		cnzsl::setError("nzslLangWriterGenerate failed with unknown error");
 	}
 
 	return output;
 }
 
-void NZSL_API nzslLangWriterOutputDestroy(NZSLLangWriterOutput output) {
+void NZSL_API nzslLangWriterOutputDestroy(NZSLLangWriterOutput output)
+{
 	auto outputPtr = reinterpret_cast<std::string*>(output->internal);
 
 	delete outputPtr;
 	delete output;
 }
 
-void NZSL_API nzslLangWriterDestroy(NZSLLangWriter writer) {
+void NZSL_API nzslLangWriterDestroy(NZSLLangWriter writer)
+{
 	auto writerPtr = reinterpret_cast<nzsl::LangWriter*>(writer);
 
 	delete writerPtr;
 }
-
 }

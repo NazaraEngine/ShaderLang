@@ -11,26 +11,31 @@
 using namespace std::literals;
 
 extern "C" {
-
-
-NZSLGlslWriter NZSL_API nzslGlslWriterCreate(void) {
+NZSLGlslWriter NZSL_API nzslGlslWriterCreate(void)
+{
 	nzsl::GlslWriter* writer = nullptr;
 
-	try {
+	try
+	{
 		writer = new nzsl::GlslWriter;
-	} catch (std::exception& e) {
+	}
+	catch (std::exception& e)
+	{
 		cnzsl::setError("nzslGlslWriterCreate failed: "s + e.what());
-	} catch (...) {
+	} catch (...)
+	{
 		cnzsl::setError("nzslGlslWriterCreate failed with unknown error");
 	}
 
 	return reinterpret_cast<NZSLGlslWriter>(writer);
 }
 
-int NZSL_API nzslGlslWriterSetEnv(NZSLGlslWriter writer, NZSLGlslWriterEnvironment env) {
+int NZSL_API nzslGlslWriterSetEnv(NZSLGlslWriter writer, NZSLGlslWriterEnvironment env)
+{
 	auto writerPtr = reinterpret_cast<nzsl::GlslWriter*>(writer);
 
-	try {
+	try
+	{
 		writerPtr->SetEnv({
 			.extCallback = {},
 			.glMajorVersion = env.glMajorVersion,
@@ -39,12 +44,15 @@ int NZSL_API nzslGlslWriterSetEnv(NZSLGlslWriter writer, NZSLGlslWriterEnvironme
 			.flipYPosition = env.flipYPosition >= 1,
 			.remapZPosition = env.remapZPosition >= 1,
 			.allowDrawParametersUniformsFallback = env.allowDrawParametersUniformsFallback >= 1
-	  	});
-	} catch (std::exception& e) {
+		});
+	}
+	catch (std::exception& e)
+	{
 		cnzsl::setError("nzslGlslWriterSetEnv failed: "s + e.what());
 
 		return 0;
-	} catch (...) {
+	} catch (...)
+	{
 		cnzsl::setError("nzslGlslWriterSetEnv failed with unknown error");
 
 		return 0;
@@ -53,13 +61,15 @@ int NZSL_API nzslGlslWriterSetEnv(NZSLGlslWriter writer, NZSLGlslWriterEnvironme
 	return 1;
 }
 
-NZSLGlslWriterOutput NZSL_API nzslGlslWriterGenerate(NZSLGlslWriter writer, NZSLModule module) {
+NZSLGlslWriterOutput NZSL_API nzslGlslWriterGenerate(NZSLGlslWriter writer, NZSLModule module)
+{
 	auto writerPtr = reinterpret_cast<nzsl::GlslWriter*>(writer);
-	auto modulePtr = reinterpret_cast<nzsl::Ast::ModulePtr *>(module);
+	auto modulePtr = reinterpret_cast<nzsl::Ast::ModulePtr*>(module);
 
 	NZSLGlslWriterOutput output = nullptr;
 
-	try {
+	try
+	{
 		auto generated = new nzsl::GlslWriter::Output(writerPtr->Generate(**modulePtr));
 
 		try
@@ -72,57 +82,67 @@ NZSLGlslWriterOutput NZSL_API nzslGlslWriterGenerate(NZSLGlslWriter writer, NZSL
 				.usesDrawParameterBaseVertexUniform = generated->usesDrawParameterBaseVertexUniform ? 1 : 0,
 				.usesDrawParameterDrawIndexUniform = generated->usesDrawParameterDrawIndexUniform ? 1 : 0
 			};
-		} catch(...) {
+		}
+		catch (...)
+		{
 			delete generated;
 
 			throw;
 		}
-	} catch (std::exception& e) {
+	}
+	catch (std::exception& e)
+	{
 		cnzsl::setError("nzslGlslWriterGenerate failed: "s + e.what());
-	} catch (...) {
+	} catch (...)
+	{
 		cnzsl::setError("nzslGlslWriterGenerate failed with unknown error");
 	}
 
 	return output;
 }
 
-int NZSL_API nzslGlslWriterOutputGetExplicitTextureBinding(NZSLGlslWriterOutput output, const char* bindingName) {
+int NZSL_API nzslGlslWriterOutputGetExplicitTextureBinding(NZSLGlslWriterOutput output, const char* bindingName)
+{
 	auto outputPtr = reinterpret_cast<nzsl::GlslWriter::Output*>(output->internal);
 
-	if(
+	if (
 		auto it = outputPtr->explicitTextureBinding.find(bindingName);
 		it != outputPtr->explicitTextureBinding.end()
-	) {
+	)
+	{
 		return static_cast<int>(it->second);
 	}
 
 	return -1;
 }
 
-int NZSL_API nzslGlslWriterOutputGetExplicitUniformBlockBinding(NZSLGlslWriterOutput output, const char* bindingName) {
+int NZSL_API nzslGlslWriterOutputGetExplicitUniformBlockBinding(NZSLGlslWriterOutput output, const char* bindingName)
+{
 	auto outputPtr = reinterpret_cast<nzsl::GlslWriter::Output*>(output->internal);
 
-	if(
+	if (
 		auto it = outputPtr->explicitUniformBlockBinding.find(bindingName);
 		it != outputPtr->explicitUniformBlockBinding.end()
-	) {
+	)
+	{
 		return static_cast<int>(it->second);
 	}
 
 	return -1;
 }
 
-void NZSL_API nzslGlslWriterOutputDestroy(NZSLGlslWriterOutput output) {
+void NZSL_API nzslGlslWriterOutputDestroy(NZSLGlslWriterOutput output)
+{
 	auto outputPtr = reinterpret_cast<nzsl::GlslWriter::Output*>(output->internal);
 
 	delete outputPtr;
 	delete output;
 }
 
-void NZSL_API nzslGlslWriterDestroy(NZSLGlslWriter writer) {
+void NZSL_API nzslGlslWriterDestroy(NZSLGlslWriter writer)
+{
 	auto writerPtr = reinterpret_cast<nzsl::GlslWriter*>(writer);
 
 	delete writerPtr;
 }
-
 }

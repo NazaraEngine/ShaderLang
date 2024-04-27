@@ -11,6 +11,7 @@
 
 #ifdef __cplusplus
 #include <cstddef>
+
 extern "C" {
 #else
 #include <stddef.h>
@@ -20,7 +21,7 @@ extern "C" {
  *  Errors are local to the thread
  * @param module
  */
-const char * NZSL_API nzslGetError(void);
+const char* NZSL_API nzslGetError(void);
 
 #ifdef __cplusplus
 }
