@@ -17,16 +17,18 @@ extern "C" {
 
 
 /// Opaque pointer on nzsl::LangWriter
-typedef struct NZSLLangWriter_s *NZSLLangWriter;
+typedef struct NZSLLangWriter_s* NZSLLangWriter;
 
-typedef struct NZSLLangWriterOutputInternal_s *NZSLLangWriterOutputInternal;
+typedef struct NZSLLangWriterOutputInternal_s* NZSLLangWriterOutputInternal;
+
 typedef struct
 {
 	NZSLLangWriterOutputInternal internal;
 	const char* code;
 	size_t codeLen;
 } NZSLLangWriterOutput_s;
-typedef NZSLLangWriterOutput_s *NZSLLangWriterOutput;
+
+typedef NZSLLangWriterOutput_s* NZSLLangWriterOutput;
 
 NZSLLangWriter NZSL_API nzslLangWriterCreate(void);
 

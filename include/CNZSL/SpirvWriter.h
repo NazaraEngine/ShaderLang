@@ -12,6 +12,7 @@
 
 #ifdef __cplusplus
 #include <cstddef>
+
 extern "C" {
 #else
 #includ <stddef.h>
@@ -19,7 +20,7 @@ extern "C" {
 
 
 /// Opaque pointer on nzsl::SpirvWriter
-typedef struct NZSLSpirvWriter_s *NZSLSpirvWriter;
+typedef struct NZSLSpirvWriter_s* NZSLSpirvWriter;
 
 typedef struct
 {
@@ -27,14 +28,16 @@ typedef struct
 	uint32_t spvMinorVersion;
 } NZSLSpirvWriterEnvironment;
 
-typedef struct NZSLSpirvWriterOutputInternal_s *NZSLSpirvWriterOutputInternal;
+typedef struct NZSLSpirvWriterOutputInternal_s* NZSLSpirvWriterOutputInternal;
+
 typedef struct
 {
 	NZSLSpirvWriterOutputInternal internal;
 	const uint32_t* spirv;
 	size_t spirvLen;
 } NZSLSpirvWriterOutput_s;
-typedef NZSLSpirvWriterOutput_s *NZSLSpirvWriterOutput;
+
+typedef NZSLSpirvWriterOutput_s* NZSLSpirvWriterOutput;
 
 NZSLSpirvWriter NZSL_API nzslSpirvWriterCreate(void);
 
