@@ -44,7 +44,7 @@ add_rules("plugin.vsxmake.autoupdate")
 
 add_includedirs("include", "src")
 set_exceptions("cxx")
-set_languages("c89", "c++17")
+set_languages("c89", "c++20")
 set_rundir("./bin/$(plat)_$(arch)_$(mode)")
 set_targetdir("./bin/$(plat)_$(arch)_$(mode)")
 

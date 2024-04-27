@@ -2,6 +2,8 @@
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
+#pragma once
+
 #ifndef CNZSL_MODULE_H
 #define CNZSL_MODULE_H
 

@@ -7,6 +7,9 @@ build
 vs*
 vsxmake*
 *.user
+.idea/
+cmake*/
+CMakeLists.txt
 
 # Prerequisites
 *.d
