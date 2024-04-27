@@ -16,7 +16,7 @@ extern "C" {
 
 
 /// Opaque pointer on nzsl::GlslWriter
-typedef struct NZSLGlslWriter_s *NZSLGlslWriter;
+typedef struct NZSLGlslWriter_s* NZSLGlslWriter;
 
 typedef struct
 {
@@ -29,7 +29,8 @@ typedef struct
 	int allowDrawParametersUniformsFallback;
 } NZSLGlslWriterEnvironment;
 
-typedef struct NZSLGlslWriterOutputInternal_s *NZSLGlslWriterOutputInternal;
+typedef struct NZSLGlslWriterOutputInternal_s* NZSLGlslWriterOutputInternal;
+
 typedef struct
 {
 	NZSLGlslWriterOutputInternal internal;
@@ -39,7 +40,8 @@ typedef struct
 	int usesDrawParameterBaseVertexUniform;
 	int usesDrawParameterDrawIndexUniform;
 } NZSLGlslWriterOutput_s;
-typedef NZSLGlslWriterOutput_s *NZSLGlslWriterOutput;
+
+typedef NZSLGlslWriterOutput_s* NZSLGlslWriterOutput;
 
 NZSLGlslWriter NZSL_API nzslGlslWriterCreate(void);
 

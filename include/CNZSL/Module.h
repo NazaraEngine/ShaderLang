@@ -15,7 +15,7 @@ extern "C" {
 
 
 /// Opaque pointer on nzsl::Ast::ModulePtr
-typedef struct NZSLModule_s *NZSLModule;
+typedef struct NZSLModule_s* NZSLModule;
 
 /** Free a NZSLModule that was returned by one of the parsers functions
  *

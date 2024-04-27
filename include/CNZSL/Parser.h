@@ -15,38 +15,21 @@ extern "C" {
 #endif
 
 
-/**
- *
- * @param source
- * @param sourceLen
- * @param f
- * @return
- */
 NZSLModule NZSL_API nzslParserParseSource(const char* source, size_t sourceLen);
 
 /**
  *
  * @param source
  * @param sourceLen
- * @param filePath
+ * @param filePath used when reporting errors
  * @param filePathLen
  * @return
  */
-NZSLModule NZSL_API nzslParserParseSourceWithFilePath(const char* source, size_t sourceLen, const char* filePath, size_t filePathLen);
+NZSLModule NZSL_API nzslParserParseSourceWithFilePath(const char* source, size_t sourceLen, const char* filePath,
+                                                      size_t filePathLen);
 
-/**
- *
- * @param sourcePath
- * @param sourcePathLen
- * @return
- */
 NZSLModule NZSL_API nzslParserParseFromFile(const char* sourcePath, size_t sourcePathLen);
 
-/** Free a NZSLModule that was returned by one of the parsers functions
- *
- * @param module
- */
-void NZSL_API nzslModuleDestroy(NZSLModule module);
 
 #ifdef __cplusplus
 }
