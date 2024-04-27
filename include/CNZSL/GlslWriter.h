@@ -49,9 +49,23 @@ int NZSL_API nzslGlslWriterSetEnv(NZSLGlslWriter writer, NZSLGlslWriterEnvironme
 
 NZSLGlslWriterOutput NZSL_API nzslGlslWriterGenerate(NZSLGlslWriter writer, NZSLModule module);
 
+/**Return texture binding in output or -1 if binding doesn't exists
+ *
+ * @param output
+ * @param bindingName
+ * @return
+ */
 int NZSL_API nzslGlslWriterOutputGetExplicitTextureBinding(NZSLGlslWriterOutput output, const char* bindingName);
 
+/**Return uniform binding in output or -1 if binding doesn't exists
+ *
+ * @param output
+ * @param bindingName
+ * @return
+ */
 int NZSL_API nzslGlslWriterOutputGetExplicitUniformBlockBinding(NZSLGlslWriterOutput output, const char* bindingName);
+
+void NZSL_API nzslGlslWriterOutputDestroy(NZSLGlslWriterOutput output);
 
 void NZSL_API nzslGlslWriterDestroy(NZSLGlslWriter writer);
 
