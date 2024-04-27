@@ -34,6 +34,8 @@ NZSLLangWriter NZSL_API nzslLangWriterCreate(void);
 
 NZSLLangWriterOutput NZSL_API nzslLangWriterGenerate(NZSLLangWriter writer, NZSLModule module);
 
+void NZSL_API nzslLangWriterOutputDestroy(NZSLLangWriterOutput output);
+
 void NZSL_API nzslLangWriterDestroy(NZSLLangWriter writer);
 
 #ifdef __cplusplus

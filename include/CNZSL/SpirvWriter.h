@@ -45,6 +45,8 @@ int NZSL_API nzslSpirvWriterSetEnv(NZSLSpirvWriter writer, NZSLSpirvWriterEnviro
 
 NZSLSpirvWriterOutput NZSL_API nzslSpirvWriterGenerate(NZSLSpirvWriter writer, NZSLModule module);
 
+void NZSL_API nzslSpirvWriterOutputDestroy(NZSLSpirvWriterOutput output);
+
 void NZSL_API nzslSpirvWriterDestroy(NZSLSpirvWriter writer);
 
 #ifdef __cplusplus
