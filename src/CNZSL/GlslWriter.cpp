@@ -1,3 +1,7 @@
+// Copyright (C) 2024 REMqb (remqb at remqb dot fr)
+// This file is part of the "Nazara Shading Language" project
+// For conditions of distribution and use, see copyright notice in Config.hpp
+
 #include <NZSL/GlslWriter.hpp>
 #include <string>
 
@@ -23,7 +27,7 @@ NZSLGlslWriter NZSL_API nzslGlslWriterCreate(void) {
 	return reinterpret_cast<NZSLGlslWriter>(writer);
 }
 
-int NZSL_API nzslGlslWriterSetEnv(NZSLGlslWriter writer, NZSLEnvironment env) {
+int NZSL_API nzslGlslWriterSetEnv(NZSLGlslWriter writer, NZSLGlslWriterEnvironment env) {
 	auto writerPtr = reinterpret_cast<nzsl::GlslWriter*>(writer);
 
 	try {
@@ -56,18 +60,23 @@ NZSLGlslWriterOutput NZSL_API nzslGlslWriterGenerate(NZSLGlslWriter writer, NZSL
 	NZSLGlslWriterOutput output = nullptr;
 
 	try {
-		auto generated = std::make_unique<nzsl::GlslWriter::Output>(writerPtr->Generate(**modulePtr));
+		auto generated = new nzsl::GlslWriter::Output(writerPtr->Generate(**modulePtr));
 
-		output = new NZSLGlslWriterOutput_s{
-			.internal = nullptr,
-			.code = generated->code.c_str(),
-			.codeLen = generated->code.size(),
-			.usesDrawParameterBaseInstanceUniform = generated->usesDrawParameterBaseInstanceUniform ? 1 : 0,
-			.usesDrawParameterBaseVertexUniform = generated->usesDrawParameterBaseVertexUniform ? 1 : 0,
-			.usesDrawParameterDrawIndexUniform = generated->usesDrawParameterDrawIndexUniform ? 1 : 0
-		};
+		try
+		{
+			output = new NZSLGlslWriterOutput_s{
+				.internal = reinterpret_cast<NZSLGlslWriterOutputInternal>(generated),
+				.code = generated->code.c_str(),
+				.codeLen = generated->code.size(),
+				.usesDrawParameterBaseInstanceUniform = generated->usesDrawParameterBaseInstanceUniform ? 1 : 0,
+				.usesDrawParameterBaseVertexUniform = generated->usesDrawParameterBaseVertexUniform ? 1 : 0,
+				.usesDrawParameterDrawIndexUniform = generated->usesDrawParameterDrawIndexUniform ? 1 : 0
+			};
+		} catch(...) {
+			delete generated;
 
-		output->internal = reinterpret_cast<NZSLGlslWriterOutputInternal>(generated.release());
+			throw;
+		}
 	} catch (std::exception& e) {
 		cnzsl::setError("nzslGlslWriterGenerate failed: "s + e.what());
 	} catch (...) {

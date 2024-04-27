@@ -2,6 +2,8 @@
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
+#pragma once
+
 #ifndef CNZSL_GLSLWRITER_H
 #define CNZSL_GLSLWRITER_H
 
@@ -25,7 +27,7 @@ typedef struct
 	int flipYPosition;
 	int remapZPosition;
 	int allowDrawParametersUniformsFallback;
-} NZSLEnvironment;
+} NZSLGlslWriterEnvironment;
 
 typedef struct NZSLGlslWriterOutputInternal_s *NZSLGlslWriterOutputInternal;
 typedef struct
@@ -33,8 +35,6 @@ typedef struct
 	NZSLGlslWriterOutputInternal internal;
 	const char* code;
 	size_t codeLen;
-	//std::unordered_map<std::string, unsigned int> explicitTextureBinding;
-	//std::unordered_map<std::string, unsigned int> explicitUniformBlockBinding;
 	int usesDrawParameterBaseInstanceUniform;
 	int usesDrawParameterBaseVertexUniform;
 	int usesDrawParameterDrawIndexUniform;
@@ -43,7 +43,7 @@ typedef NZSLGlslWriterOutput_s *NZSLGlslWriterOutput;
 
 NZSLGlslWriter NZSL_API nzslGlslWriterCreate(void);
 
-int NZSL_API nzslGlslWriterSetEnv(NZSLGlslWriter writer, NZSLEnvironment env);
+int NZSL_API nzslGlslWriterSetEnv(NZSLGlslWriter writer, NZSLGlslWriterEnvironment env);
 
 NZSLGlslWriterOutput NZSL_API nzslGlslWriterGenerate(NZSLGlslWriter writer, NZSLModule module);
 
