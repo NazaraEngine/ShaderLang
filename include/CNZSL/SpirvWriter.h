@@ -1,6 +1,8 @@
-// Copyright (C) 2024 REMqb (remqb at remqb dot fr)
-// This file is part of the "Nazara Shading Language" project
-// For conditions of distribution and use, see copyright notice in Config.hpp
+/*
+	Copyright (C) 2024 REMqb (remqb at remqb dot fr)
+	This file is part of the "Nazara Shading Language - C Binding" project
+	For conditions of distribution and use, see copyright notice in Config.hpp
+*/
 
 #pragma once
 
@@ -9,49 +11,44 @@
 
 #include <CNZSL/Config.h>
 #include <CNZSL/Module.h>
+#include <CNZSL/WriterStates.h>
+#include <stddef.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
-#include <cstddef>
-
-extern "C" {
-#else
-#includ <stddef.h>
+extern "C"
+{
 #endif
 
-
-/// Opaque pointer on nzsl::SpirvWriter
-typedef struct NZSLSpirvWriter_s* NZSLSpirvWriter;
+typedef struct nzslSpirvWriter nzslSpirvWriter;
+typedef struct nzslSpirvOutput nzslSpirvOutput;
 
 typedef struct
 {
 	uint32_t spvMajorVersion;
 	uint32_t spvMinorVersion;
-} NZSLSpirvWriterEnvironment;
+} nzslSpirvWriterEnvironment;
 
-typedef struct NZSLSpirvWriterOutputInternal_s* NZSLSpirvWriterOutputInternal;
+CNZSL_API nzslSpirvWriter* nzslSpirvWriterCreate(void);
+CNZSL_API void nzslSpirvWriterDestroy(nzslSpirvWriter* writerPtr);
 
-typedef struct
-{
-	NZSLSpirvWriterOutputInternal internal;
-	const uint32_t* spirv;
-	size_t spirvLen;
-} NZSLSpirvWriterOutput_s;
+CNZSL_API nzslSpirvOutput* nzslSpirvWriterGenerate(nzslSpirvWriter* writerPtr, const nzslModule* modulePtr, const nzslWriterStates* statesPtr);
 
-typedef NZSLSpirvWriterOutput_s* NZSLSpirvWriterOutput;
+/** 
+**  Gets the last error message set by the last operation to this writer
+**
+** @param writerPtr
+** @returns null-terminated error string
+**/
+CNZSL_API const char* nzslSpirvWriterGetLastError(const nzslSpirvWriter* writerPtr);
 
-NZSLSpirvWriter NZSL_API nzslSpirvWriterCreate(void);
+CNZSL_API void nzslSpirvWriterSetEnv(nzslSpirvWriter* writerPtr, const nzslSpirvWriterEnvironment* env);
 
-int NZSL_API nzslSpirvWriterSetEnv(NZSLSpirvWriter writer, NZSLSpirvWriterEnvironment env);
-
-NZSLSpirvWriterOutput NZSL_API nzslSpirvWriterGenerate(NZSLSpirvWriter writer, NZSLModule module);
-
-void NZSL_API nzslSpirvWriterOutputDestroy(NZSLSpirvWriterOutput output);
-
-void NZSL_API nzslSpirvWriterDestroy(NZSLSpirvWriter writer);
+CNZSL_API void nzslSpirvOutputDestroy(nzslSpirvOutput* outputPtr);
+CNZSL_API const uint32_t* nzslSpirvOutputGetSpirv(const nzslSpirvOutput* outputPtr, size_t* length);
 
 #ifdef __cplusplus
 }
 #endif
 
-
-#endif //CNZSL_SPIRVWRITER_H
+#endif /* CNZSL_SPIRVWRITER_H */

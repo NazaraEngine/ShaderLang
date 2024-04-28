@@ -23,7 +23,7 @@ namespace nzsl
 	class NZSL_API GlslWriter : public ShaderWriter, public Ast::ExpressionVisitorExcept, public Ast::StatementVisitorExcept
 	{
 		public:
-			using BindingMapping = std::unordered_map<std::uint64_t /* set | binding */, unsigned /*glBinding*/>;
+			using BindingMapping = std::unordered_map<std::uint64_t /* set | binding */, unsigned int /*glBinding*/>;
 			using ExtSupportCallback = std::function<bool(std::string_view name)>;
 			struct Environment;
 			struct Output;

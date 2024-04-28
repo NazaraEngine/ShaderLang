@@ -29,7 +29,7 @@
 
 #include <NazaraUtils/Prerequisites.hpp>
 
-// Nazara version macro
+// NZSL version macro
 #define NZSL_VERSION_MAJOR 0
 #define NZSL_VERSION_MINOR 1
 #define NZSL_VERSION_PATCH 0

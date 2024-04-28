@@ -1,107 +1,50 @@
-// Copyright (C) 2024 REMqb (remqb at remqb dot fr)
-// This file is part of the "Nazara Shading Language" project
-// For conditions of distribution and use, see copyright notice in Config.hpp
+/*
+	Nazara Shading Language - C Binding (CNZSL)
+
+	Copyright (C) 2024 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
+	              2024 REMqb (remqb at remqb dot fr)
+
+	Permission is hereby granted, free of charge, to any person obtaining a copy of
+	this software and associated documentation files (the "Software"), to deal in
+	the Software without restriction, including without limitation the rights to
+	use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+	of the Software, and to permit persons to whom the Software is furnished to do
+	so, subject to the following conditions:
+
+	The above copyright notice and this permission notice shall be included in all
+	copies or substantial portions of the Software.
+
+	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+	SOFTWARE.
+*/
 
 #pragma once
 
-#ifndef CNZSL_CNZSL_H
-#define CNZSL_CNZSL_H
+#ifndef CNZSL_CONFIG_H
+#define CNZSL_CONFIG_H
 
-// #include <NazaraUtils/Prerequisites.hpp> // I don't want the C++ things
+/* CNZSL version macro */
+#define CNZSL_VERSION_MAJOR 0
+#define CNZSL_VERSION_MINOR 1
+#define CNZSL_VERSION_PATCH 0
 
-// Try to identify the compiler
-#if defined(__clang__)
-#define NAZARA_COMPILER_CLANG
-	#define NAZARA_COMPILER_CLANG_VER (__clang_major__ * 100 + __clang_minor__)
-	#define NAZARA_DEPRECATED(txt) __attribute__((__deprecated__(txt)))
-	#define NAZARA_PRETTY_FUNCTION __PRETTY_FUNCTION__
-
-	#define NAZARA_CHECK_CLANG_VER(ver) (NAZARA_COMPILER_CLANG_VER >= ver)
-
-	#define NAZARA_PRAGMA(x) _Pragma(#x)
-
-	#define NAZARA_WARNING_CLANG_DISABLE(warn) NAZARA_PRAGMA(clang diagnostic ignored warn)
-	#define NAZARA_WARNING_CLANG_GCC_DISABLE(warn) NAZARA_PRAGMA(clang diagnostic ignored warn)
-	#define NAZARA_WARNING_POP() NAZARA_PRAGMA(clang diagnostic pop)
-	#define NAZARA_WARNING_PUSH() NAZARA_PRAGMA(clang diagnostic push)
-
-	#ifdef __MINGW32__
-		#define NAZARA_COMPILER_MINGW
-		#ifdef __MINGW64_VERSION_MAJOR
-			#define NAZARA_COMPILER_MINGW_W64
+#if !defined(CNZSL_STATIC)
+	#ifdef _WIN32
+		#ifdef CNZSL_BUILD
+			#define CNZSL_API __declspec(dllexport)
+		#else
+			#define CNZSL_API __declspec(dllimport)
 		#endif
-	#endif
-#elif defined(__GNUC__) || defined(__MINGW32__)
-#define NAZARA_COMPILER_GCC
-#define NAZARA_COMPILER_GCC_VER (__GNUC__ * 100 + __GNUC_MINOR__)
-#define NAZARA_DEPRECATED(txt) __attribute__((__deprecated__(txt)))
-#define NAZARA_PRETTY_FUNCTION __PRETTY_FUNCTION__
-
-#define NAZARA_CHECK_GCC_VER(ver) (NAZARA_COMPILER_GCC_VER >= ver)
-
-#define NAZARA_PRAGMA(x) _Pragma(#x)
-
-#define NAZARA_WARNING_CLANG_GCC_DISABLE(warn) NAZARA_PRAGMA(GCC diagnostic ignored warn)
-#define NAZARA_WARNING_GCC_DISABLE(warn) NAZARA_PRAGMA(GCC diagnostic ignored warn)
-#define NAZARA_WARNING_POP() NAZARA_PRAGMA(GCC diagnostic pop)
-#define NAZARA_WARNING_PUSH() NAZARA_PRAGMA(GCC diagnostic push)
-
-#ifdef __MINGW32__
-#define NAZARA_COMPILER_MINGW
-		#ifdef __MINGW64_VERSION_MAJOR
-			#define NAZARA_COMPILER_MINGW_W64
-		#endif
-#endif
-#elif defined(__INTEL_COMPILER) || defined(__ICL)
-#define NAZARA_COMPILER_ICC
-	#define NAZARA_COMPILER_ICC_VER __INTEL_COMPILER
-	#define NAZARA_DEPRECATED(txt) [[deprecated(txt)]]
-	#define NAZARA_PRETTY_FUNCTION __FUNCTION__
-
-	#define NAZARA_CHECK_ICC_VER(ver) (NAZARA_COMPILER_ICC_VER >= ver)
-
-	#define NAZARA_PRAGMA(x) _Pragma(x)
-
-	#define NAZARA_WARNING_ICC_DISABLE(...) NAZARA_PRAGMA(warning(disable: __VA_ARGS__))
-	#define NAZARA_WARNING_POP() NAZARA_PRAGMA(warning(pop))
-	#define NAZARA_WARNING_PUSH() NAZARA_PRAGMA(warning(push))
-#elif defined(_MSC_VER)
-	#define NAZARA_COMPILER_MSVC
-	#define NAZARA_COMPILER_MSVC_VER _MSC_VER
-	#define NAZARA_DEPRECATED(txt) __declspec(deprecated(txt))
-	#define NAZARA_PRETTY_FUNCTION __FUNCSIG__
-
-	#define NAZARA_CHECK_MSVC_VER(ver) (NAZARA_COMPILER_MSVC_VER >= ver)
-
-	#define NAZARA_PRAGMA(x) __pragma(x)
-
-	#define NAZARA_WARNING_MSVC_DISABLE(...) NAZARA_PRAGMA(warning(disable: __VA_ARGS__))
-	#define NAZARA_WARNING_POP() NAZARA_PRAGMA(warning(pop))
-	#define NAZARA_WARNING_PUSH() NAZARA_PRAGMA(warning(push))
-
-	// __cplusplus isn't respected on MSVC without /Zc:__cplusplus flag
-	#define NAZARA_CPP_VER _MSVC_LANG
-#else
-	#define NAZARA_COMPILER_UNKNOWN
-	#define NAZARA_DEPRECATED(txt)
-	#define NAZARA_PRETTY_FUNCTION __func__ // __func__ has been standardized in C++ 2011
-
-	#pragma message This compiler is not fully supported
-#endif
-
-// Nazara version macro
-#define NZSL_VERSION_MAJOR 0
-#define NZSL_VERSION_MINOR 1
-#define NZSL_VERSION_PATCH 0
-
-#if !defined(NZSL_STATIC)
-#ifdef NZSL_BUILD
-		#define NZSL_API NAZARA_EXPORT
 	#else
-		#define NZSL_API NAZARA_IMPORT
+		#define CNZSL_API __attribute__((visibility("default")))
 	#endif
 #else
-#define NZSL_API
+	#define CNZSL_API extern
 #endif
 
-#endif //CNZSL_CNZSL_H
+#endif /* CNZSL_CONFIG_H */

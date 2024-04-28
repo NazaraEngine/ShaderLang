@@ -2,109 +2,76 @@
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
+#include <CNZSL/SpirvWriter.h>
+#include <CNZSL/Structs/Module.hpp>
+#include <CNZSL/Structs/SpirvOutput.hpp>
+#include <CNZSL/Structs/SpirvWriter.hpp>
+#include <CNZSL/Structs/WriterStates.hpp>
 #include <NZSL/SpirvWriter.hpp>
+#include <fmt/format.h>
 #include <string>
 
-#include <CNZSL/SpirvWriter.h>
-#include <CNZSL/Error.hpp>
-
-using namespace std::literals;
-
-extern "C" {
-NZSLSpirvWriter NZSL_API nzslSpirvWriterCreate(void)
+extern "C"
 {
-	nzsl::SpirvWriter* writer = nullptr;
-
-	try
+	CNZSL_API nzslSpirvWriter* nzslSpirvWriterCreate(void)
 	{
-		writer = new nzsl::SpirvWriter;
-	}
-	catch (std::exception& e)
-	{
-		cnzsl::setError("nzslSpirvWriterCreate failed: "s + e.what());
-	} catch (...)
-	{
-		cnzsl::setError("nzslSpirvWriterCreate failed with unknown error");
+		return new nzslSpirvWriter;
 	}
 
-	return reinterpret_cast<NZSLSpirvWriter>(writer);
-}
-
-int NZSL_API nzslSpirvWriterSetEnv(NZSLSpirvWriter writer, NZSLSpirvWriterEnvironment env)
-{
-	auto writerPtr = reinterpret_cast<nzsl::SpirvWriter*>(writer);
-
-	try
+	CNZSL_API void nzslSpirvWriterDestroy(nzslSpirvWriter* writerPtr)
 	{
-		writerPtr->SetEnv({
-			.spvMajorVersion = env.spvMajorVersion,
-			.spvMinorVersion = env.spvMinorVersion
-		});
-	}
-	catch (std::exception& e)
-	{
-		cnzsl::setError("nzslSpirvWriterSetEnv failed: "s + e.what());
-
-		return 0;
-	} catch (...)
-	{
-		cnzsl::setError("nzslSpirvWriterSetEnv failed with unknown error");
-
-		return 0;
+		delete writerPtr;
 	}
 
-	return 1;
-}
-
-NZSLSpirvWriterOutput NZSL_API nzslSpirvWriterGenerate(NZSLSpirvWriter writer, NZSLModule module)
-{
-	auto writerPtr = reinterpret_cast<nzsl::SpirvWriter*>(writer);
-	auto modulePtr = reinterpret_cast<nzsl::Ast::ModulePtr*>(module);
-
-	NZSLSpirvWriterOutput output = nullptr;
-
-	try
+	CNZSL_API nzslSpirvOutput* nzslSpirvWriterGenerate(nzslSpirvWriter* writerPtr, const nzslModule* modulePtr, const nzslWriterStates* statesPtr)
 	{
-		auto generated = new std::vector{writerPtr->Generate(**modulePtr)};
-
 		try
 		{
-			output = new NZSLSpirvWriterOutput_s{
-				.internal = reinterpret_cast<NZSLSpirvWriterOutputInternal>(generated),
-				.spirv = generated->data(),
-				.spirvLen = generated->size()
-			};
+			nzsl::SpirvWriter::States states;
+			if (statesPtr)
+				states = static_cast<const nzsl::SpirvWriter::States&>(*statesPtr);
+
+			std::unique_ptr<nzslSpirvOutput> output = std::make_unique<nzslSpirvOutput>();
+			output->spirv = writerPtr->writer.Generate(*modulePtr->module, states);
+
+			return output.release();
+		}
+		catch (std::exception& e)
+		{
+			writerPtr->lastError = fmt::format("nzslSpirvWriterGenerate failed: {}", e.what());
+			return nullptr;
 		}
 		catch (...)
 		{
-			delete generated;
-
-			throw;
+			writerPtr->lastError = "nzslSpirvWriterGenerate failed with unknown error";
+			return nullptr;
 		}
 	}
-	catch (std::exception& e)
+
+	CNZSL_API const char* nzslSpirvWriterGetLastError(const nzslSpirvWriter* writerPtr)
 	{
-		cnzsl::setError("nzslSpirvWriterGenerate failed: "s + e.what());
-	} catch (...)
-	{
-		cnzsl::setError("nzslSpirvWriterGenerate failed with unknown error");
+		return writerPtr->lastError.c_str();
 	}
 
-	return output;
-}
+	CNZSL_API void nzslSpirvWriterSetEnv(nzslSpirvWriter* writerPtr, const nzslSpirvWriterEnvironment* env)
+	{
+		nzsl::SpirvWriter::Environment writerEnv;
+		writerEnv.spvMajorVersion = env->spvMajorVersion;
+		writerEnv.spvMinorVersion = env->spvMinorVersion;
 
-void NZSL_API nzslSpirvWriterOutputDestroy(NZSLSpirvWriterOutput output)
-{
-	auto outputPtr = reinterpret_cast<std::vector<std::uint32_t>*>(output->internal);
+		writerPtr->writer.SetEnv(writerEnv);
+	}
 
-	delete outputPtr;
-	delete output;
-}
+	CNZSL_API void nzslSpirvOutputDestroy(nzslSpirvOutput* outputPtr)
+	{
+		delete outputPtr;
+	}
 
-void NZSL_API nzslSpirvWriterDestroy(NZSLSpirvWriter writer)
-{
-	auto writerPtr = reinterpret_cast<nzsl::SpirvWriter*>(writer);
+	CNZSL_API const uint32_t* nzslSpirvOutputGetSpirv(const nzslSpirvOutput* outputPtr, size_t* length)
+	{
+		if (length)
+			*length = outputPtr->spirv.size();
 
-	delete writerPtr;
-}
+		return outputPtr->spirv.data();
+	}
 }
