@@ -1,6 +1,8 @@
-// Copyright (C) 2024 REMqb (remqb at remqb dot fr)
-// This file is part of the "Nazara Shading Language" project
-// For conditions of distribution and use, see copyright notice in Config.hpp
+/*
+	Copyright (C) 2024 REMqb (remqb at remqb dot fr)
+	This file is part of the "Nazara Shading Glsluage - C Binding" project
+	For conditions of distribution and use, see copyright notice in Config.hpp
+*/
 
 #pragma once
 
@@ -9,69 +11,77 @@
 
 #include <CNZSL/Config.h>
 #include <CNZSL/Module.h>
+#include <CNZSL/ShaderStageType.h>
+#include <CNZSL/WriterStates.h>
+#include <stddef.h>
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-
-/// Opaque pointer on nzsl::GlslWriter
-typedef struct NZSLGlslWriter_s* NZSLGlslWriter;
+typedef struct nzslGlslWriter nzslGlslWriter;
+typedef struct nzslGlslBindingMapping nzslGlslBindingMapping;
+typedef struct nzslGlslOutput nzslGlslOutput;
 
 typedef struct
 {
-	// ExtSupportCallback extCallback;
 	unsigned int glMajorVersion;
 	unsigned int glMinorVersion;
 	int glES;
 	int flipYPosition;
 	int remapZPosition;
 	int allowDrawParametersUniformsFallback;
-} NZSLGlslWriterEnvironment;
+} nzslGlslWriterEnvironment;
 
-typedef struct NZSLGlslWriterOutputInternal_s* NZSLGlslWriterOutputInternal;
+CNZSL_API nzslGlslBindingMapping* nzslGlslBindingMappingCreate(void);
+CNZSL_API void nzslGlslBindingMappingDestroy(nzslGlslBindingMapping* bindingMappingPtr);
 
-typedef struct
-{
-	NZSLGlslWriterOutputInternal internal;
-	const char* code;
-	size_t codeLen;
-	int usesDrawParameterBaseInstanceUniform;
-	int usesDrawParameterBaseVertexUniform;
-	int usesDrawParameterDrawIndexUniform;
-} NZSLGlslWriterOutput_s;
+CNZSL_API void nzslGlslBindingMappingSetBinding(nzslGlslBindingMapping* bindingMappingPtr, uint32_t setIndex, uint32_t bindingIndex, unsigned int glBinding);
 
-typedef NZSLGlslWriterOutput_s* NZSLGlslWriterOutput;
+CNZSL_API nzslGlslWriter* nzslGlslWriterCreate(void);
+CNZSL_API void nzslGlslWriterDestroy(nzslGlslWriter* writerPtr);
 
-NZSLGlslWriter NZSL_API nzslGlslWriterCreate(void);
+CNZSL_API nzslGlslOutput* nzslGlslWriterGenerate(nzslGlslWriter* writerPtr, const nzslModule* modulePtr, const nzslGlslBindingMapping* bindingMapping, const nzslWriterStates* statesPtr);
+CNZSL_API nzslGlslOutput* nzslGlslWriterGenerateStage(nzslShaderStageType stage, nzslGlslWriter* writerPtr, const nzslModule* modulePtr, const nzslGlslBindingMapping* bindingMapping, const nzslWriterStates* statesPtr);
 
-int NZSL_API nzslGlslWriterSetEnv(NZSLGlslWriter writer, NZSLGlslWriterEnvironment env);
+/** 
+**  Gets the last error message set by the last operation to this writer
+**
+** @param writerPtr
+** @returns null-terminated error string
+**/
+CNZSL_API const char* nzslGlslWriterGetLastError(const nzslGlslWriter* writerPtr);
 
-NZSLGlslWriterOutput NZSL_API nzslGlslWriterGenerate(NZSLGlslWriter writer, NZSLModule module);
+CNZSL_API void nzslGlslWriterSetEnv(nzslGlslWriter* writerPtr, const nzslGlslWriterEnvironment* env);
 
-/**Return texture binding in output or -1 if binding doesn't exists
+CNZSL_API void nzslGlslOutputDestroy(nzslGlslOutput* outputPtr);
+CNZSL_API const char* nzslGlslOutputGetCode(const nzslGlslOutput* outputPtr, size_t* length);
+
+/**
+ * Return texture binding in output or -1 if binding doesn't exists
  *
  * @param output
  * @param bindingName
  * @return
  */
-int NZSL_API nzslGlslWriterOutputGetExplicitTextureBinding(NZSLGlslWriterOutput output, const char* bindingName);
+CNZSL_API int nzslGlslOutputGetExplicitTextureBinding(const nzslGlslOutput* outputPtr, const char* bindingName);
 
-/**Return uniform binding in output or -1 if binding doesn't exists
+/**
+ * Return uniform binding in output or -1 if binding doesn't exists
  *
  * @param output
  * @param bindingName
  * @return
  */
-int NZSL_API nzslGlslWriterOutputGetExplicitUniformBlockBinding(NZSLGlslWriterOutput output, const char* bindingName);
+CNZSL_API int nzslGlslOutputGetExplicitUniformBlockBinding(const nzslGlslOutput* outputPtr, const char* bindingName);
 
-void NZSL_API nzslGlslWriterOutputDestroy(NZSLGlslWriterOutput output);
-
-void NZSL_API nzslGlslWriterDestroy(NZSLGlslWriter writer);
+CNZSL_API int nzslGlslOutputGetUsesDrawParameterBaseInstanceUniform(const nzslGlslOutput* outputPtr);
+CNZSL_API int nzslGlslOutputGetUsesDrawParameterBaseVertexUniform(const nzslGlslOutput* outputPtr);
+CNZSL_API int nzslGlslOutputGetUsesDrawParameterDrawIndexUniform(const nzslGlslOutput* outputPtr);
 
 #ifdef __cplusplus
 }
 #endif
 
-
-#endif //CNZSL_GLSLWRITER_H
+#endif /* CNZSL_GLSLWRITER_H */

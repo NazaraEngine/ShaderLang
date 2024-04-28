@@ -7,6 +7,7 @@ option("erronwarn", { default = false, description = "Fails compilation if a war
 option("fs_watcher", { default = true, description = "Compiles with filesystem watch support (uses efsw)"})
 option("unitybuild", { default = false, description = "Build the library using unity build"})
 option("with_nzslc", { default = true, description = "Builds the standalone command-line compiler (nzslc)"})
+option("cbinding", { default = true, description = "Builds the C binding library (CNZSL)"})
 
 -- Sanitizers
 local sanitizers = {
@@ -44,7 +45,7 @@ add_rules("plugin.vsxmake.autoupdate")
 
 add_includedirs("include", "src")
 set_exceptions("cxx")
-set_languages("c89", "c++20")
+set_languages("c89", "c++17")
 set_rundir("./bin/$(plat)_$(arch)_$(mode)")
 set_targetdir("./bin/$(plat)_$(arch)_$(mode)")
 
@@ -101,11 +102,9 @@ target("nzsl", function ()
 	add_defines("NZSL_BUILD")
 	add_headerfiles("include/(NZSL/**.hpp)")
 	add_headerfiles("include/(NZSL/**.inl)")
-	add_headerfiles("include/(CNZSL/**.h)")
 	add_headerfiles("src/NZSL/**.hpp", { prefixdir = "private", install = false })
 	add_headerfiles("src/NZSL/**.inl", { prefixdir = "private", install = false })
 	add_files("src/NZSL/**.cpp")
-	add_files("src/CNZSL/**.cpp")
 	add_packages("nazarautils", { public = true })
 	add_packages("fast_float", "fmt", "frozen", "ordered_map")
 
@@ -130,6 +129,25 @@ if has_config("with_nzslc") then
 		add_files("src/ShaderCompiler/**.cpp")
 		add_deps("nzsl")
 		add_packages("cxxopts", "fmt", "frozen", "nlohmann_json")
+	end)
+end
+
+if has_config("cbinding") then 
+	target("cnzsl", function ()
+		set_kind("$(kind)")
+		set_group("Libraries")
+		add_defines("CNZSL_BUILD")
+		add_deps("nzsl")
+		add_packages("fmt")
+
+		add_headerfiles("include/(CNZSL/**.h)")
+		add_files("src/CNZSL/**.cpp")
+
+		on_load(function (target)
+			if target:kind() == "static" then
+				target:add("defines", "CNZSL_STATIC", { public = true })
+			end
+		end)
 	end)
 end
 

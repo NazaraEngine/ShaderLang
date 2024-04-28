@@ -2,83 +2,67 @@
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
+#include <CNZSL/LangWriter.h>
+#include <CNZSL/Structs/LangOutput.hpp>
+#include <CNZSL/Structs/LangWriter.hpp>
+#include <CNZSL/Structs/Module.hpp>
+#include <CNZSL/Structs/WriterStates.hpp>
 #include <NZSL/LangWriter.hpp>
+#include <fmt/format.h>
 #include <string>
 
-#include <CNZSL/LangWriter.h>
-#include <CNZSL/Error.hpp>
-
-using namespace std::literals;
-
-extern "C" {
-NZSLLangWriter NZSL_API nzslLangWriterCreate(void)
+extern "C"
 {
-	nzsl::LangWriter* writer = nullptr;
-
-	try
+	CNZSL_API nzslLangWriter* nzslLangWriterCreate(void)
 	{
-		writer = new nzsl::LangWriter;
-	}
-	catch (std::exception& e)
-	{
-		cnzsl::setError("nzslLangWriterCreate failed: "s + e.what());
-	} catch (...)
-	{
-		cnzsl::setError("nzslLangWriterCreate failed with unknown error");
+		return new nzslLangWriter;
 	}
 
-	return reinterpret_cast<NZSLLangWriter>(writer);
-}
-
-NZSLLangWriterOutput NZSL_API nzslLangWriterGenerate(NZSLLangWriter writer, NZSLModule module)
-{
-	auto writerPtr = reinterpret_cast<nzsl::LangWriter*>(writer);
-	auto modulePtr = reinterpret_cast<nzsl::Ast::ModulePtr*>(module);
-
-	NZSLLangWriterOutput output = nullptr;
-
-	try
+	CNZSL_API void nzslLangWriterDestroy(nzslLangWriter* writerPtr)
 	{
-		auto generated = new std::string{writerPtr->Generate(**modulePtr)};
+		delete writerPtr;
+	}
 
+	CNZSL_API nzslLangOutput* nzslLangWriterGenerate(nzslLangWriter* writerPtr, const nzslModule* modulePtr, const nzslWriterStates* statesPtr)
+	{
 		try
 		{
-			output = new NZSLLangWriterOutput_s{
-				.internal = reinterpret_cast<NZSLLangWriterOutputInternal>(generated),
-				.code = generated->data(),
-				.codeLen = generated->size()
-			};
+			nzsl::LangWriter::States states;
+			if (statesPtr)
+				states = static_cast<const nzsl::LangWriter::States&>(*statesPtr);
+
+			std::unique_ptr<nzslLangOutput> output = std::make_unique<nzslLangOutput>();
+			output->code = writerPtr->writer.Generate(*modulePtr->module, states);
+
+			return output.release();
+		}
+		catch (std::exception& e)
+		{
+			writerPtr->lastError = fmt::format("nzslLangWriterGenerate failed: {}", e.what());
+			return nullptr;
 		}
 		catch (...)
 		{
-			delete generated;
-
-			throw;
+			writerPtr->lastError = "nzslLangWriterGenerate failed with unknown error";
+			return nullptr;
 		}
 	}
-	catch (std::exception& e)
+
+	CNZSL_API const char* nzslLangWriterGetLastError(const nzslLangWriter* writerPtr)
 	{
-		cnzsl::setError("nzslLangWriterGenerate failed: "s + e.what());
-	} catch (...)
-	{
-		cnzsl::setError("nzslLangWriterGenerate failed with unknown error");
+		return writerPtr->lastError.c_str();
 	}
 
-	return output;
-}
+	CNZSL_API void nzslLangOutputDestroy(nzslLangOutput* outputPtr)
+	{
+		delete outputPtr;
+	}
 
-void NZSL_API nzslLangWriterOutputDestroy(NZSLLangWriterOutput output)
-{
-	auto outputPtr = reinterpret_cast<std::string*>(output->internal);
+	CNZSL_API const char* nzslLangOutputGetCode(const nzslLangOutput* outputPtr, size_t* length)
+	{
+		if (length)
+			*length = outputPtr->code.size();
 
-	delete outputPtr;
-	delete output;
-}
-
-void NZSL_API nzslLangWriterDestroy(NZSLLangWriter writer)
-{
-	auto writerPtr = reinterpret_cast<nzsl::LangWriter*>(writer);
-
-	delete writerPtr;
-}
+		return outputPtr->code.data();
+	}
 }

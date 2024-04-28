@@ -1,6 +1,8 @@
-// Copyright (C) 2024 REMqb (remqb at remqb dot fr)
-// This file is part of the "Nazara Shading Language" project
-// For conditions of distribution and use, see copyright notice in Config.hpp
+/*
+	Copyright (C) 2024 REMqb (remqb at remqb dot fr)
+	This file is part of the "Nazara Shading Language - C Binding" project
+	For conditions of distribution and use, see copyright notice in Config.hpp
+*/
 
 #pragma once
 
@@ -9,38 +11,35 @@
 
 #include <CNZSL/Config.h>
 #include <CNZSL/Module.h>
+#include <CNZSL/WriterStates.h>
+#include <stddef.h>
 
 #ifdef __cplusplus
-extern "C" {
-#else
+extern "C"
+{
 #endif
 
+typedef struct nzslLangWriter nzslLangWriter;
+typedef struct nzslLangOutput nzslLangOutput;
 
-/// Opaque pointer on nzsl::LangWriter
-typedef struct NZSLLangWriter_s* NZSLLangWriter;
+CNZSL_API nzslLangWriter* nzslLangWriterCreate(void);
+CNZSL_API void nzslLangWriterDestroy(nzslLangWriter* writerPtr);
 
-typedef struct NZSLLangWriterOutputInternal_s* NZSLLangWriterOutputInternal;
+CNZSL_API nzslLangOutput* nzslLangWriterGenerate(nzslLangWriter* writerPtr, const nzslModule* modulePtr, const nzslWriterStates* statesPtr);
 
-typedef struct
-{
-	NZSLLangWriterOutputInternal internal;
-	const char* code;
-	size_t codeLen;
-} NZSLLangWriterOutput_s;
+/** 
+**  Gets the last error message set by the last operation to this writer
+**
+** @param writerPtr
+** @returns null-terminated error string
+**/
+CNZSL_API const char* nzslLangWriterGetLastError(const nzslLangWriter* writerPtr);
 
-typedef NZSLLangWriterOutput_s* NZSLLangWriterOutput;
-
-NZSLLangWriter NZSL_API nzslLangWriterCreate(void);
-
-NZSLLangWriterOutput NZSL_API nzslLangWriterGenerate(NZSLLangWriter writer, NZSLModule module);
-
-void NZSL_API nzslLangWriterOutputDestroy(NZSLLangWriterOutput output);
-
-void NZSL_API nzslLangWriterDestroy(NZSLLangWriter writer);
+CNZSL_API void nzslLangOutputDestroy(nzslLangOutput* outputPtr);
+CNZSL_API const char* nzslLangOutputGetCode(const nzslLangOutput* outputPtr, size_t* length);
 
 #ifdef __cplusplus
 }
 #endif
 
-
-#endif //CNZSL_LANGWRITER_H
+#endif /* CNZSL_LANGWRITER_H */
