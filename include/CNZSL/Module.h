@@ -1,6 +1,8 @@
-// Copyright (C) 2024 REMqb (remqb at remqb dot fr)
-// This file is part of the "Nazara Shading Language" project
-// For conditions of distribution and use, see copyright notice in Config.hpp
+/*
+	Copyright (C) 2024 REMqb (remqb at remqb dot fr)
+	This file is part of the "Nazara Shading Language - C Binding" project
+	For conditions of distribution and use, see copyright notice in Config.hpp
+*/
 
 #pragma once
 
@@ -10,22 +12,36 @@
 #include <CNZSL/Config.h>
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
+typedef struct nzslModule nzslModule;
 
-/// Opaque pointer on nzsl::Ast::ModulePtr
-typedef struct NZSLModule_s* NZSLModule;
+/**
+** Creates an empty nzslModule
+**
+** @param module
+*/
+CNZSL_API nzslModule* nzslModuleCreate(void);
 
-/** Free a NZSLModule that was returned by one of the parsers functions
- *
- * @param module
- */
-void NZSL_API nzslModuleDestroy(NZSLModule module);
+/**
+** Free a nzslModule that was returned by one of the parsers functions
+**
+** @param module
+*/
+CNZSL_API void nzslModuleDestroy(nzslModule* module);
+
+/** 
+**  Gets the last error message set by the last operation to this module
+**
+** @param module
+** @returns null-terminated error string
+**/
+CNZSL_API const char* nzslModuleGetLastError(const nzslModule* module);
 
 #ifdef __cplusplus
 }
 #endif
 
-
-#endif //CNZSL_MODULE_H
+#endif /* CNZSL_MODULE_H */

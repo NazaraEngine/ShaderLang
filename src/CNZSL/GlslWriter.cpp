@@ -2,147 +2,164 @@
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
+#include <CNZSL/GlslWriter.h>
+#include <CNZSL/Structs/GlslBindingMapping.hpp>
+#include <CNZSL/Structs/GlslOutput.hpp>
+#include <CNZSL/Structs/GlslWriter.hpp>
+#include <CNZSL/Structs/Module.hpp>
+#include <CNZSL/Structs/WriterStates.hpp>
 #include <NZSL/GlslWriter.hpp>
+#include <fmt/format.h>
 #include <string>
 
-#include <CNZSL/GlslWriter.h>
-#include <CNZSL/Error.hpp>
-
-using namespace std::literals;
-
-extern "C" {
-NZSLGlslWriter NZSL_API nzslGlslWriterCreate(void)
+extern "C"
 {
-	nzsl::GlslWriter* writer = nullptr;
-
-	try
+	CNZSL_API nzslGlslBindingMapping* nzslGlslBindingMappingCreate(void)
 	{
-		writer = new nzsl::GlslWriter;
-	}
-	catch (std::exception& e)
-	{
-		cnzsl::setError("nzslGlslWriterCreate failed: "s + e.what());
-	} catch (...)
-	{
-		cnzsl::setError("nzslGlslWriterCreate failed with unknown error");
+		return new nzslGlslBindingMapping;
 	}
 
-	return reinterpret_cast<NZSLGlslWriter>(writer);
-}
-
-int NZSL_API nzslGlslWriterSetEnv(NZSLGlslWriter writer, NZSLGlslWriterEnvironment env)
-{
-	auto writerPtr = reinterpret_cast<nzsl::GlslWriter*>(writer);
-
-	try
+	CNZSL_API void nzslGlslBindingMappingDestroy(nzslGlslBindingMapping* bindingMappingPtr)
 	{
-		writerPtr->SetEnv({
-			.extCallback = {},
-			.glMajorVersion = env.glMajorVersion,
-			.glMinorVersion = env.glMinorVersion,
-			.glES = env.glES >= 1,
-			.flipYPosition = env.flipYPosition >= 1,
-			.remapZPosition = env.remapZPosition >= 1,
-			.allowDrawParametersUniformsFallback = env.allowDrawParametersUniformsFallback >= 1
-		});
-	}
-	catch (std::exception& e)
-	{
-		cnzsl::setError("nzslGlslWriterSetEnv failed: "s + e.what());
-
-		return 0;
-	} catch (...)
-	{
-		cnzsl::setError("nzslGlslWriterSetEnv failed with unknown error");
-
-		return 0;
+		delete bindingMappingPtr;
 	}
 
-	return 1;
-}
-
-NZSLGlslWriterOutput NZSL_API nzslGlslWriterGenerate(NZSLGlslWriter writer, NZSLModule module)
-{
-	auto writerPtr = reinterpret_cast<nzsl::GlslWriter*>(writer);
-	auto modulePtr = reinterpret_cast<nzsl::Ast::ModulePtr*>(module);
-
-	NZSLGlslWriterOutput output = nullptr;
-
-	try
+	CNZSL_API void nzslGlslBindingMappingSetBinding(nzslGlslBindingMapping* bindingMappingPtr, uint32_t setIndex, uint32_t bindingIndex, unsigned int glBinding)
 	{
-		auto generated = new nzsl::GlslWriter::Output(writerPtr->Generate(**modulePtr));
+		uint64_t setBinding = setIndex;
+		setBinding <<= 32;
+		setBinding |= bindingIndex;
 
+		bindingMappingPtr->mappings[setBinding] = glBinding;
+	}
+
+	CNZSL_API nzslGlslWriter* nzslGlslWriterCreate(void)
+	{
+		return new nzslGlslWriter;
+	}
+
+	CNZSL_API void nzslGlslWriterDestroy(nzslGlslWriter* writerPtr)
+	{
+		delete writerPtr;
+	}
+
+	CNZSL_API nzslGlslOutput* nzslGlslWriterGenerate(nzslGlslWriter* writerPtr, const nzslModule* modulePtr, const nzslGlslBindingMapping* bindingMapping, const nzslWriterStates* statesPtr)
+	{
 		try
 		{
-			output = new NZSLGlslWriterOutput_s{
-				.internal = reinterpret_cast<NZSLGlslWriterOutputInternal>(generated),
-				.code = generated->code.c_str(),
-				.codeLen = generated->code.size(),
-				.usesDrawParameterBaseInstanceUniform = generated->usesDrawParameterBaseInstanceUniform ? 1 : 0,
-				.usesDrawParameterBaseVertexUniform = generated->usesDrawParameterBaseVertexUniform ? 1 : 0,
-				.usesDrawParameterDrawIndexUniform = generated->usesDrawParameterDrawIndexUniform ? 1 : 0
-			};
+			nzsl::GlslWriter::States states;
+			if (statesPtr)
+				states = static_cast<const nzsl::GlslWriter::States&>(*statesPtr);
+
+			std::unique_ptr<nzslGlslOutput> output = std::make_unique<nzslGlslOutput>();
+			static_cast<nzsl::GlslWriter::Output&>(*output) = writerPtr->writer.Generate(*modulePtr->module, bindingMapping->mappings, states);
+
+			return output.release();
+		}
+		catch (std::exception& e)
+		{
+			writerPtr->lastError = fmt::format("nzslGlslWriterGenerate failed: {}", e.what());
+			return nullptr;
 		}
 		catch (...)
 		{
-			delete generated;
-
-			throw;
+			writerPtr->lastError = "nzslGlslWriterGenerate failed with unknown error";
+			return nullptr;
 		}
 	}
-	catch (std::exception& e)
+
+	CNZSL_API nzslGlslOutput* nzslGlslWriterGenerateStage(nzslShaderStageType stage, nzslGlslWriter* writerPtr, const nzslModule* modulePtr, const nzslGlslBindingMapping* bindingMapping, const nzslWriterStates* statesPtr)
 	{
-		cnzsl::setError("nzslGlslWriterGenerate failed: "s + e.what());
-	} catch (...)
-	{
-		cnzsl::setError("nzslGlslWriterGenerate failed with unknown error");
+		constexpr std::array s_shaderStages = {
+			nzsl::ShaderStageType::Compute,  // NZSL_STAGE_COMPUTE
+			nzsl::ShaderStageType::Fragment, // NZSL_STAGE_FRAGMENT
+			nzsl::ShaderStageType::Vertex    // NZSL_STAGE_VERTEX
+		};
+
+		try
+		{
+			nzsl::GlslWriter::States states;
+			if (statesPtr)
+				states = static_cast<const nzsl::GlslWriter::States&>(*statesPtr);
+
+			std::unique_ptr<nzslGlslOutput> output = std::make_unique<nzslGlslOutput>();
+			static_cast<nzsl::GlslWriter::Output&>(*output) = writerPtr->writer.Generate(s_shaderStages[stage], *modulePtr->module, bindingMapping->mappings, states);
+
+			return output.release();
+		}
+		catch (std::exception& e)
+		{
+			writerPtr->lastError = fmt::format("nzslGlslWriterGenerate failed: {}", e.what());
+			return nullptr;
+		}
+		catch (...)
+		{
+			writerPtr->lastError = "nzslGlslWriterGenerate failed with unknown error";
+			return nullptr;
+		}
 	}
 
-	return output;
-}
+	CNZSL_API const char* nzslGlslWriterGetLastError(const nzslGlslWriter* writerPtr)
+	{
+		return writerPtr->lastError.c_str();
+	}
 
-int NZSL_API nzslGlslWriterOutputGetExplicitTextureBinding(NZSLGlslWriterOutput output, const char* bindingName)
-{
-	auto outputPtr = reinterpret_cast<nzsl::GlslWriter::Output*>(output->internal);
+	CNZSL_API void nzslGlslWriterSetEnv(nzslGlslWriter* writerPtr, const nzslGlslWriterEnvironment* env)
+	{
+		nzsl::GlslWriter::Environment writerEnv;
+		writerEnv.glMajorVersion = env->glMajorVersion;
+		writerEnv.glMinorVersion = env->glMinorVersion;
+		writerEnv.glES = env->glES;
+		writerEnv.flipYPosition = env->flipYPosition;
+		writerEnv.remapZPosition = env->remapZPosition;
+		writerEnv.allowDrawParametersUniformsFallback = env->allowDrawParametersUniformsFallback;
 
-	if (
+		writerPtr->writer.SetEnv(writerEnv);
+	}
+
+	CNZSL_API void nzslGlslOutputDestroy(nzslGlslOutput* outputPtr)
+	{
+		delete outputPtr;
+	}
+
+	CNZSL_API const char* nzslGlslOutputGetCode(const nzslGlslOutput* outputPtr, size_t* length)
+	{
+		if (length)
+			*length = outputPtr->code.size();
+
+		return outputPtr->code.data();
+	}
+	
+	CNZSL_API int nzslGlslOutputGetExplicitTextureBinding(const nzslGlslOutput* outputPtr, const char* bindingName)
+	{
 		auto it = outputPtr->explicitTextureBinding.find(bindingName);
-		it != outputPtr->explicitTextureBinding.end()
-	)
-	{
-		return static_cast<int>(it->second);
+		if (it == outputPtr->explicitTextureBinding.end())
+			return -1;
+
+		return it->second;
 	}
 
-	return -1;
-}
-
-int NZSL_API nzslGlslWriterOutputGetExplicitUniformBlockBinding(NZSLGlslWriterOutput output, const char* bindingName)
-{
-	auto outputPtr = reinterpret_cast<nzsl::GlslWriter::Output*>(output->internal);
-
-	if (
+	CNZSL_API int nzslGlslOutputGetExplicitUniformBlockBinding(const nzslGlslOutput* outputPtr, const char* bindingName)
+	{
 		auto it = outputPtr->explicitUniformBlockBinding.find(bindingName);
-		it != outputPtr->explicitUniformBlockBinding.end()
-	)
-	{
-		return static_cast<int>(it->second);
+		if (it == outputPtr->explicitUniformBlockBinding.end())
+			return -1;
+
+		return it->second;
 	}
 
-	return -1;
-}
+	CNZSL_API int nzslGlslOutputGetUsesDrawParameterBaseInstanceUniform(const nzslGlslOutput* outputPtr)
+	{
+		return outputPtr->usesDrawParameterBaseInstanceUniform;
+	}
 
-void NZSL_API nzslGlslWriterOutputDestroy(NZSLGlslWriterOutput output)
-{
-	auto outputPtr = reinterpret_cast<nzsl::GlslWriter::Output*>(output->internal);
+	CNZSL_API int nzslGlslOutputGetUsesDrawParameterBaseVertexUniform(const nzslGlslOutput* outputPtr)
+	{
+		return outputPtr->usesDrawParameterBaseVertexUniform;
+	}
 
-	delete outputPtr;
-	delete output;
-}
-
-void NZSL_API nzslGlslWriterDestroy(NZSLGlslWriter writer)
-{
-	auto writerPtr = reinterpret_cast<nzsl::GlslWriter*>(writer);
-
-	delete writerPtr;
-}
+	CNZSL_API int nzslGlslOutputGetUsesDrawParameterDrawIndexUniform(const nzslGlslOutput* outputPtr)
+	{
+		return outputPtr->usesDrawParameterDrawIndexUniform;
+	}
 }
