@@ -20,6 +20,8 @@ extern "C"
 
 typedef uint32_t nzslOptionHash;
 
+CNZSL_API nzslOptionHash nzslHashOption(const char* str);
+
 typedef struct nzslWriterStates nzslWriterStates;
 
 CNZSL_API nzslWriterStates* nzslWriterStatesCreate(void);
