@@ -9,6 +9,11 @@
 
 extern "C"
 {
+	CNZSL_API nzslOptionHash nzslHashOption(const char* str)
+	{
+		return nzsl::Ast::HashOption(str);
+	}
+
 	CNZSL_API nzslWriterStates* nzslWriterStatesCreate(void)
 	{
 		return new nzslWriterStates;
