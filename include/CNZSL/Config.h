@@ -47,4 +47,8 @@
 	#define CNZSL_API extern
 #endif
 
+typedef int nzslBool;
+typedef float nzslFloat32;
+typedef double nzslFloat64;
+
 #endif /* CNZSL_CONFIG_H */
