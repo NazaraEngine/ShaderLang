@@ -57,6 +57,10 @@ jobs:
     - name: Set xmake env
       run: echo "XMAKE_GLOBALDIR=${{ runner.workspace }}/xmake-global" >> $GITHUB_ENV
 
+    # Update xmake to nightly (fixes a bug in xmake 2.9.1)
+    - name: Update xmake to dev
+      run: xmake update -s dev
+
     # Update xmake repository (in order to have the file that will be cached)
     - name: Update xmake repository
       run: xmake repo --update

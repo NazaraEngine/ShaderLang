@@ -47,6 +47,7 @@ jobs:
       uses: xmake-io/github-action-setup-xmake@v1
       with:
         actions-cache-folder: .xmake-cache-W${{ steps.cache_key.outputs.key }}
+        xmake-version: branch@dev # fixes a bug in xmake 2.9.1
 
     # Update xmake repository (in order to have the file that will be cached)
     - name: Update xmake repository
