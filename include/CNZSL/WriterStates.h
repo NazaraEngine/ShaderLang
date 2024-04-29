@@ -18,31 +18,33 @@ extern "C"
 {
 #endif
 
+typedef uint32_t nzslOptionHash;
+
 typedef struct nzslWriterStates nzslWriterStates;
 
 CNZSL_API nzslWriterStates* nzslWriterStatesCreate(void);
 CNZSL_API void nzslWriterStatesDestroy(nzslWriterStates* statesPtr);
 
-CNZSL_API void nzslWriterStatesEnableOptimization(nzslWriterStates* statesPtr, int enable);
-CNZSL_API void nzslWriterStatesEnableSanitization(nzslWriterStates* statesPtr, int enable);
+CNZSL_API void nzslWriterStatesEnableOptimization(nzslWriterStates* statesPtr, nzslBool enable);
+CNZSL_API void nzslWriterStatesEnableSanitization(nzslWriterStates* statesPtr, nzslBool enable);
 CNZSL_API void nzslWriterStatesSetDebugLevel(nzslWriterStates* statesPtr, nzslDebugLevel debugLevel);
 
-CNZSL_API void nzslWriterStatesSetOption_bool(nzslWriterStates* statesPtr, uint32_t optionHash, bool value);
-CNZSL_API void nzslWriterStatesSetOption_f32(nzslWriterStates* statesPtr, uint32_t optionHash, float value);
-CNZSL_API void nzslWriterStatesSetOption_i32(nzslWriterStates* statesPtr, uint32_t optionHash, int32_t value);
-CNZSL_API void nzslWriterStatesSetOption_u32(nzslWriterStates* statesPtr, uint32_t optionHash, uint32_t value);
-CNZSL_API void nzslWriterStatesSetOption_vec2bool(nzslWriterStates* statesPtr, uint32_t optionHash, const bool* values);
-CNZSL_API void nzslWriterStatesSetOption_vec3bool(nzslWriterStates* statesPtr, uint32_t optionHash, const bool* values);
-CNZSL_API void nzslWriterStatesSetOption_vec4bool(nzslWriterStates* statesPtr, uint32_t optionHash, const bool* values);
-CNZSL_API void nzslWriterStatesSetOption_vec2f32(nzslWriterStates* statesPtr, uint32_t optionHash, const float* values);
-CNZSL_API void nzslWriterStatesSetOption_vec3f32(nzslWriterStates* statesPtr, uint32_t optionHash, const float* values);
-CNZSL_API void nzslWriterStatesSetOption_vec4f32(nzslWriterStates* statesPtr, uint32_t optionHash, const float* values);
-CNZSL_API void nzslWriterStatesSetOption_vec2i32(nzslWriterStates* statesPtr, uint32_t optionHash, const int32_t* values);
-CNZSL_API void nzslWriterStatesSetOption_vec3i32(nzslWriterStates* statesPtr, uint32_t optionHash, const int32_t* values);
-CNZSL_API void nzslWriterStatesSetOption_vec4i32(nzslWriterStates* statesPtr, uint32_t optionHash, const int32_t* values);
-CNZSL_API void nzslWriterStatesSetOption_vec2u32(nzslWriterStates* statesPtr, uint32_t optionHash, const uint32_t* values);
-CNZSL_API void nzslWriterStatesSetOption_vec3u32(nzslWriterStates* statesPtr, uint32_t optionHash, const uint32_t* values);
-CNZSL_API void nzslWriterStatesSetOption_vec4u32(nzslWriterStates* statesPtr, uint32_t optionHash, const uint32_t* values);
+CNZSL_API void nzslWriterStatesSetOption_bool(nzslWriterStates* statesPtr, nzslOptionHash optionHash, nzslBool value);
+CNZSL_API void nzslWriterStatesSetOption_f32(nzslWriterStates* statesPtr, nzslOptionHash optionHash, nzslFloat32 value);
+CNZSL_API void nzslWriterStatesSetOption_i32(nzslWriterStates* statesPtr, nzslOptionHash optionHash, int32_t value);
+CNZSL_API void nzslWriterStatesSetOption_u32(nzslWriterStates* statesPtr, nzslOptionHash optionHash, uint32_t value);
+CNZSL_API void nzslWriterStatesSetOption_vec2bool(nzslWriterStates* statesPtr, nzslOptionHash optionHash, const nzslBool* values);
+CNZSL_API void nzslWriterStatesSetOption_vec3bool(nzslWriterStates* statesPtr, nzslOptionHash optionHash, const nzslBool* values);
+CNZSL_API void nzslWriterStatesSetOption_vec4bool(nzslWriterStates* statesPtr, nzslOptionHash optionHash, const nzslBool* values);
+CNZSL_API void nzslWriterStatesSetOption_vec2f32(nzslWriterStates* statesPtr, nzslOptionHash optionHash, const nzslFloat32* values);
+CNZSL_API void nzslWriterStatesSetOption_vec3f32(nzslWriterStates* statesPtr, nzslOptionHash optionHash, const nzslFloat32* values);
+CNZSL_API void nzslWriterStatesSetOption_vec4f32(nzslWriterStates* statesPtr, nzslOptionHash optionHash, const nzslFloat32* values);
+CNZSL_API void nzslWriterStatesSetOption_vec2i32(nzslWriterStates* statesPtr, nzslOptionHash optionHash, const int32_t* values);
+CNZSL_API void nzslWriterStatesSetOption_vec3i32(nzslWriterStates* statesPtr, nzslOptionHash optionHash, const int32_t* values);
+CNZSL_API void nzslWriterStatesSetOption_vec4i32(nzslWriterStates* statesPtr, nzslOptionHash optionHash, const int32_t* values);
+CNZSL_API void nzslWriterStatesSetOption_vec2u32(nzslWriterStates* statesPtr, nzslOptionHash optionHash, const uint32_t* values);
+CNZSL_API void nzslWriterStatesSetOption_vec3u32(nzslWriterStates* statesPtr, nzslOptionHash optionHash, const uint32_t* values);
+CNZSL_API void nzslWriterStatesSetOption_vec4u32(nzslWriterStates* statesPtr, nzslOptionHash optionHash, const uint32_t* values);
 
 #ifdef __cplusplus
 }

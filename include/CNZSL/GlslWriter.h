@@ -28,9 +28,9 @@ typedef struct
 {
 	unsigned int glMajorVersion;
 	unsigned int glMinorVersion;
-	int glES;
-	int flipYPosition;
-	int remapZPosition;
+	nzslBool glES;
+	nzslBool flipYPosition;
+	nzslBool remapZPosition;
 	int allowDrawParametersUniformsFallback;
 } nzslGlslWriterEnvironment;
 
