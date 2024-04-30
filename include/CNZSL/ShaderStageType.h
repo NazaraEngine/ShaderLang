@@ -9,13 +9,13 @@
 #ifndef CNZSL_SHADERSTAGETYPE_H
 #define CNZSL_SHADERSTAGETYPE_H
 
-enum nzslShaderStageType
+typedef enum
 {
 	NZSL_STAGE_COMPUTE,
 	NZSL_STAGE_FRAGMENT,
 	NZSL_STAGE_VERTEX,
 
 	NZSL_STAGE_MAX_ENUM = 0x7FFFFFFF
-};
+} nzslShaderStageType;
 
 #endif /* CNZSL_SHADERSTAGETYPE_H */

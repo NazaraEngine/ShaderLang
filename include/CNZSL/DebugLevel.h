@@ -9,7 +9,7 @@
 #ifndef CNZSL_DEBUGLEVEL_H
 #define CNZSL_DEBUGLEVEL_H
 
-enum nzslDebugLevel
+typedef enum
 {
 	NZSL_DEBUG_NONE,
 
@@ -18,6 +18,6 @@ enum nzslDebugLevel
 	NZSL_DEBUG_REGULAR,
 
 	NZSL_DEBUG_MAX_ENUM = 0x7FFFFFFF
-};
+} nzslDebugLevel;
 
 #endif /* CNZSL_DEBUGLEVEL_H */
