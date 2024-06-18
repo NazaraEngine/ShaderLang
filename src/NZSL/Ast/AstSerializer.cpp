@@ -314,14 +314,14 @@ namespace nzsl::Ast
 
 	void SerializerBase::Serialize(DeclareAliasStatement& node)
 	{
-		OptVal(node.aliasIndex);
+		OptSizeT(node.aliasIndex);
 		Value(node.name);
 		Node(node.expression);
 	}
 
 	void SerializerBase::Serialize(DeclareConstStatement& node)
 	{
-		OptVal(node.constIndex);
+		OptSizeT(node.constIndex);
 		Value(node.name);
 		ExprValue(node.isExported);
 		ExprValue(node.type);
@@ -342,7 +342,7 @@ namespace nzsl::Ast
 		for (auto& extVar : node.externalVars)
 		{
 			Value(extVar.name);
-			OptVal(extVar.varIndex);
+			OptSizeT(extVar.varIndex);
 			ExprValue(extVar.type);
 			ExprValue(extVar.bindingIndex);
 			ExprValue(extVar.bindingSet);
@@ -360,7 +360,7 @@ namespace nzsl::Ast
 		ExprValue(node.earlyFragmentTests);
 		ExprValue(node.entryStage);
 		ExprValue(node.isExported);
-		OptVal(node.funcIndex);
+		OptSizeT(node.funcIndex);
 
 		if (IsVersionGreaterOrEqual(6))
 			ExprValue(node.workgroupSize);
@@ -370,7 +370,7 @@ namespace nzsl::Ast
 		{
 			Value(parameter.name);
 			ExprValue(parameter.type);
-			OptVal(parameter.varIndex);
+			OptSizeT(parameter.varIndex);
 			SourceLoc(parameter.sourceLocation);
 		}
 
@@ -381,7 +381,7 @@ namespace nzsl::Ast
 
 	void SerializerBase::Serialize(DeclareOptionStatement& node)
 	{
-		OptVal(node.optIndex);
+		OptSizeT(node.optIndex);
 		Value(node.optName);
 		ExprValue(node.optType);
 		Node(node.defaultValue);
@@ -389,7 +389,7 @@ namespace nzsl::Ast
 
 	void SerializerBase::Serialize(DeclareStructStatement& node)
 	{
-		OptVal(node.structIndex);
+		OptSizeT(node.structIndex);
 		ExprValue(node.isExported);
 
 		Value(node.description.name);
@@ -415,7 +415,7 @@ namespace nzsl::Ast
 	
 	void SerializerBase::Serialize(DeclareVariableStatement& node)
 	{
-		OptVal(node.varIndex);
+		OptSizeT(node.varIndex);
 		Value(node.varName);
 		ExprValue(node.varType);
 		Node(node.initialExpression);
@@ -433,7 +433,7 @@ namespace nzsl::Ast
 
 	void SerializerBase::Serialize(ForStatement& node)
 	{
-		OptVal(node.varIndex);
+		OptSizeT(node.varIndex);
 		ExprValue(node.unroll);
 		Value(node.varName);
 		Node(node.fromExpr);
@@ -444,7 +444,7 @@ namespace nzsl::Ast
 
 	void SerializerBase::Serialize(ForEachStatement& node)
 	{
-		OptVal(node.varIndex);
+		OptSizeT(node.varIndex);
 		ExprValue(node.unroll);
 		Value(node.varName);
 		Node(node.expression);
@@ -688,7 +688,7 @@ namespace nzsl::Ast
 				SizeT(arg.containedType.structIndex);
 			}
 			else
-				static_assert(Nz::AlwaysFalse<T>::value, "non-exhaustive visitor");
+				static_assert(Nz::AlwaysFalse<T>(), "non-exhaustive visitor");
 		}, type);
 	}
 

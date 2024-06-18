@@ -76,6 +76,7 @@ namespace nzsl::Ast
 			template<typename T> void Enum(T& enumVal);
 			template<typename T> void ExprValue(ExpressionValue<T>& attribute);
 			template<typename T> void OptEnum(std::optional<T>& optVal);
+			inline void OptSizeT(std::optional<std::size_t>& optVal);
 			inline void OptType(std::optional<ExpressionType>& optType);
 			template<typename T> void OptVal(std::optional<T>& optVal);
 
