@@ -129,6 +129,23 @@ namespace nzsl::Ast
 			Enum(optVal.value());
 	}
 
+	inline void SerializerBase::OptSizeT(std::optional<std::size_t>& optVal)
+	{
+		bool isWriting = IsWriting();
+
+		bool hasValue;
+		if (isWriting)
+			hasValue = optVal.has_value();
+
+		Value(hasValue);
+
+		if (!isWriting && hasValue)
+			optVal.emplace();
+
+		if (optVal.has_value())
+			SizeT(optVal.value());
+	}
+
 	inline void SerializerBase::OptType(std::optional<ExpressionType>& optType)
 	{
 		bool isWriting = IsWriting();
@@ -177,12 +194,7 @@ namespace nzsl::Ast
 			optVal.emplace();
 
 		if (optVal.has_value())
-		{
-			if constexpr (std::is_same_v<T, std::size_t>)
-				SizeT(optVal.value());
-			else
-				Value(optVal.value());
-		}
+			Value(optVal.value());
 	}
 
 	inline void SerializerBase::SizeT(std::size_t& val)
