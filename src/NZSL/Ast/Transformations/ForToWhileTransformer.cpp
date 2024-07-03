@@ -22,7 +22,7 @@ namespace nzsl::Ast
 		const ExpressionType* exprType = GetExpressionType(*forEachStatement.expression);
 		if (!exprType)
 		{
-			if (!m_options->allowPartialSanitization)
+			if (!m_context->allowPartialSanitization)
 				throw AstInternalError{ forEachStatement.sourceLocation, "unexpected missing expression type" };
 
 			return nullptr;
@@ -49,7 +49,7 @@ namespace nzsl::Ast
 			multi->statements.reserve(2);
 
 			// Counter variable
-			auto counterVariable = ShaderBuilder::DeclareVariable("_nzsl_counter", ShaderBuilder::ConstantValue(0u));
+			auto counterVariable = ShaderBuilder::DeclareVariable("_nzsl_counter", ExpressionType{ PrimitiveType::UInt32 }, ShaderBuilder::ConstantValue(0u));
 			counterVariable->sourceLocation = forEachStatement.sourceLocation;
 			counterVariable->varIndex = m_context->nextVariableIndex++;
 
@@ -74,7 +74,7 @@ namespace nzsl::Ast
 			elementVariable->varIndex = forEachStatement.varIndex; //< Preserve var index
 
 			body->statements.emplace_back(std::move(elementVariable));
-			body->statements.emplace_back(std::move(forEachStatement.statement));
+			body->statements.emplace_back(Unscope(std::move(forEachStatement.statement)));
 
 			auto incrCounter = ShaderBuilder::Assign(AssignType::CompoundAdd, ShaderBuilder::Variable(counterVarIndex, PrimitiveType::UInt32, forEachStatement.sourceLocation), ShaderBuilder::ConstantValue(1u, forEachStatement.sourceLocation));
 
@@ -96,12 +96,7 @@ namespace nzsl::Ast
 		Expression& fromExpr = *forStatement.fromExpr;
 		const ExpressionType* fromExprType = GetExpressionType(fromExpr);
 		if (!fromExprType)
-		{
-			if (!m_options->allowPartialSanitization)
-				throw AstInternalError{ forStatement.sourceLocation, "unexpected missing expression type" };
-
 			return nullptr;
-		}
 
 		const ExpressionType& resolvedFromExprType = ResolveAlias(*fromExprType);
 		if (!IsPrimitiveType(resolvedFromExprType))
@@ -123,7 +118,7 @@ namespace nzsl::Ast
 		multi->statements.emplace_back(std::move(counterVariable));
 
 		// Target variable
-		auto targetVariable = ShaderBuilder::DeclareVariable("_nzsl_to", std::move(forStatement.toExpr));
+		auto targetVariable = ShaderBuilder::DeclareVariable("_nzsl_to", ExpressionType{ counterType }, std::move(forStatement.toExpr));
 		targetVariable->sourceLocation = forStatement.sourceLocation;
 		targetVariable->varIndex = m_context->nextVariableIndex++;
 
@@ -135,7 +130,7 @@ namespace nzsl::Ast
 
 		if (forStatement.stepExpr)
 		{
-			auto stepVariable = ShaderBuilder::DeclareVariable("_nzsl_step", std::move(forStatement.stepExpr));
+			auto stepVariable = ShaderBuilder::DeclareVariable("_nzsl_step", ExpressionType{ counterType }, std::move(forStatement.stepExpr));
 			stepVariable->sourceLocation = forStatement.sourceLocation;
 			stepVariable->varIndex = m_context->nextVariableIndex++;
 
@@ -173,7 +168,7 @@ namespace nzsl::Ast
 		auto incrCounter = ShaderBuilder::Assign(AssignType::CompoundAdd, ShaderBuilder::Variable(counterVarIndex, counterType, forStatement.sourceLocation), std::move(incrExpr));
 		incrCounter->sourceLocation = forStatement.sourceLocation;
 
-		body->statements.emplace_back(std::move(forStatement.statement));
+		body->statements.emplace_back(Unscope(std::move(forStatement.statement)));
 		body->statements.emplace_back(ShaderBuilder::ExpressionStatement(std::move(incrCounter)));
 
 		whileStatement->body = std::move(body);

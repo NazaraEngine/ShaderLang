@@ -4,19 +4,19 @@
 
 #pragma once
 
-#ifndef NZSL_AST_TRANSFORMATIONS_FORTOWHILETRANSFORMER_HPP
-#define NZSL_AST_TRANSFORMATIONS_FORTOWHILETRANSFORMER_HPP
+#ifndef NZSL_AST_TRANSFORMATIONS_ASSIGNMENTTRANSFORMER_HPP
+#define NZSL_AST_TRANSFORMATIONS_ASSIGNMENTTRANSFORMER_HPP
 
 #include <NZSL/Ast/Transformations/Transformer.hpp>
 
 namespace nzsl::Ast
 {
-	class NZSL_API ForToWhileTransformer final : public Transformer
+	class NZSL_API AssignmentTransformer final : public Transformer
 	{
 		public:
 			struct Options;
 
-			inline ForToWhileTransformer();
+			inline AssignmentTransformer();
 
 			inline bool Transform(Module& module, Context& context, std::string* error = nullptr);
 			bool Transform(Module& module, Context& context, const Options& options, std::string* error = nullptr);
@@ -24,19 +24,17 @@ namespace nzsl::Ast
 			struct Options
 			{
 				bool allowPartialSanitization = false;
-				bool reduceForEachLoopsToWhile = true;
-				bool reduceForLoopsToWhile = true;
+				bool removeCompoundAssignment = false;
 			};
 
 		private:
 			using Transformer::Transform;
-			StatementPtr Transform(ForEachStatement&& statement) override;
-			StatementPtr Transform(ForStatement&& statement) override;
+			ExpressionPtr Transform(AssignExpression&& assign) override;
 
 			const Options* m_options;
 	};
 }
 
-#include <NZSL/Ast/Transformations/ForToWhileTransformer.inl>
+#include <NZSL/Ast/Transformations/AssignmentTransformer.inl>
 
-#endif // NZSL_AST_TRANSFORMATIONS_FORTOWHILETRANSFORMER_HPP
+#endif // NZSL_AST_TRANSFORMATIONS_ASSIGNMENTTRANSFORMER_HPP
