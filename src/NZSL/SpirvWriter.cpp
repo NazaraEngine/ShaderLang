@@ -873,16 +873,16 @@ namespace nzsl
 	Ast::SanitizeVisitor::Options SpirvWriter::GetSanitizeOptions()
 	{
 		Ast::SanitizeVisitor::Options options;
-		options.reduceLoopsToWhile = true;
+		//options.reduceLoopsToWhile = true;
 		options.removeAliases = true;
-		options.removeCompoundAssignments = true;
+		//options.removeCompoundAssignments = true;
 		options.removeConstArraySize = true;
-		options.removeMatrixBinaryAddSub = true;
-		options.removeMatrixCast = true;
+		//options.removeMatrixBinaryAddSub = true;
+		//options.removeMatrixCast = true;
 		options.removeOptionDeclaration = true;
 		options.removeSingleConstDeclaration = true;
 		options.splitWrappedArrayAssignation = true;
-		options.splitMultipleBranches = true;
+		//options.splitMultipleBranches = true;
 		options.splitWrappedStructAssignation = true;
 		options.useIdentifierAccessesForStructs = false;
 

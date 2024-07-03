@@ -4,6 +4,11 @@
 #include <NZSL/ShaderBuilder.hpp>
 #include <NZSL/Parser.hpp>
 #include <NZSL/Ast/SanitizeVisitor.hpp>
+#include <NZSL/Ast/Transformations/AssignmentTransformer.hpp>
+#include <NZSL/Ast/Transformations/BranchSplitterTransformer.hpp>
+#include <NZSL/Ast/Transformations/ForToWhileTransformer.hpp>
+#include <NZSL/Ast/Transformations/MatrixTransformer.hpp>
+#include <NZSL/Ast/Transformations/SwizzleTransformer.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <array>
 #include <cctype>
@@ -44,10 +49,10 @@ fn main()
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
 
-		nzsl::Ast::SanitizeVisitor::Options options;
-		options.splitMultipleBranches = true;
+		nzsl::Ast::BranchSplitterTransformer branchSplitterTransformer;
+		nzsl::Ast::Transformer::Context context;
 
-		REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(*shaderModule, options));
+		REQUIRE_NOTHROW(branchSplitterTransformer.Transform(*shaderModule, context));
 
 		ExpectNZSL(*shaderModule, R"(
 [entry(frag)]
@@ -75,6 +80,64 @@ fn main()
 				value = 0.0;
 			}
 
+		}
+
+	}
+
+}
+)");
+
+	}
+
+	WHEN("reducing for to while")
+	{
+		std::string_view nzslSource = R"(
+[nzsl_version("1.0")]
+module;
+
+struct inputStruct
+{
+	value: array[f32, 10]
+}
+
+external
+{
+	[set(0), binding(0)] data: uniform[inputStruct]
+}
+
+[entry(frag)]
+fn main()
+{
+	let x = 0.0;
+	for i in 0 -> 10
+	{
+		x += data.value[i];
+	}
+}
+)";
+
+		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
+
+		REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(*shaderModule));
+
+		nzsl::Ast::ForToWhileTransformer forToWhileTransformer;
+		nzsl::Ast::Transformer::Context context;
+		context.nextVariableIndex = 10;
+
+		REQUIRE_NOTHROW(forToWhileTransformer.Transform(*shaderModule, context));
+
+		ExpectNZSL(*shaderModule, R"(
+[entry(frag)]
+fn main()
+{
+	let x: f32 = 0.0;
+	{
+		let i = 0;
+		let _nzsl_to: i32 = 10;
+		while (i < _nzsl_to)
+		{
+			x += data.value[i];
+			i += 1;
 		}
 
 	}
@@ -113,10 +176,13 @@ fn main()
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
 
-		nzsl::Ast::SanitizeVisitor::Options options;
-		options.reduceLoopsToWhile = true;
+		REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(*shaderModule));
 
-		REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(*shaderModule, options));
+		nzsl::Ast::ForToWhileTransformer forToWhileTransformer;
+		nzsl::Ast::Transformer::Context context;
+		context.nextVariableIndex = 10;
+
+		REQUIRE_NOTHROW(forToWhileTransformer.Transform(*shaderModule, context));
 
 		ExpectNZSL(*shaderModule, R"(
 [entry(frag)]
@@ -124,16 +190,56 @@ fn main()
 {
 	let x: f32 = 0.0;
 	{
-		let i: u32 = u32(0);
-		while (i < (u32(10)))
+		let _nzsl_counter: u32 = u32(0);
+		while (_nzsl_counter < (u32(10)))
 		{
-			let v: f32 = data.value[i];
+			let v = data.value[_nzsl_counter];
 			x += v;
-			i += u32(1);
+			_nzsl_counter += u32(1);
 		}
 
 	}
 
+}
+)");
+
+	}
+
+	WHEN("removing compound assignment")
+	{
+		std::string_view nzslSource = R"(
+[nzsl_version("1.0")]
+module;
+
+fn main()
+{
+	let x = 1;
+	let y = 2;
+	x += y;
+	x += 1;
+}
+)";
+
+		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
+
+		nzsl::Ast::AssignmentTransformer::Options options;
+		options.removeCompoundAssignment = true;
+
+		nzsl::Ast::AssignmentTransformer assignmentTransformer;
+		nzsl::Ast::Transformer::Context context;
+
+		REQUIRE_NOTHROW(assignmentTransformer.Transform(*shaderModule, context, options));
+
+		ExpectNZSL(*shaderModule, R"(
+[nzsl_version("1.0")]
+module;
+
+fn main()
+{
+	let x = 1;
+	let y = 2;
+	x = x + y;
+	x = x + (1);
 }
 )");
 
@@ -198,18 +304,24 @@ fn testMat4ToMat4(input: mat4[f32]) -> mat4[f32]
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
 
-		nzsl::Ast::SanitizeVisitor::Options options;
-		options.removeMatrixCast = true;
+		REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(*shaderModule));
 
-		REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(*shaderModule, options));
+		nzsl::Ast::Transformer::Context context;
+		context.nextVariableIndex = 20;
+
+		nzsl::Ast::MatrixTransformer::Options matrixOptions;
+		matrixOptions.removeMatrixCast = true;
+
+		nzsl::Ast::MatrixTransformer matrixTransformer;
+		REQUIRE_NOTHROW(matrixTransformer.Transform(*shaderModule, context, matrixOptions));
 
 		ExpectNZSL(*shaderModule, R"(
 fn buildMat2x3(a: f32, b: f32, c: f32, d: f32, e: f32, f: f32) -> mat2x3[f32]
 {
-	let temp: mat2x3[f32];
-	temp[u32(0)] = vec3[f32](a, b, c);
-	temp[u32(1)] = vec3[f32](d, e, f);
-	return temp;
+	let _nzsl_matrix: mat2x3[f32];
+	_nzsl_matrix[u32(0)] = vec3[f32](a, b, c);
+	_nzsl_matrix[u32(1)] = vec3[f32](d, e, f);
+	return _nzsl_matrix;
 }
 
 fn testMat2ToMat2(input: mat2[f32]) -> mat2[f32]
@@ -219,29 +331,29 @@ fn testMat2ToMat2(input: mat2[f32]) -> mat2[f32]
 
 fn testMat2ToMat3(input: mat2[f32]) -> mat3[f32]
 {
-	let temp: mat3[f32];
-	temp[u32(0)] = vec3[f32](input[u32(0)], 0.0);
-	temp[u32(1)] = vec3[f32](input[u32(1)], 0.0);
-	temp[u32(2)] = vec3[f32](input[u32(2)], 1.0);
-	return temp;
+	let _nzsl_matrix: mat3[f32];
+	_nzsl_matrix[u32(0)] = vec3[f32](input[u32(0)], 0.0);
+	_nzsl_matrix[u32(1)] = vec3[f32](input[u32(1)], 0.0);
+	_nzsl_matrix[u32(2)] = vec3[f32](input[u32(2)], 1.0);
+	return _nzsl_matrix;
 }
 
 fn testMat2ToMat4(input: mat2[f32]) -> mat4[f32]
 {
-	let temp: mat4[f32];
-	temp[u32(0)] = vec4[f32](input[u32(0)], 0.0, 0.0);
-	temp[u32(1)] = vec4[f32](input[u32(1)], 0.0, 0.0);
-	temp[u32(2)] = vec4[f32](input[u32(2)], 1.0, 0.0);
-	temp[u32(3)] = vec4[f32](input[u32(3)], 0.0, 1.0);
-	return temp;
+	let _nzsl_matrix: mat4[f32];
+	_nzsl_matrix[u32(0)] = vec4[f32](input[u32(0)], 0.0, 0.0);
+	_nzsl_matrix[u32(1)] = vec4[f32](input[u32(1)], 0.0, 0.0);
+	_nzsl_matrix[u32(2)] = vec4[f32](input[u32(2)], 1.0, 0.0);
+	_nzsl_matrix[u32(3)] = vec4[f32](input[u32(3)], 0.0, 1.0);
+	return _nzsl_matrix;
 }
 
 fn testMat3ToMat2(input: mat3[f32]) -> mat2[f32]
 {
-	let temp: mat2[f32];
-	temp[u32(0)] = input[u32(0)].xy;
-	temp[u32(1)] = input[u32(1)].xy;
-	return temp;
+	let _nzsl_matrix: mat2[f32];
+	_nzsl_matrix[u32(0)] = input[u32(0)].xy;
+	_nzsl_matrix[u32(1)] = input[u32(1)].xy;
+	return _nzsl_matrix;
 }
 
 fn testMat3ToMat3(input: mat3[f32]) -> mat3[f32]
@@ -251,29 +363,29 @@ fn testMat3ToMat3(input: mat3[f32]) -> mat3[f32]
 
 fn testMat3ToMat4(input: mat3[f32]) -> mat4[f32]
 {
-	let temp: mat4[f32];
-	temp[u32(0)] = vec4[f32](input[u32(0)], 0.0);
-	temp[u32(1)] = vec4[f32](input[u32(1)], 0.0);
-	temp[u32(2)] = vec4[f32](input[u32(2)], 0.0);
-	temp[u32(3)] = vec4[f32](input[u32(3)], 1.0);
-	return temp;
+	let _nzsl_matrix: mat4[f32];
+	_nzsl_matrix[u32(0)] = vec4[f32](input[u32(0)], 0.0);
+	_nzsl_matrix[u32(1)] = vec4[f32](input[u32(1)], 0.0);
+	_nzsl_matrix[u32(2)] = vec4[f32](input[u32(2)], 0.0);
+	_nzsl_matrix[u32(3)] = vec4[f32](input[u32(3)], 1.0);
+	return _nzsl_matrix;
 }
 
 fn testMat4ToMat2(input: mat4[f32]) -> mat2[f32]
 {
-	let temp: mat2[f32];
-	temp[u32(0)] = input[u32(0)].xy;
-	temp[u32(1)] = input[u32(1)].xy;
-	return temp;
+	let _nzsl_matrix: mat2[f32];
+	_nzsl_matrix[u32(0)] = input[u32(0)].xy;
+	_nzsl_matrix[u32(1)] = input[u32(1)].xy;
+	return _nzsl_matrix;
 }
 
 fn testMat4ToMat3(input: mat4[f32]) -> mat3[f32]
 {
-	let temp: mat3[f32];
-	temp[u32(0)] = input[u32(0)].xyz;
-	temp[u32(1)] = input[u32(1)].xyz;
-	temp[u32(2)] = input[u32(2)].xyz;
-	return temp;
+	let _nzsl_matrix: mat3[f32];
+	_nzsl_matrix[u32(0)] = input[u32(0)].xyz;
+	_nzsl_matrix[u32(1)] = input[u32(1)].xyz;
+	_nzsl_matrix[u32(2)] = input[u32(2)].xyz;
+	return _nzsl_matrix;
 }
 
 fn testMat4ToMat4(input: mat4[f32]) -> mat4[f32]
@@ -320,11 +432,21 @@ fn testMat4CompoundMinusMat4(x: mat4[f32], y: mat4[f32]) -> mat4[f32]
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
 
-		nzsl::Ast::SanitizeVisitor::Options options;
-		options.removeMatrixBinaryAddSub = true;
-		options.removeCompoundAssignments = true;
+		REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(*shaderModule));
 
-		REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(*shaderModule, options));
+		nzsl::Ast::Transformer::Context context;
+
+		nzsl::Ast::AssignmentTransformer::Options assignmentOptions;
+		assignmentOptions.removeCompoundAssignment = true;
+
+		nzsl::Ast::AssignmentTransformer assignmentTransformer;
+		REQUIRE_NOTHROW(assignmentTransformer.Transform(*shaderModule, context, assignmentOptions));
+
+		nzsl::Ast::MatrixTransformer::Options matrixOptions;
+		matrixOptions.removeMatrixBinaryAddSub = true;
+
+		nzsl::Ast::MatrixTransformer matrixTransformer;
+		REQUIRE_NOTHROW(matrixTransformer.Transform(*shaderModule, context, matrixOptions));
 
 		ExpectNZSL(*shaderModule, R"(
 fn testMat4PlusMat4(x: mat4[f32], y: mat4[f32]) -> mat4[f32]
@@ -339,8 +461,8 @@ fn testMat4SubMat4(x: mat4[f32], y: mat4[f32]) -> mat4[f32]
 
 fn testMat4SubMat4TimesMat4(x: mat4[f32], y: mat4[f32], z: mat4[f32]) -> mat4[f32]
 {
-	let cachedResult: mat4[f32] = y * y;
-	return mat4[f32](x[u32(0)] - cachedResult[u32(0)], x[u32(1)] - cachedResult[u32(1)], x[u32(2)] - cachedResult[u32(2)], x[u32(3)] - cachedResult[u32(3)]);
+	let _nzsl_cachedResult: mat4[f32] = y * y;
+	return mat4[f32](x[u32(0)] - _nzsl_cachedResult[u32(0)], x[u32(1)] - _nzsl_cachedResult[u32(1)], x[u32(2)] - _nzsl_cachedResult[u32(2)], x[u32(3)] - _nzsl_cachedResult[u32(3)]);
 }
 
 fn testMat4CompoundPlusMat4(x: mat4[f32], y: mat4[f32]) -> mat4[f32]
@@ -358,40 +480,47 @@ fn testMat4CompoundMinusMat4(x: mat4[f32], y: mat4[f32]) -> mat4[f32]
 
 		WHEN("Removing matrix casts")
 		{
-			options.removeMatrixCast = true;
+			REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(*shaderModule));
 
-			REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(*shaderModule, options));
+			nzsl::Ast::Transformer::Context context2;
+			context2.nextVariableIndex = 20;
+
+			nzsl::Ast::MatrixTransformer::Options matrixOptions2;
+			matrixOptions2.removeMatrixCast = true;
+
+			nzsl::Ast::MatrixTransformer matrixTransformer2;
+			REQUIRE_NOTHROW(matrixTransformer2.Transform(*shaderModule, context2, matrixOptions2));
 
 			ExpectNZSL(*shaderModule, R"(
 fn testMat4PlusMat4(x: mat4[f32], y: mat4[f32]) -> mat4[f32]
 {
-	let temp: mat4[f32];
-	temp[u32(0)] = x[u32(0)] + y[u32(0)];
-	temp[u32(1)] = x[u32(1)] + y[u32(1)];
-	temp[u32(2)] = x[u32(2)] + y[u32(2)];
-	temp[u32(3)] = x[u32(3)] + y[u32(3)];
-	return temp;
+	let _nzsl_matrix: mat4[f32];
+	_nzsl_matrix[u32(0)] = x[u32(0)] + y[u32(0)];
+	_nzsl_matrix[u32(1)] = x[u32(1)] + y[u32(1)];
+	_nzsl_matrix[u32(2)] = x[u32(2)] + y[u32(2)];
+	_nzsl_matrix[u32(3)] = x[u32(3)] + y[u32(3)];
+	return _nzsl_matrix;
 }
 
 fn testMat4SubMat4(x: mat4[f32], y: mat4[f32]) -> mat4[f32]
 {
-	let temp: mat4[f32];
-	temp[u32(0)] = x[u32(0)] - y[u32(0)];
-	temp[u32(1)] = x[u32(1)] - y[u32(1)];
-	temp[u32(2)] = x[u32(2)] - y[u32(2)];
-	temp[u32(3)] = x[u32(3)] - y[u32(3)];
-	return temp;
+	let _nzsl_matrix: mat4[f32];
+	_nzsl_matrix[u32(0)] = x[u32(0)] - y[u32(0)];
+	_nzsl_matrix[u32(1)] = x[u32(1)] - y[u32(1)];
+	_nzsl_matrix[u32(2)] = x[u32(2)] - y[u32(2)];
+	_nzsl_matrix[u32(3)] = x[u32(3)] - y[u32(3)];
+	return _nzsl_matrix;
 }
 
 fn testMat4SubMat4TimesMat4(x: mat4[f32], y: mat4[f32], z: mat4[f32]) -> mat4[f32]
 {
-	let cachedResult: mat4[f32] = y * y;
-	let temp: mat4[f32];
-	temp[u32(0)] = x[u32(0)] - cachedResult[u32(0)];
-	temp[u32(1)] = x[u32(1)] - cachedResult[u32(1)];
-	temp[u32(2)] = x[u32(2)] - cachedResult[u32(2)];
-	temp[u32(3)] = x[u32(3)] - cachedResult[u32(3)];
-	return temp;
+	let _nzsl_cachedResult: mat4[f32] = y * y;
+	let _nzsl_matrix: mat4[f32];
+	_nzsl_matrix[u32(0)] = x[u32(0)] - _nzsl_cachedResult[u32(0)];
+	_nzsl_matrix[u32(1)] = x[u32(1)] - _nzsl_cachedResult[u32(1)];
+	_nzsl_matrix[u32(2)] = x[u32(2)] - _nzsl_cachedResult[u32(2)];
+	_nzsl_matrix[u32(3)] = x[u32(3)] - _nzsl_cachedResult[u32(3)];
+	return _nzsl_matrix;
 }
 )");
 		}
@@ -444,27 +573,49 @@ external
 [nzsl_version("1.0")]
 module;
 
+fn expr() -> i32
+{
+	return 1.0;
+}
+
 fn main()
 {
 	let value = 42.0;
-	let y = value.r;
-	let z = value.xxxx;
+	let x = value.r;
+	let y = value.xxxx;
+	let z = expr().xxx;
 }
 )";
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
 
-		nzsl::Ast::SanitizeVisitor::Options options;
-		options.removeScalarSwizzling = true;
+		REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(*shaderModule));
 
-		REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(*shaderModule, options));
+		nzsl::Ast::SwizzleTransformer::Options swizzleOptions;
+		swizzleOptions.removeScalarSwizzling = true;
+
+		nzsl::Ast::SwizzleTransformer swizzleTransformer;
+		nzsl::Ast::Transformer::Context context;
+		context.nextVariableIndex = 10;
+
+		REQUIRE_NOTHROW(swizzleTransformer.Transform(*shaderModule, context, swizzleOptions));
 
 		ExpectNZSL(*shaderModule, R"(
+[nzsl_version("1.0")]
+module;
+
+fn expr() -> i32
+{
+	return 1.0;
+}
+
 fn main()
 {
 	let value: f32 = 42.0;
-	let y: f32 = value;
-	let z: vec4[f32] = vec4[f32](value, value, value, value);
+	let x: f32 = value;
+	let y: vec4[f32] = vec4[f32](value, value, value, value);
+	let _nzsl_cachedResult: i32 = expr();
+	let z: vec3[i32] = vec3[i32](_nzsl_cachedResult, _nzsl_cachedResult, _nzsl_cachedResult);
 }
 )");
 

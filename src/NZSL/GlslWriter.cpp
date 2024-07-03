@@ -531,11 +531,11 @@ namespace nzsl
 
 		Ast::SanitizeVisitor::Options options;
 		options.makeVariableNameUnique = true;
-		options.reduceLoopsToWhile = true;
+		//options.reduceLoopsToWhile = true;
 		options.removeAliases = true;
-		options.removeCompoundAssignments = false;
+		//options.removeCompoundAssignments = false;
 		options.removeOptionDeclaration = true;
-		options.removeScalarSwizzling = true;
+		//options.removeScalarSwizzling = true;
 		options.removeSingleConstDeclaration = true;
 		options.splitWrappedStructAssignation = true; //< TODO: Only split for base uniforms/storage
 		options.identifierSanitizer = [](std::string& identifier, Ast::IdentifierScope /*scope*/)
