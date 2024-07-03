@@ -10,61 +10,61 @@
 #include <utility>
 
 // https://fmt.dev/latest/api.html#udt
-template <>
+template<>
 struct fmt::formatter<nzsl::Ast::AttributeType> : formatter<string_view>
 {
-	template <typename FormatContext>
-	auto format(const nzsl::Ast::AttributeType& p, FormatContext& ctx) -> decltype(ctx.out())
+	template<typename FormatContext>
+	auto format(const nzsl::Ast::AttributeType& p, FormatContext& ctx) const -> decltype(ctx.out())
 	{
 		return formatter<string_view>::format(nzsl::Parser::ToString(p), ctx);
 	}
 };
 
-template <>
+template<>
 struct fmt::formatter<nzsl::Ast::BuiltinEntry> : formatter<string_view>
 {
-	template <typename FormatContext>
-	auto format(const nzsl::Ast::BuiltinEntry& p, FormatContext& ctx) -> decltype(ctx.out())
+	template<typename FormatContext>
+	auto format(const nzsl::Ast::BuiltinEntry& p, FormatContext& ctx) const -> decltype(ctx.out())
 	{
 		return formatter<string_view>::format(nzsl::Parser::ToString(p), ctx);
 	}
 };
 
-template <>
+template<>
 struct fmt::formatter<nzsl::Ast::ModuleFeature> : formatter<string_view>
 {
-	template <typename FormatContext>
-	auto format(const nzsl::Ast::ModuleFeature& p, FormatContext& ctx) -> decltype(ctx.out())
+	template<typename FormatContext>
+	auto format(const nzsl::Ast::ModuleFeature& p, FormatContext& ctx) const -> decltype(ctx.out())
 	{
 		return formatter<string_view>::format(nzsl::Parser::ToString(p), ctx);
 	}
 };
 
-template <>
+template<>
 struct fmt::formatter<nzsl::ErrorCategory> : formatter<string_view>
 {
-	template <typename FormatContext>
-	auto format(const nzsl::ErrorCategory& p, FormatContext& ctx) -> decltype(ctx.out())
+	template<typename FormatContext>
+	auto format(const nzsl::ErrorCategory& p, FormatContext& ctx) const -> decltype(ctx.out())
 	{
 		return formatter<string_view>::format(ToString(p), ctx);
 	}
 };
 
-template <>
+template<>
 struct fmt::formatter<nzsl::ErrorType> : formatter<string_view>
 {
-	template <typename FormatContext>
-	auto format(const nzsl::ErrorType& p, FormatContext& ctx) -> decltype(ctx.out())
+	template<typename FormatContext>
+	auto format(const nzsl::ErrorType& p, FormatContext& ctx) const -> decltype(ctx.out())
 	{
 		return formatter<string_view>::format(ToString(p), ctx);
 	}
 };
 
-template <>
+template<>
 struct fmt::formatter<nzsl::ShaderStageType> : formatter<string_view>
 {
-	template <typename FormatContext>
-	auto format(const nzsl::ShaderStageType& p, FormatContext& ctx) -> decltype(ctx.out())
+	template<typename FormatContext>
+	auto format(const nzsl::ShaderStageType& p, FormatContext& ctx) const -> decltype(ctx.out())
 	{
 		// Use complete name instead of identifier ("fragment" instead of "frag")
 		auto it = nzsl::LangData::s_entryPoints.find(p);
@@ -74,11 +74,11 @@ struct fmt::formatter<nzsl::ShaderStageType> : formatter<string_view>
 	}
 };
 
-template <>
+template<>
 struct fmt::formatter<nzsl::TokenType> : formatter<string_view>
 {
-	template <typename FormatContext>
-	auto format(const nzsl::TokenType& p, FormatContext& ctx) -> decltype(ctx.out())
+	template<typename FormatContext>
+	auto format(const nzsl::TokenType& p, FormatContext& ctx) const -> decltype(ctx.out())
 	{
 		return formatter<string_view>::format(ToString(p), ctx);
 	}
