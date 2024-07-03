@@ -50,20 +50,8 @@ jobs:
     - uses: msys2/setup-msys2@v2
       with:
         msystem: ${{ matrix.msystem }}
-        install: base-devel git unzip p7zip mingw-w64-${{ matrix.arch }}-toolchain
+        install: base-devel git unzip p7zip mingw-w64-${{ matrix.arch }}-toolchain mingw-w64-${{ matrix.arch }}-xmake
         update: true
-
-    # Update xmake to nightly (fixes a bug in xmake 2.9.1)
-    - name: Install xmake dev
-      shell: msys2 {0}
-      run: |
-        git clone https://github.com/xmake-io/xmake.git --recurse-submodules -b dev xmake-src
-        cd xmake-src
-        ./configure
-        make -j4
-        make install PREFIX=/${{ matrix.msystem }}
-        xmake --version
-        cd ..
 
     # Force xmake to a specific folder (for cache)
     - name: Set xmake env
@@ -75,19 +63,29 @@ jobs:
 
     # Fetch xmake dephash
     - name: Retrieve dependencies hash
-      id: dep_hash
+      id: dephash
       run: echo "hash=$(xmake l utils.ci.packageskey)" >> $GITHUB_OUTPUT
-  
+      shell: bash
+
     # Cache xmake dependencies
     - name: Retrieve cached xmake dependencies
-      uses: actions/cache@v4
+      id: restore-depcache
+      uses: actions/cache/restore@v4
       with:
         path: ${{ env.XMAKE_GLOBALDIR }}/.xmake/packages
-        key: MinGW-${{ matrix.arch }}-${{ matrix.mode }}-${{ steps.dep_hash.outputs.hash }}-W${{ steps.cache_key.outputs.key }}
+        key: MinGW-${{ matrix.arch }}-${{ matrix.mode }}-${{ steps.dephash.outputs.hash }}-W${{ steps.cache_key.outputs.key }}
 
     # Setup compilation mode and install project dependencies
     - name: Configure xmake and install dependencies
       run: xmake config --arch=${{ matrix.arch }} --mode=${{ matrix.mode }} --kind=${{ matrix.kind }} --ccache=n --examples=y --tests=y --unitybuild=n --yes
+
+    # Save dependencies
+    - name: Save cached xmake dependencies
+      if: ${{ !steps.restore-depcache.outputs.cache-hit }}
+      uses: actions/cache/save@v4
+      with:
+        path: ${{ env.XMAKE_GLOBALDIR }}/.xmake/packages
+        key: ${{ steps.restore-depcache.outputs.cache-primary-key }}
 
     # Build library and tests
     - name: Build library
