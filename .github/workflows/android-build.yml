@@ -22,6 +22,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         arch: [armeabi-v7a, arm64-v8a]
+        mode: [debug, releasedbg]
         ndk_sdkver: ["28"]
 
     runs-on: ${{ matrix.os }}
@@ -44,7 +45,6 @@ jobs:
       uses: xmake-io/github-action-setup-xmake@v1
       with:
         actions-cache-folder: .xmake-cache-W${{ steps.cache_key.outputs.key }}
-        xmake-version: branch@dev # fixes a bug in xmake 2.9.1
 
     # Setup NDK
     - name: Download NDK
@@ -58,19 +58,29 @@ jobs:
 
     # Fetch xmake dephash
     - name: Retrieve dependencies hash
-      id: dep_hash
+      id: dephash
       run: echo "hash=$(xmake l utils.ci.packageskey)" >> $GITHUB_OUTPUT
+      shell: bash
 
     # Cache xmake dependencies
     - name: Retrieve cached xmake dependencies
-      uses: actions/cache@v4
+      id: restore-depcache
+      uses: actions/cache/restore@v4
       with:
         path: ${{ env.XMAKE_GLOBALDIR }}/.xmake/packages
-        key: Android-${{ matrix.ndk_sdkver }}-${{ matrix.arch }}-${{ matrix.mode }}-${{ steps.dep_hash.outputs.hash }}-W${{ steps.cache_key.outputs.key }}
+        key: Android-${{ matrix.ndk_sdkver }}-${{ matrix.arch }}-${{ matrix.mode }}-${{ steps.dephash.outputs.hash }}-W${{ steps.cache_key.outputs.key }}
 
     # Setup compilation mode and install project dependencies
     - name: Configure xmake and install dependencies
-      run: xmake config --tests=y --plat=android --ndk=`pwd`/android-ndk-r25c --ndk_sdkver=${{ matrix.ndk_sdkver }} --arch=${{ matrix.arch }} --mode=${{ matrix.mode }} --ccache=n --fs_watcher=n --tests=n --yes
+      run: xmake config --plat=android --ndk=`pwd`/android-ndk-r25c --ndk_sdkver=${{ matrix.ndk_sdkver }} --arch=${{ matrix.arch }} --mode=${{ matrix.mode }} --tests=y --ccache=n --fs_watcher=n --tests=n --yes
+
+    # Save dependencies
+    - name: Save cached xmake dependencies
+      if: ${{ !steps.restore-depcache.outputs.cache-hit }}
+      uses: actions/cache/save@v4
+      with:
+        path: ${{ env.XMAKE_GLOBALDIR }}/.xmake/packages
+        key: ${{ steps.restore-depcache.outputs.cache-primary-key }}
 
     # Build library
     - name: Build library

@@ -21,11 +21,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        os: [macOS-latest]
         mode: [debug, releasedbg]
         kind: [static, shared]
-        confs:
-          - { runner: macOS-latest, arch: x86_64 }
-          - { runner: macOS-14,     arch: arm64 }
+        arch: [x86_64, arm64]
 
     runs-on: ${{ matrix.confs.runner }}
     if: ${{ !contains(github.event.head_commit.message, 'ci skip') }}
@@ -47,7 +46,6 @@ jobs:
       uses: xmake-io/github-action-setup-xmake@v1
       with:
         actions-cache-folder: .xmake-cache-W${{ steps.cache_key.outputs.key }}
-        xmake-version: branch@dev # fixes a bug in xmake 2.9.1
 
     # Update xmake repository (in order to have the file that will be cached)
     - name: Update xmake repository
@@ -55,19 +53,28 @@ jobs:
 
     # Fetch xmake dephash
     - name: Retrieve dependencies hash
-      id: dep_hash
+      id: dephash
       run: echo "hash=$(xmake l utils.ci.packageskey)" >> $GITHUB_OUTPUT
 
     # Cache xmake dependencies
     - name: Retrieve cached xmake dependencies
-      uses: actions/cache@v4
+      id: restore-depcache
+      uses: actions/cache/restore@v4
       with:
         path: ${{ env.XMAKE_GLOBALDIR }}/.xmake/packages
-        key: macOS-${{ matrix.confs.arch }}-${{ matrix.mode }}-${{ steps.dep_hash.outputs.hash }}-W${{ steps.cache_key.outputs.key }}
+        key: macOS-${{ matrix.arch }}-${{ matrix.mode }}-${{ steps.dephash.outputs.hash }}-W${{ steps.cache_key.outputs.key }}
 
     # Setup compilation mode and install project dependencies
     - name: Configure xmake and install dependencies
-      run: xmake config --arch=${{ matrix.confs.arch }} --mode=${{ matrix.mode }} --kind=${{ matrix.kind }} --ccache=n --examples=y --tests=y --unitybuild=y --yes
+      run: xmake config --arch=${{ matrix.arch }} --mode=${{ matrix.mode }} --kind=${{ matrix.kind }} --ccache=n --examples=y --tests=y --unitybuild=y --yes
+
+    # Save dependencies
+    - name: Save cached xmake dependencies
+      if: ${{ !steps.restore-depcache.outputs.cache-hit }}
+      uses: actions/cache/save@v4
+      with:
+        path: ${{ env.XMAKE_GLOBALDIR }}/.xmake/packages
+        key: ${{ steps.restore-depcache.outputs.cache-primary-key }}
 
     # Build library and tests
     - name: Build library
@@ -84,5 +91,5 @@ jobs:
     # Upload artifacts
     - uses: actions/upload-artifact@v4
       with:
-        name: nzsl-macOS-${{ matrix.confs.arch }}-${{ matrix.kind }}-${{ matrix.mode }}
+        name: nzsl-macOS-${{ matrix.arch }}-${{ matrix.kind }}-${{ matrix.mode }}
         path: package

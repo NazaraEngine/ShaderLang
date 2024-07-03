@@ -46,7 +46,6 @@ jobs:
       uses: xmake-io/github-action-setup-xmake@v1
       with:
         actions-cache-folder: .xmake-cache-W${{ steps.cache_key.outputs.key }}
-        xmake-version: branch@dev # fixes a bug in xmake 2.9.1
 
     # Update xmake repository (in order to have the file that will be cached)
     - name: Update xmake repository
@@ -54,8 +53,9 @@ jobs:
 
     # Fetch xmake dephash
     - name: Retrieve dependencies hash
-      id: dep_hash
+      id: dephash
       run: echo "hash=$(xmake l utils.ci.packageskey)" >> $GITHUB_OUTPUT
+      shell: bash
 
     # Setup emsdk
     - name: Setup emscripten
@@ -66,14 +66,23 @@ jobs:
 
     # Cache xmake dependencies
     - name: Retrieve cached xmake dependencies
-      uses: actions/cache@v4
+      id: restore-depcache
+      uses: actions/cache/restore@v4
       with:
         path: ${{ env.XMAKE_GLOBALDIR }}/.xmake/packages
-        key: Wasm-${{ matrix.arch }}-${{ matrix.mode }}-${{ steps.dep_hash.outputs.hash }}-W${{ steps.cache_key.outputs.key }}
+        key: Wasm-${{ matrix.arch }}-${{ matrix.mode }}-${{ steps.dephash.outputs.hash }}-W${{ steps.cache_key.outputs.key }}
 
     # Setup compilation mode and install project dependencies
     - name: Configure xmake and install dependencies
       run: xmake config --plat=wasm --arch=${{ matrix.arch }} --mode=${{ matrix.mode }} --kind=${{ matrix.kind }} --ccache=n --fs_watcher=n --tests=n --unitybuild=y --yes
+
+    # Save dependencies
+    - name: Save cached xmake dependencies
+      if: ${{ !steps.restore-depcache.outputs.cache-hit }}
+      uses: actions/cache/save@v4
+      with:
+        path: ${{ env.XMAKE_GLOBALDIR }}/.xmake/packages
+        key: ${{ steps.restore-depcache.outputs.cache-primary-key }}
 
     # Build library and tests
     - name: Build library
