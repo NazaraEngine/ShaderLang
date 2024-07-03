@@ -4,12 +4,12 @@
 
 namespace nzsl::Ast
 {
-	inline ForToWhileTransformer::ForToWhileTransformer() :
+	inline BranchSplitterTransformer::BranchSplitterTransformer() :
 	Transformer(false)
 	{
 	}
 
-	inline bool ForToWhileTransformer::Transform(Module& module, Context& context, std::string* error)
+	inline bool BranchSplitterTransformer::Transform(Module& module, Context& context, std::string* error)
 	{
 		return Transform(module, context, {}, error);
 	}
