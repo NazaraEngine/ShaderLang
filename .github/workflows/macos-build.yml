@@ -26,7 +26,7 @@ jobs:
         kind: [static, shared]
         arch: [x86_64, arm64]
 
-    runs-on: ${{ matrix.confs.runner }}
+    runs-on: ${{ matrix.os }}
     if: ${{ !contains(github.event.head_commit.message, 'ci skip') }}
 
     steps:
