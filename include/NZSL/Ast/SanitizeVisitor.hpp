@@ -47,16 +47,10 @@ namespace nzsl::Ast
 				bool forceAutoBindingResolve = false;
 				bool makeVariableNameUnique = false;
 				bool partialSanitization = false;
-				bool reduceLoopsToWhile = false;
 				bool removeAliases = false;
-				bool removeCompoundAssignments = false;
 				bool removeConstArraySize = false;
-				bool removeMatrixBinaryAddSub = false;
-				bool removeMatrixCast = false;
 				bool removeOptionDeclaration = false;
-				bool removeScalarSwizzling = false;
 				bool removeSingleConstDeclaration = false;
-				bool splitMultipleBranches = false;
 				bool splitWrappedArrayAssignation = false;
 				bool splitWrappedStructAssignation = false;
 				bool useIdentifierAccessesForStructs = true;
