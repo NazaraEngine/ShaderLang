@@ -4,12 +4,12 @@
 
 namespace nzsl::Ast
 {
-	inline ForToWhileTransformer::ForToWhileTransformer() :
-	Transformer(false)
+	inline AssignmentTransformer::AssignmentTransformer() :
+	Transformer(true)
 	{
 	}
 
-	inline bool ForToWhileTransformer::Transform(Module& module, Context& context, std::string* error)
+	inline bool AssignmentTransformer::Transform(Module& module, Context& context, std::string* error)
 	{
 		return Transform(module, context, {}, error);
 	}
