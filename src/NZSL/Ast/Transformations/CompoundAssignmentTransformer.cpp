@@ -2,20 +2,20 @@
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
-#include <NZSL/Ast/Transformations/AssignmentTransformer.hpp>
+#include <NZSL/Ast/Transformations/CompoundAssignmentTransformer.hpp>
 #include <NZSL/Ast/Cloner.hpp>
 #include <NZSL/Lang/Errors.hpp>
 
 namespace nzsl::Ast
 {
-	bool AssignmentTransformer::Transform(Module& module, Context& context, const Options& options, std::string* error)
+	bool CompoundAssignmentTransformer::Transform(Module& module, Context& context, const Options& options, std::string* error)
 	{
 		m_options = &options;
 
 		return TransformModule(module, context, error);
 	}
 
-	ExpressionPtr AssignmentTransformer::Transform(AssignExpression&& assign)
+	ExpressionPtr CompoundAssignmentTransformer::Transform(AssignExpression&& assign)
 	{
 		if (assign.op == AssignType::Simple || !m_options->removeCompoundAssignment)
 			return nullptr;
