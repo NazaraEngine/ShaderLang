@@ -51,8 +51,6 @@ namespace nzsl::Ast
 				bool removeConstArraySize = false;
 				bool removeOptionDeclaration = false;
 				bool removeSingleConstDeclaration = false;
-				bool splitWrappedArrayAssignation = false;
-				bool splitWrappedStructAssignation = false;
 				bool useIdentifierAccessesForStructs = true;
 			};
 
@@ -196,9 +194,6 @@ namespace nzsl::Ast
 			static std::uint32_t ToSwizzleIndex(char c, const SourceLocation& sourceLocation);
 
 			static StatementPtr Unscope(StatementPtr node);
-
-			static ExpressionType UnwrapExternalType(const ExpressionType& exprType);
-			template<typename T> static ExpressionType WrapExternalType(const ExpressionType& exprType);
 
 			enum class IdentifierCategory
 			{

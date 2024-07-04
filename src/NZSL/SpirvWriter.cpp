@@ -881,9 +881,9 @@ namespace nzsl
 		//options.removeMatrixCast = true;
 		options.removeOptionDeclaration = true;
 		options.removeSingleConstDeclaration = true;
-		options.splitWrappedArrayAssignation = true;
+		//options.splitWrappedArrayAssignation = true;
 		//options.splitMultipleBranches = true;
-		options.splitWrappedStructAssignation = true;
+		//options.splitWrappedStructAssignation = true;
 		options.useIdentifierAccessesForStructs = false;
 
 		return options;

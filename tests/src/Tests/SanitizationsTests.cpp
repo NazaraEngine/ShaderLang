@@ -8,6 +8,7 @@
 #include <NZSL/Ast/Transformations/CompoundAssignmentTransformer.hpp>
 #include <NZSL/Ast/Transformations/ForToWhileTransformer.hpp>
 #include <NZSL/Ast/Transformations/MatrixTransformer.hpp>
+#include <NZSL/Ast/Transformations/StructAssignmentTransformer.hpp>
 #include <NZSL/Ast/Transformations/SwizzleTransformer.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <array>
@@ -643,13 +644,17 @@ struct Outer
 }
 
 [layout(std140)]
+struct Empty {}
+
+[layout(std140)]
 struct Foo
 {
 	bar: i32,
 	baz: f32,
 	[cond(HasQux)] quz: vec4[f32],
 	outer: Outer,
-	[cond(HasQuux)] quux: bool
+	[cond(HasQuux)] quux: bool,
+	empty: Empty
 }
 
 external
@@ -668,10 +673,18 @@ fn main()
 
 		nzsl::Ast::SanitizeVisitor::Options options;
 		options.partialSanitization = true;
-		options.splitWrappedArrayAssignation = true;
-		options.splitWrappedStructAssignation = true;
 
 		REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(*shaderModule, options));
+
+		nzsl::Ast::StructAssignmentTransformer::Options transformerOptions;
+		transformerOptions.splitWrappedArrayAssignation = true;
+		transformerOptions.splitWrappedStructAssignation = true;
+
+		nzsl::Ast::StructAssignmentTransformer assignmentTransformer;
+		nzsl::Ast::Transformer::Context context;
+		context.nextVariableIndex = 10;
+
+		REQUIRE_NOTHROW(assignmentTransformer.Transform(*shaderModule, context, transformerOptions));
 
 		ExpectNZSL(*shaderModule, R"(
 [nzsl_version("1.0")]
@@ -695,13 +708,20 @@ struct Outer
 }
 
 [layout(std140)]
+struct Empty
+{
+
+}
+
+[layout(std140)]
 struct Foo
 {
 	bar: i32,
 	baz: f32,
 	[cond(HasQux)] quz: vec4[f32],
 	outer: Outer,
-	[cond(false)] quux: bool
+	[cond(false)] quux: bool,
+	empty: Empty
 }
 
 external
