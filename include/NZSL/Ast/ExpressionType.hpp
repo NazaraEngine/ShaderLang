@@ -316,6 +316,10 @@ namespace nzsl::Ast
 	NZSL_API std::string ToString(const Type& type, const Stringifier& stringifier = {});
 	NZSL_API std::string ToString(const UniformType& type, const Stringifier& stringifier = {});
 	NZSL_API std::string ToString(const VectorType& type, const Stringifier& stringifier = {});
+
+	inline ExpressionType UnwrapExternalType(const ExpressionType& exprType);
+	template<typename T> ExpressionType WrapExternalType(const ExpressionType& exprType);
+	inline ExpressionType WrapExternalType(const ExpressionType& exprType, const ExpressionType& referenceType);
 }
 
 #ifdef NAZARA_COMPILER_GCC
