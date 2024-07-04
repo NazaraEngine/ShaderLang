@@ -3,8 +3,8 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <NZSL/Ast/Transformations/Transformer.hpp>
-#include <NZSL/Lang/Errors.hpp>
 #include <NZSL/Ast/Utils.hpp>
+#include <NZSL/Lang/Errors.hpp>
 #include <fmt/format.h>
 
 namespace nzsl::Ast
@@ -63,6 +63,18 @@ namespace nzsl::Ast
 		return varPtr;
 	}
 
+	ExpressionPtr& Transformer::GetCurrentExpressionPtr()
+	{
+		assert(!m_expressionStack.empty());
+		return *m_expressionStack.back();
+	}
+
+	StatementPtr& Transformer::GetCurrentStatementPtr()
+	{
+		assert(!m_statementStack.empty());
+		return *m_statementStack.back();
+	}
+
 	const ExpressionType* Transformer::GetExpressionType(Expression& expr) const
 	{
 		return GetExpressionType(expr, m_context->allowPartialSanitization);
@@ -78,6 +90,24 @@ namespace nzsl::Ast
 		}
 
 		return expressionType;
+	}
+
+	const ExpressionType* Transformer::GetResolvedExpressionType(Expression& expr) const
+	{
+		const ExpressionType* exprType = GetExpressionType(expr);
+		if (!exprType)
+			return nullptr;
+
+		return &ResolveAlias(*exprType);
+	}
+
+	const ExpressionType* Transformer::GetResolvedExpressionType(Expression& expr, bool allowEmpty) const
+	{
+		const ExpressionType* exprType = GetExpressionType(expr, allowEmpty);
+		if (!exprType)
+			return nullptr;
+
+		return &ResolveAlias(*exprType);
 	}
 
 #define NZSL_SHADERAST_NODE(Node, Type) \
@@ -131,22 +161,28 @@ namespace nzsl::Ast
 	template<typename T>
 	bool Transformer::TransformCurrentExpression()
 	{
-		ExpressionPtr newExpression = Transform(std::move(Nz::SafeCast<T&>(**m_expressionStack.back())));
+		ExpressionPtr newExpression = Transform(std::move(Nz::SafeCast<T&>(*GetCurrentExpressionPtr())));
 		if (!newExpression)
+		{
+			assert(GetCurrentExpressionPtr());
 			return false;
+		}
 
-		*m_expressionStack.back() = std::move(newExpression);
+		GetCurrentExpressionPtr() = std::move(newExpression);
 		return true;
 	}
 
 	template<typename T>
 	bool Transformer::TransformCurrentStatement()
 	{
-		StatementPtr newStatement = Transform(std::move(Nz::SafeCast<T&>(**m_statementStack.back())));
+		StatementPtr newStatement = Transform(std::move(Nz::SafeCast<T&>(*GetCurrentStatementPtr())));
 		if (!newStatement)
+		{
+			assert(GetCurrentStatementPtr());
 			return false;
+		}
 
-		*m_statementStack.back() = std::move(newStatement);
+		GetCurrentStatementPtr() = std::move(newStatement);
 		return true;
 	}
 
