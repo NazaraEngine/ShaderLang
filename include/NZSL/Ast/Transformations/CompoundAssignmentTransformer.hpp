@@ -4,26 +4,25 @@
 
 #pragma once
 
-#ifndef NZSL_AST_TRANSFORMATIONS_ASSIGNMENTTRANSFORMER_HPP
-#define NZSL_AST_TRANSFORMATIONS_ASSIGNMENTTRANSFORMER_HPP
+#ifndef NZSL_AST_TRANSFORMATIONS_COMPOUNDASSIGNMENTTRANSFORMER_HPP
+#define NZSL_AST_TRANSFORMATIONS_COMPOUNDASSIGNMENTTRANSFORMER_HPP
 
 #include <NZSL/Ast/Transformations/Transformer.hpp>
 
 namespace nzsl::Ast
 {
-	class NZSL_API AssignmentTransformer final : public Transformer
+	class NZSL_API CompoundAssignmentTransformer final : public Transformer
 	{
 		public:
 			struct Options;
 
-			inline AssignmentTransformer();
+			inline CompoundAssignmentTransformer();
 
 			inline bool Transform(Module& module, Context& context, std::string* error = nullptr);
 			bool Transform(Module& module, Context& context, const Options& options, std::string* error = nullptr);
 
 			struct Options
 			{
-				bool allowPartialSanitization = false;
 				bool removeCompoundAssignment = false;
 			};
 
@@ -35,6 +34,6 @@ namespace nzsl::Ast
 	};
 }
 
-#include <NZSL/Ast/Transformations/AssignmentTransformer.inl>
+#include <NZSL/Ast/Transformations/CompoundAssignmentTransformer.inl>
 
-#endif // NZSL_AST_TRANSFORMATIONS_ASSIGNMENTTRANSFORMER_HPP
+#endif // NZSL_AST_TRANSFORMATIONS_COMPOUNDASSIGNMENTTRANSFORMER_HPP
