@@ -4,12 +4,12 @@
 
 namespace nzsl::Ast
 {
-	inline AssignmentTransformer::AssignmentTransformer() :
+	inline CompoundAssignmentTransformer::CompoundAssignmentTransformer() :
 	Transformer(true)
 	{
 	}
 
-	inline bool AssignmentTransformer::Transform(Module& module, Context& context, std::string* error)
+	inline bool CompoundAssignmentTransformer::Transform(Module& module, Context& context, std::string* error)
 	{
 		return Transform(module, context, {}, error);
 	}
