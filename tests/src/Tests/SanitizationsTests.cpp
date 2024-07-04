@@ -4,8 +4,8 @@
 #include <NZSL/ShaderBuilder.hpp>
 #include <NZSL/Parser.hpp>
 #include <NZSL/Ast/SanitizeVisitor.hpp>
-#include <NZSL/Ast/Transformations/AssignmentTransformer.hpp>
 #include <NZSL/Ast/Transformations/BranchSplitterTransformer.hpp>
+#include <NZSL/Ast/Transformations/CompoundAssignmentTransformer.hpp>
 #include <NZSL/Ast/Transformations/ForToWhileTransformer.hpp>
 #include <NZSL/Ast/Transformations/MatrixTransformer.hpp>
 #include <NZSL/Ast/Transformations/SwizzleTransformer.hpp>
@@ -222,10 +222,10 @@ fn main()
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
 
-		nzsl::Ast::AssignmentTransformer::Options options;
+		nzsl::Ast::CompoundAssignmentTransformer::Options options;
 		options.removeCompoundAssignment = true;
 
-		nzsl::Ast::AssignmentTransformer assignmentTransformer;
+		nzsl::Ast::CompoundAssignmentTransformer assignmentTransformer;
 		nzsl::Ast::Transformer::Context context;
 
 		REQUIRE_NOTHROW(assignmentTransformer.Transform(*shaderModule, context, options));
@@ -435,11 +435,12 @@ fn testMat4CompoundMinusMat4(x: mat4[f32], y: mat4[f32]) -> mat4[f32]
 		REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(*shaderModule));
 
 		nzsl::Ast::Transformer::Context context;
+		context.nextVariableIndex = 20;
 
-		nzsl::Ast::AssignmentTransformer::Options assignmentOptions;
+		nzsl::Ast::CompoundAssignmentTransformer::Options assignmentOptions;
 		assignmentOptions.removeCompoundAssignment = true;
 
-		nzsl::Ast::AssignmentTransformer assignmentTransformer;
+		nzsl::Ast::CompoundAssignmentTransformer assignmentTransformer;
 		REQUIRE_NOTHROW(assignmentTransformer.Transform(*shaderModule, context, assignmentOptions));
 
 		nzsl::Ast::MatrixTransformer::Options matrixOptions;
@@ -482,14 +483,11 @@ fn testMat4CompoundMinusMat4(x: mat4[f32], y: mat4[f32]) -> mat4[f32]
 		{
 			REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(*shaderModule));
 
-			nzsl::Ast::Transformer::Context context2;
-			context2.nextVariableIndex = 20;
-
 			nzsl::Ast::MatrixTransformer::Options matrixOptions2;
 			matrixOptions2.removeMatrixCast = true;
 
 			nzsl::Ast::MatrixTransformer matrixTransformer2;
-			REQUIRE_NOTHROW(matrixTransformer2.Transform(*shaderModule, context2, matrixOptions2));
+			REQUIRE_NOTHROW(matrixTransformer2.Transform(*shaderModule, context, matrixOptions2));
 
 			ExpectNZSL(*shaderModule, R"(
 fn testMat4PlusMat4(x: mat4[f32], y: mat4[f32]) -> mat4[f32]
