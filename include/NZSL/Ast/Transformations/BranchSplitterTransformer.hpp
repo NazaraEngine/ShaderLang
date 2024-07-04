@@ -23,7 +23,6 @@ namespace nzsl::Ast
 
 			struct Options
 			{
-				bool allowPartialSanitization = false;
 			};
 
 		private:

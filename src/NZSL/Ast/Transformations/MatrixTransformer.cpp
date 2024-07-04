@@ -95,7 +95,7 @@ namespace nzsl::Ast
 					return nullptr; //< unresolved type
 			}
 
-			const ExpressionType& resolvedFrontExprType = ResolveAlias(*GetExpressionType(*castExpr.expressions.front()));
+			const ExpressionType& resolvedFrontExprType = *GetResolvedExpressionType(*castExpr.expressions.front());
 			bool isMatrixCast = IsMatrixType(resolvedFrontExprType);
 			if (isMatrixCast && std::get<MatrixType>(resolvedFrontExprType) == targetMatrixType)
 			{
@@ -136,7 +136,7 @@ namespace nzsl::Ast
 				{
 					// parameter #i
 					vectorExpr = std::move(castExpr.expressions[i]);
-					vectorComponentCount = std::get<VectorType>(ResolveAlias(*GetExpressionType(*vectorExpr))).componentCount;
+					vectorComponentCount = std::get<VectorType>(*GetResolvedExpressionType(*vectorExpr)).componentCount;
 				}
 				else
 				{
