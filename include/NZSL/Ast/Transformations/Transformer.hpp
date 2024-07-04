@@ -35,8 +35,14 @@ namespace nzsl::Ast
 			DeclareVariableStatement* DeclareVariable(std::string_view name, ExpressionPtr initialExpr);
 			DeclareVariableStatement* DeclareVariable(std::string_view name, Ast::ExpressionType type, SourceLocation sourceLocation);
 
+			ExpressionPtr& GetCurrentExpressionPtr();
+			StatementPtr& GetCurrentStatementPtr();
+
 			const ExpressionType* GetExpressionType(Expression& expr) const;
 			const ExpressionType* GetExpressionType(Expression& expr, bool allowEmpty) const;
+
+			const ExpressionType* GetResolvedExpressionType(Expression& expr) const;
+			const ExpressionType* GetResolvedExpressionType(Expression& expr, bool allowEmpty) const;
 
 			template<bool Single, typename F> void HandleStatementList(std::vector<StatementPtr>& statementList, F&& callback);
 

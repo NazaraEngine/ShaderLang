@@ -17,13 +17,11 @@ namespace nzsl::Ast
 
 	ExpressionPtr SwizzleTransformer::Transform(SwizzleExpression&& swizzle)
 	{
-		const ExpressionType* exprType = GetExpressionType(*swizzle.expression);
+		const ExpressionType* exprType = GetResolvedExpressionType(*swizzle.expression);
 		if (!exprType)
 			return nullptr;
 
-		const ExpressionType& resolvedExprType = ResolveAlias(*exprType);
-
-		if (m_options->removeScalarSwizzling && IsPrimitiveType(resolvedExprType))
+		if (m_options->removeScalarSwizzling && IsPrimitiveType(*exprType))
 		{
 			for (std::size_t i = 0; i < swizzle.componentCount; ++i)
 			{
@@ -37,7 +35,7 @@ namespace nzsl::Ast
 			// Use a Cast expression to replace swizzle
 			ExpressionPtr expression = CacheExpression(std::move(swizzle.expression)); //< Since we are going to use a value multiple times, cache it if required
 
-			PrimitiveType baseType = std::get<PrimitiveType>(resolvedExprType);
+			PrimitiveType baseType = std::get<PrimitiveType>(*exprType);
 
 			auto cast = std::make_unique<CastExpression>();
 			cast->sourceLocation = swizzle.sourceLocation;
