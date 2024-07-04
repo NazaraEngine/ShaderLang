@@ -19,71 +19,56 @@ namespace nzsl::Ast
 		if (!m_options->reduceForEachLoopsToWhile)
 			return nullptr;
 
-		const ExpressionType* exprType = GetExpressionType(*forEachStatement.expression);
+		const ExpressionType* exprType = GetResolvedExpressionType(*forEachStatement.expression);
 		if (!exprType)
-		{
-			if (!m_context->allowPartialSanitization)
-				throw AstInternalError{ forEachStatement.sourceLocation, "unexpected missing expression type" };
-
 			return nullptr;
-		}
 
-		const ExpressionType& resolvedExprType = ResolveAlias(*exprType);
-
-		ExpressionType innerType;
-		if (IsArrayType(resolvedExprType))
-		{
-			const ArrayType& arrayType = std::get<ArrayType>(resolvedExprType);
-			innerType = arrayType.containedType->type;
-		}
-		else
+		if (!IsArrayType(*exprType))
 			throw CompilerForEachUnsupportedTypeError{ forEachStatement.sourceLocation, ToString(*exprType) };
+
+		const ArrayType& arrayType = std::get<ArrayType>(*exprType);
+		const ExpressionType& innerType = ResolveAlias(arrayType.containedType->type);
 
 		auto multi = std::make_unique<MultiStatement>();
 		multi->sourceLocation = forEachStatement.sourceLocation;
 
-		if (IsArrayType(resolvedExprType))
-		{
-			const ArrayType& arrayType = std::get<ArrayType>(resolvedExprType);
+		multi->statements.reserve(2);
 
-			multi->statements.reserve(2);
+		// Counter variable
+		auto counterVariable = ShaderBuilder::DeclareVariable("_nzsl_counter", ExpressionType{ PrimitiveType::UInt32 }, ShaderBuilder::ConstantValue(0u));
+		counterVariable->sourceLocation = forEachStatement.sourceLocation;
+		counterVariable->varIndex = m_context->nextVariableIndex++;
 
-			// Counter variable
-			auto counterVariable = ShaderBuilder::DeclareVariable("_nzsl_counter", ExpressionType{ PrimitiveType::UInt32 }, ShaderBuilder::ConstantValue(0u));
-			counterVariable->sourceLocation = forEachStatement.sourceLocation;
-			counterVariable->varIndex = m_context->nextVariableIndex++;
+		std::size_t counterVarIndex = counterVariable->varIndex.value();
 
-			std::size_t counterVarIndex = counterVariable->varIndex.value();
+		multi->statements.emplace_back(std::move(counterVariable));
 
-			multi->statements.emplace_back(std::move(counterVariable));
+		auto whileStatement = std::make_unique<WhileStatement>();
+		whileStatement->unroll = std::move(forEachStatement.unroll);
 
-			auto whileStatement = std::make_unique<WhileStatement>();
-			whileStatement->unroll = std::move(forEachStatement.unroll);
+		// While condition
+		auto condition = ShaderBuilder::Binary(BinaryType::CompLt, ShaderBuilder::Variable(counterVarIndex, PrimitiveType::UInt32, forEachStatement.sourceLocation), ShaderBuilder::ConstantValue(arrayType.length, forEachStatement.sourceLocation));
+		whileStatement->condition = std::move(condition);
 
-			// While condition
-			auto condition = ShaderBuilder::Binary(BinaryType::CompLt, ShaderBuilder::Variable(counterVarIndex, PrimitiveType::UInt32, forEachStatement.sourceLocation), ShaderBuilder::ConstantValue(arrayType.length, forEachStatement.sourceLocation));
-			whileStatement->condition = std::move(condition);
+		// While body
+		auto body = std::make_unique<MultiStatement>();
+		body->statements.reserve(3);
 
-			// While body
-			auto body = std::make_unique<MultiStatement>();
-			body->statements.reserve(3);
+		auto accessIndex = ShaderBuilder::AccessIndex(std::move(forEachStatement.expression), ShaderBuilder::Variable(counterVarIndex, PrimitiveType::UInt32, forEachStatement.sourceLocation));
 
-			auto accessIndex = ShaderBuilder::AccessIndex(std::move(forEachStatement.expression), ShaderBuilder::Variable(counterVarIndex, PrimitiveType::UInt32, forEachStatement.sourceLocation));
+		auto elementVariable = ShaderBuilder::DeclareVariable(forEachStatement.varName, std::move(accessIndex));
+		elementVariable->varIndex = forEachStatement.varIndex; //< Preserve var index
 
-			auto elementVariable = ShaderBuilder::DeclareVariable(forEachStatement.varName, std::move(accessIndex));
-			elementVariable->varIndex = forEachStatement.varIndex; //< Preserve var index
+		body->statements.emplace_back(std::move(elementVariable));
+		body->statements.emplace_back(Unscope(std::move(forEachStatement.statement)));
 
-			body->statements.emplace_back(std::move(elementVariable));
-			body->statements.emplace_back(Unscope(std::move(forEachStatement.statement)));
+		auto incrCounter = ShaderBuilder::Assign(AssignType::CompoundAdd, ShaderBuilder::Variable(counterVarIndex, PrimitiveType::UInt32, forEachStatement.sourceLocation), ShaderBuilder::ConstantValue(1u, forEachStatement.sourceLocation));
 
-			auto incrCounter = ShaderBuilder::Assign(AssignType::CompoundAdd, ShaderBuilder::Variable(counterVarIndex, PrimitiveType::UInt32, forEachStatement.sourceLocation), ShaderBuilder::ConstantValue(1u, forEachStatement.sourceLocation));
+		body->statements.emplace_back(ShaderBuilder::ExpressionStatement(std::move(incrCounter)));
 
-			body->statements.emplace_back(ShaderBuilder::ExpressionStatement(std::move(incrCounter)));
+		whileStatement->body = std::move(body);
 
-			whileStatement->body = std::move(body);
-
-			multi->statements.emplace_back(std::move(whileStatement));
-		}
+		multi->statements.emplace_back(std::move(whileStatement));
 
 		return ShaderBuilder::Scoped(std::move(multi));
 	}
@@ -94,15 +79,14 @@ namespace nzsl::Ast
 			return nullptr;
 
 		Expression& fromExpr = *forStatement.fromExpr;
-		const ExpressionType* fromExprType = GetExpressionType(fromExpr);
+		const ExpressionType* fromExprType = GetResolvedExpressionType(fromExpr);
 		if (!fromExprType)
 			return nullptr;
 
-		const ExpressionType& resolvedFromExprType = ResolveAlias(*fromExprType);
-		if (!IsPrimitiveType(resolvedFromExprType))
+		if (!IsPrimitiveType(*fromExprType))
 			throw CompilerForFromTypeExpectIntegerTypeError{ fromExpr.sourceLocation, ToString(*fromExprType) };
 
-		PrimitiveType counterType = std::get<PrimitiveType>(resolvedFromExprType);
+		PrimitiveType counterType = std::get<PrimitiveType>(*fromExprType);
 		if (counterType != PrimitiveType::Int32 && counterType != PrimitiveType::UInt32)
 			throw CompilerForFromTypeExpectIntegerTypeError{ fromExpr.sourceLocation, ToString(*fromExprType) };
 
