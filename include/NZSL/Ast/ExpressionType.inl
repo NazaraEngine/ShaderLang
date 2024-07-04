@@ -341,6 +341,78 @@ namespace nzsl::Ast
 		else
 			return exprType;
 	}
+
+	ExpressionType UnwrapExternalType(const ExpressionType& exprType)
+	{
+		if (IsStorageType(exprType))
+			return std::get<StorageType>(exprType).containedType;
+		else if (IsUniformType(exprType))
+			return std::get<UniformType>(exprType).containedType;
+		else if (IsArrayType(exprType))
+		{
+			const ArrayType& arrayType = std::get<ArrayType>(exprType);
+			if (arrayType.isWrapped)
+			{
+				ArrayType unwrappedArrayType;
+				unwrappedArrayType.containedType = std::make_unique<ContainedType>();
+				unwrappedArrayType.containedType->type = UnwrapExternalType(arrayType.containedType->type);
+				unwrappedArrayType.length = arrayType.length;
+
+				return unwrappedArrayType;
+			}
+		}
+		
+		return exprType;
+	}
+
+	template<typename T>
+	ExpressionType WrapExternalType(const ExpressionType& exprType)
+	{
+		if (IsStructType(exprType))
+		{
+			std::size_t innerStructIndex = std::get<StructType>(exprType).structIndex;
+			return T{ innerStructIndex };
+		}
+		else if (IsArrayType(exprType))
+		{
+			const ArrayType& arrayType = std::get<ArrayType>(exprType);
+
+			ArrayType wrappedArrayType;
+			wrappedArrayType.containedType = std::make_unique<ContainedType>();
+			wrappedArrayType.containedType->type = WrapExternalType<T>(arrayType.containedType->type);
+			wrappedArrayType.length = arrayType.length;
+			wrappedArrayType.isWrapped = true;
+
+			return wrappedArrayType;
+		}
+		else if (IsDynArrayType(exprType))
+		{
+			const DynArrayType& arrayType = std::get<DynArrayType>(exprType);
+
+			DynArrayType wrappedDynArrayType;
+			wrappedDynArrayType.containedType = std::make_unique<ContainedType>();
+			wrappedDynArrayType.containedType->type = WrapExternalType<T>(arrayType.containedType->type);
+			wrappedDynArrayType.isWrapped = true;
+
+			return wrappedDynArrayType;
+		}
+		else
+			return exprType;
+	}
+
+	inline ExpressionType WrapExternalType(const ExpressionType& exprType, const ExpressionType& referenceType)
+	{
+		if (IsStorageType(referenceType))
+			return WrapExternalType<StorageType>(exprType);
+		else if (IsUniformType(referenceType))
+			return WrapExternalType<StorageType>(exprType);
+		else if (IsArrayType(referenceType))
+			return WrapExternalType(exprType, std::get<ArrayType>(referenceType).containedType->type);
+		else if (IsDynArrayType(referenceType))
+			return WrapExternalType(exprType, std::get<DynArrayType>(referenceType).containedType->type);
+		else
+			return exprType;
+	}
 }
 
 namespace std
