@@ -62,7 +62,7 @@ namespace nzslc
 			template<typename F, typename... Args> auto Step(std::enable_if_t<!std::is_member_function_pointer_v<F>, std::string_view> stepName, F&& func, Args&&... args) -> decltype(std::invoke(func, std::forward<Args>(args)...));
 			template<typename F, typename... Args> auto Step(std::enable_if_t<std::is_member_function_pointer_v<F>, std::string_view> stepName, F&& func, Args&&... args) -> decltype(std::invoke(func, this, std::forward<Args>(args)...));
 			template<typename F> auto StepInternal(std::string_view stepName, F&& func) -> decltype(func());
-			nzsl::Ast::ModulePtr Unserialize(const std::uint8_t* data, std::size_t size);
+			nzsl::Ast::ModulePtr Deserialize(const std::uint8_t* data, std::size_t size);
 
 			static nzsl::Ast::ModulePtr Parse(std::string_view sourceContent, const std::string& filePath);
 			static std::vector<std::uint8_t> ReadFileContent(const std::filesystem::path& filePath);

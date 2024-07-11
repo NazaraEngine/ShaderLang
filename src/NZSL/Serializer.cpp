@@ -11,7 +11,7 @@ namespace nzsl
 {
 	AbstractSerializer::~AbstractSerializer() = default;
 
-	AbstractUnserializer::~AbstractUnserializer() = default;
+	AbstractDeserializer::~AbstractDeserializer() = default;
 
 	void AbstractSerializer::Serialize(bool value)
 	{
@@ -56,72 +56,72 @@ namespace nzsl
 	}
 
 
-	void AbstractUnserializer::Unserialize(bool& value)
+	void AbstractDeserializer::Deserialize(bool& value)
 	{
 		std::uint8_t v;
-		Unserialize(v);
+		Deserialize(v);
 
 		value = (v != 0);
 	}
 
-	void AbstractUnserializer::Unserialize(double& value)
+	void AbstractDeserializer::Deserialize(double& value)
 	{
 		std::uint64_t v;
-		Unserialize(v);
+		Deserialize(v);
 
 		value = Nz::BitCast<double>(v);
 	}
 
-	void AbstractUnserializer::Unserialize(float& value)
+	void AbstractDeserializer::Deserialize(float& value)
 	{
 		std::uint32_t v;
-		Unserialize(v);
+		Deserialize(v);
 
 		value = Nz::BitCast<float>(v);
 	}
 
-	void AbstractUnserializer::Unserialize(std::int8_t& value)
+	void AbstractDeserializer::Deserialize(std::int8_t& value)
 	{
 		std::uint8_t v;
-		Unserialize(v);
+		Deserialize(v);
 
 		value = Nz::BitCast<std::int8_t>(v);
 	}
 	
-	void AbstractUnserializer::Unserialize(std::int16_t& value)
+	void AbstractDeserializer::Deserialize(std::int16_t& value)
 	{
 		std::uint16_t v;
-		Unserialize(v);
+		Deserialize(v);
 
 		value = Nz::BitCast<std::int16_t>(v);
 	}
 	
-	void AbstractUnserializer::Unserialize(std::int32_t& value)
+	void AbstractDeserializer::Deserialize(std::int32_t& value)
 	{
 		std::uint32_t v;
-		Unserialize(v);
+		Deserialize(v);
 
 		value = Nz::BitCast<std::int32_t>(v);
 	}
 
-	void AbstractUnserializer::Unserialize(std::int64_t& value)
+	void AbstractDeserializer::Deserialize(std::int64_t& value)
 	{
 		std::uint64_t v;
-		Unserialize(v);
+		Deserialize(v);
 
 		value = Nz::BitCast<std::int64_t>(v);
 	}
 
-	void AbstractUnserializer::Unserialize(std::string& value)
+	void AbstractDeserializer::Deserialize(std::string& value)
 	{
 		std::uint32_t size;
-		Unserialize(size);
+		Deserialize(size);
 
 		value.resize(size);
 		for (char& c : value)
 		{
 			std::uint8_t characterValue;
-			Unserialize(characterValue);
+			Deserialize(characterValue);
 
 			c = static_cast<char>(characterValue);
 		}
@@ -156,18 +156,18 @@ namespace nzsl
 		m_data.insert(m_data.end(), ptr, ptr + sizeof(value));
 	}
 
-	void Unserializer::Unserialize(std::uint8_t& value)
+	void Deserializer::Deserialize(std::uint8_t& value)
 	{
 		if (m_ptr + sizeof(value) > m_ptrEnd)
-			throw std::runtime_error("not enough data to unserialize u8");
+			throw std::runtime_error("not enough data to deserialize u8");
 
 		value = *m_ptr++;
 	}
 
-	void Unserializer::Unserialize(std::uint16_t& value)
+	void Deserializer::Deserialize(std::uint16_t& value)
 	{
 		if (m_ptr + sizeof(value) > m_ptrEnd)
-			throw std::runtime_error("not enough data to unserialize u16");
+			throw std::runtime_error("not enough data to deserialize u16");
 
 		std::memcpy(&value, m_ptr, sizeof(value));
 		m_ptr += sizeof(value);
@@ -175,10 +175,10 @@ namespace nzsl
 		value = Nz::LittleEndianToHost(value);
 	}
 
-	void Unserializer::Unserialize(std::uint32_t& value)
+	void Deserializer::Deserialize(std::uint32_t& value)
 	{
 		if (m_ptr + sizeof(value) > m_ptrEnd)
-			throw std::runtime_error("not enough data to unserialize u32");
+			throw std::runtime_error("not enough data to deserialize u32");
 
 		std::memcpy(&value, m_ptr, sizeof(value));
 		m_ptr += sizeof(value);
@@ -186,10 +186,10 @@ namespace nzsl
 		value = Nz::LittleEndianToHost(value);
 	}
 
-	void Unserializer::Unserialize(std::uint64_t& value)
+	void Deserializer::Deserialize(std::uint64_t& value)
 	{
 		if (m_ptr + sizeof(value) > m_ptrEnd)
-			throw std::runtime_error("not enough data to unserialize u64");
+			throw std::runtime_error("not enough data to deserialize u64");
 
 		std::memcpy(&value, m_ptr, sizeof(value));
 		m_ptr += sizeof(value);

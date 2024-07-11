@@ -32,23 +32,23 @@ namespace nzsl
 			virtual void Serialize(const std::string& value);
 	};
 
-	class NZSL_API AbstractUnserializer
+	class NZSL_API AbstractDeserializer
 	{
 		public:
-			virtual ~AbstractUnserializer();
+			virtual ~AbstractDeserializer();
 
-			virtual void Unserialize(bool& value);
-			virtual void Unserialize(double& value);
-			virtual void Unserialize(float& value);
-			virtual void Unserialize(std::int8_t& value);
-			virtual void Unserialize(std::int16_t& value);
-			virtual void Unserialize(std::int32_t& value);
-			virtual void Unserialize(std::int64_t& value);
-			virtual void Unserialize(std::uint8_t& value) = 0;
-			virtual void Unserialize(std::uint16_t& value) = 0;
-			virtual void Unserialize(std::uint32_t& value) = 0;
-			virtual void Unserialize(std::uint64_t& value) = 0;
-			virtual void Unserialize(std::string& value);
+			virtual void Deserialize(bool& value);
+			virtual void Deserialize(double& value);
+			virtual void Deserialize(float& value);
+			virtual void Deserialize(std::int8_t& value);
+			virtual void Deserialize(std::int16_t& value);
+			virtual void Deserialize(std::int32_t& value);
+			virtual void Deserialize(std::int64_t& value);
+			virtual void Deserialize(std::uint8_t& value) = 0;
+			virtual void Deserialize(std::uint16_t& value) = 0;
+			virtual void Deserialize(std::uint32_t& value) = 0;
+			virtual void Deserialize(std::uint64_t& value) = 0;
+			virtual void Deserialize(std::string& value);
 	};
 
 	class NZSL_API Serializer : public AbstractSerializer
@@ -74,22 +74,22 @@ namespace nzsl
 			std::vector<std::uint8_t> m_data;
 	};
 
-	class NZSL_API Unserializer : public AbstractUnserializer
+	class NZSL_API Deserializer : public AbstractDeserializer
 	{
 		public:
-			inline Unserializer(const void* data, std::size_t dataSize);
-			Unserializer(const Unserializer&) = default;
-			Unserializer(Unserializer&&) noexcept = default;
-			~Unserializer() = default;
+			inline Deserializer(const void* data, std::size_t dataSize);
+			Deserializer(const Deserializer&) = default;
+			Deserializer(Deserializer&&) noexcept = default;
+			~Deserializer() = default;
 
-			using AbstractUnserializer::Unserialize;
-			void Unserialize(std::uint8_t& value) override;
-			void Unserialize(std::uint16_t& value) override;
-			void Unserialize(std::uint32_t& value) override;
-			void Unserialize(std::uint64_t& value) override;
+			using AbstractDeserializer::Deserialize;
+			void Deserialize(std::uint8_t& value) override;
+			void Deserialize(std::uint16_t& value) override;
+			void Deserialize(std::uint32_t& value) override;
+			void Deserialize(std::uint64_t& value) override;
 
-			Unserializer& operator=(const Unserializer&) = default;
-			Unserializer& operator=(Unserializer&&) noexcept = default;
+			Deserializer& operator=(const Deserializer&) = default;
+			Deserializer& operator=(Deserializer&&) noexcept = default;
 
 		private:
 			const std::uint8_t* m_ptr;
