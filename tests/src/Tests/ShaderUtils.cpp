@@ -441,11 +441,11 @@ nzsl::Ast::ModulePtr SanitizeModule(const nzsl::Ast::Module& module, const nzsl:
 
 		const std::vector<std::uint8_t>& data = serializer.GetData();
 
-		nzsl::Unserializer unserializer(&data[0], data.size());
-		nzsl::Ast::ModulePtr unserializedShader;
-		REQUIRE_NOTHROW(unserializedShader = nzsl::Ast::UnserializeShader(unserializer));
+		nzsl::Deserializer deserializer(&data[0], data.size());
+		nzsl::Ast::ModulePtr deserializedShader;
+		REQUIRE_NOTHROW(deserializedShader = nzsl::Ast::DeserializeShader(deserializer));
 
-		CHECK(nzsl::Ast::Compare(targetModule, *unserializedShader));
+		CHECK(nzsl::Ast::Compare(targetModule, *deserializedShader));
 	};
 
 	WHEN("We sanitize the shader")
@@ -456,13 +456,13 @@ nzsl::Ast::ModulePtr SanitizeModule(const nzsl::Ast::Module& module, const nzsl:
 		{
 			Reparse();
 
-			WHEN("We serialize/unserialize the shader and except the same result")
+			WHEN("We serialize/deserialize the shader and except the same result")
 			{
 				Serialize();
 			}
 		}
 		
-		WHEN("We serialize/unserialize the shader and except the same result")
+		WHEN("We serialize/deserialize the shader and except the same result")
 		{
 			Serialize();
 		}
@@ -472,13 +472,13 @@ nzsl::Ast::ModulePtr SanitizeModule(const nzsl::Ast::Module& module, const nzsl:
 	{
 		Reparse();
 
-		WHEN("We serialize/unserialize the shader and except the same result")
+		WHEN("We serialize/deserialize the shader and except the same result")
 		{
 			Serialize();
 		}
 	}
 
-	WHEN("We serialize/unserialize the shader and except the same result")
+	WHEN("We serialize/deserialize the shader and except the same result")
 	{
 		Serialize();
 	}

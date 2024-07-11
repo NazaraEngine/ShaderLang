@@ -225,8 +225,8 @@ namespace nzsl::Ast
 	{
 	}
 
-	inline ShaderAstUnserializer::ShaderAstUnserializer(AbstractUnserializer& unserializer) :
-	m_unserializer(unserializer)
+	inline ShaderAstDeserializer::ShaderAstDeserializer(AbstractDeserializer& deserializer) :
+	m_deserializer(deserializer)
 	{
 	}
 }

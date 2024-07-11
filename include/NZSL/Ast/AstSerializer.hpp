@@ -170,13 +170,13 @@ namespace nzsl::Ast
 			AbstractSerializer& m_serializer;
 	};
 
-	class NZSL_API ShaderAstUnserializer final : public SerializerBase
+	class NZSL_API ShaderAstDeserializer final : public SerializerBase
 	{
 		public:
-			ShaderAstUnserializer(AbstractUnserializer& stream);
-			~ShaderAstUnserializer() = default;
+			ShaderAstDeserializer(AbstractDeserializer& stream);
+			~ShaderAstDeserializer() = default;
 
-			ModulePtr Unserialize();
+			ModulePtr Deserialize();
 
 		private:
 			using SerializerBase::Serialize;
@@ -214,12 +214,12 @@ namespace nzsl::Ast
 			void Value(std::uint64_t& val) override;
 
 			std::vector<std::shared_ptr<const std::string>> m_strings;
-			AbstractUnserializer& m_unserializer;
+			AbstractDeserializer& m_deserializer;
 			std::uint32_t m_version;
 	};
 	
 	NZSL_API void SerializeShader(AbstractSerializer& serializer, const Module& shader);
-	NZSL_API ModulePtr UnserializeShader(AbstractUnserializer& unserializer);
+	NZSL_API ModulePtr DeserializeShader(AbstractDeserializer& deserializer);
 }
 
 #include <NZSL/Ast/AstSerializer.inl>

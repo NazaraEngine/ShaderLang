@@ -9,7 +9,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <cctype>
 
-void ParseSerializeUnserialize(std::string_view sourceCode, bool sanitize)
+void ParseSerializeDeserialize(std::string_view sourceCode, bool sanitize)
 {
 	nzsl::Ast::ModulePtr shaderModule;
 	REQUIRE_NOTHROW(shaderModule = nzsl::Parse(sourceCode));
@@ -43,18 +43,18 @@ void ParseSerializeUnserialize(std::string_view sourceCode, bool sanitize)
 
 		const std::vector<std::uint8_t>& data = serializer.GetData();
 
-		nzsl::Unserializer unserializer(&data[0], data.size());
-		nzsl::Ast::ModulePtr unserializedShader;
-		REQUIRE_NOTHROW(unserializedShader = nzsl::Ast::UnserializeShader(unserializer));
+		nzsl::Deserializer deserializer(&data[0], data.size());
+		nzsl::Ast::ModulePtr deserializedShader;
+		REQUIRE_NOTHROW(deserializedShader = nzsl::Ast::DeserializeShader(deserializer));
 
-		CHECK(nzsl::Ast::Compare(*shaderModule, *unserializedShader));
+		CHECK(nzsl::Ast::Compare(*shaderModule, *deserializedShader));
 	}
 }
 
-void ParseSerializeUnserialize(std::string_view sourceCode)
+void ParseSerializeDeserialize(std::string_view sourceCode)
 {
-	ParseSerializeUnserialize(sourceCode, false);
-	ParseSerializeUnserialize(sourceCode, true);
+	ParseSerializeDeserialize(sourceCode, false);
+	ParseSerializeDeserialize(sourceCode, true);
 }
 
 template<typename T>
@@ -65,11 +65,11 @@ void TestSerialization(const T& value)
 
 	const std::vector<std::uint8_t>& data = serializer.GetData();
 
-	nzsl::Unserializer unserializer(data.data(), data.size());
-	T unserializedValue;
-	REQUIRE_NOTHROW(unserializer.Unserialize(unserializedValue));
+	nzsl::Deserializer deserializer(data.data(), data.size());
+	T deserializedValue;
+	REQUIRE_NOTHROW(deserializer.Deserialize(deserializedValue));
 
-	CHECK(value == unserializedValue);
+	CHECK(value == deserializedValue);
 }
 
 TEST_CASE("basic", "[Serialization]")
@@ -182,19 +182,19 @@ TEST_CASE("basic", "[Serialization]")
 
 	WHEN("Serializing multiple types")
 	{
-		auto SerializeOrUnserialize = [&](auto& serializer, const auto& value)
+		auto SerializeOrDeserialize = [&](auto& serializer, const auto& value)
 		{
 			using S = std::decay_t<decltype(serializer)>;
 			using T = std::decay_t<decltype(value)>;
 
 			if constexpr (std::is_same_v<S, nzsl::Serializer>)
 				REQUIRE_NOTHROW(serializer.Serialize(value));
-			else if constexpr (std::is_same_v<S, nzsl::Unserializer>)
+			else if constexpr (std::is_same_v<S, nzsl::Deserializer>)
 			{
-				T unserializedValue;
-				REQUIRE_NOTHROW(serializer.Unserialize(unserializedValue));
+				T deserializedValue;
+				REQUIRE_NOTHROW(serializer.Deserialize(deserializedValue));
 
-				CHECK(unserializedValue == value);
+				CHECK(deserializedValue == value);
 			}
 			else
 				static_assert(Nz::AlwaysFalse<S>(), "unexpected type");
@@ -204,16 +204,16 @@ TEST_CASE("basic", "[Serialization]")
 		{
 			using namespace std::literals;
 
-			SerializeOrUnserialize(serializer, true);
-			SerializeOrUnserialize(serializer, false);
-			SerializeOrUnserialize(serializer, false);
-			SerializeOrUnserialize(serializer, true);
+			SerializeOrDeserialize(serializer, true);
+			SerializeOrDeserialize(serializer, false);
+			SerializeOrDeserialize(serializer, false);
+			SerializeOrDeserialize(serializer, true);
 
-			SerializeOrUnserialize(serializer, 1.42f);
-			SerializeOrUnserialize(serializer, 1.67f);
-			SerializeOrUnserialize(serializer, "Hello world"s);
-			SerializeOrUnserialize(serializer, Nz::Pi<double>);
-			SerializeOrUnserialize(serializer, std::numeric_limits<std::uint64_t>::max() / 2);
+			SerializeOrDeserialize(serializer, 1.42f);
+			SerializeOrDeserialize(serializer, 1.67f);
+			SerializeOrDeserialize(serializer, "Hello world"s);
+			SerializeOrDeserialize(serializer, Nz::Pi<double>);
+			SerializeOrDeserialize(serializer, std::numeric_limits<std::uint64_t>::max() / 2);
 		};
 
 		nzsl::Serializer serializer;
@@ -221,8 +221,8 @@ TEST_CASE("basic", "[Serialization]")
 
 		const std::vector<std::uint8_t>& data = serializer.GetData();
 
-		nzsl::Unserializer unserializer(data.data(), data.size());
-		TestValues(unserializer);
+		nzsl::Deserializer deserializer(data.data(), data.size());
+		TestValues(deserializer);
 	}
 }
 
@@ -230,7 +230,7 @@ TEST_CASE("serialization", "[Shader]")
 {
 	WHEN("serializing and unserializing a simple shader")
 	{
-		ParseSerializeUnserialize(R"(
+		ParseSerializeDeserialize(R"(
 [nzsl_version("1.0")]
 [author("Lynix")]
 [desc("Serialization\" \"test")]
@@ -265,7 +265,7 @@ fn main() -> Output
 	
 	WHEN("serializing and unserializing a shader using features")
 	{
-		ParseSerializeUnserialize(R"(
+		ParseSerializeDeserialize(R"(
 [nzsl_version("1.0")]
 [feature(primitive_externals)]
 module;
@@ -293,7 +293,7 @@ fn main() -> Output
 
 	WHEN("serializing and unserializing branches")
 	{
-		ParseSerializeUnserialize(R"(
+		ParseSerializeDeserialize(R"(
 [nzsl_version("1.0")]
 module;
 
@@ -325,7 +325,7 @@ fn main()
 
 	WHEN("serializing and unserializing const arrays")
 	{
-		ParseSerializeUnserialize(R"(
+		ParseSerializeDeserialize(R"(
 [nzsl_version("1.0")]
 module;
 
@@ -373,7 +373,7 @@ const v4iArray = array[vec4[i32]](
 
 	WHEN("serializing and unserializing consts")
 	{
-		ParseSerializeUnserialize(R"(
+		ParseSerializeDeserialize(R"(
 [nzsl_version("1.0")]
 module;
 
@@ -420,7 +420,7 @@ fn main()
 
 	WHEN("serializing and unserializing function")
 	{
-		ParseSerializeUnserialize(R"(
+		ParseSerializeDeserialize(R"(
 [nzsl_version("1.0")]
 module;
 
@@ -457,7 +457,7 @@ fn main(input: FragIn)
 
 )");
 
-		ParseSerializeUnserialize(R"(
+		ParseSerializeDeserialize(R"(
 [nzsl_version("1.0")]
 module;
 
@@ -479,7 +479,7 @@ fn main()
 
 	WHEN("serializing and unserializing loops")
 	{
-		ParseSerializeUnserialize(R"(
+		ParseSerializeDeserialize(R"(
 [nzsl_version("1.0")]
 module;
 
@@ -526,7 +526,7 @@ fn main()
 
 	WHEN("serializing and unserializing swizzles")
 	{
-		ParseSerializeUnserialize(R"(
+		ParseSerializeDeserialize(R"(
 [nzsl_version("1.0")]
 module;
 
@@ -542,7 +542,7 @@ fn main()
 
 	WHEN("serializing and unserializing imports")
 	{
-		ParseSerializeUnserialize(R"(
+		ParseSerializeDeserialize(R"(
 [nzsl_version("1.0")]
 module;
 

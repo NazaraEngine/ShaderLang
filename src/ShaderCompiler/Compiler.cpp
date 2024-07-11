@@ -607,7 +607,7 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 		else if (extension == ".nzslb")
 		{
 			std::vector<std::uint8_t> sourceContent = Step("File reading"sv, &Compiler::ReadFileContent, m_inputFilePath);
-			m_shaderModule = Step("Unserialize input"sv, &Compiler::Unserialize, sourceContent.data(), sourceContent.size());
+			m_shaderModule = Step("Deserialize input"sv, &Compiler::Deserialize, sourceContent.data(), sourceContent.size());
 		}
 		else
 			throw std::runtime_error(fmt::format("{} has unknown extension \"{}\"", Nz::PathToString(m_inputFilePath.filename()), Nz::PathToString(extension)));
@@ -697,10 +697,10 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 		return func();
 	}
 
-	nzsl::Ast::ModulePtr Compiler::Unserialize(const std::uint8_t* data, std::size_t size)
+	nzsl::Ast::ModulePtr Compiler::Deserialize(const std::uint8_t* data, std::size_t size)
 	{
-		nzsl::Unserializer unserializer(data, size);
-		return nzsl::Ast::UnserializeShader(unserializer);
+		nzsl::Deserializer deserializer(data, size);
+		return nzsl::Ast::DeserializeShader(deserializer);
 	}
 
 	nzsl::Ast::ModulePtr Compiler::Parse(std::string_view sourceContent, const std::string& filePath)

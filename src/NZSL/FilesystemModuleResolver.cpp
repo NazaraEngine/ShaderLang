@@ -48,8 +48,8 @@ namespace nzsl
 			std::string ext = Nz::PathToString(realPath.extension());
 			if (ext == CompiledModuleExtension)
 			{
-				Unserializer unserializer(content.data(), content.size());
-				module = Ast::UnserializeShader(unserializer);
+				Deserializer deserializer(content.data(), content.size());
+				module = Ast::DeserializeShader(deserializer);
 			}
 			else if (ext == ModuleExtension)
 				module = Parse(std::string_view(content.data(), content.size()), Nz::PathToString(realPath));

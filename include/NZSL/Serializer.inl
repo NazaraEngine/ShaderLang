@@ -11,7 +11,7 @@ namespace nzsl
 		return m_data;
 	}
 
-	inline Unserializer::Unserializer(const void* data, std::size_t dataSize)
+	inline Deserializer::Deserializer(const void* data, std::size_t dataSize)
 	{
 		m_ptr = static_cast<const std::uint8_t*>(data);
 		m_ptrEnd = m_ptr + dataSize;

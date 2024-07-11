@@ -842,15 +842,15 @@ namespace nzsl::Ast
 		m_serializer.Serialize(val);
 	}
 
-	ModulePtr ShaderAstUnserializer::Unserialize()
+	ModulePtr ShaderAstDeserializer::Deserialize()
 	{
 		std::uint32_t magicNumber = 0;
 		m_version = 0;
-		m_unserializer.Unserialize(magicNumber);
+		m_deserializer.Deserialize(magicNumber);
 		if (magicNumber != s_shaderAstMagicNumber)
 			throw std::runtime_error("invalid shader file");
 
-		m_unserializer.Unserialize(m_version);
+		m_deserializer.Deserialize(m_version);
 		if (m_version > s_shaderAstCurrentVersion)
 			throw std::runtime_error("unsupported version");
 
@@ -860,20 +860,20 @@ namespace nzsl::Ast
 		return module;
 	}
 
-	bool ShaderAstUnserializer::IsVersionGreaterOrEqual(std::uint32_t version) const
+	bool ShaderAstDeserializer::IsVersionGreaterOrEqual(std::uint32_t version) const
 	{
 		return m_version >= version;
 	}
 
-	bool ShaderAstUnserializer::IsWriting() const
+	bool ShaderAstDeserializer::IsWriting() const
 	{
 		return false;
 	}
 
-	void ShaderAstUnserializer::Node(ExpressionPtr& node)
+	void ShaderAstDeserializer::Node(ExpressionPtr& node)
 	{
 		std::int32_t nodeTypeInt = - 1;
-		m_unserializer.Unserialize(nodeTypeInt);
+		m_deserializer.Deserialize(nodeTypeInt);
 
 		if (nodeTypeInt < static_cast<std::int32_t>(NodeType::None) || nodeTypeInt > static_cast<std::int32_t>(NodeType::Max))
 			throw std::runtime_error("invalid node type");
@@ -896,10 +896,10 @@ namespace nzsl::Ast
 		}
 	}
 
-	void ShaderAstUnserializer::Node(StatementPtr& node)
+	void ShaderAstDeserializer::Node(StatementPtr& node)
 	{
 		std::int32_t nodeTypeInt = -1;
-		m_unserializer.Unserialize(nodeTypeInt);
+		m_deserializer.Deserialize(nodeTypeInt);
 
 		if (nodeTypeInt < static_cast<std::int32_t>(NodeType::None) || nodeTypeInt > static_cast<std::int32_t>(NodeType::Max))
 			throw std::runtime_error("invalid node type");
@@ -922,7 +922,7 @@ namespace nzsl::Ast
 		}
 	}
 
-	void ShaderAstUnserializer::SerializeModule(Module& module)
+	void ShaderAstDeserializer::SerializeModule(Module& module)
 	{
 		std::shared_ptr<Module::Metadata> metadata = std::make_shared<Module::Metadata>();
 		Metadata(*metadata);
@@ -945,7 +945,7 @@ namespace nzsl::Ast
 		module = Module(std::move(metadata), std::move(rootNode), std::move(importedModules));
 	}
 
-	void ShaderAstUnserializer::SharedString(std::shared_ptr<const std::string>& val)
+	void ShaderAstDeserializer::SharedString(std::shared_ptr<const std::string>& val)
 	{
 		bool hasValue;
 		Value(hasValue);
@@ -974,7 +974,7 @@ namespace nzsl::Ast
 		}
 	}
 
-	void ShaderAstUnserializer::Type(ExpressionType& type)
+	void ShaderAstDeserializer::Type(ExpressionType& type)
 	{
 #ifdef NAZARA_COMPILER_GCC
 #pragma GCC diagnostic push
@@ -1225,154 +1225,154 @@ namespace nzsl::Ast
 #endif
 	}
 
-	void ShaderAstUnserializer::Value(bool& val)
+	void ShaderAstDeserializer::Value(bool& val)
 	{
-		m_unserializer.Unserialize(val);
+		m_deserializer.Deserialize(val);
 	}
 
-	void ShaderAstUnserializer::Value(double& val)
+	void ShaderAstDeserializer::Value(double& val)
 	{
-		m_unserializer.Unserialize(val);
+		m_deserializer.Deserialize(val);
 	}
 
-	void ShaderAstUnserializer::Value(float& val)
+	void ShaderAstDeserializer::Value(float& val)
 	{
-		m_unserializer.Unserialize(val);
+		m_deserializer.Deserialize(val);
 	}
 
-	void ShaderAstUnserializer::Value(std::string& val)
+	void ShaderAstDeserializer::Value(std::string& val)
 	{
-		m_unserializer.Unserialize(val);
+		m_deserializer.Deserialize(val);
 	}
 
-	void ShaderAstUnserializer::Value(std::int32_t& val)
+	void ShaderAstDeserializer::Value(std::int32_t& val)
 	{
-		m_unserializer.Unserialize(val);
+		m_deserializer.Deserialize(val);
 	}
 
-	void ShaderAstUnserializer::Value(Vector2<bool>& val)
+	void ShaderAstDeserializer::Value(Vector2<bool>& val)
 	{
-		m_unserializer.Unserialize(val.x());
-		m_unserializer.Unserialize(val.y());
+		m_deserializer.Deserialize(val.x());
+		m_deserializer.Deserialize(val.y());
 	}
 
-	void ShaderAstUnserializer::Value(Vector3<bool>& val)
+	void ShaderAstDeserializer::Value(Vector3<bool>& val)
 	{
-		m_unserializer.Unserialize(val.x());
-		m_unserializer.Unserialize(val.y());
-		m_unserializer.Unserialize(val.z());
+		m_deserializer.Deserialize(val.x());
+		m_deserializer.Deserialize(val.y());
+		m_deserializer.Deserialize(val.z());
 	}
 
-	void ShaderAstUnserializer::Value(Vector4<bool>& val)
+	void ShaderAstDeserializer::Value(Vector4<bool>& val)
 	{
-		m_unserializer.Unserialize(val.x());
-		m_unserializer.Unserialize(val.y());
-		m_unserializer.Unserialize(val.z());
-		m_unserializer.Unserialize(val.w());
+		m_deserializer.Deserialize(val.x());
+		m_deserializer.Deserialize(val.y());
+		m_deserializer.Deserialize(val.z());
+		m_deserializer.Deserialize(val.w());
 	}
 
-	void ShaderAstUnserializer::Value(Vector2f32& val)
+	void ShaderAstDeserializer::Value(Vector2f32& val)
 	{
-		m_unserializer.Unserialize(val.x());
-		m_unserializer.Unserialize(val.y());
+		m_deserializer.Deserialize(val.x());
+		m_deserializer.Deserialize(val.y());
 	}
 
-	void ShaderAstUnserializer::Value(Vector3f32& val)
+	void ShaderAstDeserializer::Value(Vector3f32& val)
 	{
-		m_unserializer.Unserialize(val.x());
-		m_unserializer.Unserialize(val.y());
-		m_unserializer.Unserialize(val.z());
+		m_deserializer.Deserialize(val.x());
+		m_deserializer.Deserialize(val.y());
+		m_deserializer.Deserialize(val.z());
 	}
 
-	void ShaderAstUnserializer::Value(Vector4f32& val)
+	void ShaderAstDeserializer::Value(Vector4f32& val)
 	{
-		m_unserializer.Unserialize(val.x());
-		m_unserializer.Unserialize(val.y());
-		m_unserializer.Unserialize(val.z());
-		m_unserializer.Unserialize(val.w());
+		m_deserializer.Deserialize(val.x());
+		m_deserializer.Deserialize(val.y());
+		m_deserializer.Deserialize(val.z());
+		m_deserializer.Deserialize(val.w());
 	}
 
-	void ShaderAstUnserializer::Value(Vector2f64& val)
+	void ShaderAstDeserializer::Value(Vector2f64& val)
 	{
-		m_unserializer.Unserialize(val.x());
-		m_unserializer.Unserialize(val.y());
+		m_deserializer.Deserialize(val.x());
+		m_deserializer.Deserialize(val.y());
 	}
 	
-	void ShaderAstUnserializer::Value(Vector3f64& val)
+	void ShaderAstDeserializer::Value(Vector3f64& val)
 	{
-		m_unserializer.Unserialize(val.x());
-		m_unserializer.Unserialize(val.y());
-		m_unserializer.Unserialize(val.z());
+		m_deserializer.Deserialize(val.x());
+		m_deserializer.Deserialize(val.y());
+		m_deserializer.Deserialize(val.z());
 	}
 
-	void ShaderAstUnserializer::Value(Vector4f64& val)
+	void ShaderAstDeserializer::Value(Vector4f64& val)
 	{
-		m_unserializer.Unserialize(val.x());
-		m_unserializer.Unserialize(val.y());
-		m_unserializer.Unserialize(val.z());
-		m_unserializer.Unserialize(val.w());
+		m_deserializer.Deserialize(val.x());
+		m_deserializer.Deserialize(val.y());
+		m_deserializer.Deserialize(val.z());
+		m_deserializer.Deserialize(val.w());
 	}
 
-	void ShaderAstUnserializer::Value(Vector2i32& val)
+	void ShaderAstDeserializer::Value(Vector2i32& val)
 	{
-		m_unserializer.Unserialize(val.x());
-		m_unserializer.Unserialize(val.y());
+		m_deserializer.Deserialize(val.x());
+		m_deserializer.Deserialize(val.y());
 	}
 
-	void ShaderAstUnserializer::Value(Vector3i32& val)
+	void ShaderAstDeserializer::Value(Vector3i32& val)
 	{
-		m_unserializer.Unserialize(val.x());
-		m_unserializer.Unserialize(val.y());
-		m_unserializer.Unserialize(val.z());
+		m_deserializer.Deserialize(val.x());
+		m_deserializer.Deserialize(val.y());
+		m_deserializer.Deserialize(val.z());
 	}
 
-	void ShaderAstUnserializer::Value(Vector4i32& val)
+	void ShaderAstDeserializer::Value(Vector4i32& val)
 	{
-		m_unserializer.Unserialize(val.x());
-		m_unserializer.Unserialize(val.y());
-		m_unserializer.Unserialize(val.z());
-		m_unserializer.Unserialize(val.w());
+		m_deserializer.Deserialize(val.x());
+		m_deserializer.Deserialize(val.y());
+		m_deserializer.Deserialize(val.z());
+		m_deserializer.Deserialize(val.w());
 	}
 
-	void ShaderAstUnserializer::Value(Vector2u32& val)
+	void ShaderAstDeserializer::Value(Vector2u32& val)
 	{
-		m_unserializer.Unserialize(val.x());
-		m_unserializer.Unserialize(val.y());
+		m_deserializer.Deserialize(val.x());
+		m_deserializer.Deserialize(val.y());
 	}
 
-	void ShaderAstUnserializer::Value(Vector3u32& val)
+	void ShaderAstDeserializer::Value(Vector3u32& val)
 	{
-		m_unserializer.Unserialize(val.x());
-		m_unserializer.Unserialize(val.y());
-		m_unserializer.Unserialize(val.z());
+		m_deserializer.Deserialize(val.x());
+		m_deserializer.Deserialize(val.y());
+		m_deserializer.Deserialize(val.z());
 	}
 
-	void ShaderAstUnserializer::Value(Vector4u32& val)
+	void ShaderAstDeserializer::Value(Vector4u32& val)
 	{
-		m_unserializer.Unserialize(val.x());
-		m_unserializer.Unserialize(val.y());
-		m_unserializer.Unserialize(val.z());
-		m_unserializer.Unserialize(val.w());
+		m_deserializer.Deserialize(val.x());
+		m_deserializer.Deserialize(val.y());
+		m_deserializer.Deserialize(val.z());
+		m_deserializer.Deserialize(val.w());
 	}
 
-	void ShaderAstUnserializer::Value(std::uint8_t& val)
+	void ShaderAstDeserializer::Value(std::uint8_t& val)
 	{
-		m_unserializer.Unserialize(val);
+		m_deserializer.Deserialize(val);
 	}
 
-	void ShaderAstUnserializer::Value(std::uint16_t& val)
+	void ShaderAstDeserializer::Value(std::uint16_t& val)
 	{
-		m_unserializer.Unserialize(val);
+		m_deserializer.Deserialize(val);
 	}
 
-	void ShaderAstUnserializer::Value(std::uint32_t& val)
+	void ShaderAstDeserializer::Value(std::uint32_t& val)
 	{
-		m_unserializer.Unserialize(val);
+		m_deserializer.Deserialize(val);
 	}
 
-	void ShaderAstUnserializer::Value(std::uint64_t& val)
+	void ShaderAstDeserializer::Value(std::uint64_t& val)
 	{
-		m_unserializer.Unserialize(val);
+		m_deserializer.Deserialize(val);
 	}
 
 
@@ -1382,9 +1382,9 @@ namespace nzsl::Ast
 		astSerializer.Serialize(module);
 	}
 
-	ModulePtr UnserializeShader(AbstractUnserializer& unserializer)
+	ModulePtr DeserializeShader(AbstractDeserializer& deserializer)
 	{
-		ShaderAstUnserializer astUnserializer(unserializer);
-		return astUnserializer.Unserialize();
+		ShaderAstDeserializer astDeserializer(deserializer);
+		return astDeserializer.Deserialize();
 	}
 }
