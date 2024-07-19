@@ -86,7 +86,7 @@ TEST_CASE("basic", "[Serialization]")
 		TestSerialization(-0.f);
 		TestSerialization(42.1337f);
 		TestSerialization(-42.1337f);
-		TestSerialization(Nz::Pi<float>);
+		TestSerialization(Nz::Pi<float>());
 		TestSerialization(std::numeric_limits<float>::infinity());
 		TestSerialization(-std::numeric_limits<float>::infinity());
 		TestSerialization(std::numeric_limits<float>::max());
@@ -97,7 +97,7 @@ TEST_CASE("basic", "[Serialization]")
 		TestSerialization(-0.0);
 		TestSerialization(42.1337);
 		TestSerialization(-42.1337);
-		TestSerialization(Nz::Pi<double>);
+		TestSerialization(Nz::Pi<double>());
 		TestSerialization(std::numeric_limits<double>::infinity());
 		TestSerialization(-std::numeric_limits<double>::infinity());
 		TestSerialization(std::numeric_limits<double>::max());
@@ -212,7 +212,7 @@ TEST_CASE("basic", "[Serialization]")
 			SerializeOrDeserialize(serializer, 1.42f);
 			SerializeOrDeserialize(serializer, 1.67f);
 			SerializeOrDeserialize(serializer, "Hello world"s);
-			SerializeOrDeserialize(serializer, Nz::Pi<double>);
+			SerializeOrDeserialize(serializer, Nz::Pi<double>());
 			SerializeOrDeserialize(serializer, std::numeric_limits<std::uint64_t>::max() / 2);
 		};
 
