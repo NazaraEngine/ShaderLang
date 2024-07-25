@@ -58,7 +58,7 @@ namespace nzsl
 			Ast::ExpressionPtr BuildUnary(Ast::UnaryType unaryType, Ast::ExpressionPtr expr);
 
 			// Statements
-			Ast::StatementPtr ParseAliasDeclaration();
+			Ast::StatementPtr ParseAliasDeclaration(std::vector<Attribute> attributes = {});
 			Ast::StatementPtr ParseBranchStatement();
 			Ast::StatementPtr ParseBreakStatement();
 			Ast::StatementPtr ParseConstStatement(std::vector<Attribute> attributes = {});

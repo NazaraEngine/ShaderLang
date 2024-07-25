@@ -518,9 +518,24 @@ namespace nzsl
 		return unaryExpr;
 	}
 
-	Ast::StatementPtr Parser::ParseAliasDeclaration()
+	Ast::StatementPtr Parser::ParseAliasDeclaration(std::vector<Attribute> attributes)
 	{
 		const Token& aliasToken = Expect(Advance(), TokenType::Alias);
+
+		Ast::ExpressionValue<bool> condition;
+
+		for (auto&& attribute : attributes)
+		{
+			switch (attribute.type)
+			{
+				case Ast::AttributeType::Cond:
+					HandleUniqueAttribute(condition, std::move(attribute));
+					break;
+
+				default:
+					throw ParserUnexpectedAttributeError{ attribute.sourceLocation, attribute.type, "alias declaration" };
+			}
+		}
 
 		std::string name = ParseIdentifierAsName(nullptr);
 
@@ -533,7 +548,10 @@ namespace nzsl
 		auto aliasStatement = ShaderBuilder::DeclareAlias(std::move(name), std::move(expr));
 		aliasStatement->sourceLocation = SourceLocation::BuildFromTo(aliasToken.location, endToken.location);
 
-		return aliasStatement;
+		if (condition.HasValue())
+			return ShaderBuilder::ConditionalStatement(std::move(condition).GetExpression(), std::move(aliasStatement));
+		else
+			return aliasStatement;
 	}
 
 	Ast::StatementPtr Parser::ParseBranchStatement()
@@ -1069,10 +1087,7 @@ namespace nzsl
 		switch (nextToken.type)
 		{
 			case TokenType::Alias:
-				if (!attributes.empty())
-					throw ParserUnexpectedAttributeError{ attributes.front().sourceLocation, attributes.front().type, "alias declaration" };
-
-				return ParseAliasDeclaration();
+				return ParseAliasDeclaration(std::move(attributes));
 
 			case TokenType::Const:
 				return ParseConstStatement(std::move(attributes));

@@ -3541,8 +3541,14 @@ namespace nzsl::Ast
 
 	std::size_t SanitizeVisitor::RegisterAlias(std::string name, std::optional<Identifier> aliasData, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
 	{
-		if (!IsIdentifierAvailable(name))
-			throw CompilerIdentifierAlreadyUsedError{ sourceLocation, name };
+		bool unresolved = false;
+		if (const IdentifierData* identifierData = FindIdentifier(name))
+		{
+			if (!m_context->inConditionalStatement || !identifierData->isConditional)
+				throw CompilerIdentifierAlreadyUsedError{ sourceLocation, name };
+			else
+				unresolved = true;
+		}
 
 		std::size_t aliasIndex;
 		if (aliasData)
@@ -3555,14 +3561,19 @@ namespace nzsl::Ast
 		else
 			aliasIndex = m_context->aliases.RegisterNewIndex(true);
 
-		m_context->currentEnv->identifiersInScope.push_back({
-			std::move(name),
-			{ 
-				aliasIndex,
-				IdentifierCategory::Alias,
-				m_context->inConditionalStatement
-			}
-		});
+		if (!unresolved)
+		{
+			m_context->currentEnv->identifiersInScope.push_back({
+				std::move(name),
+				{
+					aliasIndex,
+					IdentifierCategory::Alias,
+					m_context->inConditionalStatement
+				}
+			});
+		}
+		else
+			RegisterUnresolved(std::move(name));
 
 		return aliasIndex;
 	}

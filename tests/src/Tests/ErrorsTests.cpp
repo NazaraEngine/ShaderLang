@@ -68,9 +68,9 @@ module;
 [nzsl_version("1.0")]
 module;
 
-[cond(false)]
+[layout(std140)]
 alias vec3f32 = vec3[f32];
-)"), "(5,2 -> 12): PUnexpectedAttribute error: unexpected attribute cond on alias declaration");
+)"), "(5,2 -> 15): PUnexpectedAttribute error: unexpected attribute layout on alias declaration");
 
 		// import statements don't support cond attribute
 		CHECK_THROWS_WITH(nzsl::Parse(R"(
