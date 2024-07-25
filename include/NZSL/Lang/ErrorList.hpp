@@ -48,7 +48,7 @@ NZSL_SHADERLANG_PARSER_ERROR(ModuleFeatureMultipleUnique, "module feature {} has
 NZSL_SHADERLANG_PARSER_ERROR(ReservedKeyword, "reserved keyword")
 NZSL_SHADERLANG_PARSER_ERROR(UnknownAttribute, "unknown attribute \"{}\"", std::string)
 NZSL_SHADERLANG_PARSER_ERROR(UnknownType, "unknown type")
-NZSL_SHADERLANG_PARSER_ERROR(UnexpectedAttribute, "unexpected attribute {}", Ast::AttributeType)
+NZSL_SHADERLANG_PARSER_ERROR(UnexpectedAttribute, "unexpected attribute {} on {}", Ast::AttributeType, std::string)
 NZSL_SHADERLANG_PARSER_ERROR(UnexpectedEndOfFile, "unexpected end of file")
 NZSL_SHADERLANG_PARSER_ERROR(UnexpectedToken, "unexpected token {}", TokenType)
 

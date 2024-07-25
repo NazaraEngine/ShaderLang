@@ -70,7 +70,7 @@ module;
 
 [cond(false)]
 alias vec3f32 = vec3[f32];
-)"), "(5,2 -> 12): PUnexpectedAttribute error: unexpected attribute cond");
+)"), "(5,2 -> 12): PUnexpectedAttribute error: unexpected attribute cond on alias declaration");
 
 		// import statements don't support cond attribute
 		CHECK_THROWS_WITH(nzsl::Parse(R"(
@@ -79,7 +79,7 @@ module;
 
 [cond(true)]
 import Stuff;
-)"), "(5,2 -> 11): PUnexpectedAttribute error: unexpected attribute cond");
+)"), "(5,2 -> 11): PUnexpectedAttribute error: unexpected attribute cond on import statement");
 
 		// option statements don't support attributes
 		CHECK_THROWS_WITH(nzsl::Parse(R"(
@@ -88,7 +88,7 @@ module;
 
 [cond(false)]
 option enable: bool;
-)"), "(5,2 -> 12): PUnexpectedAttribute error: unexpected attribute cond");
+)"), "(5,2 -> 12): PUnexpectedAttribute error: unexpected attribute cond on option declaration");
 	}
 
 	SECTION("Checking compiler errors")

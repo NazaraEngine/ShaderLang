@@ -377,7 +377,7 @@ namespace nzsl
 				}
 
 				default:
-					throw ParserUnexpectedAttributeError{ attribute.sourceLocation, attribute.type };
+					throw ParserUnexpectedAttributeError{ attribute.sourceLocation, attribute.type, "module statement" };
 			}
 		}
 
@@ -615,7 +615,7 @@ namespace nzsl
 							break;
 
 						default:
-							throw ParserUnexpectedAttributeError{ attribute.sourceLocation, attribute.type };
+							throw ParserUnexpectedAttributeError{ attribute.sourceLocation, attribute.type, "const declaration" };
 					}
 				}
 
@@ -712,7 +712,7 @@ namespace nzsl
 					break;
 
 				default:
-					throw ParserUnexpectedAttributeError{ attribute.sourceLocation, attribute.type };
+					throw ParserUnexpectedAttributeError{ attribute.sourceLocation, attribute.type, "external block" };
 			}
 		}
 
@@ -761,7 +761,7 @@ namespace nzsl
 							break;
 
 						default:
-							throw ParserUnexpectedAttributeError{ attribute.sourceLocation, attribute.type };
+							throw ParserUnexpectedAttributeError{ attribute.sourceLocation, attribute.type, "external variable" };
 					}
 				}
 			}
@@ -824,7 +824,7 @@ namespace nzsl
 						break;
 
 					default:
-						throw ParserUnexpectedAttributeError{ attribute.sourceLocation, attribute.type };
+						throw ParserUnexpectedAttributeError{ attribute.sourceLocation, attribute.type, "for loop" };
 				}
 			}
 
@@ -848,7 +848,7 @@ namespace nzsl
 						break;
 
 					default:
-						throw ParserUnexpectedAttributeError{ attribute.sourceLocation, attribute.type };
+						throw ParserUnexpectedAttributeError{ attribute.sourceLocation, attribute.type, "foreach loop" };
 				}
 			}
 
@@ -952,7 +952,7 @@ namespace nzsl
 				}
 
 				default:
-					throw ParserUnexpectedAttributeError{ attribute.sourceLocation, attribute.type };
+					throw ParserUnexpectedAttributeError{ attribute.sourceLocation, attribute.type, "function declaration" };
 			}
 		}
 
@@ -1070,7 +1070,7 @@ namespace nzsl
 		{
 			case TokenType::Alias:
 				if (!attributes.empty())
-					throw ParserUnexpectedAttributeError{ attributes.front().sourceLocation, attributes.front().type };
+					throw ParserUnexpectedAttributeError{ attributes.front().sourceLocation, attributes.front().type, "alias declaration" };
 
 				return ParseAliasDeclaration();
 
@@ -1086,9 +1086,12 @@ namespace nzsl
 			case TokenType::External:
 				return ParseExternalBlock(std::move(attributes));
 
+			case TokenType::FunctionDeclaration:
+				return ParseFunctionDeclaration(std::move(attributes));
+
 			case TokenType::Import:
 				if (!attributes.empty())
-					throw ParserUnexpectedAttributeError{ attributes.front().sourceLocation, attributes.front().type };
+					throw ParserUnexpectedAttributeError{ attributes.front().sourceLocation, attributes.front().type, "import statement"};
 
 				return ParseImportStatement();
 
@@ -1103,13 +1106,10 @@ namespace nzsl
 			case TokenType::Option:
 			{
 				if (!attributes.empty())
-					throw ParserUnexpectedAttributeError{ attributes.front().sourceLocation, attributes.front().type };
+					throw ParserUnexpectedAttributeError{ attributes.front().sourceLocation, attributes.front().type, "option declaration" };
 
 				return ParseOptionDeclaration();
 			}
-
-			case TokenType::FunctionDeclaration:
-				return ParseFunctionDeclaration(std::move(attributes));
 
 			case TokenType::Struct:
 				return ParseStructDeclaration(std::move(attributes));
@@ -1278,7 +1278,7 @@ namespace nzsl
 					break;
 
 				default:
-					throw ParserUnexpectedAttributeError{ attribute.sourceLocation, attribute.type };
+					throw ParserUnexpectedAttributeError{ attribute.sourceLocation, attribute.type, "struct declaration" };
 			}
 		}
 
@@ -1334,7 +1334,7 @@ namespace nzsl
 							break;
 
 						default:
-							throw ParserUnexpectedAttributeError{ attribute.sourceLocation, attribute.type };
+							throw ParserUnexpectedAttributeError{ attribute.sourceLocation, attribute.type, "struct member" };
 					}
 				}
 			}
@@ -1406,7 +1406,7 @@ namespace nzsl
 					break;
 
 				default:
-					throw ParserUnexpectedAttributeError{ attribute.sourceLocation, attribute.type };
+					throw ParserUnexpectedAttributeError{ attribute.sourceLocation, attribute.type, "while loop" };
 			}
 		}
 
