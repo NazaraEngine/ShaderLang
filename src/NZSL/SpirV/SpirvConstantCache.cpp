@@ -1368,20 +1368,17 @@ namespace nzsl
 			if (debugLevel >= DebugLevel::Minimal)
 				debugInfos.Append(SpirvOp::OpMemberName, resultId, memberIndex, member.name);
 
-			std::uint32_t offset = member.offset.value();
+			AnyType* type = &member.type->type;
+			while (std::holds_alternative<Array>(*type))
+				type = &std::get<Array>(*type).elementType->type;
 
-			std::visit([&](auto&& arg)
+			if (std::holds_alternative<Matrix>(*type))
 			{
-				using T = std::decay_t<decltype(arg)>;
+				annotations.Append(SpirvOp::OpMemberDecorate, resultId, memberIndex, SpirvDecoration::ColMajor);
+				annotations.Append(SpirvOp::OpMemberDecorate, resultId, memberIndex, SpirvDecoration::MatrixStride, 16);
+			}
 
-				if constexpr (std::is_same_v<T, Matrix>)
-				{
-					annotations.Append(SpirvOp::OpMemberDecorate, resultId, memberIndex, SpirvDecoration::ColMajor);
-					annotations.Append(SpirvOp::OpMemberDecorate, resultId, memberIndex, SpirvDecoration::MatrixStride, 16);
-				}
-			}, member.type->type);
-
-			annotations.Append(SpirvOp::OpMemberDecorate, resultId, memberIndex, SpirvDecoration::Offset, offset);
+			annotations.Append(SpirvOp::OpMemberDecorate, resultId, memberIndex, SpirvDecoration::Offset, member.offset.value());
 		}
 	}
 }
