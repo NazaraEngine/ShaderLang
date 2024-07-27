@@ -1268,12 +1268,12 @@ namespace nzsl::Ast
 					throw CompilerConditionExpectedBoolError{ cond.condition->sourceLocation, ToString(GetConstantType(*conditionValue), cond.condition->sourceLocation) };
 
 				if (std::get<bool>(*conditionValue))
-					return Unscope(Cloner::Clone(*cond.statement));
+					return Cloner::Clone(*cond.statement);
 			}
 
 			// Every condition failed, fallback to else if any
 			if (node.elseStatement)
-				return Unscope(Cloner::Clone(*node.elseStatement));
+				return Cloner::Clone(*node.elseStatement);
 			else
 				return ShaderBuilder::NoOp();
 		}
