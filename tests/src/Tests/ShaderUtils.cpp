@@ -294,32 +294,28 @@ void ExpectGLSL(nzsl::ShaderStageType stageType, const nzsl::Ast::Module& shader
 
 void ExpectGLSL(const nzsl::Ast::Module& shaderModule, std::string_view expectedOutput, const nzsl::ShaderWriter::States& options, const nzsl::GlslWriter::Environment& env, bool testShaderCompilation)
 {
+
+	// Retrieve entry-point to get shader type
 	std::optional<nzsl::ShaderStageType> entryShaderStage;
-	
-	SECTION("Detecting GLSL entry point")
+
+	nzsl::Ast::ReflectVisitor::Callbacks callbacks;
+	callbacks.onEntryPointDeclaration = [&](nzsl::ShaderStageType stageType, const std::string& functionName)
 	{
-		// Retrieve entry-point to get shader type
+		INFO("multiple entry points found! (" << functionName << ")");
+		REQUIRE((!entryShaderStage.has_value() || stageType == entryShaderStage));
 
-		nzsl::Ast::ReflectVisitor::Callbacks callbacks;
-		callbacks.onEntryPointDeclaration = [&](nzsl::ShaderStageType stageType, const std::string& functionName)
-		{
-			INFO("multiple entry points found! (" << functionName << ")");
-			REQUIRE((!entryShaderStage.has_value() || stageType == entryShaderStage));
+		entryShaderStage = stageType;
+	};
 
-			entryShaderStage = stageType;
-		};
+	nzsl::Ast::ReflectVisitor reflectVisitor;
+	reflectVisitor.Reflect(*shaderModule.rootNode, callbacks);
 
-		nzsl::Ast::ReflectVisitor reflectVisitor;
-		reflectVisitor.Reflect(*shaderModule.rootNode, callbacks);
-
-		{
-			INFO("no entry point found");
-			REQUIRE(entryShaderStage.has_value());
-		}
+	{
+		INFO("no entry point found");
+		REQUIRE(entryShaderStage.has_value());
 	}
 
-	if (entryShaderStage)
-		ExpectGLSL(entryShaderStage.value(), shaderModule, expectedOutput, options, env, testShaderCompilation);
+	ExpectGLSL(entryShaderStage.value(), shaderModule, expectedOutput, options, env, testShaderCompilation);
 }
 
 void ExpectNZSL(const nzsl::Ast::Module& shaderModule, std::string_view expectedOutput, const nzsl::ShaderWriter::States& options)
