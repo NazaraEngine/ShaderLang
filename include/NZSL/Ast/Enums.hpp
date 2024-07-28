@@ -26,6 +26,7 @@ namespace nzsl::Ast
 
 	enum class AttributeType
 	{
+		// Next free ID: 20
 		AutoBinding        = 17, //< Incremental binding index (external block only)
 		Author             = 12, //< Module author (module statement only) - has argument version string
 		Binding            =  0, //< Binding (external var only) - has argument index
@@ -37,6 +38,7 @@ namespace nzsl::Ast
 		Entry              =  5, //< Entry point (function only) - has argument type
 		Export             =  6, //< Exported (external block, function and struct only)
 		Feature            = 15, //< Feature (module statement) - has argument feature
+		Interp             = 19, //< Interpolation (struct member only) - has argument interpolation qualifier
 		LangVersion        =  9, //< NZSL version (module statement) - has argument version string
 		License            = 14, //< Module license (module statement) - has argument version string
 		Layout             =  7, //< Struct layout (struct only) - has argument style
@@ -110,6 +112,13 @@ namespace nzsl::Ast
 		Parameter,
 		Struct,
 		Variable
+	};
+
+	enum class InterpolationQualifier
+	{
+		Flat          = 0,
+		NoPerspective = 1,
+		Smooth        = 2
 	};
 
 	enum class IntrinsicType

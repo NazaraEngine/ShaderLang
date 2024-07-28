@@ -298,6 +298,9 @@ namespace nzsl::Ast
 		if (!Compare(lhs.cond, rhs.cond, params))
 			return false;
 
+		if (!Compare(lhs.interp, rhs.interp, params))
+			return false;
+
 		if (!Compare(lhs.locationIndex, rhs.locationIndex, params))
 			return false;
 

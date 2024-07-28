@@ -35,6 +35,7 @@ namespace nzsl::LangData
 		{ Ast::AttributeType::Entry,              { "entry" } },
 		{ Ast::AttributeType::Export,             { "export" } },
 		{ Ast::AttributeType::Feature,            { "feature" } },
+		{ Ast::AttributeType::Interp,             { "interp" } },
 		{ Ast::AttributeType::Layout,             { "layout" } },
 		{ Ast::AttributeType::License,            { "license" } },
 		{ Ast::AttributeType::Location,           { "location" } },
@@ -90,6 +91,17 @@ namespace nzsl::LangData
 		{ ShaderStageType::Compute,  { "comp", "compute" }},
 		{ ShaderStageType::Fragment, { "frag", "fragment" }},
 		{ ShaderStageType::Vertex,   { "vert", "vertex" }},
+	});
+
+	struct InterpolationData
+	{
+		std::string_view identifier;
+	};
+
+	constexpr auto s_interpolations = frozen::make_unordered_map<Ast::InterpolationQualifier, InterpolationData>({
+		{ Ast::InterpolationQualifier::Flat,          { "flat" } },
+		{ Ast::InterpolationQualifier::NoPerspective, { "no_perspective" } },
+		{ Ast::InterpolationQualifier::Smooth,        { "smooth" } }
 	});
 
 	namespace IntrinsicHelper

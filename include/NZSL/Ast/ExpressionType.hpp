@@ -227,6 +227,7 @@ namespace nzsl::Ast
 		struct StructMember
 		{
 			ExpressionValue<BuiltinEntry> builtin;
+			ExpressionValue<InterpolationQualifier> interp;
 			ExpressionValue<bool> cond;
 			ExpressionValue<std::uint32_t> locationIndex;
 			ExpressionValue<ExpressionType> type;

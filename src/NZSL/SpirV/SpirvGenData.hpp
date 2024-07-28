@@ -53,6 +53,17 @@ namespace nzsl::SpirvGenData
 		{ Ast::BuiltinEntry::WorkgroupIndices,        { SpirvBuiltIn::WorkgroupId,          SpirvCapability::Shader,         SpirvVersion{ 1, 0 } } }
 	});
 
+	struct SpirvInterp
+	{
+		SpirvDecoration interpolationDecoration;
+	};
+
+	constexpr auto s_interpolationMapping = frozen::make_unordered_map<Ast::InterpolationQualifier, SpirvInterp>({
+		{ Ast::InterpolationQualifier::Flat, { SpirvDecoration::Flat }},
+		{ Ast::InterpolationQualifier::NoPerspective, { SpirvDecoration::NoPerspective }}
+		// No Ast::InterpolationQualifier::Smooth since it's the default
+	});
+
 	using SpirvCodeGenerator = void(SpirvAstVisitor::*)(const Ast::IntrinsicExpression& node);
 	using SpirvGlslStd450Selector = SpirvGlslStd450Op(*)(const Ast::IntrinsicExpression& node);
 

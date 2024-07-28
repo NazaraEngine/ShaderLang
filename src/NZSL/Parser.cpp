@@ -77,6 +77,7 @@ namespace nzsl
 		constexpr auto s_builtinMapping       = BuildIdentifierMapping(LangData::s_builtinData);
 		constexpr auto s_depthWriteMapping    = BuildIdentifierMapping(LangData::s_depthWriteModes);
 		constexpr auto s_entryPointMapping    = BuildIdentifierMappingWithName(LangData::s_entryPoints);
+		constexpr auto s_interpMapping        = BuildIdentifierMapping(LangData::s_interpolations);
 		constexpr auto s_layoutMapping        = BuildIdentifierMapping(LangData::s_memoryLayouts);
 		constexpr auto s_moduleFeatureMapping = BuildIdentifierMapping(LangData::s_moduleFeatures);
 		constexpr auto s_unrollModeMapping    = BuildIdentifierMapping(LangData::s_unrollModes);
@@ -139,6 +140,14 @@ namespace nzsl
 	{
 		auto it = LangData::s_depthWriteModes.find(depthWriteMode);
 		assert(it != LangData::s_depthWriteModes.end());
+
+		return it->second.identifier;
+	}
+
+	std::string_view Parser::ToString(Ast::InterpolationQualifier interpolationQualifier)
+	{
+		auto it = LangData::s_interpolations.find(interpolationQualifier);
+		assert(it != LangData::s_interpolations.end());
 
 		return it->second.identifier;
 	}
@@ -1335,6 +1344,10 @@ namespace nzsl
 
 						case Ast::AttributeType::Cond:
 							HandleUniqueAttribute(structField.cond, std::move(attribute));
+							break;
+
+						case Ast::AttributeType::Interp:
+							HandleUniqueStringAttributeKey(structField.interp, std::move(attribute), s_interpMapping);
 							break;
 
 						case Ast::AttributeType::Location:
