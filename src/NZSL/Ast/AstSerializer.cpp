@@ -12,7 +12,7 @@ namespace nzsl::Ast
 	namespace
 	{
 		constexpr std::uint32_t s_shaderAstMagicNumber = 0x4E534852;
-		constexpr std::uint32_t s_shaderAstCurrentVersion = 8;
+		constexpr std::uint32_t s_shaderAstCurrentVersion = 9;
 
 		class ShaderSerializerVisitor : public ExpressionVisitor, public StatementVisitor
 		{
@@ -410,6 +410,8 @@ namespace nzsl::Ast
 				Value(member.tag);
 			if (IsVersionGreaterOrEqual(7))
 				Value(member.originalName);
+			if (IsVersionGreaterOrEqual(9))
+				ExprValue(member.interp);
 		}
 	}
 	

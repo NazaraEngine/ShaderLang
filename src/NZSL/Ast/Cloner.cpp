@@ -212,6 +212,7 @@ namespace nzsl::Ast
 			cloneMember.type = Clone(member.type);
 			cloneMember.builtin = Clone(member.builtin);
 			cloneMember.cond = Clone(member.cond);
+			cloneMember.interp = Clone(member.interp);
 			cloneMember.locationIndex = Clone(member.locationIndex);
 
 			cloneMember.sourceLocation = member.sourceLocation;

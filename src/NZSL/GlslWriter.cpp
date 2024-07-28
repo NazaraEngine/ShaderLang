@@ -640,6 +640,16 @@ namespace nzsl
 		throw std::runtime_error("unexpected FunctionType");
 	}
 
+	void GlslWriter::Append(Ast::InterpolationQualifier interpolation)
+	{
+		switch (interpolation)
+		{
+			case Ast::InterpolationQualifier::Flat:          return Append("flat");
+			case Ast::InterpolationQualifier::NoPerspective: return Append("noperspective");
+			case Ast::InterpolationQualifier::Smooth:        return Append("smooth");
+		}
+	}
+
 	void GlslWriter::Append(const Ast::IntrinsicFunctionType& /*intrinsicFunctionType*/)
 	{
 		throw std::runtime_error("unexpected intrinsic function type");
@@ -1474,8 +1484,11 @@ namespace nzsl
 
 					std::string varName = std::string(targetPrefix) + member.name;
 
-					auto OutputVariable = [&](auto&&... arg)
+					auto WriteVariable = [&](auto&&... arg)
 					{
+						if (member.interp.HasValue())
+							Append(member.interp.GetResultingValue(), " ");
+
 						Append((in) ? "in" : "out", " ");
 						AppendVariableDeclaration(member.type.GetResultingValue(), varName);
 						AppendLine(";", arg...);
@@ -1493,17 +1506,17 @@ namespace nzsl
 							Append(member.locationIndex.GetResultingValue());
 							Append(") ");
 
-							OutputVariable();
+							WriteVariable();
 						}
 						else
 						{
 							std::string originalName = std::move(varName);
 							varName = std::string(s_glslWriterVaryingPrefix) + std::to_string(member.locationIndex.GetResultingValue());
-							OutputVariable(" // ", originalName);
+							WriteVariable(" // ", originalName);
 						}
 					}
 					else
-						OutputVariable();
+						WriteVariable();
 					
 					fields.push_back({
 						member.name,

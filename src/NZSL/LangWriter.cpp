@@ -109,6 +109,13 @@ namespace nzsl
 		bool HasValue() const { return true; }
 	};
 
+	struct LangWriter::InterpAttribute
+	{
+		const Ast::ExpressionValue<Ast::InterpolationQualifier>& interpQualifier;
+
+		bool HasValue() const { return interpQualifier.HasValue(); }
+	};
+
 	struct LangWriter::LangVersionAttribute
 	{
 		std::uint32_t version;
@@ -599,6 +606,21 @@ namespace nzsl
 		assert(it != LangData::s_moduleFeatures.end());
 
 		Append(it->second.identifier);
+
+		Append(")");
+	}
+
+	void LangWriter::AppendAttribute(InterpAttribute attribute)
+	{
+		if (!attribute.HasValue())
+			return;
+
+		Append("interp(");
+
+		if (attribute.interpQualifier.IsResultingValue())
+			Append(Parser::ToString(attribute.interpQualifier.GetResultingValue()));
+		else
+			attribute.interpQualifier.GetExpression()->Visit(*this);
 
 		Append(")");
 	}
@@ -1438,7 +1460,7 @@ namespace nzsl
 
 				first = false;
 
-				AppendAttributes(false, CondAttribute{ member.cond }, LocationAttribute{ member.locationIndex }, BuiltinAttribute{ member.builtin }, TagAttribute{ member.tag });
+				AppendAttributes(false, CondAttribute{ member.cond }, LocationAttribute{ member.locationIndex }, InterpAttribute{ member.interp }, BuiltinAttribute{ member.builtin }, TagAttribute{ member.tag });
 				Append(member.name, ": ", member.type);
 			}
 		}

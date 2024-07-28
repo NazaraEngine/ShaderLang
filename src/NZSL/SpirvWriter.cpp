@@ -54,6 +54,7 @@ namespace nzsl
 
 			using BuiltinDecoration = tsl::ordered_map<std::uint32_t, SpirvBuiltIn>;
 			using ConstantVariables = std::unordered_map<std::size_t /*constIndex*/, SpirvVariable /*variable*/>;
+			using InterpolationDecoration = tsl::ordered_map<std::uint32_t, SpirvDecoration>;
 			using LocationDecoration = tsl::ordered_map<std::uint32_t, std::uint32_t>;
 			using ExtInstList = tsl::ordered_set<std::string>;
 			using ExtVarContainer = tsl::ordered_map<std::size_t /*varIndex*/, ExternalVar>;
@@ -558,6 +559,19 @@ namespace nzsl
 					std::uint32_t varId = m_constantCache.Register(variable);
 					locationDecorations[varId] = member.locationIndex.GetResultingValue();
 
+					if (member.interp.HasValue())
+					{
+						Ast::InterpolationQualifier interpolation = member.interp.GetResultingValue();
+						if (interpolation != Ast::InterpolationQualifier::Smooth)
+						{
+							auto spvIt = SpirvGenData::s_interpolationMapping.find(member.interp.GetResultingValue());
+							if (spvIt == SpirvGenData::s_interpolationMapping.end())
+								throw std::runtime_error("unknown interpolation value " + std::to_string(Nz::UnderlyingCast(member.interp.GetResultingValue())));
+
+							interpolationDecorations[varId] = spvIt->second.interpolationDecoration;
+						}
+					}
+
 					return varId;
 				}
 
@@ -569,6 +583,7 @@ namespace nzsl
 			ExtInstList extInsts;
 			ExtVarContainer extVars;
 			FunctionContainer funcs;
+			InterpolationDecoration interpolationDecorations;
 			LocationDecoration locationDecorations;
 			StructContainer declaredStructs;
 			tsl::ordered_set<SpirvCapability> spirvCapabilities;
@@ -788,6 +803,9 @@ namespace nzsl
 
 		for (auto&& [varId, location] : previsitor.locationDecorations)
 			state.annotations.Append(SpirvOp::OpDecorate, varId, SpirvDecoration::Location, location);
+
+		for (auto&& [varId, interp] : previsitor.interpolationDecorations)
+			state.annotations.Append(SpirvOp::OpDecorate, varId, interp);
 
 		m_currentState->constantTypeCache.Write(m_currentState->annotations, m_currentState->constants, m_currentState->debugInfo, states.debugLevel);
 

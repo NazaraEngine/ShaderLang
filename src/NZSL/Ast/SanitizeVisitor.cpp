@@ -1817,6 +1817,9 @@ namespace nzsl::Ast
 			if (member.builtin.HasValue())
 				ComputeExprValue(member.builtin, member.sourceLocation);
 
+			if (member.interp.HasValue())
+				ComputeExprValue(member.interp, member.sourceLocation);
+
 			if (member.locationIndex.HasValue())
 				ComputeExprValue(member.locationIndex, member.sourceLocation);
 

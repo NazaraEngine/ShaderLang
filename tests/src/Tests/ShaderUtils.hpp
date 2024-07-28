@@ -10,6 +10,7 @@
 #include <filesystem>
 #include <string>
 
+void ExpectGLSL(nzsl::ShaderStageType stageType, const nzsl::Ast::Module& shader, std::string_view expectedOutput, const nzsl::ShaderWriter::States& options = {}, const nzsl::GlslWriter::Environment& env = {}, bool testShaderCompilation = true);
 void ExpectGLSL(const nzsl::Ast::Module& shader, std::string_view expectedOutput, const nzsl::ShaderWriter::States& options = {}, const nzsl::GlslWriter::Environment& env = {}, bool testShaderCompilation = true);
 void ExpectNZSL(const nzsl::Ast::Module& shader, std::string_view expectedOutput, const nzsl::ShaderWriter::States& options = {});
 void ExpectSPIRV(const nzsl::Ast::Module& shader, std::string_view expectedOutput, const nzsl::ShaderWriter::States& options = {}, const nzsl::SpirvWriter::Environment& env = {}, bool outputParameter = false);
