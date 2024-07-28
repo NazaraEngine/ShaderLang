@@ -118,7 +118,10 @@ external
 fn main()
 {
 	let value: f32;
-	value = f32(data.value);
+	{
+		value = f32(data.value);
+	}
+
 }
 )");
 		}
@@ -144,7 +147,10 @@ external
 fn main()
 {
 	let value: f32;
-	value = data.value;
+	{
+		value = data.value;
+	}
+
 }
 )");
 		}

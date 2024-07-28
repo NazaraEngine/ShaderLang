@@ -305,7 +305,10 @@ fn main() -> Output
 		ExpectGLSL(*shaderModule, R"(
 void main()
 {
-	discard;
+	{
+		discard;
+	}
+
 	Output output_;
 	output_.color = vec4(1.0, 1.0, 1.0, 1.0);
 
@@ -318,7 +321,10 @@ void main()
 [entry(frag)]
 fn main() -> Output
 {
-	discard;
+	{
+		discard;
+	}
+
 	let output: Output;
 	output.color = vec4[f32](1.0, 1.0, 1.0, 1.0);
 	return output;
