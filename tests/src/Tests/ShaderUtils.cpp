@@ -294,7 +294,6 @@ void ExpectGLSL(nzsl::ShaderStageType stageType, const nzsl::Ast::Module& shader
 
 void ExpectGLSL(const nzsl::Ast::Module& shaderModule, std::string_view expectedOutput, const nzsl::ShaderWriter::States& options, const nzsl::GlslWriter::Environment& env, bool testShaderCompilation)
 {
-
 	// Retrieve entry-point to get shader type
 	std::optional<nzsl::ShaderStageType> entryShaderStage;
 
