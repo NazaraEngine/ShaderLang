@@ -241,7 +241,7 @@ namespace nzsl::Ast
 		std::string name;
 		std::string tag;
 		std::vector<StructMember> members;
-		bool isConditional = false;
+		unsigned int conditionIndex = 0;
 	};
 
 	inline bool IsAliasType(const ExpressionType& type);

@@ -185,7 +185,7 @@ namespace nzsl::Ast
 
 		struct UsedExternalData
 		{
-			bool isConditional;
+			unsigned int conditionalStatementIndex;
 		};
 
 		static constexpr std::size_t ModuleIdSentinel = std::numeric_limits<std::size_t>::max();
@@ -212,8 +212,9 @@ namespace nzsl::Ast
 		Options options;
 		FunctionData* currentFunction = nullptr;
 		bool allowUnknownIdentifiers = false;
-		bool inConditionalStatement = false;
 		bool inLoop = false;
+		unsigned int currentConditionalIndex = 0;
+		unsigned int nextConditionalIndex = 1;
 	};
 
 	ModulePtr SanitizeVisitor::Sanitize(const Module& module, const Options& options, std::string* error)
@@ -323,7 +324,12 @@ namespace nzsl::Ast
 				const auto& env = *m_context->modules[moduleIndex].environment;
 				identifierData = FindIdentifier(env, node.identifiers.front().identifier);
 				if (identifierData)
+				{
+					if (m_context->options.partialSanitization && identifierData->conditionalIndex != m_context->currentConditionalIndex)
+						return Cloner::Clone(node);
+
 					return HandleIdentifier(identifierData, node.identifiers.front().sourceLocation);
+				}
 			}
 		}
 
@@ -447,7 +453,7 @@ namespace nzsl::Ast
 
 				if (!fieldPtr)
 				{
-					if (s->isConditional)
+					if (s->conditionIndex != m_context->currentConditionalIndex)
 						return Cloner::Clone(node); //< unresolved
 
 					throw CompilerUnknownFieldError{ indexedExpr->sourceLocation, identifierEntry.identifier };
@@ -1150,6 +1156,9 @@ namespace nzsl::Ast
 		if (identifierData->category == IdentifierCategory::Unresolved)
 			return Cloner::Clone(node);
 
+		if (m_context->options.partialSanitization && identifierData->conditionalIndex != m_context->currentConditionalIndex)
+			return Cloner::Clone(node);
+
 		return HandleIdentifier(identifierData, node.sourceLocation);
 	}
 
@@ -1354,9 +1363,9 @@ namespace nzsl::Ast
 
 		if (!conditionValue.has_value())
 		{
-			bool wasInConditionalStatement = m_context->inConditionalStatement;
-			m_context->inConditionalStatement = true;
-			Nz::CallOnExit restoreCond([=] { m_context->inConditionalStatement = wasInConditionalStatement; });
+			unsigned int prevCondStatementIndex = m_context->currentConditionalIndex;
+			m_context->currentConditionalIndex = m_context->nextConditionalIndex++;
+			Nz::CallOnExit restoreCond([=] { m_context->currentConditionalIndex = prevCondStatementIndex; });
 
 			// Unresolvable condition
 			auto condStatement = ShaderBuilder::ConditionalStatement(std::move(cloneCondition), Cloner::Clone(*node.statement));
@@ -1447,7 +1456,7 @@ namespace nzsl::Ast
 				std::uint64_t bindingKey = BuildBindingKey(bindingSet, bindingIndex + i);
 				if (auto it = m_context->usedBindingIndexes.find(bindingKey); it != m_context->usedBindingIndexes.end())
 				{
-					if (!it->second.isConditional || !usedBindingData.isConditional)
+					if (it->second.conditionalStatementIndex == m_context->currentConditionalIndex || usedBindingData.conditionalStatementIndex == m_context->currentConditionalIndex)
 						throw CompilerExtBindingAlreadyUsedError{ sourceLoc, bindingSet, bindingIndex };
 				}
 
@@ -1462,11 +1471,11 @@ namespace nzsl::Ast
 			auto& extVar = clone->externalVars[i];
 			
 			Context::UsedExternalData usedBindingData;
-			usedBindingData.isConditional = m_context->inConditionalStatement;
+			usedBindingData.conditionalStatementIndex = m_context->currentConditionalIndex;
 
 			if (auto it = m_context->declaredExternalVar.find(extVar.name); it != m_context->declaredExternalVar.end())
 			{
-				if (!it->second.isConditional || !usedBindingData.isConditional)
+				if (it->second.conditionalStatementIndex == m_context->currentConditionalIndex || usedBindingData.conditionalStatementIndex == m_context->currentConditionalIndex)
 					throw CompilerExtAlreadyDeclaredError{ extVar.sourceLocation, extVar.name };
 			}
 
@@ -1586,7 +1595,7 @@ namespace nzsl::Ast
 					bindingIndex++;
 
 				Context::UsedExternalData usedBindingData;
-				usedBindingData.isConditional = m_context->inConditionalStatement;
+				usedBindingData.conditionalStatementIndex = m_context->currentConditionalIndex;
 
 				extVar.bindingIndex = bindingIndex;
 				RegisterBinding(arraySize, bindingSet, bindingIndex, usedBindingData, extVar.sourceLocation);
@@ -1912,7 +1921,7 @@ namespace nzsl::Ast
 			}
 		}
 
-		clone->description.isConditional = m_context->inConditionalStatement;
+		clone->description.conditionIndex = m_context->currentConditionalIndex;
 
 		clone->structIndex = RegisterStruct(clone->description.name, &clone->description, clone->structIndex, clone->sourceLocation);
 		SanitizeIdentifier(clone->description.name, IdentifierScope::Struct);
@@ -3547,7 +3556,7 @@ namespace nzsl::Ast
 		bool unresolved = false;
 		if (const IdentifierData* identifierData = FindIdentifier(name))
 		{
-			if (!m_context->inConditionalStatement || !identifierData->isConditional)
+			if (identifierData->conditionalIndex == m_context->currentConditionalIndex)
 				throw CompilerIdentifierAlreadyUsedError{ sourceLocation, name };
 			else
 				unresolved = true;
@@ -3571,7 +3580,7 @@ namespace nzsl::Ast
 				{
 					aliasIndex,
 					IdentifierCategory::Alias,
-					m_context->inConditionalStatement
+					m_context->currentConditionalIndex
 				}
 			});
 		}
@@ -3602,7 +3611,7 @@ namespace nzsl::Ast
 			{
 				constantIndex,
 				IdentifierCategory::Constant,
-				m_context->inConditionalStatement
+				m_context->currentConditionalIndex
 			}
 		});
 
@@ -3654,7 +3663,7 @@ namespace nzsl::Ast
 			{
 				functionIndex,
 				IdentifierCategory::Function,
-				m_context->inConditionalStatement
+				m_context->currentConditionalIndex
 			}
 		});
 
@@ -3673,7 +3682,7 @@ namespace nzsl::Ast
 			{
 				intrinsicIndex,
 				IdentifierCategory::Intrinsic,
-				m_context->inConditionalStatement
+				m_context->currentConditionalIndex
 			}
 		});
 
@@ -3692,7 +3701,7 @@ namespace nzsl::Ast
 			{
 				moduleIndex,
 				IdentifierCategory::Module,
-				m_context->inConditionalStatement
+				m_context->currentConditionalIndex
 			}
 		});
 
@@ -3706,7 +3715,7 @@ namespace nzsl::Ast
 			{
 				std::numeric_limits<std::size_t>::max(),
 				IdentifierCategory::ReservedName,
-				m_context->inConditionalStatement
+				m_context->currentConditionalIndex
 			}
 		});
 	}
@@ -3716,7 +3725,7 @@ namespace nzsl::Ast
 		bool unresolved = false;
 		if (const IdentifierData* identifierData = FindIdentifier(name))
 		{
-			if (!m_context->inConditionalStatement || !identifierData->isConditional)
+			if (identifierData->conditionalIndex == m_context->currentConditionalIndex)
 				throw CompilerIdentifierAlreadyUsedError{ sourceLocation, name };
 			else
 				unresolved = true;
@@ -3740,7 +3749,7 @@ namespace nzsl::Ast
 				{
 					structIndex,
 					IdentifierCategory::Struct,
-					m_context->inConditionalStatement
+					m_context->currentConditionalIndex
 				}
 			});
 		}
@@ -3771,7 +3780,7 @@ namespace nzsl::Ast
 			{
 				typeIndex,
 				IdentifierCategory::Type,
-				m_context->inConditionalStatement
+				m_context->currentConditionalIndex
 			}
 		});
 
@@ -3805,7 +3814,7 @@ namespace nzsl::Ast
 			{
 				typeIndex,
 				IdentifierCategory::Type,
-				m_context->inConditionalStatement
+				m_context->currentConditionalIndex
 			}
 		});
 
@@ -3819,7 +3828,7 @@ namespace nzsl::Ast
 			{
 				std::numeric_limits<std::size_t>::max(),
 				IdentifierCategory::Unresolved,
-				m_context->inConditionalStatement
+				m_context->currentConditionalIndex
 			}
 		});
 	}
@@ -3832,7 +3841,8 @@ namespace nzsl::Ast
 			// Allow variable shadowing
 			if (identifier->category != IdentifierCategory::Variable)
 				throw CompilerIdentifierAlreadyUsedError{ sourceLocation, name };
-			else if (identifier->isConditional && m_context->inConditionalStatement)
+
+			if (identifier->conditionalIndex != m_context->currentConditionalIndex)
 				unresolved = true; //< right variable isn't know from this point
 		}
 
@@ -3854,7 +3864,7 @@ namespace nzsl::Ast
 				{
 					varIndex,
 					IdentifierCategory::Variable,
-					m_context->inConditionalStatement
+					m_context->currentConditionalIndex
 				}
 			});
 		}
@@ -4102,7 +4112,10 @@ namespace nzsl::Ast
 
 		const ExpressionType* exprType = GetExpressionType(*node.expression);
 		if (!exprType)
+		{
+			RegisterUnresolved(node.name);
 			return ValidationResult::Unresolved;
+		}
 
 		const ExpressionType& resolvedType = ResolveAlias(*exprType);
 

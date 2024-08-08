@@ -825,4 +825,141 @@ OpStore
 OpReturn
 OpFunctionEnd)");
 	}
+
+	WHEN("Testing forward vs deferred based on option")
+	{
+		// Test a bugfix where an unresolved identifier (identifier imported from an unknown module when precompiling) was being resolved in 
+
+		std::string_view gbufferOutput = R"(
+[nzsl_version("1.0")]
+module DeferredShading.GBuffer;
+
+[export]
+struct GBufferOutput
+{
+	[location(0)] albedo: vec4[f32],
+	[location(1)] normal: vec4[f32],
+}
+)";
+
+		std::string_view nzslSource = R"(
+[nzsl_version("1.0")]
+module;
+
+import GBufferOutput from DeferredShading.GBuffer;
+
+option ForwardPass: bool = true;
+
+[cond(ForwardPass)]
+struct FragOut
+{
+	[location(0)] color: vec4[f32]
+}
+
+[cond(!ForwardPass)]
+alias FragOut = GBufferOutput;
+
+[entry(frag)]
+fn FragMain() -> FragOut
+{
+	let color = vec4[f32](1.0, 0.0, 0.0, 1.0);
+
+	const if (ForwardPass)
+	{
+		let output: FragOut;
+		output.color = color;
+	
+		return output;
+	}
+	else
+	{
+		let normal = vec3[f32](0.0, 1.0, 0.0);
+
+		let output: FragOut;
+		output.albedo = color;
+		output.normal = vec4[f32](normal, 1.0);
+
+		return output;
+	}
+}
+)";
+
+		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
+
+		auto directoryModuleResolver = std::make_shared<nzsl::FilesystemModuleResolver>();
+		RegisterModule(directoryModuleResolver, gbufferOutput);
+
+		nzsl::Ast::SanitizeVisitor::Options options;
+		options.partialSanitization = true;
+
+		REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(*shaderModule, options));
+
+		options.moduleResolver = directoryModuleResolver;
+		options.partialSanitization = false;
+		options.removeOptionDeclaration = true;
+
+		WHEN("Trying ForwardPass=true")
+		{
+			options.optionValues[nzsl::Ast::HashOption("ForwardPass")] = true;
+
+			REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(*shaderModule, options));
+
+			ExpectNZSL(*shaderModule, R"(
+struct FragOut
+{
+	[location(0)] color: vec4[f32]
+}
+
+[entry(frag)]
+fn FragMain() -> FragOut
+{
+	let color: vec4[f32] = vec4[f32](1.0, 0.0, 0.0, 1.0);
+	{
+		let output: FragOut;
+		output.color = color;
+		return output;
+	}
+
+}
+)");
+		}
+
+
+		WHEN("Trying ForwardPass=false")
+		{
+			options.optionValues[nzsl::Ast::HashOption("ForwardPass")] = false;
+
+			REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(*shaderModule, options));
+
+			ExpectNZSL(*shaderModule, R"(
+[nzsl_version("1.0")]
+module _DeferredShading_GBuffer
+{
+	struct GBufferOutput
+	{
+		[location(0)] albedo: vec4[f32],
+		[location(1)] normal: vec4[f32]
+	}
+
+}
+alias GBufferOutput = _DeferredShading_GBuffer.GBufferOutput;
+
+alias FragOut = GBufferOutput;
+
+[entry(frag)]
+fn FragMain() -> FragOut
+{
+	let color: vec4[f32] = vec4[f32](1.0, 0.0, 0.0, 1.0);
+	{
+		let normal: vec3[f32] = vec3[f32](0.0, 1.0, 0.0);
+		let output: FragOut;
+		output.albedo = color;
+		output.normal = vec4[f32](normal, 1.0);
+		return output;
+	}
+
+}
+)");
+		}
+	}
 }

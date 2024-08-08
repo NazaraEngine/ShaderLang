@@ -227,7 +227,7 @@ namespace nzsl::Ast
 			{
 				std::size_t index;
 				IdentifierCategory category;
-				bool isConditional = false;
+				unsigned int conditionalIndex = 0;
 			};
 
 			struct Identifier
