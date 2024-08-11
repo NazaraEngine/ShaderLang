@@ -842,18 +842,19 @@ module Module;
 
 external
 {
+	[binding(0)]
 	data: mat4[f32]
 }
 )";
 
-			std::string_view shaderSource = R"(
+			std::string_view wildcardImportSource = R"(
 [nzsl_version("1.0")]
 module;
 
 import * from Module;
 )";
 
-			nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(shaderSource);
+			nzsl::Ast::ModulePtr shaderModule;
 
 			auto directoryModuleResolver = std::make_shared<nzsl::FilesystemModuleResolver>();
 			directoryModuleResolver->RegisterModule(importedSource);
@@ -861,7 +862,19 @@ import * from Module;
 			nzsl::Ast::SanitizeVisitor::Options sanitizeOpt;
 			sanitizeOpt.moduleResolver = directoryModuleResolver;
 
+			shaderModule = nzsl::Parse(wildcardImportSource);
 			CHECK_THROWS_WITH(nzsl::Ast::Sanitize(*shaderModule, sanitizeOpt), "(5,1 -> 21): CModuleFeatureMismatch error: module Module requires feature primitive_externals");
+
+			std::string_view nonExistentImportShaderSource = R"(
+[nzsl_version("1.0")]
+[feature(primitive_externals)]
+module;
+
+import Foo from Module;
+)";
+
+			shaderModule = nzsl::Parse(nonExistentImportShaderSource);
+			CHECK_THROWS_WITH(nzsl::Ast::Sanitize(*shaderModule, sanitizeOpt), "(6,1 -> 23): CImportIdentifierNotFound error: identifier Foo not found in module Module");
 		}
 
 		/************************************************************************/
