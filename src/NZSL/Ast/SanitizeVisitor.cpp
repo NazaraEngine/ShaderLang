@@ -2580,20 +2580,23 @@ namespace nzsl::Ast
 		std::vector<DeclareAliasStatementPtr> aliasStatements;
 		std::vector<DeclareConstStatementPtr> constStatements;
 
-		std::vector<std::string> wildcardImport{ std::string{} };
-
-		auto CheckImport = [&](const std::string& identifier) -> std::pair<bool, const std::vector<std::string>*>
+		auto CheckImport = [&](const std::string& identifier) -> std::pair<bool, std::vector<std::string>>
 		{
 			auto it = importedSymbols.find(identifier);
 			if (it == importedSymbols.end())
 			{
 				if (!importEverythingElse)
-					return { false, nullptr };
+					return { false, {} };
 
-				return { true, &wildcardImport };
+				return { true, { std::string{} } };
 			}
 			else
-				return { true, &it->second };
+			{
+				std::vector<std::string> imports = std::move(it->second);
+				importedSymbols.erase(it);
+
+				return { true, std::move(imports) };
+			}
 		};
 
 		ExportVisitor::Callbacks callbacks;
@@ -2617,7 +2620,7 @@ namespace nzsl::Ast
 				return ShaderBuilder::Constant(*node.constIndex, GetConstantType(*value));
 			};
 
-			for (const std::string& aliasName : *aliasesName)
+			for (const std::string& aliasName : aliasesName)
 			{
 				if (aliasName.empty())
 				{
@@ -2644,7 +2647,7 @@ namespace nzsl::Ast
 			if (moduleData.dependenciesVisitor)
 				moduleData.dependenciesVisitor->MarkFunctionAsUsed(*node.funcIndex);
 
-			for (const std::string& aliasName : *aliasesName)
+			for (const std::string& aliasName : aliasesName)
 			{
 				if (aliasName.empty())
 				{
@@ -2671,7 +2674,7 @@ namespace nzsl::Ast
 			if (moduleData.dependenciesVisitor)
 				moduleData.dependenciesVisitor->MarkStructAsUsed(*node.structIndex);
 
-			for (const std::string& aliasName : *aliasesName)
+			for (const std::string& aliasName : aliasesName)
 			{
 				if (aliasName.empty())
 				{
@@ -2689,6 +2692,12 @@ namespace nzsl::Ast
 
 		ExportVisitor exportVisitor;
 		exportVisitor.Visit(*m_context->currentModule->importedModules[moduleIndex].module->rootNode, callbacks);
+
+		if (!importedSymbols.empty())
+		{
+			for (const auto& [identifier, aliasesName] : importedSymbols)
+				throw CompilerImportIdentifierNotFoundError{ node.sourceLocation, identifier, node.moduleName };
+		}
 
 		if (aliasStatements.empty() && constStatements.empty())
 			return ShaderBuilder::NoOp();
