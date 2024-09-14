@@ -7,7 +7,6 @@
 #include <CNZSL/Structs/Serializer.hpp>
 #include <CNZSL/Structs/Module.hpp>
 #include <NZSL/Ast/AstSerializer.hpp>
-
 #include <fmt/format.h>
 #include <cassert>
 
@@ -64,9 +63,11 @@ extern "C"
 
 		try
 		{
-			nzslModule* module = nzslModuleCreate();
-			module->module = nzsl::Ast::DeserializeShader(deserializerPtr->deserializer);
-			return module;
+			nzsl::Ast::ModulePtr module = nzsl::Ast::DeserializeShader(deserializerPtr->deserializer);
+
+			nzslModule* modulePtr = nzslModuleCreate();
+			modulePtr->module = std::move(ModulePtr);
+			return modulePtr;
 		}
 		catch(std::exception& e)
 		{
