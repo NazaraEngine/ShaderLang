@@ -66,7 +66,7 @@ extern "C"
 			nzsl::Ast::ModulePtr module = nzsl::Ast::DeserializeShader(deserializerPtr->deserializer);
 
 			nzslModule* modulePtr = nzslModuleCreate();
-			modulePtr->module = std::move(ModulePtr);
+			modulePtr->module = std::move(module);
 			return modulePtr;
 		}
 		catch(std::exception& e)
