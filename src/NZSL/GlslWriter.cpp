@@ -126,6 +126,20 @@ namespace nzsl
 					RegisterPrecisionQualifiers(std::get<Ast::DynArrayType>(type).containedType->type);
 			}
 
+			void RegisterStructType(const Ast::ExpressionType& type)
+			{
+				if (IsStorageType(type))
+					usedStructs.UnboundedSet(std::get<Ast::StorageType>(type).containedType.structIndex);
+				else if (IsUniformType(type))
+					usedStructs.UnboundedSet(std::get<Ast::UniformType>(type).containedType.structIndex);
+				else if (IsStructType(type))
+					usedStructs.UnboundedSet(std::get<Ast::StructType>(type).structIndex);
+				else if (IsArrayType(type))
+					RegisterStructType(std::get<Ast::ArrayType>(type).containedType->type);
+				else if (IsDynArrayType(type))
+					RegisterStructType(std::get<Ast::DynArrayType>(type).containedType->type);
+			}
+
 			void Resolve()
 			{
 				usedStructs.Resize(bufferStructs.GetSize());
@@ -253,26 +267,14 @@ namespace nzsl
 				structs[node.structIndex.value()] = &node.description;
 
 				for (const auto& member : node.description.members)
-				{
-					const Ast::ExpressionType& type = member.type.GetResultingValue();
-					if (IsStorageType(type))
-						usedStructs.UnboundedSet(std::get<Ast::StorageType>(type).containedType.structIndex);
-					else if (IsUniformType(type))
-						usedStructs.UnboundedSet(std::get<Ast::UniformType>(type).containedType.structIndex);
-				}
+					RegisterStructType(member.type.GetResultingValue());
 
 				RecursiveVisitor::Visit(node);
 			}
 
 			void Visit(Ast::DeclareVariableStatement& node) override
 			{
-				const Ast::ExpressionType& type = node.varType.GetResultingValue();
-				if (IsStorageType(type))
-					usedStructs.UnboundedSet(std::get<Ast::StorageType>(type).containedType.structIndex);
-				else if (IsUniformType(type))
-					usedStructs.UnboundedSet(std::get<Ast::UniformType>(type).containedType.structIndex);
-				else if (IsStructType(type))
-					usedStructs.UnboundedSet(std::get<Ast::StructType>(type).structIndex);
+				RegisterStructType(node.varType.GetResultingValue());
 
 				RecursiveVisitor::Visit(node);
 			}
