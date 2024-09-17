@@ -48,7 +48,7 @@ extern "C"
 		statesPtr->debugLevel = s_debugLevels[debugLevel];
 	}
 
-	CNZSL_API void nzslWriterStatesSetFsModuleResolver(nzslWriterStates* statesPtr, const nzslFilesystemModuleResolver* resolverPtr)
+	CNZSL_API void nzslWriterStatesSetModuleResolver_Filesystem(nzslWriterStates* statesPtr, const nzslFilesystemModuleResolver* resolverPtr)
 	{
 		statesPtr->shaderModuleResolver = resolverPtr->resolver;
 	}
