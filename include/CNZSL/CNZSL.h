@@ -9,10 +9,12 @@
 #ifndef CNZSL_CNZSL_H
 #define CNZSL_CNZSL_H
 
+#include <CNZSL/FilesystemModuleResolver.h>
 #include <CNZSL/GlslWriter.h>
 #include <CNZSL/LangWriter.h>
 #include <CNZSL/Module.h>
 #include <CNZSL/Parser.h>
+#include <CNZSL/Serializer.h>
 #include <CNZSL/SpirvWriter.h>
 
 #endif /* CNZSL_CNZSL_H */

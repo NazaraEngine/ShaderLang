@@ -11,6 +11,7 @@
 
 #include <CNZSL/Config.h>
 #include <CNZSL/DebugLevel.h>
+#include <CNZSL/FilesystemModuleResolver.h>
 #include <stdint.h>
 
 #ifdef __cplusplus
@@ -30,6 +31,8 @@ CNZSL_API void nzslWriterStatesDestroy(nzslWriterStates* statesPtr);
 CNZSL_API void nzslWriterStatesEnableOptimization(nzslWriterStates* statesPtr, nzslBool enable);
 CNZSL_API void nzslWriterStatesEnableSanitization(nzslWriterStates* statesPtr, nzslBool enable);
 CNZSL_API void nzslWriterStatesSetDebugLevel(nzslWriterStates* statesPtr, nzslDebugLevel debugLevel);
+
+CNZSL_API void nzslWriterStatesSetModuleResolver_Filesystem(nzslWriterStates* statesPtr, const nzslFilesystemModuleResolver* resolverPtr);
 
 CNZSL_API void nzslWriterStatesSetOption_bool(nzslWriterStates* statesPtr, nzslOptionHash optionHash, nzslBool value);
 CNZSL_API void nzslWriterStatesSetOption_f32(nzslWriterStates* statesPtr, nzslOptionHash optionHash, nzslFloat32 value);

@@ -3,7 +3,9 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <CNZSL/WriterStates.h>
+#include <CNZSL/FilesystemModuleResolver.h>
 #include <CNZSL/Structs/WriterStates.hpp>
+#include <CNZSL/Structs/FilesystemModuleResolver.hpp>
 #include <NZSL/Ast/Option.hpp>
 #include <array>
 
@@ -44,6 +46,11 @@ extern "C"
 		};
 
 		statesPtr->debugLevel = s_debugLevels[debugLevel];
+	}
+
+	CNZSL_API void nzslWriterStatesSetModuleResolver_Filesystem(nzslWriterStates* statesPtr, const nzslFilesystemModuleResolver* resolverPtr)
+	{
+		statesPtr->shaderModuleResolver = resolverPtr->resolver;
 	}
 
 	CNZSL_API void nzslWriterStatesSetOption_bool(nzslWriterStates* statesPtr, nzslOptionHash optionHash, nzslBool value)
