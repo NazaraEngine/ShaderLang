@@ -24,7 +24,7 @@ typedef struct nzslDeserializer nzslDeserializer;
 
 CNZSL_API nzslSerializer* nzslSerializerCreate(void);
 CNZSL_API void nzslSerializerDestroy(nzslSerializer* serializerPtr);
-CNZSL_API void nzslSerializeShader(nzslSerializer* serializerPtr, const nzslModule* modulePtr);
+CNZSL_API nzslBool nzslSerializeShader(nzslSerializer* serializerPtr, const nzslModule* modulePtr);
 CNZSL_API const char* nzslSerializerGetLastError(const nzslSerializer* serializerPtr);
 
 CNZSL_API nzslDeserializer* nzslDeserializerCreate(const void* data, size_t dataSize);
