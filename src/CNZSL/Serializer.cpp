@@ -44,6 +44,12 @@ extern "C"
 
 		return true;
 	}
+
+	CNZSL_API const void* nzslSerializerGetData(const nzslSerializer* serializerPtr, size_t* outSize)
+	{
+		const std::vector<std::uint8_t>& serializerData = serializerPtr->serializer.GetData();
+		*outSize = serializerData.size();
+		return serializerData.data();
 	}
 
 	CNZSL_API const char* nzslSerializerGetLastError(const nzslSerializer* serializerPtr)
