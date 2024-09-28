@@ -22,7 +22,7 @@ extern "C"
 		delete serializerPtr;
 	}
 
-	CNZSL_API void nzslSerializeShader(nzslSerializer* serializerPtr, const nzslModule* modulePtr)
+	CNZSL_API nzslBool nzslSerializeShader(nzslSerializer* serializerPtr, const nzslModule* modulePtr)
 	{
 		assert(serializerPtr);
 		assert(modulePtr);
@@ -34,11 +34,16 @@ extern "C"
 		catch(std::exception& e)
 		{
 			serializerPtr->lastError = fmt::format("nzslSerializeShader failed: {}", e.what());
+			return false;
 		}
 		catch(...)
 		{
 			serializerPtr->lastError = "nzslSerializeShader failed with unknown error";
+			return false;
 		}
+
+		return true;
+	}
 	}
 
 	CNZSL_API const char* nzslSerializerGetLastError(const nzslSerializer* serializerPtr)
