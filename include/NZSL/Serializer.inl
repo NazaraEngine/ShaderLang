@@ -6,14 +6,20 @@
 
 namespace nzsl
 {
-	inline const std::vector<std::uint8_t>& Serializer::GetData() const
+	inline const std::vector<std::uint8_t>& Serializer::GetData() const&
 	{
 		return m_data;
+	}
+
+	inline std::vector<std::uint8_t> Serializer::GetData() &&
+	{
+		return std::move(m_data);
 	}
 
 	inline Deserializer::Deserializer(const void* data, std::size_t dataSize)
 	{
 		m_ptr = static_cast<const std::uint8_t*>(data);
+		m_ptrBegin = m_ptr;
 		m_ptrEnd = m_ptr + dataSize;
 	}
 }
