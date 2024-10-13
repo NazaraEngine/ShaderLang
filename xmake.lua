@@ -6,6 +6,7 @@ set_xmakever("2.7.3")
 option("erronwarn", { default = false, description = "Fails compilation if a warning occurs"})
 option("fs_watcher", { default = true, description = "Compiles with filesystem watch support (uses efsw)"})
 option("unitybuild", { default = false, description = "Build the library using unity build"})
+option("with_nzsla", { default = true, description = "Builds the standalone command-line archiver (nzsla)"})
 option("with_nzslc", { default = true, description = "Builds the standalone command-line compiler (nzslc)"})
 option("cbinding", { default = true, description = "Builds the C binding library (CNZSL)"})
 
@@ -28,13 +29,13 @@ end
 
 add_repositories("nazara-engine-repo https://github.com/NazaraEngine/xmake-repo")
 add_requires("fmt", { system = false })
-add_requires("nazarautils >=2024.02.27", "fast_float", "frozen", "ordered_map")
+add_requires("nazarautils >=2024.02.27", "fast_float", "frozen", "lz4 >=1.9", "ordered_map")
 
 if has_config("fs_watcher") then
 	add_requires("efsw")
 end
 
-if has_config("with_nzslc") then
+if has_config("with_nzsla") or has_config("with_nzslc") then
 	add_requires("cxxopts >=3.1.1", "nlohmann_json")
 end
 
@@ -106,7 +107,7 @@ target("nzsl", function ()
 	add_headerfiles("src/NZSL/**.inl", { prefixdir = "private", install = false })
 	add_files("src/NZSL/**.cpp")
 	add_packages("nazarautils", { public = true })
-	add_packages("fast_float", "fmt", "frozen", "ordered_map")
+	add_packages("fast_float", "fmt", "frozen", "lz4", "ordered_map")
 
 	if has_config("fs_watcher") then
 		add_packages("efsw")
@@ -120,6 +121,18 @@ target("nzsl", function ()
 	end)
 end)
 
+if has_config("with_nzsla") then
+	target("nzsla", function ()
+		set_kind("binary")
+		set_group("Executables")
+		add_headerfiles("src/(ShaderArchiver/**.hpp)")
+		add_headerfiles("src/(ShaderArchiver/**.inl)")
+		add_files("src/ShaderArchiver/**.cpp")
+		add_deps("nzsl")
+		add_packages("cxxopts", "fmt", "frozen", "nlohmann_json")
+	end)
+end
+
 if has_config("with_nzslc") then
 	target("nzslc", function ()
 		set_kind("binary")
@@ -132,7 +145,7 @@ if has_config("with_nzslc") then
 	end)
 end
 
-if has_config("cbinding") then 
+if has_config("cbinding") then
 	target("cnzsl", function ()
 		set_kind("$(kind)")
 		set_group("Libraries")
