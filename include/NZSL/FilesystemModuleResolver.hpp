@@ -11,13 +11,14 @@
 #include <NZSL/Config.hpp>
 #include <NZSL/ModuleResolver.hpp>
 #include <filesystem>
-#include <memory>
 #include <mutex>
 #include <string>
 #include <unordered_map>
 
 namespace nzsl
 {
+	class Archive;
+
 	class NZSL_API FilesystemModuleResolver : public ModuleResolver
 	{
 		public:
@@ -26,6 +27,7 @@ namespace nzsl
 			FilesystemModuleResolver(FilesystemModuleResolver&&) noexcept = delete;
 			~FilesystemModuleResolver();
 
+			void RegisterArchive(const Archive& archive);
 			void RegisterModule(const std::filesystem::path& realPath);
 			void RegisterModule(std::string_view moduleSource);
 			void RegisterModule(Ast::ModulePtr module);
@@ -36,7 +38,8 @@ namespace nzsl
 			FilesystemModuleResolver& operator=(const FilesystemModuleResolver&) = delete;
 			FilesystemModuleResolver& operator=(FilesystemModuleResolver&&) noexcept = delete;
 
-			static constexpr const char* CompiledModuleExtension = ".nzslb";
+			static constexpr const char* ArchiveExtension = ".nzsla";
+			static constexpr const char* BinaryModuleExtension = ".nzslb";
 			static constexpr const char* ModuleExtension = ".nzsl";
 
 		private:

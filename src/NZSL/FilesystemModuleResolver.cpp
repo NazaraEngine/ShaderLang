@@ -4,6 +4,7 @@
 
 #include <NZSL/FilesystemModuleResolver.hpp>
 #include <NazaraUtils/PathUtils.hpp>
+#include <NZSL/Archive.hpp>
 #include <NZSL/Parser.hpp>
 #include <NZSL/Ast/AstSerializer.hpp>
 #ifdef NZSL_EFSW
@@ -22,6 +23,23 @@ namespace nzsl
 		if (m_fileWatcher)
 			efsw_release(m_fileWatcher);
 #endif
+	}
+
+	void FilesystemModuleResolver::RegisterArchive(const Archive& archive)
+	{
+		for (const Archive::ModuleData& moduleData : archive.GetModules())
+		{
+			std::vector<std::uint8_t> data = Archive::DecompressModule(&moduleData.data[0], moduleData.data.size(), moduleData.flags);
+			switch (moduleData.kind)
+			{
+				case ArchiveEntryKind::BinaryShaderModule:
+				{
+					Deserializer deserializer(&data[0], data.size());
+					RegisterModule(Ast::DeserializeShader(deserializer));
+					break;
+				}
+			}
+		}
 	}
 
 	void FilesystemModuleResolver::RegisterModule(const std::filesystem::path& realPath)
@@ -46,10 +64,15 @@ namespace nzsl
 				throw std::runtime_error("failed to read " + Nz::PathToString(realPath));
 
 			std::string ext = Nz::PathToString(realPath.extension());
-			if (ext == CompiledModuleExtension)
+			if (ext == BinaryModuleExtension)
 			{
 				Deserializer deserializer(content.data(), content.size());
 				module = Ast::DeserializeShader(deserializer);
+			}
+			else if (ext == ArchiveExtension)
+			{
+				Deserializer deserializer(content.data(), content.size());
+				RegisterArchive(DeserializeArchive(deserializer));
 			}
 			else if (ext == ModuleExtension)
 				module = Parse(std::string_view(content.data(), content.size()), Nz::PathToString(realPath));
@@ -258,6 +281,6 @@ namespace nzsl
 			});
 		};
 
-		return EndsWith(filename, ModuleExtension) || EndsWith(filename, CompiledModuleExtension);
+		return EndsWith(filename, ModuleExtension) || EndsWith(filename, BinaryModuleExtension);
 	}
 }
