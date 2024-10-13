@@ -12,7 +12,7 @@
 #include <glslang/Public/ShaderLang.h>
 #include <spirv-tools/libspirv.hpp>
 
-namespace
+namespace NAZARA_ANONYMOUS_NAMESPACE
 {
 	// Use OpenGL default minimal values (from https://www.khronos.org/registry/OpenGL-Refpages/es3.0/html/glGet.xhtml, https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glGet.xhtml and https://www.khronos.org/registry/OpenGL-Refpages/gl2.1/)
 	const TBuiltInResource s_minResources = {
@@ -218,6 +218,8 @@ namespace
 
 void ExpectGLSL(nzsl::ShaderStageType stageType, const nzsl::Ast::Module& shaderModule, std::string_view expectedOutput, const nzsl::ShaderWriter::States& options, const nzsl::GlslWriter::Environment& env, bool testShaderCompilation)
 {
+	NAZARA_USE_ANONYMOUS_NAMESPACE
+
 	std::string expectedSource = SanitizeSource(expectedOutput);
 
 	std::string_view stageName;
@@ -319,6 +321,8 @@ void ExpectGLSL(const nzsl::Ast::Module& shaderModule, std::string_view expected
 
 void ExpectNZSL(const nzsl::Ast::Module& shaderModule, std::string_view expectedOutput, const nzsl::ShaderWriter::States& options)
 {
+	NAZARA_USE_ANONYMOUS_NAMESPACE
+
 	std::string source = SanitizeSource(expectedOutput);
 
 	SECTION("Generating NZSL")
@@ -349,6 +353,8 @@ void ExpectNZSL(const nzsl::Ast::Module& shaderModule, std::string_view expected
 
 void ExpectSPIRV(const nzsl::Ast::Module& shaderModule, std::string_view expectedOutput, const nzsl::ShaderWriter::States& options, const nzsl::SpirvWriter::Environment& env, bool outputParameter)
 {
+	NAZARA_USE_ANONYMOUS_NAMESPACE
+
 	std::string source = SanitizeSource(expectedOutput);
 
 	SECTION("Generating SPIR-V")
