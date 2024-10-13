@@ -47,7 +47,7 @@ namespace nzslc
 			{ "none",    nzsl::DebugLevel::None }
 		});
 	}
-	
+
 	Compiler::Compiler(cxxopts::ParseResult& options) :
 	m_logFormat(LogFormat::Classic),
 	m_options(options),
@@ -104,7 +104,7 @@ namespace nzslc
 
 		m_verbose = m_options.count("verbose") > 0;
 	}
-	
+
 	void Compiler::PrintError(const nzsl::Error& error) const
 	{
 		const nzsl::SourceLocation& errorLocation = error.GetSourceLocation();
@@ -313,8 +313,8 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 
 		if (m_options.count("gl-version") > 0)
 		{
-			std::uint32_t minVersion = (env.glES) ? 300 : 330; //< OpenGL ES 3.0 and OpenGL 3.3 are the last versions of OpenGL
-			std::uint32_t maxVersion = (env.glES) ? 320 : 460; //< OpenGL ES 3.2 and OpenGL 4.6 are the last versions of OpenGL
+			std::uint32_t minVersion = (env.glES) ? 300 : 330; //< OpenGL ES 3.0 and OpenGL 3.3 are the lowest supported versions of OpenGL
+			std::uint32_t maxVersion = (env.glES) ? 320 : 460; //< OpenGL ES 3.2 and OpenGL 4.6 are the highest supported versions of OpenGL
 
 			std::uint32_t version = m_options["gl-version"].as<std::uint32_t>();
 			if (version < minVersion || version > maxVersion)
@@ -456,7 +456,7 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 			if (m_outputHeader)
 				OutputToStdout(std::string_view(reinterpret_cast<const char*>(&data[0]), data.size()));
 			else
-				fmt::print("NZSLB is a binary format and cannot be printed to stdout\n");
+				throw std::runtime_error("NZSLB is a binary format and cannot be printed to stdout");
 
 			return;
 		}
@@ -569,14 +569,6 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 		}
 	}
 
-	void Compiler::OutputToStdout(std::string_view str)
-	{
-		if (m_outputHeader)
-			fmt::print("{}", ToHeader(str.data(), str.size()));
-		else
-			fmt::print("{}", str);
-	}
-
 	void Compiler::OutputFile(std::filesystem::path filePath, const void* data, std::size_t size)
 	{
 		if (m_outputHeader)
@@ -591,6 +583,14 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 
 		if (m_verbose)
 			fmt::print("Generated file {}\n", Nz::PathToString(std::filesystem::absolute(filePath)));
+	}
+
+	void Compiler::OutputToStdout(std::string_view str)
+	{
+		if (m_outputHeader)
+			fmt::print("{}", ToHeader(str.data(), str.size()));
+		else
+			fmt::print("{}", str);
 	}
 
 	void Compiler::ReadInput()
@@ -630,12 +630,12 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 				if (std::filesystem::is_regular_file(path))
 				{
 					std::string stepName = "Register module " + Nz::PathToString(path);
-					Step(stepName, [&] { resolver->RegisterModule(path); });
+					Step(stepName, [&] { resolver->RegisterFile(path); });
 				}
 				else if (std::filesystem::is_directory(path))
 				{
 					std::string stepName = "Register module directory " + Nz::PathToString(path);
-					Step(stepName, [&] { resolver->RegisterModuleDirectory(path); });
+					Step(stepName, [&] { resolver->RegisterDirectory(path); });
 				}
 				else
 					throw std::runtime_error(modulePath + " is not a path nor a directory");
@@ -687,7 +687,7 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 		}
 		m_profiling = true;
 		m_verbose = wasVerbose;
-		
+
 		Nz::CallOnExit onExit([&]
 		{
 			auto& step = m_steps[stepIndex];
@@ -711,18 +711,14 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 
 	std::vector<std::uint8_t> Compiler::ReadFileContent(const std::filesystem::path& filePath)
 	{
+		std::uintmax_t fileSize = std::filesystem::file_size(filePath);
+
 		std::ifstream inputFile(filePath, std::ios::in | std::ios::binary);
 		if (!inputFile)
 			throw std::runtime_error("failed to open " + Nz::PathToString(filePath));
 
-		inputFile.seekg(0, std::ios::end);
-
-		std::streamsize length = inputFile.tellg();
-
-		inputFile.seekg(0, std::ios::beg);
-
-		std::vector<std::uint8_t> content(Nz::SafeCast<std::size_t>(length));
-		if (length > 0 && !inputFile.read(reinterpret_cast<char*>(&content[0]), length))
+		std::vector<std::uint8_t> content(Nz::SafeCast<std::size_t>(fileSize));
+		if (fileSize > 0 && !inputFile.read(reinterpret_cast<char*>(&content[0]), fileSize))
 			throw std::runtime_error("failed to read " + Nz::PathToString(filePath));
 
 		return content;
@@ -754,7 +750,7 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 
 			ss << +ptr[i];
 		}
-		
+
 		ss << '\n';
 
 		return std::move(ss).str();

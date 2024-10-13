@@ -42,25 +42,81 @@ namespace nzsl
 		}
 	}
 
-	void FilesystemModuleResolver::RegisterModule(const std::filesystem::path& realPath)
+	void FilesystemModuleResolver::RegisterDirectory(const std::filesystem::path& realPath, bool watchDirectory)
+	{
+		if (!std::filesystem::is_directory(realPath))
+			return;
+
+		if (watchDirectory)
+		{
+#ifdef NZSL_EFSW
+			if (!m_fileWatcher)
+			{
+				m_fileWatcher = efsw_create(0);
+				efsw_watch(m_fileWatcher);
+			}
+
+			auto FileSystemCallback = [](efsw_watcher /*watcher*/, efsw_watchid /*watchid*/, const char* dir, const char* filename, efsw_action action, const char* oldFileName, void* param)
+			{
+				FilesystemModuleResolver* resolver = static_cast<FilesystemModuleResolver*>(param);
+
+				switch (action)
+				{
+					case EFSW_ADD:
+						resolver->OnFileAdded(dir, filename);
+						break;
+
+					case EFSW_DELETE:
+						resolver->OnFileRemoved(dir, filename);
+						break;
+
+					case EFSW_MODIFIED:
+						resolver->OnFileUpdated(dir, filename);
+						break;
+
+					case EFSW_MOVED:
+						resolver->OnFileMoved(dir, filename, (oldFileName) ? oldFileName : std::string_view());
+						break;
+				}
+			};
+		
+			efsw_addwatch(m_fileWatcher, Nz::PathToString(realPath).c_str(), FileSystemCallback, 1, this);
+#else
+			throw std::runtime_error("nzsl was built without filesystem watch feature");
+#endif
+		}
+
+		for (const auto& entry : std::filesystem::recursive_directory_iterator(realPath))
+		{
+			if (entry.is_regular_file() && CheckExtension(Nz::PathToString(entry.path())))
+			{
+				try
+				{
+					RegisterFile(entry.path());
+				}
+				catch (const std::exception& e)
+				{
+					throw std::runtime_error(fmt::format("failed to register module {}: {}", Nz::PathToString(entry.path()), e.what()));
+				}
+			}
+		}
+	}
+
+	void FilesystemModuleResolver::RegisterFile(const std::filesystem::path& realPath)
 	{
 		Ast::ModulePtr module;
 		try
 		{
+			std::uintmax_t filesize = std::filesystem::file_size(realPath);
+			if (filesize == 0)
+				return; //< ignore empty files
+
 			std::ifstream inputFile(realPath, std::ios::in | std::ios::binary);
 			if (!inputFile)
 				throw std::runtime_error("failed to open " + Nz::PathToString(realPath));
 
-			inputFile.seekg(0, std::ios::end);
-
-			std::streamsize length = inputFile.tellg();
-			if (length == 0)
-				return; //< ignore empty files
-
-			inputFile.seekg(0, std::ios::beg);
-
-			std::vector<char> content(Nz::SafeCast<std::size_t>(length));
-			if (!inputFile.read(&content[0], length))
+			std::vector<char> content(Nz::SafeCast<std::size_t>(filesize));
+			if (!inputFile.read(&content[0], Nz::SafeCast<std::size_t>(filesize)))
 				throw std::runtime_error("failed to read " + Nz::PathToString(realPath));
 
 			std::string ext = Nz::PathToString(realPath.extension());
@@ -126,66 +182,6 @@ namespace nzsl
 			m_modules.emplace(std::move(moduleName), std::move(module));
 	}
 
-	void FilesystemModuleResolver::RegisterModuleDirectory(const std::filesystem::path& realPath, bool watchDirectory)
-	{
-		if (!std::filesystem::is_directory(realPath))
-			return;
-
-		if (watchDirectory)
-		{
-#ifdef NZSL_EFSW
-			if (!m_fileWatcher)
-			{
-				m_fileWatcher = efsw_create(0);
-				efsw_watch(m_fileWatcher);
-			}
-
-			auto FileSystemCallback = [](efsw_watcher /*watcher*/, efsw_watchid /*watchid*/, const char* dir, const char* filename, efsw_action action, const char* oldFileName, void* param)
-			{
-				FilesystemModuleResolver* resolver = static_cast<FilesystemModuleResolver*>(param);
-
-				switch (action)
-				{
-					case EFSW_ADD:
-						resolver->OnFileAdded(dir, filename);
-						break;
-
-					case EFSW_DELETE:
-						resolver->OnFileRemoved(dir, filename);
-						break;
-
-					case EFSW_MODIFIED:
-						resolver->OnFileUpdated(dir, filename);
-						break;
-
-					case EFSW_MOVED:
-						resolver->OnFileMoved(dir, filename, (oldFileName) ? oldFileName : std::string_view());
-						break;
-				}
-			};
-		
-			efsw_addwatch(m_fileWatcher, Nz::PathToString(realPath).c_str(), FileSystemCallback, 1, this);
-#else
-			throw std::runtime_error("nzsl was built without filesystem watch feature");
-#endif
-		}
-
-		for (const auto& entry : std::filesystem::recursive_directory_iterator(realPath))
-		{
-			if (entry.is_regular_file() && CheckExtension(Nz::PathToString(entry.path())))
-			{
-				try
-				{
-					RegisterModule(entry.path());
-				}
-				catch (const std::exception& e)
-				{
-					throw std::runtime_error(fmt::format("failed to register module {}: {}", Nz::PathToString(entry.path()), e.what()));
-				}
-			}
-		}
-	}
-
 	Ast::ModulePtr FilesystemModuleResolver::Resolve(const std::string& moduleName)
 	{
 		auto it = m_modules.find(moduleName);
@@ -204,7 +200,7 @@ namespace nzsl
 
 		try
 		{
-			RegisterModule(filepath);
+			RegisterFile(filepath);
 		}
 		catch (const std::exception& e)
 		{
@@ -260,7 +256,7 @@ namespace nzsl
 
 		try
 		{
-			RegisterModule(filepath);
+			RegisterFile(filepath);
 		}
 		catch (const std::exception& e)
 		{
@@ -281,6 +277,6 @@ namespace nzsl
 			});
 		};
 
-		return EndsWith(filename, ModuleExtension) || EndsWith(filename, BinaryModuleExtension);
+		return EndsWith(filename, ModuleExtension) || EndsWith(filename, BinaryModuleExtension) || EndsWith(filename, ArchiveExtension);
 	}
 }
