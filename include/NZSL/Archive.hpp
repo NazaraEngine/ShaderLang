@@ -26,7 +26,7 @@ namespace nzsl
 
 	enum class ArchiveEntryFlag
 	{
-		CompressedLZ4HC,
+		CompressedLZ4HC = 0,
 
 		Max = CompressedLZ4HC
 	};
@@ -37,7 +37,7 @@ namespace nzsl
 
 	enum class ArchiveEntryKind
 	{
-		BinaryShaderModule
+		BinaryShaderModule = 0
 	};
 
 	class NZSL_API Archive
