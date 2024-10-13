@@ -13,8 +13,8 @@ TEST_CASE("FilesystemModuleResolver", "[Shader]")
 
 	std::shared_ptr<nzsl::FilesystemModuleResolver> moduleResolver = std::make_shared<nzsl::FilesystemModuleResolver>();
 
-	REQUIRE_NOTHROW(moduleResolver->RegisterModuleDirectory(resourceDir / "modules"));
-	REQUIRE_NOTHROW(moduleResolver->RegisterModule(resourceDir / "Shader.nzsl"));
+	REQUIRE_NOTHROW(moduleResolver->RegisterDirectory(resourceDir / "modules"));
+	REQUIRE_NOTHROW(moduleResolver->RegisterFile(resourceDir / "Shader.nzsl"));
 
 	nzsl::Ast::ModulePtr shaderModule = moduleResolver->Resolve("Shader");
 

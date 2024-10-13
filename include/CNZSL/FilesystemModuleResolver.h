@@ -25,10 +25,10 @@ CNZSL_API nzslFilesystemModuleResolver* nzslFilesystemModuleResolverCreate(void)
 CNZSL_API void nzslFilesystemModuleResolverDestroy(nzslFilesystemModuleResolver* resolverPtr);
 CNZSL_API const char* nzslFilesystemModuleResolverGetLastError(const nzslFilesystemModuleResolver* resolverPtr);
 
+CNZSL_API void nzslFilesystemModuleResolverRegisterDirectory(nzslFilesystemModuleResolver* resolverPtr, const char* sourcePath, size_t sourcePathLen);
+CNZSL_API void nzslFilesystemModuleResolverRegisterFile(nzslFilesystemModuleResolver* resolverPtr, const char* sourcePath, size_t sourcePathLen);
 CNZSL_API void nzslFilesystemModuleResolverRegisterModule(nzslFilesystemModuleResolver* resolverPtr, const nzslModule* module);
-CNZSL_API void nzslFilesystemModuleResolverRegisterModuleFromFile(nzslFilesystemModuleResolver* resolverPtr, const char* sourcePath, size_t sourcePathLen);
 CNZSL_API void nzslFilesystemModuleResolverRegisterModuleFromSource(nzslFilesystemModuleResolver* resolverPtr, const char* source, size_t sourceLen);
-CNZSL_API void nzslFilesystemModuleResolverRegisterModuleDirectory(nzslFilesystemModuleResolver* resolverPtr, const char* sourcePath, size_t sourcePathLen);
 
 #ifdef __cplusplus
 }

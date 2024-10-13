@@ -28,10 +28,10 @@ namespace nzsl
 			~FilesystemModuleResolver();
 
 			void RegisterArchive(const Archive& archive);
-			void RegisterModule(const std::filesystem::path& realPath);
+			void RegisterDirectory(const std::filesystem::path& realPath, bool watchDirectory = false);
+			void RegisterFile(const std::filesystem::path& realPath);
 			void RegisterModule(std::string_view moduleSource);
 			void RegisterModule(Ast::ModulePtr module);
-			void RegisterModuleDirectory(const std::filesystem::path& realPath, bool watchDirectory = false);
 
 			Ast::ModulePtr Resolve(const std::string& moduleName) override;
 

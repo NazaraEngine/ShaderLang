@@ -5,6 +5,7 @@
 #include <CNZSL/FilesystemModuleResolver.h>
 #include <CNZSL/Structs/FilesystemModuleResolver.hpp>
 #include <CNZSL/Structs/Module.hpp>
+#include <NazaraUtils/PathUtils.hpp>
 #include <fmt/format.h>
 #include <string_view>
 #include <filesystem>
@@ -25,6 +26,42 @@ extern "C"
 		delete resolverPtr;
 	}
 
+	CNZSL_API void nzslFilesystemModuleResolverRegisterDirectory(nzslFilesystemModuleResolver* resolverPtr, const char* sourcePath, size_t sourcePathLen)
+	{
+		assert(resolverPtr);
+
+		try
+		{
+			resolverPtr->resolver->RegisterDirectory(std::filesystem::path{ sourcePath, sourcePath + sourcePathLen });
+		}
+		catch (const std::exception& e)
+		{
+			resolverPtr->lastError = fmt::format("nzslFilesystemModuleResolverRegisterDirectory failed: {}", e.what());
+		}
+		catch (...)
+		{
+			resolverPtr->lastError = "nzslFilesystemModuleResolverRegisterDirectory failed with unknown error";
+		}
+	}
+
+	CNZSL_API void nzslFilesystemModuleResolverRegisterFile(nzslFilesystemModuleResolver* resolverPtr, const char* sourcePath, size_t sourcePathLen)
+	{
+		assert(resolverPtr);
+
+		try
+		{
+			resolverPtr->resolver->RegisterFile(Nz::Utf8Path(std::string_view(sourcePath, sourcePathLen)));
+		}
+		catch (const std::exception& e)
+		{
+			resolverPtr->lastError = fmt::format("nzslFilesystemModuleResolverRegisterFile failed: {}", e.what());
+		}
+		catch (...)
+		{
+			resolverPtr->lastError = "nzslFilesystemModuleResolverRegisterFile failed with unknown error";
+		}
+	}
+
 	CNZSL_API void nzslFilesystemModuleResolverRegisterModule(nzslFilesystemModuleResolver* resolverPtr, const nzslModule* module)
 	{
 		assert(resolverPtr);
@@ -43,24 +80,6 @@ extern "C"
 		}
 	}
 
-	CNZSL_API void nzslFilesystemModuleResolverRegisterModuleFromFile(nzslFilesystemModuleResolver* resolverPtr, const char* sourcePath, size_t sourcePathLen)
-	{
-		assert(resolverPtr);
-
-		try
-		{
-			resolverPtr->resolver->RegisterModule(std::filesystem::path{ sourcePath, sourcePath + sourcePathLen });
-		}
-		catch(const std::exception& e)
-		{
-			resolverPtr->lastError = fmt::format("nzslFilesystemModuleResolverRegisterModuleFromFile failed: {}", e.what());
-		}
-		catch(...)
-		{
-			resolverPtr->lastError = "nzslFilesystemModuleResolverRegisterModuleFromFile failed with unknown error";
-		}
-	}
-
 	CNZSL_API void nzslFilesystemModuleResolverRegisterModuleFromSource(nzslFilesystemModuleResolver* resolverPtr, const char* source, size_t sourceLen)
 	{
 		assert(resolverPtr);
@@ -76,24 +95,6 @@ extern "C"
 		catch(...)
 		{
 			resolverPtr->lastError = "nzslFilesystemModuleResolverRegisterModuleFromSource failed with unknown error";
-		}
-	}
-
-	CNZSL_API void nzslFilesystemModuleResolverRegisterModuleDirectory(nzslFilesystemModuleResolver* resolverPtr, const char* sourcePath, size_t sourcePathLen)
-	{
-		assert(resolverPtr);
-
-		try
-		{
-			resolverPtr->resolver->RegisterModuleDirectory(std::filesystem::path{ sourcePath, sourcePath + sourcePathLen });
-		}
-		catch(const std::exception& e)
-		{
-			resolverPtr->lastError = fmt::format("nzslFilesystemModuleResolverRegisterModuleDirectory failed: {}", e.what());
-		}
-		catch(...)
-		{
-			resolverPtr->lastError = "nzslFilesystemModuleResolverRegisterModuleDirectory failed with unknown error";
 		}
 	}
 

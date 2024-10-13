@@ -10,7 +10,7 @@ TEST_CASE("debug info", "[Shader]")
 	SECTION("Generate debug info for a simple file")
 	{
 		auto directoryModuleResolver = std::make_shared<nzsl::FilesystemModuleResolver>();
-		directoryModuleResolver->RegisterModuleDirectory("../resources/modules");
+		directoryModuleResolver->RegisterDirectory("../resources/modules");
 
 		nzsl::Ast::SanitizeVisitor::Options sanitizeOptions;
 		sanitizeOptions.moduleResolver = std::move(directoryModuleResolver);
