@@ -13,7 +13,11 @@
 namespace nzsla
 {
 	Archiver::Archiver(cxxopts::ParseResult& options) :
-	m_options(options)
+	m_options(options),
+	m_isArchiving(false),
+	m_isShowing(false),
+	m_isVerbose(false),
+	m_outputToStdout(false)
 	{
 	}
 
@@ -49,8 +53,9 @@ namespace nzsla
 			{
 				m_outputPath = Nz::Utf8Path(outputPath);
 
-				if (!std::filesystem::is_directory(m_outputPath) && !std::filesystem::create_directories(m_outputPath))
-					throw std::runtime_error(fmt::format("failed to create {} directory", Nz::PathToString(m_outputPath)));
+				std::filesystem::path parentPath = m_outputPath.parent_path();
+				if (!std::filesystem::is_directory(parentPath) && !std::filesystem::create_directories(parentPath))
+					throw std::runtime_error(fmt::format("failed to create {} directory", Nz::PathToString(parentPath)));
 			}
 		}
 	}
@@ -78,7 +83,7 @@ namespace nzsla
 			("version", "Print version");
 
 		options.add_options("archive")
-			("a,archive", "Archives the input shaders to an archive.");
+			("a,archive", "Archives the input shaders to an archive.")
 			("header", "Generates an includable header file.");
 
 		options.add_options("compression")
@@ -162,6 +167,7 @@ namespace nzsla
 
 	void Archiver::DoShow()
 	{
+		bool first = true;
 		for (const std::filesystem::path& filePath : m_inputFiles)
 		{
 			if (filePath.extension() != Nz::Utf8Path(".nzsla"))
@@ -171,7 +177,13 @@ namespace nzsla
 			nzsl::Deserializer deserializer(fileContent.data(), fileContent.size());
 
 			nzsl::Archive archive = nzsl::DeserializeArchive(deserializer);
-			fmt::print("archive info for {}\n", Nz::PathToString(filePath));
+
+			if (!first)
+				fmt::print("---\n");
+
+			first = false;
+
+			fmt::print("archive info for {}\n\n", Nz::PathToString(filePath));
 
 			const auto& modules = archive.GetModules();
 			fmt::print("{} module(s) are stored in this archive:\n", modules.size());

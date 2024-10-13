@@ -132,6 +132,7 @@ namespace nzsl
 			std::string moduleName;
 			std::uint32_t offset;
 			std::uint32_t size;
+			ArchiveEntryKind kind;
 			ArchiveEntryFlags flags;
 		};
 
@@ -140,12 +141,17 @@ namespace nzsl
 		{
 			auto& data = entries.emplace_back();
 			deserializer.Deserialize(data.moduleName);
-			deserializer.Deserialize(data.offset);
-			deserializer.Deserialize(data.size);
+
+			std::uint32_t kind;
+			deserializer.Deserialize(kind);
+			data.kind = static_cast<ArchiveEntryKind>(kind);
 
 			std::uint32_t flags;
 			deserializer.Deserialize(flags);
 			data.flags = ArchiveEntryFlags(Nz::SafeCast<ArchiveEntryFlags::BitField>(flags));
+
+			deserializer.Deserialize(data.offset);
+			deserializer.Deserialize(data.size);
 		}
 
 		Archive archive;
@@ -155,6 +161,7 @@ namespace nzsl
 
 			Archive::ModuleData module;
 			module.name = std::move(entry.moduleName);
+			module.kind = entry.kind;
 			module.flags = entry.flags;
 
 			module.data.resize(entry.size);
@@ -178,9 +185,10 @@ namespace nzsl
 		for (const auto& module : modules)
 		{
 			serializer.Serialize(module.name);
+			serializer.Serialize(std::uint32_t(module.kind));
+			serializer.Serialize(std::uint32_t(module.flags));
 			moduleOffsets.push_back(serializer.Serialize(std::uint32_t(0))); // reserve space
 			serializer.Serialize(Nz::SafeCast<std::uint32_t>(module.data.size()));
-			serializer.Serialize(std::uint32_t(module.flags));
 		}
 
 		auto offsetIt = moduleOffsets.begin();

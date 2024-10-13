@@ -27,5 +27,17 @@ if has_config("tests") then
 		else
 			remove_files("src/Tests/NzslcTests.cpp")
 		end
+
+		if has_config("with_nzsla") then
+			add_deps("nzsla", { links = {} })
+			add_packages("fmt", "tiny-process-library")
+		else
+			remove_files("src/Tests/NzslaTests.cpp")
+		end
+
+		if not has_config("with_nzsla", "with_nzslc") then
+			remove_headerfiles("src/Tests/ToolTests.hpp")
+			remove_files("src/Tests/ToolTests.cpp")
+		end
 	end)
 end
