@@ -4,6 +4,7 @@
 
 #include <NZSL/Serializer.hpp>
 #include <NazaraUtils/Endianness.hpp>
+#include <fmt/format.h>
 #include <cstring>
 #include <stdexcept>
 
@@ -13,46 +14,99 @@ namespace nzsl
 
 	AbstractDeserializer::~AbstractDeserializer() = default;
 
-	void AbstractSerializer::Serialize(bool value)
+	void AbstractSerializer::Serialize(std::size_t offset, bool value)
 	{
-		Serialize(static_cast<std::uint8_t>(value));
+		return Serialize(offset, static_cast<std::uint8_t>(value));
 	}
 
-	void AbstractSerializer::Serialize(double value)
+	void AbstractSerializer::Serialize(std::size_t offset, double value)
 	{
-		Serialize(Nz::BitCast<std::uint64_t>(value));
+		return Serialize(offset, Nz::BitCast<std::uint64_t>(value));
 	}
 
-	void AbstractSerializer::Serialize(float value)
+	void AbstractSerializer::Serialize(std::size_t offset, float value)
 	{
-		Serialize(Nz::BitCast<std::uint32_t>(value));
+		return Serialize(offset, Nz::BitCast<std::uint32_t>(value));
 	}
 
-	void AbstractSerializer::Serialize(std::int8_t value)
+	void AbstractSerializer::Serialize(std::size_t offset, std::int8_t value)
 	{
-		Serialize(Nz::BitCast<std::uint8_t>(value));
+		return Serialize(offset, Nz::BitCast<std::uint8_t>(value));
 	}
 
-	void AbstractSerializer::Serialize(std::int16_t value)
+	void AbstractSerializer::Serialize(std::size_t offset, std::int16_t value)
 	{
-		Serialize(Nz::BitCast<std::uint16_t>(value));
+		return Serialize(offset, Nz::BitCast<std::uint16_t>(value));
 	}
 
-	void AbstractSerializer::Serialize(std::int32_t value)
+	void AbstractSerializer::Serialize(std::size_t offset, std::int32_t value)
 	{
-		Serialize(Nz::BitCast<std::uint32_t>(value));
+		return Serialize(offset, Nz::BitCast<std::uint32_t>(value));
 	}
 
-	void AbstractSerializer::Serialize(std::int64_t value)
+	void AbstractSerializer::Serialize(std::size_t offset, std::int64_t value)
 	{
-		Serialize(Nz::BitCast<std::uint64_t>(value));
+		return Serialize(offset, Nz::BitCast<std::uint64_t>(value));
 	}
 
-	void AbstractSerializer::Serialize(const std::string& value)
+	void AbstractSerializer::Serialize(std::size_t offset, const std::string& value)
 	{
-		Serialize(Nz::SafeCast<std::uint32_t>(value.size()));
-		for (char c : value)
-			Serialize(static_cast<std::uint8_t>(c));
+		Serialize(offset, Nz::SafeCast<std::uint32_t>(value.size()));
+		Serialize(offset + sizeof(std::uint32_t), value.data(), value.size());
+	}
+
+	std::size_t AbstractSerializer::Serialize(bool value)
+	{
+		return Serialize(static_cast<std::uint8_t>(value));
+	}
+
+	std::size_t AbstractSerializer::Serialize(double value)
+	{
+		return Serialize(Nz::BitCast<std::uint64_t>(value));
+	}
+
+	std::size_t AbstractSerializer::Serialize(float value)
+	{
+		return Serialize(Nz::BitCast<std::uint32_t>(value));
+	}
+
+	std::size_t AbstractSerializer::Serialize(std::int8_t value)
+	{
+		return Serialize(Nz::BitCast<std::uint8_t>(value));
+	}
+
+	std::size_t AbstractSerializer::Serialize(std::int16_t value)
+	{
+		return Serialize(Nz::BitCast<std::uint16_t>(value));
+	}
+
+	std::size_t AbstractSerializer::Serialize(std::int32_t value)
+	{
+		return Serialize(Nz::BitCast<std::uint32_t>(value));
+	}
+
+	std::size_t AbstractSerializer::Serialize(std::int64_t value)
+	{
+		return Serialize(Nz::BitCast<std::uint64_t>(value));
+	}
+
+	std::size_t AbstractSerializer::Serialize(const std::string& value)
+	{
+		std::size_t offset = Serialize(Nz::SafeCast<std::uint32_t>(value.size()));
+		Serialize(value.data(), value.size());
+
+		return offset;
+	}
+
+	std::size_t AbstractSerializer::Serialize(const void* data, std::size_t size)
+	{
+		return Serialize(size, [&](void* dst)
+		{
+			if (data)
+				std::memcpy(dst, data, size);
+
+			return size;
+		});
 	}
 
 
@@ -118,82 +172,137 @@ namespace nzsl
 		Deserialize(size);
 
 		value.resize(size);
-		for (char& c : value)
-		{
-			std::uint8_t characterValue;
-			Deserialize(characterValue);
-
-			c = static_cast<char>(characterValue);
-		}
+		Deserialize(value.data(), size);
 	}
 
-	void Serializer::Serialize(std::uint8_t value)
+
+	void Serializer::Serialize(std::size_t offset, std::uint8_t value)
 	{
+		m_data[offset] = value;
+	}
+
+	void Serializer::Serialize(std::size_t offset, std::uint16_t value)
+	{
+		value = Nz::HostToLittleEndian(value);
+		std::memcpy(&m_data[offset], &value, sizeof(value));
+	}
+
+	void Serializer::Serialize(std::size_t offset, std::uint32_t value)
+	{
+		value = Nz::HostToLittleEndian(value);
+		std::memcpy(&m_data[offset], &value, sizeof(value));
+	}
+
+	void Serializer::Serialize(std::size_t offset, std::uint64_t value)
+	{
+		value = Nz::HostToLittleEndian(value);
+		std::memcpy(&m_data[offset], &value, sizeof(value));
+	}
+
+	void Serializer::Serialize(std::size_t offset, const void* data, std::size_t size)
+	{
+		assert(data);
+		std::memcpy(&m_data[offset], data, size);
+	}
+
+	std::size_t Serializer::Serialize(std::uint8_t value)
+	{
+		std::size_t offset = m_data.size();
 		m_data.push_back(value);
+
+		return offset;
 	}
 
-	void Serializer::Serialize(std::uint16_t value)
+	std::size_t Serializer::Serialize(std::uint16_t value)
 	{
 		value = Nz::HostToLittleEndian(value);
-
-		std::uint8_t* ptr = reinterpret_cast<std::uint8_t*>(&value);
-		m_data.insert(m_data.end(), ptr, ptr + sizeof(value));
+		return Serialize(&value, sizeof(value));
 	}
 
-	void Serializer::Serialize(std::uint32_t value)
+	std::size_t Serializer::Serialize(std::uint32_t value)
 	{
 		value = Nz::HostToLittleEndian(value);
-
-		std::uint8_t* ptr = reinterpret_cast<std::uint8_t*>(&value);
-		m_data.insert(m_data.end(), ptr, ptr + sizeof(value));
+		return Serialize(&value, sizeof(value));
 	}
 
-	void Serializer::Serialize(std::uint64_t value)
+	std::size_t Serializer::Serialize(std::uint64_t value)
 	{
 		value = Nz::HostToLittleEndian(value);
-
-		std::uint8_t* ptr = reinterpret_cast<std::uint8_t*>(&value);
-		m_data.insert(m_data.end(), ptr, ptr + sizeof(value));
+		return Serialize(&value, sizeof(value));
 	}
+
+	std::size_t Serializer::Serialize(const void* data, std::size_t size)
+	{
+		const std::uint8_t* ptr = reinterpret_cast<const std::uint8_t*>(data);
+		
+		std::size_t offset = m_data.size();
+		if (data)
+			m_data.insert(m_data.end(), ptr, ptr + size);
+		else
+			m_data.resize(offset + size);
+
+		return offset;
+	}
+
+	std::size_t Serializer::Serialize(std::size_t size, const Nz::FunctionRef<std::size_t(void* data)>& callback)
+	{
+		std::size_t offset = m_data.size();
+		m_data.resize(offset + size);
+		std::size_t realSize = callback(&m_data[offset]);
+		m_data.resize(offset + realSize);
+
+		return offset;
+	}
+
 
 	void Deserializer::Deserialize(std::uint8_t& value)
 	{
-		if (m_ptr + sizeof(value) > m_ptrEnd)
-			throw std::runtime_error("not enough data to deserialize u8");
+		if NAZARA_UNLIKELY(m_ptr + sizeof(value) > m_ptrEnd)
+			throw std::runtime_error("not enough data to deserialize byte");
 
 		value = *m_ptr++;
 	}
 
 	void Deserializer::Deserialize(std::uint16_t& value)
 	{
-		if (m_ptr + sizeof(value) > m_ptrEnd)
-			throw std::runtime_error("not enough data to deserialize u16");
-
-		std::memcpy(&value, m_ptr, sizeof(value));
-		m_ptr += sizeof(value);
-
+		Deserialize(&value, sizeof(value));
 		value = Nz::LittleEndianToHost(value);
 	}
 
 	void Deserializer::Deserialize(std::uint32_t& value)
 	{
-		if (m_ptr + sizeof(value) > m_ptrEnd)
-			throw std::runtime_error("not enough data to deserialize u32");
-
-		std::memcpy(&value, m_ptr, sizeof(value));
-		m_ptr += sizeof(value);
-
+		Deserialize(&value, sizeof(value));
 		value = Nz::LittleEndianToHost(value);
 	}
 
 	void Deserializer::Deserialize(std::uint64_t& value)
 	{
-		if (m_ptr + sizeof(value) > m_ptrEnd)
-			throw std::runtime_error("not enough data to deserialize u64");
-
-		std::memcpy(&value, m_ptr, sizeof(value));
-		m_ptr += sizeof(value);
-
+		Deserialize(&value, sizeof(value));
 		value = Nz::LittleEndianToHost(value);
+	}
+
+	void Deserializer::Deserialize(void* data, std::size_t size)
+	{
+		if NAZARA_UNLIKELY(m_ptr + size > m_ptrEnd)
+			throw std::runtime_error(fmt::format("not enough data to deserialize {} bytes", size));
+
+		if (data)
+			std::memcpy(data, m_ptr, size);
+
+		m_ptr += size;
+	}
+
+	void Deserializer::Deserialize(std::size_t size, const Nz::FunctionRef<std::size_t(const void* data)>& callback)
+	{
+		if NAZARA_UNLIKELY(m_ptr + size > m_ptrEnd)
+			throw std::runtime_error(fmt::format("not enough data to deserialize {} bytes", size));
+
+		std::size_t readSize = callback(m_ptr);
+		m_ptr += readSize;
+	}
+
+	void Deserializer::SeekTo(std::size_t offset)
+	{
+		m_ptr = m_ptrBegin + offset;
 	}
 }
