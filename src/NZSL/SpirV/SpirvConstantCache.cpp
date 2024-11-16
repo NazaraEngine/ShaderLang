@@ -1045,11 +1045,6 @@ namespace nzsl
 
 	void SpirvConstantCache::RegisterSource(SpirvSourceLanguage sourceLang, std::uint32_t version, std::uint32_t fileNameId, std::string source)
 	{
-		//FIXME: NZSL has been registered to Khronos but tools are not up-to-date (libspirv won't validate a source code using NZSL as a source language)
-		// Keep unknown for now
-		if (sourceLang == SpirvSourceLanguage::NZSL)
-			sourceLang = SpirvSourceLanguage::Unknown;
-
 		auto& sourceData = m_internal->debugSources.emplace_back();
 		sourceData.file = fileNameId;
 		sourceData.fileSource = std::move(source);

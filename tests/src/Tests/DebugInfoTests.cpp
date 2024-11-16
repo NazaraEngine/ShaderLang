@@ -232,7 +232,7 @@ void main()
       OpMemoryModel AddressingModel(Logical) MemoryModel(GLSL450)
       OpEntryPoint ExecutionModel(Fragment) %27 "main" %21
       OpExecutionMode %27 ExecutionMode(OriginUpperLeft)
-      OpSource SourceLanguage(Unknown) 100
+      OpSource SourceLanguage(NZSL) 100
       OpName %12 "Data"
       OpMemberName %12 0 "color"
       OpName %22 "Output"
@@ -411,19 +411,19 @@ void main()
 %28 = OpString "../resources/Shader.nzsl"
 %29 = OpString "../resources/modules/Color.nzsl"
 %30 = OpString "../resources/modules/Data/OutputStruct.nzsl"
-      OpSource SourceLanguage(Unknown) 100 %28
+      OpSource SourceLanguage(NZSL) 100 %28
       OpSourceExtension "ModuleName: Shader"
       OpSourceExtension "Author: SirLynix"
       OpSourceExtension "Description: Test module"
       OpSourceExtension "License: MIT"
-      OpSource SourceLanguage(Unknown) 100 %29
+      OpSource SourceLanguage(NZSL) 100 %29
       OpSourceExtension "ModuleName: Color"
       OpSourceExtension "Author: SirLynix"
       OpSourceExtension "Description: Test color module"
       OpSourceExtension "License: MIT"
-      OpSource SourceLanguage(Unknown) 100
+      OpSource SourceLanguage(NZSL) 100
       OpSourceExtension "ModuleName: DataStruct"
-      OpSource SourceLanguage(Unknown) 100 %30
+      OpSource SourceLanguage(NZSL) 100 %30
       OpSourceExtension "ModuleName: OutputStruct"
       OpName %12 "Data"
       OpMemberName %12 0 "color"
@@ -722,7 +722,7 @@ void main()
 %28 = OpString "../resources/Shader.nzsl"
 %29 = OpString "../resources/modules/Color.nzsl"
 %30 = OpString "../resources/modules/Data/OutputStruct.nzsl"
-      OpSource SourceLanguage(Unknown) 100 %28 "[nzsl_version("1.0")]
+      OpSource SourceLanguage(NZSL) 100 %28 "[nzsl_version("1.0")]
 [author("SirLynix")]
 [desc("Test module")]
 [license("MIT")]
@@ -748,7 +748,7 @@ fn main() -> Output
       OpSourceExtension "Author: SirLynix"
       OpSourceExtension "Description: Test module"
       OpSourceExtension "License: MIT"
-      OpSource SourceLanguage(Unknown) 100 %29 "[nzsl_version("1.0")]
+      OpSource SourceLanguage(NZSL) 100 %29 "[nzsl_version("1.0")]
 [author("SirLynix")]
 [desc("Test color module")]
 [license("MIT")]
@@ -794,9 +794,9 @@ fn GetAnotherColor() -> vec4[f32]
       OpSourceExtension "Author: SirLynix"
       OpSourceExtension "Description: Test color module"
       OpSourceExtension "License: MIT"
-      OpSource SourceLanguage(Unknown) 100
+      OpSource SourceLanguage(NZSL) 100
       OpSourceExtension "ModuleName: DataStruct"
-      OpSource SourceLanguage(Unknown) 100 %30 "[nzsl_version("1.0")]
+      OpSource SourceLanguage(NZSL) 100 %30 "[nzsl_version("1.0")]
 module OutputStruct;
 
 import * from DataStruct;

@@ -242,7 +242,7 @@ fn main()
        OpMemoryModel AddressingModel(Logical) MemoryModel(GLSL450)
        OpEntryPoint ExecutionModel(Fragment) %59 "main"
        OpExecutionMode %59 ExecutionMode(OriginUpperLeft)
-       OpSource SourceLanguage(Unknown) 100
+       OpSource SourceLanguage(NZSL) 100
        OpName %5 "tex1D"
        OpName %9 "tex1DArray"
        OpName %13 "tex2D"
@@ -1149,7 +1149,7 @@ fn main()
        OpMemoryModel AddressingModel(Logical) MemoryModel(GLSL450)
        OpEntryPoint ExecutionModel(Fragment) %44 "main"
        OpExecutionMode %44 ExecutionMode(OriginUpperLeft)
-       OpSource SourceLanguage(Unknown) 100
+       OpSource SourceLanguage(NZSL) 100
        OpName %44 "main"
   %1 = OpTypeVoid
   %2 = OpTypeFunction %1
