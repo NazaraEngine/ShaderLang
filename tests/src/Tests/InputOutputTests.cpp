@@ -232,7 +232,7 @@ fn main(input: VertIn) -> VertOut
       OpEntryPoint ExecutionModel(Fragment) %37 "main" %11 %15 %18 %23
       OpEntryPoint ExecutionModel(Vertex) %38 "main" %27 %28 %29 %33 %35 %36
       OpExecutionMode %37 ExecutionMode(OriginUpperLeft)
-      OpSource SourceLanguage(Unknown) 100
+      OpSource SourceLanguage(NZSL) 100
       OpName %4 "ColorData"
       OpMemberName %4 0 "colors"
       OpName %20 "VertOut"
