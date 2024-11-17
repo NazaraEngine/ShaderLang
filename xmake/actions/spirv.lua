@@ -194,7 +194,7 @@ on_run(function()
 	assert(headerFile, "failed to open SPIR-V header")
 
 	headerFile:write([[
-// Copyright (C) ]] .. os.date("%Y") .. [[ Jérôme "Lynix" Leclercq (lynix680@gmail.com)
+// Copyright (C) ]] .. os.date("%Y") .. [[ Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -416,7 +416,7 @@ namespace Nz
 	assert(sourceFile, "failed to open SPIR-V source")
 
 	sourceFile:write([[
-// Copyright (C) ]] .. os.date("%Y") .. [[ Jérôme "Lynix" Leclercq (lynix680@gmail.com)
+// Copyright (C) ]] .. os.date("%Y") .. [[ Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
