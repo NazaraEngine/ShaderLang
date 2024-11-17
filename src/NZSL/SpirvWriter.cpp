@@ -208,7 +208,7 @@ namespace nzsl
 
 							typePtr = m_constantCache.BuildType(storageType);
 							if (storageType.accessPolicy != AccessPolicy::ReadWrite)
-								extVarData.decorations.push_back(ExternalVar::Decoration{ (storageType.accessPolicy == AccessPolicy::WriteOnly) ? SpirvDecoration::NonReadable : SpirvDecoration::NonWritable });
+								extVarData.decorations.push_back(ExternalVar::Decoration{ (storageType.accessPolicy == AccessPolicy::WriteOnly) ? SpirvDecoration::NonReadable : SpirvDecoration::NonWritable, {} });
 						}
 						else if (Ast::IsUniformType(extVarType))
 						{
@@ -775,8 +775,9 @@ namespace nzsl
 
 		AppendHeader();
 
-		for (auto&& [varIndex, extVar] : previsitor.extVars)
+		for (const auto& extVarPair : previsitor.extVars)
 		{
+			const auto& extVar = extVarPair.second;
 			for (const auto& varDec : extVar.decorations)
 			{
 				state.annotations.AppendVariadic(SpirvOp::OpDecorate, [&](auto&& append)
