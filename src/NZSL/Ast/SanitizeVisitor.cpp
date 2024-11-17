@@ -3492,17 +3492,29 @@ namespace nzsl::Ast
 
 		// storage
 		RegisterType("storage", PartialType {
-			{ TypeParameterCategory::StructType }, {},
-			[=](const TypeParameter* parameters, [[maybe_unused]] std::size_t parameterCount, const SourceLocation& /*sourceLocation*/) -> ExpressionType
+			{ TypeParameterCategory::StructType }, { TypeParameterCategory::ConstantValue },
+			[=](const TypeParameter* parameters, std::size_t parameterCount, const SourceLocation& sourceLocation) -> ExpressionType
 			{
-				assert(parameterCount == 1);
+				assert(parameterCount >= 1);
 				assert(std::holds_alternative<ExpressionType>(*parameters));
 
 				const ExpressionType& exprType = std::get<ExpressionType>(*parameters);
 				assert(IsStructType(exprType));
 
+				AccessPolicy access = AccessPolicy::ReadWrite;
+				if (parameterCount > 1)
+				{
+					assert(std::holds_alternative<ConstantValue>(parameters[1]));
+					const ConstantValue& accessValue = std::get<ConstantValue>(parameters[1]);
+					if (!std::holds_alternative<std::uint32_t>(accessValue))
+						throw CompilerStorageUnexpectedAccessError{ sourceLocation, "<TODO>" };
+
+					access = static_cast<AccessPolicy>(std::get<std::uint32_t>(accessValue));
+				}
+
 				StructType structType = std::get<StructType>(exprType);
 				return StorageType {
+					access,
 					structType
 				};
 			}
@@ -6065,7 +6077,11 @@ namespace nzsl::Ast
 		if (IsStructType(exprType))
 		{
 			std::size_t innerStructIndex = std::get<StructType>(exprType).structIndex;
-			return T{ innerStructIndex };
+
+			T wrappedType;
+			wrappedType.containedType = StructType{ innerStructIndex };
+
+			return wrappedType;
 		}
 		else if (IsArrayType(exprType))
 		{

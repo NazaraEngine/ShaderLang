@@ -129,7 +129,14 @@ namespace nzsl
 			void RegisterStructType(const Ast::ExpressionType& type)
 			{
 				if (IsStorageType(type))
-					usedStructs.UnboundedSet(std::get<Ast::StorageType>(type).containedType.structIndex);
+				{
+					// access qualifiers and format are not part of the type in GLSL, so uniformise them to prevent multiple declarations
+					Ast::StorageType storageType = std::get<Ast::StorageType>(type);
+					storageType.accessPolicy = AccessPolicy::ReadWrite;
+					requiredPrecisionQualifiers.insert(storageType);
+
+					usedStructs.UnboundedSet(storageType.containedType.structIndex);
+				}
 				else if (IsUniformType(type))
 					usedStructs.UnboundedSet(std::get<Ast::UniformType>(type).containedType.structIndex);
 				else if (IsStructType(type))
@@ -2339,7 +2346,17 @@ namespace nzsl
 
 			// Variable declaration
 			if (IsStorageType(exprType))
+			{
+				const Ast::StorageType& storageType = std::get<Ast::StorageType>(exprType);
+				switch (storageType.accessPolicy)
+				{
+					case AccessPolicy::ReadOnly:  Append("readonly "); break;
+					case AccessPolicy::ReadWrite: break;
+					case AccessPolicy::WriteOnly: Append("writeonly "); break;
+				}
+
 				Append("buffer ");
+			}
 			else
 				Append("uniform ");
 

@@ -4,11 +4,10 @@
 
 #include <NZSL/SpirvWriter.hpp>
 #include <NazaraUtils/CallOnExit.hpp>
+#include <NazaraUtils/FixedVector.hpp>
 #include <NazaraUtils/PathUtils.hpp>
-#include <NazaraUtils/StackVector.hpp>
 #include <NZSL/Enums.hpp>
 #include <NZSL/Parser.hpp>
-#include <NZSL/Ast/Cloner.hpp>
 #include <NZSL/Ast/ConstantPropagationVisitor.hpp>
 #include <NZSL/Ast/EliminateUnusedPassVisitor.hpp>
 #include <NZSL/Ast/RecursiveVisitor.hpp>
@@ -47,8 +46,13 @@ namespace nzsl
 		public:
 			struct ExternalVar
 			{
-				std::optional<std::uint32_t> bindingIndex;
-				std::optional<std::uint32_t> descriptorSet;
+				struct Decoration
+				{
+					SpirvDecoration decoration;
+					Nz::FixedVector<std::uint32_t, 2> decorationData;
+				};
+
+				Nz::FixedVector<Decoration, 3> decorations;
 				SpirvVariable varData;
 			};
 
@@ -182,6 +186,9 @@ namespace nzsl
 			{
 				for (auto& extVar : node.externalVars)
 				{
+					assert(extVar.varIndex);
+					ExternalVar& extVarData = extVars[*extVar.varIndex];
+
 					SpirvConstantCache::Variable variable;
 					variable.debugName = extVar.name;
 
@@ -190,49 +197,32 @@ namespace nzsl
 					SpirvConstantCache::TypePtr typePtr;
 					if (Ast::IsStorageType(extVarType) || Ast::IsUniformType(extVarType) || Ast::IsPushConstantType(extVarType))
 					{
-						SpirvDecoration decoration;
-						std::size_t structIndex;
 						if (Ast::IsStorageType(extVarType))
 						{
-							const auto& storageType = std::get<Ast::StorageType>(extVarType);
-							const auto& structType = storageType.containedType;
-							assert(structType.structIndex < declaredStructs.size());
+							auto& storageType = std::get<Ast::StorageType>(extVarType);
 
 							if (m_writer.IsVersionGreaterOrEqual(1, 3))
-							{
-								decoration = SpirvDecoration::Block;
 								variable.storageClass = SpirvStorageClass::StorageBuffer;
-							}
 							else
-							{
-								decoration = SpirvDecoration::BufferBlock;
 								variable.storageClass = SpirvStorageClass::Uniform;
-							}
 
-							structIndex = structType.structIndex;
+							typePtr = m_constantCache.BuildType(storageType);
+							if (storageType.accessPolicy != AccessPolicy::ReadWrite)
+								extVarData.decorations.push_back(ExternalVar::Decoration{ (storageType.accessPolicy == AccessPolicy::WriteOnly) ? SpirvDecoration::NonReadable : SpirvDecoration::NonWritable });
 						}
 						else if (Ast::IsUniformType(extVarType))
 						{
-							const auto& uniformType = std::get<Ast::UniformType>(extVarType);
-							const auto& structType = uniformType.containedType;
-							assert(structType.structIndex < declaredStructs.size());
-
-							decoration = SpirvDecoration::Block;
-							structIndex = structType.structIndex;
 							variable.storageClass = SpirvStorageClass::Uniform;
+
+							typePtr = m_constantCache.BuildType(std::get<Ast::UniformType>(extVarType));
 						}
 						else
 						{
-							const auto& pushConstantType = std::get<Ast::PushConstantType>(extVarType);
-							const auto& structType = pushConstantType.containedType;
-							assert(structType.structIndex < declaredStructs.size());
-
-							decoration = SpirvDecoration::Block;
-							structIndex = structType.structIndex;
 							variable.storageClass = SpirvStorageClass::PushConstant;
+
+							typePtr = m_constantCache.BuildType(std::get<Ast::PushConstantType>(extVarType));
 						}
 
-						typePtr = m_constantCache.BuildType(*declaredStructs[structIndex], { decoration });
 						variable.type = m_constantCache.BuildPointerType(typePtr, variable.storageClass);
 					}
 					else if (Ast::IsSamplerType(extVarType) || Ast::IsArrayType(extVarType) || Ast::IsTextureType(extVarType))
@@ -245,16 +235,14 @@ namespace nzsl
 
 					assert(Ast::IsPushConstantType(extVarType) || extVar.bindingIndex.IsResultingValue());
 
-					assert(extVar.varIndex);
-					ExternalVar& uniformVar = extVars[*extVar.varIndex];
-					uniformVar.varData.typeId = m_constantCache.Register((typePtr) ? *typePtr : *m_constantCache.BuildType(extVarType, variable.storageClass));
-					uniformVar.varData.storageClass = variable.storageClass;
-					uniformVar.varData.pointerId = m_constantCache.Register(std::move(variable));
+					extVarData.varData.typeId = m_constantCache.Register((typePtr) ? *typePtr : *m_constantCache.BuildType(extVarType, variable.storageClass));
+					extVarData.varData.storageClass = variable.storageClass;
+					extVarData.varData.pointerId = m_constantCache.Register(std::move(variable));
 
 					if (!Ast::IsPushConstantType(extVarType))
 					{
-						uniformVar.bindingIndex = extVar.bindingIndex.GetResultingValue();
-						uniformVar.descriptorSet = (extVar.bindingSet.HasValue()) ? extVar.bindingSet.GetResultingValue() : 0;
+						extVarData.decorations.push_back(ExternalVar::Decoration{ SpirvDecoration::Binding, { extVar.bindingIndex.GetResultingValue() } });
+						extVarData.decorations.push_back(ExternalVar::Decoration{ SpirvDecoration::DescriptorSet, { (extVar.bindingSet.HasValue()) ? extVar.bindingSet.GetResultingValue() : 0 } });
 					}
 				}
 			}
@@ -596,8 +584,8 @@ namespace nzsl
 
 	struct SpirvWriter::State
 	{
-		State() :
-		constantTypeCache(nextResultId)
+		State(SpirvWriter& writer) :
+		constantTypeCache(writer, nextResultId)
 		{
 		}
 
@@ -662,12 +650,9 @@ namespace nzsl
 
 		m_context.states = &states;
 
-		State state;
+		State state(*this);
 		m_currentState = &state;
-		Nz::CallOnExit onExit([this]()
-		{
-			m_currentState = nullptr;
-		});
+		NAZARA_DEFER({ m_currentState = nullptr; });
 
 		// Register all extended instruction sets
 		PreVisitor previsitor(*this, state.constantTypeCache);
@@ -792,10 +777,16 @@ namespace nzsl
 
 		for (auto&& [varIndex, extVar] : previsitor.extVars)
 		{
-			if (extVar.bindingIndex.has_value())
-				state.annotations.Append(SpirvOp::OpDecorate, extVar.varData.pointerId, SpirvDecoration::Binding, extVar.bindingIndex.value());
-			if (extVar.descriptorSet.has_value())
-				state.annotations.Append(SpirvOp::OpDecorate, extVar.varData.pointerId, SpirvDecoration::DescriptorSet, extVar.descriptorSet.value());
+			for (const auto& varDec : extVar.decorations)
+			{
+				state.annotations.AppendVariadic(SpirvOp::OpDecorate, [&](auto&& append)
+				{
+					append(extVar.varData.pointerId);
+					append(varDec.decoration);
+					for (std::uint32_t extraData : varDec.decorationData)
+						append(extraData);
+				});
+			}
 		}
 
 		for (auto&& [varId, builtin] : previsitor.builtinDecorations)
@@ -830,6 +821,16 @@ namespace nzsl
 		return Nz::Retrieve(m_currentState->previsitor->constantVariables, constIndex);
 	}
 
+	bool SpirvWriter::IsVersionGreaterOrEqual(std::uint32_t spvMajor, std::uint32_t spvMinor) const
+	{
+		if (m_environment.spvMajorVersion > spvMajor)
+			return true;
+		else if (m_environment.spvMajorVersion == spvMajor)
+			return m_environment.spvMinorVersion >= spvMinor;
+		else
+			return false;
+	}
+	
 	void SpirvWriter::SetEnv(Environment environment)
 	{
 		m_environment = std::move(environment);
@@ -1031,16 +1032,6 @@ namespace nzsl
 		return m_context.states->debugLevel >= debugInfo;
 	}
 
-	bool SpirvWriter::IsVersionGreaterOrEqual(std::uint32_t spvMajor, std::uint32_t spvMinor) const
-	{
-		if (m_environment.spvMajorVersion > spvMajor)
-			return true;
-		else if (m_environment.spvMajorVersion == spvMajor)
-			return m_environment.spvMinorVersion >= spvMinor;
-		else
-			return false;
-	}
-	
 	std::uint32_t SpirvWriter::RegisterArrayConstant(const Ast::ConstantArrayValue& value)
 	{
 		return m_currentState->constantTypeCache.Register(*m_currentState->constantTypeCache.BuildArrayConstant(value));

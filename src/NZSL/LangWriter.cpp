@@ -356,7 +356,14 @@ namespace nzsl
 
 	void LangWriter::Append(const Ast::StorageType& storageType)
 	{
-		Append("storage[", storageType.containedType, "]");
+		Append("storage[", storageType.containedType);
+		switch (storageType.accessPolicy)
+		{
+			case AccessPolicy::ReadOnly:  Append(", readonly"); break;
+			case AccessPolicy::ReadWrite: break;
+			case AccessPolicy::WriteOnly: Append(", writeonly"); break;
+		}
+		Append("]");
 	}
 
 	void LangWriter::Append(const Ast::StructType& structType)

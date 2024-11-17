@@ -135,6 +135,7 @@ NZSL_SHADERLANG_COMPILER_ERROR(PartialTypeExpect, "expected a {} type at #{}", s
 NZSL_SHADERLANG_COMPILER_ERROR(PartialTypeTooFewParameters, "parameter count mismatch (expected at least {}, got {})", std::uint32_t, std::uint32_t)
 NZSL_SHADERLANG_COMPILER_ERROR(PartialTypeTooManyParameters, "parameter count mismatch (expected at most {}, got {})", std::uint32_t, std::uint32_t)
 NZSL_SHADERLANG_COMPILER_ERROR(SamplerUnexpectedType, "for now only f32 samplers are supported (got {})", std::string)
+NZSL_SHADERLANG_COMPILER_ERROR(StorageUnexpectedAccess, "storage type access qualifiers must be readonly, readwrite or writeonly (got {})", std::string)
 NZSL_SHADERLANG_COMPILER_ERROR(StructDeclarationInsideFunction, "structs must be declared outside of functions")
 NZSL_SHADERLANG_COMPILER_ERROR(StructExpected, "struct type expected, got {}", std::string)
 NZSL_SHADERLANG_COMPILER_ERROR(StructFieldBuiltinLocation, "a struct field cannot have both builtin and location attributes")

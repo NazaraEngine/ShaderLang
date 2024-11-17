@@ -43,6 +43,8 @@ namespace nzsl
 
 			const SpirvVariable& GetConstantVariable(std::size_t constIndex) const;
 
+			bool IsVersionGreaterOrEqual(std::uint32_t spvMajor, std::uint32_t spvMinor) const;
+
 			void SetEnv(Environment environment);
 
 			struct Environment
@@ -74,7 +76,6 @@ namespace nzsl
 			std::uint32_t GetTypeId(const Ast::ExpressionType& type) const;
 
 			bool HasDebugInfo(DebugLevel debugInfo) const;
-			bool IsVersionGreaterOrEqual(std::uint32_t spvMajor, std::uint32_t spvMinor) const;
 
 			std::uint32_t RegisterArrayConstant(const Ast::ConstantArrayValue& value);
 			std::uint32_t RegisterFunctionType(const Ast::DeclareFunctionStatement& functionNode);

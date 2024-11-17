@@ -5,6 +5,7 @@
 #include <NZSL/SpirV/SpirvConstantCache.hpp>
 #include <NZSL/Ast/Nodes.hpp>
 #include <NZSL/Math/FieldOffsets.hpp>
+#include <NZSL/SpirvWriter.hpp>
 #include <NZSL/SpirV/SpirvSection.hpp>
 #include <tsl/ordered_map.h>
 #include <cassert>
@@ -429,8 +430,9 @@ namespace nzsl
 			std::vector<std::uint32_t> offsets;
 		};
 
-		Internal(std::uint32_t& resultId) :
-		nextResultId(resultId)
+		Internal(SpirvWriter& writer, std::uint32_t& resultId) :
+		nextResultId(resultId),
+		writer(writer)
 		{
 		}
 
@@ -440,15 +442,14 @@ namespace nzsl
 		std::vector<std::pair<Variable, std::uint32_t /*id*/>> variables;
 		StructCallback structCallback;
 		std::uint32_t& nextResultId;
+		SpirvWriter& writer;
 		bool isInBlockStruct = false;
 	};
 
-	SpirvConstantCache::SpirvConstantCache(std::uint32_t& resultId)
+	SpirvConstantCache::SpirvConstantCache(SpirvWriter& writer, std::uint32_t& resultId) :
+	m_internal(writer, resultId)
 	{
-		m_internal = std::make_unique<Internal>(resultId);
 	}
-
-	SpirvConstantCache::SpirvConstantCache(SpirvConstantCache&& cache) noexcept = default;
 
 	SpirvConstantCache::~SpirvConstantCache() = default;
 	
@@ -821,7 +822,7 @@ namespace nzsl
 
 	auto SpirvConstantCache::BuildType(const Ast::PushConstantType& type) const -> TypePtr
 	{
-		return BuildType(type.containedType);
+		return BuildType(type.containedType, { SpirvDecoration::Block });
 	}
 
 	auto SpirvConstantCache::BuildType(const Ast::SamplerType& type) const -> TypePtr
@@ -855,13 +856,13 @@ namespace nzsl
 
 	auto SpirvConstantCache::BuildType(const Ast::StorageType& type) const -> TypePtr
 	{
-		return BuildType(type.containedType);
+		return BuildType(type.containedType, { m_internal->writer.IsVersionGreaterOrEqual(1, 3) ? SpirvDecoration::Block : SpirvDecoration::BufferBlock });
 	}
 
-	auto SpirvConstantCache::BuildType(const Ast::StructType& type) const -> TypePtr
+	auto SpirvConstantCache::BuildType(const Ast::StructType& type, std::vector<SpirvDecoration> decorations) const -> TypePtr
 	{
 		assert(m_internal->structCallback);
-		return BuildType(m_internal->structCallback(type.structIndex));
+		return BuildType(m_internal->structCallback(type.structIndex), std::move(decorations));
 	}
 
 	auto SpirvConstantCache::BuildType(const Ast::StructDescription& structDesc, std::vector<SpirvDecoration> decorations) const -> TypePtr
@@ -953,7 +954,7 @@ namespace nzsl
 
 	auto SpirvConstantCache::BuildType(const Ast::UniformType& type) const -> TypePtr
 	{
-		return BuildType(type.containedType);
+		return BuildType(type.containedType, { SpirvDecoration::Block });
 	}
 
 	std::uint32_t SpirvConstantCache::GetId(std::string_view debugString)
@@ -1207,8 +1208,6 @@ namespace nzsl
 			});
 		}
 	}
-
-	SpirvConstantCache& SpirvConstantCache::operator=(SpirvConstantCache&& cache) noexcept = default;
 
 	void SpirvConstantCache::Write(const AnyConstant& constant, std::uint32_t resultId, SpirvSection& constants)
 	{

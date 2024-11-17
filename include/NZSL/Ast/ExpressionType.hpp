@@ -193,6 +193,7 @@ namespace nzsl::Ast
 
 	struct StorageType
 	{
+		AccessPolicy accessPolicy = AccessPolicy::ReadWrite;
 		StructType containedType;
 
 		inline bool operator==(const StorageType& rhs) const;

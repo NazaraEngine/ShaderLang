@@ -294,6 +294,7 @@ fn main()
 [nzsl_version("1.0")]
 module;
 
+[layout(std430)]
 struct Data
 {
 	values: array[f32, 47]
@@ -301,13 +302,15 @@ struct Data
 
 external
 {
-	[binding(0)] data: storage[Data]
+	[set(0), binding(0)] inData: storage[Data, readonly],
+	[set(0), binding(1)] outData: storage[Data, writeonly]
 }
 
 [entry(frag)]
 fn main()
 {
-	let value = data.values[42];
+	for i in 0 -> 47
+		outData.values[i] = inData.values[i];
 }
 )";
 
@@ -319,18 +322,34 @@ fn main()
 			glslEnv.glMinorVersion = 1;
 
 			ExpectGLSL(*shaderModule, R"(
-buffer _nzslBindingdata
+layout(std430) readonly buffer _nzslBindinginData
 {
 	float values[47];
-} data;
+} inData;
+
+layout(std430) writeonly buffer _nzslBindingoutData
+{
+	float values[47];
+} outData;
 
 void main()
 {
-	float value = data.values[42];
+	{
+		int i = 0;
+		int to = 47;
+		while (i < to)
+		{
+			outData.values[i] = inData.values[i];
+			i += 1;
+		}
+
+	}
+
 }
 )", {}, glslEnv);
 
 			ExpectNZSL(*shaderModule, R"(
+[layout(std430)]
 struct Data
 {
 	values: array[f32, 47]
@@ -338,13 +357,18 @@ struct Data
 
 external
 {
-	[set(0), binding(0)] data: storage[Data]
+	[set(0), binding(0)] inData: storage[Data, readonly],
+	[set(0), binding(1)] outData: storage[Data, writeonly]
 }
 
 [entry(frag)]
 fn main()
 {
-	let value: f32 = data.values[42];
+	for i in 0 -> 47
+	{
+		outData.values[i] = inData.values[i];
+	}
+
 })");
 
 			WHEN("Generating SPIR-V 1.0")
@@ -354,10 +378,15 @@ fn main()
       OpSource SourceLanguage(NZSL) 100
       OpName %5 "Data"
       OpMemberName %5 0 "values"
-      OpName %7 "data"
-      OpName %15 "main"
+      OpName %7 "inData"
+      OpName %8 "outData"
+      OpName %18 "main"
+      OpDecorate %7 Decoration(NonWritable)
       OpDecorate %7 Decoration(Binding) 0
       OpDecorate %7 Decoration(DescriptorSet) 0
+      OpDecorate %8 Decoration(NonReadable)
+      OpDecorate %8 Decoration(Binding) 1
+      OpDecorate %8 Decoration(DescriptorSet) 0
       OpDecorate %4 Decoration(ArrayStride) 16
       OpDecorate %5 Decoration(BufferBlock)
       OpMemberDecorate %5 0 Decoration(Offset) 0
@@ -367,21 +396,47 @@ fn main()
  %4 = OpTypeArray %1 %3
  %5 = OpTypeStruct %4
  %6 = OpTypePointer StorageClass(Uniform) %5
- %8 = OpTypeVoid
- %9 = OpTypeFunction %8
-%10 = OpTypeInt 32 1
-%11 = OpConstant %10 i32(0)
-%12 = OpTypeArray %1 %3
-%13 = OpConstant %10 i32(42)
-%14 = OpTypePointer StorageClass(Function) %1
-%18 = OpTypePointer StorageClass(Uniform) %1
+ %9 = OpTypeVoid
+%10 = OpTypeFunction %9
+%11 = OpTypeInt 32 1
+%12 = OpConstant %11 i32(0)
+%13 = OpTypePointer StorageClass(Function) %11
+%14 = OpConstant %11 i32(47)
+%15 = OpTypeBool
+%16 = OpTypeArray %1 %3
+%17 = OpConstant %11 i32(1)
+%30 = OpTypePointer StorageClass(Uniform) %1
+%34 = OpTypePointer StorageClass(Uniform) %4
  %7 = OpVariable %6 StorageClass(Uniform)
-%15 = OpFunction %8 FunctionControl(0) %9
-%16 = OpLabel
-%17 = OpVariable %14 StorageClass(Function)
-%19 = OpAccessChain %18 %7 %11 %13
-%20 = OpLoad %1 %19
-      OpStore %17 %20
+ %8 = OpVariable %6 StorageClass(Uniform)
+%18 = OpFunction %9 FunctionControl(0) %10
+%19 = OpLabel
+%20 = OpVariable %13 StorageClass(Function)
+%21 = OpVariable %13 StorageClass(Function)
+      OpStore %20 %12
+      OpStore %21 %14
+      OpBranch %22
+%22 = OpLabel
+%26 = OpLoad %11 %20
+%27 = OpLoad %11 %21
+%28 = OpSLessThan %15 %26 %27
+      OpLoopMerge %24 %25 LoopControl(0)
+      OpBranchConditional %28 %23 %24
+%23 = OpLabel
+%29 = OpLoad %11 %20
+%31 = OpAccessChain %30 %7 %12 %29
+%32 = OpLoad %1 %31
+%33 = OpAccessChain %34 %8 %12
+%36 = OpLoad %11 %20
+%35 = OpAccessChain %30 %33 %36
+      OpStore %35 %32
+%37 = OpLoad %11 %20
+%38 = OpIAdd %11 %37 %17
+      OpStore %20 %38
+      OpBranch %25
+%25 = OpLabel
+      OpBranch %22
+%24 = OpLabel
       OpReturn
       OpFunctionEnd)", {}, spirvEnv, true);
 			}
@@ -396,10 +451,15 @@ fn main()
       OpSource SourceLanguage(NZSL) 100
       OpName %5 "Data"
       OpMemberName %5 0 "values"
-      OpName %7 "data"
-      OpName %15 "main"
+      OpName %7 "inData"
+      OpName %8 "outData"
+      OpName %18 "main"
+      OpDecorate %7 Decoration(NonWritable)
       OpDecorate %7 Decoration(Binding) 0
       OpDecorate %7 Decoration(DescriptorSet) 0
+      OpDecorate %8 Decoration(NonReadable)
+      OpDecorate %8 Decoration(Binding) 1
+      OpDecorate %8 Decoration(DescriptorSet) 0
       OpDecorate %4 Decoration(ArrayStride) 16
       OpDecorate %5 Decoration(Block)
       OpMemberDecorate %5 0 Decoration(Offset) 0
@@ -409,21 +469,47 @@ fn main()
  %4 = OpTypeArray %1 %3
  %5 = OpTypeStruct %4
  %6 = OpTypePointer StorageClass(StorageBuffer) %5
- %8 = OpTypeVoid
- %9 = OpTypeFunction %8
-%10 = OpTypeInt 32 1
-%11 = OpConstant %10 i32(0)
-%12 = OpTypeArray %1 %3
-%13 = OpConstant %10 i32(42)
-%14 = OpTypePointer StorageClass(Function) %1
-%18 = OpTypePointer StorageClass(StorageBuffer) %1
+ %9 = OpTypeVoid
+%10 = OpTypeFunction %9
+%11 = OpTypeInt 32 1
+%12 = OpConstant %11 i32(0)
+%13 = OpTypePointer StorageClass(Function) %11
+%14 = OpConstant %11 i32(47)
+%15 = OpTypeBool
+%16 = OpTypeArray %1 %3
+%17 = OpConstant %11 i32(1)
+%30 = OpTypePointer StorageClass(StorageBuffer) %1
+%34 = OpTypePointer StorageClass(StorageBuffer) %4
  %7 = OpVariable %6 StorageClass(StorageBuffer)
-%15 = OpFunction %8 FunctionControl(0) %9
-%16 = OpLabel
-%17 = OpVariable %14 StorageClass(Function)
-%19 = OpAccessChain %18 %7 %11 %13
-%20 = OpLoad %1 %19
-      OpStore %17 %20
+ %8 = OpVariable %6 StorageClass(StorageBuffer)
+%18 = OpFunction %9 FunctionControl(0) %10
+%19 = OpLabel
+%20 = OpVariable %13 StorageClass(Function)
+%21 = OpVariable %13 StorageClass(Function)
+      OpStore %20 %12
+      OpStore %21 %14
+      OpBranch %22
+%22 = OpLabel
+%26 = OpLoad %11 %20
+%27 = OpLoad %11 %21
+%28 = OpSLessThan %15 %26 %27
+      OpLoopMerge %24 %25 LoopControl(0)
+      OpBranchConditional %28 %23 %24
+%23 = OpLabel
+%29 = OpLoad %11 %20
+%31 = OpAccessChain %30 %7 %12 %29
+%32 = OpLoad %1 %31
+%33 = OpAccessChain %34 %8 %12
+%36 = OpLoad %11 %20
+%35 = OpAccessChain %30 %33 %36
+      OpStore %35 %32
+%37 = OpLoad %11 %20
+%38 = OpIAdd %11 %37 %17
+      OpStore %20 %38
+      OpBranch %25
+%25 = OpLabel
+      OpBranch %22
+%24 = OpLabel
       OpReturn
       OpFunctionEnd)", {}, spirvEnv, true);
 			}
@@ -1083,112 +1169,112 @@ fn main()
 })");
 
 		ExpectSPIRV(*shaderModule, R"(
- %35 = OpFunction %16 FunctionControl(0) %17
- %36 = OpLabel
- %37 = OpVariable %20 StorageClass(Function)
+ %36 = OpFunction %16 FunctionControl(0) %17
+ %37 = OpLabel
  %38 = OpVariable %20 StorageClass(Function)
- %39 = OpVariable %26 StorageClass(Function)
+ %39 = OpVariable %20 StorageClass(Function)
  %40 = OpVariable %26 StorageClass(Function)
- %41 = OpBitcast %4 %19
-       OpStore %37 %41
- %43 = OpAccessChain %42 %15 %21
- %44 = OpLoad %4 %43
-       OpStore %38 %44
-       OpBranch %45
- %45 = OpLabel
- %49 = OpLoad %4 %37
- %50 = OpLoad %4 %38
- %51 = OpULessThan %22 %49 %50
-       OpLoopMerge %47 %48 LoopControl(0)
-       OpBranchConditional %51 %46 %47
+ %41 = OpVariable %26 StorageClass(Function)
+ %42 = OpBitcast %4 %19
+       OpStore %38 %42
+ %44 = OpAccessChain %43 %15 %21
+ %45 = OpLoad %4 %44
+       OpStore %39 %45
+       OpBranch %46
  %46 = OpLabel
- %52 = OpLoad %4 %37
- %54 = OpAccessChain %53 %15 %19 %52 %19
- %55 = OpLoad %2 %54
- %56 = OpAccessChain %57 %39 %19
-       OpStore %56 %55
- %58 = OpLoad %4 %37
- %59 = OpAccessChain %53 %15 %19 %58 %21
- %60 = OpLoad %2 %59
- %61 = OpAccessChain %57 %39 %21
-       OpStore %61 %60
- %62 = OpLoad %4 %37
- %64 = OpAccessChain %63 %15 %19 %62 %28
- %65 = OpLoad %3 %64
- %66 = OpAccessChain %67 %39 %28
-       OpStore %66 %65
- %68 = OpLoad %4 %37
- %70 = OpAccessChain %69 %15 %19 %68 %29
- %71 = OpLoad %1 %70
- %72 = OpAccessChain %73 %39 %29
-       OpStore %72 %71
- %74 = OpLoad %4 %37
- %75 = OpAccessChain %69 %15 %19 %74 %30
- %76 = OpLoad %1 %75
- %77 = OpAccessChain %73 %39 %30
-       OpStore %77 %76
- %78 = OpLoad %4 %37
- %79 = OpAccessChain %42 %15 %19 %78 %31
- %80 = OpLoad %4 %79
- %81 = OpAccessChain %20 %39 %31
-       OpStore %81 %80
- %82 = OpLoad %4 %37
- %83 = OpAccessChain %69 %15 %19 %82 %32 %19
- %84 = OpLoad %1 %83
- %85 = OpAccessChain %86 %39 %32
- %87 = OpAccessChain %73 %85 %19
-       OpStore %87 %84
- %88 = OpLoad %4 %37
- %89 = OpAccessChain %69 %15 %19 %88 %32 %21
- %90 = OpLoad %1 %89
- %91 = OpAccessChain %86 %39 %32
- %92 = OpAccessChain %73 %91 %21
-       OpStore %92 %90
- %93 = OpLoad %4 %37
- %94 = OpAccessChain %69 %15 %19 %93 %32 %28
- %95 = OpLoad %1 %94
- %96 = OpAccessChain %86 %39 %32
- %97 = OpAccessChain %73 %96 %28
-       OpStore %97 %95
- %98 = OpLoad %4 %37
- %99 = OpAccessChain %69 %15 %19 %98 %32 %29
-%100 = OpLoad %1 %99
-%101 = OpAccessChain %86 %39 %32
-%102 = OpAccessChain %73 %101 %29
-       OpStore %102 %100
-%103 = OpLoad %4 %37
-%105 = OpAccessChain %104 %15 %19 %103 %33 %19
-%106 = OpLoad %8 %105
-%107 = OpAccessChain %108 %39 %33
-%109 = OpAccessChain %110 %107 %19
-       OpStore %109 %106
-%111 = OpLoad %4 %37
-%112 = OpAccessChain %104 %15 %19 %111 %33 %21
-%113 = OpLoad %8 %112
-%114 = OpAccessChain %108 %39 %33
-%115 = OpAccessChain %110 %114 %21
-       OpStore %115 %113
-%116 = OpLoad %4 %37
-%117 = OpAccessChain %104 %15 %19 %116 %33 %28
-%118 = OpLoad %8 %117
-%119 = OpAccessChain %108 %39 %33
-%120 = OpAccessChain %110 %119 %28
-       OpStore %120 %118
-%121 = OpLoad %4 %37
-%122 = OpAccessChain %104 %15 %19 %121 %33 %29
-%123 = OpLoad %8 %122
-%124 = OpAccessChain %108 %39 %33
-%125 = OpAccessChain %110 %124 %29
-       OpStore %125 %123
-%126 = OpLoad %25 %39
-       OpStore %40 %126
-%127 = OpLoad %4 %37
-%128 = OpIAdd %4 %127 %34
-       OpStore %37 %128
-       OpBranch %48
- %48 = OpLabel
-       OpBranch %45
+ %50 = OpLoad %4 %38
+ %51 = OpLoad %4 %39
+ %52 = OpULessThan %22 %50 %51
+       OpLoopMerge %48 %49 LoopControl(0)
+       OpBranchConditional %52 %47 %48
  %47 = OpLabel
+ %53 = OpLoad %4 %38
+ %55 = OpAccessChain %54 %15 %19 %53 %19
+ %56 = OpLoad %2 %55
+ %57 = OpAccessChain %58 %40 %19
+       OpStore %57 %56
+ %59 = OpLoad %4 %38
+ %60 = OpAccessChain %54 %15 %19 %59 %21
+ %61 = OpLoad %2 %60
+ %62 = OpAccessChain %58 %40 %21
+       OpStore %62 %61
+ %63 = OpLoad %4 %38
+ %65 = OpAccessChain %64 %15 %19 %63 %29
+ %66 = OpLoad %3 %65
+ %67 = OpAccessChain %68 %40 %29
+       OpStore %67 %66
+ %69 = OpLoad %4 %38
+ %71 = OpAccessChain %70 %15 %19 %69 %30
+ %72 = OpLoad %1 %71
+ %73 = OpAccessChain %74 %40 %30
+       OpStore %73 %72
+ %75 = OpLoad %4 %38
+ %76 = OpAccessChain %70 %15 %19 %75 %31
+ %77 = OpLoad %1 %76
+ %78 = OpAccessChain %74 %40 %31
+       OpStore %78 %77
+ %79 = OpLoad %4 %38
+ %80 = OpAccessChain %43 %15 %19 %79 %32
+ %81 = OpLoad %4 %80
+ %82 = OpAccessChain %20 %40 %32
+       OpStore %82 %81
+ %83 = OpLoad %4 %38
+ %84 = OpAccessChain %70 %15 %19 %83 %33 %19
+ %85 = OpLoad %1 %84
+ %86 = OpAccessChain %87 %40 %33
+ %88 = OpAccessChain %74 %86 %19
+       OpStore %88 %85
+ %89 = OpLoad %4 %38
+ %90 = OpAccessChain %70 %15 %19 %89 %33 %21
+ %91 = OpLoad %1 %90
+ %92 = OpAccessChain %87 %40 %33
+ %93 = OpAccessChain %74 %92 %21
+       OpStore %93 %91
+ %94 = OpLoad %4 %38
+ %95 = OpAccessChain %70 %15 %19 %94 %33 %29
+ %96 = OpLoad %1 %95
+ %97 = OpAccessChain %87 %40 %33
+ %98 = OpAccessChain %74 %97 %29
+       OpStore %98 %96
+ %99 = OpLoad %4 %38
+%100 = OpAccessChain %70 %15 %19 %99 %33 %30
+%101 = OpLoad %1 %100
+%102 = OpAccessChain %87 %40 %33
+%103 = OpAccessChain %74 %102 %30
+       OpStore %103 %101
+%104 = OpLoad %4 %38
+%106 = OpAccessChain %105 %15 %19 %104 %34 %19
+%107 = OpLoad %8 %106
+%108 = OpAccessChain %109 %40 %34
+%110 = OpAccessChain %111 %108 %19
+       OpStore %110 %107
+%112 = OpLoad %4 %38
+%113 = OpAccessChain %105 %15 %19 %112 %34 %21
+%114 = OpLoad %8 %113
+%115 = OpAccessChain %109 %40 %34
+%116 = OpAccessChain %111 %115 %21
+       OpStore %116 %114
+%117 = OpLoad %4 %38
+%118 = OpAccessChain %105 %15 %19 %117 %34 %29
+%119 = OpLoad %8 %118
+%120 = OpAccessChain %109 %40 %34
+%121 = OpAccessChain %111 %120 %29
+       OpStore %121 %119
+%122 = OpLoad %4 %38
+%123 = OpAccessChain %105 %15 %19 %122 %34 %30
+%124 = OpLoad %8 %123
+%125 = OpAccessChain %109 %40 %34
+%126 = OpAccessChain %111 %125 %30
+       OpStore %126 %124
+%127 = OpLoad %25 %40
+       OpStore %41 %127
+%128 = OpLoad %4 %38
+%129 = OpIAdd %4 %128 %35
+       OpStore %38 %129
+       OpBranch %49
+ %49 = OpLabel
+       OpBranch %46
+ %48 = OpLabel
        OpReturn
        OpFunctionEnd)", {}, {}, true);
 	}
