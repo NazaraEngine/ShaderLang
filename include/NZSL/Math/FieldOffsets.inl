@@ -118,10 +118,7 @@ namespace nzsl
 
 	constexpr std::size_t FieldOffsets::GetAlignedSize() const
 	{
-		if (m_layout == StructLayout::Std140)
-			return Nz::AlignPow2(m_size, m_largestFieldAlignment);
-		else
-			return m_size;
+		return Nz::AlignPow2(m_size, m_largestFieldAlignment);
 	}
 
 	constexpr std::size_t FieldOffsets::GetSize() const
