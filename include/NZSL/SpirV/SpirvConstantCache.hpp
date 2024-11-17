@@ -13,6 +13,7 @@
 #include <NZSL/Ast/Enums.hpp>
 #include <NZSL/Ast/ExpressionType.hpp>
 #include <NZSL/SpirV/SpirvData.hpp>
+#include <NazaraUtils/PrivateImpl.hpp>
 #include <memory>
 #include <optional>
 #include <string>
@@ -23,15 +24,16 @@ namespace nzsl
 {
 	class FieldOffsets;
 	class SpirvSection;
+	class SpirvWriter;
 
 	class NZSL_API SpirvConstantCache
 	{
 		public:
 			using StructCallback = std::function<const Ast::StructDescription&(std::size_t structIndex)>;
 
-			SpirvConstantCache(std::uint32_t& resultId);
+			SpirvConstantCache(SpirvWriter& writer, std::uint32_t& resultId);
 			SpirvConstantCache(const SpirvConstantCache& cache) = delete;
-			SpirvConstantCache(SpirvConstantCache&& cache) noexcept;
+			SpirvConstantCache(SpirvConstantCache&& cache) noexcept = default;
 			~SpirvConstantCache();
 
 			struct Constant;
@@ -191,7 +193,7 @@ namespace nzsl
 			TypePtr BuildType(const Ast::PushConstantType& type) const;
 			TypePtr BuildType(const Ast::SamplerType& type) const;
 			TypePtr BuildType(const Ast::StorageType& type) const;
-			TypePtr BuildType(const Ast::StructType& type) const;
+			TypePtr BuildType(const Ast::StructType& type, std::vector<SpirvDecoration> decorations = {}) const;
 			TypePtr BuildType(const Ast::StructDescription& structDesc, std::vector<SpirvDecoration> decorations = {}) const;
 			TypePtr BuildType(const Ast::TextureType& type) const;
 			TypePtr BuildType(const Ast::VectorType& type) const;
@@ -228,7 +230,7 @@ namespace nzsl
 			void Write(SpirvSection& annotations, SpirvSection& constants, SpirvSection& debugInfos, DebugLevel debugInfo);
 
 			SpirvConstantCache& operator=(const SpirvConstantCache& cache) = delete;
-			SpirvConstantCache& operator=(SpirvConstantCache&& cache) noexcept;
+			SpirvConstantCache& operator=(SpirvConstantCache&& cache) noexcept = default;
 
 		private:
 			struct DepRegisterer;
@@ -243,7 +245,7 @@ namespace nzsl
 
 			void WriteStruct(const Structure& structData, std::uint32_t resultId, SpirvSection& annotations, SpirvSection& constants, SpirvSection& debugInfos, DebugLevel debugInfo);
 
-			std::unique_ptr<Internal> m_internal;
+			mutable Nz::PrivateImpl<Internal> m_internal;
 	};
 }
 

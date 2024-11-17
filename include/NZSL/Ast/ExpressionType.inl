@@ -150,7 +150,7 @@ namespace nzsl::Ast
 
 	inline bool StorageType::operator==(const StorageType& rhs) const
 	{
-		return containedType == rhs.containedType;
+		return accessPolicy == rhs.accessPolicy && containedType == rhs.containedType;
 	}
 
 	inline bool StorageType::operator!=(const StorageType& rhs) const
@@ -314,8 +314,7 @@ namespace std
 	{
 		std::size_t operator()(const nzsl::Ast::AliasType& aliasType) const
 		{
-			std::size_t h = 3;
-			Nz::HashCombine(h, aliasType.aliasIndex);
+			std::size_t h = Nz::HashCombine(aliasType.aliasIndex);
 			if (aliasType.targetType)
 				Nz::HashCombine(h, aliasType.targetType->type);
 
@@ -328,8 +327,7 @@ namespace std
 	{
 		std::size_t operator()(const nzsl::Ast::ArrayType& arrayType) const
 		{
-			std::size_t h = 3;
-			Nz::HashCombine(h, arrayType.length);
+			std::size_t h = Nz::HashCombine(arrayType.length);
 			if (arrayType.containedType)
 				Nz::HashCombine(h, arrayType.containedType->type);
 
@@ -342,7 +340,7 @@ namespace std
 	{
 		std::size_t operator()(const nzsl::Ast::DynArrayType& dynArrayType) const
 		{
-			std::size_t h = 3;
+			std::size_t h = 1;
 			if (dynArrayType.containedType)
 				Nz::HashCombine(h, dynArrayType.containedType->type);
 
@@ -355,10 +353,7 @@ namespace std
 	{
 		std::size_t operator()(const nzsl::Ast::FunctionType& functionType) const
 		{
-			std::size_t h = 3;
-			Nz::HashCombine(h, functionType.funcIndex);
-
-			return h;
+			return Nz::HashCombine(functionType.funcIndex);
 		}
 	};
 
@@ -367,10 +362,7 @@ namespace std
 	{
 		std::size_t operator()(const nzsl::Ast::IntrinsicFunctionType& functionType) const
 		{
-			std::size_t h = 3;
-			Nz::HashCombine(h, functionType.intrinsic);
-
-			return h;
+			return Nz::HashCombine(functionType.intrinsic);
 		}
 	};
 
@@ -379,12 +371,7 @@ namespace std
 	{
 		std::size_t operator()(const nzsl::Ast::MatrixType& matrixType) const
 		{
-			std::size_t h = 3;
-			Nz::HashCombine(h, matrixType.columnCount);
-			Nz::HashCombine(h, matrixType.rowCount);
-			Nz::HashCombine(h, matrixType.type);
-
-			return h;
+			return Nz::HashCombine(matrixType.columnCount, matrixType.rowCount, matrixType.type);
 		}
 	};
 
@@ -393,8 +380,7 @@ namespace std
 	{
 		std::size_t operator()(const nzsl::Ast::MethodType& methodType) const
 		{
-			std::size_t h = 3;
-			Nz::HashCombine(h, methodType.methodIndex);
+			std::size_t h = Nz::HashCombine(methodType.methodIndex);
 			if (methodType.objectType)
 				Nz::HashCombine(h, methodType.objectType->type);
 
@@ -407,10 +393,7 @@ namespace std
 	{
 		std::size_t operator()(const nzsl::Ast::PushConstantType& pushConstantType) const
 		{
-			std::size_t h = 3;
-			Nz::HashCombine(h, pushConstantType.containedType.structIndex);
-
-			return h;
+			return Nz::HashCombine(pushConstantType.containedType.structIndex);
 		}
 	};
 
@@ -419,12 +402,7 @@ namespace std
 	{
 		std::size_t operator()(const nzsl::Ast::SamplerType& samplerType) const
 		{
-			std::size_t h = 3;
-			Nz::HashCombine(h, samplerType.depth);
-			Nz::HashCombine(h, samplerType.dim);
-			Nz::HashCombine(h, samplerType.sampledType);
-
-			return h;
+			return Nz::HashCombine(samplerType.depth, samplerType.dim, samplerType.sampledType);
 		}
 	};
 
@@ -433,10 +411,7 @@ namespace std
 	{
 		std::size_t operator()(const nzsl::Ast::StorageType& storageType) const
 		{
-			std::size_t h = 3;
-			Nz::HashCombine(h, storageType.containedType.structIndex);
-
-			return h;
+			return Nz::HashCombine(storageType.accessPolicy, storageType.containedType.structIndex);
 		}
 	};
 
@@ -445,10 +420,7 @@ namespace std
 	{
 		std::size_t operator()(const nzsl::Ast::StructType& structType) const
 		{
-			std::size_t h = 3;
-			Nz::HashCombine(h, structType.structIndex);
-
-			return h;
+			return Nz::HashCombine(structType.structIndex);
 		}
 	};
 
@@ -457,13 +429,7 @@ namespace std
 	{
 		std::size_t operator()(const nzsl::Ast::TextureType& textureType) const
 		{
-			std::size_t h = 3;
-			Nz::HashCombine(h, textureType.accessPolicy);
-			Nz::HashCombine(h, textureType.baseType);
-			Nz::HashCombine(h, textureType.dim);
-			Nz::HashCombine(h, textureType.format);
-
-			return h;
+			return Nz::HashCombine(textureType.accessPolicy, textureType.baseType, textureType.dim, textureType.format);
 		}
 	};
 
@@ -472,10 +438,7 @@ namespace std
 	{
 		std::size_t operator()(const nzsl::Ast::Type& type) const
 		{
-			std::size_t h = 3;
-			Nz::HashCombine(h, type.typeIndex);
-
-			return h;
+			return Nz::HashCombine(type.typeIndex);
 		}
 	};
 
@@ -484,10 +447,7 @@ namespace std
 	{
 		std::size_t operator()(const nzsl::Ast::UniformType& uniformType) const
 		{
-			std::size_t h = 3;
-			Nz::HashCombine(h, uniformType.containedType.structIndex);
-
-			return h;
+			return Nz::HashCombine(uniformType.containedType.structIndex);
 		}
 	};
 
@@ -496,11 +456,7 @@ namespace std
 	{
 		std::size_t operator()(const nzsl::Ast::VectorType& vectorType) const
 		{
-			std::size_t h = 3;
-			Nz::HashCombine(h, vectorType.componentCount);
-			Nz::HashCombine(h, vectorType.type);
-
-			return h;
+			return Nz::HashCombine(vectorType.componentCount, vectorType.type);
 		}
 	};
 }
