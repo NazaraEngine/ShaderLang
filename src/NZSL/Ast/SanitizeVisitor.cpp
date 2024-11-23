@@ -312,11 +312,12 @@ namespace nzsl::Ast
 
 		MandatoryExpr(node.expr, node.sourceLocation);
 
-		// Handle module access (TODO: Add namespace expression?)
+		// Handle module access and named external access (TODO: Add namespace expression?)
 		if (node.expr->GetType() == NodeType::IdentifierExpression && node.identifiers.size() == 1)
 		{
 			auto& identifierExpr = static_cast<IdentifierExpression&>(*node.expr);
 			const IdentifierData* identifierData = FindIdentifier(identifierExpr.identifier);
+
 			if (identifierData && identifierData->category == IdentifierCategory::Module)
 			{
 				std::size_t moduleIndex = m_context->moduleIndices.Retrieve(identifierData->index, node.sourceLocation);
@@ -329,6 +330,17 @@ namespace nzsl::Ast
 						return Cloner::Clone(node);
 
 					return HandleIdentifier(identifierData, node.identifiers.front().sourceLocation);
+				}
+			}
+
+			if (identifierData && identifierData->category == IdentifierCategory::External)
+			{
+				identifierData = FindIdentifier(identifierExpr.identifier + node.identifiers.front().identifier);
+				if (identifierData)
+				{
+					auto variableValuePtr = HandleIdentifier(identifierData, node.identifiers.front().sourceLocation);
+					static_cast<VariableValueExpression*>(variableValuePtr.get())->prefix = identifierExpr.identifier;
+					return variableValuePtr;
 				}
 			}
 		}
@@ -1464,27 +1476,36 @@ namespace nzsl::Ast
 			}
 		};
 
+		if (!clone->name.empty())
+		{
+			RegisterExternalName(clone->name, clone->sourceLocation);
+		}
+
 		bool hasUnresolved = false;
 		Nz::StackVector<std::size_t> autoBindingEntries = NazaraStackVector(std::size_t, clone->externalVars.size());
 		for (std::size_t i = 0; i < clone->externalVars.size(); ++i)
 		{
 			auto& extVar = clone->externalVars[i];
+
+			SanitizeIdentifier(extVar.name, IdentifierScope::ExternalVariable);
+
+			std::string fullName = clone->name + extVar.name;
 			
 			Context::UsedExternalData usedBindingData;
 			usedBindingData.conditionalStatementIndex = m_context->currentConditionalIndex;
 
-			if (auto it = m_context->declaredExternalVar.find(extVar.name); it != m_context->declaredExternalVar.end())
+			if (auto it = m_context->declaredExternalVar.find(fullName); it != m_context->declaredExternalVar.end())
 			{
 				if (it->second.conditionalStatementIndex == m_context->currentConditionalIndex || usedBindingData.conditionalStatementIndex == m_context->currentConditionalIndex)
 					throw CompilerExtAlreadyDeclaredError{ extVar.sourceLocation, extVar.name };
 			}
 
-			m_context->declaredExternalVar.emplace(extVar.name, usedBindingData);
+			m_context->declaredExternalVar.emplace(fullName, usedBindingData);
 
 			std::optional<ExpressionType> resolvedType = ResolveTypeExpr(extVar.type, false, node.sourceLocation);
 			if (!resolvedType.has_value())
 			{
-				RegisterUnresolved(extVar.name);
+				RegisterUnresolved(fullName);
 				hasUnresolved = true;
 				continue;
 			}
@@ -1555,8 +1576,7 @@ namespace nzsl::Ast
 			}
 
 			extVar.type = std::move(resolvedType).value();
-			extVar.varIndex = RegisterVariable(extVar.name, std::move(varType), extVar.varIndex, extVar.sourceLocation);
-			SanitizeIdentifier(extVar.name, IdentifierScope::ExternalVariable);
+			extVar.varIndex = RegisterVariable(fullName, std::move(varType), extVar.varIndex, extVar.sourceLocation);
 		}
 
 		// Resolve auto-binding entries when explicit binding are known
@@ -2870,6 +2890,9 @@ namespace nzsl::Ast
 				return Clone(constantExpr); //< Turn ConstantExpression into ConstantValueExpression
 			}
 
+			case IdentifierCategory::External:
+				throw AstUnexpectedIdentifierError{ sourceLocation, "external" };
+
 			case IdentifierCategory::Function:
 			{
 				// Replace IdentifierExpression by FunctionExpression
@@ -3739,6 +3762,20 @@ namespace nzsl::Ast
 				m_context->currentConditionalIndex
 			}
 		});
+	}
+
+	void SanitizeVisitor::RegisterExternalName(std::string name, const SourceLocation& sourceLocation)
+	{
+		if (!IsIdentifierAvailable(name))
+			throw CompilerIdentifierAlreadyUsedError{ sourceLocation, name };
+
+		m_context->currentEnv->identifiersInScope.push_back({
+			std::move(name),
+			{
+				std::numeric_limits<std::size_t>::max(),
+				IdentifierCategory::External
+			}
+			});
 	}
 
 	std::size_t SanitizeVisitor::RegisterStruct(std::string name, std::optional<StructDescription*> description, std::optional<std::size_t> index, const SourceLocation& sourceLocation)

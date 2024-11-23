@@ -636,6 +636,47 @@ fn main()
 }
 )"), "(28,19 -> 28): CFunctionCallUnmatchingParameterType error: function GetValue parameter #0 type mismatch (expected array[struct Inner, 3], got array[uniform[struct Inner], 3])");
 
+		CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+external Viewer
+{
+	[tag("Color map")]
+	[binding(0)] tex: sampler2D[f32]
+}
+
+external Viewer
+{
+	[tag("Color map")]
+	[binding(1)] tex2: sampler2D[f32]
+}
+
+[entry(frag)]
+fn main()
+{
+	let value = Viewer.tex.Sample(vec2[f32](0.0, 0.0));
+}
+)"), "(11,1 -> 8): CIdentifierAlreadyUsed error: identifier Viewer is already used");
+
+		CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+external Viewer
+{
+	[tag("Color map")]
+	[binding(0)] tex: sampler2D[f32]
+}
+
+[entry(frag)]
+fn main()
+{
+	let Viewer = 0.0;
+	let value = Viewer.tex.Sample(vec2[f32](0.0, 0.0));
+}
+)"), "(14,2 -> 18): CIdentifierAlreadyUsed error: identifier Viewer is already used");
+
 		}
 
 		/************************************************************************/
