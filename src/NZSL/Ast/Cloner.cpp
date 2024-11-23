@@ -128,6 +128,7 @@ namespace nzsl::Ast
 		clone->autoBinding = Clone(node.autoBinding);
 		clone->bindingSet = Clone(node.bindingSet);
 		clone->tag = node.tag;
+		clone->name = node.name;
 
 		clone->externalVars.reserve(node.externalVars.size());
 		for (const auto& var : node.externalVars)
@@ -593,6 +594,7 @@ namespace nzsl::Ast
 	{
 		auto clone = std::make_unique<VariableValueExpression>();
 		clone->variableId = node.variableId;
+		clone->prefix = node.prefix;
 
 		clone->cachedExpressionType = node.cachedExpressionType;
 		clone->sourceLocation = node.sourceLocation;

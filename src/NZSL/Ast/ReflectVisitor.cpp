@@ -57,7 +57,7 @@ namespace nzsl::Ast
 			for (const auto& extVar : node.externalVars)
 			{
 				if (extVar.varIndex)
-					m_callbacks->onVariableIndex(extVar.name, *extVar.varIndex, extVar.sourceLocation);
+					m_callbacks->onVariableIndex(node.name + extVar.name, *extVar.varIndex, extVar.sourceLocation);
 			}
 		}
 

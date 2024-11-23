@@ -708,10 +708,14 @@ namespace nzsl
 		NAZARA_USE_ANONYMOUS_NAMESPACE
 
 		const Token& externalToken = Expect(Advance(), TokenType::External);
-		Expect(Advance(), TokenType::OpenCurlyBracket);
-
+		
 		std::unique_ptr<Ast::DeclareExternalStatement> externalStatement = std::make_unique<Ast::DeclareExternalStatement>();
 		externalStatement->sourceLocation = externalToken.location;
+
+		if (const Token& peekToken = Peek(); peekToken.type == TokenType::Identifier)
+			externalStatement->name = ParseIdentifierAsName(nullptr);
+
+		Expect(Advance(), TokenType::OpenCurlyBracket);
 
 		Ast::ExpressionValue<bool> condition;
 
