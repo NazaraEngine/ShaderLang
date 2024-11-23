@@ -1260,6 +1260,11 @@ namespace nzsl
 
 	void LangWriter::Visit(Ast::VariableValueExpression& node)
 	{
+		if (!node.prefix.empty())
+		{
+			Append(node.prefix, '.');
+		}
+
 		AppendIdentifier(m_currentState->variables, node.variableId);
 	}
 
@@ -1366,7 +1371,13 @@ namespace nzsl
 	void LangWriter::Visit(Ast::DeclareExternalStatement& node)
 	{
 		AppendAttributes(true, SetAttribute{ node.bindingSet }, AutoBindingAttribute{ node.autoBinding }, TagAttribute{ node.tag });
-		AppendLine("external");
+		Append("external");
+
+		if (!node.name.empty())
+			Append(" ", node.name);
+
+		AppendLine();
+
 		EnterScope();
 
 		bool first = true;

@@ -2270,7 +2270,7 @@ namespace nzsl
 					AppendComment("struct tag: " + structInfo.desc->tag);
 			}
 
-			std::string varName = externalVar.name + m_currentState->moduleSuffix;
+			std::string varName = node.name + externalVar.name + m_currentState->moduleSuffix;
 
 			// Layout handling
 			bool hasLayout = false;

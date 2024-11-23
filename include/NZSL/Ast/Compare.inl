@@ -524,6 +524,9 @@ namespace nzsl::Ast
 		if (!Compare(lhs.variableId, rhs.variableId, params))
 			return false;
 
+		if (!Compare(lhs.prefix, rhs.prefix, params))
+			return false;
+
 		return true;
 	}
 
@@ -607,6 +610,9 @@ namespace nzsl::Ast
 			return false;
 
 		if (!Compare(lhs.tag, rhs.tag, params))
+			return false;
+
+		if (!Compare(lhs.name, rhs.name, params))
 			return false;
 
 		if (!Compare(lhs.externalVars, rhs.externalVars, params))
