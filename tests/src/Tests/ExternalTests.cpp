@@ -387,7 +387,7 @@ fn main()
       OpDecorate %8 Decoration(NonReadable)
       OpDecorate %8 Decoration(Binding) 1
       OpDecorate %8 Decoration(DescriptorSet) 0
-      OpDecorate %4 Decoration(ArrayStride) 16
+      OpDecorate %4 Decoration(ArrayStride) 4
       OpDecorate %5 Decoration(BufferBlock)
       OpMemberDecorate %5 0 Decoration(Offset) 0
  %1 = OpTypeFloat 32
@@ -427,9 +427,9 @@ fn main()
 %31 = OpAccessChain %30 %7 %12 %29
 %32 = OpLoad %1 %31
 %33 = OpAccessChain %34 %8 %12
-%36 = OpLoad %11 %20
-%35 = OpAccessChain %30 %33 %36
-      OpStore %35 %32
+%35 = OpLoad %11 %20
+%36 = OpAccessChain %30 %33 %35
+      OpStore %36 %32
 %37 = OpLoad %11 %20
 %38 = OpIAdd %11 %37 %17
       OpStore %20 %38
@@ -460,7 +460,7 @@ fn main()
       OpDecorate %8 Decoration(NonReadable)
       OpDecorate %8 Decoration(Binding) 1
       OpDecorate %8 Decoration(DescriptorSet) 0
-      OpDecorate %4 Decoration(ArrayStride) 16
+      OpDecorate %4 Decoration(ArrayStride) 4
       OpDecorate %5 Decoration(Block)
       OpMemberDecorate %5 0 Decoration(Offset) 0
  %1 = OpTypeFloat 32
@@ -500,9 +500,9 @@ fn main()
 %31 = OpAccessChain %30 %7 %12 %29
 %32 = OpLoad %1 %31
 %33 = OpAccessChain %34 %8 %12
-%36 = OpLoad %11 %20
-%35 = OpAccessChain %30 %33 %36
-      OpStore %35 %32
+%35 = OpLoad %11 %20
+%36 = OpAccessChain %30 %33 %35
+      OpStore %36 %32
 %37 = OpLoad %11 %20
 %38 = OpIAdd %11 %37 %17
       OpStore %20 %38
@@ -595,10 +595,10 @@ fn main()
       OpName %15 "main"
       OpDecorate %6 Decoration(Binding) 0
       OpDecorate %6 Decoration(DescriptorSet) 0
-      OpDecorate %3 Decoration(ArrayStride) 16
+      OpDecorate %3 Decoration(ArrayStride) 4
       OpDecorate %4 Decoration(BufferBlock)
       OpMemberDecorate %4 0 Decoration(Offset) 0
-      OpMemberDecorate %4 1 Decoration(Offset) 16
+      OpMemberDecorate %4 1 Decoration(Offset) 4
  %1 = OpTypeInt 32 0
  %2 = OpTypeFloat 32
  %3 = OpTypeRuntimeArray %2
@@ -642,10 +642,10 @@ fn main()
       OpName %15 "main"
       OpDecorate %6 Decoration(Binding) 0
       OpDecorate %6 Decoration(DescriptorSet) 0
-      OpDecorate %3 Decoration(ArrayStride) 16
+      OpDecorate %3 Decoration(ArrayStride) 4
       OpDecorate %4 Decoration(Block)
       OpMemberDecorate %4 0 Decoration(Offset) 0
-      OpMemberDecorate %4 1 Decoration(Offset) 16
+      OpMemberDecorate %4 1 Decoration(Offset) 4
  %1 = OpTypeInt 32 0
  %2 = OpTypeFloat 32
  %3 = OpTypeRuntimeArray %2

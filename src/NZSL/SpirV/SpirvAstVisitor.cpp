@@ -751,7 +751,7 @@ namespace nzsl
 				std::uint32_t paramResultId = m_writer.AllocateResultId();
 				m_instructions.Append(SpirvOp::OpFunctionParameter, m_currentFunc->parameters[i].pointerTypeId, paramResultId);
 
-				RegisterVariable(*node.parameters[i].varIndex, m_currentFunc->parameters[i].typeId, paramResultId, SpirvStorageClass::Function);
+				RegisterVariable(*node.parameters[i].varIndex, m_currentFunc->parameters[i].typePtr, m_currentFunc->parameters[i].typeId, paramResultId, SpirvStorageClass::Function);
 			}
 		}
 
@@ -790,7 +790,7 @@ namespace nzsl
 					m_currentBlock->Append(SpirvOp::OpCopyMemory, resultId, input.varId);
 				}
 
-				RegisterVariable(*node.parameters.front().varIndex, inputStruct.typeId, paramId, SpirvStorageClass::Function);
+				RegisterVariable(*node.parameters.front().varIndex, inputStruct.type, inputStruct.typeId, paramId, SpirvStorageClass::Function);
 			}
 		}
 
@@ -818,13 +818,14 @@ namespace nzsl
 
 	void SpirvAstVisitor::Visit(Ast::DeclareVariableStatement& node)
 	{
-		std::uint32_t typeId = m_writer.GetTypeId(node.varType.GetResultingValue());
+		SpirvConstantCache::TypePtr typePtr = m_writer.BuildType(node.varType.GetResultingValue());
+		std::uint32_t typeId = m_writer.GetTypeId(*typePtr);
 
 		assert(node.varIndex);
 		auto varIt = m_currentFunc->varIndexToVarId.find(*node.varIndex);
 		std::uint32_t varId = m_currentFunc->variables[varIt->second].varId;
 
-		RegisterVariable(*node.varIndex, typeId, varId, SpirvStorageClass::Function);
+		RegisterVariable(*node.varIndex, std::move(typePtr), typeId, varId, SpirvStorageClass::Function);
 
 		if (node.initialExpression)
 		{

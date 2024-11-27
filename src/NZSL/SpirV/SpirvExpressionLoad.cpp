@@ -41,7 +41,7 @@ namespace nzsl
 			},
 			[this](const PointerChainAccess& pointerChainAccess) -> std::uint32_t
 			{
-				std::uint32_t pointerType = m_writer.RegisterPointerType(*pointerChainAccess.exprType, pointerChainAccess.storage); //< FIXME: We shouldn't register this so late
+				std::uint32_t pointerType = m_writer.RegisterPointerType(pointerChainAccess.pointedTypePtr, pointerChainAccess.storage); //< FIXME: We shouldn't register this so late
 
 				std::uint32_t pointerId = m_visitor.AllocateResultId();
 				
@@ -56,7 +56,7 @@ namespace nzsl
 				});
 
 				std::uint32_t resultId = m_visitor.AllocateResultId();
-				m_block.Append(SpirvOp::OpLoad, m_writer.GetTypeId(*pointerChainAccess.exprType), resultId, pointerId);
+				m_block.Append(SpirvOp::OpLoad, m_writer.GetTypeId(*pointerChainAccess.pointedTypePtr), resultId, pointerId);
 
 				return resultId;
 			},
@@ -98,7 +98,7 @@ namespace nzsl
 				compositeIndex = index;
 			}
 			else if (std::holds_alternative<std::uint32_t>(valueExpr.value))
-				compositeIndex = Nz::SafeCast<std::int32_t>(std::get<std::uint32_t>(valueExpr.value));
+				compositeIndex = Nz::SafeCaster(std::get<std::uint32_t>(valueExpr.value));
 			else
 				throw std::runtime_error("invalid index type into composite");
 
@@ -118,6 +118,7 @@ namespace nzsl
 					pointerChainAccess.exprType = exprType;
 					pointerChainAccess.indicesId = { constantId };
 					pointerChainAccess.pointedTypeId = pointer.pointedTypeId;
+					pointerChainAccess.pointedTypePtr = SpirvConstantCache::GetIndexedType(*pointer.pointedTypePtr, compositeIndex);
 					pointerChainAccess.pointerId = pointer.pointerId;
 					pointerChainAccess.storage = pointer.storage;
 
@@ -129,6 +130,7 @@ namespace nzsl
 					std::uint32_t constantId = m_writer.RegisterSingleConstant(compositeIndex);
 
 					pointerChainAccess.exprType = exprType;
+					pointerChainAccess.pointedTypePtr = SpirvConstantCache::GetIndexedType(*pointerChainAccess.pointedTypePtr, compositeIndex);
 					pointerChainAccess.indicesId.push_back(constantId);
 				},
 				[&](const Value& value)
@@ -162,6 +164,7 @@ namespace nzsl
 					pointerChainAccess.exprType = exprType;
 					pointerChainAccess.indicesId = { indexId };
 					pointerChainAccess.pointedTypeId = pointer.pointedTypeId;
+					pointerChainAccess.pointedTypePtr = SpirvConstantCache::GetIndexedType(*pointer.pointedTypePtr, -1);
 					pointerChainAccess.pointerId = pointer.pointerId;
 					pointerChainAccess.storage = pointer.storage;
 
@@ -171,6 +174,7 @@ namespace nzsl
 				{
 					pointerChainAccess.exprType = exprType;
 					pointerChainAccess.indicesId.push_back(indexId);
+					pointerChainAccess.pointedTypePtr = SpirvConstantCache::GetIndexedType(*pointerChainAccess.pointedTypePtr, -1);
 				},
 				[&](const Value& /*value*/)
 				{
@@ -187,12 +191,12 @@ namespace nzsl
 	void SpirvExpressionLoad::Visit(Ast::ConstantExpression& node)
 	{
 		const auto& var = m_writer.GetConstantVariable(node.constantId);
-		m_value = Pointer{ var.storageClass, var.pointerId, var.typeId };
+		m_value = Pointer{ var.typePtr, var.storageClass, var.pointerId, var.typeId };
 	}
 
 	void SpirvExpressionLoad::Visit(Ast::VariableValueExpression& node)
 	{
 		const auto& var = m_visitor.GetVariable(node.variableId);
-		m_value = Pointer{ var.storageClass, var.pointerId, var.typeId };
+		m_value = Pointer{ var.typePtr, var.storageClass, var.pointerId, var.typeId };
 	}
 }

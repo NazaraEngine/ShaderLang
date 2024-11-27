@@ -9,6 +9,7 @@
 
 #include <NZSL/Config.hpp>
 #include <NZSL/Ast/ExpressionVisitorExcept.hpp>
+#include <NZSL/SpirV/SpirvConstantCache.hpp>
 #include <NZSL/SpirV/SpirvData.hpp>
 #include <vector>
 
@@ -48,6 +49,7 @@ namespace nzsl
 			{
 				std::vector<std::uint32_t> indicesId;
 				const Ast::ExpressionType* exprType;
+				SpirvConstantCache::TypePtr pointedTypePtr;
 				SpirvStorageClass storage;
 				std::uint32_t pointerId;
 				std::uint32_t pointedTypeId;
@@ -55,6 +57,7 @@ namespace nzsl
 
 			struct Pointer
 			{
+				SpirvConstantCache::TypePtr pointedTypePtr;
 				SpirvStorageClass storage;
 				std::uint32_t pointerId;
 				std::uint32_t pointedTypeId;

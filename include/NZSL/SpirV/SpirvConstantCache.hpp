@@ -118,6 +118,7 @@ namespace nzsl
 				std::string name;
 				std::vector<Member> members;
 				std::vector<SpirvDecoration> decorations;
+				StructLayout layout;
 			};
 
 			using AnyType = std::variant<Array, Bool, Float, Function, Image, Integer, Matrix, Pointer, SampledImage, Structure, Vector, Void>;
@@ -232,8 +233,11 @@ namespace nzsl
 			SpirvConstantCache& operator=(const SpirvConstantCache& cache) = delete;
 			SpirvConstantCache& operator=(SpirvConstantCache&& cache) noexcept = default;
 
+			static TypePtr GetIndexedType(const Type& typeHolder, std::int32_t index = -1);
+
 		private:
 			struct DepRegisterer;
+			struct LayoutVisitor;
 			struct Eq;
 			struct Internal;
 			template<typename T, typename Enable = void> struct TypeBuilder;
