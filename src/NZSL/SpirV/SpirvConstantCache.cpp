@@ -3,6 +3,7 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <NZSL/SpirV/SpirvConstantCache.hpp>
+#include <NazaraUtils/Assert.hpp>
 #include <NZSL/Ast/Nodes.hpp>
 #include <NZSL/Math/FieldOffsets.hpp>
 #include <NZSL/SpirvWriter.hpp>
@@ -111,6 +112,9 @@ namespace nzsl
 				return false;
 
 			if (lhs.decorations != rhs.decorations)
+				return false;
+
+			if (lhs.layout != rhs.layout)
 				return false;
 
 			if (!Compare(lhs.members, rhs.members))
@@ -443,7 +447,7 @@ namespace nzsl
 		StructCallback structCallback;
 		std::uint32_t& nextResultId;
 		SpirvWriter& writer;
-		bool isInBlockStruct = false;
+		std::optional<StructLayout> currentBlockLayout;
 	};
 
 	SpirvConstantCache::SpirvConstantCache(SpirvWriter& writer, std::uint32_t& resultId) :
@@ -539,7 +543,7 @@ namespace nzsl
 
 	FieldOffsets SpirvConstantCache::BuildFieldOffsets(const Structure& structData) const
 	{
-		FieldOffsets structOffsets(StructLayout::Std140);
+		FieldOffsets structOffsets(structData.layout);
 
 		for (const Structure::Member& member : structData.members)
 		{
@@ -667,32 +671,27 @@ namespace nzsl
 
 	auto SpirvConstantCache::BuildPointerType(const TypePtr& type, SpirvStorageClass storageClass) const -> TypePtr
 	{
-		bool wasInblockStruct = m_internal->isInBlockStruct;
-		if (storageClass == SpirvStorageClass::Uniform || storageClass == SpirvStorageClass::StorageBuffer)
-			m_internal->isInBlockStruct = true;
-
-		auto typePtr = std::make_shared<Type>(Pointer{
+		return std::make_shared<Type>(Pointer{
 			type,
 			storageClass
 		});
-
-		m_internal->isInBlockStruct = wasInblockStruct;
-
-		return typePtr;
 	}
 
 	auto SpirvConstantCache::BuildPointerType(const Ast::PrimitiveType& type, SpirvStorageClass storageClass) const -> TypePtr
 	{
-		bool wasInblockStruct = m_internal->isInBlockStruct;
+		std::optional<StructLayout> prevBlockLayout = m_internal->currentBlockLayout;
 		if (storageClass == SpirvStorageClass::Uniform || storageClass == SpirvStorageClass::StorageBuffer)
-			m_internal->isInBlockStruct = true;
+		{
+			if (!prevBlockLayout)
+				m_internal->currentBlockLayout = (storageClass == SpirvStorageClass::Uniform) ? StructLayout::Std140 : StructLayout::Std430; // FIXME: When does that happen?
+		}
 
 		auto typePtr = std::make_shared<Type>(Pointer{
 			BuildType(type),
 			storageClass
 		});
 
-		m_internal->isInBlockStruct = wasInblockStruct;
+		m_internal->currentBlockLayout = prevBlockLayout;
 
 		return typePtr;
 	}
@@ -711,9 +710,9 @@ namespace nzsl
 
 		// ArrayStride
 		std::optional<std::uint32_t> arrayStride;
-		if (m_internal->isInBlockStruct)
+		if (m_internal->currentBlockLayout)
 		{
-			FieldOffsets fieldOffset(StructLayout::Std140);
+			FieldOffsets fieldOffset(*m_internal->currentBlockLayout);
 			RegisterArrayField(fieldOffset, builtContainedType->type, 1);
 
 			arrayStride = Nz::SafeCast<std::uint32_t>(fieldOffset.GetAlignedSize());
@@ -736,9 +735,9 @@ namespace nzsl
 
 		// ArrayStride
 		std::optional<std::uint32_t> arrayStride;
-		if (m_internal->isInBlockStruct)
+		if (m_internal->currentBlockLayout)
 		{
-			FieldOffsets fieldOffset(StructLayout::Std140);
+			FieldOffsets fieldOffset(*m_internal->currentBlockLayout);
 			RegisterArrayField(fieldOffset, builtContainedType->type, 1);
 
 			arrayStride = Nz::SafeCast<std::uint32_t>(fieldOffset.GetAlignedSize());
@@ -761,16 +760,19 @@ namespace nzsl
 
 	auto SpirvConstantCache::BuildType(const Ast::ExpressionType& type, SpirvStorageClass storageClass) const -> TypePtr
 	{
-		bool wasInblockStruct = m_internal->isInBlockStruct;
+		std::optional<StructLayout> prevBlockLayout = m_internal->currentBlockLayout;
 		if (storageClass == SpirvStorageClass::Uniform || storageClass == SpirvStorageClass::StorageBuffer)
-			m_internal->isInBlockStruct = true;
+		{
+			if (!prevBlockLayout)
+				m_internal->currentBlockLayout = (storageClass == SpirvStorageClass::Uniform) ? StructLayout::Std140 : StructLayout::Std430; // FIXME: When does that happen?
+		}
 
 		auto typePtr = std::visit([&](auto&& arg) -> TypePtr
 		{
 			return BuildType(arg);
 		}, type);
 
-		m_internal->isInBlockStruct = wasInblockStruct;
+		m_internal->currentBlockLayout = prevBlockLayout;
 
 		return typePtr;
 	}
@@ -871,11 +873,24 @@ namespace nzsl
 		sType.name = structDesc.name;
 		sType.decorations = std::move(decorations);
 
-		bool wasInBlock = m_internal->isInBlockStruct;
-		if (!wasInBlock)
+		sType.layout = StructLayout::Std140;
+		if (structDesc.layout.HasValue())
 		{
-			m_internal->isInBlockStruct = std::find(sType.decorations.begin(), sType.decorations.end(), SpirvDecoration::Block) != sType.decorations.end()
-			                           || std::find(sType.decorations.begin(), sType.decorations.end(), SpirvDecoration::BufferBlock) != sType.decorations.end();
+			switch (structDesc.layout.GetResultingValue())
+			{
+				case Ast::MemoryLayout::Std140: sType.layout = StructLayout::Std140; break;
+				case Ast::MemoryLayout::Std430: sType.layout = StructLayout::Std430; break;
+			}
+		}
+
+		std::optional<StructLayout> prevBlockLayout = m_internal->currentBlockLayout;
+		if (!prevBlockLayout)
+		{
+			bool isInBlock = std::find(sType.decorations.begin(), sType.decorations.end(), SpirvDecoration::Block) != sType.decorations.end()
+			              || std::find(sType.decorations.begin(), sType.decorations.end(), SpirvDecoration::BufferBlock) != sType.decorations.end();
+
+			if (isInBlock)
+				m_internal->currentBlockLayout = sType.layout;
 		}
 
 		for (const auto& member : structDesc.members)
@@ -888,7 +903,7 @@ namespace nzsl
 			sMembers.type = BuildType(member.type.GetResultingValue());
 		}
 
-		m_internal->isInBlockStruct = wasInBlock;
+		m_internal->currentBlockLayout = prevBlockLayout;
 
 		return std::make_shared<Type>(std::move(sType));
 	}
@@ -1128,7 +1143,7 @@ namespace nzsl
 	std::size_t SpirvConstantCache::RegisterArrayField(FieldOffsets& fieldOffsets, const Vector& type, std::size_t arrayLength) const
 	{
 		assert(type.componentCount > 0 && type.componentCount <= 4);
-		return fieldOffsets.AddFieldArray(static_cast<StructFieldType>(Nz::UnderlyingCast(SpirvTypeToStructFieldType(type.componentType->type)) + type.componentCount), arrayLength);
+		return fieldOffsets.AddFieldArray(static_cast<StructFieldType>(Nz::UnderlyingCast(SpirvTypeToStructFieldType(type.componentType->type)) + type.componentCount - 1), arrayLength);
 	}
 
 	std::size_t SpirvConstantCache::RegisterArrayField(FieldOffsets& /*fieldOffsets*/, const Void& /*type*/, std::size_t /*arrayLength*/) const
@@ -1207,6 +1222,37 @@ namespace nzsl
 					appender(GetId((*var.initializer)->constant));
 			});
 		}
+	}
+
+	auto SpirvConstantCache::GetIndexedType(const Type& typeHolder, std::int32_t index) -> TypePtr
+	{
+		if (std::holds_alternative<SpirvConstantCache::Structure>(typeHolder.type))
+		{
+			NazaraAssertMsg(index >= 0, "struct access must have a known index");
+
+			const auto& structData = std::get<SpirvConstantCache::Structure>(typeHolder.type);
+			NazaraAssert(std::uint32_t(index) < structData.members.size());
+			return structData.members[index].type;
+		}
+		else if (std::holds_alternative<SpirvConstantCache::Array>(typeHolder.type))
+		{
+			const auto& arrayData = std::get<SpirvConstantCache::Array>(typeHolder.type);
+			return arrayData.elementType;
+		}
+		else if (std::holds_alternative<SpirvConstantCache::Matrix>(typeHolder.type))
+		{
+			const auto& matrixData = std::get<SpirvConstantCache::Matrix>(typeHolder.type);
+			NazaraAssert(index < 0 || std::uint32_t(index) < matrixData.columnCount);
+			return matrixData.columnType;
+		}
+		else if (std::holds_alternative<SpirvConstantCache::Vector>(typeHolder.type))
+		{
+			const auto& vectorData = std::get<SpirvConstantCache::Vector>(typeHolder.type);
+			NazaraAssert(index < 0 || std::uint32_t(index) < vectorData.componentCount);
+			return vectorData.componentType;
+		}
+		else
+			throw std::runtime_error("an internal error occurred");
 	}
 
 	void SpirvConstantCache::Write(const AnyConstant& constant, std::uint32_t resultId, SpirvSection& constants)

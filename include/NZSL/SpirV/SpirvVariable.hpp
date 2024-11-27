@@ -9,6 +9,7 @@
 
 #include <NZSL/Config.hpp>
 #include <NZSL/SpirV/SpirvData.hpp>
+#include <NZSL/SpirV/SpirvConstantCache.hpp>
 
 namespace nzsl
 {
@@ -16,6 +17,7 @@ namespace nzsl
 	{
 		std::uint32_t pointerId;
 		std::uint32_t typeId;
+		SpirvConstantCache::TypePtr typePtr;
 		SpirvStorageClass storageClass;
 	};
 }

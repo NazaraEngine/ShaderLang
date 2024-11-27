@@ -151,10 +151,12 @@ namespace nzsl
 
 				SpirvStorageClass storageClass = SpirvStorageClass::Private;
 
+				SpirvConstantCache::TypePtr typePtr = m_constantCache.BuildType(*GetExpressionType(*node.expression));
+
 				SpirvConstantCache::Variable constantVariable;
 				constantVariable.debugName = node.name;
 				constantVariable.storageClass = storageClass;
-				constantVariable.type = m_constantCache.BuildPointerType(m_constantCache.BuildType(*GetExpressionType(*node.expression)), constantVariable.storageClass);
+				constantVariable.type = m_constantCache.BuildPointerType(typePtr, constantVariable.storageClass);
 
 				switch (node.expression->GetType())
 				{
@@ -179,7 +181,7 @@ namespace nzsl
 				std::uint32_t pointerTypeId = m_constantCache.Register(*constantVariable.type);
 				std::uint32_t variableId = m_constantCache.Register(std::move(constantVariable));
 				
-				constantVariables.emplace(*node.constIndex, SpirvVariable{ variableId, pointerTypeId, storageClass });
+				constantVariables.emplace(*node.constIndex, SpirvVariable{ variableId, pointerTypeId, std::move(typePtr), storageClass});
 			}
 
 			void Visit(Ast::DeclareExternalStatement& node) override
@@ -235,7 +237,8 @@ namespace nzsl
 
 					assert(Ast::IsPushConstantType(extVarType) || extVar.bindingIndex.IsResultingValue());
 
-					extVarData.varData.typeId = m_constantCache.Register((typePtr) ? *typePtr : *m_constantCache.BuildType(extVarType, variable.storageClass));
+					extVarData.varData.typePtr = (typePtr) ? typePtr : m_constantCache.BuildType(extVarType, variable.storageClass);
+					extVarData.varData.typeId = m_constantCache.Register(*extVarData.varData.typePtr);
 					extVarData.varData.storageClass = variable.storageClass;
 					extVarData.varData.pointerId = m_constantCache.Register(std::move(variable));
 
@@ -284,7 +287,8 @@ namespace nzsl
 
 						auto& funcParam = funcData.parameters.emplace_back();
 						funcParam.pointerTypeId = m_constantCache.Register(*m_constantCache.BuildPointerType(parameterType, SpirvStorageClass::Function));
-						funcParam.typeId = m_constantCache.Register(*m_constantCache.BuildType(parameterType));
+						funcParam.typePtr = m_constantCache.BuildType(parameterType);
+						funcParam.typeId = m_constantCache.Register(*funcParam.typePtr);
 					}
 				}
 				else
@@ -364,9 +368,12 @@ namespace nzsl
 							memberIndex++;
 						}
 
+						SpirvConstantCache::TypePtr typePtr = m_constantCache.BuildType(parameter.type.GetResultingValue());
+
 						inputStruct = EntryPoint::InputStruct{
 							m_constantCache.Register(*m_constantCache.BuildPointerType(parameterType, SpirvStorageClass::Function)),
-							m_constantCache.Register(*m_constantCache.BuildType(parameter.type.GetResultingValue()))
+							m_constantCache.Register(*typePtr),
+							typePtr
 						};
 					}
 
@@ -964,6 +971,11 @@ namespace nzsl
 		}
 	}
 
+	SpirvConstantCache::TypePtr SpirvWriter::BuildType(const Ast::ExpressionType& type)
+	{
+		return m_currentState->constantTypeCache.BuildType(type);
+	}
+
 	SpirvConstantCache::TypePtr SpirvWriter::BuildFunctionType(const Ast::DeclareFunctionStatement& functionNode)
 	{
 		std::vector<Ast::ExpressionType> parameterTypes;
@@ -1009,6 +1021,11 @@ namespace nzsl
 		return m_currentState->constantTypeCache.GetId({ *BuildFunctionType(functionNode) });
 	}
 
+	std::uint32_t SpirvWriter::GetPointerTypeId(const SpirvConstantCache::TypePtr& typePtr, SpirvStorageClass storageClass) const
+	{
+		return m_currentState->constantTypeCache.GetId(*m_currentState->constantTypeCache.BuildPointerType(typePtr, storageClass));
+	}
+
 	std::uint32_t SpirvWriter::GetPointerTypeId(const Ast::ExpressionType& type, SpirvStorageClass storageClass) const
 	{
 		return m_currentState->constantTypeCache.GetId(*m_currentState->constantTypeCache.BuildPointerType(type, storageClass));
@@ -1021,6 +1038,11 @@ namespace nzsl
 			throw std::runtime_error("unknown source filepath");
 
 		return it->second;
+	}
+
+	std::uint32_t SpirvWriter::GetTypeId(const SpirvConstantCache::Type& type) const
+	{
+		return m_currentState->constantTypeCache.GetId(type);
 	}
 
 	std::uint32_t SpirvWriter::GetTypeId(const Ast::ExpressionType& type) const
@@ -1041,6 +1063,11 @@ namespace nzsl
 	std::uint32_t SpirvWriter::RegisterFunctionType(const Ast::DeclareFunctionStatement& functionNode)
 	{
 		return m_currentState->constantTypeCache.Register({ *BuildFunctionType(functionNode) });
+	}
+
+	std::uint32_t SpirvWriter::RegisterPointerType(const SpirvConstantCache::TypePtr& typePtr, SpirvStorageClass storageClass)
+	{
+		return m_currentState->constantTypeCache.Register(*m_currentState->constantTypeCache.BuildPointerType(typePtr, storageClass));
 	}
 
 	std::uint32_t SpirvWriter::RegisterPointerType(Ast::ExpressionType type, SpirvStorageClass storageClass)

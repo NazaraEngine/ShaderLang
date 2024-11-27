@@ -10,6 +10,7 @@
 #include <NZSL/Config.hpp>
 #include <NZSL/Ast/Enums.hpp>
 #include <NZSL/Ast/ExpressionVisitorExcept.hpp>
+#include <NZSL/SpirV/SpirvConstantCache.hpp>
 #include <NZSL/SpirV/SpirvData.hpp>
 
 namespace nzsl
@@ -39,6 +40,7 @@ namespace nzsl
 		private:
 			struct Pointer
 			{
+				SpirvConstantCache::TypePtr pointedTypePtr;
 				SpirvStorageClass storage;
 				std::uint32_t pointerId;
 			};

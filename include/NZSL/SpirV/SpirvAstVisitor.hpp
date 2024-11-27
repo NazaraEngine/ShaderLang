@@ -12,6 +12,7 @@
 #include <NZSL/Ast/ExpressionVisitorExcept.hpp>
 #include <NZSL/Ast/StatementVisitorExcept.hpp>
 #include <NZSL/SpirV/SpirvBlock.hpp>
+#include <NZSL/SpirV/SpirvConstantCache.hpp>
 #include <functional>
 #include <optional>
 #include <unordered_map>
@@ -107,6 +108,7 @@ namespace nzsl
 				{
 					std::uint32_t pointerId;
 					std::uint32_t typeId;
+					SpirvConstantCache::TypePtr type;
 				};
 
 				ShaderStageType stageType;
@@ -130,12 +132,14 @@ namespace nzsl
 				{
 					std::uint32_t pointerTypeId;
 					std::uint32_t typeId;
+					SpirvConstantCache::TypePtr typePtr;
 				};
 
 				struct Variable
 				{
 					std::uint32_t typeId;
 					std::uint32_t varId;
+					SpirvConstantCache::TypePtr typePtr;
 					SourceLocation sourceLocation;
 				};
 
@@ -157,7 +161,7 @@ namespace nzsl
 			void PushResultId(std::uint32_t value);
 			std::uint32_t PopResultId();
 
-			inline void RegisterVariable(std::size_t varIndex, std::uint32_t typeId, std::uint32_t pointerId, SpirvStorageClass storageClass);
+			inline void RegisterVariable(std::size_t varIndex, SpirvConstantCache::TypePtr typePtr, std::uint32_t typeId, std::uint32_t pointerId, SpirvStorageClass storageClass);
 
 			void ResetSourceLocation();
 

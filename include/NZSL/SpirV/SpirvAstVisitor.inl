@@ -14,12 +14,13 @@ namespace nzsl
 	{
 	}
 
-	inline void SpirvAstVisitor::RegisterVariable(std::size_t varIndex, std::uint32_t typeId, std::uint32_t pointerId, SpirvStorageClass storageClass)
+	inline void SpirvAstVisitor::RegisterVariable(std::size_t varIndex, SpirvConstantCache::TypePtr typePtr, std::uint32_t typeId, std::uint32_t pointerId, SpirvStorageClass storageClass)
 	{
 		assert(m_variables.find(varIndex) == m_variables.end());
 		m_variables[varIndex] = SpirvVariable{
 			pointerId,
 			typeId,
+			std::move(typePtr),
 			storageClass
 		};
 	}

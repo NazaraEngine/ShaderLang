@@ -64,6 +64,7 @@ namespace nzsl
 
 			void AppendHeader();
 
+			SpirvConstantCache::TypePtr BuildType(const Ast::ExpressionType& type);
 			SpirvConstantCache::TypePtr BuildFunctionType(const Ast::DeclareFunctionStatement& functionNode);
 
 			std::uint32_t GetArrayConstantId(const Ast::ConstantArrayValue& values) const;
@@ -71,14 +72,17 @@ namespace nzsl
 			std::uint32_t GetExtendedInstructionSet(const std::string& instructionSetName) const;
 			const SpirvVariable& GetExtVar(std::size_t varIndex) const;
 			std::uint32_t GetFunctionTypeId(const Ast::DeclareFunctionStatement& functionNode);
+			std::uint32_t GetPointerTypeId(const SpirvConstantCache::TypePtr& typePtr, SpirvStorageClass storageClass) const;
 			std::uint32_t GetPointerTypeId(const Ast::ExpressionType& type, SpirvStorageClass storageClass) const;
 			std::uint32_t GetSourceFileId(const std::shared_ptr<const std::string>& filepathPtr);
+			std::uint32_t GetTypeId(const SpirvConstantCache::Type& type) const;
 			std::uint32_t GetTypeId(const Ast::ExpressionType& type) const;
 
 			bool HasDebugInfo(DebugLevel debugInfo) const;
 
 			std::uint32_t RegisterArrayConstant(const Ast::ConstantArrayValue& value);
 			std::uint32_t RegisterFunctionType(const Ast::DeclareFunctionStatement& functionNode);
+			std::uint32_t RegisterPointerType(const SpirvConstantCache::TypePtr& typePtr, SpirvStorageClass storageClass);
 			std::uint32_t RegisterPointerType(Ast::ExpressionType type, SpirvStorageClass storageClass);
 			std::uint32_t RegisterSingleConstant(const Ast::ConstantSingleValue& value);
 			std::uint32_t RegisterType(Ast::ExpressionType type);

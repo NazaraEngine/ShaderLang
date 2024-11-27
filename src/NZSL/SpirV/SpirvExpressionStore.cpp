@@ -94,15 +94,34 @@ namespace nzsl
 		{
 			[&](const Pointer& pointer)
 			{
-				std::uint32_t resultId = m_visitor.AllocateResultId();
-				std::uint32_t pointerType = m_writer.RegisterPointerType(*exprType, pointer.storage); //< FIXME
-
 				assert(node.indices.size() == 1);
-				std::uint32_t indexId = m_visitor.EvaluateExpression(*node.indices.front());
+				std::uint32_t indexResultId = m_visitor.EvaluateExpression(*node.indices.front());
 
-				m_block.Append(SpirvOp::OpAccessChain, pointerType, resultId, pointer.pointerId, indexId); 
+				std::uint32_t resultId = m_visitor.AllocateResultId();
 
-				m_value = Pointer { pointer.storage, resultId };
+				std::int32_t index = -1;
+
+				if (node.indices.front()->GetType() == Ast::NodeType::ConstantValueExpression)
+				{
+					const auto& constantExpr = Nz::SafeCast<Ast::ConstantValueExpression&>(*node.indices.front());
+					if (std::holds_alternative<std::int32_t>(constantExpr.value))
+					{
+						index = std::get<std::int32_t>(constantExpr.value);
+						if (index < 0)
+							throw std::runtime_error("invalid negative index into struct");
+					}
+					else if (std::holds_alternative<std::uint32_t>(constantExpr.value))
+						index = Nz::SafeCaster(std::get<std::uint32_t>(constantExpr.value));
+					else
+						throw std::runtime_error("invalid index type into composite");
+				}
+
+				SpirvConstantCache::TypePtr nextTypePtr = SpirvConstantCache::GetIndexedType(*pointer.pointedTypePtr, index);
+				std::uint32_t pointerType = m_writer.RegisterPointerType(nextTypePtr, pointer.storage);
+
+				m_block.Append(SpirvOp::OpAccessChain, pointerType, resultId, pointer.pointerId, indexResultId);
+
+				m_value = Pointer { nextTypePtr, pointer.storage, resultId };
 			},
 			[](std::monostate)
 			{
@@ -157,6 +176,6 @@ namespace nzsl
 	void SpirvExpressionStore::Visit(Ast::VariableValueExpression& node)
 	{
 		const auto& var = m_visitor.GetVariable(node.variableId);
-		m_value = Pointer{ var.storageClass, var.pointerId };
+		m_value = Pointer{ var.typePtr, var.storageClass, var.pointerId };
 	}
 }
