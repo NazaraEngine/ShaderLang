@@ -718,7 +718,7 @@ fn test() -> i32
 {
 	return 42.666;
 }
-)"), "(7,2 -> 15): CUnmatchingTypes error: left expression type (f32) doesn't match right expression type (i32)");
+)"), "(7,2 -> 15): CFunctionReturnUnmatchingTypes error: return expression type (f32) must match function return expression type (i32)");
 
 			CHECK_THROWS_WITH(Compile(R"(
 [nzsl_version("1.0")]
@@ -728,7 +728,7 @@ fn test() -> i32
 {
 	return;
 }
-)"), "(7,2 -> 8): CFunctionReturnStatementWithNoValue error: return-statement with no value, in function returning i32");
+)"), "(7,2 -> 8): CFunctionReturnWithNoValue error: return with no value, in function returning i32");
 
 			CHECK_THROWS_WITH(Compile(R"(
 [nzsl_version("1.0")]
@@ -738,7 +738,7 @@ fn test()
 {
 	return 10;
 }
-)"), "(7,2 -> 11): CFunctionReturnStatementWithAValue error: return-statement with a value, in function returning no value");
+)"), "(7,2 -> 11): CFunctionReturnWithAValue error: return with a value, in function returning no value");
 		}
 
 		/************************************************************************/
