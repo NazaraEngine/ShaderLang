@@ -2796,6 +2796,15 @@ NAZARA_WARNING_POP()
 		return clone;
 	}
 
+	StatementPtr SanitizeVisitor::Clone(ReturnStatement& node)
+	{
+		auto clone = Nz::StaticUniquePointerCast<ReturnStatement>(Cloner::Clone(node));
+
+		Validate(*clone);
+
+		return clone;
+	}
+
 	StatementPtr SanitizeVisitor::Clone(ScopedStatement& node)
 	{
 		MandatoryStatement(node.statement, node.sourceLocation);
@@ -4239,6 +4248,38 @@ NAZARA_WARNING_POP()
 
 
 		node.aliasIndex = RegisterAlias(node.name, std::move(aliasIdentifier), node.aliasIndex, node.sourceLocation);
+		return ValidationResult::Validated;
+	}
+
+	auto SanitizeVisitor::Validate(ReturnStatement& node) -> ValidationResult
+	{
+		Nz::Assert(m_context->currentFunction);
+
+		auto& function = m_context->currentFunction;
+		if (!function->node->returnType.IsResultingValue())
+			return ValidationResult::Unresolved;
+
+		const bool functionHasNoReturnType = std::holds_alternative<NoType>(function->node->returnType.GetResultingValue());
+
+		if (!node.returnExpr)
+		{
+			if (!functionHasNoReturnType)
+				throw CompilerFunctionReturnStatementWithNoValueError{ node.sourceLocation, ToString(function->node->returnType.GetResultingValue(), node.sourceLocation) };
+
+			//If node doesn't have an expression and function doesn't have return type, then we can directly validate
+			return ValidationResult::Validated;
+		}
+		
+		if (functionHasNoReturnType)
+			throw CompilerFunctionReturnStatementWithAValueError{ node.sourceLocation };
+
+		const ExpressionType* returnTypeOpt = GetExpressionType(MandatoryExpr(node.returnExpr, node.sourceLocation));
+		if (!returnTypeOpt)
+			return ValidationResult::Unresolved;
+
+		ExpressionType returnType = ResolveType(*returnTypeOpt, true, node.sourceLocation);
+		TypeMustMatch(returnType, function->node->returnType.GetResultingValue(), node.sourceLocation);
+		
 		return ValidationResult::Validated;
 	}
 

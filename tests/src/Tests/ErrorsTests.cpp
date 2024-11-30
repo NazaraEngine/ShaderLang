@@ -594,7 +594,7 @@ external
 	data: uniform[Outer]
 }
 
-fn GetValue(data: Inner) -> i32
+fn GetValue(data: Inner) -> f32
 {
 	return data.value;
 }
@@ -625,9 +625,9 @@ external
 	data: uniform[Outer]
 }
 
-fn GetValue(data: array[Inner, 3]) -> i32
+fn GetValue(data: array[Inner, 3]) -> f32
 {
-	return data[1];
+	return data[1].value;
 }
 
 fn main()
@@ -704,6 +704,41 @@ external
 	[binding(0)] data: mat4[f32]
 }
 )"), "(7,15 -> 29): CExtTypeNotAllowed error: external variable data has unauthorized type (mat4[f32]): only storage buffers, samplers, push constants and uniform buffers (and primitives, vectors and matrices if primitive external feature is enabled) are allowed in external blocks");
+		}
+
+		/************************************************************************/
+
+		SECTION("Functions")
+		{
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+fn test() -> i32
+{
+	return 42.666;
+}
+)"), "(7,2 -> 15): CUnmatchingTypes error: left expression type (f32) doesn't match right expression type (i32)");
+
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+fn test() -> i32
+{
+	return;
+}
+)"), "(7,2 -> 8): CFunctionReturnStatementWithNoValue error: return-statement with no value, in function returning i32");
+
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+fn test()
+{
+	return 10;
+}
+)"), "(7,2 -> 11): CFunctionReturnStatementWithAValue error: return-statement with a value, in function returning no value");
 		}
 
 		/************************************************************************/
