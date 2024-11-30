@@ -192,7 +192,7 @@ namespace nzsl
 					ExternalVar& extVarData = extVars[*extVar.varIndex];
 
 					SpirvConstantCache::Variable variable;
-					variable.debugName = node.name + extVar.name;
+					variable.debugName = (!node.name.empty()) ? fmt::format("{}_{}", node.name, extVar.name) : extVar.name;
 
 					const Ast::ExpressionType& extVarType = extVar.type.GetResultingValue();
 

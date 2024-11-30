@@ -1316,11 +1316,11 @@ precision mediump sampler2D;
 // header end
 
 // external var tag: Color map
-uniform sampler2D Viewertex;
+uniform sampler2D Viewer_tex;
 
 void main()
 {
-	vec4 value = texture(Viewertex, vec2(0.0, 0.0));
+	vec4 value = texture(Viewer_tex, vec2(0.0, 0.0));
 }
 )");
 
@@ -1374,8 +1374,8 @@ external Viewer
 [entry(frag)]
 fn main()
 {
-	let Viewertex = 0.0;
-	let value = Viewertex;
+	let Viewer_tex = 0.0;
+	let value = Viewer_tex;
 }
 )";
 
@@ -1397,12 +1397,12 @@ precision mediump sampler2D;
 // header end
 
 // external var tag: Color map
-uniform sampler2D Viewertex;
+uniform sampler2D Viewer_tex;
 
 void main()
 {
-	float Viewertex_2 = 0.0;
-	float value = Viewertex_2;
+	float Viewer_tex_2 = 0.0;
+	float value = Viewer_tex_2;
 }
 )");
 
@@ -1415,17 +1415,17 @@ external Viewer
 [entry(frag)]
 fn main()
 {
-	let Viewertex: f32 = 0.0;
-	let value: f32 = Viewertex;
+	let Viewer_tex: f32 = 0.0;
+	let value: f32 = Viewer_tex;
 })");
 
 		ExpectSPIRV(*shaderModule, R"(
- OpCapability Capability(Shader)
+      OpCapability Capability(Shader)
       OpMemoryModel AddressingModel(Logical) MemoryModel(GLSL450)
       OpEntryPoint ExecutionModel(Fragment) %10 "main"
       OpExecutionMode %10 ExecutionMode(OriginUpperLeft)
       OpSource SourceLanguage(NZSL) 100
-      OpName %5 "Viewertex"
+      OpName %5 "Viewer_tex"
       OpName %10 "main"
       OpDecorate %5 Decoration(Binding) 0
       OpDecorate %5 Decoration(DescriptorSet) 0

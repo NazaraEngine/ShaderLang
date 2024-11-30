@@ -242,7 +242,6 @@ namespace nzsl::Ast
 		void Visit(ExpressionVisitor& visitor) override;
 
 		std::size_t variableId;
-		std::string prefix;
 	};
 
 	struct NZSL_API UnaryExpression : Expression
