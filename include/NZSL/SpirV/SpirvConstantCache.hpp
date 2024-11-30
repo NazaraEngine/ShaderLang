@@ -7,13 +7,13 @@
 #ifndef NZSL_SPIRV_SPIRVCONSTANTCACHE_HPP
 #define NZSL_SPIRV_SPIRVCONSTANTCACHE_HPP
 
+#include <NazaraUtils/PrivateImpl.hpp>
 #include <NZSL/Config.hpp>
 #include <NZSL/Enums.hpp>
 #include <NZSL/Ast/ConstantValue.hpp>
 #include <NZSL/Ast/Enums.hpp>
 #include <NZSL/Ast/ExpressionType.hpp>
 #include <NZSL/SpirV/SpirvData.hpp>
-#include <NazaraUtils/PrivateImpl.hpp>
 #include <memory>
 #include <optional>
 #include <string>
