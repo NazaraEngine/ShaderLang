@@ -111,6 +111,7 @@ namespace nzsl::Ast
 			StatementPtr Clone(ForEachStatement& node) override;
 			StatementPtr Clone(ImportStatement& node) override;
 			StatementPtr Clone(MultiStatement& node) override;
+			StatementPtr Clone(ReturnStatement& node) override;
 			StatementPtr Clone(ScopedStatement& node) override;
 			StatementPtr Clone(WhileStatement& node) override;
 
@@ -172,6 +173,7 @@ namespace nzsl::Ast
 			ValidationResult TypeMustMatch(const ExpressionPtr& left, const ExpressionPtr& right, const SourceLocation& sourceLocation);
 
 			ValidationResult Validate(DeclareAliasStatement& node);
+			ValidationResult Validate(ReturnStatement& node);
 			ValidationResult Validate(WhileStatement& node);
 
 			ValidationResult Validate(AccessIndexExpression& node);

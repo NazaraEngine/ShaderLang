@@ -447,7 +447,7 @@ struct FragOut
 }
 
 [entry(frag)]
-fn main(input: FragIn)
+fn main(input: FragIn) -> FragOut
 {
 	let output: FragOut;
 	output.color = tex2D(texture, input.uv);
