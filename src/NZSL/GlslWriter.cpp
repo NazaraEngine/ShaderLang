@@ -8,8 +8,6 @@
 #include <NazaraUtils/CallOnExit.hpp>
 #include <NazaraUtils/PathUtils.hpp>
 #include <NZSL/Enums.hpp>
-#include <NZSL/ShaderBuilder.hpp>
-#include <NZSL/Ast/Cloner.hpp>
 #include <NZSL/Ast/ConstantPropagationVisitor.hpp>
 #include <NZSL/Ast/ConstantValue.hpp>
 #include <NZSL/Ast/EliminateUnusedPassVisitor.hpp>
@@ -26,6 +24,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <unordered_map>
+#include <unordered_set>
 
 namespace nzsl
 {
@@ -345,6 +344,7 @@ namespace nzsl
 		std::unordered_map<std::size_t, std::string> variableNames;
 		std::unordered_map<std::string, unsigned int> explicitTextureBinding;
 		std::unordered_map<std::string, unsigned int> explicitUniformBlockBinding;
+		std::unordered_set<std::string> reservedNames;
 		Nz::Bitset<> declaredFunctions;
 		const GlslWriter::BindingMapping& bindingMapping;
 		GlslWriterPreVisitor previsitor;
@@ -2267,7 +2267,24 @@ namespace nzsl
 					AppendComment("struct tag: " + structInfo.desc->tag);
 			}
 
-			std::string varName = node.name + externalVar.name + m_currentState->moduleSuffix;
+			std::string varName = externalVar.name + m_currentState->moduleSuffix;
+			if (!node.name.empty())
+				varName = fmt::format("{}_{}", node.name, varName);
+
+			if (m_currentState->reservedNames.count(varName) > 0)
+			{
+				unsigned int cloneIndex = 2;
+				std::string candidateName;
+				do
+				{
+					candidateName = fmt::format("{}_{}", varName, cloneIndex++);
+				}
+				while (m_currentState->reservedNames.count(candidateName) > 0);
+
+				varName = std::move(candidateName);
+			}
+
+			m_currentState->reservedNames.insert(varName);
 
 			// Layout handling
 			bool hasLayout = false;
@@ -2519,9 +2536,23 @@ namespace nzsl
 	void GlslWriter::Visit(Ast::DeclareVariableStatement& node)
 	{
 		assert(node.varIndex);
-		RegisterVariable(*node.varIndex, node.varName);
 
-		AppendVariableDeclaration(node.varType.GetResultingValue(), node.varName);
+		std::string varName = node.varName;
+		if (m_currentState->reservedNames.count(varName) > 0)
+		{
+			unsigned int cloneIndex = 2;
+			std::string candidateName;
+			do
+			{
+				candidateName = fmt::format("{}_{}", varName, cloneIndex++);
+			} while (m_currentState->reservedNames.count(candidateName) > 0);
+
+			varName = std::move(candidateName);
+		}
+
+		AppendVariableDeclaration(node.varType.GetResultingValue(), varName);
+		RegisterVariable(*node.varIndex, std::move(varName));
+		
 		if (node.initialExpression)
 		{
 			Append(" = ");

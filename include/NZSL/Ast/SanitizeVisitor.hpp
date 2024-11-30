@@ -144,11 +144,11 @@ namespace nzsl::Ast
 
 			std::size_t RegisterAlias(std::string name, std::optional<Identifier> aliasData, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
 			std::size_t RegisterConstant(std::string name, std::optional<ConstantValue> value, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
+			std::size_t RegisterExternalBlock(std::string name, std::size_t externalBlockIndex, const SourceLocation& sourceLocation);
 			std::size_t RegisterFunction(std::string name, std::optional<FunctionData> funcData, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
 			std::size_t RegisterIntrinsic(std::string name, IntrinsicType type);
 			std::size_t RegisterModule(std::string moduleIdentifier, std::size_t moduleIndex);
 			void RegisterReservedName(std::string name);
-			void RegisterExternalName(std::string name, const SourceLocation& sourceLocation);
 			std::size_t RegisterStruct(std::string name, std::optional<StructDescription*> description, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
 			std::size_t RegisterType(std::string name, std::optional<ExpressionType> expressionType, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
 			std::size_t RegisterType(std::string name, std::optional<PartialType> partialType, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
@@ -208,7 +208,7 @@ namespace nzsl::Ast
 			{
 				Alias,
 				Constant,
-				External,
+				ExternalBlock,
 				Function,
 				Intrinsic,
 				Module,

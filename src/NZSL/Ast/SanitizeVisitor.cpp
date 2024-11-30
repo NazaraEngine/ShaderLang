@@ -14,7 +14,6 @@
 #include <NZSL/Ast/ExportVisitor.hpp>
 #include <NZSL/Ast/ExpressionType.hpp>
 #include <NZSL/Ast/IndexRemapperVisitor.hpp>
-#include <NZSL/Ast/RecursiveVisitor.hpp>
 #include <NZSL/Ast/ReflectVisitor.hpp>
 #include <NZSL/Ast/Utils.hpp>
 #include <NZSL/Lang/Errors.hpp>
@@ -22,7 +21,6 @@
 #include <fmt/format.h>
 #include <frozen/unordered_map.h>
 #include <numeric>
-#include <sstream>
 #include <stdexcept>
 #include <unordered_set>
 #include <vector>
@@ -183,15 +181,21 @@ namespace nzsl::Ast
 			std::unique_ptr<DependencyCheckerVisitor> dependenciesVisitor;
 		};
 
+		struct NamedExternalBlockData
+		{
+			std::shared_ptr<Environment> environment;
+		};
+
 		struct UsedExternalData
 		{
 			unsigned int conditionalStatementIndex;
 		};
 
-		static constexpr std::size_t ModuleIdSentinel = std::numeric_limits<std::size_t>::max();
+		static constexpr std::size_t ModuleIdSentinel =  std::numeric_limits<std::size_t>::max();
 
 		std::array<DeclareFunctionStatement*, ShaderStageTypeCount> entryFunctions = {};
 		std::vector<ModuleData> modules;
+		std::vector<NamedExternalBlockData> namedExternalBlocks;
 		std::vector<StatementPtr>* currentStatementList = nullptr;
 		std::unordered_map<std::string, std::size_t> moduleByName;
 		std::unordered_map<std::uint64_t, UsedExternalData> usedBindingIndexes;
@@ -205,6 +209,7 @@ namespace nzsl::Ast
 		IdentifierList<Identifier> aliases;
 		IdentifierList<IntrinsicType> intrinsics;
 		IdentifierList<std::size_t> moduleIndices;
+		IdentifierList<std::size_t> namedExternalBlockIndices;
 		IdentifierList<StructDescription*> structs;
 		IdentifierList<std::variant<ExpressionType, NamedPartialType>> types;
 		IdentifierList<ExpressionType> variableTypes;
@@ -318,29 +323,44 @@ namespace nzsl::Ast
 			auto& identifierExpr = static_cast<IdentifierExpression&>(*node.expr);
 			const IdentifierData* identifierData = FindIdentifier(identifierExpr.identifier);
 
-			if (identifierData && identifierData->category == IdentifierCategory::Module)
+			if (identifierData)
 			{
-				std::size_t moduleIndex = m_context->moduleIndices.Retrieve(identifierData->index, node.sourceLocation);
-
-				const auto& env = *m_context->modules[moduleIndex].environment;
-				identifierData = FindIdentifier(env, node.identifiers.front().identifier);
-				if (identifierData)
+				switch (identifierData->category)
 				{
-					if (m_context->options.partialSanitization && identifierData->conditionalIndex != m_context->currentConditionalIndex)
-						return Cloner::Clone(node);
+					case IdentifierCategory::ExternalBlock:
+					{
+						std::size_t namedExternalBlockIndex = m_context->namedExternalBlockIndices.Retrieve(identifierData->index, node.sourceLocation);
 
-					return HandleIdentifier(identifierData, node.identifiers.front().sourceLocation);
-				}
-			}
+						const auto& env = *m_context->namedExternalBlocks[namedExternalBlockIndex].environment;
+						identifierData = FindIdentifier(env, node.identifiers.front().identifier);
+						if (identifierData)
+						{
+							if (m_context->options.partialSanitization && identifierData->conditionalIndex != m_context->currentConditionalIndex)
+								return Cloner::Clone(node);
 
-			if (identifierData && identifierData->category == IdentifierCategory::External)
-			{
-				identifierData = FindIdentifier(identifierExpr.identifier + node.identifiers.front().identifier);
-				if (identifierData)
-				{
-					auto variableValuePtr = HandleIdentifier(identifierData, node.identifiers.front().sourceLocation);
-					static_cast<VariableValueExpression*>(variableValuePtr.get())->prefix = identifierExpr.identifier;
-					return variableValuePtr;
+							return HandleIdentifier(identifierData, node.identifiers.front().sourceLocation);
+						}
+						break;
+					}
+
+					case IdentifierCategory::Module:
+					{
+						std::size_t moduleIndex = m_context->moduleIndices.Retrieve(identifierData->index, node.sourceLocation);
+
+						const auto& env = *m_context->modules[moduleIndex].environment;
+						identifierData = FindIdentifier(env, node.identifiers.front().identifier);
+						if (identifierData)
+						{
+							if (m_context->options.partialSanitization && identifierData->conditionalIndex != m_context->currentConditionalIndex)
+								return Cloner::Clone(node);
+
+							return HandleIdentifier(identifierData, node.identifiers.front().sourceLocation);
+						}
+						break;
+					}
+
+					default:
+						break;
 				}
 			}
 		}
@@ -1474,9 +1494,18 @@ NAZARA_WARNING_GCC_DISABLE("-Wmaybe-uninitialized")
 			}
 		};
 
+		std::optional<std::size_t> namedExternalBlockIndex;
+		std::shared_ptr<Environment> previousEnv;
 		if (!clone->name.empty())
 		{
-			RegisterExternalName(clone->name, clone->sourceLocation);
+			namedExternalBlockIndex = m_context->namedExternalBlocks.size();
+			auto& namedExternal = m_context->namedExternalBlocks.emplace_back();
+			namedExternal.environment = std::make_shared<Environment>();
+
+			RegisterExternalBlock(clone->name, *namedExternalBlockIndex, clone->sourceLocation);
+
+			previousEnv = std::move(m_context->currentEnv);
+			m_context->currentEnv = namedExternal.environment;
 		}
 
 		bool hasUnresolved = false;
@@ -1485,25 +1514,30 @@ NAZARA_WARNING_GCC_DISABLE("-Wmaybe-uninitialized")
 		{
 			auto& extVar = clone->externalVars[i];
 
-			SanitizeIdentifier(extVar.name, IdentifierScope::ExternalVariable);
+			std::string fullName;
+			if (!clone->name.empty())
+			{
+				fullName = fmt::format("{}_{}", clone->name, extVar.name);
+				SanitizeIdentifier(fullName, IdentifierScope::ExternalVariable);
+			}
 
-			std::string fullName = clone->name + extVar.name;
-			
+			std::string& internalName = (!clone->name.empty()) ? fullName : extVar.name;
+
 			Context::UsedExternalData usedBindingData;
 			usedBindingData.conditionalStatementIndex = m_context->currentConditionalIndex;
 
-			if (auto it = m_context->declaredExternalVar.find(fullName); it != m_context->declaredExternalVar.end())
+			if (auto it = m_context->declaredExternalVar.find(internalName); it != m_context->declaredExternalVar.end())
 			{
 				if (it->second.conditionalStatementIndex == m_context->currentConditionalIndex || usedBindingData.conditionalStatementIndex == m_context->currentConditionalIndex)
 					throw CompilerExtAlreadyDeclaredError{ extVar.sourceLocation, extVar.name };
 			}
 
-			m_context->declaredExternalVar.emplace(fullName, usedBindingData);
+			m_context->declaredExternalVar.emplace(internalName, usedBindingData);
 
 			std::optional<ExpressionType> resolvedType = ResolveTypeExpr(extVar.type, false, node.sourceLocation);
 			if (!resolvedType.has_value())
 			{
-				RegisterUnresolved(fullName);
+				RegisterUnresolved(extVar.name);
 				hasUnresolved = true;
 				continue;
 			}
@@ -1574,8 +1608,12 @@ NAZARA_WARNING_GCC_DISABLE("-Wmaybe-uninitialized")
 			}
 
 			extVar.type = std::move(resolvedType).value();
-			extVar.varIndex = RegisterVariable(fullName, std::move(varType), extVar.varIndex, extVar.sourceLocation);
+			extVar.varIndex = RegisterVariable(extVar.name, std::move(varType), extVar.varIndex, extVar.sourceLocation);
+			SanitizeIdentifier(extVar.name, IdentifierScope::ExternalVariable);
 		}
+
+		if (previousEnv)
+			m_context->currentEnv = std::move(previousEnv);
 
 		// Resolve auto-binding entries when explicit binding are known
 		if (!hasUnresolved)
@@ -2886,7 +2924,7 @@ NAZARA_WARNING_POP()
 				return Clone(constantExpr); //< Turn ConstantExpression into ConstantValueExpression
 			}
 
-			case IdentifierCategory::External:
+			case IdentifierCategory::ExternalBlock:
 				throw AstUnexpectedIdentifierError{ sourceLocation, "external" };
 
 			case IdentifierCategory::Function:
@@ -3658,6 +3696,25 @@ NAZARA_WARNING_POP()
 		return constantIndex;
 	}
 
+	std::size_t SanitizeVisitor::RegisterExternalBlock(std::string name, std::size_t externalBlockIndex, const SourceLocation& sourceLocation)
+	{
+		if (!IsIdentifierAvailable(name))
+			throw CompilerIdentifierAlreadyUsedError{ sourceLocation, name };
+
+		std::size_t index = m_context->namedExternalBlockIndices.Register(externalBlockIndex, std::nullopt, {});
+
+		m_context->currentEnv->identifiersInScope.push_back({
+			std::move(name),
+			{
+				index,
+				IdentifierCategory::ExternalBlock,
+				m_context->currentConditionalIndex
+			}
+		});
+
+		return index;
+	}
+	
 	std::size_t SanitizeVisitor::RegisterFunction(std::string name, std::optional<FunctionData> funcData, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
 	{
 		if (auto* identifier = FindIdentifier(name))
@@ -3758,20 +3815,6 @@ NAZARA_WARNING_POP()
 				m_context->currentConditionalIndex
 			}
 		});
-	}
-
-	void SanitizeVisitor::RegisterExternalName(std::string name, const SourceLocation& sourceLocation)
-	{
-		if (!IsIdentifierAvailable(name))
-			throw CompilerIdentifierAlreadyUsedError{ sourceLocation, name };
-
-		m_context->currentEnv->identifiersInScope.push_back({
-			std::move(name),
-			{
-				std::numeric_limits<std::size_t>::max(),
-				IdentifierCategory::External
-			}
-			});
 	}
 
 	std::size_t SanitizeVisitor::RegisterStruct(std::string name, std::optional<StructDescription*> description, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
