@@ -176,10 +176,12 @@ namespace nzsl
 	{
 		struct Identifier
 		{
+			std::optional<std::size_t> externalBlockIndex;
 			std::size_t moduleIndex;
 			std::string name;
 		};
 
+		std::optional<std::size_t> currentExternalBlockIndex;
 		std::size_t currentModuleIndex;
 		std::stringstream stream;
 		std::unordered_map<std::size_t, Identifier> aliases;
@@ -187,6 +189,7 @@ namespace nzsl
 		std::unordered_map<std::size_t, Identifier> functions;
 		std::unordered_map<std::size_t, Identifier> structs;
 		std::unordered_map<std::size_t, Identifier> variables;
+		std::vector<std::string> externalBlockNames;
 		std::vector<std::string> moduleNames;
 		const States* states = nullptr;
 		const Ast::Module* module;
@@ -804,11 +807,14 @@ namespace nzsl
 	template<typename T>
 	void LangWriter::AppendIdentifier(const T& map, std::size_t id)
 	{
-		const auto& structIdentifier = Nz::Retrieve(map, id);
-		if (structIdentifier.moduleIndex != m_currentState->currentModuleIndex)
-			Append(m_currentState->moduleNames[structIdentifier.moduleIndex], '.');
+		const auto& identifier = Nz::Retrieve(map, id);
+		if (identifier.moduleIndex != m_currentState->currentModuleIndex)
+			Append(m_currentState->moduleNames[identifier.moduleIndex], '.');
 
-		Append(structIdentifier.name);
+		if (identifier.externalBlockIndex != m_currentState->currentExternalBlockIndex)
+			Append(m_currentState->externalBlockNames[*identifier.externalBlockIndex], '.');
+
+		Append(identifier.name);
 	}
 
 	template<typename... Args>
@@ -922,6 +928,7 @@ namespace nzsl
 	void LangWriter::RegisterVariable(std::size_t varIndex, std::string varName)
 	{
 		State::Identifier identifier;
+		identifier.externalBlockIndex = m_currentState->currentExternalBlockIndex;
 		identifier.moduleIndex = m_currentState->currentModuleIndex;
 		identifier.name = std::move(varName);
 
@@ -1260,11 +1267,6 @@ namespace nzsl
 
 	void LangWriter::Visit(Ast::VariableValueExpression& node)
 	{
-		if (!node.prefix.empty())
-		{
-			Append(node.prefix, '.');
-		}
-
 		AppendIdentifier(m_currentState->variables, node.variableId);
 	}
 
@@ -1374,7 +1376,12 @@ namespace nzsl
 		Append("external");
 
 		if (!node.name.empty())
+		{
 			Append(" ", node.name);
+		
+			m_currentState->currentExternalBlockIndex = m_currentState->externalBlockNames.size();
+			m_currentState->externalBlockNames.push_back(node.name);
+		}
 
 		AppendLine();
 
@@ -1399,6 +1406,8 @@ namespace nzsl
 		}
 
 		LeaveScope();
+
+		m_currentState->currentExternalBlockIndex = {};
 	}
 
 	void LangWriter::Visit(Ast::DeclareFunctionStatement& node)
