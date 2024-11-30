@@ -226,7 +226,7 @@ namespace nzsl::Ast
 		currentContext.currentModule = clone;
 
 		m_context = &currentContext;
-		Nz::CallOnExit resetContext([&] { m_context = nullptr; });
+		NAZARA_DEFER({ m_context = nullptr; });
 
 		PreregisterIndices(module);
 
@@ -1300,7 +1300,7 @@ namespace nzsl::Ast
 			auto& cond = node.condStatements[condIndex];
 
 			PushScope();
-			Nz::CallOnExit unscoper([&] { PopScope(); });
+			NAZARA_DEFER({ PopScope(); });
 
 			auto BuildCondStatement = [&](BranchStatement::ConditionalStatement& condStatement)
 			{
@@ -1365,7 +1365,7 @@ namespace nzsl::Ast
 		{
 			unsigned int prevCondStatementIndex = m_context->currentConditionalIndex;
 			m_context->currentConditionalIndex = m_context->nextConditionalIndex++;
-			Nz::CallOnExit restoreCond([=] { m_context->currentConditionalIndex = prevCondStatementIndex; });
+			NAZARA_DEFER({ m_context->currentConditionalIndex = prevCondStatementIndex; });
 
 			// Unresolvable condition
 			auto condStatement = ShaderBuilder::ConditionalStatement(std::move(cloneCondition), Cloner::Clone(*node.statement));
@@ -1415,10 +1415,8 @@ namespace nzsl::Ast
 		return clone;
 	}
 
-#ifdef NAZARA_COMPILER_GCC
-	#pragma GCC diagnostic push
-	#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-#endif
+NAZARA_WARNING_PUSH()
+NAZARA_WARNING_GCC_DISABLE("-Wmaybe-uninitialized")
 
 	StatementPtr SanitizeVisitor::Clone(DeclareExternalStatement& node)
 	{
@@ -1605,9 +1603,7 @@ namespace nzsl::Ast
 		return clone;
 	}
 
-#ifdef NAZARA_COMPILER_GCC
-	#pragma GCC diagnostic pop
-#endif
+NAZARA_WARNING_POP()
 
 	StatementPtr SanitizeVisitor::Clone(DeclareFunctionStatement& node)
 	{
@@ -2043,7 +2039,7 @@ namespace nzsl::Ast
 
 				bool wasInLoop = m_context->inLoop;
 				m_context->inLoop = true;
-				Nz::CallOnExit restoreLoop([=] { m_context->inLoop = wasInLoop; });
+				NAZARA_DEFER({ m_context->inLoop = wasInLoop; });
 
 				clone->statement = CloneStatement(node.statement);
 			}
@@ -2162,7 +2158,7 @@ namespace nzsl::Ast
 		if (m_context->options.reduceLoopsToWhile)
 		{
 			PushScope();
-			Nz::CallOnExit unscoper([&] { PopScope(); });
+			NAZARA_DEFER({ PopScope(); });
 
 			auto multi = std::make_unique<MultiStatement>();
 			multi->sourceLocation = node.sourceLocation;
@@ -2218,7 +2214,7 @@ namespace nzsl::Ast
 			{
 				bool wasInLoop = m_context->inLoop;
 				m_context->inLoop = true;
-				Nz::CallOnExit restoreLoop([=] { m_context->inLoop = wasInLoop; });
+				NAZARA_DEFER({ m_context->inLoop = wasInLoop; });
 
 				body->statements.emplace_back(Unscope(CloneStatement(node.statement)));
 			}
@@ -2332,7 +2328,7 @@ namespace nzsl::Ast
 		if (m_context->options.reduceLoopsToWhile)
 		{
 			PushScope();
-			Nz::CallOnExit unscoper([&] { PopScope(); });
+			NAZARA_DEFER({ PopScope(); });
 
 			auto multi = std::make_unique<MultiStatement>();
 			multi->sourceLocation = node.sourceLocation;
@@ -2376,7 +2372,7 @@ namespace nzsl::Ast
 				{
 					bool wasInLoop = m_context->inLoop;
 					m_context->inLoop = true;
-					Nz::CallOnExit restoreLoop([=] { m_context->inLoop = wasInLoop; });
+					NAZARA_DEFER({ m_context->inLoop = wasInLoop; });
 
 					body->statements.emplace_back(Unscope(CloneStatement(node.statement)));
 				}
@@ -2408,7 +2404,7 @@ namespace nzsl::Ast
 
 				bool wasInLoop = m_context->inLoop;
 				m_context->inLoop = true;
-				Nz::CallOnExit restoreLoop([=] { m_context->inLoop = wasInLoop; });
+				NAZARA_DEFER({ m_context->inLoop = wasInLoop; });
 
 				clone->statement = CloneStatement(node.statement);
 			}
@@ -2769,7 +2765,7 @@ namespace nzsl::Ast
 		{
 			bool wasInLoop = m_context->inLoop;
 			m_context->inLoop = true;
-			Nz::CallOnExit restoreLoop([=] { m_context->inLoop = wasInLoop; });
+			NAZARA_DEFER({ m_context->inLoop = wasInLoop; });
 
 			clone->body = CloneStatement(node.body);
 		}

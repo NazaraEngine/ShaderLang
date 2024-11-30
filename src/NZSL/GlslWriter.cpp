@@ -367,10 +367,7 @@ namespace nzsl
 		state.states = &states;
 
 		m_currentState = &state;
-		Nz::CallOnExit onExit([this]()
-		{
-			m_currentState = nullptr;
-		});
+		NAZARA_DEFER({ m_currentState = nullptr; });
 
 		Ast::ModulePtr sanitizedModule;
 		const Ast::Module* targetModule;
@@ -549,7 +546,7 @@ namespace nzsl
 			std::size_t startPos = 0;
 			while ((startPos = identifier.find("__"sv, startPos)) != std::string::npos)
 			{
-				std::size_t endPos = identifier.find_first_not_of("_", startPos);
+				std::size_t endPos = identifier.find_first_not_of('_', startPos);
 				identifier.replace(startPos, endPos - startPos, fmt::format("{}{}_", (startPos == 0) ? "_" : "", endPos - startPos));
 
 				startPos = endPos;

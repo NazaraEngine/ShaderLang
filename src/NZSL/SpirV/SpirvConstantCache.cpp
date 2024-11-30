@@ -4,9 +4,9 @@
 
 #include <NZSL/SpirV/SpirvConstantCache.hpp>
 #include <NazaraUtils/Assert.hpp>
+#include <NZSL/SpirvWriter.hpp>
 #include <NZSL/Ast/Nodes.hpp>
 #include <NZSL/Math/FieldOffsets.hpp>
-#include <NZSL/SpirvWriter.hpp>
 #include <NZSL/SpirV/SpirvSection.hpp>
 #include <tsl/ordered_map.h>
 #include <cassert>

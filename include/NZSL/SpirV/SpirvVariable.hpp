@@ -8,8 +8,8 @@
 #define NZSL_SPIRV_SPIRVVARIABLE_HPP
 
 #include <NZSL/Config.hpp>
-#include <NZSL/SpirV/SpirvData.hpp>
 #include <NZSL/SpirV/SpirvConstantCache.hpp>
+#include <NZSL/SpirV/SpirvData.hpp>
 
 namespace nzsl
 {
