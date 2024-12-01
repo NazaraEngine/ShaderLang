@@ -83,7 +83,7 @@ module;
 
 import * from SimpleModule;
 
-external
+external ExtData
 {
 	[binding(0)] block: uniform[Block]
 }
@@ -91,7 +91,7 @@ external
 [entry(frag)]
 fn main(input: InputData) -> OutputData
 {
-	let data = block.data;
+	let data = ExtData.block.data;
 
 	let output: OutputData;
 	output.value = GetDataValue(data) * input.value * Pi;
@@ -142,10 +142,10 @@ struct OutputData_SimpleModule
 // Description: Main file
 // License: MIT
 
-layout(std140) uniform _nzslBindingblock
+layout(std140) uniform _nzslBindingExtData_block
 {
 	Data_SimpleModule data;
-} block;
+} ExtData_block;
 
 /**************** Inputs ****************/
 in float _nzslInvalue;
@@ -159,7 +159,7 @@ void main()
 	input_.value = _nzslInvalue;
 
 	Data_SimpleModule data;
-	data.value = block.data.value;
+	data.value = ExtData_block.data.value;
 	OutputData_SimpleModule output_;
 	output_.value = ((GetDataValue_SimpleModule(data)) * input_.value) * (3.141592);
 
@@ -219,7 +219,7 @@ alias OutputData = _SimpleModule.OutputData;
 
 const Pi: f32 = _SimpleModule.Pi;
 
-external
+external ExtData
 {
 	[set(0), binding(0)] block: uniform[_SimpleModule.Block]
 }
@@ -227,7 +227,7 @@ external
 [entry(frag)]
 fn main(input: InputData) -> OutputData
 {
-	let data: _SimpleModule.Data = block.data;
+	let data: _SimpleModule.Data = ExtData.block.data;
 	let output: OutputData;
 	output.value = ((GetDataValue(data)) * input.value) * Pi;
 	return output;
