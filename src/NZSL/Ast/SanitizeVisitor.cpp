@@ -1501,6 +1501,7 @@ NAZARA_WARNING_GCC_DISABLE("-Wmaybe-uninitialized")
 			namedExternalBlockIndex = m_context->namedExternalBlocks.size();
 			auto& namedExternal = m_context->namedExternalBlocks.emplace_back();
 			namedExternal.environment = std::make_shared<Environment>();
+			namedExternal.environment->parentEnv = m_context->currentEnv;
 
 			RegisterExternalBlock(clone->name, *namedExternalBlockIndex, clone->sourceLocation);
 

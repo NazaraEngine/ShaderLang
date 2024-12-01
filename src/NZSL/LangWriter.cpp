@@ -811,7 +811,7 @@ namespace nzsl
 		if (identifier.moduleIndex != m_currentState->currentModuleIndex)
 			Append(m_currentState->moduleNames[identifier.moduleIndex], '.');
 
-		if (identifier.externalBlockIndex != m_currentState->currentExternalBlockIndex)
+		if (identifier.externalBlockIndex && identifier.externalBlockIndex != m_currentState->currentExternalBlockIndex)
 			Append(m_currentState->externalBlockNames[*identifier.externalBlockIndex], '.');
 
 		Append(identifier.name);
