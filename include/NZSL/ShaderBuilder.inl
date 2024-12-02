@@ -105,20 +105,22 @@ namespace nzsl::ShaderBuilder
 		return branchNode;
 	}
 
-	inline Ast::CallFunctionExpressionPtr Impl::CallFunction::operator()(std::string functionName, std::vector<Ast::ExpressionPtr> parameters) const
+	inline Ast::CallFunctionExpressionPtr Impl::CallFunction::operator()(std::string functionName, std::vector<Ast::ExpressionPtr> parameters, std::vector<Ast::CallFunctionExpression::ParameterSemantic> parametersSemantic) const
 	{
 		auto callFunctionExpression = std::make_unique<Ast::CallFunctionExpression>();
 		callFunctionExpression->targetFunction = ShaderBuilder::Identifier(std::move(functionName));
 		callFunctionExpression->parameters = std::move(parameters);
+		callFunctionExpression->parametersSemantic = std::move(parametersSemantic);
 
 		return callFunctionExpression;
 	}
 
-	inline Ast::CallFunctionExpressionPtr Impl::CallFunction::operator()(Ast::ExpressionPtr functionExpr, std::vector<Ast::ExpressionPtr> parameters) const
+	inline Ast::CallFunctionExpressionPtr Impl::CallFunction::operator()(Ast::ExpressionPtr functionExpr, std::vector<Ast::ExpressionPtr> parameters, std::vector<Ast::CallFunctionExpression::ParameterSemantic> parametersSemantic) const
 	{
 		auto callFunctionExpression = std::make_unique<Ast::CallFunctionExpression>();
 		callFunctionExpression->targetFunction = std::move(functionExpr);
 		callFunctionExpression->parameters = std::move(parameters);
+		callFunctionExpression->parametersSemantic = std::move(parametersSemantic);
 
 		return callFunctionExpression;
 	}

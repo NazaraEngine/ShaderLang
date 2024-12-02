@@ -423,6 +423,10 @@ namespace nzsl::Ast
 		for (auto& parameter : node.parameters)
 			clone->parameters.push_back(CloneExpression(parameter));
 
+		clone->parametersSemantic.reserve(node.parametersSemantic.size());
+		for (auto& parameterAttribute : node.parametersSemantic)
+			clone->parametersSemantic.push_back(parameterAttribute);
+
 		clone->cachedExpressionType = node.cachedExpressionType;
 		clone->sourceLocation = node.sourceLocation;
 

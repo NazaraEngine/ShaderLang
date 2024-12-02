@@ -83,6 +83,10 @@ namespace nzsl::Ast
 		Container(node.parameters);
 		for (auto& param : node.parameters)
 			Node(param);
+
+		Container(node.parametersSemantic);
+		for (auto& paramAttribute : node.parametersSemantic)
+			Enum(paramAttribute);
 	}
 
 	void SerializerBase::Serialize(CallMethodExpression& node)
