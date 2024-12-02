@@ -39,10 +39,10 @@ fn main() -> output
 
 	let fl__oa________t = 42.0;
 
-	let out: output;
-	out.active = (f32(input) + fl__oa________t).xxx;
+	let outValue: output;
+	outValue.active = (f32(input) + fl__oa________t).xxx;
 
-	return out;
+	return outValue;
 }
 )";
 
@@ -76,14 +76,14 @@ void main()
 	int input_ = int_();
 	int input2_2 = 0;
 	float fl2_oa8_t = 42.0;
-	output_ out_;
+	output_ outValue;
 	float cachedResult = (float(input_)) + fl2_oa8_t;
-	out_.active_ = vec3(cachedResult, cachedResult, cachedResult);
+	outValue.active_ = vec3(cachedResult, cachedResult, cachedResult);
 
-	_nzslOutactive_ = out_.active_;
-	_nzslOutactive2_2 = out_.active2_2;
-	_nzslOut_ = out_._;
-	_nzslOut_2_2 = out_._2_2;
+	_nzslOutactive_ = outValue.active_;
+	_nzslOutactive2_2 = outValue.active2_2;
+	_nzslOut_ = outValue._;
+	_nzslOut_2_2 = outValue._2_2;
 	return;
 }
 )");
@@ -116,9 +116,9 @@ fn main() -> output
 	let input: i32 = int();
 	let input_: i32 = 0;
 	let fl__oa________t: f32 = 42.0;
-	let out: output;
-	out.active = ((f32(input)) + fl__oa________t).xxx;
-	return out;
+	let outValue: output;
+	outValue.active = ((f32(input)) + fl__oa________t).xxx;
+	return outValue;
 }
 )");
 

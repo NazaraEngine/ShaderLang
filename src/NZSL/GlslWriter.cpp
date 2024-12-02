@@ -931,6 +931,15 @@ namespace nzsl
 
 			first = false;
 
+			if (parameter.semantic == Ast::CallFunctionExpression::ParameterSemantic::InOut)
+			{
+				Append("inout ");
+			}
+			else if (parameter.semantic == Ast::CallFunctionExpression::ParameterSemantic::Out)
+			{
+				Append("out ");
+			}
+
 			AppendVariableDeclaration(parameter.type.GetResultingValue(), parameter.name);
 		}
 		AppendLine((forward) ? ");" : ")");

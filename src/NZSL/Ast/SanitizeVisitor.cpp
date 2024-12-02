@@ -834,6 +834,10 @@ namespace nzsl::Ast
 			for (const auto& parameter : node.parameters)
 				clone->parameters.push_back(CloneExpression(parameter));
 
+			clone->parametersSemantic.reserve(node.parametersSemantic.size());
+			for (const auto& parameterAttribute : node.parametersSemantic)
+				clone->parametersSemantic.push_back(parameterAttribute);
+
 			m_context->currentFunction->calledFunctions.UnboundedSet(targetFuncIndex);
 
 			Validate(*clone);
@@ -1677,6 +1681,7 @@ NAZARA_WARNING_POP()
 		for (auto& parameter : node.parameters)
 		{
 			auto& cloneParam = clone->parameters.emplace_back();
+			cloneParam.semantic = parameter.semantic;
 			cloneParam.name = parameter.name;
 			cloneParam.type = CloneType(parameter.type);
 			cloneParam.varIndex = parameter.varIndex;
@@ -4597,6 +4602,9 @@ NAZARA_WARNING_POP()
 
 			if (ResolveAlias(*parameterType) != ResolveAlias(referenceDeclaration->parameters[i].type.GetResultingValue()))
 				throw CompilerFunctionCallUnmatchingParameterTypeError{ node.parameters[i]->sourceLocation, referenceDeclaration->name, Nz::SafeCast<std::uint32_t>(i), ToString(referenceDeclaration->parameters[i].type.GetResultingValue(), referenceDeclaration->parameters[i].sourceLocation), ToString(*parameterType, node.parameters[i]->sourceLocation)};
+
+			if (node.parametersSemantic[i] != referenceDeclaration->parameters[i].semantic)
+				throw CompilerFunctionCallUnmatchingParameterSemanticTypeError{ node.parameters[i]->sourceLocation, referenceDeclaration->name, Nz::SafeCast<std::uint32_t>(i), Ast::ToString(referenceDeclaration->parameters[i].semantic), Ast::ToString(node.parametersSemantic[i]) };
 		}
 
 		if (node.parameters.size() != referenceDeclaration->parameters.size())
