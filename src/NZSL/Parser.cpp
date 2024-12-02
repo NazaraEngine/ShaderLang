@@ -7,6 +7,7 @@
 #include <NZSL/ShaderBuilder.hpp>
 #include <NZSL/Lang/Errors.hpp>
 #include <NZSL/Lang/LangData.hpp>
+#include <NZSL/Ast/Utils.hpp>
 #include <frozen/string.h>
 #include <frozen/unordered_map.h>
 #include <array>
@@ -997,6 +998,27 @@ namespace nzsl
 	{
 		Ast::DeclareFunctionStatement::Parameter parameter;
 
+		const Token& t = Peek();
+		if (t.type == TokenType::InOut)
+		{
+			Consume();
+			parameter.semantic = Ast::CallFunctionExpression::ParameterSemantic::InOut;
+		}
+		else if (t.type == TokenType::Out)
+		{
+			Consume();
+			parameter.semantic = Ast::CallFunctionExpression::ParameterSemantic::Out;
+		}
+		else if (t.type == TokenType::In)
+		{
+			Consume();
+			parameter.semantic = Ast::CallFunctionExpression::ParameterSemantic::In;
+		}
+		else
+		{
+			parameter.semantic = Ast::CallFunctionExpression::ParameterSemantic::In;
+		}
+
 		parameter.name = ParseIdentifierAsName(&parameter.sourceLocation);
 
 		Expect(Advance(), TokenType::Colon);
@@ -1464,10 +1486,12 @@ namespace nzsl
 
 				// Function call
 				SourceLocation closingLocation;
-				auto parameters = ParseExpressionList(TokenType::ClosingParenthesis, &closingLocation);
+				std::vector<Ast::CallFunctionExpression::ParameterSemantic> parametersSemantic;
+				auto parameters = ParseFunctionExpressionList(parametersSemantic, closingLocation);
+				Nz::Assert(parameters.size() == parametersSemantic.size());
 
 				const SourceLocation& lhsLoc = lhs->sourceLocation;
-				lhs = ShaderBuilder::CallFunction(std::move(lhs), std::move(parameters));
+				lhs = ShaderBuilder::CallFunction(std::move(lhs), std::move(parameters), std::move(parametersSemantic));
 				lhs->sourceLocation = SourceLocation::BuildFromTo(lhsLoc, closingLocation);
 				continue;
 			}
@@ -1571,6 +1595,50 @@ namespace nzsl
 		const Token& endToken = Expect(Advance(), terminationToken);
 		if (terminationLocation)
 			*terminationLocation = endToken.location;
+
+		return parameters;
+	}
+
+	std::vector<Ast::ExpressionPtr> Parser::ParseFunctionExpressionList(std::vector<Ast::CallFunctionExpression::ParameterSemantic>& parametersSemantic, SourceLocation& terminationLocation)
+	{
+		std::vector<Ast::ExpressionPtr> parameters;
+		bool first = true;
+		size_t parameterIndex = 0;
+		while (Peek().type != TokenType::ClosingParenthesis)
+		{
+			if (!first)
+				Expect(Advance(), TokenType::Comma);
+
+			TokenType tokenType = Peek().type;
+			if (tokenType == TokenType::InOut || tokenType == TokenType::Out || tokenType == TokenType::In)
+			{
+				Consume();
+
+				Ast::ExpressionPtr expressionPtr = ParseExpression();
+				const Ast::ExpressionCategory category = Ast::GetExpressionCategory(*expressionPtr);
+				if (category != Ast::ExpressionCategory::LValue)
+					throw ParserFunctionParameterNonLValueError{ expressionPtr->sourceLocation, parameterIndex };
+
+				parameters.push_back(std::move(expressionPtr));
+				if (tokenType == TokenType::InOut)
+					parametersSemantic.push_back(Ast::CallFunctionExpression::ParameterSemantic::InOut);
+				else if (tokenType == TokenType::Out)
+					parametersSemantic.push_back(Ast::CallFunctionExpression::ParameterSemantic::Out);
+				else
+					parametersSemantic.push_back(Ast::CallFunctionExpression::ParameterSemantic::In);
+			}
+			else
+			{
+				parameters.push_back(ParseExpression());
+				parametersSemantic.push_back(Ast::CallFunctionExpression::ParameterSemantic::In);
+			}
+
+			first = false;
+			parameterIndex++;
+		}
+
+		const Token& endToken = Expect(Advance(), TokenType::ClosingParenthesis);
+		terminationLocation = endToken.location;
 
 		return parameters;
 	}

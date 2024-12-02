@@ -49,8 +49,8 @@ namespace nzsl::ShaderBuilder
 
 		struct CallFunction
 		{
-			inline Ast::CallFunctionExpressionPtr operator()(std::string functionName, std::vector<Ast::ExpressionPtr> parameters) const;
-			inline Ast::CallFunctionExpressionPtr operator()(Ast::ExpressionPtr functionExpr, std::vector<Ast::ExpressionPtr> parameters) const;
+			inline Ast::CallFunctionExpressionPtr operator()(std::string functionName, std::vector<Ast::ExpressionPtr> parameters, std::vector<Ast::CallFunctionExpression::ParameterSemantic> parametersSemantic) const;
+			inline Ast::CallFunctionExpressionPtr operator()(Ast::ExpressionPtr functionExpr, std::vector<Ast::ExpressionPtr> parameters, std::vector<Ast::CallFunctionExpression::ParameterSemantic> parametersSemantic) const;
 		};
 
 		struct Cast

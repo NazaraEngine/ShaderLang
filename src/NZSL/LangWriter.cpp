@@ -1055,6 +1055,15 @@ namespace nzsl
 			if (i != 0)
 				Append(", ");
 
+			if (node.parametersSemantic[i] == Ast::CallFunctionExpression::ParameterSemantic::InOut)
+			{
+				Append("inout ");
+			}
+			else if (node.parametersSemantic[i] == Ast::CallFunctionExpression::ParameterSemantic::Out)
+			{
+				Append("out ");
+			}
+
 			node.parameters[i]->Visit(*this);
 		}
 		Append(")");
@@ -1428,6 +1437,15 @@ namespace nzsl
 
 			if (i != 0)
 				Append(", ");
+
+			if (parameter.semantic == Ast::CallFunctionExpression::ParameterSemantic::InOut)
+			{
+				Append("inout ");
+			}
+			else if (parameter.semantic == Ast::CallFunctionExpression::ParameterSemantic::Out)
+			{
+				Append("out ");
+			}
 
 			Append(parameter.name);
 			Append(": ");

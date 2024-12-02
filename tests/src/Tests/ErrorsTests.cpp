@@ -739,6 +739,37 @@ fn test()
 	return 10;
 }
 )"), "(7,2 -> 11): CFunctionReturnWithAValue error: return with a value, in function returning no value");
+
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+fn Test(inout color: vec3[f32])
+{
+	color *= 2.0;
+}
+
+fn main()
+{
+	let x = vec3[f32](1.0, 1.0, 1.0);
+	Test(x);
+}
+)"), "(13, 7): CFunctionCallUnmatchingParameterSemanticType error: function Test parameter #0 semantic mismatch (expected inout, got in)");
+
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+fn Test(inout color: vec3[f32])
+{
+	color *= 2.0;
+}
+
+fn main()
+{
+	Test(inout 2.0);
+}
+)"), "(12,13 -> 15): PFunctionParameterNonLValue error: non-L-value cannot be passed for parameter #0");
 		}
 
 		/************************************************************************/

@@ -12,6 +12,23 @@ namespace nzsl::Ast
 {
 	Node::~Node() = default;
 
+	std::string_view ToString(CallFunctionExpression::ParameterSemantic attributeType)
+	{
+		switch (attributeType)
+		{
+		case nzsl::Ast::CallFunctionExpression::ParameterSemantic::In:
+			return "in";
+		case nzsl::Ast::CallFunctionExpression::ParameterSemantic::Out:
+			return "out";
+		case nzsl::Ast::CallFunctionExpression::ParameterSemantic::InOut:
+			return "inout";
+		default:
+			break;
+		}
+
+		NAZARA_UNREACHABLE();
+	}
+
 #define NZSL_SHADERAST_NODE(Node, Category) NodeType Node##Category::GetType() const \
 	{ \
 		return NodeType:: Node##Category; \

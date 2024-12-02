@@ -224,6 +224,9 @@ namespace nzsl::Ast
 
 	inline bool Compare(const DeclareFunctionStatement::Parameter& lhs, const DeclareFunctionStatement::Parameter& rhs, const ComparisonParams& params)
 	{
+		if (!Compare(lhs.semantic, rhs.semantic, params))
+			return false;
+
 		if (!Compare(lhs.name, rhs.name, params))
 			return false;
 
@@ -386,6 +389,9 @@ namespace nzsl::Ast
 			return false;
 
 		if (!Compare(lhs.parameters, rhs.parameters, params))
+			return false;
+
+		if (!Compare(lhs.parametersSemantic, rhs.parametersSemantic, params))
 			return false;
 
 		return true;
