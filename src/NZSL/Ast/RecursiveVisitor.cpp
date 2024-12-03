@@ -38,7 +38,7 @@ namespace nzsl::Ast
 	void RecursiveVisitor::Visit(CallFunctionExpression& node)
 	{
 		for (auto& param : node.parameters)
-			param->Visit(*this);
+			param.expr->Visit(*this);
 
 		node.targetFunction->Visit(*this);
 	}

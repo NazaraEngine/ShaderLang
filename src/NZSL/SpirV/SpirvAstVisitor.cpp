@@ -496,10 +496,10 @@ namespace nzsl
 			parameterIds[i] = varId;
 
 			//Don't generate OpLoad and OpStore for out arguments
-			if (node.parametersSemantic[i] == Ast::CallFunctionExpression::ParameterSemantic::Out)
+			if (node.parameters[i].semantic == Ast::FunctionParameterSemantic::Out)
 				continue;
 
-			std::uint32_t resultId = EvaluateExpression(*node.parameters[i]);
+			std::uint32_t resultId = EvaluateExpression(*node.parameters[i].expr);
 			m_currentBlock->Append(SpirvOp::OpStore, varId, resultId);
 		}
 
@@ -519,13 +519,13 @@ namespace nzsl
 		for (std::size_t i = 0; i < node.parameters.size(); ++i)
 		{
 			//Don't generate OpLoad and OpStore for in arguments
-			if (node.parametersSemantic[i] == Ast::CallFunctionExpression::ParameterSemantic::In)
+			if (node.parameters[i].semantic == Ast::FunctionParameterSemantic::In)
 				continue;
 
 			std::uint32_t paramResultId = AllocateResultId();
 			m_currentBlock->Append(SpirvOp::OpLoad, targetFunc.parameters[i].typeId, paramResultId, parameterIds[i]);
 			SpirvExpressionStore storeVisitor(m_writer, *this, *m_currentBlock);
-			storeVisitor.Store(node.parameters[i], paramResultId);
+			storeVisitor.Store(node.parameters[i].expr, paramResultId);
 		}
 
 		PushResultId(resultId);

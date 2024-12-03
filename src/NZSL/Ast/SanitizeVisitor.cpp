@@ -832,11 +832,11 @@ namespace nzsl::Ast
 
 			clone->parameters.reserve(node.parameters.size());
 			for (const auto& parameter : node.parameters)
-				clone->parameters.push_back(CloneExpression(parameter));
-
-			clone->parametersSemantic.reserve(node.parametersSemantic.size());
-			for (const auto& parameterAttribute : node.parametersSemantic)
-				clone->parametersSemantic.push_back(parameterAttribute);
+			{
+				auto& cloneParameter = clone->parameters.emplace_back();
+				cloneParameter.expr = CloneExpression(parameter.expr);
+				cloneParameter.semantic = parameter.semantic;
+			}
 
 			m_context->currentFunction->calledFunctions.UnboundedSet(targetFuncIndex);
 
@@ -854,8 +854,8 @@ namespace nzsl::Ast
 			std::vector<ExpressionPtr> parameters;
 			parameters.reserve(node.parameters.size());
 
-			for (const auto& param : node.parameters)
-				parameters.push_back(CloneExpression(param));
+			for (const auto& parameter : node.parameters)
+				parameters.push_back(CloneExpression(parameter.expr));
 
 			auto intrinsic = ShaderBuilder::Intrinsic(m_context->intrinsics.Retrieve(targetIntrinsicId, node.sourceLocation), std::move(parameters));
 			intrinsic->sourceLocation = node.sourceLocation;
@@ -874,8 +874,8 @@ namespace nzsl::Ast
 			assert(targetExpr->GetType() == NodeType::AccessIdentifierExpression);
 
 			parameters.push_back(std::move(static_cast<AccessIdentifierExpression&>(*targetExpr).expr));
-			for (const auto& param : node.parameters)
-				parameters.push_back(CloneExpression(param));
+			for (const auto& parameter : node.parameters)
+				parameters.push_back(CloneExpression(parameter.expr));
 
 			const ExpressionType& objectType = methodType.objectType->type;
 			if (IsArrayType(objectType) && m_context->options.removeConstArraySize)
@@ -943,7 +943,7 @@ namespace nzsl::Ast
 
 			clone->expressions.reserve(node.parameters.size());
 			for (std::size_t i = 0; i < node.parameters.size(); ++i)
-				clone->expressions.push_back(CloneExpression(node.parameters[i]));
+				clone->expressions.push_back(CloneExpression(node.parameters[i].expr));
 
 			Validate(*clone);
 
@@ -4596,15 +4596,15 @@ NAZARA_WARNING_POP()
 
 		for (std::size_t i = 0; i < node.parameters.size(); ++i)
 		{
-			const ExpressionType* parameterType = GetExpressionType(*node.parameters[i]);
+			const ExpressionType* parameterType = GetExpressionType(*node.parameters[i].expr);
 			if (!parameterType)
 				return ValidationResult::Unresolved;
 
 			if (ResolveAlias(*parameterType) != ResolveAlias(referenceDeclaration->parameters[i].type.GetResultingValue()))
-				throw CompilerFunctionCallUnmatchingParameterTypeError{ node.parameters[i]->sourceLocation, referenceDeclaration->name, Nz::SafeCast<std::uint32_t>(i), ToString(referenceDeclaration->parameters[i].type.GetResultingValue(), referenceDeclaration->parameters[i].sourceLocation), ToString(*parameterType, node.parameters[i]->sourceLocation)};
+				throw CompilerFunctionCallUnmatchingParameterTypeError{ node.parameters[i].expr->sourceLocation, referenceDeclaration->name, Nz::SafeCast<std::uint32_t>(i), ToString(referenceDeclaration->parameters[i].type.GetResultingValue(), referenceDeclaration->parameters[i].sourceLocation), ToString(*parameterType, node.parameters[i].expr->sourceLocation)};
 
-			if (node.parametersSemantic[i] != referenceDeclaration->parameters[i].semantic)
-				throw CompilerFunctionCallUnmatchingParameterSemanticTypeError{ node.parameters[i]->sourceLocation, referenceDeclaration->name, Nz::SafeCast<std::uint32_t>(i), Ast::ToString(referenceDeclaration->parameters[i].semantic), Ast::ToString(node.parametersSemantic[i]) };
+			if (node.parameters[i].semantic != referenceDeclaration->parameters[i].semantic)
+				throw CompilerFunctionCallUnmatchingParameterSemanticTypeError{ node.parameters[i].expr->sourceLocation, referenceDeclaration->name, Nz::SafeCast<std::uint32_t>(i), Ast::ToString(referenceDeclaration->parameters[i].semantic), Ast::ToString(node.parameters[i].semantic) };
 		}
 
 		if (node.parameters.size() != referenceDeclaration->parameters.size())

@@ -421,11 +421,11 @@ namespace nzsl::Ast
 
 		clone->parameters.reserve(node.parameters.size());
 		for (auto& parameter : node.parameters)
-			clone->parameters.push_back(CloneExpression(parameter));
-
-		clone->parametersSemantic.reserve(node.parametersSemantic.size());
-		for (auto& parameterAttribute : node.parametersSemantic)
-			clone->parametersSemantic.push_back(parameterAttribute);
+		{
+			auto& cloneParameter = clone->parameters.emplace_back();
+			cloneParameter.expr = CloneExpression(parameter.expr);
+			cloneParameter.semantic = parameter.semantic;
+		}
 
 		clone->cachedExpressionType = node.cachedExpressionType;
 		clone->sourceLocation = node.sourceLocation;

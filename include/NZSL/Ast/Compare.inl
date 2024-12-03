@@ -199,6 +199,17 @@ namespace nzsl::Ast
 		return true;
 	}
 
+	inline bool Compare(const CallFunctionExpression::Parameter& lhs, const CallFunctionExpression::Parameter& rhs, const ComparisonParams& params)
+	{
+		if (!Compare(lhs.semantic, rhs.semantic, params))
+			return false;
+
+		if (!Compare(lhs.expr, rhs.expr, params))
+			return false;
+
+		return true;
+	}
+
 	inline bool Compare(const DeclareExternalStatement::ExternalVar& lhs, const DeclareExternalStatement::ExternalVar& rhs, const ComparisonParams& params)
 	{
 		if (!Compare(lhs.bindingIndex, rhs.bindingIndex, params))
@@ -389,9 +400,6 @@ namespace nzsl::Ast
 			return false;
 
 		if (!Compare(lhs.parameters, rhs.parameters, params))
-			return false;
-
-		if (!Compare(lhs.parametersSemantic, rhs.parametersSemantic, params))
 			return false;
 
 		return true;

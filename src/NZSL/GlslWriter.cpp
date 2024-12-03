@@ -931,11 +931,11 @@ namespace nzsl
 
 			first = false;
 
-			if (parameter.semantic == Ast::CallFunctionExpression::ParameterSemantic::InOut)
+			if (parameter.semantic == Ast::FunctionParameterSemantic::InOut)
 			{
 				Append("inout ");
 			}
-			else if (parameter.semantic == Ast::CallFunctionExpression::ParameterSemantic::Out)
+			else if (parameter.semantic == Ast::FunctionParameterSemantic::Out)
 			{
 				Append("out ");
 			}
@@ -1850,7 +1850,7 @@ namespace nzsl
 			if (i != 0)
 				Append(", ");
 
-			node.parameters[i]->Visit(*this);
+			node.parameters[i].expr->Visit(*this);
 		}
 		Append(")");
 	}
