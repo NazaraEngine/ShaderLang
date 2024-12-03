@@ -36,6 +36,7 @@ namespace nzsl::Ast
 	template<typename T> bool Compare(const ExpressionValue<T>& lhs, const ExpressionValue<T>& rhs, const ComparisonParams& params = {});
 	inline bool Compare(const AccessIdentifierExpression::Identifier& lhs, const AccessIdentifierExpression::Identifier& rhs, const ComparisonParams& params = {});
 	inline bool Compare(const BranchStatement::ConditionalStatement& lhs, const BranchStatement::ConditionalStatement& rhs, const ComparisonParams& params = {});
+	inline bool Compare(const CallFunctionExpression::Parameter& lhs, const CallFunctionExpression::Parameter& rhs, const ComparisonParams& params = {});
 	inline bool Compare(const DeclareExternalStatement::ExternalVar& lhs, const DeclareExternalStatement::ExternalVar& rhs, const ComparisonParams& params = {});
 	inline bool Compare(const DeclareFunctionStatement::Parameter& lhs, const DeclareFunctionStatement::Parameter& rhs, const ComparisonParams& params = {});
 	inline bool Compare(const ImportStatement::Identifier& lhs, const ImportStatement::Identifier& rhs, const ComparisonParams& params = {});

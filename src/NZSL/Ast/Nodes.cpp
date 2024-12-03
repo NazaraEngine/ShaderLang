@@ -12,15 +12,15 @@ namespace nzsl::Ast
 {
 	Node::~Node() = default;
 
-	std::string_view ToString(CallFunctionExpression::ParameterSemantic attributeType)
+	std::string_view ToString(FunctionParameterSemantic semantic)
 	{
-		switch (attributeType)
+		switch (semantic)
 		{
-		case nzsl::Ast::CallFunctionExpression::ParameterSemantic::In:
+		case FunctionParameterSemantic::In:
 			return "in";
-		case nzsl::Ast::CallFunctionExpression::ParameterSemantic::Out:
+		case FunctionParameterSemantic::Out:
 			return "out";
-		case nzsl::Ast::CallFunctionExpression::ParameterSemantic::InOut:
+		case FunctionParameterSemantic::InOut:
 			return "inout";
 		default:
 			break;

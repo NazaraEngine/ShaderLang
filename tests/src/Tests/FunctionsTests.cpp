@@ -295,54 +295,72 @@ fn main() -> FragOut
 )");
 
 		ExpectSPIRV(*shaderModule, R"(
-OpFunction
-OpFunctionParameter
-OpFunctionParameter
-OpFunctionParameter
-OpFunctionParameter
-OpLabel
-OpLoad
-OpVectorTimesScalar
-OpStore
-OpStore
-OpReturn
-OpFunctionEnd
-OpFunction
-OpLabel
-OpVariable
-OpVariable
-OpVariable
-OpVariable
-OpVariable
-OpVariable
-OpVariable
-OpVariable
-OpCompositeConstruct
-OpStore
-OpStore
-OpStore
-OpLoad
-OpStore
-OpLoad
-OpStore
-OpLoad
-OpStore
-OpFunctionCall
-OpLoad
-OpStore
-OpLoad
-OpAccessChain
-OpStore
-OpLoad
-OpCompositeExtract
-OpAccessChain
-OpStore
-OpLoad
-OpCompositeExtract
-OpStore
-OpCompositeExtract
-OpStore
-OpReturn
-OpFunctionEnd)");
+ %1 = OpTypeVoid
+ %2 = OpTypeFloat 32
+ %3 = OpTypeVector %2 3
+ %4 = OpTypePointer StorageClass(Function) %3
+ %5 = OpTypePointer StorageClass(Function) %2
+ %6 = OpTypeFunction %1 %4 %5 %5 %5
+ %7 = OpConstant %2 f32(2)
+ %8 = OpConstant %2 f32(10)
+ %9 = OpTypeFunction %1
+%10 = OpTypePointer StorageClass(Output) %2
+%13 = OpTypeStruct %2 %2
+%14 = OpTypePointer StorageClass(Function) %13
+%15 = OpConstant %2 f32(1)
+%16 = OpTypeInt 32 1
+%17 = OpConstant %16 i32(1)
+%18 = OpConstant %16 i32(0)
+%11 = OpVariable %10 StorageClass(Output)
+%12 = OpVariable %10 StorageClass(Output)
+%19 = OpFunction %1 FunctionControl(0) %6
+%21 = OpFunctionParameter %4
+%22 = OpFunctionParameter %5
+%23 = OpFunctionParameter %5
+%24 = OpFunctionParameter %5
+%25 = OpLabel
+%26 = OpLoad %3 %21
+%27 = OpVectorTimesScalar %3 %26 %7
+      OpStore %21 %27
+      OpStore %22 %8
+      OpReturn
+      OpFunctionEnd
+%20 = OpFunction %1 FunctionControl(0) %9
+%28 = OpLabel
+%29 = OpVariable %14 StorageClass(Function)
+%30 = OpVariable %4 StorageClass(Function)
+%31 = OpVariable %5 StorageClass(Function)
+%32 = OpVariable %5 StorageClass(Function)
+%33 = OpVariable %4 StorageClass(Function)
+%34 = OpVariable %5 StorageClass(Function)
+%35 = OpVariable %5 StorageClass(Function)
+%36 = OpVariable %5 StorageClass(Function)
+%37 = OpCompositeConstruct %3 %15 %15 %15
+      OpStore %30 %37
+      OpStore %31 %7
+      OpStore %32 %15
+%38 = OpLoad %3 %30
+      OpStore %33 %38
+%39 = OpLoad %2 %31
+      OpStore %35 %39
+%40 = OpLoad %2 %32
+      OpStore %36 %40
+%41 = OpFunctionCall %1 %19 %33 %34 %35 %36
+%42 = OpLoad %3 %33
+      OpStore %30 %42
+%43 = OpLoad %2 %34
+%44 = OpAccessChain %5 %29 %17
+      OpStore %44 %43
+%45 = OpLoad %3 %30
+%46 = OpCompositeExtract %2 %45 0
+%47 = OpAccessChain %5 %29 %18
+      OpStore %47 %46
+%48 = OpLoad %13 %29
+%49 = OpCompositeExtract %2 %48 0
+      OpStore %11 %49
+%50 = OpCompositeExtract %2 %48 1
+      OpStore %12 %50
+      OpReturn
+      OpFunctionEnd)", {}, {}, true);
 	}
 }

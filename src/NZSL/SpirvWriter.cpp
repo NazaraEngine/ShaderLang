@@ -108,8 +108,8 @@ namespace nzsl
 				for (const auto& parameter : node.parameters)
 				{
 					auto& var = func.variables.emplace_back();
-					var.sourceLocation = parameter->sourceLocation;
-					var.typeId = m_constantCache.Register(*m_constantCache.BuildPointerType(*GetExpressionType(*parameter), SpirvStorageClass::Function));
+					var.sourceLocation = parameter.expr->sourceLocation;
+					var.typeId = m_constantCache.Register(*m_constantCache.BuildPointerType(*GetExpressionType(*parameter.expr), SpirvStorageClass::Function));
 				}
 			}
 

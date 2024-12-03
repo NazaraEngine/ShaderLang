@@ -23,6 +23,13 @@ namespace nzsl::Ast
 	class ExpressionVisitor;
 	class StatementVisitor;
 
+	enum class FunctionParameterSemantic : Nz::UInt8
+	{
+		In,
+		Out,
+		InOut,
+	};
+
 	struct Node;
 
 	using NodePtr = std::unique_ptr<Node>;
@@ -117,18 +124,16 @@ namespace nzsl::Ast
 
 	struct NZSL_API CallFunctionExpression : Expression
 	{
-		enum class ParameterSemantic : Nz::UInt8
-		{
-			In,
-			Out,
-			InOut,
-		};
-
 		NodeType GetType() const override;
 		void Visit(ExpressionVisitor& visitor) override;
 
-		std::vector<ExpressionPtr> parameters;
-		std::vector<ParameterSemantic> parametersSemantic;
+		struct Parameter
+		{
+			FunctionParameterSemantic semantic;
+			ExpressionPtr expr;
+		};
+
+		std::vector<Parameter> parameters;
 		ExpressionPtr targetFunction;
 	};
 
@@ -369,7 +374,7 @@ namespace nzsl::Ast
 
 		struct Parameter
 		{
-			CallFunctionExpression::ParameterSemantic semantic;
+			FunctionParameterSemantic semantic;
 			std::optional<std::size_t> varIndex;
 			std::string name;
 			ExpressionValue<ExpressionType> type;
@@ -517,7 +522,7 @@ namespace nzsl::Ast
 		StatementPtr body;
 	};
 
-	std::string_view ToString(CallFunctionExpression::ParameterSemantic attributeType);
+	std::string_view ToString(FunctionParameterSemantic semantic);
 
 #define NZSL_SHADERAST_NODE(X, C) using X##C##Ptr = std::unique_ptr<X##C>;
 
