@@ -1002,21 +1002,21 @@ namespace nzsl
 		if (t.type == TokenType::InOut)
 		{
 			Consume();
-			parameter.semantic = Ast::CallFunctionExpression::ParameterSemantic::InOut;
+			parameter.semantic = Ast::FunctionParameterSemantic::InOut;
 		}
 		else if (t.type == TokenType::Out)
 		{
 			Consume();
-			parameter.semantic = Ast::CallFunctionExpression::ParameterSemantic::Out;
+			parameter.semantic = Ast::FunctionParameterSemantic::Out;
 		}
 		else if (t.type == TokenType::In)
 		{
 			Consume();
-			parameter.semantic = Ast::CallFunctionExpression::ParameterSemantic::In;
+			parameter.semantic = Ast::FunctionParameterSemantic::In;
 		}
 		else
 		{
-			parameter.semantic = Ast::CallFunctionExpression::ParameterSemantic::In;
+			parameter.semantic = Ast::FunctionParameterSemantic::In;
 		}
 
 		parameter.name = ParseIdentifierAsName(&parameter.sourceLocation);
@@ -1486,12 +1486,10 @@ namespace nzsl
 
 				// Function call
 				SourceLocation closingLocation;
-				std::vector<Ast::CallFunctionExpression::ParameterSemantic> parametersSemantic;
-				auto parameters = ParseFunctionExpressionList(parametersSemantic, closingLocation);
-				Nz::Assert(parameters.size() == parametersSemantic.size());
+				auto parameters = ParseFunctionExpressionList(closingLocation);
 
 				const SourceLocation& lhsLoc = lhs->sourceLocation;
-				lhs = ShaderBuilder::CallFunction(std::move(lhs), std::move(parameters), std::move(parametersSemantic));
+				lhs = ShaderBuilder::CallFunction(std::move(lhs), std::move(parameters));
 				lhs->sourceLocation = SourceLocation::BuildFromTo(lhsLoc, closingLocation);
 				continue;
 			}
@@ -1599,9 +1597,9 @@ namespace nzsl
 		return parameters;
 	}
 
-	std::vector<Ast::ExpressionPtr> Parser::ParseFunctionExpressionList(std::vector<Ast::CallFunctionExpression::ParameterSemantic>& parametersSemantic, SourceLocation& terminationLocation)
+	std::vector<Ast::CallFunctionExpression::Parameter> Parser::ParseFunctionExpressionList(SourceLocation& terminationLocation)
 	{
-		std::vector<Ast::ExpressionPtr> parameters;
+		std::vector<Ast::CallFunctionExpression::Parameter> parameters;
 		bool first = true;
 		size_t parameterIndex = 0;
 		while (Peek().type != TokenType::ClosingParenthesis)
@@ -1609,6 +1607,7 @@ namespace nzsl
 			if (!first)
 				Expect(Advance(), TokenType::Comma);
 
+			Ast::CallFunctionExpression::Parameter& parameter = parameters.emplace_back();
 			TokenType tokenType = Peek().type;
 			if (tokenType == TokenType::InOut || tokenType == TokenType::Out || tokenType == TokenType::In)
 			{
@@ -1619,18 +1618,18 @@ namespace nzsl
 				if (category != Ast::ExpressionCategory::LValue)
 					throw ParserFunctionParameterNonLValueError{ expressionPtr->sourceLocation, parameterIndex };
 
-				parameters.push_back(std::move(expressionPtr));
+				parameter.expr = std::move(expressionPtr);
 				if (tokenType == TokenType::InOut)
-					parametersSemantic.push_back(Ast::CallFunctionExpression::ParameterSemantic::InOut);
+					parameter.semantic = Ast::FunctionParameterSemantic::InOut;
 				else if (tokenType == TokenType::Out)
-					parametersSemantic.push_back(Ast::CallFunctionExpression::ParameterSemantic::Out);
+					parameter.semantic = Ast::FunctionParameterSemantic::Out;
 				else
-					parametersSemantic.push_back(Ast::CallFunctionExpression::ParameterSemantic::In);
+					parameter.semantic = Ast::FunctionParameterSemantic::In;
 			}
 			else
 			{
-				parameters.push_back(ParseExpression());
-				parametersSemantic.push_back(Ast::CallFunctionExpression::ParameterSemantic::In);
+				parameter.expr = ParseExpression();
+				parameter.semantic = Ast::FunctionParameterSemantic::In;
 			}
 
 			first = false;

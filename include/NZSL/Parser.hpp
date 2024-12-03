@@ -85,7 +85,7 @@ namespace nzsl
 			Ast::ExpressionPtr ParseConstSelectExpression();
 			Ast::ExpressionPtr ParseExpression(int exprPrecedence = 0);
 			std::vector<Ast::ExpressionPtr> ParseExpressionList(TokenType terminationToken, SourceLocation* terminationLocation);
-			std::vector<Ast::ExpressionPtr> ParseFunctionExpressionList(std::vector<Ast::CallFunctionExpression::ParameterSemantic>& parametersSemantic, SourceLocation& terminationLocation);
+			std::vector<Ast::CallFunctionExpression::Parameter> ParseFunctionExpressionList(SourceLocation& terminationLocation);
 			Ast::ExpressionPtr ParseExpressionStatement();
 			Ast::ExpressionPtr ParseFloatingPointExpression();
 			Ast::ExpressionPtr ParseIdentifier();
