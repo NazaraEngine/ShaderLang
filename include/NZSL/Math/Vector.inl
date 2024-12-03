@@ -3,6 +3,7 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <NazaraUtils/Hash.hpp>
+#include <NazaraUtils/MathUtils.hpp>
 
 namespace nzsl
 {
@@ -300,6 +301,111 @@ namespace nzsl
 	constexpr bool Vector<T, N>::operator!=(const Vector& vec) const
 	{
 		return !operator==(vec);
+	}
+
+	template<typename T, std::size_t N>
+	constexpr Vector<T, N> Vector<T, N>::operator~() const
+	{
+		Vector<T, N> result;
+		for (std::size_t i = 0; i < N; ++i)
+			result.values[i] = ~values[i];
+
+		return result;
+	}
+
+	template<typename T, std::size_t N>
+	constexpr Vector<T, N> Vector<T, N>::operator&(const Vector<T, N>& vec) const
+	{
+		Vector<T, N> result;
+		for (std::size_t i = 0; i < N; ++i)
+			result.values[i] = values[i] & vec.values[i];
+
+		return result;
+	}
+
+	template<typename T, std::size_t N>
+	constexpr Vector<T, N> Vector<T, N>::operator|(const Vector& vec) const
+	{
+		Vector<T, N> result;
+		for (std::size_t i = 0; i < N; ++i)
+			result.values[i] = values[i] | vec.values[i];
+
+		return result;
+	}
+
+	template<typename T, std::size_t N>
+	inline constexpr Vector<T, N> Vector<T, N>::operator^(const Vector& vec) const
+	{
+		Vector<T, N> result;
+		for (std::size_t i = 0; i < N; ++i)
+			result.values[i] = values[i] ^ vec.values[i];
+
+		return result;
+	}
+
+	template<typename T, std::size_t N>
+	inline constexpr Vector<T, N> Vector<T, N>::operator<<(const Vector& vec) const
+	{
+		Vector<T, N> result;
+		for (std::size_t i = 0; i < N; ++i)
+			result.values[i] = values[i] << vec.values[i];
+
+		return result;
+	}
+
+	template<typename T, std::size_t N>
+	inline constexpr Vector<T, N> Vector<T, N>::operator>>(const Vector& vec) const
+	{
+		Vector<T, N> result;
+		for (std::size_t i = 0; i < N; ++i)
+			result.values[i] = Nz::ArithmeticRightShift(values[i], vec.values[i]);
+
+		return result;
+	}
+
+	template<typename T, std::size_t N>
+	inline constexpr Vector<T, N> Vector<T, N>::operator&=(const Vector& vec)
+	{
+		for (std::size_t i = 0; i < N; ++i)
+			values[i] &= vec.values[i];
+
+		return this;
+	}
+
+	template<typename T, std::size_t N>
+	inline constexpr Vector<T, N> Vector<T, N>::operator|=(const Vector& vec)
+	{
+		for (std::size_t i = 0; i < N; ++i)
+			values[i] |= vec.values[i];
+
+		return this;
+	}
+
+	template<typename T, std::size_t N>
+	inline constexpr Vector<T, N> Vector<T, N>::operator^=(const Vector& vec)
+	{
+		for (std::size_t i = 0; i < N; ++i)
+			values[i] ^= vec.values[i];
+
+		return this;
+	}
+
+	template<typename T, std::size_t N>
+	inline constexpr Vector<T, N> Vector<T, N>::operator<<=(const Vector& vec)
+	{
+		for (std::size_t i = 0; i < N; ++i)
+			values[i] <<= vec.values[i];
+
+		return this;
+	}
+
+	template<typename T, std::size_t N>
+	inline constexpr Vector<T, N> Vector<T, N>::operator>>=(const Vector& vec)
+	{
+		for (std::size_t i = 0; i < N; ++i)
+			values[i] = Nz::ArithmeticRightShift(values[i], vec.values[i]);
+
+		return this;
 	}
 
 	template<typename T, std::size_t N>
