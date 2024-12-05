@@ -1,11 +1,8 @@
 #include <Tests/ShaderUtils.hpp>
 #include <NZSL/FilesystemModuleResolver.hpp>
-#include <NZSL/LangWriter.hpp>
-#include <NZSL/ShaderBuilder.hpp>
 #include <NZSL/Parser.hpp>
-#include <NZSL/Ast/SanitizeVisitor.hpp>
+#include <NZSL/Ast/Transformations/IdentifierTypeResolverTransformer.hpp>
 #include <catch2/catch_test_macros.hpp>
-#include <cctype>
 
 void RegisterModule(const std::shared_ptr<nzsl::FilesystemModuleResolver>& moduleResolver, std::string_view source)
 {
@@ -13,11 +10,13 @@ void RegisterModule(const std::shared_ptr<nzsl::FilesystemModuleResolver>& modul
 
 	WHEN("Compiling module")
 	{
-		nzsl::Ast::SanitizeVisitor::Options sanitizeOpt;
-		sanitizeOpt.partialSanitization = true;
+		nzsl::Ast::Transformer::Context context;
+		context.partialCompilation = true;
+
+		nzsl::Ast::IdentifierTypeResolverTransformer transformer;
 
 		compiledModule = nzsl::Parse(source);
-		compiledModule = nzsl::Ast::Sanitize(*compiledModule, sanitizeOpt);
+		transformer.Transform(*compiledModule, context);
 	}
 
 	if (compiledModule)
@@ -104,10 +103,13 @@ fn main(input: InputData) -> OutputData
 		auto directoryModuleResolver = std::make_shared<nzsl::FilesystemModuleResolver>();
 		RegisterModule(directoryModuleResolver, importedSource);
 
-		nzsl::Ast::SanitizeVisitor::Options sanitizeOpt;
-		sanitizeOpt.moduleResolver = directoryModuleResolver;
+		nzsl::Ast::ImportResolverTransformer::Options importOpt;
+		importOpt.moduleResolver = directoryModuleResolver;
 
-		shaderModule = SanitizeModule(*shaderModule, sanitizeOpt);
+		ResolveOptions resolveOptions;
+		resolveOptions.importOptions = &importOpt;
+
+		ResolveModule(*shaderModule, resolveOptions);
 
 		ExpectGLSL(*shaderModule, R"(
 // Module SimpleModule
@@ -350,10 +352,13 @@ fn main(input: Input) -> OutputData
 		RegisterModule(directoryModuleResolver, blockModule);
 		RegisterModule(directoryModuleResolver, inputOutputModule);
 
-		nzsl::Ast::SanitizeVisitor::Options sanitizeOpt;
-		sanitizeOpt.moduleResolver = directoryModuleResolver;
+		nzsl::Ast::ImportResolverTransformer::Options importOpt;
+		importOpt.moduleResolver = directoryModuleResolver;
 
-		shaderModule = SanitizeModule(*shaderModule, sanitizeOpt);
+		ResolveOptions resolveOptions;
+		resolveOptions.importOptions = &importOpt;
+
+		ResolveModule(*shaderModule, resolveOptions);
 
 		ExpectGLSL(*shaderModule, R"(
 // Module Modules.Data
@@ -560,10 +565,13 @@ fn main()
 		RegisterModule(directoryModuleResolver, dataModule);
 		RegisterModule(directoryModuleResolver, funcModule);
 
-		nzsl::Ast::SanitizeVisitor::Options sanitizeOpt;
-		sanitizeOpt.moduleResolver = directoryModuleResolver;
+		nzsl::Ast::ImportResolverTransformer::Options importOpt;
+		importOpt.moduleResolver = directoryModuleResolver;
 
-		shaderModule = SanitizeModule(*shaderModule, sanitizeOpt);
+		ResolveOptions resolveOptions;
+		resolveOptions.importOptions = &importOpt;
+
+		ResolveModule(*shaderModule, resolveOptions);
 
 		ExpectGLSL(*shaderModule, R"(
 // Module Modules.Data
@@ -889,20 +897,20 @@ fn FragMain() -> FragOut
 		auto directoryModuleResolver = std::make_shared<nzsl::FilesystemModuleResolver>();
 		RegisterModule(directoryModuleResolver, gbufferOutput);
 
-		nzsl::Ast::SanitizeVisitor::Options options;
-		options.partialSanitization = true;
+		nzsl::Ast::Transformer::Context context;
+		context.partialCompilation = true;
 
-		REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(*shaderModule, options));
+		nzsl::Ast::IdentifierTypeResolverTransformer transformer;
 
-		options.moduleResolver = directoryModuleResolver;
-		options.partialSanitization = false;
-		options.removeOptionDeclaration = true;
+		REQUIRE_NOTHROW(transformer.Transform(*shaderModule, context));
+
+		context.partialCompilation = false;
 
 		WHEN("Trying ForwardPass=true")
 		{
-			options.optionValues[nzsl::Ast::HashOption("ForwardPass")] = true;
+			context.optionValues[nzsl::Ast::HashOption("ForwardPass")] = true;
 
-			REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(*shaderModule, options));
+			REQUIRE_NOTHROW(transformer.Transform(*shaderModule, context));
 
 			ExpectNZSL(*shaderModule, R"(
 struct FragOut
@@ -927,9 +935,9 @@ fn FragMain() -> FragOut
 
 		WHEN("Trying ForwardPass=false")
 		{
-			options.optionValues[nzsl::Ast::HashOption("ForwardPass")] = false;
+			context.optionValues[nzsl::Ast::HashOption("ForwardPass")] = false;
 
-			REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(*shaderModule, options));
+			REQUIRE_NOTHROW(transformer.Transform(*shaderModule, context));
 
 			ExpectNZSL(*shaderModule, R"(
 [nzsl_version("1.0")]
@@ -1039,11 +1047,14 @@ fn FragMain() -> FragOut
 		RegisterModule(directoryModuleResolver, lightingPhongData);
 		RegisterModule(directoryModuleResolver, lightingShadowData);
 
-		nzsl::Ast::SanitizeVisitor::Options options;
-		options.moduleResolver = directoryModuleResolver;
+		nzsl::Ast::ImportResolverTransformer::Options importOpt;
+		importOpt.moduleResolver = directoryModuleResolver;
+
+		nzsl::Ast::ImportResolverTransformer importResolver;
+		nzsl::Ast::Transformer::Context context;
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(mainSource);
-		REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(*shaderModule, options));
+		REQUIRE_NOTHROW(importResolver.Transform(*shaderModule, context, importOpt));
 
 		ExpectNZSL(*shaderModule, R"(
 [nzsl_version("1.0")]
@@ -1182,10 +1193,13 @@ fn main(input: Module.InputData) -> Module.OutputData
 		auto directoryModuleResolver = std::make_shared<nzsl::FilesystemModuleResolver>();
 		RegisterModule(directoryModuleResolver, importedSource);
 
-		nzsl::Ast::SanitizeVisitor::Options sanitizeOpt;
-		sanitizeOpt.moduleResolver = directoryModuleResolver;
+		nzsl::Ast::ImportResolverTransformer::Options importOpt;
+		importOpt.moduleResolver = directoryModuleResolver;
 
-		shaderModule = SanitizeModule(*shaderModule, sanitizeOpt);
+		ResolveOptions resolveOptions;
+		resolveOptions.importOptions = &importOpt;
+
+		ResolveModule(*shaderModule, resolveOptions);
 
 		ExpectGLSL(*shaderModule, R"(
 // Module Simple.Module
@@ -1412,10 +1426,13 @@ fn main(input: SimpleModule.InputData) -> SimpleModule.OutputData
 		auto directoryModuleResolver = std::make_shared<nzsl::FilesystemModuleResolver>();
 		RegisterModule(directoryModuleResolver, importedSource);
 
-		nzsl::Ast::SanitizeVisitor::Options sanitizeOpt;
-		sanitizeOpt.moduleResolver = directoryModuleResolver;
+		nzsl::Ast::ImportResolverTransformer::Options importOpt;
+		importOpt.moduleResolver = directoryModuleResolver;
 
-		shaderModule = SanitizeModule(*shaderModule, sanitizeOpt);
+		ResolveOptions resolveOptions;
+		resolveOptions.importOptions = &importOpt;
+
+		ResolveModule(*shaderModule, resolveOptions);
 
 		ExpectGLSL(*shaderModule, R"(
 // Module Simple.Module

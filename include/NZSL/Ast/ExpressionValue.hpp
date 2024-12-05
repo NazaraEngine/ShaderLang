@@ -29,6 +29,7 @@ namespace nzsl::Ast
 			ExpressionValue(ExpressionValue&&) noexcept = default;
 			~ExpressionValue() = default;
 
+			ExpressionPtr& GetExpression() &;
 			ExpressionPtr&& GetExpression() &&;
 			const ExpressionPtr& GetExpression() const &;
 			const T& GetResultingValue() const;

@@ -34,7 +34,7 @@ fn main()
 )";
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
-		shaderModule = SanitizeModule(*shaderModule);
+		ResolveModule(*shaderModule);
 
 		// SSBO requires GLSL 4.3O
 		nzsl::GlslWriter::Environment glslEnv;
@@ -159,7 +159,7 @@ fn main()
 )";
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
-		shaderModule = SanitizeModule(*shaderModule);
+		ResolveModule(*shaderModule);
 
 		// sampler1D and sampler1D_array are not supported by GLSL ES
 		nzsl::GlslWriter::Environment glslEnv;
@@ -538,7 +538,7 @@ fn main()
 )";
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
-		shaderModule = SanitizeModule(*shaderModule);
+		ResolveModule(*shaderModule);
 
 		// We need GLSL 4.0 for fp64
 		nzsl::GlslWriter::Environment glslEnv;
@@ -1106,7 +1106,7 @@ fn main()
 )";
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
-		shaderModule = SanitizeModule(*shaderModule);
+		ResolveModule(*shaderModule);
 
 		// We need GLSL 4.0 for fp64
 		nzsl::GlslWriter::Environment glslEnv;
@@ -1335,7 +1335,7 @@ fn main()
 )";
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
-		shaderModule = SanitizeModule(*shaderModule);
+		ResolveModule(*shaderModule);
 
 		// We need GLSL 4.0 for fp64
 		nzsl::GlslWriter::Environment glslEnv;
@@ -1561,7 +1561,7 @@ fn main()
 )";
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
-		shaderModule = SanitizeModule(*shaderModule);
+		ResolveModule(*shaderModule);
 
 		// fp64 requires GLSL 4.3O
 		nzsl::GlslWriter::Environment glslEnv;

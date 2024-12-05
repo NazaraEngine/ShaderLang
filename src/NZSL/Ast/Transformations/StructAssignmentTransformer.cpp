@@ -1,4 +1,4 @@
-// Copyright (C) 2024 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
+// Copyright (C) 2025 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -16,17 +16,17 @@ namespace nzsl::Ast
 		return TransformModule(module, context, error);
 	}
 
-	ExpressionPtr StructAssignmentTransformer::Transform(AssignExpression&& assign)
+	auto StructAssignmentTransformer::Transform(AssignExpression&& assign) -> ExpressionTransformation
 	{
 		if (m_options->splitWrappedStructAssignation || m_options->splitWrappedArrayAssignation)
 		{
 			const ExpressionType* targetType = GetResolvedExpressionType(*assign.left);
 			if (!targetType)
-				return nullptr;
+				return VisitChildren{};
 
 			const ExpressionType* sourceType = GetResolvedExpressionType(*assign.right);
 			if (!sourceType)
-				return nullptr;
+				return VisitChildren{};
 
 			if (m_options->splitWrappedStructAssignation && IsStructType(*targetType) && *targetType != *sourceType)
 			{
@@ -40,7 +40,7 @@ namespace nzsl::Ast
 				auto dstVar = CacheExpression(std::move(assign.left));
 				auto srcVar = CacheExpression(std::move(assign.right));
 
-				std::int32_t memberIndex = 0;
+				std::uint32_t memberIndex = 0;
 				for (auto& member : structDesc->members)
 				{
 					if (member.cond.IsResultingValue() && !member.cond.GetResultingValue())
@@ -51,25 +51,15 @@ namespace nzsl::Ast
 
 					if (!member.type.IsResultingValue())
 					{
-						if (!m_context->allowPartialSanitization)
+						if (!m_context->partialCompilation)
 							throw CompilerConstantExpressionRequiredError{ member.type.GetExpression()->sourceLocation };
 
 						memberIndex++;
 						continue;
 					}
 
-					ExpressionPtr dstAccess;
-					ExpressionPtr srcAccess;
-					if (m_options->useIdentifierAccessesForStructs)
-					{
-						dstAccess = ShaderBuilder::AccessMember(Clone(*dstVar), { member.name });
-						srcAccess = ShaderBuilder::AccessMember(Clone(*srcVar), { member.name });
-					}
-					else
-					{
-						dstAccess = ShaderBuilder::AccessIndex(Clone(*dstVar), memberIndex);
-						srcAccess = ShaderBuilder::AccessIndex(Clone(*srcVar), memberIndex);
-					}
+					ExpressionPtr dstAccess = ShaderBuilder::AccessField(Clone(*dstVar), memberIndex);
+					ExpressionPtr srcAccess = ShaderBuilder::AccessField(Clone(*srcVar), memberIndex);
 
 					dstAccess->cachedExpressionType = member.type.GetResultingValue();
 					dstAccess->sourceLocation = assign.sourceLocation;
@@ -80,7 +70,7 @@ namespace nzsl::Ast
 					ExpressionPtr memberAssign = ShaderBuilder::Assign(AssignType::Simple, std::move(dstAccess), std::move(srcAccess));
 					memberAssign->cachedExpressionType = member.type.GetResultingValue();
 					memberAssign->sourceLocation = assign.sourceLocation;
-					TransformExpression(memberAssign);
+					HandleExpression(memberAssign);
 
 					if (memberAssign->GetType() == NodeType::AssignExpression)
 					{
@@ -95,7 +85,7 @@ namespace nzsl::Ast
 					memberIndex++;
 				}
 
-				return dstVar;
+				return ReplaceExpression{ std::move(dstVar) };
 			}
 			else if (m_options->splitWrappedArrayAssignation && IsArrayType(*targetType) && *targetType != *sourceType)
 			{
@@ -117,46 +107,46 @@ namespace nzsl::Ast
 					ExpressionPtr memberAssign = ShaderBuilder::Assign(AssignType::Simple, std::move(dstAccess), std::move(srcAccess));
 					memberAssign->cachedExpressionType = arrayType.containedType->type;
 					memberAssign->sourceLocation = assign.sourceLocation;
-					TransformExpression(memberAssign);
+					HandleExpression(memberAssign);
 
 					if (memberAssign->GetType() == NodeType::AssignExpression)
 						AppendStatement(ShaderBuilder::ExpressionStatement(std::move(memberAssign)));
 				}
 
-				return dstVar;
+				return ReplaceExpression{ std::move(dstVar) };
 			}
 		}
 
-		return nullptr;
+		return VisitChildren{};
 	}
 
-	StatementPtr StructAssignmentTransformer::Transform(DeclareStructStatement&& declStruct)
+	auto StructAssignmentTransformer::Transform(DeclareStructStatement&& declStruct) -> StatementTransformation
 	{
 		if (declStruct.structIndex)
 			m_structDescs[*declStruct.structIndex] = &declStruct.description;
 
-		return nullptr;
+		return DontVisitChildren{};
 	}
 
-	StatementPtr StructAssignmentTransformer::Transform(DeclareVariableStatement&& declVariable)
+	auto StructAssignmentTransformer::Transform(DeclareVariableStatement&& declVariable) -> StatementTransformation
 	{
 		if (!declVariable.initialExpression)
-			return nullptr;
+			return DontVisitChildren{};
 
 		const ExpressionType* initialType = GetResolvedExpressionType(*declVariable.initialExpression);
 		if (!initialType)
-			return nullptr;
+			return DontVisitChildren{};
 
 		// Check if we should split
 		ExpressionType unwrappedType = UnwrapExternalType(*initialType);
 		if (*initialType == unwrappedType)
-			return nullptr; //< not wrapped
+			return DontVisitChildren{}; //< not wrapped
 
 		if (IsArrayType(unwrappedType) && !m_options->splitWrappedArrayAssignation)
-			return nullptr;
+			return DontVisitChildren{};
 
 		if (IsStructType(unwrappedType) && !m_options->splitWrappedStructAssignation)
-			return nullptr;
+			return DontVisitChildren{};
 
 		// Split variable declaration and assignation
 		ExpressionPtr assign = ShaderBuilder::Assign(AssignType::Simple, ShaderBuilder::Variable(*declVariable.varIndex, std::move(unwrappedType), declVariable.sourceLocation), std::move(declVariable.initialExpression));
@@ -168,13 +158,13 @@ namespace nzsl::Ast
 		HandleStatementList<true>(multiStatement->statements, [&]
 		{
 			// Transform assignation into multiple assignations
-			TransformExpression(assign);
+			HandleExpression(assign);
 			if (assign->GetType() == NodeType::AssignExpression)
 				AppendStatement(ShaderBuilder::ExpressionStatement(std::move(assign)));
 		});
 
 		multiStatement->statements.insert(multiStatement->statements.begin(), std::move(GetCurrentStatementPtr()));
 
-		return multiStatement;
+		return ReplaceStatement{ std::move(multiStatement) };
 	}
 }

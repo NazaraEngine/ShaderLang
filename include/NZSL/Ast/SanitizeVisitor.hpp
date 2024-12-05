@@ -41,11 +41,9 @@ namespace nzsl::Ast
 
 			struct Options
 			{
-				std::function<bool(std::string& identifier, IdentifierScope identifierScope)> identifierSanitizer; //< ignored when performing partial sanitization
 				std::shared_ptr<ModuleResolver> moduleResolver;
 				std::unordered_map<OptionHash, ConstantValue> optionValues;
 				bool forceAutoBindingResolve = false;
-				bool makeVariableNameUnique = false;
 				bool partialSanitization = false;
 				bool removeAliases = false;
 				bool removeConstArraySize = false;
@@ -107,46 +105,23 @@ namespace nzsl::Ast
 			StatementPtr Clone(ScopedStatement& node) override;
 			StatementPtr Clone(WhileStatement& node) override;
 
-			const IdentifierData* FindIdentifier(std::string_view identifierName) const;
-			template<typename F> const IdentifierData* FindIdentifier(std::string_view identifierName, F&& functor) const;
-			const IdentifierData* FindIdentifier(const Environment& environment, std::string_view identifierName) const;
-			template<typename F> const IdentifierData* FindIdentifier(const Environment& environment, std::string_view identifierName, F&& functor) const;
-
 			const ExpressionType* GetExpressionType(Expression& expr) const;
 			const ExpressionType& GetExpressionTypeSecure(Expression& expr) const;
 
-			ExpressionPtr HandleIdentifier(const IdentifierData* identifierData, const SourceLocation& sourceLocation);
-
 			bool IsFeatureEnabled(ModuleFeature feature) const;
-			bool IsIdentifierAvailable(std::string_view identifier, bool allowReserved = true) const;
 
 			void PushScope();
 			void PopScope();
 
 			ExpressionPtr CacheResult(ExpressionPtr expression);
 
-			std::optional<ConstantValue> ComputeConstantValue(Expression& expr) const;
+			std::optional<ConstantValue> ComputeConstantValue(ExpressionPtr& expr) const;
 			template<typename T> ValidationResult ComputeExprValue(ExpressionValue<T>& attribute, const SourceLocation& sourceLocation) const;
 			template<typename T> ValidationResult ComputeExprValue(const ExpressionValue<T>& attribute, ExpressionValue<T>& targetAttribute, const SourceLocation& sourceLocation);
-			template<typename T> std::unique_ptr<T> PropagateConstants(T& node) const;
+			void PropagateConstants(ExpressionPtr& expr) const;
 
 			void PreregisterIndices(const Module& module);
 			void PropagateFunctionRequirements(FunctionData& callingFunction, std::size_t calledFuncIndex, Nz::Bitset<>& seen);
-
-			void RegisterBuiltin();
-
-			std::size_t RegisterAlias(std::string name, std::optional<Identifier> aliasData, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
-			std::size_t RegisterConstant(std::string name, std::optional<ConstantValue> value, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
-			std::size_t RegisterExternalBlock(std::string name, std::size_t externalBlockIndex, const SourceLocation& sourceLocation);
-			std::size_t RegisterFunction(std::string name, std::optional<FunctionData> funcData, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
-			std::size_t RegisterIntrinsic(std::string name, IntrinsicType type);
-			std::size_t RegisterModule(std::string moduleIdentifier, std::size_t moduleIndex);
-			void RegisterReservedName(std::string name);
-			std::size_t RegisterStruct(std::string name, std::optional<StructDescription*> description, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
-			std::size_t RegisterType(std::string name, std::optional<ExpressionType> expressionType, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
-			std::size_t RegisterType(std::string name, std::optional<PartialType> partialType, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
-			void RegisterUnresolved(std::string name);
-			std::size_t RegisterVariable(std::string name, std::optional<ExpressionType> type, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
 
 			const Identifier* ResolveAliasIdentifier(const Identifier* identifier, const SourceLocation& sourceLocation) const;
 			void ResolveFunctions();
@@ -155,7 +130,6 @@ namespace nzsl::Ast
 			std::optional<ExpressionType> ResolveTypeExpr(const ExpressionValue<ExpressionType>& exprTypeValue, bool resolveAlias, const SourceLocation& sourceLocation);
 
 			MultiStatementPtr SanitizeInternal(MultiStatement& rootNode, std::string* error);
-			bool SanitizeIdentifier(std::string& identifier, IdentifierScope identifierScope);
 
 			std::string ToString(const ExpressionType& exprType, const SourceLocation& sourceLocation) const;
 			std::string ToString(const NamedPartialType& partialType, const SourceLocation& sourceLocation) const;

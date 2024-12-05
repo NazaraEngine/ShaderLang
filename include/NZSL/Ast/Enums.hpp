@@ -104,11 +104,15 @@ namespace nzsl::Ast
 		RValue = 1
 	};
 
-	enum class IdentifierScope
+	enum class IdentifierType
 	{
+		Alias,
+		Const,
+		ExternalBlock,
 		ExternalVariable,
 		Field,
 		Function,
+		Option,
 		Parameter,
 		Struct,
 		Variable
@@ -201,6 +205,7 @@ namespace nzsl::Ast
 		None = -1,
 
 		// Expressions
+		AccessFieldExpression        = 44,
 		AccessIdentifierExpression   = 0,
 		AccessIndexExpression        = 1,
 		AliasValueExpression         = 2,
@@ -248,7 +253,7 @@ namespace nzsl::Ast
 		ScopedStatement          = 38,
 		WhileStatement           = 39,
 
-		Max = NamedExternalBlockExpression
+		Max = AccessFieldExpression
 	};
 
 	enum class PrimitiveType

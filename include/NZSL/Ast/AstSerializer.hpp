@@ -23,6 +23,7 @@ namespace nzsl::Ast
 			SerializerBase(SerializerBase&&) = delete;
 			~SerializerBase() = default;
 
+			void Serialize(AccessFieldExpression& node);
 			void Serialize(AccessIdentifierExpression& node);
 			void Serialize(AccessIndexExpression& node);
 			void Serialize(AliasValueExpression& node);

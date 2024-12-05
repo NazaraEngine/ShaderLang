@@ -33,7 +33,7 @@ fn main() -> FragOut
 )";
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
-		shaderModule = SanitizeModule(*shaderModule);
+		ResolveModule(*shaderModule);
 
 		ExpectGLSL(*shaderModule, R"(
 float GetValue()
@@ -125,7 +125,7 @@ fn foo() -> f32
 )";
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
-		shaderModule = SanitizeModule(*shaderModule);
+		ResolveModule(*shaderModule);
 
 		ExpectGLSL(*shaderModule, R"(
 float bar()
@@ -246,7 +246,7 @@ fn main() -> FragOut
 )";
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
-		shaderModule = SanitizeModule(*shaderModule);
+		ResolveModule(*shaderModule);
 
 		ExpectGLSL(*shaderModule, R"(
 void Half(inout vec3 color, out float value, float inValue, float inValue2)
@@ -396,13 +396,13 @@ fn main() -> FragOut
 )";
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
-		shaderModule = SanitizeModule(*shaderModule);
+		ResolveModule(*shaderModule);
 
 		ExpectGLSL(*shaderModule, R"(
 vec4 sample_center(sampler2D tex)
 {
-	float cachedResult = 0.5;
-	return texture(tex, vec2(cachedResult, cachedResult));
+	float _nzsl_cachedResult = 0.5;
+	return texture(tex, vec2(_nzsl_cachedResult, _nzsl_cachedResult));
 }
 
 uniform sampler2D ExtData_texture_;
@@ -524,13 +524,13 @@ fn main() -> FragOut
 )";
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
-		shaderModule = SanitizeModule(*shaderModule);
+		ResolveModule(*shaderModule);
 
 		ExpectGLSL(*shaderModule, R"(
 vec4 sample_center(sampler2D tex[3])
 {
-	float cachedResult = 0.5;
-	return texture(tex[1], vec2(cachedResult, cachedResult));
+	float _nzsl_cachedResult = 0.5;
+	return texture(tex[1], vec2(_nzsl_cachedResult, _nzsl_cachedResult));
 }
 
 uniform sampler2D ExtData_texture_[3];

@@ -1,4 +1,4 @@
-// Copyright (C) 2024 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
+// Copyright (C) 2025 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -16,10 +16,10 @@ namespace nzsl::Ast
 		return TransformModule(module, context, error);
 	}
 
-	ExpressionPtr MatrixTransformer::Transform(BinaryExpression&& binExpr)
+	auto MatrixTransformer::Transform(BinaryExpression&& binExpr) -> ExpressionTransformation
 	{
 		if (!m_options->removeMatrixBinaryAddSub)
-			return nullptr;
+			return VisitChildren{};
 
 		if (binExpr.op == BinaryType::Add || binExpr.op == BinaryType::Subtract)
 		{
@@ -61,29 +61,32 @@ namespace nzsl::Ast
 				result->cachedExpressionType = matrixType;
 				result->sourceLocation = binExpr.sourceLocation;
 
-				return result;
+				ExpressionPtr expr = std::move(result);
+				HandleExpression(expr);
+
+				return ReplaceExpression{ std::move(expr) };
 			}
 		}
 
-		return nullptr;
+		return VisitChildren{};
 	}
 
-	ExpressionPtr MatrixTransformer::Transform(CastExpression&& castExpr)
+	auto MatrixTransformer::Transform(CastExpression&& castExpr) -> ExpressionTransformation
 	{
 		if (!m_options->removeMatrixCast)
-			return nullptr;
+			return VisitChildren{};
 
 		if (!castExpr.targetType.IsResultingValue())
 		{
-			if (m_context->allowPartialSanitization)
-				return nullptr;
+			if (m_context->partialCompilation)
+				return VisitChildren{};
 
 			throw CompilerConstantExpressionRequiredError{ castExpr.targetType.GetExpression()->sourceLocation };
 		}
 
 		const ExpressionType& targetType = castExpr.targetType.GetResultingValue();
 
-		if (m_options->removeMatrixCast && IsMatrixType(targetType))
+		if (IsMatrixType(targetType))
 		{
 			const MatrixType& targetMatrixType = std::get<MatrixType>(targetType);
 
@@ -92,7 +95,7 @@ namespace nzsl::Ast
 			{
 				const ExpressionType* exprType = GetExpressionType(*castExpr.expressions[i]);
 				if (!exprType)
-					return nullptr; //< unresolved type
+					return VisitChildren{}; //< unresolved type
 			}
 
 			const ExpressionType& resolvedFrontExprType = *GetResolvedExpressionType(*castExpr.expressions.front());
@@ -100,7 +103,7 @@ namespace nzsl::Ast
 			if (isMatrixCast && std::get<MatrixType>(resolvedFrontExprType) == targetMatrixType)
 			{
 				// Nothing to do
-				return std::move(castExpr.expressions.front());
+				return ReplaceExpression{ std::move(castExpr.expressions.front()) };
 			}
 
 			auto* variableDeclaration = DeclareVariable("matrix", targetType, castExpr.sourceLocation);
@@ -149,6 +152,9 @@ namespace nzsl::Ast
 					{
 						if (castExpr.expressions.size() == 1) //< diagonal value
 						{
+							if (!cachedDiagonalValue)
+								cachedDiagonalValue = CacheExpression(std::move(castExpr.expressions.front()));
+
 							if (i == j)
 								expressions[j] = Clone(*cachedDiagonalValue);
 							else
@@ -164,6 +170,7 @@ namespace nzsl::Ast
 					}
 
 					auto buildVec = ShaderBuilder::Cast(ExpressionType{ VectorType{ targetMatrixType.rowCount, targetMatrixType.type } }, std::move(expressions));
+					buildVec->cachedExpressionType = buildVec->targetType.GetResultingValue();
 					buildVec->sourceLocation = location;
 
 					vectorExpr = std::move(buildVec);
@@ -205,14 +212,15 @@ namespace nzsl::Ast
 
 				// temp[i] = columnCastExpr
 				auto assignExpr = ShaderBuilder::Assign(AssignType::Simple, std::move(columnExpr), std::move(columnCastExpr));
+				assignExpr->cachedExpressionType = assignExpr->right->cachedExpressionType;
 				assignExpr->sourceLocation = castExpr.sourceLocation;
 
 				AppendStatement(ShaderBuilder::ExpressionStatement(std::move(assignExpr)));
 			}
 
-			return ShaderBuilder::Variable(variableIndex, targetType, castExpr.sourceLocation);
+			return ReplaceExpression{ ShaderBuilder::Variable(variableIndex, targetType, castExpr.sourceLocation) };
 		}
 
-		return nullptr;
+		return VisitChildren{};
 	}
 }

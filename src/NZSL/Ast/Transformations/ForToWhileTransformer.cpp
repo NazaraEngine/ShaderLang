@@ -1,4 +1,4 @@
-// Copyright (C) 2024 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
+// Copyright (C) 2025 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -14,14 +14,14 @@ namespace nzsl::Ast
 		return TransformModule(module, context, error);
 	}
 
-	StatementPtr ForToWhileTransformer::Transform(ForEachStatement&& forEachStatement)
+	auto ForToWhileTransformer::Transform(ForEachStatement&& forEachStatement) -> StatementTransformation
 	{
 		if (!m_options->reduceForEachLoopsToWhile)
-			return nullptr;
+			return VisitChildren{};
 
 		const ExpressionType* exprType = GetResolvedExpressionType(*forEachStatement.expression);
 		if (!exprType)
-			return nullptr;
+			return VisitChildren{};
 
 		if (!IsArrayType(*exprType))
 			throw CompilerForEachUnsupportedTypeError{ forEachStatement.sourceLocation, ToString(*exprType) };
@@ -48,6 +48,9 @@ namespace nzsl::Ast
 
 		// While condition
 		auto condition = ShaderBuilder::Binary(BinaryType::CompLt, ShaderBuilder::Variable(counterVarIndex, PrimitiveType::UInt32, forEachStatement.sourceLocation), ShaderBuilder::ConstantValue(arrayType.length, forEachStatement.sourceLocation));
+		condition->cachedExpressionType = PrimitiveType::Boolean;
+		condition->sourceLocation = forEachStatement.sourceLocation;
+
 		whileStatement->condition = std::move(condition);
 
 		// While body
@@ -55,14 +58,19 @@ namespace nzsl::Ast
 		body->statements.reserve(3);
 
 		auto accessIndex = ShaderBuilder::AccessIndex(std::move(forEachStatement.expression), ShaderBuilder::Variable(counterVarIndex, PrimitiveType::UInt32, forEachStatement.sourceLocation));
+		accessIndex->cachedExpressionType = innerType;
+		accessIndex->sourceLocation = forEachStatement.sourceLocation;
 
 		auto elementVariable = ShaderBuilder::DeclareVariable(forEachStatement.varName, std::move(accessIndex));
+		elementVariable->sourceLocation = forEachStatement.sourceLocation;
 		elementVariable->varIndex = forEachStatement.varIndex; //< Preserve var index
 
 		body->statements.emplace_back(std::move(elementVariable));
 		body->statements.emplace_back(Unscope(std::move(forEachStatement.statement)));
 
 		auto incrCounter = ShaderBuilder::Assign(AssignType::CompoundAdd, ShaderBuilder::Variable(counterVarIndex, PrimitiveType::UInt32, forEachStatement.sourceLocation), ShaderBuilder::ConstantValue(1u, forEachStatement.sourceLocation));
+		incrCounter->cachedExpressionType = PrimitiveType::UInt32;
+		incrCounter->sourceLocation = forEachStatement.sourceLocation;
 
 		body->statements.emplace_back(ShaderBuilder::ExpressionStatement(std::move(incrCounter)));
 
@@ -70,18 +78,18 @@ namespace nzsl::Ast
 
 		multi->statements.emplace_back(std::move(whileStatement));
 
-		return ShaderBuilder::Scoped(std::move(multi));
+		return ReplaceStatement{ ShaderBuilder::Scoped(std::move(multi)) };
 	}
 
-	StatementPtr ForToWhileTransformer::Transform(ForStatement&& forStatement)
+	auto ForToWhileTransformer::Transform(ForStatement&& forStatement) -> StatementTransformation
 	{
 		if (!m_options->reduceForLoopsToWhile)
-			return nullptr;
+			return VisitChildren{};
 
 		Expression& fromExpr = *forStatement.fromExpr;
 		const ExpressionType* fromExprType = GetResolvedExpressionType(fromExpr);
 		if (!fromExprType)
-			return nullptr;
+			return VisitChildren{};
 
 		if (!IsPrimitiveType(*fromExprType))
 			throw CompilerForFromTypeExpectIntegerTypeError{ fromExpr.sourceLocation, ToString(*fromExprType) };
@@ -132,6 +140,7 @@ namespace nzsl::Ast
 		auto conditionTargetVariable = ShaderBuilder::Variable(targetVarIndex, counterType, forStatement.sourceLocation);
 
 		auto condition = ShaderBuilder::Binary(BinaryType::CompLt, std::move(conditionCounterVariable), std::move(conditionTargetVariable));
+		condition->cachedExpressionType = PrimitiveType::Boolean;
 		condition->sourceLocation = forStatement.sourceLocation;
 
 		whileStatement->condition = std::move(condition);
@@ -150,6 +159,7 @@ namespace nzsl::Ast
 		incrExpr->sourceLocation = forStatement.sourceLocation;
 
 		auto incrCounter = ShaderBuilder::Assign(AssignType::CompoundAdd, ShaderBuilder::Variable(counterVarIndex, counterType, forStatement.sourceLocation), std::move(incrExpr));
+		incrCounter->cachedExpressionType = PrimitiveType::UInt32;
 		incrCounter->sourceLocation = forStatement.sourceLocation;
 
 		body->statements.emplace_back(Unscope(std::move(forStatement.statement)));
@@ -159,6 +169,6 @@ namespace nzsl::Ast
 
 		multi->statements.emplace_back(std::move(whileStatement));
 
-		return ShaderBuilder::Scoped(std::move(multi));
+		return ReplaceStatement{ ShaderBuilder::Scoped(std::move(multi)) };
 	}
 }

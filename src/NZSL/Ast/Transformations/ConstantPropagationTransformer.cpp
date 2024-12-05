@@ -2,10 +2,11 @@
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
-#include <NZSL/Ast/ConstantPropagationVisitor.hpp>
+#include <NZSL/Ast/Transformations/ConstantPropagationTransformer.hpp>
 #include <NazaraUtils/TypeTraits.hpp>
 #include <NZSL/ShaderBuilder.hpp>
 #include <NZSL/Lang/Errors.hpp>
+#include <NZSL/Ast/Transformations/CompoundAssignmentTransformer.hpp>
 #include <cassert>
 #include <cmath>
 #include <stdexcept>
@@ -87,7 +88,7 @@ namespace nzsl::Ast
 		template<typename T, typename... Args>
 		struct CastConstantBase
 		{
-			std::unique_ptr<ConstantValueExpression> operator()(const Args&... args, const SourceLocation& /*sourceLocation*/)
+			ConstantValueExpressionPtr operator()(const Args&... args, const SourceLocation& /*sourceLocation*/)
 			{
 				return ShaderBuilder::ConstantValue(T(args...));
 			}
@@ -111,7 +112,7 @@ namespace nzsl::Ast
 					return value[index];
 			}
 
-			std::unique_ptr<ConstantValueExpression> operator()(const std::array<std::uint32_t, 4>& components, const ValueType& value, const SourceLocation& /*sourceLocation*/)
+			ConstantValueExpressionPtr operator()(const std::array<std::uint32_t, 4>& components, const ValueType& value, const SourceLocation& /*sourceLocation*/)
 			{
 				if constexpr (TargetComponentCount == 4)
 					return ShaderBuilder::ConstantValue(Vector4<T>{ Access(value, components[0]), Access(value, components[1]), Access(value, components[2]), Access(value, components[3]) });
@@ -138,7 +139,7 @@ namespace nzsl::Ast
 		template<typename T>
 		struct UnaryBinaryNotBase
 		{
-			std::unique_ptr<ConstantValueExpression> operator()(const T& arg, const SourceLocation& /*sourceLocation*/)
+			ConstantValueExpressionPtr operator()(const T& arg, const SourceLocation& /*sourceLocation*/)
 			{
 				return ShaderBuilder::ConstantValue(~arg);
 			}
@@ -157,7 +158,7 @@ namespace nzsl::Ast
 		template<typename T>
 		struct UnaryLogicalNotBase
 		{
-			std::unique_ptr<ConstantValueExpression> operator()(const T& arg, const SourceLocation& /*sourceLocation*/)
+			ConstantValueExpressionPtr operator()(const T& arg, const SourceLocation& /*sourceLocation*/)
 			{
 				return ShaderBuilder::ConstantValue(!arg);
 			}
@@ -176,7 +177,7 @@ namespace nzsl::Ast
 		template<typename T>
 		struct UnaryMinusBase
 		{
-			std::unique_ptr<ConstantValueExpression> operator()(const T& arg, const SourceLocation& /*sourceLocation*/)
+			ConstantValueExpressionPtr operator()(const T& arg, const SourceLocation& /*sourceLocation*/)
 			{
 				return ShaderBuilder::ConstantValue(-arg);
 			}
@@ -195,7 +196,7 @@ namespace nzsl::Ast
 		template<typename T>
 		struct UnaryPlusBase
 		{
-			std::unique_ptr<ConstantValueExpression> operator()(const T& arg, const SourceLocation& /*sourceLocation*/)
+			ConstantValueExpressionPtr operator()(const T& arg, const SourceLocation& /*sourceLocation*/)
 			{
 				return ShaderBuilder::ConstantValue(arg);
 			}
@@ -407,29 +408,17 @@ namespace nzsl::Ast
 #undef EnableOptimisation
 	}
 
-	ModulePtr ConstantPropagationVisitor::Process(const Module& shaderModule)
+	auto ConstantPropagationTransformer::Transform(BinaryExpression&& node) -> ExpressionTransformation
 	{
-		auto rootnode = Nz::StaticUniquePointerCast<MultiStatement>(Process(*shaderModule.rootNode));
+		HandleChildren(node);
 
-		return std::make_shared<Module>(shaderModule.metadata, std::move(rootnode), shaderModule.importedModules);
-	}
+		HandleExpression(node.left);
+		HandleExpression(node.right);
 
-	ModulePtr ConstantPropagationVisitor::Process(const Module& shaderModule, const Options& options)
-	{
-		auto rootNode = Nz::StaticUniquePointerCast<MultiStatement>(Process(*shaderModule.rootNode, options));
-
-		return std::make_shared<Module>(shaderModule.metadata, std::move(rootNode), shaderModule.importedModules);
-	}
-	
-	ExpressionPtr ConstantPropagationVisitor::Clone(BinaryExpression& node)
-	{
-		auto lhs = CloneExpression(node.left);
-		auto rhs = CloneExpression(node.right);
-
-		if (lhs->GetType() == NodeType::ConstantValueExpression && rhs->GetType() == NodeType::ConstantValueExpression)
+		if (node.left->GetType() == NodeType::ConstantValueExpression && node.right->GetType() == NodeType::ConstantValueExpression)
 		{
-			const ConstantValueExpression& lhsConstant = static_cast<const ConstantValueExpression&>(*lhs);
-			const ConstantValueExpression& rhsConstant = static_cast<const ConstantValueExpression&>(*rhs);
+			const ConstantValueExpression& lhsConstant = static_cast<const ConstantValueExpression&>(*node.left);
+			const ConstantValueExpression& rhsConstant = static_cast<const ConstantValueExpression&>(*node.right);
 
 			ExpressionPtr optimized;
 			switch (node.op)
@@ -464,37 +453,27 @@ namespace nzsl::Ast
 				optimized->cachedExpressionType = node.cachedExpressionType;
 				optimized->sourceLocation = node.sourceLocation;
 				
-				return optimized;
+				return ReplaceExpression { std::move(optimized) };
 			}
 		}
-
-		auto binary = ShaderBuilder::Binary(node.op, std::move(lhs), std::move(rhs));
-		binary->cachedExpressionType = node.cachedExpressionType;
-		binary->sourceLocation = node.sourceLocation;
-
-		return binary;
+		
+		return DontVisitChildren{};
 	}
 
-	ExpressionPtr ConstantPropagationVisitor::Clone(CastExpression& node)
+	auto ConstantPropagationTransformer::Transform(CastExpression&& node) -> ExpressionTransformation
 	{
 		NAZARA_USE_ANONYMOUS_NAMESPACE
 
-		std::vector<ExpressionPtr> expressions;
-
-		std::size_t expressionCount = node.expressions.size();
-		expressions.reserve(expressionCount);
-
-		for (const auto& expression : node.expressions)
-			expressions.push_back(CloneExpression(expression));
+		HandleChildren(node);
 
 		const ExpressionType& targetType = node.targetType.GetResultingValue();
 		
 		ExpressionPtr optimized;
 		if (IsPrimitiveType(targetType))
 		{
-			if (expressionCount == 1 && expressions.front()->GetType() == NodeType::ConstantValueExpression)
+			if (node.expressions.size() == 1 && node.expressions.front()->GetType() == NodeType::ConstantValueExpression)
 			{
-				const ConstantValueExpression& constantExpr = static_cast<const ConstantValueExpression&>(*expressions.front());
+				const ConstantValueExpression& constantExpr = static_cast<const ConstantValueExpression&>(*node.expressions.front());
 
 				switch (std::get<PrimitiveType>(targetType))
 				{
@@ -513,15 +492,15 @@ namespace nzsl::Ast
 
 			// Decompose vector into values (cast(vec3, float) => cast(float, float, float, float))
 			std::vector<ConstantSingleValue> constantValues;
-			for (std::size_t i = 0; i < expressionCount; ++i)
+			for (std::size_t i = 0; i < node.expressions.size(); ++i)
 			{
-				if (expressions[i]->GetType() != NodeType::ConstantValueExpression)
+				if (node.expressions[i]->GetType() != NodeType::ConstantValueExpression)
 				{
 					constantValues.clear();
 					break;
 				}
 
-				const auto& constantExpr = static_cast<ConstantValueExpression&>(*expressions[i]);
+				const auto& constantExpr = static_cast<ConstantValueExpression&>(*node.expressions[i]);
 
 				if (!constantValues.empty() && GetConstantType(constantValues.front()) != GetConstantType(constantExpr.value))
 				{
@@ -597,7 +576,7 @@ namespace nzsl::Ast
 
 				// Check if every value is constant
 				bool canOptimize = true;
-				for (const auto& expr : expressions)
+				for (const auto& expr : node.expressions)
 				{
 					if (expr->GetType() != NodeType::ConstantValueExpression)
 					{
@@ -616,7 +595,7 @@ namespace nzsl::Ast
 				if (canOptimize)
 				{
 					// Rely on first type (TODO: Use innerType instead to handle empty arrays)
-					const auto& constantValExpr = static_cast<ConstantValueExpression&>(*expressions.front());
+					const auto& constantValExpr = static_cast<ConstantValueExpression&>(*node.expressions.front());
 					std::visit([&](auto&& arg)
 					{
 						using T = std::decay_t<decltype(arg)>;
@@ -624,7 +603,7 @@ namespace nzsl::Ast
 						if constexpr (Nz::IsComplete_v<ArrayBuilder<T>>)
 						{
 							ArrayBuilder<T> builder;
-							optimized = builder(expressions, node.sourceLocation);
+							optimized = builder(node.expressions, node.sourceLocation);
 						}
 
 					}, constantValExpr.value);
@@ -637,164 +616,165 @@ namespace nzsl::Ast
 			optimized->cachedExpressionType = node.cachedExpressionType;
 			optimized->sourceLocation = node.sourceLocation;
 
-			return optimized;
+			return ReplaceExpression{ std::move(optimized) };
 		}
 		
-		auto cast = ShaderBuilder::Cast(node.targetType.GetResultingValue(), std::move(expressions));
-		cast->cachedExpressionType = node.cachedExpressionType;
-		cast->sourceLocation = node.sourceLocation;
-
-		return cast;
+		return DontVisitChildren{};
 	}
 
-	StatementPtr ConstantPropagationVisitor::Clone(BranchStatement& node)
+	auto ConstantPropagationTransformer::Transform(BranchStatement&& node) -> StatementTransformation
 	{
-		std::vector<BranchStatement::ConditionalStatement> statements;
-		StatementPtr elseStatement;
-
-		bool continuePropagation = true;
-		for (auto& condStatement : node.condStatements)
+		for (auto it = node.condStatements.begin(); it != node.condStatements.end();)
 		{
-			auto cond = CloneExpression(condStatement.condition);
+			auto& condStatement = *it;
+			HandleExpression(condStatement.condition);
 
-			if (continuePropagation && cond->GetType() == NodeType::ConstantValueExpression)
+			if (condStatement.condition->GetType() == NodeType::ConstantValueExpression)
 			{
-				auto& constant = static_cast<ConstantValueExpression&>(*cond);
+				auto& constant = static_cast<ConstantValueExpression&>(*condStatement.condition);
 
 				const ExpressionType* constantType = GetExpressionType(constant);
 				if (!constantType)
 				{
 					// unresolved type, can't continue propagating this branch
-					continuePropagation = false;
-					continue;
+					break;
 				}
 
 				if (!IsPrimitiveType(*constantType) || std::get<PrimitiveType>(*constantType) != PrimitiveType::Boolean)
-					continue;
+					throw AstConditionExpectedBoolError{ condStatement.condition->sourceLocation, ToString(*constantType) };
 
 				bool cValue = std::get<bool>(constant.value);
 				if (!cValue)
-					continue;
-
-				if (statements.empty())
 				{
-					// First condition is true, dismiss the branch
-					return Unscope(Cloner::Clone(*condStatement.statement));
+					it = node.condStatements.erase(it);
+					continue;
+				}
+
+				if (node.condStatements.begin() == it)
+				{
+					// First condition is true, dismiss the whole branch
+					HandleStatement(condStatement.statement);
+					return ReplaceStatement{ Unscope(std::move(condStatement.statement)) };
 				}
 				else
 				{
-					// Some condition after the first one is true, make it the else statement and stop there
-					elseStatement = CloneStatement(condStatement.statement);
-					break;
+					// Some condition after the first condition is true, make it the else statement and dismiss the rest
+					// No need to call HandleStatement as the Transformer will do it when keeping the node
+					node.elseStatement = std::move(condStatement.statement);
+					node.condStatements.erase(it, node.condStatements.end());
+					return VisitChildren{};
 				}
 			}
 			else
-			{
-				auto& c = statements.emplace_back();
-				c.condition = std::move(cond);
-				c.statement = CloneStatement(condStatement.statement);
-			}
+				++it;
 		}
 
-		if (statements.empty())
+		if (node.condStatements.empty())
 		{
 			// All conditions have been removed, replace by else statement or no-op
 			if (node.elseStatement)
-				return Unscope(Cloner::Clone(*node.elseStatement));
+			{
+				HandleStatement(node.elseStatement);
+				return ReplaceStatement{ Unscope(std::move(node.elseStatement)) };
+			}
 			else
-				return ShaderBuilder::NoOp();
+				return ReplaceStatement{ ShaderBuilder::NoOp() };
 		}
 
-		if (!elseStatement)
-			elseStatement = CloneStatement(node.elseStatement);
-
-		auto branchStatement = ShaderBuilder::Branch(std::move(statements), std::move(elseStatement));
-		branchStatement->sourceLocation = node.sourceLocation;
-
-		return branchStatement;
+		return DontVisitChildren{};
 	}
 
-	ExpressionPtr ConstantPropagationVisitor::Clone(ConditionalExpression& node)
+	auto ConstantPropagationTransformer::Transform(ConditionalExpression&& node) -> ExpressionTransformation
 	{
-		auto cond = CloneExpression(node.condition);
-		if (cond->GetType() != NodeType::ConstantValueExpression)
-			throw std::runtime_error("conditional expression condition must be a constant expression");
+		HandleExpression(node.condition);
+		if (node.condition->GetType() != NodeType::ConstantValueExpression)
+		{
+			if (!m_context->partialCompilation)
+				throw std::runtime_error("conditional expression condition must be a constant expression");
+			
+			return VisitChildren{};
+		}
 
-		auto& constant = static_cast<ConstantValueExpression&>(*cond);
+		auto& constant = static_cast<ConstantValueExpression&>(*node.condition);
 
 		assert(constant.cachedExpressionType);
 		const ExpressionType& constantType = constant.cachedExpressionType.value();
 
 		if (!IsPrimitiveType(constantType) || std::get<PrimitiveType>(constantType) != PrimitiveType::Boolean)
-			throw std::runtime_error("conditional expression condition must resolve to a boolean");
+			throw AstConditionExpectedBoolError{ node.condition->sourceLocation, ToString(constantType) };
 
 		bool cValue = std::get<bool>(constant.value);
 		if (cValue)
-			return Cloner::Clone(*node.truePath);
+			return ReplaceExpression{ std::move(node.truePath) };
 		else
-			return Cloner::Clone(*node.falsePath);
+			return ReplaceExpression{ std::move(node.falsePath) };
 	}
 
-	ExpressionPtr ConstantPropagationVisitor::Clone(ConstantExpression& node)
+	auto ConstantPropagationTransformer::Transform(ConstantExpression&& node) -> ExpressionTransformation
 	{
 		NAZARA_USE_ANONYMOUS_NAMESPACE
 
-		if (!m_options.constantQueryCallback)
-			return Cloner::Clone(node);
+		if (!m_options->constantQueryCallback)
+		{
+			if (!m_context->partialCompilation)
+				throw std::runtime_error("constant expression encountered with no constant query callback");
 
-		const ConstantValue* constantValue = m_options.constantQueryCallback(node.constantId);
+			return VisitChildren{};
+		}
+
+		const ConstantValue* constantValue = m_options->constantQueryCallback(node.constantId);
 		if (!constantValue)
-			return Cloner::Clone(node);
+		{
+			if (!m_context->partialCompilation)
+				throw AstInvalidConstantIndexError{ node.sourceLocation, node.constantId };
+
+			return VisitChildren{};
+		}
 
 		// Replace by constant value
-		return std::visit([&](auto&& arg) -> ExpressionPtr
+		return std::visit([&](auto&& arg) -> ExpressionTransformation
 		{
 			using T = std::decay_t<decltype(arg)>;
 
 			using VectorInner = GetVectorInnerType<T>;
 
 			if constexpr (VectorInner::IsVector)
-				return Cloner::Clone(node); //< Keep arrays as constants
+				return VisitChildren{}; //< Keep arrays as constants
 			else
 			{
 				auto constant = ShaderBuilder::ConstantValue(arg);
 				constant->sourceLocation = node.sourceLocation;
 
-				return constant;
+				return ReplaceExpression{ std::move(constant) };
 			}
 		}, *constantValue);
 	}
 
-	ExpressionPtr ConstantPropagationVisitor::Clone(IntrinsicExpression& node)
+	auto ConstantPropagationTransformer::Transform(IntrinsicExpression&& node) -> ExpressionTransformation
 	{
-		std::vector<ExpressionPtr> parameters;
-
-		std::size_t parameterCount = node.parameters.size();
-		parameters.reserve(parameterCount);
-
-		for (const auto& parameter : node.parameters)
-			parameters.push_back(CloneExpression(parameter));
+		for (auto& expression : node.parameters)
+			HandleExpression(expression);
 
 		switch (node.intrinsic)
 		{
 			case IntrinsicType::ArraySize:
 			{
 				// Special case: we don't need the array values here, only its type (and thus length)
-				if (parameters.size() == 1)
+				if (node.parameters.size() == 1)
 				{
-					const ExpressionType* parameterType = GetExpressionType(*parameters.front());
+					const ExpressionType* parameterType = GetExpressionType(*node.parameters.front());
 					if (parameterType && IsArrayType(*parameterType)) //< DynArray cannot be handled for obvious reasons
 					{
 						const ArrayType& arrayType = std::get<ArrayType>(*parameterType);
 						auto constant = ShaderBuilder::ConstantValue(arrayType.length);
 						constant->sourceLocation = node.sourceLocation;
 
-						return constant;
+						return ReplaceExpression{ std::move(constant) };
 					}
 				}
 				break;
 			}
-			
+
 			// TODO
 			case IntrinsicType::Abs:
 			case IntrinsicType::ArcCos:
@@ -841,7 +821,7 @@ namespace nzsl::Ast
 			case IntrinsicType::Trunc:
 				break;
 
-			// Intrinsics that cannot be evalutated at compilation time
+			// Intrinsics that can't be evalutated at compilation time
 			case IntrinsicType::TextureRead:
 			case IntrinsicType::TextureWrite:
 			case IntrinsicType::TextureSampleImplicitLod:
@@ -849,20 +829,16 @@ namespace nzsl::Ast
 				break;
 		}
 
-		auto intrinsic = ShaderBuilder::Intrinsic(node.intrinsic, std::move(parameters));
-		intrinsic->cachedExpressionType = node.cachedExpressionType;
-		intrinsic->sourceLocation = node.sourceLocation;
-
-		return intrinsic;
+		return DontVisitChildren{};
 	}
 
-	ExpressionPtr ConstantPropagationVisitor::Clone(SwizzleExpression& node)
+	auto ConstantPropagationTransformer::Transform(SwizzleExpression&& node) -> ExpressionTransformation
 	{
-		auto expr = CloneExpression(node.expression);
+		HandleExpression(node.expression);
 
-		if (expr->GetType() == NodeType::ConstantValueExpression)
+		if (node.expression->GetType() == NodeType::ConstantValueExpression)
 		{
-			const ConstantValueExpression& constantExpr = static_cast<const ConstantValueExpression&>(*expr);
+			const ConstantValueExpression& constantExpr = static_cast<const ConstantValueExpression&>(*node.expression);
 
 			ExpressionPtr optimized;
 			switch (node.componentCount)
@@ -887,12 +863,12 @@ namespace nzsl::Ast
 			if (optimized)
 			{
 				optimized->sourceLocation = node.sourceLocation;
-				return optimized;
+				return ReplaceExpression { std::move(optimized) };
 			}
 		}
-		else if (expr->GetType() == NodeType::SwizzleExpression)
+		else if (node.expression->GetType() == NodeType::SwizzleExpression)
 		{
-			SwizzleExpression& constantExpr = static_cast<SwizzleExpression&>(*expr);
+			SwizzleExpression& constantExpr = static_cast<SwizzleExpression&>(*node.expression);
 
 			std::array<std::uint32_t, 4> newComponents = {};
 			for (std::size_t i = 0; i < node.componentCount; ++i)
@@ -901,23 +877,19 @@ namespace nzsl::Ast
 			constantExpr.componentCount = node.componentCount;
 			constantExpr.components = newComponents;
 
-			return expr;
+			return DontVisitChildren{};
 		}
 
-		auto swizzle = ShaderBuilder::Swizzle(std::move(expr), node.components, node.componentCount);
-		swizzle->cachedExpressionType = node.cachedExpressionType;
-		swizzle->sourceLocation = node.sourceLocation;
-
-		return swizzle;
+		return DontVisitChildren{};
 	}
 
-	ExpressionPtr ConstantPropagationVisitor::Clone(UnaryExpression& node)
+	auto ConstantPropagationTransformer::Transform(UnaryExpression&& node) -> ExpressionTransformation
 	{
-		auto expr = CloneExpression(node.expression);
+		HandleExpression(node.expression);
 
-		if (expr->GetType() == NodeType::ConstantValueExpression)
+		if (node.expression->GetType() == NodeType::ConstantValueExpression)
 		{
-			const ConstantValueExpression& constantExpr = static_cast<const ConstantValueExpression&>(*expr);
+			const ConstantValueExpression& constantExpr = static_cast<const ConstantValueExpression&>(*node.expression);
 
 			ExpressionPtr optimized;
 			switch (node.op)
@@ -942,24 +914,25 @@ namespace nzsl::Ast
 			if (optimized)
 			{
 				optimized->sourceLocation = node.sourceLocation;
-				return optimized;
+				return ReplaceExpression{ std::move(optimized) };
 			}
 		}
 
-		auto unary = ShaderBuilder::Unary(node.op, std::move(expr));
-		unary->cachedExpressionType = node.cachedExpressionType;
-		unary->sourceLocation = node.sourceLocation;
-
-		return unary;
+		return DontVisitChildren{};
 	}
 
-	StatementPtr ConstantPropagationVisitor::Clone(ConditionalStatement& node)
+	auto ConstantPropagationTransformer::Transform(ConditionalStatement&& node) -> StatementTransformation
 	{
-		auto cond = CloneExpression(node.condition);
-		if (cond->GetType() != NodeType::ConstantValueExpression)
-			throw std::runtime_error("conditional expression condition must be a constant expression");
+		HandleExpression(node.condition);
+		if (node.condition->GetType() != NodeType::ConstantValueExpression)
+		{
+			if (!m_context->partialCompilation)
+				throw std::runtime_error("conditional expression condition must be a constant expression");
 
-		auto& constant = static_cast<ConstantValueExpression&>(*cond);
+			return DontVisitChildren{};
+		}
+
+		auto& constant = static_cast<ConstantValueExpression&>(*node.condition);
 
 		assert(constant.cachedExpressionType);
 		const ExpressionType& constantType = constant.cachedExpressionType.value();
@@ -969,17 +942,20 @@ namespace nzsl::Ast
 
 		bool cValue = std::get<bool>(constant.value);
 		if (cValue)
-			return Cloner::Clone(node);
+		{
+			HandleStatement(node.statement);
+			return ReplaceStatement{ std::move(node.statement) };
+		}
 		else
-			return ShaderBuilder::NoOp();
+			return ReplaceStatement{ ShaderBuilder::NoOp() };
 	}
 
 	template<typename TargetType>
-	ExpressionPtr ConstantPropagationVisitor::PropagateSingleValueCast(const ConstantValueExpression& operand, const SourceLocation& sourceLocation)
+	ExpressionPtr ConstantPropagationTransformer::PropagateSingleValueCast(const ConstantValueExpression& operand, const SourceLocation& sourceLocation)
 	{
 		NAZARA_USE_ANONYMOUS_NAMESPACE
 
-		std::unique_ptr<ConstantValueExpression> optimized;
+		ConstantValueExpressionPtr optimized;
 
 		std::visit([&](auto&& arg)
 		{
@@ -994,11 +970,11 @@ namespace nzsl::Ast
 	}
 
 	template<std::size_t TargetComponentCount>
-	ExpressionPtr ConstantPropagationVisitor::PropagateConstantSwizzle(const std::array<std::uint32_t, 4>& components, const ConstantValueExpression& operand, const SourceLocation& sourceLocation)
+	ExpressionPtr ConstantPropagationTransformer::PropagateConstantSwizzle(const std::array<std::uint32_t, 4>& components, const ConstantValueExpression& operand, const SourceLocation& sourceLocation)
 	{
 		NAZARA_USE_ANONYMOUS_NAMESPACE
 
-		std::unique_ptr<ConstantValueExpression> optimized;
+		ConstantValueExpressionPtr optimized;
 		std::visit([&](auto&& arg)
 		{
 			using T = std::decay_t<decltype(arg)>;
@@ -1016,11 +992,11 @@ namespace nzsl::Ast
 	}
 
 	template<UnaryType Type>
-	ExpressionPtr ConstantPropagationVisitor::PropagateUnaryConstant(const ConstantValueExpression& operand, const SourceLocation& sourceLocation)
+	ExpressionPtr ConstantPropagationTransformer::PropagateUnaryConstant(const ConstantValueExpression& operand, const SourceLocation& sourceLocation)
 	{
 		NAZARA_USE_ANONYMOUS_NAMESPACE
 
-		std::unique_ptr<ConstantValueExpression> optimized;
+		ConstantValueExpressionPtr optimized;
 		std::visit([&](auto&& arg)
 		{
 			using T = std::decay_t<decltype(arg)>;
@@ -1038,7 +1014,7 @@ namespace nzsl::Ast
 	}
 
 	template<typename TargetType>
-	ExpressionPtr ConstantPropagationVisitor::PropagateVec2Cast(TargetType v1, TargetType v2, const SourceLocation& sourceLocation)
+	ExpressionPtr ConstantPropagationTransformer::PropagateVec2Cast(TargetType v1, TargetType v2, const SourceLocation& sourceLocation)
 	{
 		NAZARA_USE_ANONYMOUS_NAMESPACE
 
@@ -1046,7 +1022,7 @@ namespace nzsl::Ast
 		NazaraUnused(v2);
 		NazaraUnused(sourceLocation);
 
-		std::unique_ptr<ConstantValueExpression> optimized;
+		ConstantValueExpressionPtr optimized;
 
 		using CCType = CastConstant<Vector2<TargetType>, TargetType, TargetType>;
 
@@ -1057,7 +1033,7 @@ namespace nzsl::Ast
 	}
 
 	template<typename TargetType>
-	ExpressionPtr ConstantPropagationVisitor::PropagateVec3Cast(TargetType v1, TargetType v2, TargetType v3, const SourceLocation& sourceLocation)
+	ExpressionPtr ConstantPropagationTransformer::PropagateVec3Cast(TargetType v1, TargetType v2, TargetType v3, const SourceLocation& sourceLocation)
 	{
 		NAZARA_USE_ANONYMOUS_NAMESPACE
 
@@ -1066,7 +1042,7 @@ namespace nzsl::Ast
 		NazaraUnused(v3);
 		NazaraUnused(sourceLocation);
 
-		std::unique_ptr<ConstantValueExpression> optimized;
+		ConstantValueExpressionPtr optimized;
 
 		using CCType = CastConstant<Vector3<TargetType>, TargetType, TargetType, TargetType>;
 
@@ -1077,7 +1053,7 @@ namespace nzsl::Ast
 	}
 
 	template<typename TargetType>
-	ExpressionPtr ConstantPropagationVisitor::PropagateVec4Cast(TargetType v1, TargetType v2, TargetType v3, TargetType v4, const SourceLocation& sourceLocation)
+	ExpressionPtr ConstantPropagationTransformer::PropagateVec4Cast(TargetType v1, TargetType v2, TargetType v3, TargetType v4, const SourceLocation& sourceLocation)
 	{
 		NAZARA_USE_ANONYMOUS_NAMESPACE
 
@@ -1087,7 +1063,7 @@ namespace nzsl::Ast
 		NazaraUnused(v4);
 		NazaraUnused(sourceLocation);
 
-		std::unique_ptr<ConstantValueExpression> optimized;
+		ConstantValueExpressionPtr optimized;
 
 		using CCType = CastConstant<Vector4<TargetType>, TargetType, TargetType, TargetType, TargetType>;
 
@@ -1095,16 +1071,5 @@ namespace nzsl::Ast
 			optimized = CCType{}(v1, v2, v3, v4, sourceLocation);
 
 		return optimized;
-	}
-
-
-	StatementPtr ConstantPropagationVisitor::Unscope(StatementPtr node)
-	{
-		assert(node);
-
-		if (node->GetType() == NodeType::ScopedStatement)
-			return std::move(static_cast<ScopedStatement&>(*node).statement);
-		else
-			return node;
 	}
 }
