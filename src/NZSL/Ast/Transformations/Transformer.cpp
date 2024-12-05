@@ -233,7 +233,7 @@ namespace nzsl::Ast
 			return;
 
 		for (auto& param : node.parameters)
-			TransformExpression(param);
+			TransformExpression(param.expr);
 
 		TransformExpression(node.targetFunction);
 	}
