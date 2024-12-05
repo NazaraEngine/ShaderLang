@@ -371,7 +371,11 @@ namespace nzsl::Ast
 		if (IsStructType(exprType))
 		{
 			std::size_t innerStructIndex = std::get<StructType>(exprType).structIndex;
-			return T{ innerStructIndex };
+
+			T wrappedType;
+			wrappedType.containedType = StructType{ innerStructIndex };
+
+			return wrappedType;
 		}
 		else if (IsArrayType(exprType))
 		{
