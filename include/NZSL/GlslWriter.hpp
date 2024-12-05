@@ -11,8 +11,8 @@
 #include <NZSL/ShaderWriter.hpp>
 #include <NZSL/Ast/ExpressionVisitorExcept.hpp>
 #include <NZSL/Ast/Module.hpp>
-#include <NZSL/Ast/SanitizeVisitor.hpp>
 #include <NZSL/Ast/StatementVisitorExcept.hpp>
+#include <NZSL/Ast/TransformerExecutor.hpp>
 #include <string>
 #include <unordered_map>
 #include <variant>
@@ -69,7 +69,7 @@ namespace nzsl
 			static std::string_view GetDrawParameterBaseVertexUniformName();
 			static std::string_view GetDrawParameterDrawIndexUniformName();
 			static std::string_view GetFlipYUniformName();
-			static Ast::SanitizeVisitor::Options GetSanitizeOptions();
+			static Ast::TransformerExecutor GetPasses();
 
 		private:
 			void Append(const Ast::AliasType& aliasType);
@@ -127,6 +127,7 @@ namespace nzsl
 			void Visit(Ast::ExpressionPtr& expr, bool encloseIfRequired = false);
 
 			using ExpressionVisitorExcept::Visit;
+			void Visit(Ast::AccessFieldExpression& node) override;
 			void Visit(Ast::AccessIdentifierExpression& node) override;
 			void Visit(Ast::AccessIndexExpression& node) override;
 			void Visit(Ast::AliasValueExpression& node) override;

@@ -2,12 +2,12 @@
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
-#include <NZSL/Ast/ConstantPropagationVisitor.hpp>
 #include <NazaraUtils/Algorithm.hpp>
 #include <NazaraUtils/MathUtils.hpp>
 #include <NazaraUtils/TypeTraits.hpp>
 #include <NZSL/ShaderBuilder.hpp>
 #include <NZSL/Lang/Errors.hpp>
+#include <NZSL/Ast/Transformations/ConstantPropagationTransformer.hpp>
 #include <cassert>
 #include <cmath>
 #include <stdexcept>
@@ -276,7 +276,7 @@ namespace nzsl::Ast
 #undef EnableOptimisation
 	}
 
-	ExpressionPtr ConstantPropagationVisitor::PropagateBinaryArithmeticsConstant(BinaryType type, const ConstantValueExpression& lhs, const ConstantValueExpression& rhs, const SourceLocation& sourceLocation)
+	ExpressionPtr ConstantPropagationTransformer::PropagateBinaryArithmeticsConstant(BinaryType type, const ConstantValueExpression& lhs, const ConstantValueExpression& rhs, const SourceLocation& sourceLocation)
 	{
 		switch (type)
 		{
@@ -298,7 +298,7 @@ namespace nzsl::Ast
 	}
 
 	template<BinaryType Type>
-	ExpressionPtr ConstantPropagationVisitor::PropagateBinaryArithmeticsConstant(const ConstantValueExpression& lhs, const ConstantValueExpression& rhs, const SourceLocation& sourceLocation)
+	ExpressionPtr ConstantPropagationTransformer::PropagateBinaryArithmeticsConstant(const ConstantValueExpression& lhs, const ConstantValueExpression& rhs, const SourceLocation& sourceLocation)
 	{
 		NAZARA_USE_ANONYMOUS_NAMESPACE
 

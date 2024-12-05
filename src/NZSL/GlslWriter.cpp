@@ -8,12 +8,21 @@
 #include <NazaraUtils/CallOnExit.hpp>
 #include <NazaraUtils/PathUtils.hpp>
 #include <NZSL/Enums.hpp>
-#include <NZSL/Ast/ConstantPropagationVisitor.hpp>
+#include <NZSL/ShaderBuilder.hpp>
+#include <NZSL/Ast/Cloner.hpp>
 #include <NZSL/Ast/ConstantValue.hpp>
-#include <NZSL/Ast/EliminateUnusedPassVisitor.hpp>
 #include <NZSL/Ast/RecursiveVisitor.hpp>
 #include <NZSL/Ast/Utils.hpp>
 #include <NZSL/Lang/LangData.hpp>
+#include <NZSL/Ast/Transformations/BindingResolverTransformer.hpp>
+#include <NZSL/Ast/Transformations/ConstantRemovalTransformer.hpp>
+#include <NZSL/Ast/Transformations/ConstantPropagationTransformer.hpp>
+#include <NZSL/Ast/Transformations/EliminateUnusedTransformer.hpp>
+#include <NZSL/Ast/Transformations/ForToWhileTransformer.hpp>
+#include <NZSL/Ast/Transformations/IdentifierTransformer.hpp>
+#include <NZSL/Ast/Transformations/IdentifierTypeResolverTransformer.hpp>
+#include <NZSL/Ast/Transformations/StructAssignmentTransformer.hpp>
+#include <NZSL/Ast/Transformations/SwizzleTransformer.hpp>
 #include <fmt/format.h>
 #include <frozen/unordered_map.h>
 #include <frozen/unordered_set.h>
@@ -391,8 +400,8 @@ namespace nzsl
 		NAZARA_DEFER({ m_currentState = nullptr; });
 
 		Ast::ModulePtr sanitizedModule;
-		const Ast::Module* targetModule;
-		if (!states.sanitized)
+		Ast::Module* targetModule;
+		/*if (!states.sanitized)
 		{
 			Ast::SanitizeVisitor::Options options = GetSanitizeOptions();
 			options.optionValues = states.optionValues;
@@ -401,17 +410,25 @@ namespace nzsl
 			sanitizedModule = Ast::Sanitize(module, options);
 			targetModule = sanitizedModule.get();
 		}
-		else
-			targetModule = &module;
+		else*/
+		{
+			sanitizedModule = Ast::Clone(module);
+			targetModule = sanitizedModule.get();
+		}
+
+		Ast::TransformerExecutor executor = GetPasses();
+		executor.Transform(*targetModule);
 
 		if (states.optimize)
 		{
-			sanitizedModule = Ast::PropagateConstants(*targetModule);
+			Ast::Transformer::Context context;
+			Ast::ConstantPropagationTransformer constantPropagation;
+			constantPropagation.Transform(*targetModule, context);
 
 			Ast::DependencyCheckerVisitor::Config dependencyConfig;
 			dependencyConfig.usedShaderStages = (shaderStage) ? *shaderStage : ShaderStageType_All; //< only one should exist anyway
 
-			sanitizedModule = Ast::EliminateUnusedPass(*sanitizedModule, dependencyConfig);
+			Ast::EliminateUnusedPass(*sanitizedModule, dependencyConfig);
 
 			targetModule = sanitizedModule.get();
 		}
@@ -520,7 +537,7 @@ namespace nzsl
 		return s_glslWriterFlipYUniformName;
 	}
 
-	Ast::SanitizeVisitor::Options GlslWriter::GetSanitizeOptions()
+	Ast::TransformerExecutor GlslWriter::GetPasses()
 	{
 		static constexpr auto s_reservedKeywords = frozen::make_unordered_set<frozen::string>({
 			// All reserved GLSL keywords as of GLSL ES 3.2
@@ -529,16 +546,9 @@ namespace nzsl
 			"abs", "acos", "acosh", "asin", "asinh", "atan", "atanh", "ceil", "clamp", "cos", "cosh", "cross", "degrees", "distance", "dot", "exp", "exp2", "floor", "fract", "imageLoad", "imageStore", "inverse", "inversesqrt", "length", "log", "log2", "max", "min", "mix", "normalize", "pow", "radians", "reflect", "round", "roundEven", "sign", "sin", "sinh", "sqrt", "tan", "tanh", "texture", "transpose", "trunc",
 		});
 
-		Ast::SanitizeVisitor::Options options;
-		options.makeVariableNameUnique = true;
-		//options.reduceLoopsToWhile = true;
-		options.removeAliases = true;
-		//options.removeCompoundAssignments = false;
-		options.removeOptionDeclaration = true;
-		//options.removeScalarSwizzling = true;
-		options.removeSingleConstDeclaration = true;
-		//options.splitWrappedStructAssignation = true; //< TODO: Only split for base uniforms/storage
-		options.identifierSanitizer = [](std::string& identifier, Ast::IdentifierScope /*scope*/)
+		Ast::IdentifierTransformer::Options identifierOptions;
+		identifierOptions.makeVariableNameUnique = true;
+		identifierOptions.identifierSanitizer = [](std::string& identifier, Ast::IdentifierType /*scope*/)
 		{
 			using namespace std::string_view_literals;
 
@@ -577,7 +587,16 @@ namespace nzsl
 			return nameChanged;
 		};
 
-		return options;
+		Ast::TransformerExecutor executor;
+		executor.AddPass<Ast::IdentifierTypeResolverTransformer>({ true });
+		executor.AddPass<Ast::ForToWhileTransformer>();
+		executor.AddPass<Ast::StructAssignmentTransformer>({ false, true }); //< TODO: Only split for base uniforms/storage
+		executor.AddPass<Ast::SwizzleTransformer>({ true });
+		executor.AddPass<Ast::BindingResolverTransformer>();
+		executor.AddPass<Ast::ConstantRemovalTransformer>({ false, true, true });
+		executor.AddPass<Ast::IdentifierTransformer>(identifierOptions);
+
+		return executor;
 	}
 
 	void GlslWriter::Append(const Ast::AliasType& /*aliasType*/)
@@ -1671,6 +1690,36 @@ namespace nzsl
 			Append(")");
 	}
 
+	void GlslWriter::Visit(Ast::AccessFieldExpression& node)
+	{
+		Visit(node.expr, true);
+
+		const Ast::ExpressionType* exprType = GetExpressionType(*node.expr);
+		NazaraUnused(exprType);
+		assert(exprType);
+		assert(IsStructAddressible(*exprType));
+
+		std::size_t structIndex = Ast::ResolveStructIndex(*exprType);
+		assert(structIndex != std::numeric_limits<std::size_t>::max());
+
+		const auto& structData = Nz::Retrieve(m_currentState->structs, structIndex);
+
+		std::uint32_t remainingIndices = node.fieldIndex;
+		for (const auto& member : structData.desc->members)
+		{
+			if (member.cond.HasValue() && !member.cond.GetResultingValue())
+				continue;
+
+			if (remainingIndices == 0)
+			{
+				Append(".", member.name);
+				break;
+			}
+
+			remainingIndices--;
+		}
+	}
+
 	void GlslWriter::Visit(Ast::AccessIdentifierExpression& node)
 	{
 		Visit(node.expr, true);
@@ -1693,8 +1742,9 @@ namespace nzsl
 		assert(exprType);
 		assert(!IsStructAddressible(*exprType));
 
-		// Array access
 		assert(node.indices.size() == 1);
+
+		// Array access
 		Append("[");
 		Visit(node.indices.front());
 		Append("]");

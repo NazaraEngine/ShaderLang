@@ -3,21 +3,36 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <NZSL/Ast/Cloner.hpp>
+#include <NZSL/Ast/Module.hpp>
+#include <memory>
 #include <stdexcept>
 
 namespace nzsl::Ast
 {
-	ExpressionPtr Cloner::Clone(Expression& expr)
+	ExpressionPtr Cloner::Clone(const Expression& expr)
 	{
-		expr.Visit(*this);
+		const_cast<Expression&>(expr).Visit(*this); //< won't be used for writing
 
 		assert(m_statementStack.empty() && m_expressionStack.size() == 1);
 		return PopExpression();
 	}
 
-	StatementPtr Cloner::Clone(Statement& statement)
+	ModulePtr Cloner::Clone(const Module& module)
 	{
-		statement.Visit(*this);
+		MultiStatementPtr rootNode = Nz::StaticUniquePointerCast<MultiStatement>(Clone(*module.rootNode));
+		std::vector<Module::ImportedModule> importedModules(module.importedModules.size());
+		for (std::size_t i = 0; i < importedModules.size(); ++i)
+		{
+			importedModules[i].identifier = module.importedModules[i].identifier;
+			importedModules[i].module = Clone(*module.importedModules[i].module);
+		}
+
+		return std::make_shared<Module>(module.metadata, std::move(rootNode), std::move(importedModules));
+	}
+
+	StatementPtr Cloner::Clone(const Statement& statement)
+	{
+		const_cast<Statement&>(statement).Visit(*this); //< won't be used for writing
 
 		assert(m_expressionStack.empty() && m_statementStack.size() == 1);
 		return PopStatement();
@@ -346,6 +361,18 @@ namespace nzsl::Ast
 		clone->body = CloneStatement(node.body);
 		clone->unroll = Clone(node.unroll);
 
+		clone->sourceLocation = node.sourceLocation;
+
+		return clone;
+	}
+
+	ExpressionPtr Cloner::Clone(AccessFieldExpression& node)
+	{
+		auto clone = std::make_unique<AccessFieldExpression>();
+		clone->fieldIndex = node.fieldIndex;
+		clone->expr = CloneExpression(node.expr);
+
+		clone->cachedExpressionType = node.cachedExpressionType;
 		clone->sourceLocation = node.sourceLocation;
 
 		return clone;

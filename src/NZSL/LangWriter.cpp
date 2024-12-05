@@ -11,7 +11,6 @@
 #include <NZSL/ShaderBuilder.hpp>
 #include <NZSL/Ast/Cloner.hpp>
 #include <NZSL/Ast/RecursiveVisitor.hpp>
-#include <NZSL/Ast/SanitizeVisitor.hpp>
 #include <NZSL/Ast/Utils.hpp>
 #include <NZSL/Lang/LangData.hpp>
 #include <cassert>
@@ -182,6 +181,11 @@ namespace nzsl
 			std::string name;
 		};
 
+		struct StructData : Identifier
+		{
+			const Ast::StructDescription* desc;
+		};
+
 		std::optional<std::size_t> currentExternalBlockIndex;
 		std::size_t currentModuleIndex;
 		std::stringstream stream;
@@ -189,7 +193,7 @@ namespace nzsl
 		std::unordered_map<std::size_t, Identifier> constants;
 		std::unordered_map<std::size_t, Identifier> functions;
 		std::unordered_map<std::size_t, Identifier> modules;
-		std::unordered_map<std::size_t, Identifier> structs;
+		std::unordered_map<std::size_t, StructData> structs;
 		std::unordered_map<std::size_t, Identifier> variables;
 		std::vector<std::string> externalBlockNames;
 		std::vector<std::string> moduleNames;
@@ -942,14 +946,15 @@ namespace nzsl
 		m_currentState->modules.emplace(moduleIndex, std::move(identifier));
 	}
 
-	void LangWriter::RegisterStruct(std::size_t structIndex, std::string structName)
+	void LangWriter::RegisterStruct(std::size_t structIndex, const Ast::StructDescription& structDescription)
 	{
-		State::Identifier identifier;
-		identifier.moduleIndex = m_currentState->currentModuleIndex;
-		identifier.name = std::move(structName);
+		State::StructData structData;
+		structData.moduleIndex = m_currentState->currentModuleIndex;
+		structData.name = structDescription.name;
+		structData.desc = &structDescription;
 
 		assert(m_currentState->structs.find(structIndex) == m_currentState->structs.end());
-		m_currentState->structs.emplace(structIndex, std::move(identifier));
+		m_currentState->structs.emplace(structIndex, std::move(structData));
 	}
 
 	void LangWriter::RegisterVariable(std::size_t varIndex, std::string varName)
@@ -986,6 +991,36 @@ namespace nzsl
 
 		if (enclose)
 			Append(")");
+	}
+
+	void LangWriter::Visit(Ast::AccessFieldExpression& node)
+	{
+		Visit(node.expr, true);
+
+		const Ast::ExpressionType* exprType = GetExpressionType(*node.expr);
+		NazaraUnused(exprType);
+		assert(exprType);
+		assert(IsStructAddressible(*exprType));
+
+		std::size_t structIndex = Ast::ResolveStructIndex(*exprType);
+		assert(structIndex != std::numeric_limits<std::size_t>::max());
+
+		const auto& structData = Nz::Retrieve(m_currentState->structs, structIndex);
+
+		std::uint32_t remainingIndices = node.fieldIndex;
+		for (const auto& member : structData.desc->members)
+		{
+			if (member.cond.HasValue() && !member.cond.GetResultingValue())
+				continue;
+
+			if (remainingIndices == 0)
+			{
+				Append(".", member.name);
+				break;
+			}
+
+			remainingIndices--;
+		}
 	}
 
 	void LangWriter::Visit(Ast::AccessIdentifierExpression& node)
@@ -1535,7 +1570,7 @@ namespace nzsl
 	void LangWriter::Visit(Ast::DeclareStructStatement& node)
 	{
 		if (node.structIndex)
-			RegisterStruct(*node.structIndex, node.description.name);
+			RegisterStruct(*node.structIndex, node.description);
 
 		AppendAttributes(true, LayoutAttribute{ node.description.layout }, TagAttribute{ node.description.tag });
 		Append("struct ");

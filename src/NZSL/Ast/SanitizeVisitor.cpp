@@ -528,16 +528,50 @@ namespace nzsl::Ast
 				if (swizzleComponentCount > 4)
 					throw CompilerInvalidSwizzleError{ identifierEntry.sourceLocation };
 
-				auto swizzle = std::make_unique<SwizzleExpression>();
-				swizzle->expression = std::move(indexedExpr);
+				if (m_context->options.removeScalarSwizzling && IsPrimitiveType(resolvedType))
+				{
+					for (std::size_t j = 0; j < swizzleComponentCount; ++j)
+					{
+						if (ToSwizzleIndex(identifierEntry.identifier[j], identifierEntry.sourceLocation) != 0)
+							throw CompilerInvalidScalarSwizzleError{ identifierEntry.sourceLocation };
+					}
 
-				swizzle->componentCount = swizzleComponentCount;
-				for (std::size_t j = 0; j < swizzleComponentCount; ++j)
-					swizzle->components[j] = ToSwizzleIndex(identifierEntry.identifier[j], identifierEntry.sourceLocation);
+					if (swizzleComponentCount == 1)
+						continue; //< ignore this swizzle (a.x == a)
 
-				Validate(*swizzle);
+					// Use a Cast expression to replace swizzle
+					indexedExpr = CacheResult(std::move(indexedExpr)); //< Since we are going to use a value multiple times, cache it if required
 
-				indexedExpr = std::move(swizzle);
+					PrimitiveType baseType;
+					if (IsVectorType(resolvedType))
+						baseType = std::get<VectorType>(resolvedType).type;
+					else
+						baseType = std::get<PrimitiveType>(resolvedType);
+
+					auto cast = std::make_unique<CastExpression>();
+					cast->targetType = ExpressionType{ VectorType{ swizzleComponentCount, baseType } };
+
+					cast->expressions.reserve(swizzleComponentCount);
+					for (std::size_t j = 0; j < swizzleComponentCount; ++j)
+						cast->expressions.push_back(CloneExpression(indexedExpr));
+
+					Validate(*cast);
+
+					indexedExpr = std::move(cast);
+				}
+				else
+				{
+					auto swizzle = std::make_unique<SwizzleExpression>();
+					swizzle->expression = std::move(indexedExpr);
+
+					swizzle->componentCount = swizzleComponentCount;
+					for (std::size_t j = 0; j < swizzleComponentCount; ++j)
+						swizzle->components[j] = ToSwizzleIndex(identifierEntry.identifier[j], identifierEntry.sourceLocation);
+
+					Validate(*swizzle);
+
+					indexedExpr = std::move(swizzle);
+				}
 			}
 			else if (IsNamedExternalBlockType(resolvedType))
 			{
@@ -658,6 +692,85 @@ namespace nzsl::Ast
 		if (Validate(*clone) == ValidationResult::Unresolved)
 			return clone;
 
+		if (m_context->options.splitWrappedStructAssignation || m_context->options.splitWrappedArrayAssignation)
+		{
+			const ExpressionType& targetType = ResolveAlias(GetExpressionTypeSecure(*clone->left));
+			const ExpressionType& sourceType = ResolveAlias(GetExpressionTypeSecure(*clone->right));
+			if (m_context->options.splitWrappedStructAssignation && IsStructType(targetType) && targetType != sourceType)
+			{
+				std::size_t structIndex = std::get<StructType>(targetType).structIndex;
+				const StructDescription* desc = m_context->structs.Retrieve(structIndex, clone->sourceLocation);
+
+				auto dstVar = CacheResult(std::move(clone->left));
+				auto srcVar = CacheResult(std::move(clone->right));
+
+				std::int32_t memberIndex = 0;
+				for (auto& member : desc->members)
+				{
+					if (member.cond.IsResultingValue() && !member.cond.GetResultingValue())
+					{
+						memberIndex++;
+						continue;
+					}
+
+					ExpressionPtr dstAccess;
+					ExpressionPtr srcAccess;
+					if (m_context->options.useIdentifierAccessesForStructs)
+					{
+						dstAccess = ShaderBuilder::AccessMember(CloneExpression(*dstVar), { member.name });
+						srcAccess = ShaderBuilder::AccessMember(CloneExpression(*srcVar), { member.name });
+					}
+					else
+					{
+						dstAccess = ShaderBuilder::AccessIndex(CloneExpression(*dstVar), memberIndex);
+						srcAccess = ShaderBuilder::AccessIndex(CloneExpression(*srcVar), memberIndex);
+					}
+
+					dstAccess->sourceLocation = clone->sourceLocation;
+					srcAccess->sourceLocation = clone->sourceLocation;
+
+					auto assign = ShaderBuilder::Assign(AssignType::Simple, std::move(dstAccess), std::move(srcAccess));
+					assign->sourceLocation = clone->sourceLocation;
+
+					StatementPtr assignStatement = ShaderBuilder::ExpressionStatement(std::move(assign));
+
+					if (member.cond.IsExpression())
+						assignStatement = ShaderBuilder::ConstBranch(CloneExpression(*member.cond.GetExpression()), std::move(assignStatement));
+					
+					m_context->currentStatementList->push_back(CloneStatement(*assignStatement));
+
+					memberIndex++;
+				}
+
+				return dstVar;
+			}
+			else if (m_context->options.splitWrappedArrayAssignation && IsArrayType(targetType) && targetType != sourceType)
+			{
+				const auto& arrayType = std::get<ArrayType>(targetType);
+
+				auto dstVar = CacheResult(std::move(clone->left));
+				auto srcVar = CacheResult(std::move(clone->right));
+
+				for (std::uint32_t i = 0; i < arrayType.length; ++i)
+				{
+					ExpressionPtr dstAccess = ShaderBuilder::AccessIndex(CloneExpression(*dstVar), Nz::SafeCast<std::int32_t>(i));
+					ExpressionPtr srcAccess = ShaderBuilder::AccessIndex(CloneExpression(*srcVar), Nz::SafeCast<std::int32_t>(i));
+
+					dstAccess->sourceLocation = clone->sourceLocation;
+					srcAccess->sourceLocation = clone->sourceLocation;
+
+					auto assign = ShaderBuilder::Assign(AssignType::Simple, std::move(dstAccess), std::move(srcAccess));
+					assign->sourceLocation = clone->sourceLocation;
+
+					StatementPtr assignStatement = ShaderBuilder::ExpressionStatement(std::move(assign));
+
+					m_context->currentStatementList->push_back(CloneStatement(*assignStatement));
+				}
+
+				return dstVar;
+			}
+		}
+
 		return clone;
 	}
 
@@ -666,6 +779,48 @@ namespace nzsl::Ast
 		auto clone = Nz::StaticUniquePointerCast<BinaryExpression>(Cloner::Clone(node));
 		if (Validate(*clone) == ValidationResult::Unresolved)
 			return clone;
+
+		if (m_context->options.removeMatrixBinaryAddSub && (clone->op == BinaryType::Add || clone->op == BinaryType::Subtract))
+		{
+			const ExpressionType& leftExprType = GetExpressionTypeSecure(*clone->left);
+			const ExpressionType& rightExprType = GetExpressionTypeSecure(*clone->right);
+			if (IsMatrixType(leftExprType) && IsMatrixType(rightExprType))
+			{
+				const MatrixType& matrixType = std::get<MatrixType>(leftExprType);
+				assert(leftExprType == rightExprType);
+
+				// Since we're going to access both matrices multiples times, make sure we cache them into variables if required
+				auto leftMatrix = CacheResult(std::move(clone->left));
+				auto rightMatrix = CacheResult(std::move(clone->right));
+
+				std::vector<ExpressionPtr> columnExpressions(matrixType.columnCount);
+
+				for (std::size_t i = 0; i < matrixType.columnCount; ++i)
+				{
+					// mat[i]
+					auto leftColumnExpr = ShaderBuilder::AccessIndex(CloneExpression(leftMatrix), ShaderBuilder::ConstantValue(std::uint32_t(i), clone->sourceLocation));
+					auto rightColumnExpr = ShaderBuilder::AccessIndex(CloneExpression(rightMatrix), ShaderBuilder::ConstantValue(std::uint32_t(i), clone->sourceLocation));
+
+					Validate(*leftColumnExpr);
+					Validate(*rightColumnExpr);
+
+					// lhs[i] +- rhs[i]
+					auto binOp = ShaderBuilder::Binary(clone->op, std::move(leftColumnExpr), std::move(rightColumnExpr));
+					binOp->sourceLocation = clone->sourceLocation;
+
+					Validate(*binOp);
+
+					columnExpressions[i] = std::move(binOp);
+				}
+
+				// Build resulting matrix
+				auto result = ShaderBuilder::Cast(leftExprType, std::move(columnExpressions));
+				result->sourceLocation = clone->sourceLocation;
+
+				// Re-clone resulting cast operation, so it can be transformed again if required
+				return Clone(*result);
+			}
+		}
 
 		return clone;
 	}
@@ -831,6 +986,133 @@ namespace nzsl::Ast
 		if (Validate(*clone) == ValidationResult::Unresolved)
 			return clone; //< unresolved
 
+		const ExpressionType& targetType = clone->targetType.GetResultingValue();
+
+		if (m_context->options.removeMatrixCast && IsMatrixType(targetType))
+		{
+			const MatrixType& targetMatrixType = std::get<MatrixType>(targetType);
+
+			const ExpressionType& frontExprType = ResolveAlias(GetExpressionTypeSecure(*clone->expressions.front()));
+			bool isMatrixCast = IsMatrixType(frontExprType);
+			if (isMatrixCast && std::get<MatrixType>(frontExprType) == targetMatrixType)
+			{
+				// Nothing to do
+				return std::move(clone->expressions.front());
+			}
+
+			auto variableDeclaration = ShaderBuilder::DeclareVariable("temp", targetType); //< Validation will prevent name-clash if required
+			variableDeclaration->sourceLocation = node.sourceLocation;
+			Validate(*variableDeclaration);
+
+			std::size_t variableIndex = *variableDeclaration->varIndex;
+
+			m_context->currentStatementList->emplace_back(std::move(variableDeclaration));
+
+			ExpressionPtr cachedDiagonalValue;
+
+			for (std::size_t i = 0; i < targetMatrixType.columnCount; ++i)
+			{
+				// temp[i]
+				auto columnExpr = ShaderBuilder::AccessIndex(ShaderBuilder::Variable(variableIndex, targetType, node.sourceLocation), ShaderBuilder::ConstantValue(std::uint32_t(i), node.sourceLocation));
+				Validate(*columnExpr);
+
+				// vector expression
+				ExpressionPtr vectorExpr;
+				std::size_t vectorComponentCount;
+				if (isMatrixCast)
+				{
+					// fromMatrix[i]
+					auto matrixColumnExpr = ShaderBuilder::AccessIndex(CloneExpression(clone->expressions.front()), ShaderBuilder::ConstantValue(std::uint32_t(i), node.sourceLocation));
+					Validate(*matrixColumnExpr);
+
+					vectorExpr = std::move(matrixColumnExpr);
+					vectorComponentCount = std::get<MatrixType>(frontExprType).rowCount;
+				}
+				else if (IsVectorType(frontExprType))
+				{
+					// parameter #i
+					vectorExpr = std::move(clone->expressions[i]);
+					vectorComponentCount = std::get<VectorType>(ResolveAlias(GetExpressionTypeSecure(*vectorExpr))).componentCount;
+				}
+				else
+				{
+					assert(IsPrimitiveType(frontExprType));
+
+					// Use a Cast expression to replace swizzle
+					std::vector<ExpressionPtr> expressions(targetMatrixType.rowCount);
+					SourceLocation location;
+					for (std::size_t j = 0; j < targetMatrixType.rowCount; ++j)
+					{
+						if (clone->expressions.size() == 1) //< diagonal value
+						{
+							if (!cachedDiagonalValue)
+								cachedDiagonalValue = CacheResult(std::move(clone->expressions.front()));
+
+							if (i == j)
+								expressions[j] = CloneExpression(cachedDiagonalValue);
+							else
+								expressions[j] = ShaderBuilder::ConstantValue(ExpressionType{ targetMatrixType.type }, 0, node.sourceLocation);
+						}
+						else
+							expressions[j] = std::move(clone->expressions[i * targetMatrixType.rowCount + j]);
+					
+						if (j == 0)
+							location = expressions[j]->sourceLocation;
+						else
+							location.ExtendToRight(expressions[j]->sourceLocation);
+					}
+
+					auto buildVec = ShaderBuilder::Cast(ExpressionType{ VectorType{ targetMatrixType.rowCount, targetMatrixType.type } }, std::move(expressions));
+					buildVec->sourceLocation = location;
+					Validate(*buildVec);
+
+					vectorExpr = std::move(buildVec);
+					vectorComponentCount = targetMatrixType.rowCount;
+				}
+
+				// cast expression (turn fromMatrix[i] to vec3[f32](fromMatrix[i]))
+				ExpressionPtr castExpr;
+				if (vectorComponentCount != targetMatrixType.rowCount)
+				{
+					CastExpressionPtr vecCast;
+					if (vectorComponentCount < targetMatrixType.rowCount)
+					{
+						std::vector<ExpressionPtr> expressions;
+						expressions.push_back(std::move(vectorExpr));
+						for (std::size_t j = 0; j < targetMatrixType.rowCount - vectorComponentCount; ++j)
+							expressions.push_back(ShaderBuilder::ConstantValue(ExpressionType{ targetMatrixType.type }, (i == j + vectorComponentCount) ? 1 : 0, node.sourceLocation)); //< set 1 to diagonal
+
+						vecCast = ShaderBuilder::Cast(ExpressionType{ VectorType{ targetMatrixType.rowCount, targetMatrixType.type } }, std::move(expressions));
+						vecCast->sourceLocation = node.sourceLocation;
+						Validate(*vecCast);
+
+						castExpr = std::move(vecCast);
+					}
+					else
+					{
+						std::array<std::uint32_t, 4> swizzleComponents;
+						std::iota(swizzleComponents.begin(), swizzleComponents.begin() + targetMatrixType.rowCount, 0);
+
+						auto swizzleExpr = ShaderBuilder::Swizzle(std::move(vectorExpr), swizzleComponents, targetMatrixType.rowCount);
+						swizzleExpr->sourceLocation = node.sourceLocation;
+						Validate(*swizzleExpr);
+
+						castExpr = std::move(swizzleExpr);
+					}
+				}
+				else
+					castExpr = std::move(vectorExpr);
+
+				// temp[i] = castExpr
+				auto assignExpr = ShaderBuilder::Assign(AssignType::Simple, std::move(columnExpr), std::move(castExpr));
+				assignExpr->sourceLocation = node.sourceLocation;
+
+				m_context->currentStatementList->emplace_back(ShaderBuilder::ExpressionStatement(std::move(assignExpr)));
+			}
+
+			return ShaderBuilder::Variable(variableIndex, targetType, node.sourceLocation);
+		}
+
 		return clone;
 	}
 
@@ -981,15 +1263,50 @@ namespace nzsl::Ast
 		}
 
 		const ExpressionType& resolvedExprType = ResolveAlias(*exprType);
-		
-		auto clone = std::make_unique<SwizzleExpression>();
-		clone->componentCount = node.componentCount;
-		clone->components = node.components;
-		clone->expression = std::move(expression);
-		clone->sourceLocation = node.sourceLocation;
-		Validate(*clone);
 
-		return clone;
+		if (m_context->options.removeScalarSwizzling && IsPrimitiveType(resolvedExprType))
+		{
+			for (std::size_t i = 0; i < node.componentCount; ++i)
+			{
+				if (node.components[i] != 0)
+					throw CompilerInvalidScalarSwizzleError{ node.sourceLocation };
+			}
+
+			if (node.componentCount == 1)
+				return expression; //< ignore this swizzle (a.x == a)
+
+			// Use a Cast expression to replace swizzle
+			expression = CacheResult(std::move(expression)); //< Since we are going to use a value multiple times, cache it if required
+
+			PrimitiveType baseType;
+			if (IsVectorType(resolvedExprType))
+				baseType = std::get<VectorType>(resolvedExprType).type;
+			else
+				baseType = std::get<PrimitiveType>(resolvedExprType);
+
+			auto cast = std::make_unique<CastExpression>();
+			cast->sourceLocation = node.sourceLocation;
+			cast->targetType = ExpressionType{ VectorType{ node.componentCount, baseType } };
+
+			cast->expressions.reserve(node.componentCount);
+			for (std::size_t j = 0; j < node.componentCount; ++j)
+				cast->expressions.push_back(CloneExpression(expression));
+
+			Validate(*cast);
+
+			return cast;
+		}
+		else
+		{
+			auto clone = std::make_unique<SwizzleExpression>();
+			clone->componentCount = node.componentCount;
+			clone->components = node.components;
+			clone->expression = std::move(expression);
+			clone->sourceLocation = node.sourceLocation;
+			Validate(*clone);
+
+			return clone;
+		}
 	}
 
 	ExpressionPtr SanitizeVisitor::Clone(UnaryExpression& node)
@@ -1065,8 +1382,21 @@ namespace nzsl::Ast
 				return ValidationResult::Validated;
 			};
 
-			if (BuildCondStatement(clone->condStatements.emplace_back()) == ValidationResult::Unresolved)
-				return Cloner::Clone(node);
+			if (m_context->options.splitMultipleBranches && condIndex > 0)
+			{
+				auto currentBranch = std::make_unique<BranchStatement>();
+
+				if (BuildCondStatement(currentBranch->condStatements.emplace_back()) == ValidationResult::Unresolved)
+					return Cloner::Clone(node);
+
+				root->elseStatement = std::move(currentBranch);
+				root = static_cast<BranchStatement*>(root->elseStatement.get());
+			}
+			else
+			{
+				if (BuildCondStatement(clone->condStatements.emplace_back()) == ValidationResult::Unresolved)
+					return Cloner::Clone(node);
+			}
 		}
 
 		if (node.elseStatement)
@@ -1223,7 +1553,7 @@ NAZARA_WARNING_GCC_DISABLE("-Wmaybe-uninitialized")
 			if (!clone->name.empty())
 			{
 				fullName = fmt::format("{}_{}", clone->name, extVar.name);
-				SanitizeIdentifier(fullName, IdentifierScope::ExternalVariable);
+				HandleIdentifier(fullName, IdentifierScope::ExternalVariable);
 			}
 
 			std::string& internalName = (!clone->name.empty()) ? fullName : extVar.name;
@@ -1319,7 +1649,7 @@ NAZARA_WARNING_GCC_DISABLE("-Wmaybe-uninitialized")
 
 			extVar.type = std::move(resolvedType).value();
 			extVar.varIndex = RegisterVariable(extVar.name, std::move(varType), extVar.varIndex, extVar.sourceLocation);
-			SanitizeIdentifier(extVar.name, IdentifierScope::ExternalVariable);
+			HandleIdentifier(extVar.name, IdentifierScope::ExternalVariable);
 		}
 
 		if (previousEnv)
@@ -1488,7 +1818,7 @@ NAZARA_WARNING_POP()
 		std::size_t funcIndex = RegisterFunction(clone->name, std::move(funcData), node.funcIndex, node.sourceLocation);
 		clone->funcIndex = funcIndex;
 
-		SanitizeIdentifier(clone->name, IdentifierScope::Function);
+		HandleIdentifier(clone->name, IdentifierScope::Function);
 
 		return clone;
 	}
@@ -1617,7 +1947,7 @@ NAZARA_WARNING_POP()
 				do
 				{
 					candidateName = fmt::format("{}_{}", member.name, index++);
-					SanitizeIdentifier(candidateName, IdentifierScope::Field);
+					HandleIdentifier(candidateName, IdentifierScope::Field);
 				}
 				while (reservedIdentifiers.count(candidateName) > 0);
 
@@ -1626,7 +1956,7 @@ NAZARA_WARNING_POP()
 			}
 			else
 			{
-				if (SanitizeIdentifier(member.name, IdentifierScope::Field))
+				if (HandleIdentifier(member.name, IdentifierScope::Field))
 					reservedIdentifiers.insert(member.name);
 			}
 
@@ -1689,7 +2019,7 @@ NAZARA_WARNING_POP()
 		clone->description.conditionIndex = m_context->currentConditionalIndex;
 
 		clone->structIndex = RegisterStruct(clone->description.name, &clone->description, clone->structIndex, clone->sourceLocation);
-		SanitizeIdentifier(clone->description.name, IdentifierScope::Struct);
+		HandleIdentifier(clone->description.name, IdentifierScope::Struct);
 
 		return clone;
 	}
@@ -1702,6 +2032,45 @@ NAZARA_WARNING_POP()
 		auto clone = Nz::StaticUniquePointerCast<DeclareVariableStatement>(Cloner::Clone(node));
 		if (Validate(*clone) == ValidationResult::Unresolved)
 			return clone;
+
+		if (clone->initialExpression)
+		{
+			const ExpressionType& resolvedType = ResolveAlias(clone->varType.GetResultingValue());
+
+			auto ShouldSplit = [&]
+			{
+				if (m_context->options.splitWrappedStructAssignation && IsStructType(resolvedType))
+				{
+					return resolvedType != ResolveAlias(GetExpressionTypeSecure(*clone->initialExpression));
+				}
+				else if (m_context->options.splitWrappedArrayAssignation && IsArrayType(resolvedType))
+				{
+					return resolvedType != ResolveAlias(GetExpressionTypeSecure(*clone->initialExpression));
+				}
+
+				return false;
+			};
+
+			if (ShouldSplit())
+			{
+				// Split variable declaration and assignation
+				ExpressionPtr assign = ShaderBuilder::Assign(AssignType::Simple, ShaderBuilder::Variable(*clone->varIndex, clone->varType.GetResultingValue(), clone->sourceLocation), std::move(clone->initialExpression));
+
+				MultiStatementPtr multiStatement = ShaderBuilder::MultiStatement();
+				multiStatement->sourceLocation = clone->sourceLocation;
+				multiStatement->statements.push_back(std::move(clone));
+
+				std::vector<StatementPtr>* previousList = m_context->currentStatementList;
+				m_context->currentStatementList = &multiStatement->statements;
+
+				// Clone assign to replace it with a per-field assignation
+				multiStatement->statements.push_back(CloneStatement(ShaderBuilder::ExpressionStatement(std::move(assign))));
+
+				m_context->currentStatementList = previousList;
+
+				return multiStatement;
+			}
+		}
 
 		return clone;
 	}
@@ -1759,7 +2128,7 @@ NAZARA_WARNING_POP()
 				if (fromExprType && wontUnroll)
 				{
 					clone->varIndex = RegisterVariable(node.varName, *fromExprType, node.varIndex, node.sourceLocation);
-					SanitizeIdentifier(node.varName, IdentifierScope::Variable);
+					HandleIdentifier(node.varName, IdentifierScope::Variable);
 				}
 				else
 				{
@@ -1885,7 +2254,93 @@ NAZARA_WARNING_POP()
 			}
 		}
 
-		return CloneFor();
+		if (m_context->options.reduceLoopsToWhile)
+		{
+			PushScope();
+			NAZARA_DEFER({ PopScope(); });
+
+			auto multi = std::make_unique<MultiStatement>();
+			multi->sourceLocation = node.sourceLocation;
+
+			// Counter variable
+			auto counterVariable = ShaderBuilder::DeclareVariable(node.varName, std::move(fromExpr));
+			counterVariable->sourceLocation = node.sourceLocation;
+			counterVariable->varIndex = node.varIndex;
+			Validate(*counterVariable);
+
+			std::size_t counterVarIndex = counterVariable->varIndex.value();
+			multi->statements.emplace_back(std::move(counterVariable));
+
+			// Target variable
+			auto targetVariable = ShaderBuilder::DeclareVariable("to", std::move(toExpr));
+			targetVariable->sourceLocation = node.sourceLocation;
+			Validate(*targetVariable);
+
+			std::size_t targetVarIndex = targetVariable->varIndex.value();
+			multi->statements.emplace_back(std::move(targetVariable));
+
+			// Step variable
+			std::optional<std::size_t> stepVarIndex;
+
+			if (stepExpr)
+			{
+				auto stepVariable = ShaderBuilder::DeclareVariable("step", std::move(stepExpr));
+				stepVariable->sourceLocation = node.sourceLocation;
+				Validate(*stepVariable);
+
+				stepVarIndex = stepVariable->varIndex;
+				multi->statements.emplace_back(std::move(stepVariable));
+			}
+
+			// While
+			auto whileStatement = std::make_unique<WhileStatement>();
+			whileStatement->sourceLocation = node.sourceLocation;
+			whileStatement->unroll = std::move(unrollValue);
+
+			// While condition
+			auto conditionCounterVariable = ShaderBuilder::Variable(counterVarIndex, counterType, node.sourceLocation);
+			auto conditionTargetVariable = ShaderBuilder::Variable(targetVarIndex, counterType, node.sourceLocation);
+
+			auto condition = ShaderBuilder::Binary(BinaryType::CompLt, std::move(conditionCounterVariable), std::move(conditionTargetVariable));
+			condition->sourceLocation = node.sourceLocation;
+			Validate(*condition);
+
+			whileStatement->condition = std::move(condition);
+
+			// While body
+			auto body = std::make_unique<MultiStatement>();
+			body->statements.reserve(2);
+			{
+				bool wasInLoop = m_context->inLoop;
+				m_context->inLoop = true;
+				NAZARA_DEFER({ m_context->inLoop = wasInLoop; });
+
+				body->statements.emplace_back(Unscope(CloneStatement(node.statement)));
+			}
+
+			// Counter and increment
+			ExpressionPtr incrExpr;
+			if (stepVarIndex)
+				incrExpr = ShaderBuilder::Variable(*stepVarIndex, counterType, node.sourceLocation);
+			else
+				incrExpr = (counterType == PrimitiveType::Int32) ? ShaderBuilder::ConstantValue(1, node.sourceLocation) : ShaderBuilder::ConstantValue(1u, node.sourceLocation);
+
+			incrExpr->sourceLocation = node.sourceLocation;
+
+			auto incrCounter = ShaderBuilder::Assign(AssignType::CompoundAdd, ShaderBuilder::Variable(counterVarIndex, counterType, node.sourceLocation), std::move(incrExpr));
+			incrCounter->sourceLocation = node.sourceLocation;
+			Validate(*incrCounter);
+
+			body->statements.emplace_back(ShaderBuilder::ExpressionStatement(std::move(incrCounter)));
+
+			whileStatement->body = std::move(body);
+
+			multi->statements.emplace_back(std::move(whileStatement));
+
+			return ShaderBuilder::Scoped(std::move(multi));
+		}
+		else
+			return CloneFor();
 	}
 
 	StatementPtr SanitizeVisitor::Clone(ForEachStatement& node)
@@ -1969,26 +2424,93 @@ NAZARA_WARNING_POP()
 			}
 		}
 
-		auto clone = std::make_unique<ForEachStatement>();
-		clone->expression = std::move(expr);
-		clone->varName = node.varName;
-		clone->unroll = std::move(unrollValue);
-		clone->sourceLocation = node.sourceLocation;
-
-		PushScope();
+		if (m_context->options.reduceLoopsToWhile)
 		{
-			clone->varIndex = RegisterVariable(node.varName, innerType, node.varIndex, node.sourceLocation);
-			SanitizeIdentifier(node.varName, IdentifierScope::Variable);
+			PushScope();
+			NAZARA_DEFER({ PopScope(); });
 
-			bool wasInLoop = m_context->inLoop;
-			m_context->inLoop = true;
-			Nz::CallOnExit restoreLoop([=] { m_context->inLoop = wasInLoop; });
+			auto multi = std::make_unique<MultiStatement>();
+			multi->sourceLocation = node.sourceLocation;
 
-			clone->statement = CloneStatement(node.statement);
+			if (IsArrayType(resolvedExprType))
+			{
+				const ArrayType& arrayType = std::get<ArrayType>(resolvedExprType);
+
+				multi->statements.reserve(2);
+
+				// Counter variable
+				auto counterVariable = ShaderBuilder::DeclareVariable("i", ShaderBuilder::ConstantValue(0u));
+				counterVariable->sourceLocation = node.sourceLocation;
+
+				Validate(*counterVariable);
+
+				std::size_t counterVarIndex = counterVariable->varIndex.value();
+
+				multi->statements.emplace_back(std::move(counterVariable));
+
+				auto whileStatement = std::make_unique<WhileStatement>();
+				whileStatement->unroll = std::move(unrollValue);
+
+				// While condition
+				auto condition = ShaderBuilder::Binary(BinaryType::CompLt, ShaderBuilder::Variable(counterVarIndex, PrimitiveType::UInt32, node.sourceLocation), ShaderBuilder::ConstantValue(arrayType.length, node.sourceLocation));
+				Validate(*condition);
+				whileStatement->condition = std::move(condition);
+
+				// While body
+				auto body = std::make_unique<MultiStatement>();
+				body->statements.reserve(3);
+
+				auto accessIndex = ShaderBuilder::AccessIndex(std::move(expr), ShaderBuilder::Variable(counterVarIndex, PrimitiveType::UInt32, node.sourceLocation));
+				Validate(*accessIndex);
+
+				auto elementVariable = ShaderBuilder::DeclareVariable(node.varName, std::move(accessIndex));
+				elementVariable->varIndex = node.varIndex; //< Preserve var index
+				Validate(*elementVariable);
+				body->statements.emplace_back(std::move(elementVariable));
+
+				{
+					bool wasInLoop = m_context->inLoop;
+					m_context->inLoop = true;
+					NAZARA_DEFER({ m_context->inLoop = wasInLoop; });
+
+					body->statements.emplace_back(Unscope(CloneStatement(node.statement)));
+				}
+
+				auto incrCounter = ShaderBuilder::Assign(AssignType::CompoundAdd, ShaderBuilder::Variable(counterVarIndex, PrimitiveType::UInt32, node.sourceLocation), ShaderBuilder::ConstantValue(1u, node.sourceLocation));
+				Validate(*incrCounter);
+
+				body->statements.emplace_back(ShaderBuilder::ExpressionStatement(std::move(incrCounter)));
+
+				whileStatement->body = std::move(body);
+
+				multi->statements.emplace_back(std::move(whileStatement));
+			}
+
+			return ShaderBuilder::Scoped(std::move(multi));
 		}
-		PopScope();
+		else
+		{
+			auto clone = std::make_unique<ForEachStatement>();
+			clone->expression = std::move(expr);
+			clone->varName = node.varName;
+			clone->unroll = std::move(unrollValue);
+			clone->sourceLocation = node.sourceLocation;
 
-		return clone;
+			PushScope();
+			{
+				clone->varIndex = RegisterVariable(node.varName, innerType, node.varIndex, node.sourceLocation);
+				HandleIdentifier(node.varName, IdentifierScope::Variable);
+
+				bool wasInLoop = m_context->inLoop;
+				m_context->inLoop = true;
+				NAZARA_DEFER({ m_context->inLoop = wasInLoop; });
+
+				clone->statement = CloneStatement(node.statement);
+			}
+			PopScope();
+
+			return clone;
+		}
 	}
 
 	StatementPtr SanitizeVisitor::Clone(ImportStatement& node)
@@ -3545,7 +4067,7 @@ NAZARA_WARNING_POP()
 				if (!m_context->options.partialSanitization || parameter.type.IsResultingValue())
 				{
 					parameter.varIndex = RegisterVariable(parameter.name, parameter.type.GetResultingValue(), parameter.varIndex, parameter.sourceLocation);
-					SanitizeIdentifier(parameter.name, IdentifierScope::Parameter);
+					HandleIdentifier(parameter.name, IdentifierScope::Parameter);
 				}
 				else
 					RegisterUnresolved(parameter.name);
@@ -3686,7 +4208,7 @@ NAZARA_WARNING_POP()
 		return output;
 	}
 
-	bool SanitizeVisitor::SanitizeIdentifier(std::string& identifier, IdentifierScope identifierScope)
+	bool SanitizeVisitor::HandleIdentifier(std::string& identifier, IdentifierScope identifierScope)
 	{
 		if (!m_context->options.identifierSanitizer)
 			return false;
@@ -4103,6 +4625,12 @@ NAZARA_WARNING_POP()
 		{
 			ExpressionType expressionType = ValidateBinaryOp(*binaryType, ResolveAlias(*leftExprType), UnwrapExternalType(ResolveAlias(*rightExprType)), node.sourceLocation);
 			TypeMustMatch(UnwrapExternalType(*leftExprType), expressionType, node.sourceLocation);
+
+			if (m_context->options.removeCompoundAssignments)
+			{
+				node.op = AssignType::Simple;
+				node.right = Clone(*ShaderBuilder::Binary(*binaryType, Cloner::Clone(*node.left), std::move(node.right)));
+			}
 		}
 
 		node.cachedExpressionType = *leftExprType;
@@ -4577,7 +5105,7 @@ NAZARA_WARNING_POP()
 		}
 
 		// SanitizeIdentifier registers the reserved name if its changes it
-		if (!SanitizeIdentifier(node.varName, IdentifierScope::Variable) && nameChanged)
+		if (!HandleIdentifier(node.varName, IdentifierScope::Variable) && nameChanged)
 			RegisterReservedName(node.varName);
 
 		return ValidationResult::Validated;
@@ -5285,6 +5813,9 @@ NAZARA_WARNING_POP()
 		std::size_t componentCount;
 		if (IsPrimitiveType(resolvedExprType))
 		{
+			if (m_context->options.removeScalarSwizzling)
+				throw AstInternalError{ node.sourceLocation, "scalar swizzling should have been removed before validating" };
+
 			baseType = std::get<PrimitiveType>(resolvedExprType);
 			componentCount = 1;
 		}
@@ -5726,5 +6257,65 @@ NAZARA_WARNING_POP()
 			return std::move(static_cast<ScopedStatement&>(*node).statement);
 		else
 			return node;
+	}
+
+	ExpressionType SanitizeVisitor::UnwrapExternalType(const ExpressionType& exprType)
+	{
+		if (IsStorageType(exprType))
+			return std::get<StorageType>(exprType).containedType;
+		else if (IsUniformType(exprType))
+			return std::get<UniformType>(exprType).containedType;
+		else if (IsArrayType(exprType))
+		{
+			const ArrayType& arrayType = std::get<ArrayType>(exprType);
+
+			ArrayType wrappedArrayType;
+			wrappedArrayType.containedType = std::make_unique<ContainedType>();
+			wrappedArrayType.containedType->type = UnwrapExternalType(arrayType.containedType->type);
+			wrappedArrayType.length = arrayType.length;
+
+			return wrappedArrayType;
+		}
+		else
+			return exprType;
+	}
+
+	template<typename T>
+	ExpressionType SanitizeVisitor::WrapExternalType(const ExpressionType& exprType)
+	{
+		if (IsStructType(exprType))
+		{
+			std::size_t innerStructIndex = std::get<StructType>(exprType).structIndex;
+
+			T wrappedType;
+			wrappedType.containedType = StructType{ innerStructIndex };
+
+			return wrappedType;
+		}
+		else if (IsArrayType(exprType))
+		{
+			const ArrayType& arrayType = std::get<ArrayType>(exprType);
+
+			ArrayType wrappedArrayType;
+			wrappedArrayType.containedType = std::make_unique<ContainedType>();
+			wrappedArrayType.containedType->type = WrapExternalType<T>(arrayType.containedType->type);
+			wrappedArrayType.length = arrayType.length;
+			wrappedArrayType.isWrapped = true;
+
+			return wrappedArrayType;
+		}
+		else if (IsDynArrayType(exprType))
+		{
+			const DynArrayType& arrayType = std::get<DynArrayType>(exprType);
+			ExpressionType wrapperInnerType = WrapExternalType<T>(arrayType.containedType->type);
+
+			DynArrayType wrappedDynArrayType;
+			wrappedDynArrayType.containedType = std::make_unique<ContainedType>();
+			wrappedDynArrayType.containedType->type = wrapperInnerType;
+
+			return wrappedDynArrayType;
+		}
+		else
+			return exprType;
 	}
 }

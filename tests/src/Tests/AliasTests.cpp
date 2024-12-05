@@ -3,6 +3,7 @@
 #include <NZSL/Parser.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <cctype>
+#include <NZSL/Ast/Transformations/ConstantRemovalTransformer.hpp>
 
 TEST_CASE("aliases", "[Shader]")
 {
@@ -49,7 +50,7 @@ fn main(input: In) -> FragOut
 )";
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
-		shaderModule = SanitizeModule(*shaderModule);
+		ResolveModule(*shaderModule);
 
 		ExpectGLSL(*shaderModule, R"(
 void main()
@@ -135,19 +136,27 @@ fn main() -> FragOut
 
 		WHEN("We perform a partial sanitization")
 		{
-			nzsl::Ast::SanitizeVisitor::Options options;
-			options.partialSanitization = true;
-		
-			shaderModule = SanitizeModule(*shaderModule, options);
+			nzsl::Ast::Transformer::Context context;
+			context.partialCompilation = true;
+
+			nzsl::Ast::ConstantRemovalTransformer::Options constantRemovalOpt;
+
+			ResolveOptions resolveOptions;
+			resolveOptions.partialCompilation = true;
+			resolveOptions.constantRemovalOptions = &constantRemovalOpt;
+
+			ResolveModule(*shaderModule, resolveOptions);
 		}
 
 		WHEN("We enable ForwardPass")
 		{
-			nzsl::Ast::SanitizeVisitor::Options options;
-			options.optionValues[nzsl::Ast::HashOption("ForwardPass")] = true;
-			options.removeOptionDeclaration = true;
+			nzsl::Ast::ConstantRemovalTransformer::Options constantRemovalOpt;
 
-			shaderModule = SanitizeModule(*shaderModule, options);
+			ResolveOptions resolveOptions;
+			resolveOptions.optionValues[nzsl::Ast::HashOption("ForwardPass")] = true;
+			resolveOptions.constantRemovalOptions = &constantRemovalOpt;
+
+			ResolveModule(*shaderModule, resolveOptions);
 
 			ExpectGLSL(*shaderModule, R"(
 struct ForwardOutput
@@ -213,12 +222,14 @@ OpFunctionEnd)");
 
 		WHEN("We disable ForwardPass")
 		{
-			nzsl::Ast::SanitizeVisitor::Options options;
-			options.optionValues[nzsl::Ast::HashOption("ForwardPass")] = false;
-			options.removeOptionDeclaration = true;
+			nzsl::Ast::ConstantRemovalTransformer::Options constantRemovalOpt;
 
-			shaderModule = SanitizeModule(*shaderModule, options);
-			
+			ResolveOptions resolveOptions;
+			resolveOptions.optionValues[nzsl::Ast::HashOption("ForwardPass")] = false;
+			resolveOptions.constantRemovalOptions = &constantRemovalOpt;
+
+			ResolveModule(*shaderModule, resolveOptions);
+
 			ExpectGLSL(*shaderModule, R"(
 struct ForwardOutput
 {

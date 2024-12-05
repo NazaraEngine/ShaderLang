@@ -1,4 +1,4 @@
-// Copyright (C) 2024 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
+// Copyright (C) 2025 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -15,15 +15,15 @@ namespace nzsl::Ast
 		return TransformModule(module, context, error);
 	}
 
-	ExpressionPtr CompoundAssignmentTransformer::Transform(AssignExpression&& assign)
+	auto CompoundAssignmentTransformer::Transform(AssignExpression&& assign) -> ExpressionTransformation
 	{
 		if (assign.op == AssignType::Simple || !m_options->removeCompoundAssignment)
-			return nullptr;
+			return VisitChildren{};
 
 		BinaryType binaryType;
 		switch (assign.op)
 		{
-			case AssignType::Simple:             NAZARA_UNREACHABLE();
+			case AssignType::Simple:             NAZARA_UNREACHABLE(); break;
 			case AssignType::CompoundAdd:        binaryType = BinaryType::Add; break;
 			case AssignType::CompoundDivide:     binaryType = BinaryType::Divide; break;
 			case AssignType::CompoundModulo:     binaryType = BinaryType::Modulo; break;
@@ -35,7 +35,8 @@ namespace nzsl::Ast
 
 		assign.op = AssignType::Simple;
 		assign.right = ShaderBuilder::Binary(binaryType, Clone(*assign.left), std::move(assign.right));
+		assign.right->cachedExpressionType = assign.left->cachedExpressionType;
 
-		return nullptr;
+		return VisitChildren{};
 	}
 }

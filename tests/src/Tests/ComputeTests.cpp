@@ -43,7 +43,7 @@ fn main(input: Input)
 )";
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
-		shaderModule = SanitizeModule(*shaderModule);
+		ResolveModule(*shaderModule);
 
 		nzsl::GlslWriter::Environment glslEnv;
 		glslEnv.glES = true;

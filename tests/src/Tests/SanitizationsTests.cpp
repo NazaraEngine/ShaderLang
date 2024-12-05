@@ -3,7 +3,6 @@
 #include <NZSL/Serializer.hpp>
 #include <NZSL/ShaderBuilder.hpp>
 #include <NZSL/Parser.hpp>
-#include <NZSL/Ast/SanitizeVisitor.hpp>
 #include <NZSL/Ast/Transformations/BranchSplitterTransformer.hpp>
 #include <NZSL/Ast/Transformations/CompoundAssignmentTransformer.hpp>
 #include <NZSL/Ast/Transformations/ForToWhileTransformer.hpp>
@@ -119,13 +118,11 @@ fn main()
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
 
-		REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(*shaderModule));
+		nzsl::Ast::TransformerExecutor executor;
+		executor.AddPass<nzsl::Ast::IdentifierTypeResolverTransformer>();
+		executor.AddPass<nzsl::Ast::ForToWhileTransformer>();
 
-		nzsl::Ast::ForToWhileTransformer forToWhileTransformer;
-		nzsl::Ast::Transformer::Context context;
-		context.nextVariableIndex = 10;
-
-		REQUIRE_NOTHROW(forToWhileTransformer.Transform(*shaderModule, context));
+		REQUIRE_NOTHROW(executor.Transform(*shaderModule));
 
 		ExpectNZSL(*shaderModule, R"(
 [entry(frag)]
@@ -177,13 +174,11 @@ fn main()
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
 
-		REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(*shaderModule));
+		nzsl::Ast::TransformerExecutor executor;
+		executor.AddPass<nzsl::Ast::IdentifierTypeResolverTransformer>();
+		executor.AddPass<nzsl::Ast::ForToWhileTransformer>();
 
-		nzsl::Ast::ForToWhileTransformer forToWhileTransformer;
-		nzsl::Ast::Transformer::Context context;
-		context.nextVariableIndex = 10;
-
-		REQUIRE_NOTHROW(forToWhileTransformer.Transform(*shaderModule, context));
+		REQUIRE_NOTHROW(executor.Transform(*shaderModule));
 
 		ExpectNZSL(*shaderModule, R"(
 [entry(frag)]
@@ -305,16 +300,11 @@ fn testMat4ToMat4(input: mat4[f32]) -> mat4[f32]
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
 
-		REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(*shaderModule));
+		nzsl::Ast::TransformerExecutor executor;
+		executor.AddPass<nzsl::Ast::IdentifierTypeResolverTransformer>();
+		executor.AddPass<nzsl::Ast::MatrixTransformer>({ false, true });
 
-		nzsl::Ast::Transformer::Context context;
-		context.nextVariableIndex = 20;
-
-		nzsl::Ast::MatrixTransformer::Options matrixOptions;
-		matrixOptions.removeMatrixCast = true;
-
-		nzsl::Ast::MatrixTransformer matrixTransformer;
-		REQUIRE_NOTHROW(matrixTransformer.Transform(*shaderModule, context, matrixOptions));
+		REQUIRE_NOTHROW(executor.Transform(*shaderModule));
 
 		ExpectNZSL(*shaderModule, R"(
 fn buildMat2x3(a: f32, b: f32, c: f32, d: f32, e: f32, f: f32) -> mat2x3[f32]
@@ -432,23 +422,15 @@ fn testMat4CompoundMinusMat4(x: mat4[f32], y: mat4[f32]) -> mat4[f32]
 )";
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
+		nzsl::Ast::Transformer::Context transformContext;
+		{
+			nzsl::Ast::TransformerExecutor executor;
+			executor.AddPass<nzsl::Ast::IdentifierTypeResolverTransformer>();
+			executor.AddPass<nzsl::Ast::CompoundAssignmentTransformer>({ true });
+			executor.AddPass<nzsl::Ast::MatrixTransformer>({ true, false });
 
-		REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(*shaderModule));
-
-		nzsl::Ast::Transformer::Context context;
-		context.nextVariableIndex = 20;
-
-		nzsl::Ast::CompoundAssignmentTransformer::Options assignmentOptions;
-		assignmentOptions.removeCompoundAssignment = true;
-
-		nzsl::Ast::CompoundAssignmentTransformer assignmentTransformer;
-		REQUIRE_NOTHROW(assignmentTransformer.Transform(*shaderModule, context, assignmentOptions));
-
-		nzsl::Ast::MatrixTransformer::Options matrixOptions;
-		matrixOptions.removeMatrixBinaryAddSub = true;
-
-		nzsl::Ast::MatrixTransformer matrixTransformer;
-		REQUIRE_NOTHROW(matrixTransformer.Transform(*shaderModule, context, matrixOptions));
+			REQUIRE_NOTHROW(executor.Transform(*shaderModule, transformContext));
+		}
 
 		ExpectNZSL(*shaderModule, R"(
 fn testMat4PlusMat4(x: mat4[f32], y: mat4[f32]) -> mat4[f32]
@@ -482,13 +464,10 @@ fn testMat4CompoundMinusMat4(x: mat4[f32], y: mat4[f32]) -> mat4[f32]
 
 		WHEN("Removing matrix casts")
 		{
-			REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(*shaderModule));
+			nzsl::Ast::TransformerExecutor executor;
+			executor.AddPass<nzsl::Ast::MatrixTransformer>({ false, true });
 
-			nzsl::Ast::MatrixTransformer::Options matrixOptions2;
-			matrixOptions2.removeMatrixCast = true;
-
-			nzsl::Ast::MatrixTransformer matrixTransformer2;
-			REQUIRE_NOTHROW(matrixTransformer2.Transform(*shaderModule, context, matrixOptions2));
+			REQUIRE_NOTHROW(executor.Transform(*shaderModule, transformContext));
 
 			ExpectNZSL(*shaderModule, R"(
 fn testMat4PlusMat4(x: mat4[f32], y: mat4[f32]) -> mat4[f32]
@@ -547,10 +526,10 @@ external
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
 
-		nzsl::Ast::SanitizeVisitor::Options options;
-		options.removeAliases = true;
+		//nzsl::Ast::SanitizeVisitor::Options options;
+		//options.removeAliases = true;
 
-		REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(*shaderModule, options));
+		//REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(*shaderModule, options));
 
 		ExpectNZSL(*shaderModule, R"(
 struct inputStruct
@@ -588,16 +567,10 @@ fn main()
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
 
-		REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(*shaderModule));
+		nzsl::Ast::TransformerExecutor executor;
+		executor.AddPass<nzsl::Ast::SwizzleTransformer>({ true });
 
-		nzsl::Ast::SwizzleTransformer::Options swizzleOptions;
-		swizzleOptions.removeScalarSwizzling = true;
-
-		nzsl::Ast::SwizzleTransformer swizzleTransformer;
-		nzsl::Ast::Transformer::Context context;
-		context.nextVariableIndex = 10;
-
-		REQUIRE_NOTHROW(swizzleTransformer.Transform(*shaderModule, context, swizzleOptions));
+		REQUIRE_NOTHROW(executor.Transform(*shaderModule));
 
 		ExpectNZSL(*shaderModule, R"(
 [nzsl_version("1.0")]
@@ -671,20 +644,13 @@ fn main()
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
 
-		nzsl::Ast::SanitizeVisitor::Options options;
-		options.partialSanitization = true;
-
-		REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(*shaderModule, options));
-
-		nzsl::Ast::StructAssignmentTransformer::Options transformerOptions;
-		transformerOptions.splitWrappedArrayAssignation = true;
-		transformerOptions.splitWrappedStructAssignation = true;
-
-		nzsl::Ast::StructAssignmentTransformer assignmentTransformer;
 		nzsl::Ast::Transformer::Context context;
-		context.nextVariableIndex = 10;
+		context.partialCompilation = true;
 
-		REQUIRE_NOTHROW(assignmentTransformer.Transform(*shaderModule, context, transformerOptions));
+		nzsl::Ast::TransformerExecutor executor;
+		executor.AddPass<nzsl::Ast::StructAssignmentTransformer>({ true, true });
+
+		REQUIRE_NOTHROW(executor.Transform(*shaderModule));
 
 		ExpectNZSL(*shaderModule, R"(
 [nzsl_version("1.0")]

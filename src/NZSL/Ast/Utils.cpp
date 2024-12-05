@@ -13,6 +13,11 @@ namespace nzsl::Ast
 		return m_expressionCategory;
 	}
 
+	void ValueCategory::Visit(AccessFieldExpression& node)
+	{
+		node.expr->Visit(*this);
+	}
+
 	void ValueCategory::Visit(AccessIdentifierExpression& node)
 	{
 		node.expr->Visit(*this);

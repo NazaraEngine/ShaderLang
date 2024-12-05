@@ -21,7 +21,16 @@ namespace nzsl::Ast
 	}
 
 	template<typename T>
-	ExpressionPtr&& ExpressionValue<T>::GetExpression() &&
+	ExpressionPtr& ExpressionValue<T>::GetExpression() &
+	{
+		if (!IsExpression())
+			throw std::runtime_error("excepted expression");
+
+		return std::get<ExpressionPtr>(m_value);
+	}
+
+	template<typename T>
+	ExpressionPtr&& ExpressionValue<T>::GetExpression()&&
 	{
 		if (!IsExpression())
 			throw std::runtime_error("excepted expression");

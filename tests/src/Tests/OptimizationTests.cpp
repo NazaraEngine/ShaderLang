@@ -1,9 +1,8 @@
 #include <Tests/ShaderUtils.hpp>
 #include <NZSL/ShaderBuilder.hpp>
 #include <NZSL/Parser.hpp>
-#include <NZSL/Ast/ConstantPropagationVisitor.hpp>
-#include <NZSL/Ast/EliminateUnusedPassVisitor.hpp>
-#include <NZSL/Ast/SanitizeVisitor.hpp>
+#include <NZSL/Ast/Transformations/ConstantPropagationTransformer.hpp>
+#include <NZSL/Ast/Transformations/EliminateUnusedTransformer.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <cctype>
 
@@ -11,8 +10,12 @@ void PropagateConstantAndExpect(std::string_view sourceCode, std::string_view ex
 {
 	nzsl::Ast::ModulePtr shaderModule;
 	REQUIRE_NOTHROW(shaderModule = nzsl::Parse(sourceCode));
-	shaderModule = SanitizeModule(*shaderModule);
-	REQUIRE_NOTHROW(shaderModule = nzsl::Ast::PropagateConstants(*shaderModule));
+	ResolveModule(*shaderModule);
+
+	nzsl::Ast::ConstantPropagationTransformer::Context context; //< FIXME
+
+	nzsl::Ast::ConstantPropagationTransformer constantPropagation;
+	constantPropagation.Transform(*shaderModule, context);
 
 	ExpectNZSL(*shaderModule, expectedOptimizedResult);
 }
@@ -24,8 +27,9 @@ void EliminateUnusedAndExpect(std::string_view sourceCode, std::string_view expe
 
 	nzsl::Ast::ModulePtr shaderModule;
 	REQUIRE_NOTHROW(shaderModule = nzsl::Parse(sourceCode));
-	shaderModule = SanitizeModule(*shaderModule);
-	REQUIRE_NOTHROW(shaderModule = nzsl::Ast::EliminateUnusedPass(*shaderModule, depConfig));
+	ResolveModule(*shaderModule);
+
+	REQUIRE_NOTHROW(nzsl::Ast::EliminateUnusedPass(*shaderModule, depConfig));
 
 	ExpectNZSL(*shaderModule, expectedOptimizedResult);
 }

@@ -17,6 +17,11 @@ namespace nzsl::ShaderBuilder
 {
 	namespace Impl
 	{
+		struct AccessField
+		{
+			inline Ast::AccessFieldExpressionPtr operator()(Ast::ExpressionPtr expr, std::uint32_t fieldIndex) const;
+		};
+
 		struct AccessIndex
 		{
 			inline Ast::AccessIndexExpressionPtr operator()(Ast::ExpressionPtr expr, std::int32_t index) const;
@@ -218,6 +223,7 @@ namespace nzsl::ShaderBuilder
 		};
 	}
 
+	constexpr Impl::AccessField AccessField;
 	constexpr Impl::AccessIndex AccessIndex;
 	constexpr Impl::AccessMember AccessMember;
 	constexpr Impl::Assign Assign;

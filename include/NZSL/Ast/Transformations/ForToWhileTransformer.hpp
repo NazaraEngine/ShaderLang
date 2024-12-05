@@ -1,4 +1,4 @@
-// Copyright (C) 2024 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
+// Copyright (C) 2025 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -23,15 +23,14 @@ namespace nzsl::Ast
 
 			struct Options
 			{
-				bool allowPartialSanitization = false;
 				bool reduceForEachLoopsToWhile = true;
 				bool reduceForLoopsToWhile = true;
 			};
 
 		private:
 			using Transformer::Transform;
-			StatementPtr Transform(ForEachStatement&& statement) override;
-			StatementPtr Transform(ForStatement&& statement) override;
+			StatementTransformation Transform(ForEachStatement&& statement) override;
+			StatementTransformation Transform(ForStatement&& statement) override;
 
 			const Options* m_options;
 	};
