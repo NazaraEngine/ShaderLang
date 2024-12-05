@@ -80,7 +80,7 @@ namespace nzsl::Ast
 					ExpressionPtr memberAssign = ShaderBuilder::Assign(AssignType::Simple, std::move(dstAccess), std::move(srcAccess));
 					memberAssign->cachedExpressionType = member.type.GetResultingValue();
 					memberAssign->sourceLocation = assign.sourceLocation;
-					TransformExpression(memberAssign);
+					HandleExpression(memberAssign);
 
 					if (memberAssign->GetType() == NodeType::AssignExpression)
 					{
@@ -117,7 +117,7 @@ namespace nzsl::Ast
 					ExpressionPtr memberAssign = ShaderBuilder::Assign(AssignType::Simple, std::move(dstAccess), std::move(srcAccess));
 					memberAssign->cachedExpressionType = arrayType.containedType->type;
 					memberAssign->sourceLocation = assign.sourceLocation;
-					TransformExpression(memberAssign);
+					HandleExpression(memberAssign);
 
 					if (memberAssign->GetType() == NodeType::AssignExpression)
 						AppendStatement(ShaderBuilder::ExpressionStatement(std::move(memberAssign)));
@@ -168,7 +168,7 @@ namespace nzsl::Ast
 		HandleStatementList<true>(multiStatement->statements, [&]
 		{
 			// Transform assignation into multiple assignations
-			TransformExpression(assign);
+			HandleExpression(assign);
 			if (assign->GetType() == NodeType::AssignExpression)
 				AppendStatement(ShaderBuilder::ExpressionStatement(std::move(assign)));
 		});

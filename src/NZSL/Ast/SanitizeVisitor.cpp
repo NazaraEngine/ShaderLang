@@ -8,9 +8,7 @@
 #include <NazaraUtils/StackArray.hpp>
 #include <NazaraUtils/StackVector.hpp>
 #include <NZSL/ShaderBuilder.hpp>
-#include <NZSL/Ast/ConstantPropagationVisitor.hpp>
 #include <NZSL/Ast/DependencyCheckerVisitor.hpp>
-#include <NZSL/Ast/EliminateUnusedPassVisitor.hpp>
 #include <NZSL/Ast/ExportVisitor.hpp>
 #include <NZSL/Ast/ExpressionType.hpp>
 #include <NZSL/Ast/IndexRemapperVisitor.hpp>
@@ -18,6 +16,8 @@
 #include <NZSL/Ast/Utils.hpp>
 #include <NZSL/Lang/Errors.hpp>
 #include <NZSL/Lang/LangData.hpp>
+#include <NZSL/Ast/Transformations/ConstantPropagationTransformer.hpp>
+#include <NZSL/Ast/Transformations/EliminateUnusedTransformer.hpp>
 #include <fmt/format.h>
 #include <frozen/unordered_map.h>
 #include <tsl/ordered_map.h>
@@ -296,7 +296,7 @@ namespace nzsl::Ast
 			{
 				moduleData.dependenciesVisitor->Resolve(true); //< allow unknown identifiers since we may be referencing other modules
 
-				importedModule.module = EliminateUnusedPass(*importedModule.module, moduleData.dependenciesVisitor->GetUsage());
+				EliminateUnusedPass(*importedModule.module, moduleData.dependenciesVisitor->GetUsage());
 			}
 		}
 
@@ -842,7 +842,7 @@ namespace nzsl::Ast
 
 		ExpressionPtr cloneCondition = Cloner::Clone(*node.condition);
 
-		std::optional<ConstantValue> conditionValue = ComputeConstantValue(*cloneCondition);
+		std::optional<ConstantValue> conditionValue = ComputeConstantValue(cloneCondition);
 		if (!conditionValue.has_value())
 		{
 			// Unresolvable condition
@@ -979,8 +979,6 @@ namespace nzsl::Ast
 
 			return swizzleExpr;
 		}
-
-		const ExpressionType& resolvedExprType = ResolveAlias(*exprType);
 		
 		auto clone = std::make_unique<SwizzleExpression>();
 		clone->componentCount = node.componentCount;
@@ -1016,8 +1014,8 @@ namespace nzsl::Ast
 			for (auto& cond : node.condStatements)
 			{
 				MandatoryExpr(cond.condition, node.sourceLocation);
-
-				std::optional<ConstantValue> conditionValue = ComputeConstantValue(*Cloner::Clone(*cond.condition));
+				ExpressionPtr condExpr = Cloner::Clone(*cond.condition);
+				std::optional<ConstantValue> conditionValue = ComputeConstantValue(condExpr);
 				if (!conditionValue.has_value())
 					return Cloner::Clone(node); //< Unresolvable condition
 
@@ -1094,7 +1092,7 @@ namespace nzsl::Ast
 
 		ExpressionPtr cloneCondition = Cloner::Clone(*node.condition);
 
-		std::optional<ConstantValue> conditionValue = ComputeConstantValue(*cloneCondition);
+		std::optional<ConstantValue> conditionValue = ComputeConstantValue(cloneCondition);
 
 		if (!conditionValue.has_value())
 		{
@@ -1554,7 +1552,7 @@ NAZARA_WARNING_POP()
 				if (!clone->defaultValue)
 					throw CompilerMissingOptionValueError{ node.sourceLocation, clone->optName };
 
-				clone->optIndex = RegisterConstant(clone->optName, ComputeConstantValue(*clone->defaultValue), node.optIndex, node.sourceLocation);
+				clone->optIndex = RegisterConstant(clone->optName, ComputeConstantValue(clone->defaultValue), node.optIndex, node.sourceLocation);
 			}
 		}
 
@@ -1812,15 +1810,15 @@ NAZARA_WARNING_POP()
 			assert(unrollValue.IsResultingValue());
 			if (unrollValue.GetResultingValue() == LoopUnroll::Always)
 			{
-				std::optional<ConstantValue> fromValue = ComputeConstantValue(*fromExpr);
-				std::optional<ConstantValue> toValue = ComputeConstantValue(*toExpr);
+				std::optional<ConstantValue> fromValue = ComputeConstantValue(fromExpr);
+				std::optional<ConstantValue> toValue = ComputeConstantValue(toExpr);
 				if (!fromValue.has_value() || !toValue.has_value())
 					return CloneFor(); //< can't resolve step value
 
 				std::optional<ConstantValue> stepValue;
 				if (stepExpr)
 				{
-					stepValue = ComputeConstantValue(*stepExpr);
+					stepValue = ComputeConstantValue(stepExpr);
 					if (!stepValue.has_value())
 						return CloneFor(); //< can't resolve step value
 				}
@@ -2598,28 +2596,28 @@ NAZARA_WARNING_POP()
 		return varExpr;
 	}
 
-	std::optional<ConstantValue> SanitizeVisitor::ComputeConstantValue(Expression& expr) const
+	std::optional<ConstantValue> SanitizeVisitor::ComputeConstantValue(ExpressionPtr& expr) const
 	{
 		// Run optimizer on constant value to hopefully retrieve a single constant value
-		ExpressionPtr optimizedExpr = PropagateConstants(expr);
-		if (optimizedExpr->GetType() == NodeType::ConstantValueExpression)
+		PropagateConstants(expr);
+		if (expr->GetType() == NodeType::ConstantValueExpression)
 		{
 			return std::visit([&](auto&& value) -> ConstantValue
 			{
 				return value;
-			}, static_cast<ConstantValueExpression&>(*optimizedExpr).value);
+			}, static_cast<ConstantValueExpression&>(*expr).value);
 		}
-		else if (optimizedExpr->GetType() == NodeType::ConstantArrayValueExpression)
+		else if (expr->GetType() == NodeType::ConstantArrayValueExpression)
 		{
 			return std::visit([&](auto&& values) -> ConstantValue
 			{
 				return values;
-			}, static_cast<ConstantArrayValueExpression&>(*optimizedExpr).values);
+			}, static_cast<ConstantArrayValueExpression&>(*expr).values);
 		}
 		else
 		{
 			if (!m_context->options.partialSanitization)
-				throw CompilerConstantExpressionRequiredError{ expr.sourceLocation };
+				throw CompilerConstantExpressionRequiredError{ expr->sourceLocation };
 
 			return std::nullopt;
 		}
@@ -2633,7 +2631,7 @@ NAZARA_WARNING_POP()
 
 		if (attribute.IsExpression())
 		{
-			auto& expr = *attribute.GetExpression();
+			ExpressionPtr expr = Ast::Clone(*attribute.GetExpression());
 
 			std::optional<ConstantValue> value = ComputeConstantValue(expr);
 			if (!value)
@@ -2648,18 +2646,18 @@ NAZARA_WARNING_POP()
 					{
 						std::int32_t intVal = std::get<std::int32_t>(*value);
 						if (intVal < 0)
-							throw CompilerAttributeUnexpectedNegativeError{ expr.sourceLocation, Ast::ToString(intVal) };
+							throw CompilerAttributeUnexpectedNegativeError{ expr->sourceLocation, Ast::ToString(intVal) };
 					
 						attribute = static_cast<std::uint32_t>(intVal);
 					}
 					else
-						throw CompilerAttributeUnexpectedTypeError{ expr.sourceLocation, ToString(GetConstantExpressionType<T>(), sourceLocation), ToString(GetExpressionTypeSecure(expr), sourceLocation) };
+						throw CompilerAttributeUnexpectedTypeError{ expr->sourceLocation, ToString(GetConstantExpressionType<T>(), sourceLocation), ToString(GetExpressionTypeSecure(*expr), sourceLocation) };
 				}
 				else
 					attribute = std::get<T>(*value);
 			}
 			else
-				throw CompilerAttributeUnexpectedExpressionError{ expr.sourceLocation };
+				throw CompilerAttributeUnexpectedExpressionError{ expr->sourceLocation };
 		}
 
 		return ValidationResult::Validated;
@@ -2673,12 +2671,12 @@ NAZARA_WARNING_POP()
 
 		if (attribute.IsExpression())
 		{
-			auto& expr = *attribute.GetExpression();
+			ExpressionPtr expr = Ast::Clone(*attribute.GetExpression());
 
-			std::optional<ConstantValue> value = ComputeConstantValue(*Cloner::Clone(expr));
+			std::optional<ConstantValue> value = ComputeConstantValue(expr);
 			if (!value)
 			{
-				targetAttribute = Cloner::Clone(expr);
+				targetAttribute = Cloner::Clone(*expr);
 				return ValidationResult::Unresolved;
 			}
 
@@ -2693,21 +2691,21 @@ NAZARA_WARNING_POP()
 						{
 							std::int32_t intVal = std::get<std::int32_t>(*value);
 							if (intVal < 0)
-								throw CompilerAttributeUnexpectedNegativeError{ expr.sourceLocation, Ast::ToString(intVal) };
+								throw CompilerAttributeUnexpectedNegativeError{ expr->sourceLocation, Ast::ToString(intVal) };
 
 							targetAttribute = static_cast<std::uint32_t>(intVal);
 						}
 						else
-							throw CompilerAttributeUnexpectedTypeError{ expr.sourceLocation, ToString(GetConstantExpressionType<T>(), sourceLocation), ToString(GetExpressionTypeSecure(expr), sourceLocation) };
+							throw CompilerAttributeUnexpectedTypeError{ expr->sourceLocation, ToString(GetConstantExpressionType<T>(), sourceLocation), ToString(GetExpressionTypeSecure(*expr), sourceLocation) };
 					}
 					else
-						throw CompilerAttributeUnexpectedTypeError{ expr.sourceLocation, ToString(GetConstantExpressionType<T>(), sourceLocation), ToString(GetExpressionTypeSecure(expr), sourceLocation) };
+						throw CompilerAttributeUnexpectedTypeError{ expr->sourceLocation, ToString(GetConstantExpressionType<T>(), sourceLocation), ToString(GetExpressionTypeSecure(*expr), sourceLocation) };
 				}
 				else
 					targetAttribute = std::get<T>(*value);
 			}
 			else
-				throw CompilerAttributeUnexpectedExpressionError{ expr.sourceLocation };
+				throw CompilerAttributeUnexpectedExpressionError{ expr->sourceLocation };
 		}
 		else
 		{
@@ -2718,21 +2716,24 @@ NAZARA_WARNING_POP()
 		return ValidationResult::Validated;
 	}
 
-	template<typename T>
-	std::unique_ptr<T> SanitizeVisitor::PropagateConstants(T& node) const
+	void SanitizeVisitor::PropagateConstants(ExpressionPtr& expr) const
 	{
-		ConstantPropagationVisitor::Options optimizerOptions;
+		// Run optimizer on constant value to hopefully retrieve a single constant value
+
+		ConstantPropagationTransformer::Options optimizerOptions;
 		optimizerOptions.constantQueryCallback = [&](std::size_t constantId) -> const ConstantValue*
 		{
-			const ConstantValue* value = m_context->constantValues.TryRetrieve(constantId, node.sourceLocation);
+			const ConstantValue* value = m_context->constantValues.TryRetrieve(constantId, expr->sourceLocation);
 			if (!value && !m_context->options.partialSanitization)
-				throw AstInvalidConstantIndexError{ node.sourceLocation, constantId };
+				throw AstInvalidConstantIndexError{ expr->sourceLocation, constantId };
 
 			return value;
 		};
 
-		// Run optimizer on constant value to hopefully retrieve a single constant value
-		return Nz::StaticUniquePointerCast<T>(Ast::PropagateConstants(node, optimizerOptions));
+		ConstantPropagationTransformer::Context context;
+
+		ConstantPropagationTransformer constantPropagation;
+		constantPropagation.Transform(expr, context, optimizerOptions);
 	}
 
 	void SanitizeVisitor::PreregisterIndices(const Module& module)
@@ -3894,14 +3895,14 @@ NAZARA_WARNING_POP()
 			Nz::StackVector<TypeParameter> parameters = NazaraStackVector(TypeParameter, node.indices.size());
 			for (std::size_t i = 0; i < node.indices.size(); ++i)
 			{
-				const ExpressionPtr& indexExpr = node.indices[i];
+				ExpressionPtr& indexExpr = node.indices[i];
 
 				TypeParameterCategory typeCategory = (i < requiredParameterCount) ? partialType.type.parameters[i] : partialType.type.optParameters[i - requiredParameterCount];
 				switch (typeCategory)
 				{
 					case TypeParameterCategory::ConstantValue:
 					{
-						std::optional<ConstantValue> value = ComputeConstantValue(*indexExpr);
+						std::optional<ConstantValue> value = ComputeConstantValue(indexExpr);
 						if (!value.has_value())
 							return ValidationResult::Unresolved;
 
@@ -3959,7 +3960,7 @@ NAZARA_WARNING_POP()
 			if (node.indices.size() != 1)
 				throw AstNoIndexError{ node.sourceLocation };
 
-			for (const auto& indexExpr : node.indices)
+			for (auto& indexExpr : node.indices)
 			{
 				const ExpressionType* indexType = GetExpressionType(*indexExpr);
 				if (!indexType)
@@ -3989,7 +3990,7 @@ NAZARA_WARNING_POP()
 					if (primitiveIndexType != PrimitiveType::Int32)
 						throw CompilerIndexStructRequiresInt32IndicesError{ node.sourceLocation, ToString(*indexType, indexExpr->sourceLocation) };
 
-					std::optional<ConstantValue> constantValue = ComputeConstantValue(*indexExpr);
+					std::optional<ConstantValue> constantValue = ComputeConstantValue(indexExpr);
 					if (!constantValue.has_value())
 						return ValidationResult::Unresolved;
 
@@ -4465,9 +4466,9 @@ NAZARA_WARNING_POP()
 				throw CompilerExpectedConstantTypeError{ node.sourceLocation, ToString(*constType, node.sourceLocation) };
 		}
 
-		ExpressionPtr constantExpr = PropagateConstants(*node.expression);
+		PropagateConstants(node.expression);
 
-		NodeType constantType = constantExpr->GetType();
+		NodeType constantType = node.expression->GetType();
 		if (constantType != NodeType::ConstantValueExpression && constantType != NodeType::ConstantArrayValueExpression)
 		{
 			// Constant propagation failed
@@ -4481,18 +4482,17 @@ NAZARA_WARNING_POP()
 		ExpressionType expressionType;
 		if (constantType == NodeType::ConstantValueExpression)
 		{
-			const auto& constant = static_cast<ConstantValueExpression&>(*constantExpr);
+			const auto& constant = static_cast<ConstantValueExpression&>(*node.expression);
 			expressionType = GetConstantType(constant.value);
 
 			node.constIndex = RegisterConstant(node.name, ToConstantValue(constant.value), node.constIndex, node.sourceLocation);
 		}
 		else if (constantType == NodeType::ConstantArrayValueExpression)
 		{
-			const auto& constant = static_cast<ConstantArrayValueExpression&>(*constantExpr);
+			const auto& constant = static_cast<ConstantArrayValueExpression&>(*node.expression);
 			expressionType = GetConstantType(constant.values);
 
 			node.constIndex = RegisterConstant(node.name, ToConstantValue(constant.values), node.constIndex, node.sourceLocation);
-			node.expression = std::move(constantExpr); //< FIXME: Should const arrays be allowed?
 		}
 
 		if (constType.has_value() && ResolveAlias(*constType) != ResolveAlias(expressionType))

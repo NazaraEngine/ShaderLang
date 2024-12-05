@@ -1,7 +1,7 @@
 #include <Tests/ShaderUtils.hpp>
 #include <NZSL/ShaderBuilder.hpp>
 #include <NZSL/Parser.hpp>
-#include <NZSL/Ast/ConstantPropagationVisitor.hpp>
+#include <NZSL/Ast/ConstantPropagationTransformer.hpp>
 #include <NZSL/Ast/EliminateUnusedPassVisitor.hpp>
 #include <NZSL/Ast/SanitizeVisitor.hpp>
 #include <catch2/catch_test_macros.hpp>

@@ -125,10 +125,10 @@ namespace nzsl::Ast
 
 			ExpressionPtr CacheResult(ExpressionPtr expression);
 
-			std::optional<ConstantValue> ComputeConstantValue(Expression& expr) const;
+			std::optional<ConstantValue> ComputeConstantValue(ExpressionPtr& expr) const;
 			template<typename T> ValidationResult ComputeExprValue(ExpressionValue<T>& attribute, const SourceLocation& sourceLocation) const;
 			template<typename T> ValidationResult ComputeExprValue(const ExpressionValue<T>& attribute, ExpressionValue<T>& targetAttribute, const SourceLocation& sourceLocation);
-			template<typename T> std::unique_ptr<T> PropagateConstants(T& node) const;
+			void PropagateConstants(ExpressionPtr& expr) const;
 
 			void PreregisterIndices(const Module& module);
 			void PropagateFunctionRequirements(FunctionData& callingFunction, std::size_t calledFuncIndex, Nz::Bitset<>& seen);

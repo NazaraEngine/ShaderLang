@@ -8,8 +8,9 @@
 #include <NazaraUtils/PathUtils.hpp>
 #include <NZSL/Enums.hpp>
 #include <NZSL/Parser.hpp>
-#include <NZSL/Ast/ConstantPropagationVisitor.hpp>
-#include <NZSL/Ast/EliminateUnusedPassVisitor.hpp>
+#include <NZSL/Ast/Cloner.hpp>
+#include <NZSL/Ast/Transformations/ConstantPropagationTransformer.hpp>
+#include <NZSL/Ast/Transformations/EliminateUnusedTransformer.hpp>
 #include <NZSL/Ast/RecursiveVisitor.hpp>
 #include <NZSL/Ast/SanitizeVisitor.hpp>
 #include <NZSL/Lang/LangData.hpp>
@@ -639,7 +640,7 @@ namespace nzsl
 	std::vector<std::uint32_t> SpirvWriter::Generate(const Ast::Module& module, const States& states)
 	{
 		Ast::ModulePtr sanitizedModule;
-		const Ast::Module* targetModule;
+		Ast::Module* targetModule;
 		if (!states.sanitized)
 		{
 			Ast::SanitizeVisitor::Options options = GetSanitizeOptions();
@@ -650,16 +651,21 @@ namespace nzsl
 			targetModule = sanitizedModule.get();
 		}
 		else
-			targetModule = &module;
+		{
+			sanitizedModule = Ast::Clone(module);
+			targetModule = sanitizedModule.get();
+		}
 
 		if (states.optimize)
 		{
-			sanitizedModule = Ast::PropagateConstants(*targetModule);
-			
+			Ast::Transformer::Context context;
+			Ast::ConstantPropagationTransformer constantPropagation;
+			constantPropagation.Transform(*targetModule, context);
+
 			Ast::DependencyCheckerVisitor::Config dependencyConfig;
 			dependencyConfig.usedShaderStages = ShaderStageType_All;
 
-			sanitizedModule = Ast::EliminateUnusedPass(*sanitizedModule, dependencyConfig);
+			Ast::EliminateUnusedPass(*sanitizedModule, dependencyConfig);
 
 			targetModule = sanitizedModule.get();
 		}

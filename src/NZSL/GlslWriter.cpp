@@ -8,12 +8,14 @@
 #include <NazaraUtils/CallOnExit.hpp>
 #include <NazaraUtils/PathUtils.hpp>
 #include <NZSL/Enums.hpp>
-#include <NZSL/Ast/ConstantPropagationVisitor.hpp>
+#include <NZSL/ShaderBuilder.hpp>
+#include <NZSL/Ast/Cloner.hpp>
 #include <NZSL/Ast/ConstantValue.hpp>
-#include <NZSL/Ast/EliminateUnusedPassVisitor.hpp>
 #include <NZSL/Ast/RecursiveVisitor.hpp>
 #include <NZSL/Ast/Utils.hpp>
 #include <NZSL/Lang/LangData.hpp>
+#include <NZSL/Ast/Transformations/ConstantPropagationTransformer.hpp>
+#include <NZSL/Ast/Transformations/EliminateUnusedTransformer.hpp>
 #include <fmt/format.h>
 #include <frozen/unordered_map.h>
 #include <frozen/unordered_set.h>
@@ -391,7 +393,7 @@ namespace nzsl
 		NAZARA_DEFER({ m_currentState = nullptr; });
 
 		Ast::ModulePtr sanitizedModule;
-		const Ast::Module* targetModule;
+		Ast::Module* targetModule;
 		if (!states.sanitized)
 		{
 			Ast::SanitizeVisitor::Options options = GetSanitizeOptions();
@@ -402,16 +404,21 @@ namespace nzsl
 			targetModule = sanitizedModule.get();
 		}
 		else
-			targetModule = &module;
+		{
+			sanitizedModule = Ast::Clone(module);
+			targetModule = sanitizedModule.get();
+		}
 
 		if (states.optimize)
 		{
-			sanitizedModule = Ast::PropagateConstants(*targetModule);
+			Ast::Transformer::Context context;
+			Ast::ConstantPropagationTransformer constantPropagation;
+			constantPropagation.Transform(*targetModule, context);
 
 			Ast::DependencyCheckerVisitor::Config dependencyConfig;
 			dependencyConfig.usedShaderStages = (shaderStage) ? *shaderStage : ShaderStageType_All; //< only one should exist anyway
 
-			sanitizedModule = Ast::EliminateUnusedPass(*sanitizedModule, dependencyConfig);
+			Ast::EliminateUnusedPass(*sanitizedModule, dependencyConfig);
 
 			targetModule = sanitizedModule.get();
 		}

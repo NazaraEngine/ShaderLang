@@ -2,7 +2,6 @@
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
-
 namespace nzsl::Ast
 {
 	template<typename T>
@@ -53,6 +52,12 @@ namespace nzsl::Ast
 	{
 		Cloner cloner;
 		return cloner.Clone(node);
+	}
+
+	inline ModulePtr Clone(Module& module)
+	{
+		Cloner cloner;
+		return cloner.Clone(module);
 	}
 
 	inline StatementPtr Clone(Statement& node)

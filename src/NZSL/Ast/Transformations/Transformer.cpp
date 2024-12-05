@@ -110,6 +110,24 @@ namespace nzsl::Ast
 		return &ResolveAlias(*exprType);
 	}
 
+	void Transformer::HandleExpression(ExpressionPtr& expression)
+	{
+		assert(expression);
+
+		m_expressionStack.push_back(&expression);
+		expression->Visit(*this);
+		m_expressionStack.pop_back();
+	}
+
+	void Transformer::HandleStatement(StatementPtr& statement)
+	{
+		assert(statement);
+
+		m_statementStack.push_back(&statement);
+		statement->Visit(*this);
+		m_statementStack.pop_back();
+	}
+
 #define NZSL_SHADERAST_NODE(Node, Type) \
 	Type##Ptr Transformer::Transform(Node##Type&& /*node*/) \
 	{ \
@@ -118,13 +136,24 @@ namespace nzsl::Ast
 
 #include <NZSL/Ast/NodeList.hpp>
 
-	void Transformer::TransformExpression(ExpressionPtr& expression)
+	bool Transformer::TransformExpression(ExpressionPtr& expression, Context& context, std::string* error)
 	{
-		assert(expression);
+		m_context = &context;
 
-		m_expressionStack.push_back(&expression);
-		expression->Visit(*this);
-		m_expressionStack.pop_back();
+		try
+		{
+			HandleExpression(expression);
+		}
+		catch(const std::exception& e)
+		{
+			if (!error)
+				throw;
+
+			*error = e.what();
+			return false;
+		}
+		
+		return true;
 	}
 
 	bool Transformer::TransformModule(Module& module, Context& context, std::string* error)
@@ -134,7 +163,7 @@ namespace nzsl::Ast
 		try
 		{
 			StatementPtr root = std::move(module.rootNode);
-			TransformStatement(root);
+			HandleStatement(root);
 			module.rootNode = Nz::StaticUniquePointerCast<MultiStatement>(std::move(root));
 		}
 		catch(const std::exception& e)
@@ -149,13 +178,24 @@ namespace nzsl::Ast
 		return true;
 	}
 
-	void Transformer::TransformStatement(StatementPtr& statement)
+	bool Transformer::TransformStatement(StatementPtr& statement, Context& context, std::string* error)
 	{
-		assert(statement);
+		m_context = &context;
 
-		m_statementStack.push_back(&statement);
-		statement->Visit(*this);
-		m_statementStack.pop_back();
+		try
+		{
+			HandleStatement(statement);
+		}
+		catch(const std::exception& e)
+		{
+			if (!error)
+				throw;
+
+			*error = e.what();
+			return false;
+		}
+		
+		return true;
 	}
 
 	template<typename T>
@@ -191,7 +231,7 @@ namespace nzsl::Ast
 		if (TransformCurrentExpression<AccessIdentifierExpression>())
 			return;
 
-		TransformExpression(node.expr);
+		HandleExpression(node.expr);
 	}
 
 	void Transformer::Visit(AccessIndexExpression& node)
@@ -199,9 +239,9 @@ namespace nzsl::Ast
 		if (TransformCurrentExpression<AccessIndexExpression>())
 			return;
 
-		TransformExpression(node.expr);
+		HandleExpression(node.expr);
 		for (auto& index : node.indices)
-			TransformExpression(index);
+			HandleExpression(index);
 	}
 
 	void Transformer::Visit(AliasValueExpression& /*node*/)
@@ -214,8 +254,8 @@ namespace nzsl::Ast
 		if (TransformCurrentExpression<AssignExpression>())
 			return;
 
-		TransformExpression(node.left);
-		TransformExpression(node.right);
+		HandleExpression(node.left);
+		HandleExpression(node.right);
 	}
 
 	void Transformer::Visit(BinaryExpression& node)
@@ -223,8 +263,8 @@ namespace nzsl::Ast
 		if (TransformCurrentExpression<BinaryExpression>())
 			return;
 
-		TransformExpression(node.left);
-		TransformExpression(node.right);
+		HandleExpression(node.left);
+		HandleExpression(node.right);
 	}
 
 	void Transformer::Visit(CallFunctionExpression& node)
@@ -233,9 +273,9 @@ namespace nzsl::Ast
 			return;
 
 		for (auto& param : node.parameters)
-			TransformExpression(param.expr);
+			HandleExpression(param.expr);
 
-		TransformExpression(node.targetFunction);
+		HandleExpression(node.targetFunction);
 	}
 
 	void Transformer::Visit(CallMethodExpression& node)
@@ -243,10 +283,10 @@ namespace nzsl::Ast
 		if (TransformCurrentExpression<CallMethodExpression>())
 			return;
 
-		TransformExpression(node.object);
+		HandleExpression(node.object);
 
 		for (auto& param : node.parameters)
-			TransformExpression(param);
+			HandleExpression(param);
 	}
 
 	void Transformer::Visit(CastExpression& node)
@@ -255,7 +295,7 @@ namespace nzsl::Ast
 			return;
 
 		for (auto& expr : node.expressions)
-			TransformExpression(expr);
+			HandleExpression(expr);
 	}
 
 	void Transformer::Visit(ConditionalExpression& node)
@@ -263,8 +303,8 @@ namespace nzsl::Ast
 		if (TransformCurrentExpression<ConditionalExpression>())
 			return;
 
-		TransformExpression(node.truePath);
-		TransformExpression(node.falsePath);
+		HandleExpression(node.truePath);
+		HandleExpression(node.falsePath);
 	}
 
 	void Transformer::Visit(ConstantExpression& /*node*/)
@@ -298,7 +338,7 @@ namespace nzsl::Ast
 			return;
 
 		for (auto& param : node.parameters)
-			TransformExpression(param);
+			HandleExpression(param);
 	}
 
 	void Transformer::Visit(IntrinsicFunctionExpression& /*node*/)
@@ -317,7 +357,7 @@ namespace nzsl::Ast
 			return;
 
 		if (node.expression)
-			TransformExpression(node.expression);
+			HandleExpression(node.expression);
 	}
 
 	void Transformer::Visit(TypeExpression& /*node*/)
@@ -336,7 +376,7 @@ namespace nzsl::Ast
 			return;
 
 		if (node.expression)
-			TransformExpression(node.expression);
+			HandleExpression(node.expression);
 	}
 
 	void Transformer::Visit(BranchStatement& node)
@@ -346,14 +386,14 @@ namespace nzsl::Ast
 
 		for (auto& cond : node.condStatements)
 		{
-			TransformStatement(cond.statement);
+			HandleStatement(cond.statement);
 
 			if (m_visitExpressions)
-				TransformExpression(cond.condition);
+				HandleExpression(cond.condition);
 		}
 
 		if (node.elseStatement)
-			TransformStatement(node.elseStatement);
+			HandleStatement(node.elseStatement);
 	}
 
 	void Transformer::Visit(BreakStatement& /*node*/)
@@ -366,10 +406,10 @@ namespace nzsl::Ast
 		if (TransformCurrentStatement<ConditionalStatement>())
 			return;
 
-		TransformStatement(node.statement);
+		HandleStatement(node.statement);
 
 		if (m_visitExpressions)
-			TransformExpression(node.condition);
+			HandleExpression(node.condition);
 	}
 
 	void Transformer::Visit(ContinueStatement& /*node*/)
@@ -383,7 +423,7 @@ namespace nzsl::Ast
 			return;
 
 		if (m_visitExpressions)
-			TransformExpression(node.expression);
+			HandleExpression(node.expression);
 	}
 
 	void Transformer::Visit(DeclareConstStatement& node)
@@ -392,7 +432,7 @@ namespace nzsl::Ast
 			return;
 
 		if (m_visitExpressions)
-			TransformExpression(node.expression);
+			HandleExpression(node.expression);
 	}
 
 	void Transformer::Visit(DeclareExternalStatement& /*node*/)
@@ -407,7 +447,7 @@ namespace nzsl::Ast
 
 		HandleStatementList<false>(node.statements, [&](StatementPtr& statement)
 		{
-			TransformStatement(statement);
+			HandleStatement(statement);
 		});
 	}
 
@@ -419,7 +459,7 @@ namespace nzsl::Ast
 		if (m_visitExpressions)
 		{
 			if (node.defaultValue)
-				TransformExpression(node.defaultValue);
+				HandleExpression(node.defaultValue);
 		}
 	}
 
@@ -436,7 +476,7 @@ namespace nzsl::Ast
 		if (m_visitExpressions)
 		{
 			if (node.initialExpression)
-				TransformExpression(node.initialExpression);
+				HandleExpression(node.initialExpression);
 		}
 	}
 
@@ -451,7 +491,7 @@ namespace nzsl::Ast
 			return;
 
 		if (m_visitExpressions)
-			TransformExpression(node.expression);
+			HandleExpression(node.expression);
 	}
 
 	void Transformer::Visit(ForStatement& node)
@@ -460,15 +500,15 @@ namespace nzsl::Ast
 			return;
 
 		if (node.statement)
-			TransformStatement(node.statement);
+			HandleStatement(node.statement);
 
 		if (m_visitExpressions)
 		{
-			TransformExpression(node.fromExpr);
-			TransformExpression(node.toExpr);
+			HandleExpression(node.fromExpr);
+			HandleExpression(node.toExpr);
 
 			if (node.stepExpr)
-				TransformExpression(node.stepExpr);
+				HandleExpression(node.stepExpr);
 		}
 	}
 
@@ -478,10 +518,10 @@ namespace nzsl::Ast
 			return;
 
 		if (node.statement)
-			TransformStatement(node.statement);
+			HandleStatement(node.statement);
 
 		if (m_visitExpressions)
-			TransformExpression(node.expression);
+			HandleExpression(node.expression);
 	}
 
 	void Transformer::Visit(ImportStatement& /*node*/)
@@ -496,7 +536,7 @@ namespace nzsl::Ast
 
 		HandleStatementList<false>(node.statements, [&](StatementPtr& statement)
 		{
-			TransformStatement(statement);
+			HandleStatement(statement);
 		});
 	}
 
@@ -511,7 +551,7 @@ namespace nzsl::Ast
 			return;
 
 		if (m_visitExpressions)
-			TransformExpression(node.returnExpr);
+			HandleExpression(node.returnExpr);
 	}
 
 	void Transformer::Visit(ScopedStatement& node)
@@ -522,7 +562,7 @@ namespace nzsl::Ast
 		std::vector<StatementPtr> statementList;
 		HandleStatementList<true>(statementList, [&]
 		{
-			TransformStatement(node.statement);
+			HandleStatement(node.statement);
 		});
 
 		// To handle the case where our scoped statement does not contain a statement list but requires
@@ -543,9 +583,9 @@ namespace nzsl::Ast
 			return;
 
 		if (node.body)
-			TransformStatement(node.body);
+			HandleStatement(node.body);
 
 		if (m_visitExpressions)
-			TransformExpression(node.condition);
+			HandleExpression(node.condition);
 	}
 }

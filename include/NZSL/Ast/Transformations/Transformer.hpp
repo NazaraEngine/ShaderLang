@@ -44,14 +44,16 @@ namespace nzsl::Ast
 			const ExpressionType* GetResolvedExpressionType(Expression& expr) const;
 			const ExpressionType* GetResolvedExpressionType(Expression& expr, bool allowEmpty) const;
 
+			void HandleExpression(ExpressionPtr& expression);
 			template<bool Single, typename F> void HandleStatementList(std::vector<StatementPtr>& statementList, F&& callback);
+			void HandleStatement(StatementPtr& expression);
 
 #define NZSL_SHADERAST_NODE(Node, Type) virtual Type##Ptr Transform(Node##Type&& node);
 #include <NZSL/Ast/NodeList.hpp>
 
-			void TransformExpression(ExpressionPtr& expression);
+			bool TransformExpression(ExpressionPtr& expression, Context& context, std::string* error = nullptr);
 			bool TransformModule(Module& module, Context& context, std::string* error = nullptr);
-			void TransformStatement(StatementPtr& statement);
+			bool TransformStatement(StatementPtr& statement, Context& context, std::string* error = nullptr);
 
 			Context* m_context;
 
