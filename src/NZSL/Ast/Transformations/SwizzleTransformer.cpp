@@ -1,4 +1,4 @@
-// Copyright (C) 2024 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
+// Copyright (C) 2025 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -15,11 +15,11 @@ namespace nzsl::Ast
 		return TransformModule(module, context, error);
 	}
 
-	ExpressionPtr SwizzleTransformer::Transform(SwizzleExpression&& swizzle)
+	auto SwizzleTransformer::Transform(SwizzleExpression&& swizzle) -> ExpressionTransformation
 	{
 		const ExpressionType* exprType = GetResolvedExpressionType(*swizzle.expression);
 		if (!exprType)
-			return nullptr;
+			return VisitChildren{};
 
 		if (m_options->removeScalarSwizzling && IsPrimitiveType(*exprType))
 		{
@@ -30,7 +30,7 @@ namespace nzsl::Ast
 			}
 
 			if (swizzle.componentCount == 1)
-				return std::move(swizzle.expression); //< remove swizzle expression (a.x => a)
+				return ReplaceExpression{ std::move(swizzle.expression) }; //< remove swizzle expression (a.x => a)
 
 			// Use a Cast expression to replace swizzle
 			ExpressionPtr expression = CacheExpression(std::move(swizzle.expression)); //< Since we are going to use a value multiple times, cache it if required
@@ -44,11 +44,14 @@ namespace nzsl::Ast
 
 			cast->expressions.reserve(swizzle.componentCount);
 			for (std::size_t j = 0; j < swizzle.componentCount; ++j)
+			{
 				cast->expressions.push_back(Clone(*expression));
+				HandleExpression(cast->expressions.back());
+			}
 
-			return cast;
+			return ReplaceExpression{ std::move(cast) };
 		}
 
-		return nullptr;
+		return VisitChildren{};
 	}
 }

@@ -1,4 +1,4 @@
-// Copyright (C) 2024 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
+// Copyright (C) 2025 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -25,14 +25,14 @@ namespace nzsl::Ast
 			{
 				bool splitWrappedArrayAssignation = false;
 				bool splitWrappedStructAssignation = false;
-				bool useIdentifierAccessesForStructs = true;
 			};
 
 		private:
 			using Transformer::Transform;
-			ExpressionPtr Transform(AssignExpression&& assign) override;
-			StatementPtr Transform(DeclareStructStatement&& declStruct) override;
-			StatementPtr Transform(DeclareVariableStatement&& declVariable) override;
+
+			ExpressionTransformation Transform(AssignExpression&& assign) override;
+			StatementTransformation Transform(DeclareStructStatement&& declStruct) override;
+			StatementTransformation Transform(DeclareVariableStatement&& declVariable) override;
 
 			const Options* m_options;
 			std::unordered_map<std::size_t /*structIndex*/, const StructDescription*> m_structDescs;

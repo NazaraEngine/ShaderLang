@@ -19,6 +19,7 @@ namespace nzsl::Ast
 			RecursiveVisitor() = default;
 			~RecursiveVisitor() = default;
 
+			void Visit(AccessFieldExpression& node) override;
 			void Visit(AccessIdentifierExpression& node) override;
 			void Visit(AccessIndexExpression& node) override;
 			void Visit(AliasValueExpression& node) override;

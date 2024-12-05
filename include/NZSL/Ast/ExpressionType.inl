@@ -342,7 +342,7 @@ namespace nzsl::Ast
 			return exprType;
 	}
 
-	ExpressionType UnwrapExternalType(const ExpressionType& exprType)
+	inline ExpressionType UnwrapExternalType(const ExpressionType& exprType)
 	{
 		if (IsStorageType(exprType))
 			return std::get<StorageType>(exprType).containedType;

@@ -89,6 +89,7 @@ namespace nzsl::Ast
 
 #define NZSL_SHADERAST_STATEMENT(Node) case NodeType::Node##Statement: return Compare(static_cast<const Node##Statement&>(lhs), static_cast<const Node##Statement&>(lhs), params);
 #include <NZSL/Ast/NodeList.hpp>
+#include "Compare.hpp"
 
 			default: throw std::runtime_error("unexpected node type");
 		}
@@ -331,6 +332,17 @@ namespace nzsl::Ast
 			return false;
 
 		if (!Compare(lhs.tag, rhs.tag, params))
+			return false;
+
+		return true;
+	}
+
+	bool Compare(const AccessFieldExpression& lhs, const AccessFieldExpression& rhs, const ComparisonParams& params)
+	{
+		if (!Compare(*lhs.expr, *rhs.expr, params))
+			return false;
+
+		if (!Compare(lhs.fieldIndex, rhs.fieldIndex, params))
 			return false;
 
 		return true;

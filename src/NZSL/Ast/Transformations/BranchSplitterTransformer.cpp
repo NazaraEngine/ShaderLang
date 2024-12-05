@@ -1,4 +1,4 @@
-// Copyright (C) 2024 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
+// Copyright (C) 2025 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -14,10 +14,10 @@ namespace nzsl::Ast
 		return TransformModule(module, context, error);
 	}
 
-	StatementPtr BranchSplitterTransformer::Transform(BranchStatement&& branchStatement)
+	auto BranchSplitterTransformer::Transform(BranchStatement&& branchStatement) -> StatementTransformation
 	{
 		if (branchStatement.condStatements.size() < 2)
-			return nullptr;
+			return VisitChildren{};
 
 		StatementPtr elseStatement = std::move(branchStatement.elseStatement);
 		for (std::size_t i = branchStatement.condStatements.size() - 1; i >= 1; --i)
@@ -33,6 +33,6 @@ namespace nzsl::Ast
 		branchStatement.condStatements.resize(1);
 		branchStatement.elseStatement = std::move(elseStatement);
 
-		return nullptr;
+		return VisitChildren{};
 	}
 }

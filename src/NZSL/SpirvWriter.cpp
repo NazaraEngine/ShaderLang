@@ -8,10 +8,8 @@
 #include <NazaraUtils/PathUtils.hpp>
 #include <NZSL/Enums.hpp>
 #include <NZSL/Parser.hpp>
-#include <NZSL/Ast/ConstantPropagationVisitor.hpp>
-#include <NZSL/Ast/EliminateUnusedPassVisitor.hpp>
+#include <NZSL/Ast/Cloner.hpp>
 #include <NZSL/Ast/RecursiveVisitor.hpp>
-#include <NZSL/Ast/SanitizeVisitor.hpp>
 #include <NZSL/Lang/LangData.hpp>
 #include <NZSL/SpirV/SpirvAstVisitor.hpp>
 #include <NZSL/SpirV/SpirvBlock.hpp>
@@ -19,6 +17,17 @@
 #include <NZSL/SpirV/SpirvData.hpp>
 #include <NZSL/SpirV/SpirvGenData.hpp>
 #include <NZSL/SpirV/SpirvSection.hpp>
+#include <NZSL/Ast/Transformations/BindingResolverTransformer.hpp>
+#include <NZSL/Ast/Transformations/BranchSplitterTransformer.hpp>
+#include <NZSL/Ast/Transformations/CompoundAssignmentTransformer.hpp>
+#include <NZSL/Ast/Transformations/ConstantRemovalTransformer.hpp>
+#include <NZSL/Ast/Transformations/ConstantPropagationTransformer.hpp>
+#include <NZSL/Ast/Transformations/EliminateUnusedTransformer.hpp>
+#include <NZSL/Ast/Transformations/ForToWhileTransformer.hpp>
+#include <NZSL/Ast/Transformations/IdentifierTypeResolverTransformer.hpp>
+#include <NZSL/Ast/Transformations/MatrixTransformer.hpp>
+#include <NZSL/Ast/Transformations/StructAssignmentTransformer.hpp>
+#include <NZSL/Ast/Transformations/SwizzleTransformer.hpp>
 #include <fmt/format.h>
 #include <frozen/unordered_map.h>
 #include <tsl/ordered_map.h>
@@ -77,6 +86,13 @@ namespace nzsl
 				});
 
 				spirvCapabilities.insert(SpirvCapability::Shader);
+			}
+
+			void Visit(Ast::AccessFieldExpression& node) override
+			{
+				RecursiveVisitor::Visit(node);
+
+				m_constantCache.Register(*m_constantCache.BuildType(node.cachedExpressionType.value()));
 			}
 
 			void Visit(Ast::AccessIndexExpression& node) override
@@ -639,8 +655,8 @@ namespace nzsl
 	std::vector<std::uint32_t> SpirvWriter::Generate(const Ast::Module& module, const States& states)
 	{
 		Ast::ModulePtr sanitizedModule;
-		const Ast::Module* targetModule;
-		if (!states.sanitized)
+		Ast::Module* targetModule;
+		/*if (!states.sanitized)
 		{
 			Ast::SanitizeVisitor::Options options = GetSanitizeOptions();
 			options.optionValues = states.optionValues;
@@ -649,17 +665,25 @@ namespace nzsl
 			sanitizedModule = Ast::Sanitize(module, options);
 			targetModule = sanitizedModule.get();
 		}
-		else
-			targetModule = &module;
+		else*/
+		{
+			sanitizedModule = Ast::Clone(module);
+			targetModule = sanitizedModule.get();
+		}
+
+		Ast::TransformerExecutor executor = GetPasses();
+		executor.Transform(*targetModule);
 
 		if (states.optimize)
 		{
-			sanitizedModule = Ast::PropagateConstants(*targetModule);
-			
+			Ast::Transformer::Context context;
+			Ast::ConstantPropagationTransformer constantPropagation;
+			constantPropagation.Transform(*targetModule, context);
+
 			Ast::DependencyCheckerVisitor::Config dependencyConfig;
 			dependencyConfig.usedShaderStages = ShaderStageType_All;
 
-			sanitizedModule = Ast::EliminateUnusedPass(*sanitizedModule, dependencyConfig);
+			Ast::EliminateUnusedPass(*sanitizedModule, dependencyConfig);
 
 			targetModule = sanitizedModule.get();
 		}
@@ -870,23 +894,20 @@ namespace nzsl
 			return { 1, 0 };
 	}
 
-	Ast::SanitizeVisitor::Options SpirvWriter::GetSanitizeOptions()
+	Ast::TransformerExecutor SpirvWriter::GetPasses()
 	{
-		Ast::SanitizeVisitor::Options options;
-		//options.reduceLoopsToWhile = true;
-		options.removeAliases = true;
-		//options.removeCompoundAssignments = true;
-		options.removeConstArraySize = true;
-		//options.removeMatrixBinaryAddSub = true;
-		//options.removeMatrixCast = true;
-		options.removeOptionDeclaration = true;
-		options.removeSingleConstDeclaration = true;
-		//options.splitWrappedArrayAssignation = true;
-		//options.splitMultipleBranches = true;
-		//options.splitWrappedStructAssignation = true;
-		options.useIdentifierAccessesForStructs = false;
+		Ast::TransformerExecutor executor;
+		executor.AddPass<Ast::IdentifierTypeResolverTransformer>({ true });
+		executor.AddPass<Ast::BranchSplitterTransformer>();
+		executor.AddPass<Ast::CompoundAssignmentTransformer>({ true });
+		executor.AddPass<Ast::ForToWhileTransformer>();
+		executor.AddPass<Ast::MatrixTransformer>({ true, true });
+		executor.AddPass<Ast::StructAssignmentTransformer>({ true, true });
+		executor.AddPass<Ast::SwizzleTransformer>({ true });
+		executor.AddPass<Ast::BindingResolverTransformer>();
+		executor.AddPass<Ast::ConstantRemovalTransformer>();
 
-		return options;
+		return executor;
 	}
 
 	std::uint32_t SpirvWriter::AllocateResultId()

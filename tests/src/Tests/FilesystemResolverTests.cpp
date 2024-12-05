@@ -3,7 +3,6 @@
 #include <NZSL/LangWriter.hpp>
 #include <NZSL/ShaderBuilder.hpp>
 #include <NZSL/Parser.hpp>
-#include <NZSL/Ast/SanitizeVisitor.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <cctype>
 
@@ -18,10 +17,13 @@ TEST_CASE("FilesystemModuleResolver", "[Shader]")
 
 	nzsl::Ast::ModulePtr shaderModule = moduleResolver->Resolve("Shader");
 
-	nzsl::Ast::SanitizeVisitor::Options sanitizeOpt;
-	sanitizeOpt.moduleResolver = moduleResolver;
+	nzsl::Ast::ImportResolverTransformer::Options importOpt;
+	importOpt.moduleResolver = moduleResolver;
 
-	shaderModule = SanitizeModule(*shaderModule, sanitizeOpt);
+	ResolveOptions resolveOptions;
+	resolveOptions.importOptions = &importOpt;
+
+	ResolveModule(*shaderModule, resolveOptions);
 
 	ExpectGLSL(*shaderModule, R"(
 // Module Color
@@ -33,8 +35,8 @@ uniform sampler2D tex1_Color;
 
 vec4 GenerateColor_Color()
 {
-	float cachedResult = 0.0;
-	return texture(tex1_Color, vec2(cachedResult, cachedResult));
+	float _nzsl_cachedResult = 0.0;
+	return texture(tex1_Color, vec2(_nzsl_cachedResult, _nzsl_cachedResult));
 }
 
 vec4 GetColor_Color()

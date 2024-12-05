@@ -2,17 +2,20 @@
 #include <NZSL/FilesystemModuleResolver.hpp>
 #include <NZSL/ShaderBuilder.hpp>
 #include <NZSL/Parser.hpp>
-#include <NZSL/Ast/ConstantPropagationVisitor.hpp>
-#include <NZSL/Ast/SanitizeVisitor.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <cctype>
 
-void ExpectOutput(nzsl::Ast::Module& shaderModule, const nzsl::Ast::SanitizeVisitor::Options& options, std::string_view expectedOptimizedResult)
+void ExpectOutput(nzsl::Ast::Module& shaderModule, const ResolveOptions& resolveOptions, std::string_view expectedOptimizedResult)
 {
-	nzsl::Ast::ModulePtr sanitizedShader;
-	sanitizedShader = SanitizeModule(shaderModule, options);
+	ResolveModule(shaderModule, resolveOptions);
 
-	ExpectNZSL(*sanitizedShader, expectedOptimizedResult);
+	ExpectNZSL(shaderModule, expectedOptimizedResult);
+}
+
+void ExpectOutput(nzsl::Ast::Module& shaderModule, std::string_view expectedOptimizedResult)
+{
+	ResolveOptions resolveOptions;
+	ExpectOutput(shaderModule, resolveOptions, expectedOptimizedResult);
 }
 
 TEST_CASE("const", "[Shader]")
@@ -42,7 +45,7 @@ struct LightData
 		nzsl::Ast::ModulePtr shaderModule;
 		REQUIRE_NOTHROW(shaderModule = nzsl::Parse(sourceCode));
 
-		ExpectOutput(*shaderModule, {}, R"(
+		ExpectOutput(*shaderModule, R"(
 [layout(std140)]
 struct LightData
 {
@@ -95,15 +98,15 @@ fn main()
 		nzsl::Ast::ModulePtr shaderModule;
 		REQUIRE_NOTHROW(shaderModule = nzsl::Parse(sourceCode));
 
-		nzsl::Ast::SanitizeVisitor::Options options;
+		ResolveOptions resolveOptions;
 
 		WHEN("Enabling option")
 		{
 			using namespace nzsl::Ast::Literals;
 
-			options.optionValues["UseInt"_opt] = true;
+			resolveOptions.optionValues["UseInt"_opt] = true;
 
-			ExpectOutput(*shaderModule, options, R"(
+			ExpectOutput(*shaderModule, resolveOptions, R"(
 struct inputStruct
 {
 	value: i32
@@ -130,9 +133,9 @@ fn main()
 		{
 			using namespace nzsl::Ast::Literals;
 			
-			options.optionValues["UseInt"_opt] = false;
+			resolveOptions.optionValues["UseInt"_opt] = false;
 
-			ExpectOutput(*shaderModule, options, R"(
+			ExpectOutput(*shaderModule, resolveOptions, R"(
 struct inputStruct
 {
 	value: f32
@@ -197,7 +200,7 @@ fn main()
 		nzsl::Ast::ModulePtr shaderModule;
 		REQUIRE_NOTHROW(shaderModule = nzsl::Parse(sourceCode));
 
-		ExpectOutput(*shaderModule, {}, R"(
+		ExpectOutput(*shaderModule, R"(
 [entry(frag)]
 fn main()
 {
@@ -277,7 +280,7 @@ fn main()
 		nzsl::Ast::ModulePtr shaderModule;
 		REQUIRE_NOTHROW(shaderModule = nzsl::Parse(sourceCode));
 
-		ExpectOutput(*shaderModule, {}, R"(
+		ExpectOutput(*shaderModule, R"(
 [entry(frag)]
 fn main()
 {
@@ -342,22 +345,27 @@ fn main()
 		resolver->RegisterModule(importedSource);
 
 		// First pass
+		nzsl::Ast::IdentifierTypeResolverTransformer resolverTransformer;
 		{
-			nzsl::Ast::SanitizeVisitor::Options options;
-			options.partialSanitization = true;
+			nzsl::Ast::Transformer::Context context;
+			context.partialCompilation = true;
 
-			REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(*shaderModule, options));
+			REQUIRE_NOTHROW(resolverTransformer.Transform(*shaderModule, context, {}));
 		}
 
 		// Second pass
 		{
-			nzsl::Ast::SanitizeVisitor::Options options;
-			options.moduleResolver = resolver;
+			nzsl::Ast::ImportResolverTransformer importTransformer;
+			nzsl::Ast::ImportResolverTransformer::Options importOptions;
+			importOptions.moduleResolver = resolver;
 
-			REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(*shaderModule, options));
+			nzsl::Ast::Transformer::Context context;
+
+			REQUIRE_NOTHROW(importTransformer.Transform(*shaderModule, context, importOptions));
+			REQUIRE_NOTHROW(resolverTransformer.Transform(*shaderModule, context, {}));
 		}
 
-		ExpectOutput(*shaderModule, {}, R"(
+		ExpectOutput(*shaderModule, R"(
 [entry(frag)]
 fn main()
 {
