@@ -828,7 +828,7 @@ OpFunctionEnd)");
 
 	WHEN("Testing forward vs deferred based on option")
 	{
-		// Test a bugfix where an unresolved identifier (identifier imported from an unknown module when precompiling) was being resolved in 
+		// Tests a bugfix where an unresolved identifier (identifier imported from an unknown module when precompiling) was being resolved in 
 
 		std::string_view gbufferOutput = R"(
 [nzsl_version("1.0")]
@@ -961,5 +961,148 @@ fn FragMain() -> FragOut
 }
 )");
 		}
+	}
+
+	WHEN("Testing a more complex hierarchy")
+	{
+		// Tests a more complex hierarchy where the same module is imported at multiple levels, which caused a bug
+
+		std::string_view lightingLightData = R"(
+[nzsl_version("1.0")]
+module Lighting.LightData;
+
+[export]
+struct LightData
+{
+	color: vec3[f32],
+	pos: vec3[f32],
+	radius: f32
+}
+)";
+
+		std::string_view lightingPhongData = R"(
+[nzsl_version("1.0")]
+module Lighting.Phong;
+
+import LightData from Lighting.LightData;
+
+[export]
+fn ComputeLighting(light: LightData, worldPos: vec3[f32]) -> vec3[f32]
+{
+	let color = light.color;
+	return color * max(distance(light.pos, worldPos) / light.radius, 1.0);
+}
+)";
+
+		std::string_view lightingShadowData = R"(
+[nzsl_version("1.0")]
+module Lighting.Shadow;
+
+import LightData from Lighting.LightData;
+
+[export]
+fn ComputeLightShadow(light: LightData) -> f32
+{
+	return 0.5;
+}
+)";
+
+		std::string_view mainSource = R"(
+[nzsl_version("1.0")]
+module;
+
+import LightData from Lighting.LightData;
+import * from Lighting.Phong;
+import * from Lighting.Shadow;
+
+struct FragOut
+{
+	[location(0)] color: vec3[f32]
+}
+
+[entry(frag)]
+fn FragMain() -> FragOut
+{
+	let lightData: LightData;
+
+	let output: FragOut;
+	output.color = ComputeLighting(lightData, vec3[f32](0.0, 0.0, 0.0));
+	output.color *= ComputeLightShadow(lightData);
+	
+	return output;
+}
+)";
+
+
+		auto directoryModuleResolver = std::make_shared<nzsl::FilesystemModuleResolver>();
+		RegisterModule(directoryModuleResolver, lightingLightData);
+		RegisterModule(directoryModuleResolver, lightingPhongData);
+		RegisterModule(directoryModuleResolver, lightingShadowData);
+
+		nzsl::Ast::SanitizeVisitor::Options options;
+		options.moduleResolver = directoryModuleResolver;
+
+		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(mainSource);
+		REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(*shaderModule, options));
+
+		ExpectNZSL(*shaderModule, R"(
+[nzsl_version("1.0")]
+module;
+
+[nzsl_version("1.0")]
+module _Lighting_LightData
+{
+	struct LightData
+	{
+		color: vec3[f32],
+		pos: vec3[f32],
+		radius: f32
+	}
+
+}
+[nzsl_version("1.0")]
+module _Lighting_Phong
+{
+	alias LightData = _Lighting_LightData.LightData;
+
+	fn ComputeLighting(light: LightData, worldPos: vec3[f32]) -> vec3[f32]
+	{
+		let color: vec3[f32] = light.color;
+		return color * (max((distance(light.pos, worldPos)) / light.radius, 1.0));
+	}
+
+}
+[nzsl_version("1.0")]
+module _Lighting_Shadow
+{
+	alias LightData = _Lighting_LightData.LightData;
+
+	fn ComputeLightShadow(light: LightData) -> f32
+	{
+		return 0.5;
+	}
+
+}
+alias LightData = _Lighting_LightData.LightData;
+
+alias ComputeLighting = _Lighting_Phong.ComputeLighting;
+
+alias ComputeLightShadow = _Lighting_Shadow.ComputeLightShadow;
+
+struct FragOut
+{
+	[location(0)] color: vec3[f32]
+}
+
+[entry(frag)]
+fn FragMain() -> FragOut
+{
+	let lightData: LightData;
+	let output: FragOut;
+	output.color = ComputeLighting(lightData, vec3[f32](0.0, 0.0, 0.0));
+	output.color *= ComputeLightShadow(lightData);
+	return output;
+}
+)");
 	}
 }

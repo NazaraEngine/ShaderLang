@@ -2577,6 +2577,7 @@ NAZARA_WARNING_POP()
 
 			// Load new module
 			auto moduleEnvironment = std::make_shared<Environment>();
+			moduleEnvironment->moduleId = moduleName;
 			moduleEnvironment->parentEnv = m_context->globalEnv;
 
 			auto previousEnv = m_context->currentEnv;
@@ -2712,10 +2713,10 @@ NAZARA_WARNING_POP()
 				if (aliasName.empty())
 				{
 					// symbol not renamed, export it once
-					if (exportedSet.usedStructs.UnboundedTest(*node.funcIndex))
+					if (exportedSet.usedFunctions.UnboundedTest(*node.funcIndex))
 						return;
 
-					exportedSet.usedStructs.UnboundedSet(*node.funcIndex);
+					exportedSet.usedFunctions.UnboundedSet(*node.funcIndex);
 					aliasStatements.emplace_back(ShaderBuilder::DeclareAlias(node.name, ShaderBuilder::Function(*node.funcIndex)));
 				}
 				else
