@@ -296,6 +296,24 @@ fn main()
 	let r = x ^ y;
 	let r = x << y;
 	let r = x >> y;
+
+	let x = vec3[i32](0, 1, 2);
+	let y = vec3[i32](2, 1, 0);
+
+	let r = x & y;
+	let r = x | y;
+	let r = x ^ y;
+	let r = x << y;
+	let r = x >> y;
+
+	let x = vec3[u32](u32(0), u32(1), u32(2));
+	let y = vec3[u32](u32(2), u32(1), u32(0));
+
+	let r = x & y;
+	let r = x | y;
+	let r = x ^ y;
+	let r = x << y;
+	let r = x >> y;
 }
 )";
 
@@ -319,6 +337,20 @@ void main()
 	uint r_8 = x_2 ^ y_2;
 	uint r_9 = x_2 << y_2;
 	uint r_10 = x_2 >> y_2;
+	ivec3 x_3 = ivec3(0, 1, 2);
+	ivec3 y_3 = ivec3(2, 1, 0);
+	ivec3 r_11 = x_3 & y_3;
+	ivec3 r_12 = x_3 | y_3;
+	ivec3 r_13 = x_3 ^ y_3;
+	ivec3 r_14 = x_3 << y_3;
+	ivec3 r_15 = x_3 >> y_3;
+	uvec3 x_4 = uvec3(uint(0), uint(1), uint(2));
+	uvec3 y_4 = uvec3(uint(2), uint(1), uint(0));
+	uvec3 r_16 = x_4 & y_4;
+	uvec3 r_17 = x_4 | y_4;
+	uvec3 r_18 = x_4 ^ y_4;
+	uvec3 r_19 = x_4 << y_4;
+	uvec3 r_20 = x_4 >> y_4;
 }
 )");
 
@@ -340,6 +372,20 @@ fn main()
 	let r: u32 = x ^ y;
 	let r: u32 = x << y;
 	let r: u32 = x >> y;
+	let x: vec3[i32] = vec3[i32](0, 1, 2);
+	let y: vec3[i32] = vec3[i32](2, 1, 0);
+	let r: vec3[i32] = x & y;
+	let r: vec3[i32] = x | y;
+	let r: vec3[i32] = x ^ y;
+	let r: vec3[i32] = x << y;
+	let r: vec3[i32] = x >> y;
+	let x: vec3[u32] = vec3[u32](u32(0), u32(1), u32(2));
+	let y: vec3[u32] = vec3[u32](u32(2), u32(1), u32(0));
+	let r: vec3[u32] = x & y;
+	let r: vec3[u32] = x | y;
+	let r: vec3[u32] = x ^ y;
+	let r: vec3[u32] = x << y;
+	let r: vec3[u32] = x >> y;
 }
 )");
 
@@ -1028,6 +1074,8 @@ fn main()
 	let r = -r * +r;
 	let r = ~42;
 	let r = ~u32(42);
+	let r = ~vec3[i32](1, 2, 3);
+	let r = ~vec3[u32](u32(1), u32(2), u32(3));
 }
 )";
 
