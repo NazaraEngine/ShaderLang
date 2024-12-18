@@ -861,7 +861,7 @@ namespace nzsl::Ast
 
 		m_deserializer.Deserialize(m_version);
 		if (m_version > s_shaderAstCurrentVersion)
-			throw std::runtime_error("unsupported version");
+			throw std::runtime_error(fmt::format("unsupported module version {0} (max supported version: {1})", m_version, s_shaderAstCurrentVersion)));
 
 		ModulePtr module = std::make_shared<Module>();
 		SerializeModule(*module);
