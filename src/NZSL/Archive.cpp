@@ -122,7 +122,7 @@ namespace nzsl
 		std::uint32_t version;
 		deserializer.Deserialize(version);
 		if (version > s_shaderArchiveCurrentVersion)
-			throw std::runtime_error("unsupported version");
+			throw std::runtime_error(fmt::format("unsupported archive version {0} (max supported version: {1})", version, s_shaderArchiveCurrentVersion));
 
 		std::uint32_t moduleCount;
 		deserializer.Deserialize(moduleCount);
