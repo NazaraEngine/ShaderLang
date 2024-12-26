@@ -6,7 +6,7 @@
 
 int main()
 {
-	sf::RenderWindow window(sf::VideoMode(1280, 720), "SFML + NZSL Shader", sf::Style::Titlebar | sf::Style::Close | sf::Style::Resize);
+	sf::RenderWindow window(sf::VideoMode(sf::Vector2u(1280, 720)), "SFML + NZSL Shader", sf::Style::Titlebar | sf::Style::Close | sf::Style::Resize);
 	window.setVerticalSyncEnabled(true);
 
 	auto mandelbrotShader = nzsl::ParseFromFile("mandelbrot.nzsl");
@@ -15,7 +15,7 @@ int main()
 	auto glslShader = glslWriter.Generate(*mandelbrotShader);
 
 	sf::Shader shader;
-	if (!shader.loadFromMemory(glslShader.code, sf::Shader::Fragment))
+	if (!shader.loadFromMemory(glslShader.code, sf::Shader::Type::Fragment))
 	{
 		std::cerr << "failed to load fragment shader" << std::endl;
 		return 0;
@@ -49,60 +49,40 @@ int main()
 	sf::Clock updateClock;
 	while (window.isOpen())
 	{
-		sf::Event event;
-		while (window.pollEvent(event))
+		while (std::optional<sf::Event> event = window.pollEvent())
 		{
-			switch (event.type)
+			if (event->is<sf::Event::Closed>())
 			{
-				case sf::Event::Closed:
-				{
+				window.close();
+				break;
+			}
+			else if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>())
+			{
+				if (keyPressed->code == sf::Keyboard::Key::Escape)
 					window.close();
-					break;
-				}
+			}
+			else if (const auto* mouseMoved = event->getIf<sf::Event::MouseMoved>())
+			{
+				sf::Vector2i delta = mouseMoved->position - mousePos;
+				mousePos = mouseMoved->position;
 
-				case sf::Event::KeyPressed:
+				if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left))
 				{
-					if (event.key.code == sf::Keyboard::Escape)
-						window.close();
-					break;
+					center += scale * sf::Vector2f(sf::Vector2i(delta.x, -delta.y));
+					shader.setUniform("center", center);
 				}
+			}
+			else if (const auto* mouseWheelScrolled = event->getIf<sf::Event::MouseWheelScrolled>())
+				targetScale = std::clamp(targetScale - targetScale * 0.1f * mouseWheelScrolled->delta, 0.000001f, 3.f);
+			else if (const auto* resized = event->getIf<sf::Event::Resized>())
+			{
+				sf::Vector2f newSize(float(resized->size.x), float(resized->size.y));
 
-				case sf::Event::MouseMoved:
-				{
-					sf::Vector2i newPos(event.mouseMove.x, event.mouseMove.y);
-					sf::Vector2i delta = newPos - mousePos;
-					mousePos = newPos;
+				shader.setUniform("screen_size", newSize);
+				fullscreenShape.setSize(newSize);
 
-					if (sf::Mouse::isButtonPressed(sf::Mouse::Left))
-					{
-						center += scale * sf::Vector2f(sf::Vector2i(delta.x, -delta.y));
-						shader.setUniform("center", center);
-						break;
-					}
-
-					break;
-				}
-
-				case sf::Event::MouseWheelScrolled:
-				{
-					targetScale = std::clamp(targetScale - targetScale * 0.1f * event.mouseWheelScroll.delta, 0.000001f, 3.f);
-					break;
-				}
-
-				case sf::Event::Resized:
-				{
-					sf::Vector2f newSize(float(event.size.width), float(event.size.height));
-
-					shader.setUniform("screen_size", newSize);
-					fullscreenShape.setSize(newSize);
-
-					sf::FloatRect visibleArea(0.f, 0.f, newSize.x, newSize.y);
-					window.setView(sf::View(visibleArea));
-					break;
-				}
-
-				default:
-					break;
+				sf::FloatRect visibleArea(sf::Vector2f(0.f, 0.f), sf::Vector2f(newSize.x, newSize.y));
+				window.setView(sf::View(visibleArea));
 			}
 		}
 
