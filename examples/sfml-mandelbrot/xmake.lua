@@ -3,7 +3,7 @@ if is_plat("android", "iphoneos", "wasm") then
 	return
 end
 
-add_requires("sfml", { configs = { audio = false, network = false }})
+add_requires("sfml 3.0", { configs = { audio = false, network = false }})
 
 target("sfml-mandelbrot")
 	set_group("Examples")
