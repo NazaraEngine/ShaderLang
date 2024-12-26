@@ -53,8 +53,8 @@ fn main(input: Input) -> Output
 	else
 		u = 0.0;
 
-	let out: Output;
-	out.color = palette.Sample(vec2[f32](u, 0.0));
+	let output: Output;
+	output.color = palette.Sample(vec2[f32](u, 0.0));
 
-	return out;
+	return output;
 }
