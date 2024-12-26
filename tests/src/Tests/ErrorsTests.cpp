@@ -952,6 +952,9 @@ external
 	[binding(0)]
 	data: mat4[f32]
 }
+
+[export]
+struct Bar {}
 )";
 
 			std::string_view wildcardImportSource = R"(
@@ -981,7 +984,18 @@ import Foo from Module;
 )";
 
 			shaderModule = nzsl::Parse(nonExistentImportShaderSource);
-			CHECK_THROWS_WITH(nzsl::Ast::Sanitize(*shaderModule, sanitizeOpt), "(6,1 -> 23): CImportIdentifierNotFound error: identifier Foo not found in module Module");
+			CHECK_THROWS_WITH(nzsl::Ast::Sanitize(*shaderModule, sanitizeOpt), "(6,1 -> 23): CImportIdentifierNotFound error: identifier(s) Foo not found in module Module");
+
+			std::string_view multipleNonExistentImportShaderSource = R"(
+[nzsl_version("1.0")]
+[feature(primitive_externals)]
+module;
+
+import Foo, Bar, Baz as Qix from Module;
+)";
+
+			shaderModule = nzsl::Parse(multipleNonExistentImportShaderSource);
+			CHECK_THROWS_WITH(nzsl::Ast::Sanitize(*shaderModule, sanitizeOpt), "(6,1 -> 40): CImportIdentifierNotFound error: identifier(s) Foo, Baz not found in module Module");
 		}
 
 		/************************************************************************/

@@ -2756,8 +2756,16 @@ NAZARA_WARNING_POP()
 
 		if (!importedSymbols.empty())
 		{
-			for (const auto& [identifier, aliasesName] : importedSymbols)
-				throw CompilerImportIdentifierNotFoundError{ node.sourceLocation, identifier, node.moduleName };
+			std::string symbolList;
+			for (const auto& [identifier, _] : importedSymbols)
+			{
+				if (!symbolList.empty())
+					symbolList += ", ";
+
+				symbolList += identifier;
+			}
+
+			throw CompilerImportIdentifierNotFoundError{ node.sourceLocation, symbolList, node.moduleName };
 		}
 
 		if (aliasStatements.empty() && constStatements.empty())

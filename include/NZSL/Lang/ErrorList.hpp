@@ -107,7 +107,7 @@ NZSL_SHADERLANG_COMPILER_ERROR(FunctionReturnWithNoValue, "return with no value,
 NZSL_SHADERLANG_COMPILER_ERROR(FunctionReturnUnmatchingTypes, "return expression type ({}) must match function return expression type ({})", std::string, std::string)
 NZSL_SHADERLANG_COMPILER_ERROR(IdentifierAlreadyUsed, "identifier {} is already used", std::string)
 NZSL_SHADERLANG_COMPILER_ERROR(ImportIdentifierAlreadyPresent, "{} identifier was already imported", std::string)
-NZSL_SHADERLANG_COMPILER_ERROR(ImportIdentifierNotFound, "identifier {} not found in module {}", std::string, std::string)
+NZSL_SHADERLANG_COMPILER_ERROR(ImportIdentifierNotFound, "identifier(s) {} not found in module {}", std::string, std::string)
 NZSL_SHADERLANG_COMPILER_ERROR(ImportMultipleWildcard, "only one wildcard can be present in an import directive")
 NZSL_SHADERLANG_COMPILER_ERROR(ImportWildcardRename, "wildcard cannot be renamed")
 NZSL_SHADERLANG_COMPILER_ERROR(IndexRequiresIntegerIndices, "index access requires integer indices (got {})", std::string)
