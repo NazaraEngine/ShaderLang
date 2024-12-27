@@ -20,6 +20,7 @@
 #include <NZSL/Lang/LangData.hpp>
 #include <fmt/format.h>
 #include <frozen/unordered_map.h>
+#include <tsl/ordered_map.h>
 #include <numeric>
 #include <stdexcept>
 #include <unordered_set>
@@ -2483,7 +2484,7 @@ NAZARA_WARNING_POP()
 		if (node.identifiers.empty())
 			throw AstEmptyImportError{ node.sourceLocation };
 
-		std::unordered_map<std::string, std::vector<std::string>> importedSymbols;
+		tsl::ordered_map<std::string, std::vector<std::string>> importedSymbols;
 		bool importEverythingElse = false;
 		for (const auto& entry : node.identifiers)
 		{
@@ -2507,7 +2508,7 @@ NAZARA_WARNING_POP()
 				if (it == importedSymbols.end())
 					it = importedSymbols.emplace(entry.identifier, std::vector<std::string>{}).first;
 
-				std::vector<std::string>& symbols = it->second;
+				std::vector<std::string>& symbols = it.value();
 
 				// Non-renamed symbols can be present only once
 				if (entry.renamedIdentifier.empty())
