@@ -12,8 +12,6 @@
 #include <NZSL/Ast/ExpressionVisitorExcept.hpp>
 #include <NZSL/Ast/Module.hpp>
 #include <NZSL/Ast/StatementVisitorExcept.hpp>
-#include <set>
-#include <sstream>
 #include <string>
 
 namespace nzsl
@@ -70,6 +68,8 @@ namespace nzsl
 			void Append(const Ast::IntrinsicFunctionType& intrinsicFunctionType);
 			void Append(const Ast::MatrixType& matrixType);
 			void Append(const Ast::MethodType& methodType);
+			void Append(const Ast::ModuleType& moduleType);
+			void Append(const Ast::NamedExternalBlockType& namedExternalBlockType);
 			void Append(Ast::NoType);
 			void Append(Ast::PrimitiveType type);
 			void Append(const Ast::PushConstantType& pushConstantType);
@@ -120,6 +120,7 @@ namespace nzsl
 			void RegisterAlias(std::size_t aliasIndex, std::string aliasName);
 			void RegisterConstant(std::size_t constantIndex, std::string constantName);
 			void RegisterFunction(std::size_t funcIndex, std::string functionName);
+			void RegisterModule(std::size_t moduleIndex, std::string moduleName);
 			void RegisterStruct(std::size_t structIndex, std::string structName);
 			void RegisterVariable(std::size_t varIndex, std::string varName);
 
@@ -142,6 +143,8 @@ namespace nzsl
 			void Visit(Ast::FunctionExpression& node) override;
 			void Visit(Ast::IdentifierExpression& node) override;
 			void Visit(Ast::IntrinsicExpression& node) override;
+			void Visit(Ast::ModuleExpression& node) override;
+			void Visit(Ast::NamedExternalBlockExpression& node) override;
 			void Visit(Ast::StructTypeExpression& node) override;
 			void Visit(Ast::SwizzleExpression& node) override;
 			void Visit(Ast::VariableValueExpression& node) override;

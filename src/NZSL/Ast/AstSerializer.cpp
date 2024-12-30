@@ -13,7 +13,7 @@ namespace nzsl::Ast
 	namespace
 	{
 		constexpr std::uint32_t s_shaderAstMagicNumber = 0x4E534852;
-		constexpr std::uint32_t s_shaderAstCurrentVersion = 11;
+		constexpr std::uint32_t s_shaderAstCurrentVersion = 12;
 
 		class ShaderSerializerVisitor : public ExpressionVisitor, public StatementVisitor
 		{
@@ -254,6 +254,16 @@ namespace nzsl::Ast
 		SizeT(node.intrinsicId);
 	}
 
+	void SerializerBase::Serialize(ModuleExpression& node)
+	{
+		SizeT(node.moduleId);
+	}
+
+	void SerializerBase::Serialize(NamedExternalBlockExpression& node)
+	{
+		SizeT(node.externalBlockId);
+	}
+
 	void SerializerBase::Serialize(StructTypeExpression& node)
 	{
 		SizeT(node.structTypeId);
@@ -470,6 +480,9 @@ namespace nzsl::Ast
 			SourceLoc(identifierEntry.identifierLoc);
 			SourceLoc(identifierEntry.renamedIdentifierLoc);
 		}
+
+		if (IsVersionGreaterOrEqual(12))
+			Value(node.moduleIdentifier);
 	}
 
 	void SerializerBase::Serialize(MultiStatement& node)
@@ -696,6 +709,16 @@ namespace nzsl::Ast
 			{
 				m_serializer.Serialize(std::uint8_t(17));
 				SizeT(arg.containedType.structIndex);
+			}
+			else if constexpr (std::is_same_v<T, ModuleType>)
+			{
+				m_serializer.Serialize(std::uint8_t(18));
+				SizeT(arg.moduleIndex);
+			}
+			else if constexpr (std::is_same_v<T, NamedExternalBlockType>)
+			{
+				m_serializer.Serialize(std::uint8_t(19));
+				SizeT(arg.namedExternalBlockIndex);
 			}
 			else
 				static_assert(Nz::AlwaysFalse<T>(), "non-exhaustive visitor");
@@ -986,10 +1009,8 @@ namespace nzsl::Ast
 
 	void ShaderAstDeserializer::Type(ExpressionType& type)
 	{
-#ifdef NAZARA_COMPILER_GCC
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-#endif
+NAZARA_WARNING_PUSH()
+NAZARA_WARNING_GCC_DISABLE("-Wmaybe-uninitialized")
 
 		std::uint8_t typeIndex;
 		Value(typeIndex);
@@ -1045,8 +1066,8 @@ namespace nzsl::Ast
 
 			case 5: //< StructType
 			{
-				std::uint32_t structIndex;
-				Value(structIndex);
+				std::size_t structIndex;
+				SizeT(structIndex);
 
 				type = StructType{
 					structIndex
@@ -1230,14 +1251,33 @@ namespace nzsl::Ast
 				break;
 			}
 
+			case 18: //< ModuleType
+			{
+				std::size_t moduleIndex;
+				SizeT(moduleIndex);
+
+				type = ModuleType{
+					moduleIndex
+				};
+				break;
+			}
+
+			case 19: //< NamedExternalBlockType
+			{
+				std::size_t externalBlockIndex;
+				SizeT(externalBlockIndex);
+
+				type = NamedExternalBlockType{
+					externalBlockIndex
+				};
+				break;
+			}
 
 			default:
 				throw std::runtime_error("unexpected type index " + std::to_string(typeIndex));
 		}
 
-#ifdef NAZARA_COMPILER_GCC
-#pragma GCC diagnostic pop
-#endif
+NAZARA_WARNING_POP()
 	}
 
 	void ShaderAstDeserializer::Value(bool& val)

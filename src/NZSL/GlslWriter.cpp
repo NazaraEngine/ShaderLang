@@ -682,6 +682,16 @@ namespace nzsl
 		throw std::runtime_error("unexpected method type");
 	}
 
+	void GlslWriter::Append(const Ast::ModuleType& /*moduleType*/)
+	{
+		throw std::runtime_error("unexpected module type");
+	}
+
+	void GlslWriter::Append(const Ast::NamedExternalBlockType& /*namedExternalBlockType*/)
+	{
+		throw std::runtime_error("unexpected named external block type");
+	}
+
 	void GlslWriter::Append(Ast::PrimitiveType type)
 	{
 		switch (type)

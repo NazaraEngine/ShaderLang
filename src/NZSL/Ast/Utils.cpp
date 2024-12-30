@@ -102,6 +102,16 @@ namespace nzsl::Ast
 		m_expressionCategory = ExpressionCategory::LValue;
 	}
 
+	void ValueCategory::Visit(ModuleExpression& /*node*/)
+	{
+		m_expressionCategory = ExpressionCategory::LValue;
+	}
+
+	void ValueCategory::Visit(NamedExternalBlockExpression& /*node*/)
+	{
+		m_expressionCategory = ExpressionCategory::LValue;
+	}
+
 	void ValueCategory::Visit(StructTypeExpression& /*node*/)
 	{
 		m_expressionCategory = ExpressionCategory::LValue;

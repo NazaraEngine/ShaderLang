@@ -81,6 +81,13 @@ module;
 import Stuff;
 )"), "(5,2 -> 11): PUnexpectedAttribute error: unexpected attribute cond on import statement");
 
+		CHECK_THROWS_WITH(nzsl::Parse(R"(
+[nzsl_version("1.0")]
+module;
+
+import Foo.Bar from Baz;
+)"), "(5,8 -> 14): PModuleImportInvalidIdentifier error: Foo.Bar is not a valid identifier to import");
+
 		// option statements don't support attributes
 		CHECK_THROWS_WITH(nzsl::Parse(R"(
 [nzsl_version("1.0")]

@@ -216,6 +216,8 @@ namespace nzsl::Ast
 		IdentifierExpression         = 13,
 		IntrinsicExpression          = 14,
 		IntrinsicFunctionExpression  = 15,
+		ModuleExpression             = 42,
+		NamedExternalBlockExpression = 43,
 		StructTypeExpression         = 16,
 		SwizzleExpression            = 17,
 		TypeExpression               = 18,
@@ -245,7 +247,7 @@ namespace nzsl::Ast
 		ScopedStatement          = 38,
 		WhileStatement           = 39,
 
-		Max = ContinueStatement
+		Max = NamedExternalBlockExpression
 	};
 
 	enum class PrimitiveType

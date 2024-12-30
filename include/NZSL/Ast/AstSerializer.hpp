@@ -39,6 +39,8 @@ namespace nzsl::Ast
 			void Serialize(IdentifierExpression& node);
 			void Serialize(IntrinsicExpression& node);
 			void Serialize(IntrinsicFunctionExpression& node);
+			void Serialize(ModuleExpression& node);
+			void Serialize(NamedExternalBlockExpression& node);
 			void Serialize(StructTypeExpression& node);
 			void Serialize(SwizzleExpression& node);
 			void Serialize(TypeExpression& node);

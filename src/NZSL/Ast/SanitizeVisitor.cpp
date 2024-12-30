@@ -179,12 +179,14 @@ namespace nzsl::Ast
 		{
 			std::unordered_map<std::string, DependencyCheckerVisitor::UsageSet> exportedSetByModule;
 			std::shared_ptr<Environment> environment;
+			std::string moduleName;
 			std::unique_ptr<DependencyCheckerVisitor> dependenciesVisitor;
 		};
 
 		struct NamedExternalBlockData
 		{
 			std::shared_ptr<Environment> environment;
+			std::string name;
 		};
 
 		struct UsedExternalData
@@ -271,6 +273,7 @@ namespace nzsl::Ast
 			m_context->moduleByName[cloneImportedModule.module->metadata->moduleName] = moduleId;
 			auto& moduleData = m_context->modules.emplace_back();
 			moduleData.environment = std::move(importedModuleEnv);
+			moduleData.moduleName = cloneImportedModule.identifier;
 
 			m_context->currentEnv = m_context->globalEnv;
 			RegisterModule(cloneImportedModule.identifier, moduleId);
@@ -318,53 +321,7 @@ namespace nzsl::Ast
 
 		MandatoryExpr(node.expr, node.sourceLocation);
 
-		// Handle module access and named external access (TODO: Add namespace expression?)
-		if (node.expr->GetType() == NodeType::IdentifierExpression && node.identifiers.size() == 1)
-		{
-			auto& identifierExpr = static_cast<IdentifierExpression&>(*node.expr);
-			const IdentifierData* identifierData = FindIdentifier(identifierExpr.identifier);
-
-			if (identifierData)
-			{
-				switch (identifierData->category)
-				{
-					case IdentifierCategory::ExternalBlock:
-					{
-						std::size_t namedExternalBlockIndex = m_context->namedExternalBlockIndices.Retrieve(identifierData->index, node.sourceLocation);
-
-						const auto& env = *m_context->namedExternalBlocks[namedExternalBlockIndex].environment;
-						identifierData = FindIdentifier(env, node.identifiers.front().identifier);
-						if (identifierData)
-						{
-							if (m_context->options.partialSanitization && identifierData->conditionalIndex != m_context->currentConditionalIndex)
-								return Cloner::Clone(node);
-
-							return HandleIdentifier(identifierData, node.identifiers.front().sourceLocation);
-						}
-						break;
-					}
-
-					case IdentifierCategory::Module:
-					{
-						std::size_t moduleIndex = m_context->moduleIndices.Retrieve(identifierData->index, node.sourceLocation);
-
-						const auto& env = *m_context->modules[moduleIndex].environment;
-						identifierData = FindIdentifier(env, node.identifiers.front().identifier);
-						if (identifierData)
-						{
-							if (m_context->options.partialSanitization && identifierData->conditionalIndex != m_context->currentConditionalIndex)
-								return Cloner::Clone(node);
-
-							return HandleIdentifier(identifierData, node.identifiers.front().sourceLocation);
-						}
-						break;
-					}
-
-					default:
-						break;
-				}
-			}
-		}
+		auto previousEnv = m_context->currentEnv;
 
 		ExpressionPtr indexedExpr = CloneExpression(node.expr);
 		for (const auto& identifierEntry : node.identifiers)
@@ -615,9 +572,79 @@ namespace nzsl::Ast
 					indexedExpr = std::move(swizzle);
 				}
 			}
+			else if (IsNamedExternalBlockType(resolvedType))
+			{
+				const NamedExternalBlockType& externalBlockType = std::get<NamedExternalBlockType>(resolvedType);
+				std::size_t namedExternalBlockIndex = externalBlockType.namedExternalBlockIndex;
+
+				const IdentifierData* identifierData = FindIdentifier(*m_context->namedExternalBlocks[namedExternalBlockIndex].environment, identifierEntry.identifier);
+				if (!identifierData)
+				{
+					if (m_context->allowUnknownIdentifiers)
+						return Cloner::Clone(node);
+
+					throw CompilerUnknownIdentifierError{ node.sourceLocation, identifierEntry.identifier };
+				}
+
+				if (identifierData->category == IdentifierCategory::Unresolved)
+					return Cloner::Clone(node);
+
+				if (m_context->options.partialSanitization && identifierData->conditionalIndex != m_context->currentConditionalIndex)
+					return Cloner::Clone(node);
+
+				indexedExpr = HandleIdentifier(identifierData, identifierEntry.sourceLocation);
+			}
+			else if (IsModuleType(resolvedType))
+			{
+				const ModuleType& moduleType = std::get<ModuleType>(resolvedType);
+				std::size_t moduleId = moduleType.moduleIndex;
+
+				m_context->currentEnv = m_context->modules[moduleId].environment;
+
+				const IdentifierData* identifierData = FindIdentifier(*m_context->currentEnv, identifierEntry.identifier);
+				if (!identifierData)
+				{
+					if (m_context->allowUnknownIdentifiers)
+						return Cloner::Clone(node);
+
+					throw CompilerUnknownIdentifierError{ node.sourceLocation, identifierEntry.identifier };
+				}
+
+				if (identifierData->category == IdentifierCategory::Unresolved)
+					return Cloner::Clone(node);
+
+				if (m_context->options.partialSanitization && identifierData->conditionalIndex != m_context->currentConditionalIndex)
+					return Cloner::Clone(node);
+
+				auto& dependencyCheckerPtr = m_context->modules[moduleId].dependenciesVisitor;
+				if (dependencyCheckerPtr) //< dependency checker can be null when performing partial sanitization
+				{
+					switch (identifierData->category)
+					{
+						case IdentifierCategory::Constant:
+							dependencyCheckerPtr->MarkConstantAsUsed(identifierData->index);
+							break;
+
+						case IdentifierCategory::Function:
+							dependencyCheckerPtr->MarkFunctionAsUsed(identifierData->index);
+							break;
+
+						case IdentifierCategory::Struct:
+							dependencyCheckerPtr->MarkStructAsUsed(identifierData->index);
+							break;
+
+						default:
+							break;
+					}
+				}
+
+				indexedExpr = HandleIdentifier(identifierData, identifierEntry.sourceLocation);
+			}
 			else
 				throw CompilerUnexpectedAccessedTypeError{ node.sourceLocation };
 		}
+
+		m_context->currentEnv = std::move(previousEnv);
 
 		return indexedExpr;
 	}
@@ -1507,6 +1534,7 @@ NAZARA_WARNING_GCC_DISABLE("-Wmaybe-uninitialized")
 			auto& namedExternal = m_context->namedExternalBlocks.emplace_back();
 			namedExternal.environment = std::make_shared<Environment>();
 			namedExternal.environment->parentEnv = m_context->currentEnv;
+			namedExternal.name = clone->name;
 
 			RegisterExternalBlock(clone->name, *namedExternalBlockIndex, clone->sourceLocation);
 
@@ -2481,9 +2509,6 @@ NAZARA_WARNING_POP()
 
 	StatementPtr SanitizeVisitor::Clone(ImportStatement& node)
 	{
-		if (node.identifiers.empty())
-			throw AstEmptyImportError{ node.sourceLocation };
-
 		tsl::ordered_map<std::string, std::vector<std::string>> importedSymbols;
 		bool importEverythingElse = false;
 		for (const auto& entry : node.identifiers)
@@ -2636,141 +2661,146 @@ NAZARA_WARNING_POP()
 
 		auto& moduleData = m_context->modules[moduleIndex];
 
-		auto& exportedSet = moduleData.exportedSetByModule[m_context->currentEnv->moduleId];
-
 		// Extract exported nodes and their dependencies
 		std::vector<DeclareAliasStatementPtr> aliasStatements;
 		std::vector<DeclareConstStatementPtr> constStatements;
-
-		auto CheckImport = [&](const std::string& identifier) -> std::pair<bool, std::vector<std::string>>
+		if (!importedSymbols.empty() || importEverythingElse)
 		{
-			auto it = importedSymbols.find(identifier);
-			if (it == importedSymbols.end())
+			// Importing module symbols in global scope
+			auto& exportedSet = moduleData.exportedSetByModule[m_context->currentEnv->moduleId];
+
+			auto CheckImport = [&](const std::string& identifier) -> std::pair<bool, std::vector<std::string>>
 			{
-				if (!importEverythingElse)
-					return { false, {} };
+				auto it = importedSymbols.find(identifier);
+				if (it == importedSymbols.end())
+				{
+					if (!importEverythingElse)
+						return { false, {} };
 
-				return { true, { std::string{} } };
-			}
-			else
-			{
-				std::vector<std::string> imports = std::move(it->second);
-				importedSymbols.erase(it);
+					return { true, { std::string{} } };
+				}
+				else
+				{
+					std::vector<std::string> imports = std::move(it.value());
+					importedSymbols.erase(it);
 
-				return { true, std::move(imports) };
-			}
-		};
-
-		ExportVisitor::Callbacks callbacks;
-		callbacks.onExportedConst = [&](DeclareConstStatement& node)
-		{
-			assert(node.constIndex);
-
-			auto [imported, aliasesName] = CheckImport(node.name);
-			if (!imported)
-				return;
-
-			if (moduleData.dependenciesVisitor)
-				moduleData.dependenciesVisitor->MarkConstantAsUsed(*node.constIndex);
-
-			auto BuildConstant = [&]() -> ExpressionPtr
-			{
-				const ConstantValue* value = m_context->constantValues.TryRetrieve(*node.constIndex, node.sourceLocation);
-				if (!value)
-					throw AstInvalidConstantIndexError{ node.sourceLocation, *node.constIndex };
-
-				return ShaderBuilder::Constant(*node.constIndex, GetConstantType(*value));
+					return { true, std::move(imports) };
+				}
 			};
 
-			for (const std::string& aliasName : aliasesName)
+			ExportVisitor::Callbacks callbacks;
+			callbacks.onExportedConst = [&](DeclareConstStatement& node)
 			{
-				if (aliasName.empty())
+				assert(node.constIndex);
+
+				auto [imported, aliasesName] = CheckImport(node.name);
+				if (!imported)
+					return;
+
+				if (moduleData.dependenciesVisitor)
+					moduleData.dependenciesVisitor->MarkConstantAsUsed(*node.constIndex);
+
+				auto BuildConstant = [&]() -> ExpressionPtr
 				{
-					// symbol not renamed, export it once
-					if (exportedSet.usedConstants.UnboundedTest(*node.constIndex))
-						return;
+					const ConstantValue* value = m_context->constantValues.TryRetrieve(*node.constIndex, node.sourceLocation);
+					if (!value)
+						throw AstInvalidConstantIndexError{ node.sourceLocation, *node.constIndex };
 
-					exportedSet.usedConstants.UnboundedSet(*node.constIndex);
-					constStatements.emplace_back(ShaderBuilder::DeclareConst(node.name, BuildConstant()));
-				}
-				else
-					constStatements.emplace_back(ShaderBuilder::DeclareConst(aliasName, BuildConstant()));
-			}
-		};
+					return ShaderBuilder::Constant(*node.constIndex, GetConstantType(*value));
+				};
 
-		callbacks.onExportedFunc = [&](DeclareFunctionStatement& node)
-		{
-			assert(node.funcIndex);
-
-			auto [imported, aliasesName] = CheckImport(node.name);
-			if (!imported)
-				return;
-
-			if (moduleData.dependenciesVisitor)
-				moduleData.dependenciesVisitor->MarkFunctionAsUsed(*node.funcIndex);
-
-			for (const std::string& aliasName : aliasesName)
-			{
-				if (aliasName.empty())
+				for (const std::string& aliasName : aliasesName)
 				{
-					// symbol not renamed, export it once
-					if (exportedSet.usedFunctions.UnboundedTest(*node.funcIndex))
-						return;
+					if (aliasName.empty())
+					{
+						// symbol not renamed, export it once
+						if (exportedSet.usedConstants.UnboundedTest(*node.constIndex))
+							return;
 
-					exportedSet.usedFunctions.UnboundedSet(*node.funcIndex);
-					aliasStatements.emplace_back(ShaderBuilder::DeclareAlias(node.name, ShaderBuilder::Function(*node.funcIndex)));
+						exportedSet.usedConstants.UnboundedSet(*node.constIndex);
+						constStatements.emplace_back(ShaderBuilder::DeclareConst(node.name, BuildConstant()));
+					}
+					else
+						constStatements.emplace_back(ShaderBuilder::DeclareConst(aliasName, BuildConstant()));
 				}
-				else
-					aliasStatements.emplace_back(ShaderBuilder::DeclareAlias(aliasName, ShaderBuilder::Function(*node.funcIndex)));
-			}
-		};
+			};
 
-		callbacks.onExportedStruct = [&](DeclareStructStatement& node)
-		{
-			assert(node.structIndex);
-
-			auto [imported, aliasesName] = CheckImport(node.description.name);
-			if (!imported)
-				return;
-
-			if (moduleData.dependenciesVisitor)
-				moduleData.dependenciesVisitor->MarkStructAsUsed(*node.structIndex);
-
-			for (const std::string& aliasName : aliasesName)
+			callbacks.onExportedFunc = [&](DeclareFunctionStatement& node)
 			{
-				if (aliasName.empty())
+				assert(node.funcIndex);
+
+				auto [imported, aliasesName] = CheckImport(node.name);
+				if (!imported)
+					return;
+
+				if (moduleData.dependenciesVisitor)
+					moduleData.dependenciesVisitor->MarkFunctionAsUsed(*node.funcIndex);
+
+				for (const std::string& aliasName : aliasesName)
 				{
-					// symbol not renamed, export it once
-					if (exportedSet.usedStructs.UnboundedTest(*node.structIndex))
-						return;
+					if (aliasName.empty())
+					{
+						// symbol not renamed, export it once
+						if (exportedSet.usedFunctions.UnboundedTest(*node.funcIndex))
+							return;
 
-					exportedSet.usedStructs.UnboundedSet(*node.structIndex);
-					aliasStatements.emplace_back(ShaderBuilder::DeclareAlias(node.description.name, ShaderBuilder::StructType(*node.structIndex)));
+						exportedSet.usedFunctions.UnboundedSet(*node.funcIndex);
+						aliasStatements.emplace_back(ShaderBuilder::DeclareAlias(node.name, ShaderBuilder::Function(*node.funcIndex)));
+					}
+					else
+						aliasStatements.emplace_back(ShaderBuilder::DeclareAlias(aliasName, ShaderBuilder::Function(*node.funcIndex)));
 				}
-				else
-					aliasStatements.emplace_back(ShaderBuilder::DeclareAlias(aliasName, ShaderBuilder::StructType(*node.structIndex)));
-			}
-		};
+			};
 
-		ExportVisitor exportVisitor;
-		exportVisitor.Visit(*m_context->currentModule->importedModules[moduleIndex].module->rootNode, callbacks);
-
-		if (!importedSymbols.empty())
-		{
-			std::string symbolList;
-			for (const auto& [identifier, _] : importedSymbols)
+			callbacks.onExportedStruct = [&](DeclareStructStatement& node)
 			{
-				if (!symbolList.empty())
-					symbolList += ", ";
+				assert(node.structIndex);
 
-				symbolList += identifier;
+				auto [imported, aliasesName] = CheckImport(node.description.name);
+				if (!imported)
+					return;
+
+				if (moduleData.dependenciesVisitor)
+					moduleData.dependenciesVisitor->MarkStructAsUsed(*node.structIndex);
+
+				for (const std::string& aliasName : aliasesName)
+				{
+					if (aliasName.empty())
+					{
+						// symbol not renamed, export it once
+						if (exportedSet.usedStructs.UnboundedTest(*node.structIndex))
+							return;
+
+						exportedSet.usedStructs.UnboundedSet(*node.structIndex);
+						aliasStatements.emplace_back(ShaderBuilder::DeclareAlias(node.description.name, ShaderBuilder::StructType(*node.structIndex)));
+					}
+					else
+						aliasStatements.emplace_back(ShaderBuilder::DeclareAlias(aliasName, ShaderBuilder::StructType(*node.structIndex)));
+				}
+			};
+
+			ExportVisitor exportVisitor;
+			exportVisitor.Visit(*m_context->currentModule->importedModules[moduleIndex].module->rootNode, callbacks);
+
+			if (!importedSymbols.empty())
+			{
+				std::string symbolList;
+				for (const auto& [identifier, _] : importedSymbols)
+				{
+					if (!symbolList.empty())
+						symbolList += ", ";
+
+					symbolList += identifier;
+				}
+
+				throw CompilerImportIdentifierNotFoundError{ node.sourceLocation, symbolList, node.moduleName };
 			}
 
-			throw CompilerImportIdentifierNotFoundError{ node.sourceLocation, symbolList, node.moduleName };
+			if (aliasStatements.empty() && constStatements.empty())
+				return ShaderBuilder::NoOp();
 		}
-
-		if (aliasStatements.empty() && constStatements.empty())
-			return ShaderBuilder::NoOp();
+		else
+			aliasStatements.emplace_back(ShaderBuilder::DeclareAlias(node.moduleIdentifier, ShaderBuilder::ModuleExpr(moduleIndex)));
 
 		// Register aliases
 		for (auto& aliasPtr : aliasStatements)
@@ -2949,7 +2979,15 @@ NAZARA_WARNING_POP()
 			}
 
 			case IdentifierCategory::ExternalBlock:
-				throw AstUnexpectedIdentifierError{ sourceLocation, "external" };
+			{
+				// Replace IdentifierExpression by NamedExternalBlockExpression
+				auto moduleExpr = std::make_unique<NamedExternalBlockExpression>();
+				moduleExpr->cachedExpressionType = NamedExternalBlockType{ identifierData->index };
+				moduleExpr->sourceLocation = sourceLocation;
+				moduleExpr->externalBlockId = identifierData->index;
+
+				return moduleExpr;
+			}
 
 			case IdentifierCategory::Function:
 			{
@@ -2976,7 +3014,15 @@ NAZARA_WARNING_POP()
 			}
 
 			case IdentifierCategory::Module:
-				throw AstUnexpectedIdentifierError{ sourceLocation, "module" };
+			{
+				// Replace IdentifierExpression by ModuleExpression
+				auto moduleExpr = std::make_unique<ModuleExpression>();
+				moduleExpr->cachedExpressionType = ModuleType{ identifierData->index };
+				moduleExpr->sourceLocation = sourceLocation;
+				moduleExpr->moduleId = identifierData->index;
+
+				return moduleExpr;
+			}
 
 			case IdentifierCategory::Struct:
 			{
@@ -4182,6 +4228,22 @@ NAZARA_WARNING_POP()
 			return m_context->aliases.Retrieve(aliasIndex, sourceLocation).name;
 		};
 
+		stringifier.moduleStringifier = [&](std::size_t moduleIndex)
+		{
+			const std::string& moduleName = m_context->modules[moduleIndex].moduleName;
+			return (!moduleName.empty()) ? moduleName : fmt::format("<anonymous module #{}>", moduleIndex);
+		};
+		
+		stringifier.namedExternalBlockStringifier = [&](std::size_t namedExternalBlockIndex)
+		{
+			return m_context->namedExternalBlocks[namedExternalBlockIndex].name;
+		};
+
+		stringifier.structStringifier = [&](std::size_t structIndex)
+		{
+			return m_context->structs.Retrieve(structIndex, sourceLocation)->name;
+		};
+
 		stringifier.structStringifier = [&](std::size_t structIndex)
 		{
 			return m_context->structs.Retrieve(structIndex, sourceLocation)->name;
@@ -4258,9 +4320,13 @@ NAZARA_WARNING_POP()
 			const AliasType& alias = std::get<AliasType>(resolvedType);
 			aliasIdentifier.target = { alias.aliasIndex, IdentifierCategory::Alias };
 		}
+		else if (IsModuleType(resolvedType))
+		{
+			const ModuleType& module = std::get<ModuleType>(resolvedType);
+			aliasIdentifier.target = { module.moduleIndex, IdentifierCategory::Module };
+		}
 		else
 			throw CompilerAliasUnexpectedTypeError{ node.sourceLocation, ToString(*exprType, node.expression->sourceLocation) };
-
 
 		node.aliasIndex = RegisterAlias(node.name, std::move(aliasIdentifier), node.aliasIndex, node.sourceLocation);
 		return ValidationResult::Validated;
