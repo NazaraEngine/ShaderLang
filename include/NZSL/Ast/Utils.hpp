@@ -46,6 +46,8 @@ namespace nzsl::Ast
 			void Visit(IdentifierExpression& node) override;
 			void Visit(IntrinsicExpression& node) override;
 			void Visit(IntrinsicFunctionExpression& node) override;
+			void Visit(ModuleExpression& node) override;
+			void Visit(NamedExternalBlockExpression& node) override;
 			void Visit(StructTypeExpression& node) override;
 			void Visit(SwizzleExpression& node) override;
 			void Visit(TypeExpression& node) override;

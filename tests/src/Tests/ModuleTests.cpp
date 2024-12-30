@@ -28,7 +28,7 @@ void RegisterModule(const std::shared_ptr<nzsl::FilesystemModuleResolver>& modul
 
 TEST_CASE("Modules", "[Shader]")
 {
-	WHEN("using a simple module")
+	WHEN("Importing a simple module")
 	{
 		std::string_view importedSource = R"(
 [nzsl_version("1.0")]
@@ -266,7 +266,7 @@ OpReturn
 OpFunctionEnd)");
 	}
 
-	WHEN("Using nested modules")
+	WHEN("Importing nested modules")
 	{
 		std::string_view dataModule = R"(
 [nzsl_version("1.0")]
@@ -965,7 +965,7 @@ fn FragMain() -> FragOut
 
 	WHEN("Testing a more complex hierarchy")
 	{
-		// Tests a more complex hierarchy where the same module is imported at multiple levels, which caused a bug
+		// Tests a more complex hierarchy where the same module is imported at multiple levels, which caused a bug at some point
 
 		std::string_view lightingLightData = R"(
 [nzsl_version("1.0")]
@@ -1104,5 +1104,235 @@ fn FragMain() -> FragOut
 	return output;
 }
 )");
+	}
+
+	WHEN("Importing a simple module by name")
+	{
+		std::string_view importedSource = R"(
+[nzsl_version("1.0")]
+[author("Lynix")]
+[desc("Simple \"module\" for testing")]
+[license("Public domain")]
+module Simple.Module;
+
+[export]
+const Pi = 3.141592;
+
+[layout(std140)]
+struct Data
+{
+	value: f32
+}
+
+[export]
+[layout(std140)]
+struct Block
+{
+	data: Data
+}
+
+[export]
+fn GetDataValue(data: Data) -> f32
+{
+	return data.value;
+}
+
+struct Unused {}
+
+[export]
+struct InputData
+{
+	value: f32
+}
+
+[export]
+struct OutputData
+{
+	value: f32
+}
+)";
+
+		std::string_view shaderSource = R"(
+[nzsl_version("1.0")]
+[author("Sir Lynix")]
+[desc("Main file")]
+[license("MIT")]
+module;
+
+import Simple.Module as SimpleModule;
+
+external ExtData
+{
+	[binding(0)] block: uniform[SimpleModule.Block]
+}
+
+[entry(frag)]
+fn main(input: SimpleModule.InputData) -> SimpleModule.OutputData
+{
+	let data = ExtData.block.data;
+
+	let output: SimpleModule.OutputData;
+	output.value = SimpleModule.GetDataValue(data) * input.value * SimpleModule.Pi;
+	return output;
+}
+)";
+
+		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(shaderSource);
+
+		auto directoryModuleResolver = std::make_shared<nzsl::FilesystemModuleResolver>();
+		RegisterModule(directoryModuleResolver, importedSource);
+
+		nzsl::Ast::SanitizeVisitor::Options sanitizeOpt;
+		sanitizeOpt.moduleResolver = directoryModuleResolver;
+
+		shaderModule = SanitizeModule(*shaderModule, sanitizeOpt);
+
+		ExpectGLSL(*shaderModule, R"(
+// Module Simple.Module
+// Author: Lynix
+// Description: Simple "module" for testing
+// License: Public domain
+
+struct Data_Simple_Module
+{
+	float value;
+};
+
+// struct Block_Simple_Module omitted (used as UBO/SSBO)
+
+float GetDataValue_Simple_Module(Data_Simple_Module data)
+{
+	return data.value;
+}
+
+struct InputData_Simple_Module
+{
+	float value;
+};
+
+struct OutputData_Simple_Module
+{
+	float value;
+};
+
+// Main module
+// Author: Sir Lynix
+// Description: Main file
+// License: MIT
+
+layout(std140) uniform _nzslBindingExtData_block
+{
+	Data_Simple_Module data;
+} ExtData_block;
+
+/**************** Inputs ****************/
+in float _nzslInvalue;
+
+/*************** Outputs ***************/
+out float _nzslOutvalue;
+
+void main()
+{
+	InputData_Simple_Module input_;
+	input_.value = _nzslInvalue;
+
+	Data_Simple_Module data;
+	data.value = ExtData_block.data.value;
+	OutputData_Simple_Module output_;
+	output_.value = ((GetDataValue_Simple_Module(data)) * input_.value) * (3.141592);
+
+	_nzslOutvalue = output_.value;
+	return;
+}
+)");
+
+		ExpectNZSL(*shaderModule, R"(
+[nzsl_version("1.0")]
+[author("Sir Lynix"), desc("Main file")]
+[license("MIT")]
+module;
+
+[nzsl_version("1.0")]
+[author("Lynix"), desc("Simple \"module\" for testing")]
+[license("Public domain")]
+module _Simple_Module
+{
+	const Pi: f32 = 3.141592;
+
+	[layout(std140)]
+	struct Data
+	{
+		value: f32
+	}
+
+	[layout(std140)]
+	struct Block
+	{
+		data: Data
+	}
+
+	fn GetDataValue(data: Data) -> f32
+	{
+		return data.value;
+	}
+
+	struct InputData
+	{
+		value: f32
+	}
+
+	struct OutputData
+	{
+		value: f32
+	}
+
+}
+alias SimpleModule = _Simple_Module;
+
+external ExtData
+{
+	[set(0), binding(0)] block: uniform[SimpleModule.Block]
+}
+
+[entry(frag)]
+fn main(input: SimpleModule.InputData) -> SimpleModule.OutputData
+{
+	let data: SimpleModule.Data = ExtData.block.data;
+	let output: SimpleModule.OutputData;
+	output.value = ((SimpleModule.GetDataValue(data)) * input.value) * SimpleModule.Pi;
+	return output;
+}
+)");
+
+		ExpectSPIRV(*shaderModule, R"(
+OpFunction
+OpFunctionParameter
+OpLabel
+OpAccessChain
+OpLoad
+OpReturnValue
+OpFunctionEnd
+OpFunction
+OpLabel
+OpVariable
+OpVariable
+OpVariable
+OpVariable
+OpAccessChain
+OpLoad
+OpAccessChain
+OpStore
+OpLoad
+OpStore
+OpFunctionCall
+OpAccessChain
+OpLoad
+OpFMul
+OpFMul
+OpAccessChain
+OpStore
+OpLoad
+OpReturn
+OpFunctionEnd)");
 	}
 }

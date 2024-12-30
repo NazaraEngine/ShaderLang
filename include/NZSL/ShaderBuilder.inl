@@ -404,6 +404,15 @@ namespace nzsl::ShaderBuilder
 		return identifierNode;
 	}
 
+	inline Ast::ImportStatementPtr Impl::Import::operator()(std::string modulePath, std::string moduleIdentifier) const
+	{
+		auto importNode = std::make_unique<Ast::ImportStatement>();
+		importNode->moduleName = std::move(modulePath);
+		importNode->moduleIdentifier = std::move(moduleIdentifier);
+
+		return importNode;
+	}
+
 	inline Ast::ImportStatementPtr Impl::Import::operator()(std::string moduleName, std::vector<Ast::ImportStatement::Identifier> identifiers) const
 	{
 		auto importNode = std::make_unique<Ast::ImportStatement>();
@@ -429,6 +438,15 @@ namespace nzsl::ShaderBuilder
 		intrinsicTypeExpr->intrinsicId = intrinsicFunctionId;
 
 		return intrinsicTypeExpr;
+	}
+
+	inline Ast::ModuleExpressionPtr Impl::ModuleExpr::operator()(std::size_t moduleTypeId) const
+	{
+		auto moduleTypeExpr = std::make_unique<Ast::ModuleExpression>();
+		moduleTypeExpr->cachedExpressionType = Ast::ModuleType{ moduleTypeId };
+		moduleTypeExpr->moduleId = moduleTypeId;
+
+		return moduleTypeExpr;
 	}
 
 	inline Ast::MultiStatementPtr Impl::Multi::operator()(std::vector<Ast::StatementPtr> statements) const

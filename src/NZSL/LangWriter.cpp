@@ -16,6 +16,7 @@
 #include <NZSL/Lang/LangData.hpp>
 #include <cassert>
 #include <optional>
+#include <sstream>
 #include <stdexcept>
 #include <unordered_map>
 
@@ -187,6 +188,7 @@ namespace nzsl
 		std::unordered_map<std::size_t, Identifier> aliases;
 		std::unordered_map<std::size_t, Identifier> constants;
 		std::unordered_map<std::size_t, Identifier> functions;
+		std::unordered_map<std::size_t, Identifier> modules;
 		std::unordered_map<std::size_t, Identifier> structs;
 		std::unordered_map<std::size_t, Identifier> variables;
 		std::vector<std::string> externalBlockNames;
@@ -223,6 +225,11 @@ namespace nzsl
 			}
 
 			m_currentState->currentModuleIndex = std::numeric_limits<std::size_t>::max();
+
+			std::size_t moduleIndex = 0;
+			for (const auto& importedModule : module.importedModules)
+				RegisterModule(moduleIndex++, importedModule.identifier);
+
 			module.rootNode->Visit(previsitor);
 		}
 
@@ -317,6 +324,16 @@ namespace nzsl
 	void LangWriter::Append(const Ast::MethodType& /*functionType*/)
 	{
 		throw std::runtime_error("unexpected method type");
+	}
+
+	void LangWriter::Append(const Ast::ModuleType& moduleType)
+	{
+		AppendIdentifier(m_currentState->modules, moduleType.moduleIndex);
+	}
+
+	void LangWriter::Append(const Ast::NamedExternalBlockType& namedExternalBlockType)
+	{
+		Append(m_currentState->externalBlockNames[namedExternalBlockType.namedExternalBlockIndex]);
 	}
 
 	void LangWriter::Append(Ast::PrimitiveType type)
@@ -915,6 +932,16 @@ namespace nzsl
 		m_currentState->functions.emplace(funcIndex, std::move(identifier));
 	}
 
+	void LangWriter::RegisterModule(std::size_t moduleIndex, std::string moduleName)
+	{
+		State::Identifier identifier;
+		identifier.moduleIndex = m_currentState->currentModuleIndex;
+		identifier.name = std::move(moduleName);
+
+		assert(m_currentState->modules.find(moduleIndex) == m_currentState->modules.end());
+		m_currentState->modules.emplace(moduleIndex, std::move(identifier));
+	}
+
 	void LangWriter::RegisterStruct(std::size_t structIndex, std::string structName)
 	{
 		State::Identifier identifier;
@@ -1259,6 +1286,16 @@ namespace nzsl
 		Append(")");
 	}
 
+	void LangWriter::Visit(Ast::ModuleExpression& node)
+	{
+		AppendIdentifier(m_currentState->modules, node.moduleId);
+	}
+
+	void LangWriter::Visit(Ast::NamedExternalBlockExpression& node)
+	{
+		Append(m_currentState->externalBlockNames[node.externalBlockId]);
+	}
+
 	void LangWriter::Visit(Ast::StructTypeExpression& node)
 	{
 		AppendIdentifier(m_currentState->structs, node.structTypeId);
@@ -1358,6 +1395,14 @@ namespace nzsl
 		Append("alias ", node.name, " = ");
 		assert(node.expression);
 		node.expression->Visit(*this);
+
+		// Special case, if that alias points to a module, use it instead to try to keep source code readable
+		if (node.expression->GetType() == Ast::NodeType::ModuleExpression)
+		{
+			auto& moduleExpr = Nz::SafeCast<Ast::ModuleExpression&>(*node.expression);
+			m_currentState->moduleNames[moduleExpr.moduleId] = node.name;
+		}
+
 		AppendLine(";");
 	}
 
@@ -1580,25 +1625,45 @@ namespace nzsl
 	{
 		Append("import ");
 		
-		bool first = true;
-		for (const auto& entry : node.identifiers)
+		if (node.identifiers.empty())
 		{
-			if (!first)
-				Append(", ");
+			// Whole module import
+			Append(node.moduleName);
 
-			first = false;
-
-			if (!entry.identifier.empty())
-			{
-				Append(entry.identifier);
-				if (!entry.renamedIdentifier.empty())
-					Append(" as ", entry.renamedIdentifier);
-			}
+			std::string_view defaultIdentifierName;
+			std::size_t lastSep = node.moduleName.find_last_of('.');
+			if (lastSep != std::string::npos)
+				defaultIdentifierName = std::string_view(node.moduleName).substr(lastSep + 1);
 			else
-				Append("*");
-		}
+				defaultIdentifierName = node.moduleName;
 
-		AppendLine(" from ", node.moduleName, ";");
+			if (node.moduleIdentifier != node.moduleName)
+				Append(" as ", node.moduleIdentifier);
+
+			AppendLine(";");
+		}
+		else
+		{
+			// Module identifier import
+			bool first = true;
+			for (const auto& entry : node.identifiers)
+			{
+				if (!first)
+					Append(", ");
+
+				first = false;
+
+				if (!entry.identifier.empty())
+				{
+					Append(entry.identifier);
+					if (!entry.renamedIdentifier.empty())
+						Append(" as ", entry.renamedIdentifier);
+				}
+				else
+					Append("*");
+			}
+			AppendLine(" from ", node.moduleName, ";");
+		}
 	}
 
 	void LangWriter::Visit(Ast::MultiStatement& node)

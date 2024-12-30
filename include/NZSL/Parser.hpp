@@ -95,7 +95,7 @@ namespace nzsl
 			Ast::ExpressionPtr ParseStringExpression();
 
 			const std::string& ParseIdentifierAsName(SourceLocation* sourceLocation);
-			std::string ParseModuleName();
+			std::string ParseModuleName(SourceLocation* sourceLocation);
 			Ast::ExpressionPtr ParseType();
 
 			const std::string& ExtractStringAttribute(Attribute&& attribute);

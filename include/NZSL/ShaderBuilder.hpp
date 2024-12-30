@@ -150,6 +150,7 @@ namespace nzsl::ShaderBuilder
 
 		struct Import
 		{
+			inline Ast::ImportStatementPtr operator()(std::string modulePath, std::string moduleIdentifier) const;
 			inline Ast::ImportStatementPtr operator()(std::string modulePath, std::vector<Ast::ImportStatement::Identifier> identifiers) const;
 		};
 
@@ -161,6 +162,11 @@ namespace nzsl::ShaderBuilder
 		struct IntrinsicFunction
 		{
 			inline Ast::IntrinsicFunctionExpressionPtr operator()(std::size_t intrinsicFunctionId, Ast::IntrinsicType intrinsicType) const;
+		};
+
+		struct ModuleExpr
+		{
+			inline Ast::ModuleExpressionPtr operator()(std::size_t moduleTypeId) const;
 		};
 
 		struct Multi
@@ -242,6 +248,7 @@ namespace nzsl::ShaderBuilder
 	constexpr Impl::IntrinsicFunction IntrinsicFunction;
 	constexpr Impl::Import Import;
 	constexpr Impl::Intrinsic Intrinsic;
+	constexpr Impl::ModuleExpr ModuleExpr;
 	constexpr Impl::Multi MultiStatement;
 	constexpr Impl::NoParam<Ast::NoOpStatement> NoOp;
 	constexpr Impl::Return Return;

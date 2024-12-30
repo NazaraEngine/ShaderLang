@@ -289,8 +289,9 @@ namespace nzsl::Ast
 	StatementPtr Cloner::Clone(ImportStatement& node)
 	{
 		auto clone = std::make_unique<ImportStatement>();
-		clone->moduleName = node.moduleName;
 		clone->identifiers = node.identifiers;
+		clone->moduleName = node.moduleName;
+		clone->moduleIdentifier = node.moduleIdentifier;
 
 		clone->sourceLocation = node.sourceLocation;
 
@@ -552,6 +553,28 @@ namespace nzsl::Ast
 	{
 		auto clone = std::make_unique<IntrinsicFunctionExpression>();
 		clone->intrinsicId = node.intrinsicId;
+
+		clone->cachedExpressionType = node.cachedExpressionType;
+		clone->sourceLocation = node.sourceLocation;
+
+		return clone;
+	}
+
+	ExpressionPtr Cloner::Clone(ModuleExpression& node)
+	{
+		auto clone = std::make_unique<ModuleExpression>();
+		clone->moduleId = node.moduleId;
+
+		clone->cachedExpressionType = node.cachedExpressionType;
+		clone->sourceLocation = node.sourceLocation;
+
+		return clone;
+	}
+
+	ExpressionPtr Cloner::Clone(NamedExternalBlockExpression& node)
+	{
+		auto clone = std::make_unique<NamedExternalBlockExpression>();
+		clone->externalBlockId = node.externalBlockId;
 
 		clone->cachedExpressionType = node.cachedExpressionType;
 		clone->sourceLocation = node.sourceLocation;

@@ -12,15 +12,12 @@
 #include <NZSL/Ast/Enums.hpp>
 #include <NZSL/Ast/ExpressionValue.hpp>
 #include <NZSL/Lang/SourceLocation.hpp>
-#include <optional>
 #include <string>
 #include <variant>
 #include <vector>
 
-#ifdef NAZARA_COMPILER_GCC
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-#endif
+NAZARA_WARNING_PUSH()
+NAZARA_WARNING_GCC_DISABLE("-Wmaybe-uninitialized")
 
 namespace nzsl
 {
@@ -137,6 +134,22 @@ namespace nzsl::Ast
 		inline bool operator!=(const MethodType& rhs) const;
 	};
 
+	struct ModuleType
+	{
+		std::size_t moduleIndex;
+
+		inline bool operator==(const ModuleType& rhs) const;
+		inline bool operator!=(const ModuleType& rhs) const;
+	};
+
+	struct NamedExternalBlockType
+	{
+		std::size_t namedExternalBlockIndex;
+
+		inline bool operator==(const NamedExternalBlockType& rhs) const;
+		inline bool operator!=(const NamedExternalBlockType& rhs) const;
+	};
+
 	struct NoType
 	{
 		inline bool operator==(const NoType& rhs) const;
@@ -216,7 +229,7 @@ namespace nzsl::Ast
 		inline bool operator!=(const PushConstantType& rhs) const;
 	};
 
-	using ExpressionType = std::variant<NoType, AliasType, ArrayType, DynArrayType, FunctionType, IntrinsicFunctionType, MatrixType, MethodType, PrimitiveType, PushConstantType, SamplerType, StorageType, StructType, TextureType, Type, UniformType, VectorType>;
+	using ExpressionType = std::variant<NoType, AliasType, ArrayType, DynArrayType, FunctionType, IntrinsicFunctionType, MatrixType, MethodType, ModuleType, NamedExternalBlockType, PrimitiveType, PushConstantType, SamplerType, StorageType, StructType, TextureType, Type, UniformType, VectorType>;
 
 	struct ContainedType
 	{
@@ -252,6 +265,8 @@ namespace nzsl::Ast
 	inline bool IsIntrinsicFunctionType(const ExpressionType& type);
 	inline bool IsMatrixType(const ExpressionType& type);
 	inline bool IsMethodType(const ExpressionType& type);
+	inline bool IsModuleType(const ExpressionType& type);
+	inline bool IsNamedExternalBlockType(const ExpressionType& type);
 	inline bool IsNoType(const ExpressionType& type);
 	inline bool IsPrimitiveType(const ExpressionType& type);
 	inline bool IsPushConstantType(const ExpressionType& type);
@@ -296,6 +311,8 @@ namespace nzsl::Ast
 	struct Stringifier
 	{
 		std::function<std::string(std::size_t aliasIndex)> aliasStringifier;
+		std::function<std::string(std::size_t moduleIndex)> moduleStringifier;
+		std::function<std::string(std::size_t moduleIndex)> namedExternalBlockStringifier;
 		std::function<std::string(std::size_t structIndex)> structStringifier;
 		std::function<std::string(std::size_t typeIndex)> typeStringifier;
 	};
@@ -308,6 +325,8 @@ namespace nzsl::Ast
 	NZSL_API std::string ToString(const IntrinsicFunctionType& type, const Stringifier& stringifier = {});
 	NZSL_API std::string ToString(const MatrixType& type, const Stringifier& stringifier = {});
 	NZSL_API std::string ToString(const MethodType& type, const Stringifier& stringifier = {});
+	NZSL_API std::string ToString(const ModuleType& type, const Stringifier& stringifier = {});
+	NZSL_API std::string ToString(const NamedExternalBlockType& type, const Stringifier& stringifier = {});
 	NZSL_API std::string ToString(NoType type, const Stringifier& stringifier = {});
 	NZSL_API std::string ToString(PrimitiveType type, const Stringifier& stringifier = {});
 	NZSL_API std::string ToString(const PushConstantType& type, const Stringifier& stringifier = {});
@@ -320,9 +339,7 @@ namespace nzsl::Ast
 	NZSL_API std::string ToString(const VectorType& type, const Stringifier& stringifier = {});
 }
 
-#ifdef NAZARA_COMPILER_GCC
-#pragma GCC diagnostic pop
-#endif
+NAZARA_WARNING_POP()
 
 #include <NZSL/Ast/ExpressionType.inl>
 
