@@ -5,9 +5,9 @@
 #include <NZSL/Parser.hpp>
 #include <NazaraUtils/PathUtils.hpp>
 #include <NZSL/ShaderBuilder.hpp>
+#include <NZSL/Ast/Utils.hpp>
 #include <NZSL/Lang/Errors.hpp>
 #include <NZSL/Lang/LangData.hpp>
-#include <NZSL/Ast/Utils.hpp>
 #include <frozen/string.h>
 #include <frozen/unordered_map.h>
 #include <array>
@@ -403,7 +403,7 @@ namespace nzsl
 
 		if (m_context->module)
 		{
-			moduleMetadata->moduleName = ParseModuleName();
+			moduleMetadata->moduleName = ParseModuleName(nullptr);
 			auto module = std::make_shared<Ast::Module>(std::move(moduleMetadata));
 
 			// Imported module
@@ -434,7 +434,7 @@ namespace nzsl
 		{
 			std::string moduleName;
 			if (Peek().type == TokenType::Identifier)
-				moduleName = ParseModuleName();
+				moduleName = ParseModuleName(nullptr);
 			else
 			{
 				moduleName.resize(33);
@@ -1051,7 +1051,7 @@ namespace nzsl
 				identifier.identifierLoc = token.location;
 			}
 			else
-				identifier.identifier = ParseIdentifierAsName(&identifier.identifierLoc);
+				identifier.identifier = ParseModuleName(&identifier.identifierLoc); // at this point it could be an identifier or a module name (allowing dots), parse module name for now
 
 			if (Peek().type == TokenType::As)
 			{
@@ -1060,18 +1060,60 @@ namespace nzsl
 				identifier.renamedIdentifier = ParseIdentifierAsName(&identifier.renamedIdentifierLoc);
 			}
 		}
-		while (Peek().type != TokenType::From);
+		while (Peek().type == TokenType::Comma);
 
-		Consume(); //< From
+		const Token& token = Peek();
+		if (token.type == TokenType::From)
+		{
+			// import <identifiers> from <module>;
+			Consume(); //< From
 
-		std::string moduleName = ParseModuleName();
+			for (auto& identifierData : identifiers)
+			{
+				if (identifierData.identifier.find('.') != std::string::npos)
+					throw ParserModuleImportInvalidIdentifierError{ identifierData.identifierLoc, identifierData.identifier };
+			}
 
-		const Token& endtoken = Expect(Advance(), TokenType::Semicolon);
+			std::string moduleName = ParseModuleName(nullptr);
 
-		auto importStatement = ShaderBuilder::Import(std::move(moduleName), std::move(identifiers));
-		importStatement->sourceLocation = SourceLocation::BuildFromTo(importToken.location, endtoken.location);
+			const Token& endtoken = Expect(Advance(), TokenType::Semicolon);
 
-		return importStatement;
+			auto importStatement = ShaderBuilder::Import(std::move(moduleName), std::move(identifiers));
+			importStatement->sourceLocation = SourceLocation::BuildFromTo(importToken.location, endtoken.location);
+
+			return importStatement;
+		}
+		else
+		{
+			// import <module> (as identifier); -- (where modules comes from identifiers)
+			if (identifiers.size() != 1)
+			{
+				const auto& firstIdentifier = identifiers.front();
+				const auto& lastIdentifier = identifiers.back();
+				SourceLocation importLoc = SourceLocation::BuildFromTo(firstIdentifier.identifierLoc, lastIdentifier.renamedIdentifierLoc.IsValid() ? lastIdentifier.renamedIdentifierLoc : lastIdentifier.identifierLoc);
+				throw ParserModuleImportMultipleError{ importLoc };
+			}
+
+			auto& firstIdentifier = identifiers.front();
+
+			std::string identifierName = std::move(firstIdentifier.renamedIdentifier);
+			if (identifierName.empty())
+			{
+				// When importing a module with a dot separator, the default identifier is the last part;
+				std::size_t lastSep = firstIdentifier.identifier.find_last_of('.');
+				if (lastSep != std::string::npos)
+					identifierName = firstIdentifier.identifier.substr(lastSep + 1);
+				else
+					identifierName = firstIdentifier.identifier;
+			}
+
+			const Token& endtoken = Expect(Advance(), TokenType::Semicolon);
+
+			auto importStatement = ShaderBuilder::Import(std::move(firstIdentifier.identifier), std::move(identifierName));
+			importStatement->sourceLocation = SourceLocation::BuildFromTo(importToken.location, endtoken.location);
+
+			return importStatement;
+		}
 	}
 
 	Ast::StatementPtr Parser::ParseOptionDeclaration()
@@ -1815,14 +1857,19 @@ namespace nzsl
 		return std::get<std::string>(identifierToken.data);
 	}
 
-	std::string Parser::ParseModuleName()
+	std::string Parser::ParseModuleName(SourceLocation* sourceLocation)
 	{
-		std::string moduleName = ParseIdentifierAsName(nullptr);
+		std::string moduleName = ParseIdentifierAsName(sourceLocation);
 		while (Peek().type == TokenType::Dot)
 		{
+			SourceLocation identifierLocation;
+
 			Consume();
 			moduleName += '.';
-			moduleName += ParseIdentifierAsName(nullptr);
+			moduleName += ParseIdentifierAsName(&identifierLocation);
+
+			if (sourceLocation)
+				sourceLocation->ExtendToRight(identifierLocation);
 		}
 
 		return moduleName;

@@ -44,6 +44,17 @@ namespace nzsl::Ast
 	}
 
 
+	inline bool NamedExternalBlockType::operator==(const NamedExternalBlockType& rhs) const
+	{
+		return namedExternalBlockIndex == rhs.namedExternalBlockIndex;
+	}
+
+	inline bool NamedExternalBlockType::operator!=(const NamedExternalBlockType& rhs) const
+	{
+		return !operator==(rhs);
+	}
+
+
 	inline bool FunctionType::operator==(const FunctionType& rhs) const
 	{
 		return funcIndex == rhs.funcIndex;
@@ -78,6 +89,17 @@ namespace nzsl::Ast
 
 
 	inline bool MethodType::operator!=(const MethodType& rhs) const
+	{
+		return !operator==(rhs);
+	}
+
+
+	inline bool ModuleType::operator==(const ModuleType& rhs) const
+	{
+		return moduleIndex == rhs.moduleIndex;
+	}
+
+	inline bool ModuleType::operator!=(const ModuleType& rhs) const
 	{
 		return !operator==(rhs);
 	}
@@ -214,6 +236,16 @@ namespace nzsl::Ast
 	inline bool IsMethodType(const ExpressionType& type)
 	{
 		return std::holds_alternative<MethodType>(type);
+	}
+
+	inline bool IsModuleType(const ExpressionType& type)
+	{
+		return std::holds_alternative<ModuleType>(type);
+	}
+
+	inline bool IsNamedExternalBlockType(const ExpressionType& type)
+	{
+		return std::holds_alternative<NamedExternalBlockType>(type);
 	}
 
 	inline bool IsNoType(const ExpressionType& type)
@@ -385,6 +417,24 @@ namespace std
 				Nz::HashCombine(h, methodType.objectType->type);
 
 			return h;
+		}
+	};
+
+	template<>
+	struct hash<nzsl::Ast::ModuleType>
+	{
+		std::size_t operator()(const nzsl::Ast::ModuleType& moduleType) const
+		{
+			return Nz::HashCombine(moduleType.moduleIndex);
+		}
+	};
+	
+	template<>
+	struct hash<nzsl::Ast::NamedExternalBlockType>
+	{
+		std::size_t operator()(const nzsl::Ast::NamedExternalBlockType& namedExternalBlockType) const
+		{
+			return Nz::HashCombine(namedExternalBlockType.namedExternalBlockIndex);
 		}
 	};
 

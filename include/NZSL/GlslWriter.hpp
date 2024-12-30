@@ -77,7 +77,9 @@ namespace nzsl
 			void Append(const Ast::IntrinsicFunctionType& intrinsicFunctionType);
 			void Append(const Ast::MatrixType& matrixType);
 			void Append(const Ast::MethodType& methodType);
+			void Append(const Ast::ModuleType& methodType);
 			void Append(Ast::MemoryLayout layout);
+			void Append(const Ast::NamedExternalBlockType& namedExternalBlockType);
 			void Append(Ast::NoType);
 			void Append(Ast::PrimitiveType type);
 			void Append(const Ast::PushConstantType& pushConstantType);

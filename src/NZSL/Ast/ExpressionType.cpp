@@ -98,14 +98,14 @@ namespace nzsl::Ast
 		return objectType->type == rhs.objectType->type && methodIndex == rhs.methodIndex;
 	}
 	
-	using ForbiddenStructTypes = Nz::TypeList<AliasType, FunctionType, IntrinsicFunctionType, MethodType, NoType, PushConstantType, SamplerType, StorageType, TextureType, Type, UniformType>;
+	using StructTypes = Nz::TypeList<ArrayType, DynArrayType, MatrixType, PrimitiveType, StructType, VectorType>;
 
 	std::size_t RegisterStructField(FieldOffsets& fieldOffsets, const ExpressionType& type, const StructFinder& structFinder)
 	{
 		return std::visit([&](auto&& arg) -> std::size_t
 		{
 			using T = std::decay_t<decltype(arg)>;
-			if constexpr (!Nz::TypeListHas<ForbiddenStructTypes, T>)
+			if constexpr (Nz::TypeListHas<StructTypes, T>)
 				return RegisterStructFieldType(fieldOffsets, arg, structFinder);
 			else
 				throw std::runtime_error("unexpected type (" + ToString(arg) + ") as struct field");
@@ -117,7 +117,7 @@ namespace nzsl::Ast
 		return std::visit([&](auto&& arg) -> std::size_t
 		{
 			using T = std::decay_t<decltype(arg)>;
-			if constexpr (!Nz::TypeListHas<ForbiddenStructTypes, T>)
+			if constexpr (Nz::TypeListHas<StructTypes, T>)
 				return RegisterStructFieldType(fieldOffsets, arg, arraySize, structFinder);
 			else
 				throw std::runtime_error("unexpected type (" + ToString(arg) + ") as struct field");
@@ -286,6 +286,8 @@ namespace nzsl::Ast
 			                   std::is_same_v<T, PrimitiveType> ||
 			                   std::is_same_v<T, MatrixType> ||
 			                   std::is_same_v<T, MethodType> ||
+			                   std::is_same_v<T, ModuleType> ||
+			                   std::is_same_v<T, NamedExternalBlockType> ||
 			                   std::is_same_v<T, SamplerType> ||
 			                   std::is_same_v<T, TextureType> ||
 			                   std::is_same_v<T, Type> ||
@@ -370,6 +372,22 @@ namespace nzsl::Ast
 		return "<method of object " + ToString(type.objectType->type) + " type>";
 	}
 
+	std::string ToString(const ModuleType& type, const Stringifier& stringifier)
+	{
+		if (stringifier.moduleStringifier)
+			return "imported module " + stringifier.moduleStringifier(type.moduleIndex);
+		else
+			return fmt::format("imported module #{}", type.moduleIndex);
+	}
+
+	std::string ToString(const NamedExternalBlockType& type, const Stringifier& stringifier)
+	{
+		if (stringifier.namedExternalBlockStringifier)
+			return "named external block " + stringifier.namedExternalBlockStringifier(type.namedExternalBlockIndex);
+		else
+			return fmt::format("named external block #{}", type.namedExternalBlockIndex);
+	}
+
 	std::string ToString(NoType /*type*/, const Stringifier& /*stringifier*/)
 	{
 		return "()";
@@ -421,7 +439,7 @@ namespace nzsl::Ast
 		if (stringifier.structStringifier)
 			return "struct " + stringifier.structStringifier(type.structIndex);
 		else
-			return "struct #" + std::to_string(type.structIndex);
+			return fmt::format("struct #{}", type.structIndex);
 	}
 
 	std::string ToString(const TextureType& type, const Stringifier& /*stringifier*/)
@@ -445,7 +463,7 @@ namespace nzsl::Ast
 		if (stringifier.typeStringifier)
 			return "type " + stringifier.typeStringifier(type.typeIndex);
 		else
-			return "type #" + std::to_string(type.typeIndex);
+			return fmt::format("type #{}", type.typeIndex);
 	}
 
 	std::string ToString(const UniformType& type, const Stringifier& stringifier)

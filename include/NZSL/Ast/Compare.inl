@@ -263,7 +263,7 @@ namespace nzsl::Ast
 
 		if (!Compare(lhs.renamedIdentifierLoc, rhs.renamedIdentifierLoc, params))
 			return false;
-		
+
 		return true;
 	}
 
@@ -498,6 +498,22 @@ namespace nzsl::Ast
 	inline bool Compare(const IntrinsicFunctionExpression& lhs, const IntrinsicFunctionExpression& rhs, const ComparisonParams& params)
 	{
 		if (!Compare(lhs.intrinsicId, rhs.intrinsicId, params))
+			return false;
+
+		return true;
+	}
+
+	inline bool Compare(const ModuleExpression& lhs, const ModuleExpression& rhs, const ComparisonParams& params)
+	{
+		if (!Compare(lhs.moduleId, rhs.moduleId, params))
+			return false;
+
+		return true;
+	}
+
+	inline bool Compare(const NamedExternalBlockExpression& lhs, const NamedExternalBlockExpression& rhs, const ComparisonParams& params)
+	{
+		if (!Compare(lhs.externalBlockId, rhs.externalBlockId, params))
 			return false;
 
 		return true;
@@ -756,6 +772,9 @@ namespace nzsl::Ast
 	bool Compare(const ImportStatement& lhs, const ImportStatement& rhs, const ComparisonParams& params)
 	{
 		if (params.compareModuleName && !Compare(lhs.moduleName, rhs.moduleName, params))
+			return false;
+
+		if (!Compare(lhs.moduleIdentifier, rhs.moduleIdentifier, params))
 			return false;
 
 		if (!Compare(lhs.identifiers, rhs.identifiers, params))

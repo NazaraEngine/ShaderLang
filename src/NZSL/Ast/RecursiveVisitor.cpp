@@ -99,6 +99,16 @@ namespace nzsl::Ast
 		/* Nothing to do */
 	}
 
+	void RecursiveVisitor::Visit(ModuleExpression& /*node*/)
+	{
+		/* Nothing to do */
+	}
+
+	void RecursiveVisitor::Visit(NamedExternalBlockExpression& /*node*/)
+	{
+		/* Nothing to do */
+	}
+
 	void RecursiveVisitor::Visit(StructTypeExpression& /*node*/)
 	{
 		/* Nothing to do */

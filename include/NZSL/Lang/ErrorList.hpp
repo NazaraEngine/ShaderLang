@@ -42,6 +42,8 @@ NZSL_SHADERLANG_PARSER_ERROR(AttributeUnexpectedParameterCount, "attribute {} ex
 NZSL_SHADERLANG_PARSER_ERROR(ExpectedToken, "expected token {}, got {}", TokenType, TokenType)
 NZSL_SHADERLANG_PARSER_ERROR(DuplicateIdentifier, "duplicate identifier")
 NZSL_SHADERLANG_PARSER_ERROR(DuplicateModule, "duplicate module")
+NZSL_SHADERLANG_PARSER_ERROR(ModuleImportInvalidIdentifier, "{} is not a valid identifier to import", std::string)
+NZSL_SHADERLANG_PARSER_ERROR(ModuleImportMultiple, "a module import can only be a single name")
 NZSL_SHADERLANG_PARSER_ERROR(InvalidVersion, "\"{}\" is not a valid version", std::string)
 NZSL_SHADERLANG_PARSER_ERROR(MissingAttribute, "missing attribute {}", Ast::AttributeType)
 NZSL_SHADERLANG_PARSER_ERROR(ModuleFeatureMultipleUnique, "module feature {} has already been specified", Ast::ModuleFeature)

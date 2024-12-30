@@ -223,6 +223,22 @@ namespace nzsl::Ast
 		std::size_t intrinsicId;
 	};
 
+	struct NZSL_API ModuleExpression : Expression
+	{
+		NodeType GetType() const override;
+		void Visit(ExpressionVisitor& visitor) override;
+
+		std::size_t moduleId;
+	};
+
+	struct NZSL_API NamedExternalBlockExpression : Expression
+	{
+		NodeType GetType() const override;
+		void Visit(ExpressionVisitor& visitor) override;
+
+		std::size_t externalBlockId;
+	};
+
 	struct NZSL_API StructTypeExpression : Expression
 	{
 		NodeType GetType() const override;
@@ -478,6 +494,7 @@ namespace nzsl::Ast
 			SourceLocation renamedIdentifierLoc;
 		};
 
+		std::string moduleIdentifier;
 		std::string moduleName;
 		std::vector<Identifier> identifiers;
 	};
