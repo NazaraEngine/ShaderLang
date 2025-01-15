@@ -135,6 +135,7 @@ NZSL_SHADERLANG_COMPILER_ERROR(MissingWorkgroupAttribute, "compute shader requir
 NZSL_SHADERLANG_COMPILER_ERROR(ModuleCompilationFailed, "module {} compilation failed: {}", std::string, std::string)
 NZSL_SHADERLANG_COMPILER_ERROR(ModuleFeatureMismatch, "module {} requires feature {}", std::string, Ast::ModuleFeature)
 NZSL_SHADERLANG_COMPILER_ERROR(ModuleNotFound, "module {} not found", std::string)
+NZSL_SHADERLANG_COMPILER_ERROR(MultiplePushConstant, "there can be only one push constant external in a shader stage", std::string)
 NZSL_SHADERLANG_COMPILER_ERROR(NoModuleResolver, "import statement found but no module resolver has been set (and partial sanitization is not enabled)")
 NZSL_SHADERLANG_COMPILER_ERROR(OptionHashCollision, "option {} has the same hash as option {}", std::string, std::string)
 NZSL_SHADERLANG_COMPILER_ERROR(OptionDeclarationInsideFunction, "options must be declared outside of functions")

@@ -197,16 +197,16 @@ namespace nzsl::Ast
 		static constexpr std::size_t ModuleIdSentinel =  std::numeric_limits<std::size_t>::max();
 
 		std::array<DeclareFunctionStatement*, ShaderStageTypeCount> entryFunctions = {};
-		std::vector<ModuleData> modules;
-		std::vector<NamedExternalBlockData> namedExternalBlocks;
-		std::vector<StatementPtr>* currentStatementList = nullptr;
+		std::shared_ptr<Environment> globalEnv;
+		std::shared_ptr<Environment> currentEnv;
+		std::shared_ptr<Environment> moduleEnv;
 		std::unordered_map<std::string, std::size_t> moduleByName;
 		std::unordered_map<std::uint64_t, UsedExternalData> usedBindingIndexes;
 		std::unordered_map<std::string, UsedExternalData> declaredExternalVar;
 		std::unordered_map<OptionHash, std::string> declaredOptions;
-		std::shared_ptr<Environment> globalEnv;
-		std::shared_ptr<Environment> currentEnv;
-		std::shared_ptr<Environment> moduleEnv;
+		std::vector<ModuleData> modules;
+		std::vector<NamedExternalBlockData> namedExternalBlocks;
+		std::vector<StatementPtr>* currentStatementList = nullptr;
 		IdentifierList<ConstantValue> constantValues;
 		IdentifierList<FunctionData> functions;
 		IdentifierList<Identifier> aliases;
@@ -218,6 +218,7 @@ namespace nzsl::Ast
 		IdentifierList<ExpressionType> variableTypes;
 		ModulePtr currentModule;
 		Options options;
+		SourceLocation pushConstantLocation;
 		FunctionData* currentFunction = nullptr;
 		bool allowUnknownIdentifiers = false;
 		bool inLoop = false;
@@ -1600,6 +1601,11 @@ NAZARA_WARNING_GCC_DISABLE("-Wmaybe-uninitialized")
 
 			if (IsPushConstantType(targetType))
 			{
+				if (m_context->pushConstantLocation.IsValid())
+					throw CompilerMultiplePushConstantError{ extVar.sourceLocation };
+
+				m_context->pushConstantLocation = extVar.sourceLocation;
+
 				if (extVar.bindingSet.HasValue())
 					throw CompilerUnexpectedAttributeOnPushConstantError{ extVar.sourceLocation, Ast::AttributeType::Set };
 				else if (extVar.bindingIndex.HasValue())

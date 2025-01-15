@@ -417,6 +417,22 @@ external
 [nzsl_version("1.0")]
 module;
 
+struct Foo
+{
+}
+
+external
+{
+	foo: push_constant[Foo],
+	bar: push_constant[Foo]
+}
+
+)"), "(12,2 -> 24): CMultiplePushConstant error: there can be only one push constant external in a shader stage");
+
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
 external
 {
 	[binding(0)] foo: i32
