@@ -66,6 +66,16 @@ struct Output_OutputStruct
 // Description: Test module
 // License: MIT
 
+struct PushConstants
+{
+	vec4 color;
+};
+
+layout(std140) uniform _nzslPushConstant
+{
+	vec4 color;
+} ExternalResources_constants;
+
 /*************** Outputs ***************/
 layout(location = 0) out vec4 _nzslOutcolor;
 
@@ -74,7 +84,7 @@ void main()
 	Data_DataStruct data;
 	data.color = GetColor_Color();
 	Output_OutputStruct output_;
-	output_.color = GetColorFromData_OutputStruct(data);
+	output_.color = (GetColorFromData_OutputStruct(data)) * ExternalResources_constants.color;
 
 	_nzslOutcolor = output_.color;
 	return;
@@ -145,54 +155,68 @@ alias GetColorFromData = _OutputStruct.GetColorFromData;
 
 alias Output = _OutputStruct.Output;
 
+[layout(std140)]
+struct PushConstants
+{
+	color: vec4[f32]
+}
+
+external ExternalResources
+{
+	constants: push_constant[PushConstants]
+}
+
 [entry(frag)]
 fn main() -> Output
 {
 	let data: Data;
 	data.color = Color();
 	let output: Output;
-	output.color = GetColorFromData(data);
+	output.color = (GetColorFromData(data)) * ExternalResources.constants.color;
 	return output;
 }
 )");
 
 	ExpectSPIRV(*shaderModule, R"(
-%24 = OpFunction %6 FunctionControl(0) %7
-%28 = OpLabel
-%29 = OpLoad %3 %5
-%30 = OpCompositeConstruct %11 %8 %8
-%31 = OpImageSampleImplicitLod %6 %29 %30
-      OpReturnValue %31
+%27 = OpFunction %6 FunctionControl(0) %7
+%31 = OpLabel
+%32 = OpLoad %3 %5
+%33 = OpCompositeConstruct %11 %8 %8
+%34 = OpImageSampleImplicitLod %6 %32 %33
+      OpReturnValue %34
       OpFunctionEnd
-%25 = OpFunction %6 FunctionControl(0) %7
-%32 = OpLabel
-%33 = OpFunctionCall %6 %24
-      OpReturnValue %33
-      OpFunctionEnd
-%26 = OpFunction %6 FunctionControl(0) %14
-%34 = OpFunctionParameter %13
+%28 = OpFunction %6 FunctionControl(0) %7
 %35 = OpLabel
-%37 = OpAccessChain %36 %34 %10
-%38 = OpLoad %6 %37
-%39 = OpFMul %6 %38 %17
-      OpReturnValue %39
+%36 = OpFunctionCall %6 %27
+      OpReturnValue %36
       OpFunctionEnd
-%27 = OpFunction %18 FunctionControl(0) %19
-%40 = OpLabel
-%41 = OpVariable %13 StorageClass(Function)
-%42 = OpVariable %23 StorageClass(Function)
-%43 = OpVariable %13 StorageClass(Function)
-%44 = OpFunctionCall %6 %25
-%45 = OpAccessChain %36 %41 %10
-      OpStore %45 %44
-%46 = OpLoad %12 %41
-      OpStore %43 %46
-%47 = OpFunctionCall %6 %26 %43
-%48 = OpAccessChain %36 %42 %10
+%29 = OpFunction %6 FunctionControl(0) %14
+%37 = OpFunctionParameter %13
+%38 = OpLabel
+%40 = OpAccessChain %39 %37 %10
+%41 = OpLoad %6 %40
+%42 = OpFMul %6 %41 %17
+      OpReturnValue %42
+      OpFunctionEnd
+%30 = OpFunction %21 FunctionControl(0) %22
+%43 = OpLabel
+%44 = OpVariable %13 StorageClass(Function)
+%45 = OpVariable %26 StorageClass(Function)
+%46 = OpVariable %13 StorageClass(Function)
+%47 = OpFunctionCall %6 %28
+%48 = OpAccessChain %39 %44 %10
       OpStore %48 %47
-%49 = OpLoad %22 %42
-%50 = OpCompositeExtract %6 %49 0
-      OpStore %21 %50
+%49 = OpLoad %12 %44
+      OpStore %46 %49
+%50 = OpFunctionCall %6 %29 %46
+%52 = OpAccessChain %51 %20 %10
+%53 = OpLoad %6 %52
+%54 = OpFMul %6 %50 %53
+%55 = OpAccessChain %39 %45 %10
+      OpStore %55 %54
+%56 = OpLoad %25 %45
+%57 = OpCompositeExtract %6 %56 0
+      OpStore %24 %57
       OpReturn
       OpFunctionEnd)", {}, {}, true);
 }

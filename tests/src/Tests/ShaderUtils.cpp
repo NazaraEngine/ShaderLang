@@ -242,7 +242,10 @@ void ExpectGLSL(nzsl::ShaderStageType stageType, const nzsl::Ast::Module& shader
 		nzsl::GlslWriter writer;
 		writer.SetEnv(env);
 
-		nzsl::GlslWriter::Output output = writer.Generate(stageType, targetModule, {}, options);
+		nzsl::GlslWriter::Parameters parameters;
+		parameters.shaderStage = stageType;
+
+		nzsl::GlslWriter::Output output = writer.Generate(targetModule, parameters, options);
 
 		SECTION("Validating expected code")
 		{

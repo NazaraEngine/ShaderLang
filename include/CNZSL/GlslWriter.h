@@ -21,7 +21,7 @@ extern "C"
 #endif
 
 typedef struct nzslGlslWriter nzslGlslWriter;
-typedef struct nzslGlslBindingMapping nzslGlslBindingMapping;
+typedef struct nzslGlslWriterParameters nzslGlslWriterParameters;
 typedef struct nzslGlslOutput nzslGlslOutput;
 
 typedef struct
@@ -34,16 +34,17 @@ typedef struct
 	int allowDrawParametersUniformsFallback;
 } nzslGlslWriterEnvironment;
 
-CNZSL_API nzslGlslBindingMapping* nzslGlslBindingMappingCreate(void);
-CNZSL_API void nzslGlslBindingMappingDestroy(nzslGlslBindingMapping* bindingMappingPtr);
+CNZSL_API nzslGlslWriterParameters* nzslGlslWriterParametersCreate(void);
+CNZSL_API void nzslGlslWriterParametersDestroy(nzslGlslWriterParameters* parameterPtr);
 
-CNZSL_API void nzslGlslBindingMappingSetBinding(nzslGlslBindingMapping* bindingMappingPtr, uint32_t setIndex, uint32_t bindingIndex, unsigned int glBinding);
+CNZSL_API void nzslGlslWriterParametersSetBindingMapping(nzslGlslWriterParameters* parameterPtr, uint32_t setIndex, uint32_t bindingIndex, unsigned int glBinding);
+CNZSL_API void nzslGlslWriterParametersSetPushConstantBinding(nzslGlslWriterParameters* parameterPtr, unsigned int glBinding);
+CNZSL_API void nzslGlslWriterParametersSetShaderStage(nzslGlslWriterParameters* parameterPtr, nzslShaderStageType stage);
 
 CNZSL_API nzslGlslWriter* nzslGlslWriterCreate(void);
 CNZSL_API void nzslGlslWriterDestroy(nzslGlslWriter* writerPtr);
 
-CNZSL_API nzslGlslOutput* nzslGlslWriterGenerate(nzslGlslWriter* writerPtr, const nzslModule* modulePtr, const nzslGlslBindingMapping* bindingMapping, const nzslWriterStates* statesPtr);
-CNZSL_API nzslGlslOutput* nzslGlslWriterGenerateStage(nzslShaderStageType stage, nzslGlslWriter* writerPtr, const nzslModule* modulePtr, const nzslGlslBindingMapping* bindingMapping, const nzslWriterStates* statesPtr);
+CNZSL_API nzslGlslOutput* nzslGlslWriterGenerate(nzslGlslWriter* writerPtr, const nzslModule* modulePtr, const nzslGlslWriterParameters* parameterPtr, const nzslWriterStates* statesPtr);
 
 /** 
 **  Gets the last error message set by the last operation to this writer

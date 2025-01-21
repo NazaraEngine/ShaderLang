@@ -958,6 +958,7 @@ fn main()
 [nzsl_version("1.0")]
 module;
 
+[layout(std140)]
 struct Data
 {
 	index: i32
@@ -978,12 +979,10 @@ fn main()
 		shaderModule = SanitizeModule(*shaderModule);
 
 		ExpectGLSL(*shaderModule, R"(
-struct Data
+layout(std140) uniform _nzslPushConstant
 {
 	int index;
-};
-
-uniform Data data;
+} data;
 
 void main()
 {
