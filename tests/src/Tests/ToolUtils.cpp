@@ -51,6 +51,8 @@ namespace NAZARA_ANONYMOUS_NAMESPACE
 
 void CheckFileMatch(const std::filesystem::path& firstFile, const std::filesystem::path& secondFile)
 {
+	NAZARA_USE_ANONYMOUS_NAMESPACE
+
 	std::vector<char> firstFileContent = ReadFile(firstFile);
 	std::vector<char> secondFileContent = ReadFile(secondFile);
 
@@ -65,6 +67,8 @@ void CheckFileMatch(const std::filesystem::path& firstFile, const std::filesyste
 
 void CheckHeaderMatch(const std::filesystem::path& originalFilepath)
 {
+	NAZARA_USE_ANONYMOUS_NAMESPACE
+
 	std::vector<char> originalContent = ReadFile(originalFilepath);
 
 	std::filesystem::path headerFilepath = originalFilepath;
