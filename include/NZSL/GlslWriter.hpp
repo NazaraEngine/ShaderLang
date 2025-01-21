@@ -23,18 +23,17 @@ namespace nzsl
 	class NZSL_API GlslWriter : public ShaderWriter, public Ast::ExpressionVisitorExcept, public Ast::StatementVisitorExcept
 	{
 		public:
-			using BindingMapping = std::unordered_map<std::uint64_t /* set | binding */, unsigned int /*glBinding*/>;
 			using ExtSupportCallback = std::function<bool(std::string_view name)>;
 			struct Environment;
 			struct Output;
+			struct Parameters;
 
 			inline GlslWriter();
 			GlslWriter(const GlslWriter&) = delete;
 			GlslWriter(GlslWriter&&) = delete;
 			~GlslWriter() = default;
 
-			inline Output Generate(const Ast::Module& module, const BindingMapping& bindingMapping = {}, const States& states = {});
-			Output Generate(std::optional<ShaderStageType> shaderStage, const Ast::Module& module, const BindingMapping& bindingMapping = {}, const States& states = {});
+			Output Generate(const Ast::Module& module, const Parameters& parameters = {}, const States& states = {});
 
 			void SetEnv(Environment environment);
 
@@ -47,6 +46,13 @@ namespace nzsl
 				bool flipYPosition = false;
 				bool remapZPosition = false;
 				bool allowDrawParametersUniformsFallback = false;
+			};
+
+			struct Parameters
+			{
+				std::optional<unsigned int> pushConstantBinding;
+				std::optional<ShaderStageType> shaderStage;
+				std::unordered_map<std::uint64_t /* set | binding */, unsigned int /*glBinding*/> bindingMapping;
 			};
 
 			struct Output

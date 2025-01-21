@@ -4,14 +4,14 @@
 
 #pragma once
 
-#ifndef CNZSL_STRUCTS_GLSLBINDINGMAPPING_HPP
-#define CNZSL_STRUCTS_GLSLBINDINGMAPPING_HPP
+#ifndef CNZSL_STRUCTS_GLSLWRITERPARAMETERS_HPP
+#define CNZSL_STRUCTS_GLSLWRITERPARAMETERS_HPP
 
 #include <NZSL/GlslWriter.hpp>
 
-struct nzslGlslBindingMapping
+struct nzslGlslWriterParameters
 {
-    nzsl::GlslWriter::BindingMapping mappings;
+	nzsl::GlslWriter::Parameters parameters;
 };
 
-#endif // CNZSL_STRUCTS_GLSLBINDINGMAPPING_HPP
+#endif // CNZSL_STRUCTS_GLSLWRITERPARAMETERS_HPP

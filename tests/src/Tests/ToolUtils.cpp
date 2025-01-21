@@ -27,24 +27,45 @@ namespace NAZARA_ANONYMOUS_NAMESPACE
 
 		return str;
 	}
+
+	std::vector<char> ReadFile(const std::filesystem::path& filepath)
+	{
+		std::ifstream originalFile(filepath, std::ios::in | std::ios::binary);
+		REQUIRE(originalFile);
+
+		originalFile.seekg(0, std::ios::end);
+
+		std::streamsize length = originalFile.tellg();
+		REQUIRE(length > 0);
+		if (length == 0)
+			return {}; //< ignore empty files
+
+		originalFile.seekg(0, std::ios::beg);
+
+		std::vector<char> originalContent(Nz::SafeCast<std::size_t>(length));
+		REQUIRE(originalFile.read(&originalContent[0], length));
+
+		return originalContent;
+	}
+}
+
+void CheckFileMatch(const std::filesystem::path& firstFile, const std::filesystem::path& secondFile)
+{
+	std::vector<char> firstFileContent = ReadFile(firstFile);
+	std::vector<char> secondFileContent = ReadFile(secondFile);
+
+	std::string firstFileStr(firstFileContent.begin(), firstFileContent.end());
+	ReplaceStr(firstFileStr, "\r\n", "\n");
+
+	std::string secondFileStr(secondFileContent.begin(), secondFileContent.end());
+	ReplaceStr(secondFileStr, "\r\n", "\n");
+
+	REQUIRE(firstFileStr == secondFileStr);
 }
 
 void CheckHeaderMatch(const std::filesystem::path& originalFilepath)
 {
-	std::ifstream originalFile(originalFilepath, std::ios::in | std::ios::binary);
-	REQUIRE(originalFile);
-
-	originalFile.seekg(0, std::ios::end);
-
-	std::streamsize length = originalFile.tellg();
-	REQUIRE(length > 0);
-	if (length == 0)
-		return; //< ignore empty files
-
-	originalFile.seekg(0, std::ios::beg);
-
-	std::vector<char> originalContent(Nz::SafeCast<std::size_t>(length));
-	REQUIRE(originalFile.read(&originalContent[0], length));
+	std::vector<char> originalContent = ReadFile(originalFilepath);
 
 	std::filesystem::path headerFilepath = originalFilepath;
 	headerFilepath.concat(".h");

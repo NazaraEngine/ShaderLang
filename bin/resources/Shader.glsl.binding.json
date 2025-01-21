@@ -1,0 +1,10 @@
+{
+    "bindings": [
+        {
+            "set": 0,
+            "binding": 0,
+            "glsl_binding": 0
+        }
+    ],
+    "push_constant_binding": 1
+}

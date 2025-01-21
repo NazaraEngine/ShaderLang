@@ -8,6 +8,17 @@ import GetColor as Color from Color;
 import * from DataStruct;
 import * from OutputStruct;
 
+[layout(std140)]
+struct PushConstants
+{
+    color: vec4[f32]
+}
+
+external ExternalResources
+{
+    constants: push_constant[PushConstants]
+}
+
 [entry(frag)]
 fn main() -> Output
 {
@@ -15,7 +26,7 @@ fn main() -> Output
     data.color = Color();
 
     let output: Output;
-    output.color = GetColorFromData(data);
+    output.color = GetColorFromData(data) * ExternalResources.constants.color;
 
     return output;
 }

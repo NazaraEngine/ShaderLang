@@ -35,6 +35,7 @@ namespace nzsl
 		constexpr std::string_view s_glslWriterShaderDrawParametersBaseVertexName = "_nzslBaseVertex";
 		constexpr std::string_view s_glslWriterShaderDrawParametersDrawIndexName = "_nzslDrawID";
 		constexpr std::string_view s_glslWriterBlockBindingPrefix = "_nzslBinding";
+		constexpr std::string_view s_glslWriterPushConstantPrefix = "_nzslPushConstant";
 		constexpr std::string_view s_glslWriterVaryingPrefix = "_nzslVarying";
 		constexpr std::string_view s_glslWriterInputPrefix = "_nzslIn";
 		constexpr std::string_view s_glslWriterOutputPrefix = "_nzslOut";
@@ -318,8 +319,8 @@ namespace nzsl
 
 	struct GlslWriter::State
 	{
-		State(const GlslWriter::BindingMapping& bindings) :
-		bindingMapping(bindings)
+		State(const GlslWriter::Parameters& parameters) :
+		writerParameters(parameters)
 		{
 		}
 
@@ -346,7 +347,7 @@ namespace nzsl
 		std::unordered_map<std::string, unsigned int> explicitUniformBlockBinding;
 		std::unordered_set<std::string> reservedNames;
 		Nz::Bitset<> declaredFunctions;
-		const GlslWriter::BindingMapping& bindingMapping;
+		const GlslWriter::Parameters& writerParameters;
 		GlslWriterPreVisitor previsitor;
 		ShaderStageType stage;
 		const States* states = nullptr;
@@ -361,9 +362,9 @@ namespace nzsl
 		unsigned int indentLevel = 0;
 	};
 
-	auto GlslWriter::Generate(std::optional<ShaderStageType> shaderStage, const Ast::Module& module, const BindingMapping& bindingMapping, const States& states) -> GlslWriter::Output
+	auto GlslWriter::Generate(const Ast::Module& module, const Parameters& parameters, const States& states) -> GlslWriter::Output
 	{
-		State state(bindingMapping);
+		State state(parameters);
 		state.states = &states;
 
 		m_currentState = &state;
@@ -388,7 +389,7 @@ namespace nzsl
 			sanitizedModule = Ast::PropagateConstants(*targetModule);
 
 			Ast::DependencyCheckerVisitor::Config dependencyConfig;
-			dependencyConfig.usedShaderStages = (shaderStage) ? *shaderStage : ShaderStageType_All; //< only one should exist anyway
+			dependencyConfig.usedShaderStages = (parameters.shaderStage) ? *parameters.shaderStage : ShaderStageType_All; //< only one should exist anyway
 
 			sanitizedModule = Ast::EliminateUnusedPass(*sanitizedModule, dependencyConfig);
 
@@ -414,7 +415,7 @@ namespace nzsl
 			}
 		}
 
-		state.previsitor.selectedStage = shaderStage;
+		state.previsitor.selectedStage = parameters.shaderStage;
 
 		for (const auto& importedModule : targetModule->importedModules)
 		{
@@ -2257,7 +2258,7 @@ namespace nzsl
 
 			const Ast::ExpressionType& exprType = externalVar.type.GetResultingValue();
 			
-			bool isUniformOrStorageBuffer = IsStorageType(exprType) || IsUniformType(exprType);
+			bool isUniformOrStorageBuffer = IsPushConstantType(exprType) || IsStorageType(exprType) || IsUniformType(exprType);
 
 			const char* memoryLayout = nullptr;
 			if (isUniformOrStorageBuffer)
@@ -2324,38 +2325,51 @@ namespace nzsl
 					Append(") ");
 			};
 
-			if (!m_currentState->bindingMapping.empty())
+			if (!IsPushConstantType(exprType))
 			{
-				assert(externalVar.bindingIndex.HasValue());
+				if (!m_currentState->writerParameters.bindingMapping.empty())
+				{
+					assert(externalVar.bindingIndex.HasValue());
 
-				std::uint64_t bindingIndex = externalVar.bindingIndex.GetResultingValue();
-				std::uint64_t bindingSet;
-				if (externalVar.bindingSet.HasValue())
-					bindingSet = externalVar.bindingSet.GetResultingValue();
-				else
-					bindingSet = 0;
+					std::uint64_t bindingIndex = externalVar.bindingIndex.GetResultingValue();
+					std::uint64_t bindingSet;
+					if (externalVar.bindingSet.HasValue())
+						bindingSet = externalVar.bindingSet.GetResultingValue();
+					else
+						bindingSet = 0;
 
-				auto bindingIt = m_currentState->bindingMapping.find(bindingSet << 32 | bindingIndex);
-				if (bindingIt == m_currentState->bindingMapping.end())
-					throw std::runtime_error("no binding found for (set=" + std::to_string(bindingSet) + ", binding=" + std::to_string(bindingIndex) + ")");
+					auto bindingIt = m_currentState->writerParameters.bindingMapping.find(bindingSet << 32 | bindingIndex);
+					if (bindingIt == m_currentState->writerParameters.bindingMapping.end())
+						throw std::runtime_error("no binding found for (set=" + std::to_string(bindingSet) + ", binding=" + std::to_string(bindingIndex) + ")");
 
-				unsigned int glslBindingIndex = bindingIt->second;
+					unsigned int glslBindingIndex = bindingIt->second;
 
+					if (!m_currentState->requiresExplicitUniformBinding)
+					{
+						BeginLayout();
+						Append("binding = ", glslBindingIndex);
+					}
+					else
+					{
+						// Ensure name is unique
+						varName += std::to_string(glslBindingIndex);
+
+						if (IsSamplerType(exprType))
+							m_currentState->explicitTextureBinding.emplace(varName, glslBindingIndex);
+						else
+							m_currentState->explicitUniformBlockBinding.emplace(std::string(s_glslWriterBlockBindingPrefix) + varName, glslBindingIndex);
+					}
+				}
+			}
+			else if (m_currentState->writerParameters.pushConstantBinding.has_value())
+			{
 				if (!m_currentState->requiresExplicitUniformBinding)
 				{
 					BeginLayout();
-					Append("binding = ", glslBindingIndex);
+					Append("binding = ", *m_currentState->writerParameters.pushConstantBinding);
 				}
 				else
-				{
-					// Ensure name is unique
-					varName += std::to_string(glslBindingIndex);
-
-					if (IsSamplerType(exprType))
-						m_currentState->explicitTextureBinding.emplace(varName, glslBindingIndex);
-					else
-						m_currentState->explicitUniformBlockBinding.emplace(std::string(s_glslWriterBlockBindingPrefix) + varName, glslBindingIndex);
-				}
+					m_currentState->explicitUniformBlockBinding.emplace(s_glslWriterPushConstantPrefix, *m_currentState->writerParameters.pushConstantBinding);
 			}
 
 			if (IsTextureType(exprType))
@@ -2395,8 +2409,13 @@ namespace nzsl
 
 			if (isUniformOrStorageBuffer)
 			{
-				Append(s_glslWriterBlockBindingPrefix);
-				AppendLine(varName);
+				if (IsPushConstantType(exprType))
+					AppendLine(s_glslWriterPushConstantPrefix);
+				else
+				{
+					Append(s_glslWriterBlockBindingPrefix);
+					AppendLine(varName);
+				}
 
 				EnterScope();
 				{

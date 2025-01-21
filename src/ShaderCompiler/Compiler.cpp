@@ -324,11 +324,11 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 			env.glMinorVersion = (version % 100) / 10;
 		}
 
-		nzsl::GlslWriter::BindingMapping bindingMapping;
+		nzsl::GlslWriter::Parameters parameters;
 		if (m_options.count("gl-bindingmap") > 0)
 		{
 			unsigned int glslBinding = 0;
-			nlohmann::json bindingArray;
+			nlohmann::ordered_json bindingArray;
 
 			nzsl::Ast::ReflectVisitor::Callbacks callbacks;
 			callbacks.onExternalDeclaration = [&](const nzsl::Ast::DeclareExternalStatement& extDecl)
@@ -344,6 +344,12 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 
 				for (auto& extVar : extDecl.externalVars)
 				{
+					if (IsPushConstantType(extVar.type.GetResultingValue()))
+					{
+						parameters.pushConstantBinding = glslBinding++;
+						continue;
+					}
+
 					std::uint64_t bindingSet = extSet;
 					if (extVar.bindingSet.HasValue())
 					{
@@ -360,9 +366,9 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 					bindingIndex = extVar.bindingIndex.GetResultingValue();
 
 					std::uint64_t binding = bindingSet << 32 | bindingIndex;
-					bindingMapping.emplace(binding, glslBinding);
+					parameters.bindingMapping.emplace(binding, glslBinding);
 
-					nlohmann::json& bindingDoc = bindingArray.emplace_back();
+					nlohmann::ordered_json& bindingDoc = bindingArray.emplace_back();
 					bindingDoc["set"] = bindingSet;
 					bindingDoc["binding"] = bindingIndex;
 					bindingDoc["glsl_binding"] = glslBinding;
@@ -376,14 +382,17 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 
 			if (!bindingArray.empty())
 			{
-				nlohmann::json finalDoc;
+				nlohmann::ordered_json finalDoc;
 				finalDoc["bindings"] = std::move(bindingArray);
+
+				if (parameters.pushConstantBinding.has_value())
+					finalDoc["push_constant_binding"] = *parameters.pushConstantBinding;
 
 				std::string bindingStr = finalDoc.dump(4);
 
 				std::filesystem::path bindingOutputPath = outputPath;
 				bindingOutputPath.replace_extension("glsl.binding.json");
-				OutputFile(std::move(bindingOutputPath), bindingStr.data(), bindingStr.size());
+				OutputFile(std::move(bindingOutputPath), bindingStr.data(), bindingStr.size(), true);
 			}
 		}
 
@@ -407,7 +416,9 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 
 		for (nzsl::ShaderStageType entryType : entryTypes)
 		{
-			nzsl::GlslWriter::Output output = writer.Generate(entryType, module, bindingMapping, states);
+			parameters.shaderStage = entryType;
+
+			nzsl::GlslWriter::Output output = writer.Generate(module, parameters, states);
 
 			if (m_outputToStdout)
 			{
@@ -569,9 +580,9 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 		}
 	}
 
-	void Compiler::OutputFile(std::filesystem::path filePath, const void* data, std::size_t size)
+	void Compiler::OutputFile(std::filesystem::path filePath, const void* data, std::size_t size, bool disallowHeader)
 	{
-		if (m_outputHeader)
+		if (m_outputHeader && !disallowHeader)
 		{
 			std::string headerFile = ToHeader(data, size);
 
