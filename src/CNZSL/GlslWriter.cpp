@@ -3,7 +3,7 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <CNZSL/GlslWriter.h>
-#include <CNZSL/Structs/GlslBindingMapping.hpp>
+#include <CNZSL/Structs/GlslWriterParameters.hpp>
 #include <CNZSL/Structs/GlslOutput.hpp>
 #include <CNZSL/Structs/GlslWriter.hpp>
 #include <CNZSL/Structs/Module.hpp>
@@ -14,23 +14,39 @@
 
 extern "C"
 {
-	CNZSL_API nzslGlslBindingMapping* nzslGlslBindingMappingCreate(void)
+	CNZSL_API nzslGlslWriterParameters* nzslGlslWriterParametersCreate(void)
 	{
-		return new nzslGlslBindingMapping;
+		return new nzslGlslWriterParameters;
 	}
 
-	CNZSL_API void nzslGlslBindingMappingDestroy(nzslGlslBindingMapping* bindingMappingPtr)
+	CNZSL_API void nzslGlslWriterParametersDestroy(nzslGlslWriterParameters* parameterPtr)
 	{
-		delete bindingMappingPtr;
+		delete parameterPtr;
 	}
 
-	CNZSL_API void nzslGlslBindingMappingSetBinding(nzslGlslBindingMapping* bindingMappingPtr, uint32_t setIndex, uint32_t bindingIndex, unsigned int glBinding)
+	CNZSL_API void nzslGlslWriterParametersSetBindingMapping(nzslGlslWriterParameters* parameterPtr, uint32_t setIndex, uint32_t bindingIndex, unsigned int glBinding)
 	{
 		uint64_t setBinding = setIndex;
 		setBinding <<= 32;
 		setBinding |= bindingIndex;
 
-		bindingMappingPtr->mappings[setBinding] = glBinding;
+		parameterPtr->parameters.bindingMapping[setBinding] = glBinding;
+	}
+
+	CNZSL_API void nzslGlslWriterParametersSetPushConstantBinding(nzslGlslWriterParameters* parameterPtr, unsigned int glBinding)
+	{
+		parameterPtr->parameters.pushConstantBinding = glBinding;
+	}
+
+	CNZSL_API void nzslGlslWriterParametersSetShaderStage(nzslGlslWriterParameters* parameterPtr, nzslShaderStageType stage)
+	{
+		constexpr std::array s_shaderStages = {
+			nzsl::ShaderStageType::Compute,  // NZSL_STAGE_COMPUTE
+			nzsl::ShaderStageType::Fragment, // NZSL_STAGE_FRAGMENT
+			nzsl::ShaderStageType::Vertex    // NZSL_STAGE_VERTEX
+		};
+
+		parameterPtr->parameters.shaderStage = s_shaderStages[stage];
 	}
 
 	CNZSL_API nzslGlslWriter* nzslGlslWriterCreate(void)
@@ -43,7 +59,7 @@ extern "C"
 		delete writerPtr;
 	}
 
-	CNZSL_API nzslGlslOutput* nzslGlslWriterGenerate(nzslGlslWriter* writerPtr, const nzslModule* modulePtr, const nzslGlslBindingMapping* bindingMapping, const nzslWriterStates* statesPtr)
+	CNZSL_API nzslGlslOutput* nzslGlslWriterGenerate(nzslGlslWriter* writerPtr, const nzslModule* modulePtr, const nzslGlslWriterParameters* parameters, const nzslWriterStates* statesPtr)
 	{
 		try
 		{
@@ -52,38 +68,7 @@ extern "C"
 				states = static_cast<const nzsl::GlslWriter::States&>(*statesPtr);
 
 			std::unique_ptr<nzslGlslOutput> output = std::make_unique<nzslGlslOutput>();
-			static_cast<nzsl::GlslWriter::Output&>(*output) = writerPtr->writer.Generate(*modulePtr->module, bindingMapping->mappings, states);
-
-			return output.release();
-		}
-		catch (std::exception& e)
-		{
-			writerPtr->lastError = fmt::format("nzslGlslWriterGenerate failed: {}", e.what());
-			return nullptr;
-		}
-		catch (...)
-		{
-			writerPtr->lastError = "nzslGlslWriterGenerate failed with unknown error";
-			return nullptr;
-		}
-	}
-
-	CNZSL_API nzslGlslOutput* nzslGlslWriterGenerateStage(nzslShaderStageType stage, nzslGlslWriter* writerPtr, const nzslModule* modulePtr, const nzslGlslBindingMapping* bindingMapping, const nzslWriterStates* statesPtr)
-	{
-		constexpr std::array s_shaderStages = {
-			nzsl::ShaderStageType::Compute,  // NZSL_STAGE_COMPUTE
-			nzsl::ShaderStageType::Fragment, // NZSL_STAGE_FRAGMENT
-			nzsl::ShaderStageType::Vertex    // NZSL_STAGE_VERTEX
-		};
-
-		try
-		{
-			nzsl::GlslWriter::States states;
-			if (statesPtr)
-				states = static_cast<const nzsl::GlslWriter::States&>(*statesPtr);
-
-			std::unique_ptr<nzslGlslOutput> output = std::make_unique<nzslGlslOutput>();
-			static_cast<nzsl::GlslWriter::Output&>(*output) = writerPtr->writer.Generate(s_shaderStages[stage], *modulePtr->module, bindingMapping->mappings, states);
+			static_cast<nzsl::GlslWriter::Output&>(*output) = writerPtr->writer.Generate(*modulePtr->module, parameters->parameters, states);
 
 			return output.release();
 		}
