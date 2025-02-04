@@ -39,12 +39,12 @@ CNZSL_API void nzslGlslWriterParametersDestroy(nzslGlslWriterParameters* paramet
 
 CNZSL_API void nzslGlslWriterParametersSetBindingMapping(nzslGlslWriterParameters* parameterPtr, uint32_t setIndex, uint32_t bindingIndex, unsigned int glBinding);
 CNZSL_API void nzslGlslWriterParametersSetPushConstantBinding(nzslGlslWriterParameters* parameterPtr, unsigned int glBinding);
-CNZSL_API void nzslGlslWriterParametersSetShaderStage(nzslGlslWriterParameters* parameterPtr, nzslShaderStageType stage);
 
 CNZSL_API nzslGlslWriter* nzslGlslWriterCreate(void);
 CNZSL_API void nzslGlslWriterDestroy(nzslGlslWriter* writerPtr);
 
 CNZSL_API nzslGlslOutput* nzslGlslWriterGenerate(nzslGlslWriter* writerPtr, const nzslModule* modulePtr, const nzslGlslWriterParameters* parameterPtr, const nzslWriterStates* statesPtr);
+CNZSL_API nzslGlslOutput* nzslGlslWriterGenerateStage(nzslGlslWriter* writerPtr, nzslShaderStageType stage, const nzslModule* modulePtr, const nzslGlslWriterParameters* parameterPtr, const nzslWriterStates* statesPtr);
 
 /** 
 **  Gets the last error message set by the last operation to this writer

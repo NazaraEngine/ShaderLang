@@ -38,17 +38,6 @@ extern "C"
 		parameterPtr->parameters.pushConstantBinding = glBinding;
 	}
 
-	CNZSL_API void nzslGlslWriterParametersSetShaderStage(nzslGlslWriterParameters* parameterPtr, nzslShaderStageType stage)
-	{
-		constexpr std::array s_shaderStages = {
-			nzsl::ShaderStageType::Compute,  // NZSL_STAGE_COMPUTE
-			nzsl::ShaderStageType::Fragment, // NZSL_STAGE_FRAGMENT
-			nzsl::ShaderStageType::Vertex    // NZSL_STAGE_VERTEX
-		};
-
-		parameterPtr->parameters.shaderStage = s_shaderStages[stage];
-	}
-
 	CNZSL_API nzslGlslWriter* nzslGlslWriterCreate(void)
 	{
 		return new nzslGlslWriter;
@@ -80,6 +69,37 @@ extern "C"
 		catch (...)
 		{
 			writerPtr->lastError = "nzslGlslWriterGenerate failed with unknown error";
+			return nullptr;
+		}
+	}
+
+	CNZSL_API nzslGlslOutput* nzslGlslWriterGenerateStage(nzslGlslWriter* writerPtr, nzslShaderStageType stage, const nzslModule* modulePtr, const nzslGlslWriterParameters* parameters, const nzslWriterStates* statesPtr)
+	{
+		try
+		{
+			constexpr std::array s_shaderStages = {
+				nzsl::ShaderStageType::Compute,  // NZSL_STAGE_COMPUTE
+				nzsl::ShaderStageType::Fragment, // NZSL_STAGE_FRAGMENT
+				nzsl::ShaderStageType::Vertex    // NZSL_STAGE_VERTEX
+			};
+
+			nzsl::GlslWriter::States states;
+			if (statesPtr)
+				states = static_cast<const nzsl::GlslWriter::States&>(*statesPtr);
+
+			std::unique_ptr<nzslGlslOutput> output = std::make_unique<nzslGlslOutput>();
+			static_cast<nzsl::GlslWriter::Output&>(*output) = writerPtr->writer.Generate(s_shaderStages[stage], *modulePtr->module, parameters->parameters, states);
+
+			return output.release();
+		}
+		catch (std::exception& e)
+		{
+			writerPtr->lastError = fmt::format("nzslGlslWriterGenerateStage failed: {}", e.what());
+			return nullptr;
+		}
+		catch (...)
+		{
+			writerPtr->lastError = "nzslGlslWriterGenerateStage failed with unknown error";
 			return nullptr;
 		}
 	}
