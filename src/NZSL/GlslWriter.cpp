@@ -362,7 +362,7 @@ namespace nzsl
 		unsigned int indentLevel = 0;
 	};
 
-	auto GlslWriter::Generate(const Ast::Module& module, const Parameters& parameters, const States& states) -> GlslWriter::Output
+	auto GlslWriter::Generate(std::optional<ShaderStageType> shaderStage, const Ast::Module& module, const Parameters& parameters, const States& states) -> GlslWriter::Output
 	{
 		State state(parameters);
 		state.states = &states;
@@ -389,7 +389,7 @@ namespace nzsl
 			sanitizedModule = Ast::PropagateConstants(*targetModule);
 
 			Ast::DependencyCheckerVisitor::Config dependencyConfig;
-			dependencyConfig.usedShaderStages = (parameters.shaderStage) ? *parameters.shaderStage : ShaderStageType_All; //< only one should exist anyway
+			dependencyConfig.usedShaderStages = (shaderStage) ? *shaderStage : ShaderStageType_All; //< only one should exist anyway
 
 			sanitizedModule = Ast::EliminateUnusedPass(*sanitizedModule, dependencyConfig);
 
@@ -415,7 +415,7 @@ namespace nzsl
 			}
 		}
 
-		state.previsitor.selectedStage = parameters.shaderStage;
+		state.previsitor.selectedStage = shaderStage;
 
 		for (const auto& importedModule : targetModule->importedModules)
 		{

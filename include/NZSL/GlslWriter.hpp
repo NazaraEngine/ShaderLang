@@ -33,7 +33,8 @@ namespace nzsl
 			GlslWriter(GlslWriter&&) = delete;
 			~GlslWriter() = default;
 
-			Output Generate(const Ast::Module& module, const Parameters& parameters = {}, const States& states = {});
+			inline Output Generate(const Ast::Module& module, const Parameters& parameters = {}, const States& states = {});
+			Output Generate(std::optional<ShaderStageType> shaderStage, const Ast::Module& module, const Parameters& parameters = {}, const States& states = {});
 
 			void SetEnv(Environment environment);
 
@@ -51,7 +52,6 @@ namespace nzsl
 			struct Parameters
 			{
 				std::optional<unsigned int> pushConstantBinding;
-				std::optional<ShaderStageType> shaderStage;
 				std::unordered_map<std::uint64_t /* set | binding */, unsigned int /*glBinding*/> bindingMapping;
 			};
 

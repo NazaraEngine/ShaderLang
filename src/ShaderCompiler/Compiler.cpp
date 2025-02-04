@@ -416,9 +416,7 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 
 		for (nzsl::ShaderStageType entryType : entryTypes)
 		{
-			parameters.shaderStage = entryType;
-
-			nzsl::GlslWriter::Output output = writer.Generate(module, parameters, states);
+			nzsl::GlslWriter::Output output = writer.Generate(entryType, module, parameters, states);
 
 			if (m_outputToStdout)
 			{

@@ -8,4 +8,9 @@ namespace nzsl
 	m_currentState(nullptr)
 	{
 	}
+
+	inline auto GlslWriter::Generate(const Ast::Module& shader, const Parameters& parameters, const States& states) -> Output
+	{
+		return Generate(std::nullopt, shader, parameters, states);
+	}
 }
