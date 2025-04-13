@@ -10,7 +10,8 @@ namespace nzsl
 	m_functionRetriever(std::move(functionRetriever)),
 	m_currentBlock(nullptr),
 	m_instructions(instructions),
-	m_writer(writer)
+	m_writer(writer),
+	m_isEvaluatingPointer(false)
 	{
 	}
 

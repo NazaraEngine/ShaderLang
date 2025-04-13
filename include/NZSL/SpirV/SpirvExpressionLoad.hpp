@@ -27,7 +27,8 @@ namespace nzsl
 			SpirvExpressionLoad(SpirvExpressionLoad&&) = delete;
 			~SpirvExpressionLoad() = default;
 
-			std::uint32_t Evaluate(Ast::Expression& node);
+			std::uint32_t EvaluatePointer(Ast::Expression& node);
+			std::uint32_t EvaluateValue(Ast::Expression& node);
 
 			using ExpressionVisitorExcept::Visit;
 			void Visit(Ast::AccessIndexExpression& node) override;

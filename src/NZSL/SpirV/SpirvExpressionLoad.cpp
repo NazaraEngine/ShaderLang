@@ -10,7 +10,50 @@
 
 namespace nzsl
 {
-	std::uint32_t SpirvExpressionLoad::Evaluate(Ast::Expression& node)
+	std::uint32_t SpirvExpressionLoad::EvaluatePointer(Ast::Expression& node)
+	{
+		node.Visit(*this);
+
+		return std::visit(Nz::Overloaded
+			{
+				[this](const CompositeExtraction& /*extractedValue*/) -> std::uint32_t
+				{
+					throw std::runtime_error("expected pointer, got value");
+				},
+				[this](const Pointer& pointer) -> std::uint32_t
+				{
+					return pointer.pointerId;
+				},
+				[this](const PointerChainAccess& pointerChainAccess) -> std::uint32_t
+				{
+					std::uint32_t pointerType = m_writer.RegisterPointerType(pointerChainAccess.pointedTypePtr, pointerChainAccess.storage); //< FIXME: We shouldn't register this so late
+
+					std::uint32_t pointerId = m_visitor.AllocateResultId();
+
+					m_block.AppendVariadic(SpirvOp::OpAccessChain, [&](const auto& appender)
+					{
+						appender(pointerType);
+						appender(pointerId);
+						appender(pointerChainAccess.pointerId);
+
+						for (std::uint32_t id : pointerChainAccess.indicesId)
+							appender(id);
+					});
+
+					return pointerId;
+				},
+				[](const Value& /*value*/) -> std::uint32_t
+				{
+					throw std::runtime_error("expected pointer, got value");
+				},
+				[](std::monostate) -> std::uint32_t
+				{
+					throw std::runtime_error("an internal error occurred");
+				}
+			}, m_value);
+	}
+
+	std::uint32_t SpirvExpressionLoad::EvaluateValue(Ast::Expression& node)
 	{
 		node.Visit(*this);
 

@@ -180,6 +180,7 @@ namespace nzsl
 			ConstantPtr BuildConstant(const Ast::ConstantSingleValue& value) const;
 			FieldOffsets BuildFieldOffsets(const Structure& structData) const;
 			TypePtr BuildFunctionType(const Ast::ExpressionType& retType, const std::vector<Ast::ExpressionType>& parameters) const;
+			TypePtr BuildFunctionType(TypePtr retType, std::vector<TypePtr> parameterTypes) const;
 			TypePtr BuildPointerType(const Ast::PrimitiveType& type, SpirvStorageClass storageClass) const;
 			TypePtr BuildPointerType(const Ast::ExpressionType& type, SpirvStorageClass storageClass) const;
 			TypePtr BuildPointerType(const TypePtr& type, SpirvStorageClass storageClass) const;

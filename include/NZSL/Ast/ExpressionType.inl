@@ -263,42 +263,42 @@ namespace nzsl::Ast
 		return std::holds_alternative<SamplerType>(type);
 	}
 
-	bool IsStorageType(const ExpressionType& type)
+	inline bool IsStorageType(const ExpressionType& type)
 	{
 		return std::holds_alternative<StorageType>(type);
 	}
 
-	bool IsStructType(const ExpressionType& type)
+	inline bool IsStructType(const ExpressionType& type)
 	{
 		return std::holds_alternative<StructType>(type);
 	}
 
-	bool IsTextureType(const ExpressionType& type)
+	inline bool IsTextureType(const ExpressionType& type)
 	{
 		return std::holds_alternative<TextureType>(type);
 	}
 
-	bool IsTypeExpression(const ExpressionType& type)
+	inline bool IsTypeExpression(const ExpressionType& type)
 	{
 		return std::holds_alternative<Type>(type);
 	}
 
-	bool IsUniformType(const ExpressionType& type)
+	inline bool IsUniformType(const ExpressionType& type)
 	{
 		return std::holds_alternative<UniformType>(type);
 	}
 
-	bool IsPushConstantType(const ExpressionType& type)
+	inline bool IsPushConstantType(const ExpressionType& type)
 	{
 		return std::holds_alternative<PushConstantType>(type);
 	}
 
-	bool IsVectorType(const ExpressionType& type)
+	inline bool IsVectorType(const ExpressionType& type)
 	{
 		return std::holds_alternative<VectorType>(type);
 	}
 
-	bool IsConstantType(const ExpressionType& exprType)
+	inline bool IsConstantType(const ExpressionType& exprType)
 	{
 		if (IsArrayType(exprType))
 		{
@@ -307,13 +307,26 @@ namespace nzsl::Ast
 				return false;
 
 			const ExpressionType& innerType = arrayType.containedType->type;
-			return IsPrimitiveType(innerType) || IsVectorType(innerType);
+			return IsConstantType(innerType);
 		}
 		else
 			return IsPrimitiveType(exprType) || IsVectorType(exprType);
 	}
 
-	bool IsStructAddressible(const ExpressionType& exprType)
+	inline bool IsExternalPointerType(const ExpressionType& exprType)
+	{
+		if (IsArrayType(exprType))
+		{
+			const ArrayType& arrayType = std::get<ArrayType>(exprType);
+
+			const ExpressionType& innerType = arrayType.containedType->type;
+			return IsExternalPointerType(innerType);
+		}
+		else
+			return IsSamplerType(exprType) || IsTextureType(exprType);
+	}
+
+	inline bool IsStructAddressible(const ExpressionType& exprType)
 	{
 		return ResolveStructIndex(exprType) != std::numeric_limits<std::size_t>::max();
 	}
