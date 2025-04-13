@@ -19,7 +19,8 @@ namespace nzsl
 
 	void Archive::AddModule(std::string moduleName, ArchiveEntryKind kind, const void* moduleData, std::size_t moduleSize, ArchiveEntryFlags flags)
 	{
-		if NAZARA_UNLIKELY(auto it = std::find_if(m_modules.begin(), m_modules.end(), [&](const ModuleData& moduleData) { return moduleData.name == moduleName; }); it != m_modules.end())
+		auto it = std::find_if(m_modules.begin(), m_modules.end(), [&](const ModuleData& moduleData) { return moduleData.name == moduleName; });
+		if NAZARA_UNLIKELY(it != m_modules.end())
 			throw std::runtime_error(fmt::format("module {} is already registered", moduleName));
 
 		ModuleData module;
@@ -33,7 +34,8 @@ namespace nzsl
 
 	void Archive::AddModule(ModuleData moduleData)
 	{
-		if NAZARA_UNLIKELY(auto it = std::find_if(m_modules.begin(), m_modules.end(), [&](const ModuleData& module) { return module.name == moduleData.name; }); it != m_modules.end())
+		auto it = std::find_if(m_modules.begin(), m_modules.end(), [&](const ModuleData& module) { return module.name == moduleData.name; });
+		if NAZARA_UNLIKELY(it != m_modules.end())
 			throw std::runtime_error(fmt::format("module {} is already registered", moduleData.name));
 
 		m_modules.push_back(std::move(moduleData));
