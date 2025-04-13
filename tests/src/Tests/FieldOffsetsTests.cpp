@@ -1,3 +1,4 @@
+#include "NZSL/Enums.hpp"
 #include <NZSL/Math/FieldOffsets.hpp>
 #include <NZSL/Ast/ExpressionType.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -37,6 +38,18 @@ TEST_CASE("Field offsets", "[FieldOffsets]")
 		REQUIRE(fieldOffsets.AddField(nzsl::StructFieldType::Float1) == 76);
 		REQUIRE(fieldOffsets.AddField(nzsl::StructFieldType::Float1) == 80);
 		REQUIRE(fieldOffsets.GetAlignedSize() == 96);
+	}
+
+	SECTION("scalar")
+	{
+		nzsl::FieldOffsets fieldOffset(nzsl::StructLayout::Scalar);
+		REQUIRE(fieldOffset.AddField(nzsl::StructFieldType::Float3) == 0);
+		REQUIRE(fieldOffset.AddField(nzsl::StructFieldType::Float3) == 12);
+		REQUIRE(fieldOffset.AddField(nzsl::StructFieldType::Float4) == 24);
+		REQUIRE(fieldOffset.AddFieldArray(nzsl::StructFieldType::Float1, 4) == 40);
+		REQUIRE(fieldOffset.AddField(nzsl::StructFieldType::Bool1) == 56);
+		REQUIRE(fieldOffset.AddField(nzsl::StructFieldType::Bool1) == 60);
+		REQUIRE(fieldOffset.GetAlignedSize() == 64);
 	}
 }
 

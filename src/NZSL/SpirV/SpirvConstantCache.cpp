@@ -2,6 +2,7 @@
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
+#include "NZSL/Ast/Enums.hpp"
 #include <NZSL/SpirV/SpirvConstantCache.hpp>
 #include <NazaraUtils/Assert.hpp>
 #include <NZSL/SpirvWriter.hpp>
@@ -885,6 +886,7 @@ namespace nzsl
 			{
 				case Ast::MemoryLayout::Std140: sType.layout = StructLayout::Std140; break;
 				case Ast::MemoryLayout::Std430: sType.layout = StructLayout::Std430; break;
+				case Ast::MemoryLayout::Scalar: sType.layout = StructLayout::Scalar; break;
 			}
 		}
 

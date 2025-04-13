@@ -184,7 +184,8 @@ namespace nzsl::Ast
 	enum class MemoryLayout
 	{
 		Std140 = 0,
-		Std430 = 1
+		Std430 = 1,
+		Scalar = 2,
 	};
 
 	enum class ModuleFeature

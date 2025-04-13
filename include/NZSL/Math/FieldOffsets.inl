@@ -2,6 +2,7 @@
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
+#include "NZSL/Enums.hpp"
 #include <NazaraUtils/Algorithm.hpp>
 #include <cassert>
 #include <memory>
@@ -171,6 +172,8 @@ namespace nzsl
 						return 4 * 8;
 				}
 			}
+			case StructLayout::Scalar:
+				return 4;
 		}
 
 		return 0;

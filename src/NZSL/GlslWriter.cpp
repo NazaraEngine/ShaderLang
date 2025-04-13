@@ -2,6 +2,7 @@
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
+#include "NZSL/Ast/Enums.hpp"
 #include <NZSL/GlslWriter.hpp>
 #include <NazaraUtils/Algorithm.hpp>
 #include <NazaraUtils/Bitset.hpp>
@@ -821,6 +822,7 @@ namespace nzsl
 		{
 			case Ast::MemoryLayout::Std140: Append("std140"); break;
 			case Ast::MemoryLayout::Std430: Append("std430"); break;
+			case Ast::MemoryLayout::Scalar: Append("scalar"); break;
 		}
 	}
 
@@ -2280,6 +2282,7 @@ namespace nzsl
 					{
 						case Ast::MemoryLayout::Std140: memoryLayout = "std140"; break;
 						case Ast::MemoryLayout::Std430: memoryLayout = "std430"; break;
+						case Ast::MemoryLayout::Scalar: memoryLayout = "scalar"; break;
 					}
 				}
 
