@@ -36,6 +36,7 @@ namespace nzsl
 			std::uint32_t AllocateResultId();
 
 			std::uint32_t EvaluateExpression(Ast::Expression& expr);
+			std::uint32_t EvaluatePointer(Ast::Expression& expr);
 
 			const SpirvVariable& GetVariable(std::size_t varIndex) const;
 
@@ -178,6 +179,7 @@ namespace nzsl
 			SpirvSection& m_instructions;
 			SpirvWriter& m_writer;
 			SourceLocation m_lastLocation;
+			bool m_isEvaluatingPointer;
 	};
 }
 

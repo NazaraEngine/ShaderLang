@@ -655,8 +655,13 @@ namespace nzsl
 		for (const auto& parameterType : parameters)
 			parameterTypes.push_back(BuildPointerType(parameterType, SpirvStorageClass::Function));
 
+		return BuildFunctionType(BuildType(retType), std::move(parameterTypes));
+	}
+
+	auto SpirvConstantCache::BuildFunctionType(TypePtr retType, std::vector<TypePtr> parameterTypes) const -> TypePtr
+	{
 		return std::make_shared<Type>(Function{
-			BuildType(retType),
+			std::move(retType),
 			std::move(parameterTypes)
 		});
 	}

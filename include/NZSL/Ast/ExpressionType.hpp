@@ -279,6 +279,7 @@ namespace nzsl::Ast
 	inline bool IsVectorType(const ExpressionType& type);
 
 	inline bool IsConstantType(const ExpressionType& exprType);
+	inline bool IsExternalPointerType(const ExpressionType& type);
 	inline bool IsStructAddressible(const ExpressionType& exprType);
 
 	using StructFinder = std::function<const FieldOffsets& (std::size_t structIndex)>;

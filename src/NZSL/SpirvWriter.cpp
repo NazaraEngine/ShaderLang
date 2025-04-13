@@ -266,30 +266,41 @@ namespace nzsl
 				if (!entryPointType)
 				{
 					std::vector<Ast::ExpressionType> parameterTypes;
+					parameterTypes.reserve(node.parameters.size());
 					for (auto& parameter : node.parameters)
 						parameterTypes.push_back(parameter.type.GetResultingValue());
 
+					SpirvConstantCache::TypePtr returnTypePtr;
 					if (node.returnType.HasValue())
 					{
 						const auto& returnType = node.returnType.GetResultingValue();
-						funcData.returnTypeId = m_constantCache.Register(*m_constantCache.BuildType(returnType));
-						funcData.funcTypeId = m_constantCache.Register(*m_constantCache.BuildFunctionType(returnType, parameterTypes));
+						returnTypePtr = m_constantCache.BuildType(returnType);
 					}
 					else
-					{
-						funcData.returnTypeId = m_constantCache.Register(*m_constantCache.BuildType(Ast::NoType{}));
-						funcData.funcTypeId = m_constantCache.Register(*m_constantCache.BuildFunctionType(Ast::NoType{}, parameterTypes));
-					}
+						returnTypePtr = m_constantCache.BuildType(Ast::NoType{});
+
+					funcData.returnTypeId = m_constantCache.Register(*returnTypePtr);
+
+					std::vector<SpirvConstantCache::TypePtr> parameterTypePtr;
+					parameterTypePtr.reserve(node.parameters.size());
 
 					for (auto& parameter : node.parameters)
 					{
 						const auto& parameterType = parameter.type.GetResultingValue();
 
+						bool isUniformConstant = Ast::IsExternalPointerType(parameterType);
+						SpirvStorageClass storageClass = (isUniformConstant) ? SpirvStorageClass::UniformConstant : SpirvStorageClass::Function;
+
+						SpirvConstantCache::TypePtr typePtr = m_constantCache.BuildType(parameterType, storageClass);
+						SpirvConstantCache::TypePtr& pointerTypePtr = parameterTypePtr.emplace_back(m_constantCache.BuildPointerType(typePtr, storageClass));
+
 						auto& funcParam = funcData.parameters.emplace_back();
-						funcParam.pointerTypeId = m_constantCache.Register(*m_constantCache.BuildPointerType(parameterType, SpirvStorageClass::Function));
-						funcParam.typePtr = m_constantCache.BuildType(parameterType);
-						funcParam.typeId = m_constantCache.Register(*funcParam.typePtr);
+						funcParam.pointerTypeId = m_constantCache.Register(*pointerTypePtr);
+						funcParam.typeId = m_constantCache.Register(*typePtr);
+						funcParam.typePtr = std::move(typePtr);
 					}
+
+					funcData.funcTypeId = m_constantCache.Register(*m_constantCache.BuildFunctionType(std::move(returnTypePtr), std::move(parameterTypePtr)));
 				}
 				else
 				{

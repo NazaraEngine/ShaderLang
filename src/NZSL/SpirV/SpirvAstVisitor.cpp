@@ -22,7 +22,23 @@ namespace nzsl
 
 	std::uint32_t SpirvAstVisitor::EvaluateExpression(Ast::Expression& expr)
 	{
+		bool wasEvaluatingPointer = m_isEvaluatingPointer;
+
+		m_isEvaluatingPointer = false;
 		expr.Visit(*this);
+		m_isEvaluatingPointer = wasEvaluatingPointer;
+
+		assert(m_resultIds.size() == 1);
+		return PopResultId();
+	}
+
+	std::uint32_t SpirvAstVisitor::EvaluatePointer(Ast::Expression& expr)
+	{
+		bool wasEvaluatingPointer = m_isEvaluatingPointer;
+
+		m_isEvaluatingPointer = true;
+		expr.Visit(*this);
+		m_isEvaluatingPointer = wasEvaluatingPointer;
 
 		assert(m_resultIds.size() == 1);
 		return PopResultId();
@@ -41,7 +57,7 @@ namespace nzsl
 		HandleSourceLocation(node.sourceLocation);
 
 		SpirvExpressionLoad accessMemberVisitor(m_writer, *this, *m_currentBlock);
-		PushResultId(accessMemberVisitor.Evaluate(node));
+		PushResultId((m_isEvaluatingPointer) ? accessMemberVisitor.EvaluatePointer(node) : accessMemberVisitor.EvaluateValue(node));
 	}
 
 	void SpirvAstVisitor::Visit(Ast::AssignExpression& node)
@@ -492,15 +508,25 @@ namespace nzsl
 		Nz::StackArray<std::uint32_t> parameterIds = NazaraStackArrayNoInit(std::uint32_t, node.parameters.size());
 		for (std::size_t i = 0; i < node.parameters.size(); ++i)
 		{
-			std::uint32_t varId = m_currentFunc->variables[funcCall.firstVarIndex + i].varId;
+			auto& var = m_currentFunc->variables[funcCall.firstVarIndex + i];
+			std::uint32_t varId = var.varId;
 			parameterIds[i] = varId;
 
 			//Don't generate OpLoad and OpStore for out arguments
 			if (node.parameters[i].semantic == Ast::FunctionParameterSemantic::Out)
 				continue;
 
-			std::uint32_t resultId = EvaluateExpression(*node.parameters[i].expr);
-			m_currentBlock->Append(SpirvOp::OpStore, varId, resultId);
+			const auto& varType = *GetExpressionType(*node.parameters[i].expr);
+			// UniformConstant types are already pointers and shouldn't be stored
+			if (Ast::IsExternalPointerType(varType))
+			{
+				parameterIds[i] = EvaluatePointer(*node.parameters[i].expr);
+			}
+			else
+			{
+				std::uint32_t resultId = EvaluateExpression(*node.parameters[i].expr);
+				m_currentBlock->Append(SpirvOp::OpStore, varId, resultId);
+			}
 		}
 
 		HandleSourceLocation(node.sourceLocation);
@@ -719,7 +745,7 @@ namespace nzsl
 		HandleSourceLocation(node.sourceLocation);
 
 		SpirvExpressionLoad accessMemberVisitor(m_writer, *this, *m_currentBlock);
-		PushResultId(accessMemberVisitor.Evaluate(node));
+		PushResultId((m_isEvaluatingPointer) ? accessMemberVisitor.EvaluatePointer(node) : accessMemberVisitor.EvaluateValue(node));
 	}
 
 	void SpirvAstVisitor::Visit(Ast::ConstantValueExpression& node)
@@ -767,17 +793,19 @@ namespace nzsl
 				std::uint32_t paramResultId = m_writer.AllocateResultId();
 				m_instructions.Append(SpirvOp::OpFunctionParameter, m_currentFunc->parameters[i].pointerTypeId, paramResultId);
 
-				RegisterVariable(*node.parameters[i].varIndex, m_currentFunc->parameters[i].typePtr, m_currentFunc->parameters[i].typeId, paramResultId, SpirvStorageClass::Function);
+				const auto& parameterType = node.parameters[i].type.GetResultingValue();
+				bool isUniformConstant = Ast::IsExternalPointerType(parameterType);
+
+				RegisterVariable(*node.parameters[i].varIndex, m_currentFunc->parameters[i].typePtr, m_currentFunc->parameters[i].typeId, paramResultId, (isUniformConstant) ? SpirvStorageClass::UniformConstant : SpirvStorageClass::Function);
 			}
 		}
 
 		auto contentBlock = std::make_unique<SpirvBlock>(m_writer);
 		m_currentBlock = contentBlock.get();
+		NAZARA_DEFER({ m_currentBlock = nullptr; });
 
 		m_functionBlocks.clear();
 		m_functionBlocks.emplace_back(std::move(contentBlock));
-
-		Nz::CallOnExit resetCurrentBlock([&] { m_currentBlock = nullptr; });
 
 		ResetSourceLocation();
 
@@ -1166,7 +1194,7 @@ namespace nzsl
 		HandleSourceLocation(node.sourceLocation);
 
 		SpirvExpressionLoad loadVisitor(m_writer, *this, *m_currentBlock);
-		PushResultId(loadVisitor.Evaluate(node));
+		PushResultId((m_isEvaluatingPointer) ? loadVisitor.EvaluatePointer(node) : loadVisitor.EvaluateValue(node));
 	}
 
 	void SpirvAstVisitor::Visit(Ast::WhileStatement& node)
