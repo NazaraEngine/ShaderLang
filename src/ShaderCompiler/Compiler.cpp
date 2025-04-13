@@ -356,7 +356,7 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 						if (!extVar.bindingSet.IsResultingValue())
 							throw std::runtime_error(fmt::format("external var on line {} has unresolved binding set", extVar.sourceLocation.startLine));
 
-						extSet = extVar.bindingSet.GetResultingValue();
+						bindingSet = extVar.bindingSet.GetResultingValue();
 					}
 
 					std::uint64_t bindingIndex;
