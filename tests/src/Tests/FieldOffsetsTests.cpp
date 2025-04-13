@@ -1,4 +1,3 @@
-#include "NZSL/Enums.hpp"
 #include <NZSL/Math/FieldOffsets.hpp>
 #include <NZSL/Ast/ExpressionType.hpp>
 #include <catch2/catch_test_macros.hpp>
