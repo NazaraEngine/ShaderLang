@@ -10,6 +10,7 @@ vsxmake*
 .idea/
 cmake*/
 CMakeLists.txt
+<<<<<<< HEAD
 .luarc.json
 
 # vscode
@@ -17,6 +18,8 @@ CMakeLists.txt
 
 # clangd
 .cache
+=======
+>>>>>>> 167b49d (base for wgsl writer)
 compile_commands.json
 
 # Prerequisites
