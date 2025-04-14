@@ -133,6 +133,9 @@ namespace nzsl
 			case StructLayout::Packed:
 				return 1;
 
+			case StructLayout::Scalar:
+				return 4;
+
 			case StructLayout::Std140:
 			case StructLayout::Std430:
 			{
@@ -171,8 +174,6 @@ namespace nzsl
 						return 4 * 8;
 				}
 			}
-			case StructLayout::Scalar:
-				return 4;
 		}
 
 		return 0;

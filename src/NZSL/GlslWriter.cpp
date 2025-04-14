@@ -358,6 +358,7 @@ namespace nzsl
 		bool hasDrawParametersBaseVertexUniform = false;
 		bool hasDrawParametersDrawIndexUniform = false;
 		bool hasIntegerMix = false;
+		bool requiresScalarBlockLayout = false;
 		int streamEmptyLine = 1;
 		unsigned int indentLevel = 0;
 	};
@@ -1201,6 +1202,12 @@ namespace nzsl
 				else
 					m_currentState->supportsVaryingLocations = false;
 			}
+		}
+
+		// GL_EXT_scalar_block_layout (required for layout(scalar) and layout(std430))
+		if (m_currentState->requiresScalarBlockLayout)
+		{
+			requiredExtensions.emplace("GL_EXT_scalar_block_layout");
 		}
 
 		if (!requiredExtensions.empty())
