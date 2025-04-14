@@ -275,7 +275,8 @@ namespace nzsl
 				if (node.description.layout.HasValue())
 				{
 					const auto &layout = node.description.layout.GetResultingValue();
-					switch (layout) {
+					switch (layout)
+					{
 						case Ast::MemoryLayout::Std430:
 						case Ast::MemoryLayout::Scalar:
 							// GL_EXT_scalar_block_layout (required for layout(scalar) and layout(std430))

@@ -48,7 +48,8 @@ TEST_CASE("Field offsets", "[FieldOffsets]")
 		REQUIRE(fieldOffset.AddFieldArray(nzsl::StructFieldType::Float1, 4) == 40);
 		REQUIRE(fieldOffset.AddField(nzsl::StructFieldType::Bool1) == 56);
 		REQUIRE(fieldOffset.AddField(nzsl::StructFieldType::Bool1) == 60);
-		REQUIRE(fieldOffset.GetAlignedSize() == 64);
+		REQUIRE(fieldOffset.AddField(nzsl::StructFieldType::Double1) == 64);
+		REQUIRE(fieldOffset.GetAlignedSize() == 72);
 	}
 }
 
