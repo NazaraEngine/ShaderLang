@@ -272,6 +272,18 @@ namespace nzsl
 			void Visit(Ast::DeclareStructStatement& node) override
 			{
 				structs[node.structIndex.value()] = &node.description;
+				if (node.description.layout.HasValue())
+				{
+					const auto &layout = node.description.layout.GetResultingValue();
+					switch (layout) {
+						case Ast::MemoryLayout::Std430:
+						case Ast::MemoryLayout::Scalar:
+							// GL_EXT_scalar_block_layout (required for layout(scalar) and layout(std430))
+							requiredExtensions.emplace("GL_EXT_scalar_block_layout");
+							break;
+						default: break;
+					}
+				}
 
 				for (const auto& member : node.description.members)
 					RegisterStructType(member.type.GetResultingValue());
@@ -310,6 +322,7 @@ namespace nzsl
 			std::unordered_map<std::size_t, Ast::StructDescription*> structs;
 			tsl::ordered_set<GlslCapability> capabilities;
 			tsl::ordered_set<Ast::ExpressionType> requiredPrecisionQualifiers;
+			tsl::ordered_set<std::string_view> requiredExtensions;
 			Nz::Bitset<> bufferStructs; //< structs used only in UBO/SSBO that shouldn't be declared as such in GLSL
 			Nz::Bitset<> usedStructs; //< & with bufferStructs, to handle case where a UBO/SSBO struct is declared as a variable (which is allowed) or member of a struct
 			Ast::DeclareFunctionStatement* entryPoint = nullptr;
@@ -358,7 +371,6 @@ namespace nzsl
 		bool hasDrawParametersBaseVertexUniform = false;
 		bool hasDrawParametersDrawIndexUniform = false;
 		bool hasIntegerMix = false;
-		bool requiresScalarBlockLayout = false;
 		int streamEmptyLine = 1;
 		unsigned int indentLevel = 0;
 	};
@@ -1018,7 +1030,7 @@ namespace nzsl
 
 		// Extensions
 
-		tsl::ordered_set<std::string_view> requiredExtensions;
+		tsl::ordered_set<std::string_view> requiredExtensions = m_currentState->previsitor.requiredExtensions;
 		
 		bool hasConservativeDepth = false;
 		bool hasEarlyFragmentTests = false;
@@ -1202,12 +1214,6 @@ namespace nzsl
 				else
 					m_currentState->supportsVaryingLocations = false;
 			}
-		}
-
-		// GL_EXT_scalar_block_layout (required for layout(scalar) and layout(std430))
-		if (m_currentState->requiresScalarBlockLayout)
-		{
-			requiredExtensions.emplace("GL_EXT_scalar_block_layout");
 		}
 
 		if (!requiredExtensions.empty())
