@@ -53,7 +53,6 @@ namespace nzsl
 			struct EntryAttribute;
 			struct FeatureAttribute;
 			struct InterpAttribute;
-			struct LangVersionAttribute;
 			struct LayoutAttribute;
 			struct LicenseAttribute;
 			struct LocationAttribute;
@@ -99,7 +98,6 @@ namespace nzsl
 			void AppendAttribute(EntryAttribute attribute);
 			void AppendAttribute(FeatureAttribute attribute);
 			void AppendAttribute(InterpAttribute attribute);
-			void AppendAttribute(LangVersionAttribute attribute);
 			void AppendAttribute(LayoutAttribute attribute);
 			void AppendAttribute(LicenseAttribute attribute);
 			void AppendAttribute(LocationAttribute attribute);

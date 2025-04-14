@@ -125,13 +125,6 @@ namespace nzsl
 		bool HasValue() const { return interpQualifier.HasValue(); }
 	};
 
-	struct WgslWriter::LangVersionAttribute
-	{
-		std::uint32_t version;
-
-		bool HasValue() const { return true; }
-	};
-
 	struct WgslWriter::LayoutAttribute
 	{
 		const Ast::ExpressionValue<Ast::MemoryLayout>& layout;
@@ -703,7 +696,14 @@ namespace nzsl
 			return;
 
 		if (attribute.stageType.IsResultingValue())
-			Append(Parser::ToString(attribute.stageType.GetResultingValue()));
+		{
+			switch (attribute.stageType.GetResultingValue())
+			{
+				case ShaderStageType::Compute: Append("compute"); break;
+				case ShaderStageType::Fragment: Append("fragment"); break;
+				case ShaderStageType::Vertex: Append("vertex"); break;
+			}
+		}
 		else
 			attribute.stageType.GetExpression()->Visit(*this);
 	}
@@ -733,25 +733,6 @@ namespace nzsl
 			attribute.interpQualifier.GetExpression()->Visit(*this);
 
 		Append(")");
-	}
-
-	void WgslWriter::AppendAttribute(LangVersionAttribute attribute)
-	{
-		std::uint32_t shaderLangVersion = attribute.version;
-		std::uint32_t majorVersion = shaderLangVersion / 100;
-		shaderLangVersion -= majorVersion * 100;
-
-		std::uint32_t minorVersion = shaderLangVersion / 10;
-		shaderLangVersion -= minorVersion * 100;
-
-		std::uint32_t patchVersion = shaderLangVersion;
-
-		// nzsl_version
-		Append("nzsl_version(\"", majorVersion, ".", minorVersion);
-		if (patchVersion != 0)
-			Append(".", patchVersion);
-
-		Append("\")");
 	}
 
 	void WgslWriter::AppendAttribute(LayoutAttribute attribute)
@@ -939,7 +920,6 @@ namespace nzsl
 
 	void WgslWriter::AppendModuleAttributes(const Ast::Module::Metadata& metadata)
 	{
-		AppendAttributes(true, LangVersionAttribute{ metadata.shaderLangVersion });
 		for (Ast::ModuleFeature feature : metadata.enabledFeatures)
 			AppendAttributes(true, FeatureAttribute{ feature });
 
@@ -1535,13 +1515,95 @@ namespace nzsl
 			{
 				[&](const Ast::UniformType& uniformType)
 				{
+					Append("<uniform> ", externalVar.name, ": ", uniformType.containedType);
 				},
 				[&](const Ast::StorageType& storageType)
 				{
+					Append("<storage, ");
+					switch (storageType.accessPolicy)
+					{
+						case AccessPolicy::ReadOnly:  Append("read"); break;
+						case AccessPolicy::ReadWrite: Append("read_write"); break;
+						case AccessPolicy::WriteOnly: Append("write"); break;
+					}
+					Append("> ", externalVar.name, ": ", storageType.containedType);
 				},
+				[&](const Ast::SamplerType& samplerType)
+				{
+					Append(" ", externalVar.name, ": texture_");
+					switch (samplerType.dim)
+					{
+						case ImageType::E1D:       Append("1d");      break;
+						case ImageType::E1D_Array: Append("1d_array"); break;
+						case ImageType::E2D:       Append("2d");      break;
+						case ImageType::E2D_Array: Append("2d_array"); break;
+						case ImageType::E3D:       Append("3d");      break;
+						case ImageType::Cubemap:   Append("cube");    break;
+					}
+					switch (samplerType.sampledType)
+					{
+						case Ast::PrimitiveType::Boolean:
+							throw std::runtime_error("unexpected bool type for texture");
+						case Ast::PrimitiveType::Float64:
+							throw std::runtime_error("unexpected f64 type for texture");
+
+						case Ast::PrimitiveType::Float32: Append("<f32>"); break;
+						case Ast::PrimitiveType::Int32:   Append("<i32>"); break;
+						case Ast::PrimitiveType::UInt32:  Append("<u32>"); break;
+
+						case Ast::PrimitiveType::String:
+							throw std::runtime_error("unexpected string type for texture");
+					}
+				},
+				[&](const Ast::PushConstantType& /*pushConstantType*/)
+				{
+					throw std::runtime_error("push constant are not supported yet");
+				},
+				[&](const Ast::TextureType& textureType)
+				{
+					Append(" ", externalVar.name, ": texture_storage_");
+					switch (textureType.dim)
+					{
+						case ImageType::E1D:       Append("1d");      break;
+						case ImageType::E2D:       Append("2d");      break;
+						case ImageType::E2D_Array: Append("2d_array"); break;
+						case ImageType::E3D:       Append("3d");      break;
+
+						default:
+							throw std::runtime_error("unexpected texture type");
+					}
+					switch (textureType.baseType)
+					{
+						case Ast::PrimitiveType::Boolean:
+							throw std::runtime_error("unexpected bool type for texture");
+						case Ast::PrimitiveType::Float64:
+							throw std::runtime_error("unexpected f64 type for texture");
+
+						case Ast::PrimitiveType::Float32: Append("<f32>"); break;
+						case Ast::PrimitiveType::Int32:   Append("<i32>"); break;
+						case Ast::PrimitiveType::UInt32:  Append("<u32>"); break;
+
+						case Ast::PrimitiveType::String:
+							throw std::runtime_error("unexpected string type for texture");
+					}
+				},
+				[&](const Ast::NoType&) { throw std::runtime_error("unexpected Type?"); },
+				[&](const Ast::AliasType&) { throw std::runtime_error("unexpected Type?"); },
+				[&](const Ast::ArrayType&) { throw std::runtime_error("unexpected Type?"); },
+				[&](const Ast::DynArrayType&) { throw std::runtime_error("unexpected Type?"); },
+				[&](const Ast::FunctionType&) { throw std::runtime_error("unexpected Type?"); },
+				[&](const Ast::IntrinsicFunctionType&) { throw std::runtime_error("unexpected Type?"); },
+				[&](const Ast::MatrixType&) { throw std::runtime_error("unexpected Type?"); },
+				[&](const Ast::MethodType&) { throw std::runtime_error("unexpected Type?"); },
+				[&](const Ast::ModuleType&) { throw std::runtime_error("unexpected Type?"); },
+				[&](const Ast::PrimitiveType&) { throw std::runtime_error("unexpected Type?"); },
+				[&](const Ast::StructType&) { throw std::runtime_error("unexpected Type?"); },
+				[&](const Ast::Type&) { throw std::runtime_error("unexpected Type?"); },
+				[&](const Ast::VectorType&) { throw std::runtime_error("unexpected Type?"); },
+				[&](const Ast::NamedExternalBlockType&) { throw std::runtime_error("unexpected Type?"); }
 			}, externalVar.type.GetResultingValue());
 
-			Append(";");
+			AppendLine(";");
 
 			if (externalVar.varIndex)
 				RegisterVariable(*externalVar.varIndex, externalVar.name);
@@ -1793,10 +1855,6 @@ namespace nzsl
 	void WgslWriter::AppendHeader()
 	{
 		AppendModuleAttributes(*m_currentState->module->metadata);
-		if (!m_currentState->module->metadata->moduleName.empty() && m_currentState->module->metadata->moduleName[0] != '_')
-			AppendLine("module ", m_currentState->module->metadata->moduleName, ";");
-		else
-			AppendLine("module;");
 		AppendLine();
 	}
 }
