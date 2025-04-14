@@ -13,6 +13,7 @@ external
 {
 	[binding(0)] palette: sampler2D[f32],
     [binding(1)] ubo: uniform[UBO],
+    [binding(2)] ssbo: storage[UBO, readonly],
 }
 
 struct Input
