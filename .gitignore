@@ -1,3 +1,6 @@
+# Clangd
+.cache/
+
 # XMake
 .xmake
 bin/*
