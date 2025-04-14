@@ -112,6 +112,9 @@ target("nzsl", function ()
 	if has_config("fs_watcher") then
 		add_packages("efsw")
 		add_defines("NZSL_EFSW")
+		if is_plat("mingw", "linux", "macosx", "iphoneos", "bsd", "wasm") then
+			add_syslinks("pthread")
+		end
 	end
 
 	on_load(function (target)
