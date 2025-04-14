@@ -14,11 +14,15 @@
 #include <NZSL/Ast/SanitizeVisitor.hpp>
 #include <NZSL/Ast/Utils.hpp>
 #include <NZSL/Lang/LangData.hpp>
+#include <frozen/unordered_map.h>
+#include <frozen/unordered_set.h>
 #include <cassert>
 #include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <unordered_map>
+
+#include <iostream>
 
 namespace nzsl
 {
@@ -173,6 +177,29 @@ namespace nzsl
 		bool HasValue() const { return workgroup.HasValue(); }
 	};
 
+	Ast::SanitizeVisitor::Options WgslWriter::GetSanitizeOptions()
+	{
+		static constexpr auto s_reservedKeywords = frozen::make_unordered_set<frozen::string>({
+			"write", "vec2", "vec3", "vec4", "void",
+		});
+
+		Ast::SanitizeVisitor::Options options;
+		options.makeVariableNameUnique = true;
+		options.reduceLoopsToWhile = true;
+		options.removeAliases = true;
+		options.removeCompoundAssignments = false;
+		options.removeOptionDeclaration = true;
+		options.removeScalarSwizzling = true;
+		options.removeSingleConstDeclaration = true;
+		options.splitWrappedStructAssignation = true; //< TODO: Only split for base uniforms/storage
+		options.identifierSanitizer = [](std::string& identifier, Ast::IdentifierScope /*scope*/)
+		{
+			return false;
+		};
+
+		return options;
+	}
+
 	struct WgslWriter::State
 	{
 		struct Identifier
@@ -200,7 +227,7 @@ namespace nzsl
 		unsigned int indentLevel = 0;
 	};
 
-	std::string WgslWriter::Generate(const Ast::Module& module, const States& /*states*/)
+	std::string WgslWriter::Generate(const Ast::Module& module, const States& states)
 	{
 		State state;
 		m_currentState = &state;
@@ -211,13 +238,27 @@ namespace nzsl
 
 		state.module = &module;
 
+		Ast::ModulePtr sanitizedModule;
+		const Ast::Module* targetModule;
+		if (!states.sanitized)
+		{
+			Ast::SanitizeVisitor::Options options = GetSanitizeOptions();
+			options.optionValues = states.optionValues;
+			options.moduleResolver = states.shaderModuleResolver;
+
+			sanitizedModule = Ast::Sanitize(module, options);
+			targetModule = sanitizedModule.get();
+		}
+		else
+			targetModule = &module;
+
 		AppendHeader();
 
 		// First registration pass (required to register function names)
 		PreVisitor previsitor(*this);
 		{
 			m_currentState->currentModuleIndex = 0;
-			for (const auto& importedModule : module.importedModules)
+			for (const auto& importedModule : targetModule->importedModules)
 			{
 				importedModule.module->rootNode->Visit(previsitor);
 				m_currentState->currentModuleIndex++;
@@ -227,7 +268,7 @@ namespace nzsl
 			m_currentState->currentModuleIndex = std::numeric_limits<std::size_t>::max();
 
 			std::size_t moduleIndex = 0;
-			for (const auto& importedModule : module.importedModules)
+			for (const auto& importedModule : targetModule->importedModules)
 				RegisterModule(moduleIndex++, importedModule.identifier);
 
 			module.rootNode->Visit(previsitor);
@@ -235,7 +276,7 @@ namespace nzsl
 
 		// Register imported modules
 		m_currentState->currentModuleIndex = 0;
-		for (const auto& importedModule : module.importedModules)
+		for (const auto& importedModule : targetModule->importedModules)
 		{
 			AppendModuleAttributes(*importedModule.module->metadata);
 			AppendLine("module ", importedModule.identifier);
@@ -248,7 +289,7 @@ namespace nzsl
 		}
 
 		m_currentState->currentModuleIndex = std::numeric_limits<std::size_t>::max();
-		module.rootNode->Visit(*this);
+		targetModule->rootNode->Visit(*this);
 
 		return state.stream.str();
 	}
@@ -408,9 +449,9 @@ namespace nzsl
 		Append("[", textureType.baseType, ", ");
 		switch (textureType.accessPolicy)
 		{
-			case AccessPolicy::ReadOnly:  Append("readonly"); break;
-			case AccessPolicy::ReadWrite: Append("readwrite"); break;
-			case AccessPolicy::WriteOnly: Append("writeonly"); break;
+			case AccessPolicy::ReadOnly:  Append("read"); break;
+			case AccessPolicy::ReadWrite: Append("read_write"); break;
+			case AccessPolicy::WriteOnly: Append("write"); break;
 		}
 
 		if (textureType.format != ImageFormat::Unknown)
@@ -433,7 +474,7 @@ namespace nzsl
 
 	void WgslWriter::Append(const Ast::VectorType& vecType)
 	{
-		Append("vec", vecType.componentCount, "[", vecType.type, "]");
+		Append("vec", vecType.componentCount, "<", vecType.type, ">");
 	}
 
 	void WgslWriter::Append(Ast::NoType)
@@ -615,14 +656,12 @@ namespace nzsl
 		if (!attribute.HasValue())
 			return;
 
-		Append("entry(");
+		Append("@");
 
 		if (attribute.stageType.IsResultingValue())
 			Append(Parser::ToString(attribute.stageType.GetResultingValue()));
 		else
 			attribute.stageType.GetExpression()->Visit(*this);
-
-		Append(")");
 	}
 
 	void WgslWriter::AppendAttribute(FeatureAttribute attribute)

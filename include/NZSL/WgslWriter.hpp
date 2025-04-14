@@ -11,6 +11,7 @@
 #include <NZSL/ShaderWriter.hpp>
 #include <NZSL/Ast/ExpressionVisitorExcept.hpp>
 #include <NZSL/Ast/Module.hpp>
+#include <NZSL/Ast/SanitizeVisitor.hpp>
 #include <NZSL/Ast/StatementVisitorExcept.hpp>
 #include <string>
 
@@ -33,6 +34,8 @@ namespace nzsl
 			struct Environment
 			{
 			};
+
+			static Ast::SanitizeVisitor::Options GetSanitizeOptions();
 
 		private:
 			struct PreVisitor;
