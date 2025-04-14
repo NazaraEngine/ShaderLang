@@ -152,6 +152,21 @@ namespace nzsl
 				usedStructs.Resize(bufferStructs.GetSize());
 				usedStructs.PerformsNOT(usedStructs); //< ~
 				bufferStructs &= usedStructs;
+
+				// Determine required extensions
+				for (const auto &[structIndex, structInfo] : structs)
+				{
+					// Determine required extensions for struct layout
+					if (structInfo->layout.HasValue())
+					{
+						const auto &layout = structInfo->layout.GetResultingValue();
+						// TODO: Determine struct type.
+						if (layout == Ast::MemoryLayout::Scalar) //  || (layout == Ast::MemoryLayout::Std430 && isUniform)
+						{
+							requiredExtensions.emplace("GL_EXT_scalar_block_layout");
+						}
+					}
+				}
 			}
 
 			using RecursiveVisitor::Visit;
@@ -272,19 +287,6 @@ namespace nzsl
 			void Visit(Ast::DeclareStructStatement& node) override
 			{
 				structs[node.structIndex.value()] = &node.description;
-				if (node.description.layout.HasValue())
-				{
-					const auto &layout = node.description.layout.GetResultingValue();
-					switch (layout)
-					{
-						case Ast::MemoryLayout::Std430:
-						case Ast::MemoryLayout::Scalar:
-							// GL_EXT_scalar_block_layout (required for layout(scalar) and layout(std430))
-							requiredExtensions.emplace("GL_EXT_scalar_block_layout");
-							break;
-						default: break;
-					}
-				}
 
 				for (const auto& member : node.description.members)
 					RegisterStructType(member.type.GetResultingValue());
