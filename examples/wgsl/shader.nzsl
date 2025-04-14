@@ -1,0 +1,15 @@
+[nzsl_version("1.0")]
+module;
+
+struct Output
+{
+	[location(0)] color: vec4[f32]
+}
+
+[entry(frag)]
+fn main() -> Output
+{
+	let output: Output;
+	output.color = vec4[f32](1.0, 1.0, 1.0, 1.0);
+	return output;
+}
