@@ -10,6 +10,9 @@
 #include <NZSL/Parser.hpp>
 #include <NZSL/ShaderBuilder.hpp>
 #include <NZSL/Ast/Cloner.hpp>
+#include <NZSL/Ast/ConstantPropagationVisitor.hpp>
+#include <NZSL/Ast/ConstantValue.hpp>
+#include <NZSL/Ast/EliminateUnusedPassVisitor.hpp>
 #include <NZSL/Ast/RecursiveVisitor.hpp>
 #include <NZSL/Ast/SanitizeVisitor.hpp>
 #include <NZSL/Ast/Utils.hpp>
@@ -21,6 +24,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <unordered_map>
+#include <variant>
 
 #include <iostream>
 
@@ -180,7 +184,22 @@ namespace nzsl
 	Ast::SanitizeVisitor::Options WgslWriter::GetSanitizeOptions()
 	{
 		static constexpr auto s_reservedKeywords = frozen::make_unordered_set<frozen::string>({
-			"write", "vec2", "vec3", "vec4", "void",
+			"NULL", "Self", "abstract", "active", "alignas", "alignof", "as", "asm", "asm_fragment", "async",
+			"attribute", "auto", "await", "become", "cast", "catch", "class", "co_await", "co_return", "co_yield",
+			"coherent", "column_major", "common", "compile", "compile_fragment", "concept", "const_cast", "consteval",
+			"constexpr", "constinit", "crate", "debugger", "decltype", "delete", "demote", "demote_to_helper",
+			"do", "dynamic_cast", "enum", "explicit", "export", "extends", "extern", "external", "fallthrough",
+			"filter", "final", "finally", "friend", "from", "fxgroup", "get", "goto", "groupshared", "highp", "impl",
+			"implements", "import", "inline", "instanceof", "interface", "layout", "lowp", "macro", "macro_rules",
+			"match", "mediump", "meta", "mod", "module", "move", "mut", "mutable", "namespace", "new", "nil",
+			"noexcept", "noinline", "nointerpolation", "non_coherent", "noncoherent", "noperspective", "null",
+			"nullptr", "of", "operator", "package", "packoffset", "partition", "pass", "patch", "pixelfragment",
+			"precise", "precision", "premerge", "priv", "protected", "pub", "public", "readonly", "ref", "regardless",
+			"register", "reinterpret_cast", "require", "resource", "restrict", "self", "set", "shared", "sizeof",
+			"smooth", "snorm", "static", "static_assert", "static_cast", "std", "subroutine", "super", "target",
+			"template", "this", "thread_local", "throw", "trait", "try", "type", "typedef", "typeid", "typename",
+			"typeof", "union", "unless", "unorm", "unsafe", "unsized", "use", "using", "varying", "virtual",
+			"volatile", "wgsl", "where", "with", "writeonly", "yield"
 		});
 
 		Ast::SanitizeVisitor::Options options;
@@ -194,7 +213,23 @@ namespace nzsl
 		options.splitWrappedStructAssignation = true; //< TODO: Only split for base uniforms/storage
 		options.identifierSanitizer = [](std::string& identifier, Ast::IdentifierScope /*scope*/)
 		{
-			return false;
+			using namespace std::string_view_literals;
+
+			bool nameChanged = false;
+			while (s_reservedKeywords.count(frozen::string(identifier)) != 0)
+			{
+				identifier += '_';
+				nameChanged = true;
+			}
+
+			// Identifier can't start with _nzsl
+			if (identifier.compare(0, 5, "_nzsl") == 0)
+			{
+				identifier.replace(0, 5, "_"sv);
+				nameChanged = true;
+			}
+
+			return nameChanged;
 		};
 
 		return options;
@@ -251,6 +286,18 @@ namespace nzsl
 		}
 		else
 			targetModule = &module;
+
+		if (states.optimize)
+		{
+			sanitizedModule = Ast::PropagateConstants(*targetModule);
+			
+			Ast::DependencyCheckerVisitor::Config dependencyConfig;
+			dependencyConfig.usedShaderStages = ShaderStageType_All;
+
+			sanitizedModule = Ast::EliminateUnusedPass(*sanitizedModule, dependencyConfig);
+
+			targetModule = sanitizedModule.get();
+		}
 
 		AppendHeader();
 
@@ -467,9 +514,9 @@ namespace nzsl
 		throw std::runtime_error("unexpected type?");
 	}
 
-	void WgslWriter::Append(const Ast::UniformType& uniformType)
+	void WgslWriter::Append(const Ast::UniformType& /*uniformType*/)
 	{
-		Append("uniform[", uniformType.containedType, "]");
+		throw std::runtime_error("unexpected UniformType?");
 	}
 
 	void WgslWriter::Append(const Ast::VectorType& vecType)
@@ -514,9 +561,8 @@ namespace nzsl
 
 		bool first = true;
 
-		Append("[");
+		Append("@");
 		AppendAttributesInternal(first, std::forward<Args>(params)...);
-		Append("]");
 
 		if (appendLine)
 			AppendLine();
@@ -531,7 +577,7 @@ namespace nzsl
 			return;
 
 		if (!first)
-			Append(", ");
+			Append(" @");
 
 		first = false;
 
@@ -656,8 +702,6 @@ namespace nzsl
 		if (!attribute.HasValue())
 			return;
 
-		Append("@");
-
 		if (attribute.stageType.IsResultingValue())
 			Append(Parser::ToString(attribute.stageType.GetResultingValue()));
 		else
@@ -751,7 +795,7 @@ namespace nzsl
 		if (!attribute.HasValue())
 			return;
 
-		Append("set(");
+		Append("group(");
 
 		if (attribute.setIndex.IsResultingValue())
 			Append(attribute.setIndex.GetResultingValue());
@@ -1466,7 +1510,6 @@ namespace nzsl
 	void WgslWriter::Visit(Ast::DeclareExternalStatement& node)
 	{
 		AppendAttributes(true, SetAttribute{ node.bindingSet }, AutoBindingAttribute{ node.autoBinding }, TagAttribute{ node.tag });
-		Append("external");
 
 		if (!node.name.empty())
 		{
@@ -1478,27 +1521,31 @@ namespace nzsl
 
 		AppendLine();
 
-		EnterScope();
-
-		bool first = true;
 		for (const auto& externalVar : node.externalVars)
 		{
-			if (!first)
-				AppendLine(",");
+			if (!externalVar.tag.empty() && m_currentState->states->debugLevel >= DebugLevel::Minimal)
+				AppendComment("external var tag: " + externalVar.tag);
 
-			first = false;
+			if (!externalVar.type.IsResultingValue() || !IsPushConstantType(externalVar.type.GetResultingValue())) // push constants don't have set or binding'
+				AppendAttributes(false, SetAttribute{ externalVar.bindingSet }, BindingAttribute{ externalVar.bindingIndex });
 
-			if (externalVar.type.IsResultingValue() && IsPushConstantType(externalVar.type.GetResultingValue())) // push constants don't have set or binding'
-				AppendAttributes(false, TagAttribute{ externalVar.tag });
-			else
-				AppendAttributes(false, SetAttribute{ externalVar.bindingSet }, BindingAttribute{ externalVar.bindingIndex }, TagAttribute{ externalVar.tag });
-			Append(externalVar.name, ": ", externalVar.type);
+			Append("var");
+
+			std::visit(Nz::Overloaded
+			{
+				[&](const Ast::UniformType& uniformType)
+				{
+				},
+				[&](const Ast::StorageType& storageType)
+				{
+				},
+			}, externalVar.type.GetResultingValue());
+
+			Append(";");
 
 			if (externalVar.varIndex)
 				RegisterVariable(*externalVar.varIndex, externalVar.name);
 		}
-
-		LeaveScope();
 
 		m_currentState->currentExternalBlockIndex = {};
 	}
