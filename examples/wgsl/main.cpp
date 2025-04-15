@@ -7,6 +7,6 @@ int main()
 	auto shader = nzsl::ParseFromFile("shader.nzsl");
 	nzsl::WgslWriter wgslWriter;
 	auto wgslShader = wgslWriter.Generate(*shader);
-	std::cout << wgslShader << std::endl;
+	std::cout << wgslShader.code << std::endl;
 	return 0;
 }
