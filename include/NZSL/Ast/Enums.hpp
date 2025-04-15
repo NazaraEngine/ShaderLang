@@ -47,6 +47,7 @@ namespace nzsl::Ast
 		Tag                = 16, //< Tag (external block and external var only) - has argument string
 		Unroll             = 11, //< Unroll (for/for each only) - has argument mode
 		Workgroup          = 18, //< Work group size (function only) - has arguments X, Y, Z
+		Target             = 20, //< 
 	};
 
 	enum class BinaryType
@@ -267,6 +268,13 @@ namespace nzsl::Ast
 		LogicalNot = 0, //< !v
 		Minus      = 1, //< -v
 		Plus       = 2, //< +v
+	};
+
+	enum class TargetType
+	{
+		GLSL = 0,
+		GLES = 1,
+		SPIRV = 3,
 	};
 }
 

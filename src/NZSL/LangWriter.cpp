@@ -173,6 +173,14 @@ namespace nzsl
 		bool HasValue() const { return workgroup.HasValue(); }
 	};
 
+	struct LangWriter::TargetAttribute
+	{
+		const Ast::ExpressionValue<Ast::TargetType>& target;
+		const Ast::ExpressionValue<std::uint32_t>& version;
+
+		bool HasValue() const { return target.HasValue(); }
+	};
+
 	struct LangWriter::State
 	{
 		struct Identifier
@@ -775,6 +783,32 @@ namespace nzsl
 			workgroupCast.expressions[1]->Visit(*this);
 			Append(", ");
 			workgroupCast.expressions[2]->Visit(*this);
+		}
+
+		Append(")");
+	}
+
+	void LangWriter::AppendAttribute(TargetAttribute attribute)
+	{
+		if (!attribute.HasValue())
+			return;
+
+		Append("target(");
+
+		if (attribute.target.IsResultingValue())
+			Append(Parser::ToString(attribute.target.GetResultingValue()));
+		else
+			attribute.target.GetExpression()->Visit(*this);
+
+		if (attribute.version.HasValue())
+		{
+			if (attribute.version.IsResultingValue())
+			{
+				Append(", ");
+				Append(attribute.version.GetResultingValue());
+			}
+			else
+				attribute.version.GetExpression()->Visit(*this);
 		}
 
 		Append(")");
@@ -1690,6 +1724,9 @@ namespace nzsl
 
 	void LangWriter::Visit(Ast::ScopedStatement& node)
 	{
+		AppendAttributes(true,
+			TargetAttribute{ node.targetType, node.targetVersion });
+
 		EnterScope();
 		node.statement->Visit(*this);
 		LeaveScope();

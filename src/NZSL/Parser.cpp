@@ -82,6 +82,7 @@ namespace nzsl
 		constexpr auto s_layoutMapping        = BuildIdentifierMapping(LangData::s_memoryLayouts);
 		constexpr auto s_moduleFeatureMapping = BuildIdentifierMapping(LangData::s_moduleFeatures);
 		constexpr auto s_unrollModeMapping    = BuildIdentifierMapping(LangData::s_unrollModes);
+		constexpr auto s_targetMapping        = BuildIdentifierMapping(LangData::s_targets);
 	}
 
 	Ast::ModulePtr Parser::Parse(const std::vector<Token>& tokens)
@@ -173,6 +174,14 @@ namespace nzsl
 	{
 		auto it = LangData::s_moduleFeatures.find(moduleFeature);
 		assert(it != LangData::s_moduleFeatures.end());
+
+		return it->second.identifier;
+	}
+
+	std::string_view Parser::ToString(Ast::TargetType targetType)
+	{
+		auto it = LangData::s_targets.find(targetType);
+		assert(it != LangData::s_targets.end());
 
 		return it->second.identifier;
 	}
@@ -1294,6 +1303,13 @@ namespace nzsl
 					attributes.clear();
 					break;
 
+				case TokenType::OpenCurlyBracket:
+					if (attributes.empty())
+						throw ParserUnexpectedTokenError{ token.location, token.type };
+
+					statement = ParseStatement(std::move(attributes));
+					attributes.clear();
+					break;
 				default:
 					throw ParserUnexpectedTokenError{ token.location, token.type };
 			}
@@ -1303,14 +1319,70 @@ namespace nzsl
 		return statement;
 	}
 
-	Ast::StatementPtr Parser::ParseStatement()
+	Ast::StatementPtr Parser::ParseStatement(std::vector<Attribute> attributes)
 	{
 		if (Peek().type == TokenType::OpenCurlyBracket)
 		{
 			auto multiStatement = ShaderBuilder::MultiStatement();
 			multiStatement->statements = ParseStatementList(&multiStatement->sourceLocation);
 
-			return ShaderBuilder::Scoped(std::move(multiStatement));
+			auto scopedStatement = ShaderBuilder::Scoped(std::move(multiStatement));
+			for (auto&& attribute : attributes)
+			{
+				switch (attribute.type)
+				{
+					case Ast::AttributeType::Target:
+					{
+						if (scopedStatement->targetType.HasValue())
+							throw ParserAttributeMultipleUniqueError{ attribute.sourceLocation, attribute.type };
+
+						if (attribute.args.empty())
+							throw ParserAttributeUnexpectedParameterCountError{ attribute.sourceLocation, attribute.type, 1, attribute.args.size() };
+
+						const auto& targetTypeArg = attribute.args[0];
+
+						if (attribute.args[0]->GetType() != Ast::NodeType::IdentifierExpression)
+							throw ParserAttributeParameterIdentifierError{ targetTypeArg->sourceLocation, attribute.type };
+
+						bool hasExplicitTargetVersion = attribute.args.size() == 2;
+
+						auto targetTypeStr = static_cast<Ast::IdentifierExpression&>(*targetTypeArg).identifier;
+						auto it = s_targetMapping.find(targetTypeStr);
+						if (it == s_targetMapping.end())
+							throw ParserAttributeInvalidParameterError{ targetTypeArg->sourceLocation, targetTypeStr, attribute.type };
+
+						scopedStatement->targetType = it->second;
+
+						if (hasExplicitTargetVersion)
+						{
+							const auto& targetVersionArg = attribute.args[1];
+
+							if (targetVersionArg->GetType() != Ast::NodeType::ConstantValueExpression)
+								throw ParserAttributeParameterIdentifierError{ targetVersionArg->sourceLocation, attribute.type };
+
+							auto targetVersionValue = static_cast<Ast::ConstantValueExpression&>(*targetVersionArg).value;
+							if (std::holds_alternative<std::int32_t>(targetVersionValue))
+							{
+								auto targetVersion = std::get<std::int32_t>(targetVersionValue);
+								if (targetVersion < 0)
+									throw ParserAttributeInvalidTargetVersionError{ targetVersionArg->sourceLocation, targetVersion, targetTypeStr };
+
+								scopedStatement->targetVersion = Nz::SafeCast<std::uint32_t>(targetVersion);
+							}
+							else if (std::holds_alternative<std::uint32_t>(targetVersionValue))
+								scopedStatement->targetVersion = std::get<std::uint32_t>(targetVersionValue);
+							else
+								throw ParserAttributeInvalidTargetVersionError{ targetVersionArg->sourceLocation, 0, targetTypeStr };
+						}
+
+						break;
+					}
+					default:
+						throw ParserUnexpectedAttributeError{ attribute.sourceLocation, attribute.type, "scoped statement" };
+				}
+			}
+
+			return scopedStatement;
 		}
 		else
 			return ParseSingleStatement();

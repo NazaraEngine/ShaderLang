@@ -31,6 +31,7 @@ namespace nzsl
 			static std::string_view ToString(Ast::LoopUnroll loopUnroll);
 			static std::string_view ToString(Ast::MemoryLayout memoryLayout);
 			static std::string_view ToString(Ast::ModuleFeature moduleFeature);
+			static std::string_view ToString(Ast::TargetType targetType);
 			static std::string_view ToString(ShaderStageType shaderStage);
 
 		private:
@@ -74,7 +75,7 @@ namespace nzsl
 			Ast::StatementPtr ParseReturnStatement();
 			Ast::StatementPtr ParseRootStatement(std::vector<Attribute> attributes = {});
 			Ast::StatementPtr ParseSingleStatement();
-			Ast::StatementPtr ParseStatement();
+			Ast::StatementPtr ParseStatement(std::vector<Attribute> attributes = {});
 			std::vector<Ast::StatementPtr> ParseStatementList(SourceLocation* sourceLocation);
 			Ast::StatementPtr ParseStructDeclaration(std::vector<Attribute> attributes = {});
 			Ast::StatementPtr ParseVariableDeclaration();
