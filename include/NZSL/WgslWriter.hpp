@@ -21,18 +21,25 @@ namespace nzsl
 	{
 		public:
 			struct Environment;
+			struct Output;
 
 			inline WgslWriter();
 			WgslWriter(const WgslWriter&) = delete;
 			WgslWriter(WgslWriter&&) = delete;
 			~WgslWriter() = default;
 
-			std::string Generate(const Ast::Module& module, const States& states = {});
+			Output Generate(const Ast::Module& module, const States& states = {});
 
 			void SetEnv(Environment environment);
 
 			struct Environment
 			{
+			};
+
+			struct Output
+			{
+				std::string code;
+				std::vector</* sets/group */ std::unordered_map<unsigned int/* bindings */, unsigned int>> bindingRemap;
 			};
 
 			static Ast::SanitizeVisitor::Options GetSanitizeOptions();

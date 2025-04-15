@@ -2,6 +2,7 @@
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
+#include "NZSL/Ast/Enums.hpp"
 #include <NZSL/WgslWriter.hpp>
 #include <NazaraUtils/Algorithm.hpp>
 #include <NazaraUtils/CallOnExit.hpp>
@@ -174,6 +175,22 @@ namespace nzsl
 		bool HasValue() const { return workgroup.HasValue(); }
 	};
 
+	constexpr auto s_wgslBuiltinMapping = frozen::make_unordered_map<Ast::BuiltinEntry, std::string_view>({
+		{ Ast::BuiltinEntry::BaseInstance,            {} },
+		{ Ast::BuiltinEntry::BaseVertex,              {} },
+		{ Ast::BuiltinEntry::DrawIndex,               {} },
+		{ Ast::BuiltinEntry::FragCoord,               "position" },
+		{ Ast::BuiltinEntry::FragDepth,               "frag_depth" },
+		{ Ast::BuiltinEntry::GlocalInvocationIndices, "global_invocation_id" },
+		{ Ast::BuiltinEntry::InstanceIndex,           "instance_index" },
+		{ Ast::BuiltinEntry::LocalInvocationIndex,    "local_invocation_index" },
+		{ Ast::BuiltinEntry::LocalInvocationIndices,  "local_invocation_id" },
+		{ Ast::BuiltinEntry::VertexIndex,             "vertex_index" },
+		{ Ast::BuiltinEntry::VertexPosition,          "position" },
+		{ Ast::BuiltinEntry::WorkgroupCount,          "num_workgroups" },
+		{ Ast::BuiltinEntry::WorkgroupIndices,        "workgroup_id" }
+	});
+
 	Ast::SanitizeVisitor::Options WgslWriter::GetSanitizeOptions()
 	{
 		static constexpr auto s_reservedKeywords = frozen::make_unordered_set<frozen::string>({
@@ -192,7 +209,9 @@ namespace nzsl
 			"smooth", "snorm", "static", "static_assert", "static_cast", "std", "subroutine", "super", "target",
 			"template", "this", "thread_local", "throw", "trait", "try", "type", "typedef", "typeid", "typename",
 			"typeof", "union", "unless", "unorm", "unsafe", "unsized", "use", "using", "varying", "virtual",
-			"volatile", "wgsl", "where", "with", "writeonly", "yield"
+			"volatile", "wgsl", "where", "with", "writeonly", "yield", "alias", "break", "case", "const", "const_assert",
+			"continue", "continuing", "default", "diagnostic", "discard", "else", "enable", "false", "fn", "for",
+			"if", "let", "loop", "override", "requires", "return", "struct", "switch", "true", "var", "while"
 		});
 
 		Ast::SanitizeVisitor::Options options;
@@ -255,7 +274,7 @@ namespace nzsl
 		unsigned int indentLevel = 0;
 	};
 
-	std::string WgslWriter::Generate(const Ast::Module& module, const States& states)
+	WgslWriter::Output WgslWriter::Generate(const Ast::Module& module, const States& states)
 	{
 		State state;
 		m_currentState = &state;
@@ -331,7 +350,10 @@ namespace nzsl
 		m_currentState->currentModuleIndex = std::numeric_limits<std::size_t>::max();
 		targetModule->rootNode->Visit(*this);
 
-		return state.stream.str();
+		Output output;
+		output.code = std::move(state.stream).str();
+
+		return output;
 	}
 
 	void WgslWriter::SetEnv(Environment environment)
@@ -626,15 +648,11 @@ namespace nzsl
 	{
 		if (!attribute.HasValue())
 			return;
-
-		Append("builtin(");
-
-		if (attribute.builtin.IsResultingValue())
-			Append(Parser::ToString(attribute.builtin.GetResultingValue()));
-		else
-			attribute.builtin.GetExpression()->Visit(*this);
-
-		Append(")");
+		auto it = s_wgslBuiltinMapping.find(attribute.builtin.GetResultingValue());
+		assert(it != s_wgslBuiltinMapping.end());
+		if (it->second.empty())
+			throw std::runtime_error("unsupported builtin attribute! (for now)");
+		Append("builtin(", it->second, ")");
 	}
 
 	void WgslWriter::AppendAttribute(CondAttribute attribute)
@@ -1314,10 +1332,7 @@ namespace nzsl
 				break;
 
 			case Ast::IntrinsicType::TextureSampleImplicitLod:
-				assert(!node.parameters.empty());
-				Visit(node.parameters.front(), true);
-				Append(".Sample");
-				method = true;
+				Append("textureLoad");
 				break;
 
 			case Ast::IntrinsicType::TextureSampleImplicitLodDepthComp:
@@ -1345,6 +1360,12 @@ namespace nzsl
 			first = false;
 
 			node.parameters[i]->Visit(*this);
+		}
+		switch (node.intrinsic)
+		{
+			case Ast::IntrinsicType::TextureSampleImplicitLod: Append(", 0.0"); break;
+
+			default: break;
 		}
 		Append(")");
 	}
@@ -1710,7 +1731,8 @@ namespace nzsl
 		if (node.varIndex)
 			RegisterVariable(*node.varIndex, node.varName);
 
-		Append("let ", node.varName);
+		Append("var ");
+		Append(node.varName);
 		if (node.varType.HasValue())
 			Append(": ", node.varType);
 
