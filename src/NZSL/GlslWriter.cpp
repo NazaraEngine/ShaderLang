@@ -176,16 +176,13 @@ namespace nzsl
 
 			void Visit(Ast::DeclareExternalStatement& node) override
 			{
-				auto testStructLayout = [&](std::size_t structIndex, auto testFn) -> bool
+				auto testStructLayout = [&](std::size_t structIndex, auto&& callback) -> bool
 				{
-					const auto& structInfo = structs[structIndex];
-					if (structInfo->layout.HasValue())
-					{
-						const auto& structLayout = structInfo->layout.GetResultingValue();
-						return testFn(structLayout);
-					}
+					const Ast::StructDescription* structDesc = Nz::Retrieve(structs, structIndex);
+					if (!structDesc->layout.HasValue())
+						return false;
 
-					return false;
+					return callback(structDesc->layout.GetResultingValue());
 				};
 
 				for (const auto& extVar : node.externalVars)
@@ -193,23 +190,19 @@ namespace nzsl
 					const Ast::ExpressionType& type = extVar.type.GetResultingValue();
 					if (IsStorageType(type))
 					{
-						const auto structIndex = std::get<Ast::StorageType>(type).containedType.structIndex;
-						if (testStructLayout(structIndex, [](const Ast::MemoryLayout& layout)
-							{ return layout == Ast::MemoryLayout::Scalar; }))
-						{
+						std::size_t structIndex = std::get<Ast::StorageType>(type).containedType.structIndex;
+						if (testStructLayout(structIndex, [](Ast::MemoryLayout layout) { return layout == Ast::MemoryLayout::Scalar; }))
 							requiredExtensions.emplace("GL_EXT_scalar_block_layout");
-						}
+
 						capabilities.insert(GlslCapability::SSBO);
 						bufferStructs.UnboundedSet(structIndex);
 					}
 					else if (IsUniformType(type))
 					{
-						const auto structIndex = std::get<Ast::UniformType>(type).containedType.structIndex;
-						if (testStructLayout(structIndex, [](const Ast::MemoryLayout& layout)
-							{ return layout == Ast::MemoryLayout::Scalar || layout == Ast::MemoryLayout::Std430; }))
-						{
+						std::size_t structIndex = std::get<Ast::UniformType>(type).containedType.structIndex;
+						if (testStructLayout(structIndex, [](Ast::MemoryLayout layout) { return layout == Ast::MemoryLayout::Scalar || layout == Ast::MemoryLayout::Std430; }))
 							requiredExtensions.emplace("GL_EXT_scalar_block_layout");
-						}
+
 						bufferStructs.UnboundedSet(structIndex);
 					}
 					else
