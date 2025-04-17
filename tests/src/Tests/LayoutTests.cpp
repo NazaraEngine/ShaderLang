@@ -329,6 +329,8 @@ fn main()
 	let value: f32 = 0.0;
 }
 )");
+		spvtools::ValidatorOptions spvValidatorOptions;
+		spvValidatorOptions.SetScalarBlockLayout(true);
 
 		WHEN("Generating SPIR-V 1.0")
 		{
@@ -367,7 +369,7 @@ fn main()
       OpStore %12 %8
       OpReturn
       OpFunctionEnd
-)", {}, spirvEnv, true, true);
+)", {}, spirvEnv, true, spvValidatorOptions);
 		}
 
 		WHEN("Generating SPIR-V 1.3")
@@ -407,7 +409,7 @@ fn main()
       OpStore %12 %8
       OpReturn
       OpFunctionEnd
-)", {}, spirvEnv, true, true);
+)", {}, spirvEnv, true, spvValidatorOptions);
 		}
 	}
 

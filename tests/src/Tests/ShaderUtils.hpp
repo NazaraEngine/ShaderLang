@@ -7,13 +7,13 @@
 #include <NZSL/SpirvWriter.hpp>
 #include <NZSL/Ast/Module.hpp>
 #include <NZSL/Ast/SanitizeVisitor.hpp>
+#include <spirv-tools/libspirv.hpp>
 #include <filesystem>
-#include <string>
 
 void ExpectGLSL(nzsl::ShaderStageType stageType, const nzsl::Ast::Module& shader, std::string_view expectedOutput, const nzsl::ShaderWriter::States& options = {}, const nzsl::GlslWriter::Environment& env = {}, bool testShaderCompilation = true);
 void ExpectGLSL(const nzsl::Ast::Module& shader, std::string_view expectedOutput, const nzsl::ShaderWriter::States& options = {}, const nzsl::GlslWriter::Environment& env = {}, bool testShaderCompilation = true);
 void ExpectNZSL(const nzsl::Ast::Module& shader, std::string_view expectedOutput, const nzsl::ShaderWriter::States& options = {});
-void ExpectSPIRV(const nzsl::Ast::Module& shader, std::string_view expectedOutput, const nzsl::ShaderWriter::States& options = {}, const nzsl::SpirvWriter::Environment& env = {}, bool outputParameter = false, bool validateScalarLayout = false);
+void ExpectSPIRV(const nzsl::Ast::Module& shader, std::string_view expectedOutput, const nzsl::ShaderWriter::States& options = {}, const nzsl::SpirvWriter::Environment& env = {}, bool outputParameter = false, const spvtools::ValidatorOptions& validatorOptions = {});
 
 std::filesystem::path GetResourceDir();
 
