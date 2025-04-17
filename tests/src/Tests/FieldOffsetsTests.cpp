@@ -5,7 +5,7 @@
 TEST_CASE("Field offsets", "[FieldOffsets]")
 {
 	// References values were extracted using an OpenGL program containing an UBO
-	GIVEN("Simple fields")
+	GIVEN("std140")
 	{
 		nzsl::FieldOffsets fieldOffsets(nzsl::StructLayout::Std140);
 		REQUIRE(fieldOffsets.AddMatrix(nzsl::StructFieldType::Float1, 4, 4, true) == 0);
