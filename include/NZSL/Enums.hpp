@@ -139,8 +139,9 @@ namespace nzsl
 		Packed,
 		Std140,
 		Std430,
+		Scalar,
 
-		Max = Std430
+		Max = Scalar,
 	};
 }
 

@@ -5,7 +5,7 @@
 TEST_CASE("Field offsets", "[FieldOffsets]")
 {
 	// References values were extracted using an OpenGL program containing an UBO
-	GIVEN("Simple fields")
+	GIVEN("std140")
 	{
 		nzsl::FieldOffsets fieldOffsets(nzsl::StructLayout::Std140);
 		REQUIRE(fieldOffsets.AddMatrix(nzsl::StructFieldType::Float1, 4, 4, true) == 0);
@@ -37,6 +37,19 @@ TEST_CASE("Field offsets", "[FieldOffsets]")
 		REQUIRE(fieldOffsets.AddField(nzsl::StructFieldType::Float1) == 76);
 		REQUIRE(fieldOffsets.AddField(nzsl::StructFieldType::Float1) == 80);
 		REQUIRE(fieldOffsets.GetAlignedSize() == 96);
+	}
+
+	SECTION("scalar")
+	{
+		nzsl::FieldOffsets fieldOffset(nzsl::StructLayout::Scalar);
+		REQUIRE(fieldOffset.AddField(nzsl::StructFieldType::Float3) == 0);
+		REQUIRE(fieldOffset.AddField(nzsl::StructFieldType::Float3) == 12);
+		REQUIRE(fieldOffset.AddField(nzsl::StructFieldType::Float4) == 24);
+		REQUIRE(fieldOffset.AddFieldArray(nzsl::StructFieldType::Float1, 4) == 40);
+		REQUIRE(fieldOffset.AddField(nzsl::StructFieldType::Bool1) == 56);
+		REQUIRE(fieldOffset.AddField(nzsl::StructFieldType::Bool1) == 60);
+		REQUIRE(fieldOffset.AddField(nzsl::StructFieldType::Double1) == 64);
+		REQUIRE(fieldOffset.GetAlignedSize() == 72);
 	}
 }
 

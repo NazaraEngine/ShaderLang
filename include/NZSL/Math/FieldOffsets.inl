@@ -171,6 +171,37 @@ namespace nzsl
 						return 4 * 8;
 				}
 			}
+
+			case StructLayout::Scalar:
+			{
+				switch (fieldType)
+				{
+					case StructFieldType::Bool1:
+					case StructFieldType::Float1:
+					case StructFieldType::Int1:
+					case StructFieldType::UInt1:
+					case StructFieldType::Bool2:
+					case StructFieldType::Float2:
+					case StructFieldType::Int2:
+					case StructFieldType::UInt2:
+					case StructFieldType::Bool3:
+					case StructFieldType::Float3:
+					case StructFieldType::Int3:
+					case StructFieldType::UInt3:
+					case StructFieldType::Bool4:
+					case StructFieldType::Float4:
+					case StructFieldType::Int4:
+					case StructFieldType::UInt4:
+						return 4;
+
+					case StructFieldType::Double1:
+					case StructFieldType::Double2:
+					case StructFieldType::Double3:
+					case StructFieldType::Double4:
+						return 8;
+				}
+			}
+
 		}
 
 		return 0;

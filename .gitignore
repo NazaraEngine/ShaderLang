@@ -10,6 +10,14 @@ vsxmake*
 .idea/
 cmake*/
 CMakeLists.txt
+.luarc.json
+
+# vscode
+.vscode
+
+# clangd
+.cache
+compile_commands.json
 
 # Prerequisites
 *.d
