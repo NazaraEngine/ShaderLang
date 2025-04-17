@@ -353,7 +353,7 @@ void ExpectNZSL(const nzsl::Ast::Module& shaderModule, std::string_view expected
 	}
 }
 
-void ExpectSPIRV(const nzsl::Ast::Module& shaderModule, std::string_view expectedOutput, const nzsl::ShaderWriter::States& options, const nzsl::SpirvWriter::Environment& env, bool outputParameter)
+void ExpectSPIRV(const nzsl::Ast::Module& shaderModule, std::string_view expectedOutput, const nzsl::ShaderWriter::States& options, const nzsl::SpirvWriter::Environment& env, bool outputParameter, const spvtools::ValidatorOptions& validatorOptions)
 {
 	NAZARA_USE_ANONYMOUS_NAMESPACE
 
@@ -413,7 +413,7 @@ void ExpectSPIRV(const nzsl::Ast::Module& shaderModule, std::string_view expecte
 				UNSCOPED_INFO(fullSpirv + "\n" + message);
 			});
 
-			REQUIRE(spirvTools.Validate(spirv));
+			REQUIRE(spirvTools.Validate(spirv.data(), spirv.size(), validatorOptions));
 		}
 	}
 }

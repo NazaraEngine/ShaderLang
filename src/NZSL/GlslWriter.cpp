@@ -176,16 +176,35 @@ namespace nzsl
 
 			void Visit(Ast::DeclareExternalStatement& node) override
 			{
+				auto testStructLayout = [&](std::size_t structIndex, auto&& callback) -> bool
+				{
+					const Ast::StructDescription* structDesc = Nz::Retrieve(structs, structIndex);
+					if (!structDesc->layout.HasValue())
+						return false;
+
+					return callback(structDesc->layout.GetResultingValue());
+				};
+
 				for (const auto& extVar : node.externalVars)
 				{
 					const Ast::ExpressionType& type = extVar.type.GetResultingValue();
 					if (IsStorageType(type))
 					{
+						std::size_t structIndex = std::get<Ast::StorageType>(type).containedType.structIndex;
+						if (testStructLayout(structIndex, [](Ast::MemoryLayout layout) { return layout == Ast::MemoryLayout::Scalar; }))
+							requiredExtensions.emplace("GL_EXT_scalar_block_layout");
+
 						capabilities.insert(GlslCapability::SSBO);
-						bufferStructs.UnboundedSet(std::get<Ast::StorageType>(type).containedType.structIndex);
+						bufferStructs.UnboundedSet(structIndex);
 					}
 					else if (IsUniformType(type))
-						bufferStructs.UnboundedSet(std::get<Ast::UniformType>(type).containedType.structIndex);
+					{
+						std::size_t structIndex = std::get<Ast::UniformType>(type).containedType.structIndex;
+						if (testStructLayout(structIndex, [](Ast::MemoryLayout layout) { return layout == Ast::MemoryLayout::Scalar || layout == Ast::MemoryLayout::Std430; }))
+							requiredExtensions.emplace("GL_EXT_scalar_block_layout");
+
+						bufferStructs.UnboundedSet(structIndex);
+					}
 					else
 						RegisterPrecisionQualifiers(type);
 				}
@@ -310,6 +329,7 @@ namespace nzsl
 			std::unordered_map<std::size_t, Ast::StructDescription*> structs;
 			tsl::ordered_set<GlslCapability> capabilities;
 			tsl::ordered_set<Ast::ExpressionType> requiredPrecisionQualifiers;
+			tsl::ordered_set<std::string_view> requiredExtensions;
 			Nz::Bitset<> bufferStructs; //< structs used only in UBO/SSBO that shouldn't be declared as such in GLSL
 			Nz::Bitset<> usedStructs; //< & with bufferStructs, to handle case where a UBO/SSBO struct is declared as a variable (which is allowed) or member of a struct
 			Ast::DeclareFunctionStatement* entryPoint = nullptr;
@@ -821,6 +841,7 @@ namespace nzsl
 		{
 			case Ast::MemoryLayout::Std140: Append("std140"); break;
 			case Ast::MemoryLayout::Std430: Append("std430"); break;
+			case Ast::MemoryLayout::Scalar: Append("scalar"); break;
 		}
 	}
 
@@ -1016,7 +1037,7 @@ namespace nzsl
 
 		// Extensions
 
-		tsl::ordered_set<std::string_view> requiredExtensions;
+		tsl::ordered_set<std::string_view> requiredExtensions = m_currentState->previsitor.requiredExtensions;
 		
 		bool hasConservativeDepth = false;
 		bool hasEarlyFragmentTests = false;
@@ -2280,6 +2301,7 @@ namespace nzsl
 					{
 						case Ast::MemoryLayout::Std140: memoryLayout = "std140"; break;
 						case Ast::MemoryLayout::Std430: memoryLayout = "std430"; break;
+						case Ast::MemoryLayout::Scalar: memoryLayout = "scalar"; break;
 					}
 				}
 

@@ -239,7 +239,8 @@ namespace nzsl::LangData
 
 	constexpr auto s_memoryLayouts = frozen::make_unordered_map<Ast::MemoryLayout, MemoryLayoutData>({
 		{ Ast::MemoryLayout::Std140, { "std140", StructLayout::Std140 } },
-		{ Ast::MemoryLayout::Std430, { "std430", StructLayout::Std140 } }
+		{ Ast::MemoryLayout::Std430, { "std430", StructLayout::Std430 } },
+		{ Ast::MemoryLayout::Scalar, { "scalar", StructLayout::Scalar } },
 	});
 
 	constexpr auto s_moduleFeatures = frozen::make_unordered_map<Ast::ModuleFeature, ModuleFeatureData>({

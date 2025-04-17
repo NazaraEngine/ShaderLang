@@ -885,6 +885,7 @@ namespace nzsl
 			{
 				case Ast::MemoryLayout::Std140: sType.layout = StructLayout::Std140; break;
 				case Ast::MemoryLayout::Std430: sType.layout = StructLayout::Std430; break;
+				case Ast::MemoryLayout::Scalar: sType.layout = StructLayout::Scalar; break;
 			}
 		}
 
