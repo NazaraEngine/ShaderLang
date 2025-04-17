@@ -39,7 +39,7 @@ namespace nzsl
 			struct Output
 			{
 				std::string code;
-				std::vector</* sets/group */ std::unordered_map<unsigned int/* bindings */, unsigned int>> bindingRemap;
+				std::unordered_map<std::uint64_t /* set | binding */, unsigned int /*new binding*/> bindingRemap;
 			};
 
 			static Ast::SanitizeVisitor::Options GetSanitizeOptions();
