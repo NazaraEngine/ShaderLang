@@ -25,6 +25,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <unordered_map>
+#include <unordered_set>
 #include <variant>
 
 #include <iostream>
@@ -265,6 +266,7 @@ namespace nzsl
 		std::unordered_map<std::size_t, Identifier> modules;
 		std::unordered_map<std::size_t, Identifier> structs;
 		std::unordered_map<std::size_t, Identifier> variables;
+		std::unordered_map<std::uint64_t, unsigned int> bindingRemap;
 		std::vector<std::string> externalBlockNames;
 		std::vector<std::string> moduleNames;
 		const States* states = nullptr;
@@ -352,6 +354,7 @@ namespace nzsl
 
 		Output output;
 		output.code = std::move(state.stream).str();
+		output.bindingRemap = std::move(state.bindingRemap);
 
 		return output;
 	}
@@ -1261,6 +1264,8 @@ namespace nzsl
 	void WgslWriter::Visit(Ast::IntrinsicExpression& node)
 	{
 		bool method = false;
+		bool firstParam = true;
+		std::size_t firstParamIndex = 0;
 		switch (node.intrinsic)
 		{
 			// Function intrinsics
@@ -1332,7 +1337,14 @@ namespace nzsl
 				break;
 
 			case Ast::IntrinsicType::TextureSampleImplicitLod:
-				Append("textureLoad");
+				firstParam = false;
+				firstParamIndex = node.parameters.size();
+				Append("textureSample(");
+				node.parameters[0]->Visit(*this);
+				Append(", ");
+				node.parameters[0]->Visit(*this);
+				Append("Sampler, ");
+				node.parameters[1]->Visit(*this);
 				break;
 
 			case Ast::IntrinsicType::TextureSampleImplicitLodDepthComp:
@@ -1350,9 +1362,10 @@ namespace nzsl
 				break;
 		}
 
-		Append("(");
+		if (firstParam)
+			Append("(");
 		bool first = true;
-		for (std::size_t i = (method) ? 1 : 0; i < node.parameters.size(); ++i)
+		for (std::size_t i = (method) ? firstParamIndex + 1 : firstParamIndex; i < node.parameters.size(); ++i)
 		{
 			if (!first)
 				Append(", ");
@@ -1360,12 +1373,6 @@ namespace nzsl
 			first = false;
 
 			node.parameters[i]->Visit(*this);
-		}
-		switch (node.intrinsic)
-		{
-			case Ast::IntrinsicType::TextureSampleImplicitLod: Append(", 0.0"); break;
-
-			default: break;
 		}
 		Append(")");
 	}
@@ -1515,20 +1522,34 @@ namespace nzsl
 		if (!node.name.empty())
 		{
 			Append(" ", node.name);
-		
+
 			m_currentState->currentExternalBlockIndex = m_currentState->externalBlockNames.size();
 			m_currentState->externalBlockNames.push_back(node.name);
 		}
 
 		AppendLine();
 
+		std::unordered_set<std::uint64_t> reservedBindings;
+
 		for (const auto& externalVar : node.externalVars)
 		{
 			if (!externalVar.tag.empty() && m_currentState->states->debugLevel >= DebugLevel::Minimal)
 				AppendComment("external var tag: " + externalVar.tag);
 
+			std::uint32_t binding = 0;
+			std::uint64_t bindingSet;
+			if (externalVar.bindingSet.HasValue())
+				bindingSet = externalVar.bindingSet.GetResultingValue();
+			else
+				bindingSet = 0;
 			if (!externalVar.type.IsResultingValue() || !IsPushConstantType(externalVar.type.GetResultingValue())) // push constants don't have set or binding'
-				AppendAttributes(false, SetAttribute{ externalVar.bindingSet }, BindingAttribute{ externalVar.bindingIndex });
+			{
+				binding = externalVar.bindingIndex.GetResultingValue();
+				for (; reservedBindings.count(bindingSet << 32 | binding); binding++);
+				reservedBindings.emplace(bindingSet << 32 | binding);
+				m_currentState->bindingRemap[bindingSet << 32 | externalVar.bindingIndex.GetResultingValue()] = binding;
+				AppendAttributes(false, SetAttribute{ externalVar.bindingSet }, BindingAttribute{ Ast::ExpressionValue{ binding } });
+			}
 
 			Append("var");
 
@@ -1551,15 +1572,16 @@ namespace nzsl
 				},
 				[&](const Ast::SamplerType& samplerType)
 				{
-					Append(" ", externalVar.name, ": texture_");
+					std::string dimension;
+					std::string type;
 					switch (samplerType.dim)
 					{
-						case ImageType::E1D:       Append("1d");      break;
-						case ImageType::E1D_Array: Append("1d_array"); break;
-						case ImageType::E2D:       Append("2d");      break;
-						case ImageType::E2D_Array: Append("2d_array"); break;
-						case ImageType::E3D:       Append("3d");      break;
-						case ImageType::Cubemap:   Append("cube");    break;
+						case ImageType::E1D:       dimension = "1d";       break;
+						case ImageType::E1D_Array: dimension = "1d_array"; break;
+						case ImageType::E2D:       dimension = "2d";       break;
+						case ImageType::E2D_Array: dimension = "2d_array"; break;
+						case ImageType::E3D:       dimension = "3d";       break;
+						case ImageType::Cubemap:   dimension = "cube";     break;
 					}
 					switch (samplerType.sampledType)
 					{
@@ -1568,13 +1590,17 @@ namespace nzsl
 						case Ast::PrimitiveType::Float64:
 							throw std::runtime_error("unexpected f64 type for texture");
 
-						case Ast::PrimitiveType::Float32: Append("<f32>"); break;
-						case Ast::PrimitiveType::Int32:   Append("<i32>"); break;
-						case Ast::PrimitiveType::UInt32:  Append("<u32>"); break;
+						case Ast::PrimitiveType::Float32: type = "<f32>"; break;
+						case Ast::PrimitiveType::Int32:   type = "<i32>"; break;
+						case Ast::PrimitiveType::UInt32:  type = "<u32>"; break;
 
 						case Ast::PrimitiveType::String:
 							throw std::runtime_error("unexpected string type for texture");
 					}
+					AppendLine(" ", externalVar.name, ": texture_", dimension, type, ";");
+					AppendAttributes(false, SetAttribute{ externalVar.bindingSet }, BindingAttribute{ Ast::ExpressionValue{ binding + 1 } });
+					reservedBindings.emplace(bindingSet << 32 | binding + 1);
+					Append("var ", externalVar.name, "Sampler: sampler");
 				},
 				[&](const Ast::PushConstantType& /*pushConstantType*/)
 				{
