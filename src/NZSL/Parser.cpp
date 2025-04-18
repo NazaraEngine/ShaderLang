@@ -1321,6 +1321,8 @@ namespace nzsl
 
 	Ast::StatementPtr Parser::ParseStatement(std::vector<Attribute> attributes)
 	{
+		NAZARA_USE_ANONYMOUS_NAMESPACE
+
 		if (Peek().type == TokenType::OpenCurlyBracket)
 		{
 			auto multiStatement = ShaderBuilder::MultiStatement();
