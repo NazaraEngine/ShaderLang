@@ -1031,6 +1031,19 @@ namespace nzsl
 
 	void SpirvAstVisitor::Visit(Ast::ScopedStatement& node)
 	{
+		if (node.targetType.IsResultingValue())
+		{
+			unsigned int spirvVersion = m_writer.m_environment.spvMajorVersion * 100 + m_writer.m_environment.spvMinorVersion * 10;
+			auto targetType = node.targetType.GetResultingValue();
+			std::uint32_t targetVersion = 0;
+			if (node.targetVersion.IsResultingValue())
+				targetVersion = node.targetVersion.GetResultingValue();
+
+			const auto isSPIRV = targetType == Ast::TargetType::SPIRV;
+			if (!(isSPIRV && targetVersion <= spirvVersion))
+				return;
+		}
+
 		node.statement->Visit(*this);
 	}
 

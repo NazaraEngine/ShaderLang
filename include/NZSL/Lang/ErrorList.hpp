@@ -39,6 +39,7 @@ NZSL_SHADERLANG_PARSER_ERROR(AttributeInvalidParameter, "invalid parameter {} fo
 NZSL_SHADERLANG_PARSER_ERROR(AttributeMultipleUnique, "attribute {} can only be present once", Ast::AttributeType)
 NZSL_SHADERLANG_PARSER_ERROR(AttributeParameterIdentifier, "attribute {} parameter can only be an identifier", Ast::AttributeType)
 NZSL_SHADERLANG_PARSER_ERROR(AttributeUnexpectedParameterCount, "attribute {} expects {} arguments, got {}", Ast::AttributeType, std::size_t, std::size_t)
+NZSL_SHADERLANG_PARSER_ERROR(AttributeInvalidTargetVersion, "invalid target version {} for target {}", std::int32_t, std::string)
 NZSL_SHADERLANG_PARSER_ERROR(ExpectedToken, "expected token {}, got {}", TokenType, TokenType)
 NZSL_SHADERLANG_PARSER_ERROR(DuplicateIdentifier, "duplicate identifier")
 NZSL_SHADERLANG_PARSER_ERROR(DuplicateModule, "duplicate module")

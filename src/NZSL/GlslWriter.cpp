@@ -2703,6 +2703,20 @@ namespace nzsl
 
 	void GlslWriter::Visit(Ast::ScopedStatement& node)
 	{
+		if (node.targetType.IsResultingValue())
+		{
+			unsigned int glVersion = m_environment.glMajorVersion * 100 + m_environment.glMinorVersion * 10;
+			auto targetType = node.targetType.GetResultingValue();
+			std::uint32_t targetVersion = 0;
+			if (node.targetVersion.IsResultingValue())
+				targetVersion = node.targetVersion.GetResultingValue();
+
+			const auto isGLSL = !m_environment.glES && targetType == Ast::TargetType::GLSL;
+			const auto isGLES = m_environment.glES && targetType == Ast::TargetType::GLES;
+			if (!((isGLSL || isGLES) && targetVersion <= glVersion))
+				return;
+		}
+
 		EnterScope();
 		node.statement->Visit(*this);
 		LeaveScope(true);
