@@ -43,8 +43,12 @@ namespace nzsl
 		{
 			if (node.funcIndex)
 				m_writer.RegisterFunction(*node.funcIndex, node.name);
-
-			// Speed up by not visiting function statements, we only need to extract function data
+			std::optional<ShaderStageType> entryPointType;
+			if (node.entryStage.HasValue())
+				entryPointType = node.entryStage.GetResultingValue();
+			if (entryPointType && *entryPointType == ShaderStageType::Vertex)
+			{
+			}
 		}
 
 		WgslWriter& m_writer;
@@ -279,6 +283,8 @@ namespace nzsl
 	WgslWriter::Output WgslWriter::Generate(const Ast::Module& module, const States& states)
 	{
 		State state;
+		state.states = &states;
+
 		m_currentState = &state;
 		Nz::CallOnExit onExit([this]()
 		{
@@ -594,12 +600,8 @@ namespace nzsl
 		if (!param.HasValue())
 			return;
 
-		if (!first)
-			Append(" @");
-
+		AppendAttribute(first, param);
 		first = false;
-
-		AppendAttribute(param);
 	}
 
 	template<typename T1, typename T2, typename... Rest>
@@ -609,10 +611,12 @@ namespace nzsl
 		AppendAttributesInternal(first, secondParam, std::forward<Rest>(params)...);
 	}
 
-	void WgslWriter::AppendAttribute(AutoBindingAttribute attribute)
+	void WgslWriter::AppendAttribute(bool first, AutoBindingAttribute attribute)
 	{
 		if (!attribute.HasValue())
 			return;
+		if (!first)
+			Append(" @");
 
 		Append("auto_binding(");
 
@@ -624,18 +628,22 @@ namespace nzsl
 		Append(")");
 	}
 
-	void WgslWriter::AppendAttribute(AuthorAttribute attribute)
+	void WgslWriter::AppendAttribute(bool first, AuthorAttribute attribute)
 	{
 		if (!attribute.HasValue())
 			return;
+		if (!first)
+			Append(" @");
 
 		Append("author(", EscapeString(attribute.author), ")");
 	}
 
-	void WgslWriter::AppendAttribute(BindingAttribute attribute)
+	void WgslWriter::AppendAttribute(bool first, BindingAttribute attribute)
 	{
 		if (!attribute.HasValue())
 			return;
+		if (!first)
+			Append(" @");
 
 		Append("binding(");
 
@@ -647,10 +655,12 @@ namespace nzsl
 		Append(")");
 	}
 
-	void WgslWriter::AppendAttribute(BuiltinAttribute attribute)
+	void WgslWriter::AppendAttribute(bool first, BuiltinAttribute attribute)
 	{
 		if (!attribute.HasValue())
 			return;
+		if (!first)
+			Append(" @");
 		auto it = s_wgslBuiltinMapping.find(attribute.builtin.GetResultingValue());
 		assert(it != s_wgslBuiltinMapping.end());
 		if (it->second.empty())
@@ -658,10 +668,12 @@ namespace nzsl
 		Append("builtin(", it->second, ")");
 	}
 
-	void WgslWriter::AppendAttribute(CondAttribute attribute)
+	void WgslWriter::AppendAttribute(bool first, CondAttribute attribute)
 	{
 		if (!attribute.HasValue())
 			return;
+		if (!first)
+			Append(" @");
 
 		Append("cond(");
 
@@ -673,48 +685,32 @@ namespace nzsl
 		Append(")");
 	}
 	
-	void WgslWriter::AppendAttribute(DepthWriteAttribute attribute)
+	void WgslWriter::AppendAttribute(bool /*first*/, DepthWriteAttribute /*attribute*/)
 	{
-		if (!attribute.HasValue())
-			return;
-
-		Append("depth_write(");
-
-		if (attribute.writeMode.IsResultingValue())
-			Append(Parser::ToString(attribute.writeMode.GetResultingValue()));
-		else
-			attribute.writeMode.GetExpression()->Visit(*this);
-
-		Append(")");
+		return;
 	}
 
-	void WgslWriter::AppendAttribute(DescriptionAttribute attribute)
+	void WgslWriter::AppendAttribute(bool first, DescriptionAttribute attribute)
 	{
 		if (!attribute.HasValue())
 			return;
+		if (!first)
+			Append(" @");
 
 		Append("desc(", EscapeString(attribute.description), ")");
 	}
 
-	void WgslWriter::AppendAttribute(EarlyFragmentTestsAttribute attribute)
+	void WgslWriter::AppendAttribute(bool /*first*/, EarlyFragmentTestsAttribute /*attribute*/)
 	{
-		if (!attribute.HasValue())
-			return;
-
-		Append("early_fragment_tests(");
-
-		if (attribute.earlyFragmentTests.IsResultingValue())
-			Append((attribute.earlyFragmentTests.GetResultingValue()) ? "true" : "false");
-		else
-			attribute.earlyFragmentTests.GetExpression()->Visit(*this);
-
-		Append(")");
+		return;
 	}
 
-	void WgslWriter::AppendAttribute(EntryAttribute attribute)
+	void WgslWriter::AppendAttribute(bool first, EntryAttribute attribute)
 	{
 		if (!attribute.HasValue())
 			return;
+		if (!first)
+			Append(" @");
 
 		if (attribute.stageType.IsResultingValue())
 		{
@@ -729,8 +725,10 @@ namespace nzsl
 			attribute.stageType.GetExpression()->Visit(*this);
 	}
 
-	void WgslWriter::AppendAttribute(FeatureAttribute attribute)
+	void WgslWriter::AppendAttribute(bool first, FeatureAttribute attribute)
 	{
+		if (!first)
+			Append(" @");
 		Append("feature(");
 
 		auto it = LangData::s_moduleFeatures.find(attribute.featureAttribute);
@@ -741,10 +739,12 @@ namespace nzsl
 		Append(")");
 	}
 
-	void WgslWriter::AppendAttribute(InterpAttribute attribute)
+	void WgslWriter::AppendAttribute(bool first, InterpAttribute attribute)
 	{
 		if (!attribute.HasValue())
 			return;
+		if (!first)
+			Append(" @");
 
 		Append("interp(");
 
@@ -756,10 +756,12 @@ namespace nzsl
 		Append(")");
 	}
 
-	void WgslWriter::AppendAttribute(LayoutAttribute attribute)
+	void WgslWriter::AppendAttribute(bool first, LayoutAttribute attribute)
 	{
 		if (!attribute.HasValue())
 			return;
+		if (!first)
+			Append(" @");
 
 		Append("layout(");
 		if (attribute.layout.IsResultingValue())
@@ -769,18 +771,22 @@ namespace nzsl
 		Append(")");
 	}
 
-	void WgslWriter::AppendAttribute(LicenseAttribute attribute)
+	void WgslWriter::AppendAttribute(bool first, LicenseAttribute attribute)
 	{
 		if (!attribute.HasValue())
 			return;
+		if (!first)
+			Append(" @");
 
 		Append("license(", EscapeString(attribute.license), ")");
 	}
 
-	void WgslWriter::AppendAttribute(LocationAttribute attribute)
+	void WgslWriter::AppendAttribute(bool first, LocationAttribute attribute)
 	{
 		if (!attribute.HasValue())
 			return;
+		if (!first)
+			Append(" @");
 
 		Append("location(");
 
@@ -792,10 +798,12 @@ namespace nzsl
 		Append(")");
 	}
 	
-	void WgslWriter::AppendAttribute(SetAttribute attribute)
+	void WgslWriter::AppendAttribute(bool first, SetAttribute attribute)
 	{
 		if (!attribute.HasValue())
 			return;
+		if (!first)
+			Append(" @");
 
 		Append("group(");
 
@@ -807,18 +815,22 @@ namespace nzsl
 		Append(")");
 	}
 
-	void WgslWriter::AppendAttribute(TagAttribute attribute)
+	void WgslWriter::AppendAttribute(bool first, TagAttribute attribute)
 	{
 		if (!attribute.HasValue())
 			return;
+		if (!first)
+			Append(" @");
 
 		Append("tag(", EscapeString(attribute.tag), ")");
 	}
 
-	void WgslWriter::AppendAttribute(UnrollAttribute attribute)
+	void WgslWriter::AppendAttribute(bool first, UnrollAttribute attribute)
 	{
 		if (!attribute.HasValue())
 			return;
+		if (!first)
+			Append(" @");
 
 		Append("unroll(");
 
@@ -830,10 +842,12 @@ namespace nzsl
 		Append(")");
 	}
 
-	void WgslWriter::AppendAttribute(WorkgroupAttribute attribute)
+	void WgslWriter::AppendAttribute(bool first, WorkgroupAttribute attribute)
 	{
 		if (!attribute.HasValue())
 			return;
+		if (!first)
+			Append(" @");
 
 		Append("workgroup(");
 

@@ -1,6 +1,7 @@
 #include <Tests/ShaderUtils.hpp>
 #include <NZSL/GlslWriter.hpp>
 #include <NZSL/LangWriter.hpp>
+#include <NZSL/WgslWriter.hpp>
 #include <NZSL/Parser.hpp>
 #include <NZSL/SpirV/SpirvPrinter.hpp>
 #include <NZSL/SpirvWriter.hpp>
@@ -14,6 +15,7 @@
 #include <NZSL/Ast/Transformations/LiteralTransformer.hpp>
 #include <NZSL/Ast/Cloner.hpp>
 #include <sstream>
+#include <wgsl_validator.h>
 
 namespace NAZARA_ANONYMOUS_NAMESPACE
 {
@@ -458,6 +460,50 @@ void ExpectSPIRV(nzsl::Ast::Module& shaderModule, std::string_view expectedOutpu
 			});
 
 			REQUIRE(spirvTools.Validate(spirv.data(), spirv.size(), validatorOptions));
+		}
+	}
+}
+
+void ExpectWGSL(const nzsl::Ast::Module& shaderModule, std::string_view expectedOutput, const nzsl::ShaderWriter::States& options)
+{
+	NAZARA_USE_ANONYMOUS_NAMESPACE
+
+	std::string source = SanitizeSource(expectedOutput);
+
+	SECTION("Generating WGSL")
+	{
+		nzsl::Ast::ModulePtr sanitizedModule;
+		WHEN("Sanitizing a second time")
+		{
+			CHECK_NOTHROW(sanitizedModule = nzsl::Ast::Sanitize(shaderModule));
+		}
+		const nzsl::Ast::Module& targetModule = (sanitizedModule) ? *sanitizedModule : shaderModule;
+
+		nzsl::WgslWriter writer;
+		nzsl::WgslWriter::Output output = writer.Generate(targetModule, options);
+
+		SECTION("Validating expected code")
+		{
+			std::string outputCode = SanitizeSource(output.code);
+			if (outputCode.find(source) == std::string::npos)
+				HandleSourceError("WGSL", source, outputCode);
+		}
+
+		SECTION("Validating full WGSL code (using wgsl-validator)")
+		{
+			char* error = nullptr;
+			wgsl_validator_t* validator = wgsl_validator_create();
+			Nz::CallOnExit cleanupOnExit([&]
+			{
+				if (error != nullptr)
+					wgsl_validator_free_error(error);
+				wgsl_validator_destroy(validator);
+			});
+			if (wgsl_validator_validate(validator, output.code.c_str(), &error))
+			{
+				INFO("full WGSL output:\n" << output.code << "\nerror:\n" << error);
+				REQUIRE(false);
+			}
 		}
 	}
 }

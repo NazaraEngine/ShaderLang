@@ -1,12 +1,15 @@
 option("tests", { description = "Build unit tests", default = false })
 
+-- add_repositories("kbz_8-nazara-engine-repo https://github.com/Kbz-8/xmake-repo")
+add_repositories("local-repo /home/kbz_8/Documents/Code/nazara-xmake-repo")
+
 if has_config("tests") then
 	if has_config("asan") then
 		add_defines("CATCH_CONFIG_NO_WINDOWS_SEH")
 		add_defines("CATCH_CONFIG_NO_POSIX_SIGNALS")
 	end
 
-	add_requires("catch2 3", "spirv-tools", "tiny-process-library")
+	add_requires("catch2 3", "wgsl-validator", "spirv-tools", "tiny-process-library")
 	add_requires("glslang", { configs = { rtti = has_config("ubsan") } }) -- ubsan requires rtti
 
 	add_includedirs("src")
@@ -19,7 +22,7 @@ if has_config("tests") then
 		add_files("src/**.cpp")
 
 		add_deps("nzsl")
-		add_packages("catch2", "glslang", "spirv-tools")
+		add_packages("catch2", "glslang", "wgsl-validator", "spirv-tools")
 
 		if has_config("with_nzslc") then
 			add_deps("nzslc", { links = {} })

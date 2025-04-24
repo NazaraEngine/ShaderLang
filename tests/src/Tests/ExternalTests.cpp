@@ -85,6 +85,18 @@ fn main()
       OpStore %14 %17
       OpReturn
       OpFunctionEnd)", {}, {}, true);
+
+		ExpectWGSL(*shaderModule, R"(
+// external var tag: Color map
+@group(0) @binding(0) var tex: texture_2d<f32>;
+@group(0) @binding(1) var texSampler: sampler;
+
+@fragment
+fn main()
+{
+	var value: vec4<f32> = textureSample(tex, texSampler, vec2<f32>(0.0, 0.0));
+}
+)");
 	}
 	
 	SECTION("Arrays of texture")

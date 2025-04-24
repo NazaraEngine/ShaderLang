@@ -51,7 +51,7 @@ void main()
 
 			ExpectNZSL(*shaderModule, R"(
 [entry(vert)]
-fn main()
+fn main() -> @builtin(position) vec4<f32>
 {
 	let result: f32 = ubo.s.field.z;
 }
@@ -67,6 +67,14 @@ OpCompositeExtract
 OpStore
 OpReturn
 OpFunctionEnd)");
+
+			ExpectWGSL(*shaderModule, R"(
+@vertex
+fn main()
+{
+	var result: f32 = ubo.s.field.z;
+}
+)");
 		}
 
 		SECTION("AccessMember with multiples fields")
@@ -104,6 +112,14 @@ OpCompositeExtract
 OpStore
 OpReturn
 OpFunctionEnd)");
+
+			ExpectWGSL(*shaderModule, R"(
+@vertex
+fn main() -> @builtin(position) vec4<f32>
+{
+	var result: f32 = ubo.s.field.z;
+}
+)");
 		}
 	}
 }
