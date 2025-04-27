@@ -201,5 +201,39 @@ fn main(input: VertIn) -> VertOut
       OpStore %32 %70
       OpReturn
       OpFunctionEnd)", {}, {}, true);
+
+		ExpectWGSL(*shaderModule, R"(
+const vertices: array<vec3<f32>, 3> = array<vec3<f32>, 3>(
+	vec3<f32>(1.0, 2.0, 3.0),
+	vec3<f32>(4.0, 5.0, 6.0),
+	vec3<f32>(7.0, 8.0, 9.0)
+);
+
+struct VertIn
+{
+	@builtin(vertex_index) vert_index: i32
+}
+
+struct VertOut
+{
+	@builtin(position) pos: vec4<f32>
+}
+
+@vertex
+fn main(input: VertIn) -> VertOut
+{
+	var output: VertOut;
+	if ((u32(input.vert_index)) < (vertices.length()))
+	{
+		output.pos = vec4<f32>(vertices[input.vert_index], 1.0);
+	}
+	else
+	{
+		output.pos = vec4<f32>(0.0, 0.0, 0.0, 0.0);
+	}
+
+	var customData: array<i32, 5> = array<i32, 5>(1, 2, 3, 4, 5);
+	return output;
+})");
 	}
 }

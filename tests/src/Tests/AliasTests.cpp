@@ -93,6 +93,18 @@ OpCompositeExtract
 OpStore
 OpReturn
 OpFunctionEnd)");
+
+#if 0
+		ExpectWGSL(*shaderModule, R"(
+@fragment
+fn main(input: Input) -> Output
+{
+	var output: Output;
+	output.value = extData.value * input.value;
+	return output;
+}
+)");
+#endif
 	}
 
 	SECTION("Conditional aliases")
@@ -218,6 +230,27 @@ OpCompositeExtract
 OpStore
 OpReturn
 OpFunctionEnd)");
+
+			ExpectWGSL(*shaderModule, R"(
+struct ForwardOutput
+{
+	@location(0) color: vec4<f32>
+}
+
+struct DeferredOutput
+{
+	@location(0) color: vec4<f32>,
+	@location(1) normal: vec3<f32>
+}
+
+@fragment
+fn main() -> ForwardOutput
+{
+	var output: ForwardOutput;
+	output.color = vec4<f32>(0.0, 0.0, 1.0, 1.0);
+	return output;
+}
+)");
 		}
 
 		WHEN("We disable ForwardPass")
@@ -299,6 +332,28 @@ OpCompositeExtract
 OpStore
 OpReturn
 OpFunctionEnd)");
+
+			ExpectWGSL(*shaderModule, R"(
+struct ForwardOutput
+{
+	@location(0) color: vec4<f32>
+}
+
+struct DeferredOutput
+{
+	@location(0) color: vec4<f32>,
+	@location(1) normal: vec3<f32>
+}
+
+@fragment
+fn main() -> DeferredOutput
+{
+	var output: DeferredOutput;
+	output.color = vec4<f32>(0.0, 0.0, 1.0, 1.0);
+	output.normal = vec3<f32>(0.0, 1.0, 0.0);
+	return output;
+}
+)");
 		}
 	}
 }
