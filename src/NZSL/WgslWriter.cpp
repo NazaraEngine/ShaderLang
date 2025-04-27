@@ -27,6 +27,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <variant>
+#include <algorithm>
 
 #include <iostream>
 
@@ -43,12 +44,6 @@ namespace nzsl
 		{
 			if (node.funcIndex)
 				m_writer.RegisterFunction(*node.funcIndex, node.name);
-			std::optional<ShaderStageType> entryPointType;
-			if (node.entryStage.HasValue())
-				entryPointType = node.entryStage.GetResultingValue();
-			if (entryPointType && *entryPointType == ShaderStageType::Vertex)
-			{
-			}
 		}
 
 		WgslWriter& m_writer;
@@ -378,14 +373,14 @@ namespace nzsl
 	void WgslWriter::Append(const Ast::ArrayType& type)
 	{
 		if (type.length > 0)
-			Append("array[", type.containedType->type, ", ", type.length, "]");
+			Append("array<", type.containedType->type, ", ", type.length, ">");
 		else
-			Append("array[", type.containedType->type, "]");
+			Append("array<", type.containedType->type, ">");
 	}
 
 	void WgslWriter::Append(const Ast::DynArrayType& type)
 	{
-		Append("dyn_array[", type.containedType->type, "]");
+		Append("dyn_array<", type.containedType->type, ">");
 	}
 
 	void WgslWriter::Append(const Ast::ExpressionType& type)
@@ -417,20 +412,11 @@ namespace nzsl
 
 	void WgslWriter::Append(const Ast::MatrixType& matrixType)
 	{
-		if (matrixType.columnCount == matrixType.rowCount)
-		{
-			Append("mat");
-			Append(matrixType.columnCount);
-		}
-		else
-		{
-			Append("mat");
-			Append(matrixType.columnCount);
-			Append("x");
-			Append(matrixType.rowCount);
-		}
-
-		Append("[", matrixType.type, "]");
+		Append("mat");
+		Append(matrixType.columnCount);
+		Append("x");
+		Append(matrixType.rowCount);
+		Append("<", matrixType.type, ">");
 	}
 
 	void WgslWriter::Append(const Ast::MethodType& /*functionType*/)
@@ -949,6 +935,13 @@ namespace nzsl
 			bool v = value;
 			return AppendValue(v);
 		}
+		else if constexpr (IsVector_v<T>)
+		{
+			std::string str = Ast::ConstantToString(value);
+			std::replace(str.begin(), str.end(), '[', '<');
+			std::replace(str.begin(), str.end(), ']', '>');
+			Append(str);
+		}
 		else
 			Append(Ast::ConstantToString(value));
 	}
@@ -1140,6 +1133,8 @@ namespace nzsl
 
 	void WgslWriter::Visit(Ast::BinaryExpression& node)
 	{
+		bool rightCastU32 = false;
+
 		Visit(node.left, true);
 
 		switch (node.op)
@@ -1163,11 +1158,15 @@ namespace nzsl
 			case Ast::BinaryType::BitwiseAnd:  Append(" & ");  break;
 			case Ast::BinaryType::BitwiseOr:   Append(" | ");  break;
 			case Ast::BinaryType::BitwiseXor:  Append(" ^ ");  break;
-			case Ast::BinaryType::ShiftLeft:   Append(" << "); break;
-			case Ast::BinaryType::ShiftRight:  Append(" >> "); break;
+			case Ast::BinaryType::ShiftLeft:   Append(" << "); rightCastU32 = true; break;
+			case Ast::BinaryType::ShiftRight:  Append(" >> "); rightCastU32 = true; break;
 		}
 
+		if (rightCastU32)
+			Append("u32(");
 		Visit(node.right, true);
+		if (rightCastU32)
+			Append(")");
 	}
 
 	void WgslWriter::Visit(Ast::CallFunctionExpression& node)
@@ -1181,13 +1180,9 @@ namespace nzsl
 				Append(", ");
 
 			if (node.parameters[i].semantic == Ast::FunctionParameterSemantic::InOut)
-			{
 				Append("inout ");
-			}
 			else if (node.parameters[i].semantic == Ast::FunctionParameterSemantic::Out)
-			{
 				Append("out ");
-			}
 
 			node.parameters[i].expr->Visit(*this);
 		}
@@ -1199,15 +1194,67 @@ namespace nzsl
 		Append(node.targetType);
 		Append("(");
 
-		bool first = true;
-		for (const auto& exprPtr : node.expressions)
+		if (node.expressions.size() > 1 || !node.targetType.IsResultingValue())
 		{
-			if (!first)
-				Append(", ");
+			bool first = true;
+			for (const auto& exprPtr : node.expressions)
+			{
+				if (!first)
+					Append(", ");
 
-			first = false;
+				first = false;
 
-			exprPtr->Visit(*this);
+				exprPtr->Visit(*this);
+			}
+		}
+		else
+		{
+			/**
+			 * In WGSL, code like this is invalid:
+			 * `var m: mat3x3<f32> = mat3x3<f32>(1.0);`
+			 *
+			 * Instead we fill the declaration with the number of components:
+			 * `var m: mat3x3<f32> = mat3x3<f32>(1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0);`
+			 */
+			std::size_t nbParams;
+			std::visit(Nz::Overloaded
+			{
+				[&](const Ast::VectorType& vec)
+				{
+					nbParams = vec.componentCount;
+				},
+				[&](const Ast::MatrixType& mat)
+				{
+					nbParams = mat.columnCount * mat.rowCount;
+				},
+				[&](const Ast::PrimitiveType&)
+				{
+					nbParams = 1;
+				},
+				[&](const Ast::UniformType&) { throw std::runtime_error("unexpected UniformType?"); },
+				[&](const Ast::StorageType&) { throw std::runtime_error("unexpected StorageType?"); },
+				[&](const Ast::SamplerType&) { throw std::runtime_error("unexpected SamplerType?"); },
+				[&](const Ast::PushConstantType&) { throw std::runtime_error("unexpected PushConstantType?"); },
+				[&](const Ast::TextureType&) { throw std::runtime_error("unexpected TextureType?"); },
+				[&](const Ast::NoType&) { throw std::runtime_error("unexpected NoType?"); },
+				[&](const Ast::AliasType&) { throw std::runtime_error("unexpected AliasType?"); },
+				[&](const Ast::ArrayType&) { throw std::runtime_error("unexpected ArrayType?"); },
+				[&](const Ast::DynArrayType&) { throw std::runtime_error("unexpected DynArrayType?"); },
+				[&](const Ast::FunctionType&) { throw std::runtime_error("unexpected FunctionType?"); },
+				[&](const Ast::IntrinsicFunctionType&) { throw std::runtime_error("unexpected IntrinsicFunctionType?"); },
+				[&](const Ast::MethodType&) { throw std::runtime_error("unexpected MethodType?"); },
+				[&](const Ast::ModuleType&) { throw std::runtime_error("unexpected ModuleType?"); },
+				[&](const Ast::StructType&) { throw std::runtime_error("unexpected StructType?"); },
+				[&](const Ast::Type&) { throw std::runtime_error("unexpected Type?"); },
+				[&](const Ast::NamedExternalBlockType&) { throw std::runtime_error("unexpected NamedExternalBlockType?"); }
+			}, node.targetType.GetResultingValue());
+
+			for (std::size_t i = 0; i < nbParams; i++)
+			{
+				if (i != 0)
+					Append(", ");
+				node.expressions.at(0)->Visit(*this);
+			}
 		}
 
 		Append(")");
@@ -1338,8 +1385,11 @@ namespace nzsl
 			// Method intrinsics
 			case Ast::IntrinsicType::ArraySize:
 				assert(!node.parameters.empty());
-				Visit(node.parameters.front(), true);
-				Append(".Size");
+				assert(!node.parameters.empty());
+				firstParam = false;
+				firstParamIndex = node.parameters.size();
+				Append("arrayLength(");
+				node.parameters[0]->Visit(*this);
 				method = true;
 				break;
 
@@ -1437,7 +1487,6 @@ namespace nzsl
 				break;
 
 			case Ast::UnaryType::Plus:
-				Append("+");
 				break;
 		}
 
