@@ -30,6 +30,7 @@
 #include <algorithm>
 
 #include <iostream>
+#include <typeinfo>
 
 namespace nzsl
 {
@@ -273,6 +274,7 @@ namespace nzsl
 		bool isInEntryPoint = false;
 		int streamEmptyLine = 1;
 		unsigned int indentLevel = 0;
+		bool isTerminatedScope = false;
 	};
 
 	WgslWriter::Output WgslWriter::Generate(const Ast::Module& module, const States& states)
@@ -571,7 +573,6 @@ namespace nzsl
 
 		bool first = true;
 
-		Append("@");
 		AppendAttributesInternal(first, std::forward<Args>(params)...);
 
 		if (appendLine)
@@ -597,21 +598,8 @@ namespace nzsl
 		AppendAttributesInternal(first, secondParam, std::forward<Rest>(params)...);
 	}
 
-	void WgslWriter::AppendAttribute(bool first, AutoBindingAttribute attribute)
+	void WgslWriter::AppendAttribute(bool /*first*/, AutoBindingAttribute /*attribute*/)
 	{
-		if (!attribute.HasValue())
-			return;
-		if (!first)
-			Append(" @");
-
-		Append("auto_binding(");
-
-		if (attribute.autoBinding.IsResultingValue())
-			Append((attribute.autoBinding.GetResultingValue()) ? "true" : "false");
-		else
-			attribute.autoBinding.GetExpression()->Visit(*this);
-
-		Append(")");
 	}
 
 	void WgslWriter::AppendAttribute(bool first, AuthorAttribute attribute)
@@ -619,7 +607,8 @@ namespace nzsl
 		if (!attribute.HasValue())
 			return;
 		if (!first)
-			Append(" @");
+			Append(" ");
+		Append("@");
 
 		Append("author(", EscapeString(attribute.author), ")");
 	}
@@ -629,7 +618,8 @@ namespace nzsl
 		if (!attribute.HasValue())
 			return;
 		if (!first)
-			Append(" @");
+			Append(" ");
+		Append("@");
 
 		Append("binding(");
 
@@ -646,7 +636,8 @@ namespace nzsl
 		if (!attribute.HasValue())
 			return;
 		if (!first)
-			Append(" @");
+			Append(" ");
+		Append("@");
 		auto it = s_wgslBuiltinMapping.find(attribute.builtin.GetResultingValue());
 		assert(it != s_wgslBuiltinMapping.end());
 		if (it->second.empty())
@@ -659,7 +650,8 @@ namespace nzsl
 		if (!attribute.HasValue())
 			return;
 		if (!first)
-			Append(" @");
+			Append(" ");
+		Append("@");
 
 		Append("cond(");
 
@@ -681,7 +673,8 @@ namespace nzsl
 		if (!attribute.HasValue())
 			return;
 		if (!first)
-			Append(" @");
+			Append(" ");
+		Append("@");
 
 		Append("desc(", EscapeString(attribute.description), ")");
 	}
@@ -696,7 +689,8 @@ namespace nzsl
 		if (!attribute.HasValue())
 			return;
 		if (!first)
-			Append(" @");
+			Append(" ");
+		Append("@");
 
 		if (attribute.stageType.IsResultingValue())
 		{
@@ -711,18 +705,9 @@ namespace nzsl
 			attribute.stageType.GetExpression()->Visit(*this);
 	}
 
-	void WgslWriter::AppendAttribute(bool first, FeatureAttribute attribute)
+	void WgslWriter::AppendAttribute(bool /*first*/, FeatureAttribute /*attribute*/)
 	{
-		if (!first)
-			Append(" @");
-		Append("feature(");
-
-		auto it = LangData::s_moduleFeatures.find(attribute.featureAttribute);
-		assert(it != LangData::s_moduleFeatures.end());
-
-		Append(it->second.identifier);
-
-		Append(")");
+		throw std::runtime_error("none of the features of NZSL are supported by WGSL");
 	}
 
 	void WgslWriter::AppendAttribute(bool first, InterpAttribute attribute)
@@ -730,7 +715,8 @@ namespace nzsl
 		if (!attribute.HasValue())
 			return;
 		if (!first)
-			Append(" @");
+			Append(" ");
+		Append("@");
 
 		Append("interp(");
 
@@ -747,7 +733,8 @@ namespace nzsl
 		if (!attribute.HasValue())
 			return;
 		if (!first)
-			Append(" @");
+			Append(" ");
+		Append("@");
 
 		Append("layout(");
 		if (attribute.layout.IsResultingValue())
@@ -757,14 +744,9 @@ namespace nzsl
 		Append(")");
 	}
 
-	void WgslWriter::AppendAttribute(bool first, LicenseAttribute attribute)
+	void WgslWriter::AppendAttribute(bool /*first*/, LicenseAttribute /*attribute*/)
 	{
-		if (!attribute.HasValue())
-			return;
-		if (!first)
-			Append(" @");
-
-		Append("license(", EscapeString(attribute.license), ")");
+		// TODO
 	}
 
 	void WgslWriter::AppendAttribute(bool first, LocationAttribute attribute)
@@ -772,7 +754,8 @@ namespace nzsl
 		if (!attribute.HasValue())
 			return;
 		if (!first)
-			Append(" @");
+			Append(" ");
+		Append("@");
 
 		Append("location(");
 
@@ -789,7 +772,8 @@ namespace nzsl
 		if (!attribute.HasValue())
 			return;
 		if (!first)
-			Append(" @");
+			Append(" ");
+		Append("@");
 
 		Append("group(");
 
@@ -801,14 +785,9 @@ namespace nzsl
 		Append(")");
 	}
 
-	void WgslWriter::AppendAttribute(bool first, TagAttribute attribute)
+	void WgslWriter::AppendAttribute(bool /*first*/, TagAttribute /*attribute*/)
 	{
-		if (!attribute.HasValue())
-			return;
-		if (!first)
-			Append(" @");
-
-		Append("tag(", EscapeString(attribute.tag), ")");
+		// TODO
 	}
 
 	void WgslWriter::AppendAttribute(bool first, UnrollAttribute attribute)
@@ -816,7 +795,8 @@ namespace nzsl
 		if (!attribute.HasValue())
 			return;
 		if (!first)
-			Append(" @");
+			Append(" ");
+		Append("@");
 
 		Append("unroll(");
 
@@ -833,9 +813,10 @@ namespace nzsl
 		if (!attribute.HasValue())
 			return;
 		if (!first)
-			Append(" @");
+			Append(" ");
+		Append("@");
 
-		Append("workgroup(");
+		Append("workgroup_size(");
 
 		if (attribute.workgroup.IsResultingValue())
 		{
@@ -1326,7 +1307,6 @@ namespace nzsl
 	{
 		bool method = false;
 		bool firstParam = true;
-		std::size_t firstParamIndex = 0;
 		switch (node.intrinsic)
 		{
 			// Function intrinsics
@@ -1385,30 +1365,33 @@ namespace nzsl
 			// Method intrinsics
 			case Ast::IntrinsicType::ArraySize:
 				assert(!node.parameters.empty());
-				assert(!node.parameters.empty());
 				firstParam = false;
-				firstParamIndex = node.parameters.size();
+				if (node.parameters[0]->cachedExpressionType.has_value())
+				{
+					auto value = node.parameters[0]->cachedExpressionType.value();
+					if (IsArrayType(value) && std::get<Ast::ArrayType>(value).length > 0)
+					{
+						Append(std::get<Ast::ArrayType>(value).length);
+						return;
+					}
+				}
 				Append("arrayLength(");
 				node.parameters[0]->Visit(*this);
 				method = true;
 				break;
 
 			case Ast::IntrinsicType::TextureRead:
-				assert(!node.parameters.empty());
-				Visit(node.parameters.front(), true);
-				Append(".Read");
-				method = true;
+				Append("textureLoad");
 				break;
 
 			case Ast::IntrinsicType::TextureSampleImplicitLod:
 				firstParam = false;
-				firstParamIndex = node.parameters.size();
 				Append("textureSample(");
 				node.parameters[0]->Visit(*this);
 				Append(", ");
 				node.parameters[0]->Visit(*this);
 				Append("Sampler, ");
-				node.parameters[1]->Visit(*this);
+				method = true;
 				break;
 
 			case Ast::IntrinsicType::TextureSampleImplicitLodDepthComp:
@@ -1419,17 +1402,14 @@ namespace nzsl
 				break;
 
 			case Ast::IntrinsicType::TextureWrite:
-				assert(!node.parameters.empty());
-				Visit(node.parameters.front(), true);
-				Append(".Write");
-				method = true;
+				Append("textureStore");
 				break;
 		}
 
 		if (firstParam)
 			Append("(");
 		bool first = true;
-		for (std::size_t i = (method) ? firstParamIndex + 1 : firstParamIndex; i < node.parameters.size(); ++i)
+		for (std::size_t i = (method) ? 1 : 0; i < node.parameters.size(); ++i)
 		{
 			if (!first)
 				Append(", ");
@@ -1674,32 +1654,55 @@ namespace nzsl
 					Append(" ", externalVar.name, ": texture_storage_");
 					switch (textureType.dim)
 					{
-						case ImageType::E1D:       Append("1d");      break;
-						case ImageType::E2D:       Append("2d");      break;
+						case ImageType::E1D:       Append("1d");       break;
+						case ImageType::E2D:       Append("2d");       break;
 						case ImageType::E2D_Array: Append("2d_array"); break;
-						case ImageType::E3D:       Append("3d");      break;
+						case ImageType::E3D:       Append("3d");       break;
 
 						default:
 							throw std::runtime_error("unexpected texture type");
 					}
-					switch (textureType.baseType)
+					Append("<");
+					switch (textureType.format)
 					{
-						case Ast::PrimitiveType::Boolean:
-							throw std::runtime_error("unexpected bool type for texture");
-						case Ast::PrimitiveType::Float64:
-							throw std::runtime_error("unexpected f64 type for texture");
+						case ImageFormat::RGBA8:       Append("rgba8unorm");  break;
+						case ImageFormat::RGBA8i:      Append("rgba8sint");   break;
+						case ImageFormat::RGBA8Snorm:  Append("rgba8snorm");  break;
+						case ImageFormat::RGBA8ui:     Append("rgba8uint");   break;
 
-						case Ast::PrimitiveType::Float32: Append("<f32>"); break;
-						case Ast::PrimitiveType::Int32:   Append("<i32>"); break;
-						case Ast::PrimitiveType::UInt32:  Append("<u32>"); break;
+						case ImageFormat::RGBA16f:     Append("rgba16float"); break;
+						case ImageFormat::RGBA16i:     Append("rgba16sint");  break;
+						case ImageFormat::RGBA16ui:    Append("rgba16uint");  break;
 
-						case Ast::PrimitiveType::String:
-							throw std::runtime_error("unexpected string type for texture");
+						case ImageFormat::R32f:        Append("r32float");    break;
+						case ImageFormat::R32i:        Append("r32sint");     break;
+						case ImageFormat::R32ui:       Append("r32uint");     break;
+
+						case ImageFormat::RG32f:       Append("rg32float");   break;
+						case ImageFormat::RG32i:       Append("rg32sint");    break;
+						case ImageFormat::RG32ui:      Append("rg32uint");    break;
+
+						case ImageFormat::RGBA32f:     Append("rgba32float"); break;
+						case ImageFormat::RGBA32i:     Append("rgba32sint");  break;
+						case ImageFormat::RGBA32ui:    Append("rgba32uint");  break;
+
+						default:
+							throw std::runtime_error("unexpected format type for texture");
 					}
+					Append(", ");
+					switch (textureType.accessPolicy)
+					{
+						case AccessPolicy::ReadOnly:  Append("read"); break;
+						case AccessPolicy::ReadWrite: Append("read_write"); break;
+						case AccessPolicy::WriteOnly: Append("write"); break;
+					}
+					Append(">");
+				},
+				[&](const Ast::ArrayType& arrayType)
+				{
 				},
 				[&](const Ast::NoType&) { throw std::runtime_error("unexpected Type?"); },
 				[&](const Ast::AliasType&) { throw std::runtime_error("unexpected Type?"); },
-				[&](const Ast::ArrayType&) { throw std::runtime_error("unexpected Type?"); },
 				[&](const Ast::DynArrayType&) { throw std::runtime_error("unexpected Type?"); },
 				[&](const Ast::FunctionType&) { throw std::runtime_error("unexpected Type?"); },
 				[&](const Ast::IntrinsicFunctionType&) { throw std::runtime_error("unexpected Type?"); },
@@ -1809,7 +1812,11 @@ namespace nzsl
 				first = false;
 
 				AppendAttributes(false, CondAttribute{ member.cond }, LocationAttribute{ member.locationIndex }, InterpAttribute{ member.interp }, BuiltinAttribute{ member.builtin }, TagAttribute{ member.tag });
-				Append(member.name, ": ", member.type);
+				Append(member.name, ": ");
+				if (member.builtin.HasValue() && member.builtin.GetResultingValue() == Ast::BuiltinEntry::VertexIndex)
+					Append("u32");
+				else
+					Append(member.type);
 			}
 		}
 		LeaveScope();

@@ -87,6 +87,23 @@ OpBranch
 OpLabel
 OpReturn
 OpFunctionEnd)");
+
+		ExpectWGSL(*shaderModule, R"(
+@fragment
+fn main()
+{
+	var value: f32;
+	if (data.value > (0.0))
+	{
+		value = 1.0;
+	}
+	else
+	{
+		value = 0.0;
+	}
+
+}
+)");
 	}
 	
 	WHEN("using a more complex branch")
@@ -178,6 +195,23 @@ OpBranch
 OpLabel
 OpReturn
 OpFunctionEnd)");
+
+		ExpectWGSL(*shaderModule, R"(
+@fragment
+fn main()
+{
+	var value: f32;
+	if ((data.value > (42.0)) || ((data.value <= (50.0)) && (data.value < (0.0))))
+	{
+		value = 1.0;
+	}
+	else
+	{
+		value = 0.0;
+	}
+
+}
+)");
 	}
 
 	WHEN("discarding in a branch")
@@ -269,6 +303,21 @@ OpCompositeExtract
 OpStore
 OpReturn
 OpFunctionEnd)");
+
+		ExpectWGSL(*shaderModule, R"(
+@fragment
+fn main() -> Output
+{
+	if (data.value > (0.0))
+	{
+		discard;
+	}
+
+	var output: Output;
+	output.color = vec4<f32>(1.0, 1.0, 1.0, 1.0);
+	return output;
+}
+)");
 	}
 
 	WHEN("discarding in a const branch")
@@ -337,6 +386,22 @@ OpLabel
 OpVariable
 OpKill
 OpFunctionEnd)");
+
+/*
+		ExpectWGSL(*shaderModule, R"(
+@fragment
+fn main() -> Output
+{
+	{
+		discard;
+	}
+
+	var output: Output;
+	output.color = vec4<f32>(1.0, 1.0, 1.0, 1.0);
+	return output;
+}
+)");
+*/
 	}
 	
 	WHEN("using a complex branch")
@@ -462,5 +527,30 @@ OpBranch
 OpLabel
 OpReturn
 OpFunctionEnd)");
+
+		ExpectWGSL(*shaderModule, R"(
+@fragment
+fn main()
+{
+	var value: f32;
+	if (data.value >= (3.0))
+	{
+		value = 3.0;
+	}
+	else if (data.value > (2.0))
+	{
+		value = 2.0;
+	}
+	else if (data.value > (1.0))
+	{
+		value = 1.0;
+	}
+	else
+	{
+		value = 0.0;
+	}
+
+}
+)");
 	}
 }

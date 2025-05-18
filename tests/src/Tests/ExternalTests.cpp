@@ -297,6 +297,22 @@ fn main()
       OpStore %23 %30
       OpReturn
       OpFunctionEnd)", {}, {}, true);
+/*
+		ExpectWGSL(*shaderModule, R"(
+struct Data
+{
+	 values: array<f32, 47>,
+	matrices: array<mat4x4<f32>, 3>
+}
+
+@group(0) @binding(0) var<uniform> data: Data;
+
+@fragment
+fn main()
+{
+	var value: mat4x4<f32> = data.values[42] * data.matrices[1];
+})");
+*/
 	}
 
 	SECTION("Storage buffers")
@@ -453,6 +469,32 @@ fn main()
 %24 = OpLabel
       OpReturn
       OpFunctionEnd)", {}, spirvEnv, true);
+
+			ExpectWGSL(*shaderModule, R"(
+@layout(std430)
+struct Data
+{
+	values: array<f32, 47>
+}
+
+@group(0) @binding(0) var<storage, read> inData: Data;
+@group(0) @binding(1) var<storage, write> outData: Data;
+
+@fragment
+fn main()
+{
+	{
+		var i: i32 = 0;
+		var to: i32 = 47;
+		while (i < to)
+		{
+			outData.values[i] = inData.values[i];
+			i += 1;
+		}
+
+	}
+
+})");
 			}
 
 			WHEN("Generating SPIR-V 1.3")

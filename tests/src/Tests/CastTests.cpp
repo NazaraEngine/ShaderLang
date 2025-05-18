@@ -136,5 +136,25 @@ fn main()
       OpStore %28 %47
       OpReturn
       OpFunctionEnd)", {}, {}, true);
+/*
+		ExpectWGSL(*shaderModule, R"(
+@fragment
+fn main()
+{
+	var fVal: f32 = 42.0;
+	var x: f64 = f64(fVal);
+	var x_2: i32 = i32(fVal);
+	var x_3: u32 = u32(fVal);
+	var iVal: i32 = 42;
+	var x_4: f32 = f32(iVal);
+	var x_5: f64 = f64(iVal);
+	var x_6: u32 = u32(iVal);
+	var uVal: u32 = u32(42);
+	var x_7: f32 = f32(uVal);
+	var x_8: f64 = f64(uVal);
+	var x_9: i32 = i32(uVal);
+}
+)");
+*/
 	}
 }
