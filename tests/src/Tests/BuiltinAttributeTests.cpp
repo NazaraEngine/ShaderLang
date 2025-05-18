@@ -246,6 +246,38 @@ fn main(input: Input) -> Output
       OpDecorate %14 Decoration(BuiltIn) BuiltIn(VertexIndex)
       OpDecorate %21 Decoration(BuiltIn) BuiltIn(Position))", {}, spirvEnv, true);
 		}
+
+/*
+		ExpectWGSL(*shaderModule, R"(
+struct Input
+{
+	@builtin(base_instance) base_instance: i32,
+	@builtin(base_vertex) base_vertex: i32,
+	@builtin(draw_index) draw_index: i32,
+	@builtin(instance_index) instance_index: i32,
+	@builtin(vertex_index) vertex_index: u32
+}
+
+struct Output
+{
+	@builtin(position) position: vec4<f32>
+}
+
+@vertex
+fn main(input: Input) -> Output
+{
+	var bi: i32 = input.base_instance;
+	var bv: i32 = input.base_vertex;
+	var di: i32 = input.draw_index;
+	var ii: i32 = input.instance_index;
+	var vi: u32 = input.vertex_index;
+	var color: f32 = f32((((bi + bv) + di) + ii) + vi);
+	var output: Output;
+	output.position = color.xxxx;
+	return output;
+}
+)");
+*/
 	}
 	
 	SECTION("vertex index")
@@ -325,6 +357,27 @@ fn main(input: Input) -> Output
 )");
 
 		ExpectSPIRV(*shaderModule, R"(OpDecorate %5 Decoration(BuiltIn) BuiltIn(VertexIndex))", {}, {}, true);
+
+		ExpectWGSL(*shaderModule, R"(
+struct Input
+{
+	@builtin(vertex_index) vert_index: u32
+}
+
+struct Output
+{
+	@builtin(position) position: vec4<f32>
+}
+
+@vertex
+fn main(input: Input) -> Output
+{
+	var color: f32 = f32(input.vert_index);
+	var output: Output;
+	output.position = vec4<f32>(color, color, color, color);
+	return output;
+}
+)");
 	}
 
 	SECTION("vertex position")
@@ -428,5 +481,15 @@ fn main() -> Output
 )");
 
 		ExpectSPIRV(*shaderModule, R"(OpDecorate %6 Decoration(BuiltIn) BuiltIn(Position))", {}, {}, true);
+
+		ExpectWGSL(*shaderModule, R"(
+@vertex
+fn main() -> Output
+{
+	var output: Output;
+	output.position = vec4<f32>(0.0, 0.5, 1.0, 1.0);
+	return output;
+}
+)");
 	}
 }

@@ -211,7 +211,7 @@ const vertices: array<vec3<f32>, 3> = array<vec3<f32>, 3>(
 
 struct VertIn
 {
-	@builtin(vertex_index) vert_index: i32
+	@builtin(vertex_index) vert_index: u32
 }
 
 struct VertOut
@@ -223,7 +223,7 @@ struct VertOut
 fn main(input: VertIn) -> VertOut
 {
 	var output: VertOut;
-	if ((u32(input.vert_index)) < (vertices.length()))
+	if ((u32(input.vert_index)) < (3))
 	{
 		output.pos = vec4<f32>(vertices[input.vert_index], 1.0);
 	}

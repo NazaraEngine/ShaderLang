@@ -338,6 +338,49 @@ fn main()
        OpStore %64 %148
        OpReturn
        OpFunctionEnd)", {}, {}, true);
+
+		ExpectWGSL(*shaderModule, R"(
+@fragment
+fn main()
+{
+	var x: i32 = 5;
+	var y: i32 = 2;
+	var r: bool = x == y;
+	var r_2: bool = x != y;
+	var r_3: bool = x < y;
+	var r_4: bool = x <= y;
+	var r_5: bool = x > y;
+	var r_6: bool = x >= y;
+	var x_2: f32 = 5.0;
+	var y_2: f32 = 2.0;
+	var r_7: bool = x_2 == y_2;
+	var r_8: bool = x_2 != y_2;
+	var r_9: bool = x_2 < y_2;
+	var r_10: bool = x_2 <= y_2;
+	var r_11: bool = x_2 > y_2;
+	var r_12: bool = x_2 >= y_2;
+	var x_3: vec2<i32> = vec2<i32>(5, 7);
+	var y_3: vec2<i32> = vec2<i32>(2, 3);
+	var r_13: vec2<bool> = x_3 == y_3;
+	var r_14: vec2<bool> = x_3 != y_3;
+	var r_15: vec2<bool> = x_3 < y_3;
+	var r_16: vec2<bool> = x_3 <= y_3;
+	var r_17: vec2<bool> = x_3 > y_3;
+	var r_18: vec2<bool> = x_3 >= y_3;
+	var x_4: vec2<f32> = vec2<f32>(5.0, 7.0);
+	var y_4: vec2<f32> = vec2<f32>(2.0, 3.0);
+	var r_19: vec2<bool> = x_4 == y_4;
+	var r_20: vec2<bool> = x_4 != y_4;
+	var r_21: vec2<bool> = x_4 < y_4;
+	var r_22: vec2<bool> = x_4 <= y_4;
+	var r_23: vec2<bool> = x_4 > y_4;
+	var r_24: vec2<bool> = x_4 >= y_4;
+	var x_5: vec3<bool> = vec3<bool>(true, false, true);
+	var y_5: vec3<bool> = vec3<bool>(false, false, true);
+	var r_25: vec3<bool> = x_5 == y_5;
+	var r_26: vec3<bool> = x_5 != y_5;
+}
+)");
 	}
 
 	SECTION("Unary operators combined with binary operators")
@@ -440,5 +483,26 @@ fn main()
       OpStore %17 %25
       OpReturn
       OpFunctionEnd)", {}, {}, true);
+
+		ExpectWGSL(*shaderModule, R"(
+fn foo() -> bool
+{
+	return false;
+}
+
+fn bar() -> bool
+{
+	return true;
+}
+
+@fragment
+fn main()
+{
+	var x: bool = false;
+	var y: bool = true;
+	var z: bool = (!x) || y;
+	var z_2: bool = (!foo()) || (bar());
+}
+)");
 	}
 }
