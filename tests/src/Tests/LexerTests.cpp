@@ -6,6 +6,11 @@
 
 TEST_CASE("lexer", "[Shader]")
 {
+	SECTION("Empty code")
+	{
+		CHECK(nzsl::ToString(nzsl::Tokenize("")) == "EndOfStream");
+	}
+
 	SECTION("Simple code")
 	{
 		std::string_view nzslSource = R"(
