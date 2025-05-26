@@ -63,7 +63,7 @@ You can use it to generate GLSL, GLSL ES and SPIR-V in two non-exclusive ways:
 
 ### Offline compilation
 
-Since there are no release yet, build the compiler using [xmake](https://xmake.io) which will handle all dependencies and build for you, simply run `xmake` in the project folder and you should have a standalone `nzslc` executable.
+Since there are no release binaries yet, build the compiler using [xmake](https://xmake.io) which will handle all dependencies and build for you, simply run `xmake` in the project folder and you should have a standalone `nzslc` executable.
 
 **Example usage:**
 
@@ -79,8 +79,6 @@ Run `nzslc -h` to see all supported options.
 You can easily integrate NZSL as a library in your project if you're using [xmake](https://xmake.io) as a build system (try it, it's amazing!) with:
 
 ```lua
--- nzsl is not yet on the official xmake-repo
-add_repositories("nazara-repo https://github.com/NazaraEngine/xmake-repo")
 add_requires("nzsl")
 ```
 
