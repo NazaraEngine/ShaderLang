@@ -16,11 +16,11 @@ namespace nzsl
 
 		return std::visit(Nz::Overloaded
 			{
-				[this](const CompositeExtraction& /*extractedValue*/) -> std::uint32_t
+				[](const CompositeExtraction& /*extractedValue*/) -> std::uint32_t
 				{
 					throw std::runtime_error("expected pointer, got value");
 				},
-				[this](const Pointer& pointer) -> std::uint32_t
+				[](const Pointer& pointer) -> std::uint32_t
 				{
 					return pointer.pointerId;
 				},
