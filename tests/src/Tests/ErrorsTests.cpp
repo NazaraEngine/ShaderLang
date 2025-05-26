@@ -9,6 +9,7 @@ TEST_CASE("errors", "[Shader]")
 {
 	SECTION("Checking lexer errors")
 	{
+		CHECK_NOTHROW(nzsl::Tokenize(""));
 		CHECK_THROWS_WITH(nzsl::Tokenize("1x42"), "(1,1 -> 4): LBadNumber error: bad number");
 		CHECK_THROWS_WITH(nzsl::Tokenize("123456789876543210123456789"), "(1,1 -> 27): LNumberOutOfRange error: number is out of range");
 		CHECK_THROWS_WITH(nzsl::Tokenize("0x123.456"), "(1,1 -> 9): LUnexpectedFloatingPointBase error: floating-point number can only be specified using base 10 (got base 16)");
@@ -29,6 +30,8 @@ fn main()
 
 	SECTION("Checking parser errors")
 	{
+		CHECK_THROWS_WITH(nzsl::Parse(""), "(1, 1): PUnexpectedToken error: unexpected token EndOfStream");
+		CHECK_THROWS_WITH(nzsl::Parse("\r\n"), "(2, 1): PUnexpectedToken error: unexpected token EndOfStream");
 		CHECK_THROWS_WITH(nzsl::Parse("nazara"), "(1,1 -> 6): PUnexpectedToken error: unexpected token Identifier");
 		CHECK_THROWS_WITH(nzsl::Parse("module;"), "(1,1 -> 6): PMissingAttribute error: missing attribute nzsl_version");
 		CHECK_THROWS_WITH(nzsl::Parse("[nzsl_version] module;"), "(1,2 -> 13): PAttributeUnexpectedParameterCount error: attribute nzsl_version expects 1 arguments, got 0");
@@ -55,7 +58,7 @@ module;
 module;
 
 [cond(true)]
-)"), "(7, 0): PUnexpectedToken error: unexpected token EndOfStream");
+)"), "(6, 1): PUnexpectedToken error: unexpected token EndOfStream");
 
 		CHECK_THROWS_WITH(nzsl::Parse(R"(
 [nzsl_version("1.0")]

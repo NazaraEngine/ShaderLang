@@ -121,21 +121,18 @@ namespace nzsl
 
 			Token token;
 			token.location.file = currentFile;
+			token.location.startColumn = Nz::SafeCast<std::uint32_t>(currentPos - lineStartPos) + 1;
+			token.location.startLine = currentLine;
 
 			if (c == '\0')
 			{
 				token.type = TokenType::EndOfStream;
-				token.location.startColumn = 0;
-				token.location.startLine = currentLine + 1;
 				token.location.endColumn = token.location.startColumn;
 				token.location.endLine = token.location.startLine;
 
 				tokens.push_back(std::move(token));
 				break;
 			}
-
-			token.location.startColumn = Nz::SafeCast<std::uint32_t>(currentPos - lineStartPos) + 1;
-			token.location.startLine = currentLine;
 
 			std::optional<TokenType> tokenType;
 			switch (c)
