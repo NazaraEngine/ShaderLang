@@ -834,6 +834,12 @@ namespace nzsl::Ast
 
 	bool Compare(const ScopedStatement& lhs, const ScopedStatement& rhs, const ComparisonParams& params)
 	{
+		if (!Compare(lhs.targetType, rhs.targetType, params))
+			return false;
+
+		if (!Compare(lhs.targetVersion, rhs.targetVersion, params))
+			return false;
+
 		if (!Compare(lhs.statement, rhs.statement, params))
 			return false;
 

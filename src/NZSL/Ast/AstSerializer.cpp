@@ -504,6 +504,8 @@ namespace nzsl::Ast
 
 	void SerializerBase::Serialize(ScopedStatement& node)
 	{
+		ExprValue(node.targetType);
+		ExprValue(node.targetVersion);
 		Node(node.statement);
 	}
 
