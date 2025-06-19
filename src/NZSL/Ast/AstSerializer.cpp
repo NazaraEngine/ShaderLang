@@ -1234,9 +1234,9 @@ NAZARA_WARNING_POP()
 		m_deserializer.Deserialize(val);
 	}
 
-	void ShaderAstUnserializer::Value(std::int64_t& val)
+	void ShaderAstDeserializer::Value(std::int64_t& val)
 	{
-		m_unserializer.Deserialize(val);
+		m_deserializer.Deserialize(val);
 	}
 
 	void ShaderAstDeserializer::Value(std::uint8_t& val)
