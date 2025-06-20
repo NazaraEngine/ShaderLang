@@ -21,6 +21,8 @@ namespace nzsl::Ast
 	template<typename T>
 	struct Untyped
 	{
+		using Inner = T;
+
 		operator T&()
 		{
 			return value;
@@ -59,19 +61,24 @@ namespace nzsl::Ast
 	template<typename T> constexpr bool IsUntyped_v = UntypedTraits<T>::IsLiteral;
 	template<typename T> using UntypedInnerType_t = typename UntypedTraits<T>::Inner;
 
-	using ConstantSingleTypes = Nz::TypeList<
+	using ConstantPrimitiveTypes = Nz::TypeList<
 		bool,
+		double,
 		float,
 		std::int32_t,
 		std::uint32_t,
+		std::string,
+		UntypedFloat,
+		UntypedInteger
+	>;
+
+	using ConstantVectorTypes = Nz::TypeList<
 		Vector2f32,
 		Vector3f32,
 		Vector4f32,
 		Vector2i32,
 		Vector3i32,
 		Vector4i32,
-		std::string,
-		double,
 		Vector2f64,
 		Vector3f64,
 		Vector4f64,
@@ -81,9 +88,15 @@ namespace nzsl::Ast
 		Vector2<bool>,
 		Vector3<bool>,
 		Vector4<bool>,
-		UntypedFloat,
-		UntypedInteger
+		Vector2<UntypedFloat>,
+		Vector3<UntypedFloat>,
+		Vector4<UntypedFloat>,
+		Vector2<UntypedInteger>,
+		Vector3<UntypedInteger>,
+		Vector4<UntypedInteger>
 	>;
+
+	using ConstantSingleTypes = Nz::TypeListConcat<ConstantPrimitiveTypes, ConstantVectorTypes>;
 
 	template<typename T>
 	struct WrapInVector
