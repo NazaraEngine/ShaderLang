@@ -45,7 +45,7 @@ EndOfStream)");
 [nzsl_version("1.0")] // could be 1.0.0
 module /* a module has no name*/;
 
-[entry(frag/*ment but we like to keep those small*/)]
+[entry(frag/*ment but we /*like to keep*/ those small*/)]
 fn main(/* no parameters*/)
 {
 	// Line comment

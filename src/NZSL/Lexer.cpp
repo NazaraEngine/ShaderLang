@@ -181,6 +181,7 @@ namespace nzsl
 					else if (next == '*')
 					{
 						// Block comment
+						unsigned int blockDepth = 1;
 						for (;;)
 						{
 							currentPos++;
@@ -191,7 +192,16 @@ namespace nzsl
 								if (Peek(2) == '/')
 								{
 									currentPos += 2;
-									break;
+									if (--blockDepth == 0)
+										break;
+								}
+							}
+							else if (next == '/')
+							{
+								if (Peek(2) == '*')
+								{
+									blockDepth++;
+									currentPos += 2;
 								}
 							}
 							else if (next == '\n')
