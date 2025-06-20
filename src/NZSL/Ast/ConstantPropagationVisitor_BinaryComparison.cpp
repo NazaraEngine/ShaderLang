@@ -125,32 +125,38 @@ namespace nzsl::Ast
 		EnableOptimisation(BinaryCompEq, double, double);
 		EnableOptimisation(BinaryCompEq, float, float);
 		EnableOptimisation(BinaryCompEq, std::int32_t, std::int32_t);
+		EnableOptimisation(BinaryCompEq, std::int64_t, std::int64_t);
 		EnableOptimisation(BinaryCompEq, std::uint32_t, std::uint32_t);
 
 		EnableOptimisation(BinaryCompGe, double, double);
 		EnableOptimisation(BinaryCompGe, float, float);
 		EnableOptimisation(BinaryCompGe, std::int32_t, std::int32_t);
+		EnableOptimisation(BinaryCompGe, std::int64_t, std::int64_t);
 		EnableOptimisation(BinaryCompGe, std::uint32_t, std::uint32_t);
 
 		EnableOptimisation(BinaryCompGt, double, double);
 		EnableOptimisation(BinaryCompGt, float, float);
 		EnableOptimisation(BinaryCompGt, std::int32_t, std::int32_t);
+		EnableOptimisation(BinaryCompGt, std::int64_t, std::int64_t);
 		EnableOptimisation(BinaryCompGt, std::uint32_t, std::uint32_t);
 
 		EnableOptimisation(BinaryCompLe, double, double);
 		EnableOptimisation(BinaryCompLe, float, float);
 		EnableOptimisation(BinaryCompLe, std::int32_t, std::int32_t);
+		EnableOptimisation(BinaryCompLe, std::int64_t, std::int64_t);
 		EnableOptimisation(BinaryCompLe, std::uint32_t, std::uint32_t);
 
 		EnableOptimisation(BinaryCompLt, double, double);
 		EnableOptimisation(BinaryCompLt, float, float);
 		EnableOptimisation(BinaryCompLt, std::int32_t, std::int32_t);
+		EnableOptimisation(BinaryCompLt, std::int64_t, std::int64_t);
 		EnableOptimisation(BinaryCompLt, std::uint32_t, std::uint32_t);
 
 		EnableOptimisation(BinaryCompNe, bool, bool);
 		EnableOptimisation(BinaryCompNe, double, double);
 		EnableOptimisation(BinaryCompNe, float, float);
 		EnableOptimisation(BinaryCompNe, std::int32_t, std::int32_t);
+		EnableOptimisation(BinaryCompNe, std::int64_t, std::int64_t);
 		EnableOptimisation(BinaryCompNe, std::uint32_t, std::uint32_t);
 
 		EnableOptimisation(BinaryLogicalAnd, bool, bool);
