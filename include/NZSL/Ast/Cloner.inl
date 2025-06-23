@@ -48,19 +48,19 @@ namespace nzsl::Ast
 		return cloner.Clone(attribute);
 	}
 
-	inline ExpressionPtr Clone(Expression& node)
+	inline ExpressionPtr Clone(const Expression& node)
 	{
 		Cloner cloner;
 		return cloner.Clone(node);
 	}
 
-	inline ModulePtr Clone(Module& module)
+	inline ModulePtr Clone(const Module& module)
 	{
 		Cloner cloner;
 		return cloner.Clone(module);
 	}
 
-	inline StatementPtr Clone(Statement& node)
+	inline StatementPtr Clone(const Statement& node)
 	{
 		Cloner cloner;
 		return cloner.Clone(node);

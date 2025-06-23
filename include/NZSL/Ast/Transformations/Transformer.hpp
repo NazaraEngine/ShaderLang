@@ -1,4 +1,4 @@
-// Copyright (C) 2024 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
+// Copyright (C) 2025 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -77,6 +77,8 @@ namespace nzsl::Ast
 			void Visit(IdentifierExpression& node) override;
 			void Visit(IntrinsicExpression& node) override;
 			void Visit(IntrinsicFunctionExpression& node) override;
+			void Visit(ModuleExpression& node) override;
+			void Visit(NamedExternalBlockExpression& node) override;
 			void Visit(StructTypeExpression& node) override;
 			void Visit(SwizzleExpression& node) override;
 			void Visit(TypeExpression& node) override;

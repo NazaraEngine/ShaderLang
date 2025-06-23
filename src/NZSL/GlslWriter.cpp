@@ -16,6 +16,9 @@
 #include <NZSL/Lang/LangData.hpp>
 #include <NZSL/Ast/Transformations/ConstantPropagationTransformer.hpp>
 #include <NZSL/Ast/Transformations/EliminateUnusedTransformer.hpp>
+#include <NZSL/Ast/Transformations/ForToWhileTransformer.hpp>
+#include <NZSL/Ast/Transformations/StructAssignmentTransformer.hpp>
+#include <NZSL/Ast/Transformations/SwizzleTransformer.hpp>
 #include <fmt/format.h>
 #include <frozen/unordered_map.h>
 #include <frozen/unordered_set.h>
@@ -409,6 +412,9 @@ namespace nzsl
 			targetModule = sanitizedModule.get();
 		}
 
+		Ast::TransformerExecutor executor = GetPasses();
+		executor.Transform(*targetModule);
+
 		if (states.optimize)
 		{
 			Ast::Transformer::Context context;
@@ -525,6 +531,16 @@ namespace nzsl
 	std::string_view GlslWriter::GetFlipYUniformName()
 	{
 		return s_glslWriterFlipYUniformName;
+	}
+
+	Ast::TransformerExecutor GlslWriter::GetPasses()
+	{
+		Ast::TransformerExecutor executor;
+		executor.AddPass<Ast::ForToWhileTransformer>();
+		executor.AddPass<Ast::StructAssignmentTransformer>({ false, true, true }); //< TODO: Only split for base uniforms/storage
+		executor.AddPass<Ast::SwizzleTransformer>({ true });
+
+		return executor;
 	}
 
 	Ast::SanitizeVisitor::Options GlslWriter::GetSanitizeOptions()

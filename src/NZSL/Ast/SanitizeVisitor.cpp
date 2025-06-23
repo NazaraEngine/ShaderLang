@@ -2731,6 +2731,7 @@ NAZARA_WARNING_POP()
 		};
 
 		ConstantPropagationTransformer::Context context;
+		context.allowPartialSanitization = m_context->options.partialSanitization;
 
 		ConstantPropagationTransformer constantPropagation;
 		constantPropagation.Transform(expr, context, optimizerOptions);

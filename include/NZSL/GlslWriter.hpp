@@ -13,6 +13,7 @@
 #include <NZSL/Ast/Module.hpp>
 #include <NZSL/Ast/SanitizeVisitor.hpp>
 #include <NZSL/Ast/StatementVisitorExcept.hpp>
+#include <NZSL/Ast/TransformerExecutor.hpp>
 #include <string>
 #include <unordered_map>
 #include <variant>
@@ -69,6 +70,7 @@ namespace nzsl
 			static std::string_view GetDrawParameterBaseVertexUniformName();
 			static std::string_view GetDrawParameterDrawIndexUniformName();
 			static std::string_view GetFlipYUniformName();
+			static Ast::TransformerExecutor GetPasses();
 			static Ast::SanitizeVisitor::Options GetSanitizeOptions();
 
 		private:

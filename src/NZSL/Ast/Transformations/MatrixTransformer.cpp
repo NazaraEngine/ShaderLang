@@ -1,4 +1,4 @@
-// Copyright (C) 2024 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
+// Copyright (C) 2025 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -61,7 +61,10 @@ namespace nzsl::Ast
 				result->cachedExpressionType = matrixType;
 				result->sourceLocation = binExpr.sourceLocation;
 
-				return result;
+				ExpressionPtr expr = std::move(result);
+				HandleExpression(expr);
+
+				return expr;
 			}
 		}
 
@@ -83,7 +86,7 @@ namespace nzsl::Ast
 
 		const ExpressionType& targetType = castExpr.targetType.GetResultingValue();
 
-		if (m_options->removeMatrixCast && IsMatrixType(targetType))
+		if (IsMatrixType(targetType))
 		{
 			const MatrixType& targetMatrixType = std::get<MatrixType>(targetType);
 
@@ -149,6 +152,9 @@ namespace nzsl::Ast
 					{
 						if (castExpr.expressions.size() == 1) //< diagonal value
 						{
+							if (!cachedDiagonalValue)
+								cachedDiagonalValue = CacheExpression(std::move(castExpr.expressions.front()));
+
 							if (i == j)
 								expressions[j] = Clone(*cachedDiagonalValue);
 							else

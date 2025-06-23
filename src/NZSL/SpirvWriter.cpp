@@ -9,8 +9,6 @@
 #include <NZSL/Enums.hpp>
 #include <NZSL/Parser.hpp>
 #include <NZSL/Ast/Cloner.hpp>
-#include <NZSL/Ast/Transformations/ConstantPropagationTransformer.hpp>
-#include <NZSL/Ast/Transformations/EliminateUnusedTransformer.hpp>
 #include <NZSL/Ast/RecursiveVisitor.hpp>
 #include <NZSL/Ast/SanitizeVisitor.hpp>
 #include <NZSL/Lang/LangData.hpp>
@@ -20,6 +18,14 @@
 #include <NZSL/SpirV/SpirvData.hpp>
 #include <NZSL/SpirV/SpirvGenData.hpp>
 #include <NZSL/SpirV/SpirvSection.hpp>
+#include <NZSL/Ast/Transformations/BranchSplitterTransformer.hpp>
+#include <NZSL/Ast/Transformations/CompoundAssignmentTransformer.hpp>
+#include <NZSL/Ast/Transformations/ConstantPropagationTransformer.hpp>
+#include <NZSL/Ast/Transformations/EliminateUnusedTransformer.hpp>
+#include <NZSL/Ast/Transformations/ForToWhileTransformer.hpp>
+#include <NZSL/Ast/Transformations/MatrixTransformer.hpp>
+#include <NZSL/Ast/Transformations/StructAssignmentTransformer.hpp>
+#include <NZSL/Ast/Transformations/SwizzleTransformer.hpp>
 #include <fmt/format.h>
 #include <frozen/unordered_map.h>
 #include <tsl/ordered_map.h>
@@ -656,6 +662,9 @@ namespace nzsl
 			targetModule = sanitizedModule.get();
 		}
 
+		Ast::TransformerExecutor executor = GetPasses();
+		executor.Transform(*targetModule);
+
 		if (states.optimize)
 		{
 			Ast::Transformer::Context context;
@@ -874,6 +883,19 @@ namespace nzsl
 			return { 1, 3 };
 		else
 			return { 1, 0 };
+	}
+
+	Ast::TransformerExecutor SpirvWriter::GetPasses()
+	{
+		Ast::TransformerExecutor executor;
+		executor.AddPass<Ast::BranchSplitterTransformer>();
+		executor.AddPass<Ast::CompoundAssignmentTransformer>({ true });
+		executor.AddPass<Ast::ForToWhileTransformer>();
+		executor.AddPass<Ast::MatrixTransformer>({ true, true });
+		executor.AddPass<Ast::StructAssignmentTransformer>({ true, true, false });
+		executor.AddPass<Ast::SwizzleTransformer>({ true });
+
+		return executor;
 	}
 
 	Ast::SanitizeVisitor::Options SpirvWriter::GetSanitizeOptions()

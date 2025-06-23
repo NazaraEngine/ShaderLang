@@ -1,4 +1,4 @@
-// Copyright (C) 2024 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
+// Copyright (C) 2025 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -346,6 +346,16 @@ namespace nzsl::Ast
 		TransformCurrentExpression<IntrinsicFunctionExpression>();
 	}
 
+	void Transformer::Visit(ModuleExpression& node)
+	{
+		TransformCurrentExpression<ModuleExpression>();
+	}
+
+	void Transformer::Visit(NamedExternalBlockExpression& node)
+	{
+		TransformCurrentExpression<NamedExternalBlockExpression>();
+	}
+
 	void Transformer::Visit(StructTypeExpression& /*node*/)
 	{
 		TransformCurrentExpression<StructTypeExpression>();
@@ -550,7 +560,7 @@ namespace nzsl::Ast
 		if (TransformCurrentStatement<ReturnStatement>())
 			return;
 
-		if (m_visitExpressions)
+		if (m_visitExpressions && node.returnExpr)
 			HandleExpression(node.returnExpr);
 	}
 
