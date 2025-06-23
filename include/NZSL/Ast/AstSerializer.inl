@@ -220,6 +220,13 @@ namespace nzsl::Ast
 		Value(sourceLoc.startLine);
 	}
 
+	template<typename T, std::size_t N>
+	void SerializerBase::Value(Vector<T, N>& val)
+	{
+		for (std::size_t i = 0; i < N; ++i)
+			Value(val[i]);
+	}
+
 	inline ShaderAstSerializer::ShaderAstSerializer(AbstractSerializer& serializer) :
 	m_serializer(serializer)
 	{
