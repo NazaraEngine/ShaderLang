@@ -818,11 +818,11 @@ namespace nzsl::Ast
 				result->sourceLocation = clone->sourceLocation;
 
 				// Re-clone resulting cast operation, so it can be transformed again if required
-				return Clone(*result);
+				return ResolveUntyped(Clone(*result));
 			}
 		}
 
-		return clone;
+		return ResolveUntyped(std::move(clone));
 	}
 
 	ExpressionPtr SanitizeVisitor::Clone(CallFunctionExpression& node)
@@ -987,6 +987,20 @@ namespace nzsl::Ast
 			return clone; //< unresolved
 
 		const ExpressionType& targetType = clone->targetType.GetResultingValue();
+		if (m_context->options.removeUntyped)
+		{
+			if (IsPrimitiveType(targetType))
+			{
+				ExpressionPtr& expr = clone->expressions.front();
+				if (IsUntypedType(GetExpressionTypeSecure(*expr)))
+				{
+					if (!ResolveUntyped(*expr, targetType, expr->sourceLocation))
+						throw AstUntypedExpectedConstantError{ expr->sourceLocation, Ast::ToString(expr->GetType()) };
+
+					return std::move(expr);
+				}
+			}
+		}
 
 		if (m_context->options.removeMatrixCast && IsMatrixType(targetType))
 		{
@@ -1113,7 +1127,7 @@ namespace nzsl::Ast
 			return ShaderBuilder::Variable(variableIndex, targetType, node.sourceLocation);
 		}
 
-		return clone;
+		return ResolveUntyped(std::move(clone));
 	}
 
 	ExpressionPtr SanitizeVisitor::Clone(ConditionalExpression& node)
@@ -1124,7 +1138,7 @@ namespace nzsl::Ast
 
 		ExpressionPtr cloneCondition = Cloner::Clone(*node.condition);
 
-		std::optional<ConstantValue> conditionValue = ComputeConstantValue(*cloneCondition);
+		std::optional<ConstantValue> conditionValue = ComputeConstantValue(*cloneCondition, ExpressionType{ PrimitiveType::Boolean });
 		if (!conditionValue.has_value())
 		{
 			// Unresolvable condition
@@ -1245,7 +1259,7 @@ namespace nzsl::Ast
 			}
 		}
 
-		return clone;
+		return ResolveUntyped(std::move(clone));
 	}
 
 	ExpressionPtr SanitizeVisitor::Clone(SwizzleExpression& node)
@@ -1273,7 +1287,7 @@ namespace nzsl::Ast
 			}
 
 			if (node.componentCount == 1)
-				return expression; //< ignore this swizzle (a.x == a)
+				return ResolveUntyped(std::move(expression)); //< ignore this swizzle (a.x == a)
 
 			// Use a Cast expression to replace swizzle
 			expression = CacheResult(std::move(expression)); //< Since we are going to use a value multiple times, cache it if required
@@ -1294,7 +1308,7 @@ namespace nzsl::Ast
 
 			Validate(*cast);
 
-			return cast;
+			return ResolveUntyped(std::move(cast));
 		}
 		else
 		{
@@ -1305,7 +1319,7 @@ namespace nzsl::Ast
 			clone->sourceLocation = node.sourceLocation;
 			Validate(*clone);
 
-			return clone;
+			return ResolveUntyped(std::move(clone));
 		}
 	}
 
@@ -1314,7 +1328,7 @@ namespace nzsl::Ast
 		auto clone = Nz::StaticUniquePointerCast<UnaryExpression>(Cloner::Clone(node));
 		Validate(*clone);
 
-		return clone;
+		return ResolveUntyped(std::move(clone));
 	}
 
 	ExpressionPtr SanitizeVisitor::Clone(VariableValueExpression& node)
@@ -1334,7 +1348,7 @@ namespace nzsl::Ast
 			{
 				MandatoryExpr(cond.condition, node.sourceLocation);
 
-				std::optional<ConstantValue> conditionValue = ComputeConstantValue(*Cloner::Clone(*cond.condition));
+				std::optional<ConstantValue> conditionValue = ComputeConstantValue(*Cloner::Clone(*cond.condition), ExpressionType{ PrimitiveType::Boolean });
 				if (!conditionValue.has_value())
 					return Cloner::Clone(node); //< Unresolvable condition
 
@@ -1424,7 +1438,7 @@ namespace nzsl::Ast
 
 		ExpressionPtr cloneCondition = Cloner::Clone(*node.condition);
 
-		std::optional<ConstantValue> conditionValue = ComputeConstantValue(*cloneCondition);
+		std::optional<ConstantValue> conditionValue = ComputeConstantValue(*cloneCondition, ExpressionType{ PrimitiveType::Boolean });
 
 		if (!conditionValue.has_value())
 		{
@@ -1884,7 +1898,7 @@ NAZARA_WARNING_POP()
 				if (!clone->defaultValue)
 					throw CompilerMissingOptionValueError{ node.sourceLocation, clone->optName };
 
-				clone->optIndex = RegisterConstant(clone->optName, ComputeConstantValue(*clone->defaultValue), node.optIndex, node.sourceLocation);
+				clone->optIndex = RegisterConstant(clone->optName, ComputeConstantValue(*clone->defaultValue, clone->optType.GetResultingValue(), node.sourceLocation), node.optIndex, node.sourceLocation);
 			}
 		}
 
@@ -2153,6 +2167,30 @@ NAZARA_WARNING_POP()
 		if (!fromExprType || !toExprType)
 			return CloneFor(); //< unresolved from/to type
 
+		// Handle unresolved
+		std::optional<ExpressionType> referenceType;
+		if (!IsUntypedType(*fromExprType))
+			referenceType = *fromExprType;
+		else if (!IsUntypedType(*toExprType))
+			referenceType = *toExprType;
+		else if (stepExpr)
+		{
+			const ExpressionType* stepExprType = GetExpressionType(*stepExpr);
+			if (!stepExprType)
+				return CloneFor(); //< unresolved step type
+
+			referenceType = *stepExprType;
+		}
+
+		if (ResolveUntyped(*fromExpr, referenceType, fromExpr->sourceLocation))
+			fromExprType = GetExpressionType(*fromExpr);
+
+		if (ResolveUntyped(*toExpr, referenceType, toExpr->sourceLocation))
+			toExprType = GetExpressionType(*toExpr);
+
+		if (stepExpr)
+			ResolveUntyped(*stepExpr, referenceType, stepExpr->sourceLocation);
+
 		const ExpressionType& resolvedFromExprType = ResolveAlias(*fromExprType);
 		if (!IsPrimitiveType(resolvedFromExprType))
 			throw CompilerForFromTypeExpectIntegerTypeError{ fromExpr->sourceLocation, ToString(*fromExprType, fromExpr->sourceLocation) };
@@ -2181,15 +2219,15 @@ NAZARA_WARNING_POP()
 			assert(unrollValue.IsResultingValue());
 			if (unrollValue.GetResultingValue() == LoopUnroll::Always)
 			{
-				std::optional<ConstantValue> fromValue = ComputeConstantValue(*fromExpr);
-				std::optional<ConstantValue> toValue = ComputeConstantValue(*toExpr);
+				std::optional<ConstantValue> fromValue = ComputeConstantValue(*fromExpr, resolvedFromExprType, node.sourceLocation);
+				std::optional<ConstantValue> toValue = ComputeConstantValue(*toExpr, resolvedFromExprType, node.sourceLocation);
 				if (!fromValue.has_value() || !toValue.has_value())
 					return CloneFor(); //< can't resolve step value
 
 				std::optional<ConstantValue> stepValue;
 				if (stepExpr)
 				{
-					stepValue = ComputeConstantValue(*stepExpr);
+					stepValue = ComputeConstantValue(*stepExpr, resolvedFromExprType, node.sourceLocation);
 					if (!stepValue.has_value())
 						return CloneFor(); //< can't resolve step value
 				}
@@ -2940,7 +2978,7 @@ NAZARA_WARNING_POP()
 		return &it->target;
 	}
 
-	const ExpressionType* SanitizeVisitor::GetExpressionType(Expression& expr) const
+	const ExpressionType* SanitizeVisitor::GetExpressionType(const Expression& expr) const
 	{
 		const ExpressionType* expressionType = Ast::GetExpressionType(expr);
 		if (!expressionType)
@@ -2952,7 +2990,7 @@ NAZARA_WARNING_POP()
 		return expressionType;
 	}
 
-	const ExpressionType& SanitizeVisitor::GetExpressionTypeSecure(Expression& expr) const
+	const ExpressionType& SanitizeVisitor::GetExpressionTypeSecure(const Expression& expr) const
 	{
 		const ExpressionType* expressionType = GetExpressionType(expr);
 		if (!expressionType)
@@ -3120,10 +3158,18 @@ NAZARA_WARNING_POP()
 		return varExpr;
 	}
 
-	std::optional<ConstantValue> SanitizeVisitor::ComputeConstantValue(Expression& expr) const
+	std::optional<ConstantValue> SanitizeVisitor::ComputeConstantValue(Expression& expr, std::optional<ExpressionType> enforcedType) const
+	{
+		return ComputeConstantValue(expr, std::move(enforcedType), expr.sourceLocation);
+	}
+
+	std::optional<ConstantValue> SanitizeVisitor::ComputeConstantValue(Expression& expr, std::optional<ExpressionType> enforcedType, const SourceLocation& sourceLocation) const
 	{
 		// Run optimizer on constant value to hopefully retrieve a single constant value
 		ExpressionPtr optimizedExpr = PropagateConstants(expr);
+		if (enforcedType)
+			ResolveUntyped(*optimizedExpr, enforcedType, sourceLocation);
+
 		if (optimizedExpr->GetType() == NodeType::ConstantValueExpression)
 		{
 			return std::visit([&](auto&& value) -> ConstantValue
@@ -3157,28 +3203,16 @@ NAZARA_WARNING_POP()
 		{
 			auto& expr = *attribute.GetExpression();
 
-			std::optional<ConstantValue> value = ComputeConstantValue(expr);
-			if (!value)
-				return ValidationResult::Unresolved;
-
 			if constexpr (Nz::TypeListHas<ConstantTypes, T>)
 			{
-				if (!std::holds_alternative<T>(*value))
-				{
-					// HAAAAAX
-					if (std::holds_alternative<std::int32_t>(*value) && std::is_same_v<T, std::uint32_t>)
-					{
-						std::int32_t intVal = std::get<std::int32_t>(*value);
-						if (intVal < 0)
-							throw CompilerAttributeUnexpectedNegativeError{ expr.sourceLocation, Ast::ToString(intVal) };
-					
-						attribute = static_cast<std::uint32_t>(intVal);
-					}
-					else
-						throw CompilerAttributeUnexpectedTypeError{ expr.sourceLocation, ToString(GetConstantExpressionType<T>(), sourceLocation), ToString(GetExpressionTypeSecure(expr), sourceLocation) };
-				}
-				else
+				std::optional<ConstantValue> value = ComputeConstantValue(expr, GetConstantExpressionType<T>());
+				if (!value)
+					return ValidationResult::Unresolved;
+
+				if (std::holds_alternative<T>(*value))
 					attribute = std::get<T>(*value);
+				else
+					throw CompilerAttributeUnexpectedTypeError{ expr.sourceLocation, ToString(GetConstantExpressionType<T>(), sourceLocation), ToString(GetExpressionTypeSecure(expr), sourceLocation) };
 			}
 			else
 				throw CompilerAttributeUnexpectedExpressionError{ expr.sourceLocation };
@@ -3197,36 +3231,19 @@ NAZARA_WARNING_POP()
 		{
 			auto& expr = *attribute.GetExpression();
 
-			std::optional<ConstantValue> value = ComputeConstantValue(*Cloner::Clone(expr));
-			if (!value)
-			{
-				targetAttribute = Cloner::Clone(expr);
-				return ValidationResult::Unresolved;
-			}
-
 			if constexpr (Nz::TypeListHas<ConstantTypes, T>)
 			{
-				if (!std::holds_alternative<T>(*value))
+				std::optional<ConstantValue> value = ComputeConstantValue(*Cloner::Clone(expr), GetConstantExpressionType<T>());
+				if (!value)
 				{
-					// HAAAAAX
-					if constexpr (std::is_same_v<T, std::uint32_t>)
-					{
-						if (std::holds_alternative<std::int32_t>(*value))
-						{
-							std::int32_t intVal = std::get<std::int32_t>(*value);
-							if (intVal < 0)
-								throw CompilerAttributeUnexpectedNegativeError{ expr.sourceLocation, Ast::ToString(intVal) };
-
-							targetAttribute = static_cast<std::uint32_t>(intVal);
-						}
-						else
-							throw CompilerAttributeUnexpectedTypeError{ expr.sourceLocation, ToString(GetConstantExpressionType<T>(), sourceLocation), ToString(GetExpressionTypeSecure(expr), sourceLocation) };
-					}
-					else
-						throw CompilerAttributeUnexpectedTypeError{ expr.sourceLocation, ToString(GetConstantExpressionType<T>(), sourceLocation), ToString(GetExpressionTypeSecure(expr), sourceLocation) };
+					targetAttribute = Cloner::Clone(expr);
+					return ValidationResult::Unresolved;
 				}
-				else
+
+				if (std::holds_alternative<T>(*value))
 					targetAttribute = std::get<T>(*value);
+				else
+					throw CompilerAttributeUnexpectedTypeError{ expr.sourceLocation, ToString(GetConstantExpressionType<T>(), sourceLocation), ToString(GetExpressionTypeSecure(expr), sourceLocation) };
 			}
 			else
 				throw CompilerAttributeUnexpectedExpressionError{ expr.sourceLocation };
@@ -3335,6 +3352,18 @@ NAZARA_WARNING_POP()
 						lengthValue = std::get<std::uint32_t>(length);
 						if (lengthValue == 0)
 							throw CompilerArrayLengthError{ sourceLocation, Ast::ToString(lengthValue) };
+					}
+					else if (std::holds_alternative<UntypedInteger>(length))
+					{
+						// TODO: Use a function to resolve value
+						std::int64_t value = static_cast<std::int64_t>(std::get<UntypedInteger>(length));
+						if (value < 0)
+							throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(ExpressionType{ PrimitiveType::UInt32 }), std::to_string(value)};
+
+						if (static_cast<std::uint64_t>(value) > std::numeric_limits<std::uint32_t>::max())
+							throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(ExpressionType{ PrimitiveType::UInt32 }), std::to_string(value) };
+
+						lengthValue = Nz::SafeCast<std::uint32_t>(value);
 					}
 					else
 						throw CompilerArrayLengthError{ sourceLocation, ToString(GetConstantType(length), sourceLocation) };
@@ -4186,6 +4215,127 @@ NAZARA_WARNING_POP()
 		return ResolveType(*exprType, resolveAlias, sourceLocation);
 	}
 
+	bool SanitizeVisitor::ResolveUntyped(Expression& expression, std::optional<ExpressionType> enforcedType, const SourceLocation& sourceLocation) const
+	{
+		const ExpressionType* exprType = GetExpressionType(expression);
+		if (!exprType || !IsPrimitiveType(*exprType))
+			return false;
+
+		PrimitiveType primType = std::get<PrimitiveType>(*exprType);
+		switch (primType)
+		{
+			case PrimitiveType::Boolean:
+			case PrimitiveType::Float32:
+			case PrimitiveType::Float64:
+			case PrimitiveType::Int32:
+			case PrimitiveType::String:
+			case PrimitiveType::UInt32:
+				return false; //< not untyped
+
+			case PrimitiveType::UntypedFloat:
+			{
+				if (expression.GetType() != NodeType::ConstantValueExpression)
+					throw AstUntypedExpectedConstantError{ expression.sourceLocation, Ast::ToString(expression.GetType()) };
+
+				ConstantValueExpression& constantExpr = static_cast<ConstantValueExpression&>(expression);
+
+				if (enforcedType)
+				{
+					const ExpressionType& resolvedType = ResolveAlias(*enforcedType);
+					if (!IsPrimitiveType(resolvedType))
+						throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(primType), ToString(*enforcedType, sourceLocation) };
+
+					PrimitiveType targetType = std::get<PrimitiveType>(resolvedType);
+					if (targetType == PrimitiveType::Float32 || targetType == PrimitiveType::UntypedFloat)
+						constantExpr.value = static_cast<float>(std::get<UntypedFloat>(constantExpr.value));
+					else if (targetType == PrimitiveType::Float64)
+						constantExpr.value = static_cast<double>(std::get<UntypedFloat>(constantExpr.value));
+					else
+						throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(primType), Ast::ToString(targetType) };
+
+					constantExpr.cachedExpressionType = *enforcedType;
+				}
+				else
+				{
+					// Default to f32
+					constantExpr.value = static_cast<float>(std::get<UntypedFloat>(constantExpr.value));
+					constantExpr.cachedExpressionType = ExpressionType{ PrimitiveType::Float32 };
+				}
+				
+				return true;
+			}
+
+			case PrimitiveType::UntypedInteger:
+			{
+				if (expression.GetType() != NodeType::ConstantValueExpression)
+					throw AstUntypedExpectedConstantError{ expression.sourceLocation, Ast::ToString(expression.GetType()) };
+
+				ConstantValueExpression& constantExpr = static_cast<ConstantValueExpression&>(expression);
+
+				std::int64_t value = std::get<UntypedInteger>(constantExpr.value);
+
+				auto ConvertToInt32 = [&]
+				{
+					if (value > std::numeric_limits<std::int32_t>::max())
+						throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::Int32), std::to_string(value) };
+
+					if (value < std::numeric_limits<std::int32_t>::min())
+						throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::Int32), std::to_string(value) };
+
+					constantExpr.value = static_cast<std::int32_t>(std::get<UntypedInteger>(constantExpr.value));
+					constantExpr.cachedExpressionType = ExpressionType{ PrimitiveType::Int32 };
+				};
+
+				if (enforcedType)
+				{
+					const ExpressionType& resolvedType = ResolveAlias(*enforcedType);
+					if (!IsPrimitiveType(resolvedType))
+						throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(primType), ToString(*enforcedType, sourceLocation) };
+
+					PrimitiveType targetType = std::get<PrimitiveType>(resolvedType);
+					if (targetType == PrimitiveType::Int32 || targetType == PrimitiveType::UntypedInteger)
+						ConvertToInt32();
+					else if (targetType == PrimitiveType::UInt32)
+					{
+						if (value < 0)
+							throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(targetType), std::to_string(value) };
+
+						if (static_cast<std::uint64_t>(value) > std::numeric_limits<std::uint32_t>::max())
+							throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(targetType), std::to_string(value) };
+
+						constantExpr.value = static_cast<std::uint32_t>(std::get<UntypedInteger>(constantExpr.value));
+					}
+					else
+						throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(primType), Ast::ToString(targetType) };
+
+					constantExpr.cachedExpressionType = *enforcedType;
+				}
+				else
+					// Default to i32
+					ConvertToInt32();
+
+				return true;
+			}
+		}
+
+		NAZARA_UNREACHABLE();
+	}
+
+	ExpressionPtr SanitizeVisitor::ResolveUntyped(ExpressionPtr expr)
+	{
+		const ExpressionType* exprType = GetExpressionType(*expr);
+		if (exprType && IsUntypedType(*exprType))
+		{
+			ExpressionPtr optimizedExpr = PropagateConstants(*expr);
+			if (!optimizedExpr || optimizedExpr->GetType() != NodeType::ConstantValueExpression)
+				throw AstUntypedExpectedConstantError{ expr->sourceLocation, Ast::ToString(expr->GetType()) };
+
+			return optimizedExpr;
+		}
+
+		return expr;
+	}
+
 	MultiStatementPtr SanitizeVisitor::SanitizeInternal(MultiStatement& rootNode, std::string* error)
 	{
 		MultiStatementPtr output;
@@ -4280,7 +4430,22 @@ NAZARA_WARNING_POP()
 	void SanitizeVisitor::TypeMustMatch(const ExpressionType& left, const ExpressionType& right, const SourceLocation& sourceLocation) const
 	{
 		if (ResolveAlias(left) != ResolveAlias(right))
-			throw CompilerUnmatchingTypesError{ sourceLocation, ToString(left, sourceLocation), ToString(right, sourceLocation) };
+		{
+			/*const ExpressionType* untypedType;
+			const ExpressionType* typedType;
+			if (IsUntypedType(left) && !IsUntypedType(right))
+			{
+				untypedType = &left;
+				typedType = &right;
+			}
+			else if (IsUntypedType(right))
+			{
+				untypedType = &right;
+				typedType = &left;
+			}
+			else*/
+				throw CompilerUnmatchingTypesError{ sourceLocation, ToString(left, sourceLocation), ToString(right, sourceLocation) };
+		}
 	}
 
 	auto SanitizeVisitor::TypeMustMatch(const ExpressionPtr& left, const ExpressionPtr& right, const SourceLocation& sourceLocation) -> ValidationResult
@@ -4361,12 +4526,21 @@ NAZARA_WARNING_POP()
 		if (functionHasNoReturnType)
 			throw CompilerFunctionReturnWithAValueError{ node.sourceLocation };
 
-		const ExpressionType* returnTypeOpt = GetExpressionType(MandatoryExpr(node.returnExpr, node.sourceLocation));
+		const ExpressionType& resolvedFuncReturnType = ResolveAlias(functionReturnType);
+
+		Expression& expr = MandatoryExpr(node.returnExpr, node.sourceLocation);
+
+		const ExpressionType* returnTypeOpt = GetExpressionType(expr);
 		if (!returnTypeOpt)
 			return ValidationResult::Unresolved;
 
-		ExpressionType returnType = ResolveType(*returnTypeOpt, true, node.sourceLocation);
-		if (returnType != ResolveAlias(functionReturnType))
+		ExpressionType returnType;
+		if (ResolveUntyped(expr, resolvedFuncReturnType, node.returnExpr->sourceLocation))
+			returnType = *GetExpressionType(*node.returnExpr);
+		else
+			returnType = ResolveType(*returnTypeOpt, true, node.sourceLocation);
+
+		if (returnType != resolvedFuncReturnType)
 			throw CompilerFunctionReturnUnmatchingTypesError{ node.sourceLocation, ToString(returnType, node.sourceLocation), ToString(functionReturnType, node.sourceLocation) };
 		
 		return ValidationResult::Validated;
@@ -4487,6 +4661,9 @@ NAZARA_WARNING_POP()
 				if (!indexType)
 					return ValidationResult::Unresolved;
 
+				if (ResolveUntyped(*indexExpr, ExpressionType{ PrimitiveType::Int32 }, indexExpr->sourceLocation))
+					indexType = GetExpressionType(*indexExpr);
+
 				if (!IsPrimitiveType(*indexType))
 					throw CompilerIndexRequiresIntegerIndicesError{ node.sourceLocation, ToString(*indexType, indexExpr->sourceLocation) };
 
@@ -4511,7 +4688,7 @@ NAZARA_WARNING_POP()
 					if (primitiveIndexType != PrimitiveType::Int32)
 						throw CompilerIndexStructRequiresInt32IndicesError{ node.sourceLocation, ToString(*indexType, indexExpr->sourceLocation) };
 
-					std::optional<ConstantValue> constantValue = ComputeConstantValue(*indexExpr);
+					std::optional<ConstantValue> constantValue = ComputeConstantValue(*indexExpr, ExpressionType{ PrimitiveType::Int32 });
 					if (!constantValue.has_value())
 						return ValidationResult::Unresolved;
 
@@ -4605,11 +4782,16 @@ NAZARA_WARNING_POP()
 		if (GetExpressionCategory(*node.left) != ExpressionCategory::LValue)
 			throw CompilerAssignTemporaryError{ node.sourceLocation };
 
+		const ExpressionType& resolvedLeftExprType = ResolveAlias(*leftExprType);
+		ExpressionType rightType = UnwrapExternalType(ResolveAlias(*rightExprType));
+		if (ResolveUntyped(*node.right, resolvedLeftExprType, node.right->sourceLocation))
+			rightType = *GetExpressionType(*node.right);
+
 		std::optional<BinaryType> binaryType;
 		switch (node.op)
 		{
 			case AssignType::Simple:
-				TypeMustMatch(*leftExprType, UnwrapExternalType(ResolveAlias(*rightExprType)), node.sourceLocation);
+				TypeMustMatch(*leftExprType, rightType, node.sourceLocation);
 				break;
 
 			case AssignType::CompoundAdd:        binaryType = BinaryType::Add; break;
@@ -4623,7 +4805,7 @@ NAZARA_WARNING_POP()
 
 		if (binaryType)
 		{
-			ExpressionType expressionType = ValidateBinaryOp(*binaryType, ResolveAlias(*leftExprType), UnwrapExternalType(ResolveAlias(*rightExprType)), node.sourceLocation);
+			ExpressionType expressionType = ValidateBinaryOp(*binaryType, resolvedLeftExprType, rightType, node.sourceLocation);
 			TypeMustMatch(UnwrapExternalType(*leftExprType), expressionType, node.sourceLocation);
 
 			if (m_context->options.removeCompoundAssignments)
@@ -4639,15 +4821,31 @@ NAZARA_WARNING_POP()
 
 	auto SanitizeVisitor::Validate(BinaryExpression& node) -> ValidationResult
 	{
-		const ExpressionType* leftExprType = GetExpressionType(MandatoryExpr(node.left, node.sourceLocation));
+		const ExpressionType* leftExprType = GetExpressionType(MandatoryExpr(node.left, node.left->sourceLocation));
 		if (!leftExprType)
 			return ValidationResult::Unresolved;
 
-		const ExpressionType* rightExprType = GetExpressionType(MandatoryExpr(node.right, node.sourceLocation));
+		const ExpressionType* rightExprType = GetExpressionType(MandatoryExpr(node.right, node.right->sourceLocation));
 		if (!rightExprType)
 			return ValidationResult::Unresolved;
 
-		node.cachedExpressionType = ValidateBinaryOp(node.op, ResolveAlias(*leftExprType), ResolveAlias(*rightExprType), node.sourceLocation);
+		const ExpressionType* resolvedLeftExprType = &ResolveAlias(*leftExprType);
+		const ExpressionType* resolvedRightExprType = &ResolveAlias(*rightExprType);
+		if (IsUntypedType(*resolvedLeftExprType) != IsUntypedType(*resolvedRightExprType))
+		{
+			if (IsUntypedType(*resolvedLeftExprType))
+			{
+				if (ResolveUntyped(*node.left, *resolvedRightExprType, node.left->sourceLocation))
+					resolvedLeftExprType = GetExpressionType(*node.left);
+			}
+			else
+			{
+				if (ResolveUntyped(*node.right, *resolvedLeftExprType, node.right->sourceLocation))
+					resolvedRightExprType = GetExpressionType(*node.right);
+			}
+		}
+
+		node.cachedExpressionType = ValidateBinaryOp(node.op, *resolvedLeftExprType, *resolvedRightExprType, node.sourceLocation);
 		return ValidationResult::Validated;
 	}
 
@@ -4830,11 +5028,13 @@ NAZARA_WARNING_POP()
 
 				for (std::size_t i = 0; i < targetMatrixType.columnCount; ++i)
 				{
-					auto& exprPtr = MandatoryExpr(node.expressions[i], node.sourceLocation);
+					auto& expr = MandatoryExpr(node.expressions[i], node.sourceLocation);
+					ResolveUntyped(expr, ExpressionType{ targetMatrixType.type }, node.sourceLocation);
 
-					const ExpressionType* exprType = GetExpressionType(exprPtr);
+					const ExpressionType* exprType = GetExpressionType(expr);
 					if (!exprType)
 						return ValidationResult::Unresolved;
+
 
 					const ExpressionType& resolvedExprType = ResolveAlias(*exprType);
 					if (!IsVectorType(resolvedExprType))
@@ -4859,9 +5059,10 @@ NAZARA_WARNING_POP()
 				{
 					std::size_t exprIndex = (expressionCount > 1) ? i : 0;
 
-					auto& exprPtr = MandatoryExpr(node.expressions[exprIndex], node.sourceLocation);
+					auto& expr = MandatoryExpr(node.expressions[exprIndex], node.sourceLocation);
+					ResolveUntyped(expr, ExpressionType{ targetMatrixType.type }, node.sourceLocation);
 
-					const ExpressionType* exprType = GetExpressionType(exprPtr);
+					const ExpressionType* exprType = GetExpressionType(expr);
 					if (!exprType)
 						return ValidationResult::Unresolved;
 
@@ -4917,6 +5118,8 @@ NAZARA_WARNING_POP()
 
 			for (auto& exprPtr : node.expressions)
 			{
+				ResolveUntyped(*exprPtr, ExpressionType{ targetBaseType }, node.sourceLocation);
+
 				const ExpressionType* exprType = GetExpressionType(*exprPtr);
 				if (!exprType)
 					return ValidationResult::Unresolved;
@@ -4968,12 +5171,15 @@ NAZARA_WARNING_POP()
 			const ExpressionType& innerType = targetArrayType.containedType->type;
 			for (std::size_t i = 0; i < node.expressions.size(); ++i)
 			{
-				const auto& exprPtr = node.expressions[i];
+				auto& exprPtr = node.expressions[i];
 				assert(exprPtr);
 
 				const ExpressionType* exprType = GetExpressionType(*exprPtr);
 				if (!exprType)
 					return ValidationResult::Unresolved;
+
+				if (ResolveUntyped(*exprPtr, innerType, exprPtr->sourceLocation))
+					exprType = GetExpressionType(*exprPtr);
 
 				if (innerType != *exprType)
 					throw CompilerCastIncompatibleTypesError{ exprPtr->sourceLocation, ToString(innerType, node.sourceLocation), ToString(*exprType, exprPtr->sourceLocation) };
@@ -4999,8 +5205,12 @@ NAZARA_WARNING_POP()
 
 		if (constType.has_value())
 		{
-			if (!IsConstantType(ResolveAlias(*constType)))
+			const ExpressionType& resolvedType = ResolveAlias(*constType);
+			if (!IsConstantType(resolvedType))
 				throw CompilerExpectedConstantTypeError{ node.sourceLocation, ToString(*constType, node.sourceLocation) };
+		
+			if (IsUntypedType(resolvedType))
+				throw CompilerUnexpectedUntypedError{ node.sourceLocation };
 		}
 
 		ExpressionPtr constantExpr = PropagateConstants(*node.expression);
@@ -5015,6 +5225,8 @@ NAZARA_WARNING_POP()
 			node.constIndex = RegisterConstant(node.name, std::nullopt, node.constIndex, node.sourceLocation);
 			return ValidationResult::Unresolved;
 		}
+
+		ResolveUntyped(*constantExpr, constType, node.sourceLocation);
 
 		ExpressionType expressionType;
 		if (constantType == NodeType::ConstantValueExpression)
@@ -5043,7 +5255,7 @@ NAZARA_WARNING_POP()
 
 	auto SanitizeVisitor::Validate(DeclareVariableStatement& node) -> ValidationResult
 	{
-		ExpressionType initialExprType;
+		std::optional<ExpressionType> initialExprType;
 		if (node.initialExpression)
 		{
 			const ExpressionType* initialExprTypeOpt = GetExpressionType(*node.initialExpression);
@@ -5062,7 +5274,10 @@ NAZARA_WARNING_POP()
 			if (!node.initialExpression)
 				throw CompilerVarDeclarationMissingTypeAndValueError{ node.sourceLocation };
 
-			resolvedType = initialExprType;
+			if (ResolveUntyped(*node.initialExpression, {}, node.sourceLocation))
+				resolvedType = GetExpressionTypeSecure(*node.initialExpression);
+			else
+				resolvedType = *initialExprType;
 		}
 		else
 		{
@@ -5074,10 +5289,13 @@ NAZARA_WARNING_POP()
 			}
 
 			resolvedType = std::move(varType).value();
-			if (!std::holds_alternative<NoType>(initialExprType))
+			if (initialExprType)
 			{
-				if (resolvedType != initialExprType)
-					throw CompilerVarDeclarationTypeUnmatchingError{ node.sourceLocation, ToString(resolvedType, node.sourceLocation), ToString(initialExprType, node.initialExpression->sourceLocation) };
+				if (ResolveUntyped(*node.initialExpression, resolvedType, node.sourceLocation))
+					initialExprType = GetExpressionTypeSecure(*node.initialExpression);
+
+				if (ResolveAlias(resolvedType) != ResolveAlias(*initialExprType))
+					throw CompilerVarDeclarationTypeUnmatchingError{ node.sourceLocation, ToString(resolvedType, node.sourceLocation), ToString(*initialExprType, node.initialExpression->sourceLocation) };
 			}
 		}
 
@@ -5882,7 +6100,7 @@ NAZARA_WARNING_POP()
 		{
 			case UnaryType::BitwiseNot:
 			{
-				if (resolvedExprType != ExpressionType(PrimitiveType::Int32) && resolvedExprType != ExpressionType(PrimitiveType::UInt32))
+				if (resolvedExprType != ExpressionType(PrimitiveType::Int32) && resolvedExprType != ExpressionType(PrimitiveType::UInt32) && resolvedExprType != ExpressionType(PrimitiveType::UntypedInteger))
 					throw CompilerUnaryUnsupportedError{ node.sourceLocation, ToString(*exprType, node.sourceLocation) };
 
 				break;
@@ -5907,8 +6125,19 @@ NAZARA_WARNING_POP()
 				else
 					throw CompilerUnaryUnsupportedError{ node.sourceLocation, ToString(*exprType, node.sourceLocation) };
 
-				if (basicType != PrimitiveType::Float32 && basicType != PrimitiveType::Float64 && basicType != PrimitiveType::Int32 && basicType != PrimitiveType::UInt32)
-					throw CompilerUnaryUnsupportedError{ node.sourceLocation, ToString(*exprType, node.sourceLocation) };
+				switch (basicType)
+				{
+					case PrimitiveType::Float32:
+					case PrimitiveType::Float64:
+					case PrimitiveType::Int32:
+					case PrimitiveType::UInt32:
+					case PrimitiveType::UntypedFloat:
+					case PrimitiveType::UntypedInteger:
+						break;
+
+					default:
+						throw CompilerUnaryUnsupportedError{ node.sourceLocation, ToString(*exprType, node.sourceLocation) };
+				}
 
 				break;
 			}
@@ -5967,6 +6196,8 @@ NAZARA_WARNING_POP()
 						case PrimitiveType::Float64:
 						case PrimitiveType::Int32:
 						case PrimitiveType::UInt32:
+						case PrimitiveType::UntypedFloat:
+						case PrimitiveType::UntypedInteger:
 						{
 							if (IsMatrixType(rightExprType))
 							{
@@ -6135,6 +6366,8 @@ NAZARA_WARNING_POP()
 			if (arrayType.length == 0)
 				throw CompilerArrayLengthRequiredError{ sourceLocation };
 		}
+		else if (IsUntypedType(exprType))
+			throw AstUnexpectedUntypedError{ sourceLocation };
 	}
 
 	auto SanitizeVisitor::ValidateIntrinsicParamMatchingType(IntrinsicExpression& node, std::size_t from, std::size_t to) -> ValidationResult
@@ -6214,6 +6447,8 @@ NAZARA_WARNING_POP()
 	{
 		assert(index < node.parameters.size());
 		auto& parameter = MandatoryExpr(node.parameters[index], node.sourceLocation);
+
+		ResolveUntyped(parameter, {}, node.sourceLocation);
 
 		const ExpressionType* type = GetExpressionType(parameter);
 		if (!type)

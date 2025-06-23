@@ -58,21 +58,6 @@ namespace nzsl::Ast
 			using type = T;
 		};
 
-		template<typename T>
-		struct GetArithmeticType
-		{
-			using type = T;
-		};
-
-		template<typename T>
-		struct GetArithmeticType<Untyped<T>>
-		{
-			using type = T;
-		};
-
-		template<typename T>
-		using GetArithmeticType_t = typename GetArithmeticType<T>::type;
-
 		/*************************************************************************************************/
 
 		template<typename T>
@@ -104,8 +89,8 @@ namespace nzsl::Ast
 		{
 			std::unique_ptr<ConstantValueExpression> operator()(From value, const SourceLocation& /*sourceLocation*/)
 			{
-				using AriT = GetArithmeticType_t<T>;
-				using AriFrom = GetArithmeticType_t<From>;
+				using AriT = UntypedInnerType_t<T>;
+				using AriFrom = UntypedInnerType_t<From>;
 				return ShaderBuilder::ConstantValue(T{ AriT{ static_cast<T>(AriFrom{ value }) } });
 			}
 		};
@@ -124,7 +109,7 @@ namespace nzsl::Ast
 		{
 			std::unique_ptr<ConstantValueExpression> operator()(T arg, const SourceLocation& /*sourceLocation*/)
 			{
-				using AriT = GetArithmeticType_t<T>;
+				using AriT = UntypedInnerType_t<T>;
 				return ShaderBuilder::ConstantValue(T{ ~AriT{ arg } });
 			}
 		};
@@ -144,7 +129,7 @@ namespace nzsl::Ast
 		{
 			std::unique_ptr<ConstantValueExpression> operator()(T arg, const SourceLocation& /*sourceLocation*/)
 			{
-				using AriT = GetArithmeticType_t<T>;
+				using AriT = UntypedInnerType_t<T>;
 				return ShaderBuilder::ConstantValue(T{ !AriT{ arg } });
 			}
 		};
@@ -164,7 +149,7 @@ namespace nzsl::Ast
 		{
 			std::unique_ptr<ConstantValueExpression> operator()(T arg, const SourceLocation& /*sourceLocation*/)
 			{
-				using AriT = GetArithmeticType_t<T>;
+				using AriT = UntypedInnerType_t<T>;
 				return ShaderBuilder::ConstantValue(T{ -AriT{ arg } });
 			}
 		};
@@ -261,24 +246,13 @@ namespace nzsl::Ast
 
 		EnableOptimisation(UnaryBinaryNot, std::uint32_t);
 		EnableOptimisation(UnaryBinaryNot, std::int32_t);
+		EnableOptimisation(UnaryBinaryNot, UntypedInteger);
 
 		EnableOptimisation(UnaryLogicalNot, bool);
 
 		EnableOptimisation(UnaryMinus, double);
 		EnableOptimisation(UnaryMinus, float);
 		EnableOptimisation(UnaryMinus, std::int32_t);
-		EnableOptimisation(UnaryMinus, Vector2f32);
-		EnableOptimisation(UnaryMinus, Vector3f32);
-		EnableOptimisation(UnaryMinus, Vector4f32);
-		EnableOptimisation(UnaryMinus, Vector2i32);
-		EnableOptimisation(UnaryMinus, Vector3i32);
-		EnableOptimisation(UnaryMinus, Vector4i32);
-		EnableOptimisation(UnaryMinus, Vector2<UntypedFloat>);
-		EnableOptimisation(UnaryMinus, Vector3<UntypedFloat>);
-		EnableOptimisation(UnaryMinus, Vector4<UntypedFloat>);
-		EnableOptimisation(UnaryMinus, Vector2<UntypedInteger>);
-		EnableOptimisation(UnaryMinus, Vector3<UntypedInteger>);
-		EnableOptimisation(UnaryMinus, Vector4<UntypedInteger>);
 		EnableOptimisation(UnaryMinus, UntypedFloat);
 		EnableOptimisation(UnaryMinus, UntypedInteger);
 
@@ -454,15 +428,15 @@ namespace nzsl::Ast
 						switch (vecType.componentCount)
 						{
 							case 2:
-								optimized = ShaderBuilder::ConstantValue(Vector2<T>{ std::get<T>(constantValues[0]), std::get<T>(constantValues[1]), node.sourceLocation);
+								optimized = ShaderBuilder::ConstantValue(Vector2<T>{ std::get<T>(constantValues[0]), std::get<T>(constantValues[1]) }, node.sourceLocation);
 								break;
 
 							case 3:
-								optimized = ShaderBuilder::ConstantValue(Vector3<T>{ std::get<T>(constantValues[0]), std::get<T>(constantValues[1]), std::get<T>(constantValues[2]), node.sourceLocation);
+								optimized = ShaderBuilder::ConstantValue(Vector3<T>{ std::get<T>(constantValues[0]), std::get<T>(constantValues[1]), std::get<T>(constantValues[2]) }, node.sourceLocation);
 								break;
 
 							case 4:
-								optimized = ShaderBuilder::ConstantValue(Vector4<T>{ std::get<T>(constantValues[0]), std::get<T>(constantValues[1]), std::get<T>(constantValues[2]), std::get<T>(constantValues[3]), node.sourceLocation);
+								optimized = ShaderBuilder::ConstantValue(Vector4<T>{ std::get<T>(constantValues[0]), std::get<T>(constantValues[1]), std::get<T>(constantValues[2]), std::get<T>(constantValues[3]) }, node.sourceLocation);
 								break;
 						}
 					}
@@ -853,7 +827,7 @@ namespace nzsl::Ast
 					optimized = CCType{}(arg, sourceLocation);
 			}
 			else
-				return arg;
+				optimized = ShaderBuilder::ConstantValue(arg);
 
 		}, operand.value);
 
@@ -886,7 +860,7 @@ namespace nzsl::Ast
 					case 1: optimized = ShaderBuilder::ConstantValue(Access(arg, components[0]), sourceLocation); break;
 					case 2: optimized = ShaderBuilder::ConstantValue(Vector2<BaseType>{ Access(arg, components[0]), Access(arg, components[1]) }, sourceLocation); break;
 					case 3: optimized = ShaderBuilder::ConstantValue(Vector3<BaseType>{ Access(arg, components[0]), Access(arg, components[1]), Access(arg, components[2]) }, sourceLocation); break;
-					case 4: optimized = ShaderBuilder::ConstantValue(Vector4<BaseType>{ Access(arg, components[0]), Access(arg, components[1]), Access(arg, components[2]), Access(arg, components[3]) }, sourceLocation);
+					case 4: optimized = ShaderBuilder::ConstantValue(Vector4<BaseType>{ Access(arg, components[0]), Access(arg, components[1]), Access(arg, components[2]), Access(arg, components[3]) }, sourceLocation); break;
 					default:
 						throw std::runtime_error("unexpected target component count " + std::to_string(targetComponentCount));
 				}
@@ -913,71 +887,26 @@ namespace nzsl::Ast
 				if constexpr (Nz::IsComplete_v<Op>)
 					optimized = Op{}(arg, sourceLocation);
 			}
+			else if constexpr (IsVector_v<T>)
+			{
+				using TBase = typename T::Base;
+
+				using SubOp = UnaryConstantPropagation<Type, TBase>;
+				if constexpr (Nz::IsComplete_v<SubOp>)
+				{
+					using RetType = Vector<TBase, T::Dimensions>;
+
+					RetType value;
+					for (std::size_t i = 0; i < T::Dimensions; ++i)
+						value[i] = SubOp{}(arg[i], sourceLocation);
+
+					optimized = ShaderBuilder::ConstantValue(value);
+				}
+			}
 		}, operand.value);
 
 		return optimized;
 	}
-
-	template<typename TargetType>
-	ExpressionPtr ConstantPropagationVisitor::PropagateVec2Cast(TargetType v1, TargetType v2, const SourceLocation& sourceLocation)
-	{
-		NAZARA_USE_ANONYMOUS_NAMESPACE
-
-		NazaraUnused(v1);
-		NazaraUnused(v2);
-		NazaraUnused(sourceLocation);
-
-		std::unique_ptr<ConstantValueExpression> optimized;
-
-		using CCType = CastConstant<Vector2<TargetType>, TargetType, TargetType>;
-
-		if constexpr (Nz::IsComplete_v<CCType>)
-			optimized = CCType{}(v1, v2, sourceLocation);
-
-		return optimized;
-	}
-
-	template<typename TargetType>
-	ExpressionPtr ConstantPropagationVisitor::PropagateVec3Cast(TargetType v1, TargetType v2, TargetType v3, const SourceLocation& sourceLocation)
-	{
-		NAZARA_USE_ANONYMOUS_NAMESPACE
-
-		NazaraUnused(v1);
-		NazaraUnused(v2);
-		NazaraUnused(v3);
-		NazaraUnused(sourceLocation);
-
-		std::unique_ptr<ConstantValueExpression> optimized;
-
-		using CCType = CastConstant<Vector3<TargetType>, TargetType, TargetType, TargetType>;
-
-		if constexpr (Nz::IsComplete_v<CCType>)
-			optimized = CCType{}(v1, v2, v3, sourceLocation);
-
-		return optimized;
-	}
-
-	template<typename TargetType>
-	ExpressionPtr ConstantPropagationVisitor::PropagateVec4Cast(TargetType v1, TargetType v2, TargetType v3, TargetType v4, const SourceLocation& sourceLocation)
-	{
-		NAZARA_USE_ANONYMOUS_NAMESPACE
-
-		NazaraUnused(v1);
-		NazaraUnused(v2);
-		NazaraUnused(v3);
-		NazaraUnused(v4);
-		NazaraUnused(sourceLocation);
-
-		std::unique_ptr<ConstantValueExpression> optimized;
-
-		using CCType = CastConstant<Vector4<TargetType>, TargetType, TargetType, TargetType, TargetType>;
-
-		if constexpr (Nz::IsComplete_v<CCType>)
-			optimized = CCType{}(v1, v2, v3, v4, sourceLocation);
-
-		return optimized;
-	}
-
 
 	StatementPtr ConstantPropagationVisitor::Unscope(StatementPtr node)
 	{

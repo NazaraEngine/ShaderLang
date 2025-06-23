@@ -56,6 +56,7 @@ namespace nzsl::Ast
 				bool removeOptionDeclaration = false;
 				bool removeScalarSwizzling = false;
 				bool removeSingleConstDeclaration = false;
+				bool removeUntyped = false;
 				bool splitMultipleBranches = false;
 				bool splitWrappedArrayAssignation = false;
 				bool splitWrappedStructAssignation = false;
@@ -120,8 +121,8 @@ namespace nzsl::Ast
 			const IdentifierData* FindIdentifier(const Environment& environment, std::string_view identifierName) const;
 			template<typename F> const IdentifierData* FindIdentifier(const Environment& environment, std::string_view identifierName, F&& functor) const;
 
-			const ExpressionType* GetExpressionType(Expression& expr) const;
-			const ExpressionType& GetExpressionTypeSecure(Expression& expr) const;
+			const ExpressionType* GetExpressionType(const Expression& expr) const;
+			const ExpressionType& GetExpressionTypeSecure(const Expression& expr) const;
 
 			ExpressionPtr HandleIdentifier(const IdentifierData* identifierData, const SourceLocation& sourceLocation);
 
@@ -133,7 +134,8 @@ namespace nzsl::Ast
 
 			ExpressionPtr CacheResult(ExpressionPtr expression);
 
-			std::optional<ConstantValue> ComputeConstantValue(Expression& expr) const;
+			std::optional<ConstantValue> ComputeConstantValue(Expression& expr, std::optional<ExpressionType> enforcedType = {}) const;
+			std::optional<ConstantValue> ComputeConstantValue(Expression& expr, std::optional<ExpressionType> enforcedType, const SourceLocation& sourceLocation) const;
 			template<typename T> ValidationResult ComputeExprValue(ExpressionValue<T>& attribute, const SourceLocation& sourceLocation) const;
 			template<typename T> ValidationResult ComputeExprValue(const ExpressionValue<T>& attribute, ExpressionValue<T>& targetAttribute, const SourceLocation& sourceLocation);
 			template<typename T> std::unique_ptr<T> PropagateConstants(T& node) const;
@@ -161,6 +163,8 @@ namespace nzsl::Ast
 			std::size_t ResolveStructIndex(const ExpressionType& exprType, const SourceLocation& sourceLocation);
 			ExpressionType ResolveType(const ExpressionType& exprType, bool resolveAlias, const SourceLocation& sourceLocation);
 			std::optional<ExpressionType> ResolveTypeExpr(const ExpressionValue<ExpressionType>& exprTypeValue, bool resolveAlias, const SourceLocation& sourceLocation);
+			bool ResolveUntyped(Expression& expression, std::optional<ExpressionType> enforcedType, const SourceLocation& sourceLocation) const;
+			ExpressionPtr ResolveUntyped(ExpressionPtr expr);
 
 			MultiStatementPtr SanitizeInternal(MultiStatement& rootNode, std::string* error);
 			bool SanitizeIdentifier(std::string& identifier, IdentifierScope identifierScope);

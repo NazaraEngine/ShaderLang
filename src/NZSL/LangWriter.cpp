@@ -1163,7 +1163,6 @@ namespace nzsl
 		}, node.value);
 	}
 
-
 	void LangWriter::Visit(Ast::ConstantExpression& node)
 	{
 		AppendIdentifier(m_currentState->constants, node.constantId);

@@ -11,7 +11,7 @@
 
 namespace nzsl::Ast
 {
-	static_assert(std::variant_size_v<ConstantSingleValue> == 22);
+	static_assert(std::variant_size_v<ConstantSingleValue> == 30);
 
 #define NZSL_TYPE_INDEX(callback) \
 		/* callback(NoType, 0) */ \
@@ -36,6 +36,14 @@ namespace nzsl::Ast
 		callback(Vector2<bool>, 19) \
 		callback(Vector3<bool>, 20) \
 		callback(Vector4<bool>, 21) \
+		callback(UntypedFloat, 22) \
+		callback(Vector2<UntypedFloat>, 23) \
+		callback(Vector3<UntypedFloat>, 24) \
+		callback(Vector4<UntypedFloat>, 25) \
+		callback(UntypedInteger, 26) \
+		callback(Vector2<UntypedInteger>, 27) \
+		callback(Vector3<UntypedInteger>, 28) \
+		callback(Vector4<UntypedInteger>, 29)
 
 	namespace
 	{

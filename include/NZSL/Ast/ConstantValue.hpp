@@ -49,6 +49,7 @@ namespace nzsl::Ast
 	struct UntypedTraits
 	{
 		static constexpr bool IsLiteral = false;
+		using Inner = T; //< for easier use
 	};
 
 	template<typename T>
@@ -121,12 +122,12 @@ namespace nzsl::Ast
 	NZSL_API std::string ConstantToString(const ConstantSingleValue& value);
 
 	NZSL_API std::string ToString(bool value);
-	NZSL_API std::string ToString(double value, bool suffixType = true);
-	NZSL_API std::string ToString(float value, bool suffixType = true);
-	NZSL_API std::string ToString(std::int32_t value, bool suffixType = true);
-	NZSL_API std::string ToString(std::uint32_t value, bool suffixType = true);
-	NZSL_API std::string ToString(UntypedFloat value);
-	NZSL_API std::string ToString(UntypedInteger value);
+	NZSL_API std::string ToString(double value, bool enforceType = false);
+	NZSL_API std::string ToString(float value, bool enforceType = false);
+	NZSL_API std::string ToString(std::int32_t value, bool enforceType = false);
+	NZSL_API std::string ToString(std::uint32_t value, bool enforceType = false);
+	NZSL_API std::string ToString(UntypedFloat value, bool dummy = false);
+	NZSL_API std::string ToString(UntypedInteger value, bool dummy = false);
 
 	inline ConstantValue ToConstantValue(ConstantSingleValue value);
 	inline ConstantValue ToConstantValue(ConstantArrayValue value);

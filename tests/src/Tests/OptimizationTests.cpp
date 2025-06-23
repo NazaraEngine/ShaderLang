@@ -259,9 +259,9 @@ fn main()
 fn main()
 {
 	let v1: f32 = 1.0;
-	let v2: f64 = f64(-5.0);
+	let v2: f64 = -5.0;
 	let v3: i32 = 0;
-	let v4: u32 = u32(42);
+	let v4: u32 = 42;
 }
 )");
 	}

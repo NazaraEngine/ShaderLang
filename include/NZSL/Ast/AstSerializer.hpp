@@ -109,6 +109,7 @@ namespace nzsl::Ast
 			virtual void Value(std::uint16_t& val) = 0;
 			virtual void Value(std::uint32_t& val) = 0;
 			virtual void Value(std::uint64_t& val) = 0;
+			template<typename T> void Value(Untyped<T>& val);
 			template<typename T, std::size_t N> void Value(Vector<T, N>& val);
 	};
 

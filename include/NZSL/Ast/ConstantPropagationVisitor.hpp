@@ -58,10 +58,8 @@ namespace nzsl::Ast
 			template<typename TargetType> ExpressionPtr PropagateSingleValueCast(const ConstantValueExpression& operand, const SourceLocation& sourceLocation);
 			ExpressionPtr PropagateConstantSwizzle(std::size_t targetComponentCount, const std::array<std::uint32_t, 4>& components, const ConstantValueExpression& operand, const SourceLocation& sourceLocation);
 			template<UnaryType Type> ExpressionPtr PropagateUnaryConstant(const ConstantValueExpression& operand, const SourceLocation& sourceLocation);
-			template<typename TargetType> ExpressionPtr PropagateVec2Cast(TargetType v1, TargetType v2, const SourceLocation& sourceLocation);
-			template<typename TargetType> ExpressionPtr PropagateVec3Cast(TargetType v1, TargetType v2, TargetType v3, const SourceLocation& sourceLocation);
-			template<typename TargetType> ExpressionPtr PropagateVec4Cast(TargetType v1, TargetType v2, TargetType v3, TargetType v4, const SourceLocation& sourceLocation);
 
+			template<typename T, typename Other> auto ResolveUntypedIfNecessary(T value);
 			StatementPtr Unscope(StatementPtr node);
 
 		private:

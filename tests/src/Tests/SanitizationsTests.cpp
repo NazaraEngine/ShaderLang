@@ -207,8 +207,8 @@ fn testMat4ToMat4(input: mat4[f32]) -> mat4[f32]
 fn buildMat2x3(a: f32, b: f32, c: f32, d: f32, e: f32, f: f32) -> mat2x3[f32]
 {
 	let temp: mat2x3[f32];
-	temp[u32(0)] = vec3[f32](a, b, c);
-	temp[u32(1)] = vec3[f32](d, e, f);
+	temp[0] = vec3[f32](a, b, c);
+	temp[1] = vec3[f32](d, e, f);
 	return temp;
 }
 
@@ -220,27 +220,27 @@ fn testMat2ToMat2(input: mat2[f32]) -> mat2[f32]
 fn testMat2ToMat3(input: mat2[f32]) -> mat3[f32]
 {
 	let temp: mat3[f32];
-	temp[u32(0)] = vec3[f32](input[u32(0)], 0.0);
-	temp[u32(1)] = vec3[f32](input[u32(1)], 0.0);
-	temp[u32(2)] = vec3[f32](input[u32(2)], 1.0);
+	temp[0] = vec3[f32](input[0], 0.0);
+	temp[1] = vec3[f32](input[1], 0.0);
+	temp[2] = vec3[f32](input[2], 1.0);
 	return temp;
 }
 
 fn testMat2ToMat4(input: mat2[f32]) -> mat4[f32]
 {
 	let temp: mat4[f32];
-	temp[u32(0)] = vec4[f32](input[u32(0)], 0.0, 0.0);
-	temp[u32(1)] = vec4[f32](input[u32(1)], 0.0, 0.0);
-	temp[u32(2)] = vec4[f32](input[u32(2)], 1.0, 0.0);
-	temp[u32(3)] = vec4[f32](input[u32(3)], 0.0, 1.0);
+	temp[0] = vec4[f32](input[0], 0.0, 0.0);
+	temp[1] = vec4[f32](input[1], 0.0, 0.0);
+	temp[2] = vec4[f32](input[2], 1.0, 0.0);
+	temp[3] = vec4[f32](input[3], 0.0, 1.0);
 	return temp;
 }
 
 fn testMat3ToMat2(input: mat3[f32]) -> mat2[f32]
 {
 	let temp: mat2[f32];
-	temp[u32(0)] = input[u32(0)].xy;
-	temp[u32(1)] = input[u32(1)].xy;
+	temp[0] = input[0].xy;
+	temp[1] = input[1].xy;
 	return temp;
 }
 
@@ -252,27 +252,27 @@ fn testMat3ToMat3(input: mat3[f32]) -> mat3[f32]
 fn testMat3ToMat4(input: mat3[f32]) -> mat4[f32]
 {
 	let temp: mat4[f32];
-	temp[u32(0)] = vec4[f32](input[u32(0)], 0.0);
-	temp[u32(1)] = vec4[f32](input[u32(1)], 0.0);
-	temp[u32(2)] = vec4[f32](input[u32(2)], 0.0);
-	temp[u32(3)] = vec4[f32](input[u32(3)], 1.0);
+	temp[0] = vec4[f32](input[0], 0.0);
+	temp[1] = vec4[f32](input[1], 0.0);
+	temp[2] = vec4[f32](input[2], 0.0);
+	temp[3] = vec4[f32](input[3], 1.0);
 	return temp;
 }
 
 fn testMat4ToMat2(input: mat4[f32]) -> mat2[f32]
 {
 	let temp: mat2[f32];
-	temp[u32(0)] = input[u32(0)].xy;
-	temp[u32(1)] = input[u32(1)].xy;
+	temp[0] = input[0].xy;
+	temp[1] = input[1].xy;
 	return temp;
 }
 
 fn testMat4ToMat3(input: mat4[f32]) -> mat3[f32]
 {
 	let temp: mat3[f32];
-	temp[u32(0)] = input[u32(0)].xyz;
-	temp[u32(1)] = input[u32(1)].xyz;
-	temp[u32(2)] = input[u32(2)].xyz;
+	temp[0] = input[0].xyz;
+	temp[1] = input[1].xyz;
+	temp[2] = input[2].xyz;
 	return temp;
 }
 
@@ -329,29 +329,29 @@ fn testMat4CompoundMinusMat4(x: mat4[f32], y: mat4[f32]) -> mat4[f32]
 		ExpectNZSL(*shaderModule, R"(
 fn testMat4PlusMat4(x: mat4[f32], y: mat4[f32]) -> mat4[f32]
 {
-	return mat4[f32](x[u32(0)] + y[u32(0)], x[u32(1)] + y[u32(1)], x[u32(2)] + y[u32(2)], x[u32(3)] + y[u32(3)]);
+	return mat4[f32](x[0] + y[0], x[1] + y[1], x[2] + y[2], x[3] + y[3]);
 }
 
 fn testMat4SubMat4(x: mat4[f32], y: mat4[f32]) -> mat4[f32]
 {
-	return mat4[f32](x[u32(0)] - y[u32(0)], x[u32(1)] - y[u32(1)], x[u32(2)] - y[u32(2)], x[u32(3)] - y[u32(3)]);
+	return mat4[f32](x[0] - y[0], x[1] - y[1], x[2] - y[2], x[3] - y[3]);
 }
 
 fn testMat4SubMat4TimesMat4(x: mat4[f32], y: mat4[f32], z: mat4[f32]) -> mat4[f32]
 {
 	let cachedResult: mat4[f32] = y * y;
-	return mat4[f32](x[u32(0)] - cachedResult[u32(0)], x[u32(1)] - cachedResult[u32(1)], x[u32(2)] - cachedResult[u32(2)], x[u32(3)] - cachedResult[u32(3)]);
+	return mat4[f32](x[0] - cachedResult[0], x[1] - cachedResult[1], x[2] - cachedResult[2], x[3] - cachedResult[3]);
 }
 
 fn testMat4CompoundPlusMat4(x: mat4[f32], y: mat4[f32]) -> mat4[f32]
 {
-	x = mat4[f32](x[u32(0)] + y[u32(0)], x[u32(1)] + y[u32(1)], x[u32(2)] + y[u32(2)], x[u32(3)] + y[u32(3)]);
+	x = mat4[f32](x[0] + y[0], x[1] + y[1], x[2] + y[2], x[3] + y[3]);
 	return x;
 }
 
 fn testMat4CompoundMinusMat4(x: mat4[f32], y: mat4[f32]) -> mat4[f32]
 {
-	x = mat4[f32](x[u32(0)] - y[u32(0)], x[u32(1)] - y[u32(1)], x[u32(2)] - y[u32(2)], x[u32(3)] - y[u32(3)]);
+	x = mat4[f32](x[0] - y[0], x[1] - y[1], x[2] - y[2], x[3] - y[3]);
 	return x;
 }
 )");
@@ -366,20 +366,20 @@ fn testMat4CompoundMinusMat4(x: mat4[f32], y: mat4[f32]) -> mat4[f32]
 fn testMat4PlusMat4(x: mat4[f32], y: mat4[f32]) -> mat4[f32]
 {
 	let temp: mat4[f32];
-	temp[u32(0)] = x[u32(0)] + y[u32(0)];
-	temp[u32(1)] = x[u32(1)] + y[u32(1)];
-	temp[u32(2)] = x[u32(2)] + y[u32(2)];
-	temp[u32(3)] = x[u32(3)] + y[u32(3)];
+	temp[0] = x[0] + y[0];
+	temp[1] = x[1] + y[1];
+	temp[2] = x[2] + y[2];
+	temp[3] = x[3] + y[3];
 	return temp;
 }
 
 fn testMat4SubMat4(x: mat4[f32], y: mat4[f32]) -> mat4[f32]
 {
 	let temp: mat4[f32];
-	temp[u32(0)] = x[u32(0)] - y[u32(0)];
-	temp[u32(1)] = x[u32(1)] - y[u32(1)];
-	temp[u32(2)] = x[u32(2)] - y[u32(2)];
-	temp[u32(3)] = x[u32(3)] - y[u32(3)];
+	temp[0] = x[0] - y[0];
+	temp[1] = x[1] - y[1];
+	temp[2] = x[2] - y[2];
+	temp[3] = x[3] - y[3];
 	return temp;
 }
 
@@ -387,10 +387,10 @@ fn testMat4SubMat4TimesMat4(x: mat4[f32], y: mat4[f32], z: mat4[f32]) -> mat4[f3
 {
 	let cachedResult: mat4[f32] = y * y;
 	let temp: mat4[f32];
-	temp[u32(0)] = x[u32(0)] - cachedResult[u32(0)];
-	temp[u32(1)] = x[u32(1)] - cachedResult[u32(1)];
-	temp[u32(2)] = x[u32(2)] - cachedResult[u32(2)];
-	temp[u32(3)] = x[u32(3)] - cachedResult[u32(3)];
+	temp[0] = x[0] - cachedResult[0];
+	temp[1] = x[1] - cachedResult[1];
+	temp[2] = x[2] - cachedResult[2];
+	temp[3] = x[3] - cachedResult[3];
 	return temp;
 }
 )");

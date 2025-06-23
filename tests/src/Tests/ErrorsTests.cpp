@@ -154,7 +154,7 @@ const data = array[f32, 2](1.0, 2.0, 3.0);
 module;
 
 const data = array[f32, 3](1, 2, 3);
-)"), "(5, 28): CCastIncompatibleTypes error: incompatibles types (f32 and i32)");
+)"), "(5, 28): CCastIncompatibleTypes error: incompatibles types (UntypedInteger and f32)");
 
 
 			// it's an error to declare an unsized array outside of this case
@@ -303,7 +303,7 @@ module;
 
 const Pi: f32 = 3;
 
-)"), "(5, 17): CVarDeclarationTypeUnmatching error: initial expression type (i32) doesn't match specified type (f32)");
+)"), "(5,1 -> 18): CCastIncompatibleTypes error: incompatibles types (UntypedInteger and f32)");
 
 			CHECK_THROWS_WITH(Compile(R"(
 [nzsl_version("1.0")]

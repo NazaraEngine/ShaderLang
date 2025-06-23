@@ -220,6 +220,12 @@ namespace nzsl::Ast
 		Value(sourceLoc.startLine);
 	}
 
+	template<typename T> 
+	void SerializerBase::Value(Untyped<T>& val)
+	{
+		Value(static_cast<T&>(val));
+	}
+
 	template<typename T, std::size_t N>
 	void SerializerBase::Value(Vector<T, N>& val)
 	{

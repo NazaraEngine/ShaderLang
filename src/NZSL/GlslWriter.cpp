@@ -539,6 +539,7 @@ namespace nzsl
 		options.removeOptionDeclaration = true;
 		options.removeScalarSwizzling = true;
 		options.removeSingleConstDeclaration = true;
+		options.removeUntyped = true;
 		options.splitWrappedStructAssignation = true; //< TODO: Only split for base uniforms/storage
 		options.identifierSanitizer = [](std::string& identifier, Ast::IdentifierScope /*scope*/)
 		{

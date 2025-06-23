@@ -55,6 +55,8 @@ namespace nzsl
 		constexpr T& operator[](std::size_t i);
 		constexpr T operator[](std::size_t i) const;
 
+		template<typename U, typename = std::enable_if_t<!std::is_same_v<T, U>>> constexpr explicit operator Vector<U, N>() const;
+
 		constexpr Vector operator-() const;
 
 		constexpr Vector operator*(T rhs) const;

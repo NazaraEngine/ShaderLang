@@ -64,4 +64,20 @@ namespace nzsl::Ast
 		ConstantPropagationVisitor optimize;
 		return optimize.Process(ast, options);
 	}
+
+	template<typename T, typename Other>
+	auto ConstantPropagationVisitor::ResolveUntypedIfNecessary(T value)
+	{
+		if constexpr (IsUntyped_v<T> && IsUntyped_v<Other>)
+			return value; // Untyped + Untyped = Untyped
+		else if constexpr (IsUntyped_v<T> && std::is_convertible_v<T, Other>)
+		{
+			if constexpr (std::is_floating_point_v<typename T::Inner> == std::is_floating_point_v<Other>)
+				return static_cast<Other>(value); // Take other operand type
+			else
+				return value; // float + UntypedInteger is not valid
+		}
+		else
+			return value; // Other is Untyped but not us, keep our type
+	}
 }
