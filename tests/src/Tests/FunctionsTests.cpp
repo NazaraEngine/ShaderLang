@@ -401,8 +401,8 @@ fn main() -> FragOut
 		ExpectGLSL(*shaderModule, R"(
 vec4 sample_center(sampler2D tex)
 {
-	float cachedResult = 0.5;
-	return texture(tex, vec2(cachedResult, cachedResult));
+	float _nzsl_cachedResult = 0.5;
+	return texture(tex, vec2(_nzsl_cachedResult, _nzsl_cachedResult));
 }
 
 uniform sampler2D ExtData_texture_;
@@ -529,8 +529,8 @@ fn main() -> FragOut
 		ExpectGLSL(*shaderModule, R"(
 vec4 sample_center(sampler2D tex[3])
 {
-	float cachedResult = 0.5;
-	return texture(tex[1], vec2(cachedResult, cachedResult));
+	float _nzsl_cachedResult = 0.5;
+	return texture(tex[1], vec2(_nzsl_cachedResult, _nzsl_cachedResult));
 }
 
 uniform sampler2D ExtData_texture_[3];

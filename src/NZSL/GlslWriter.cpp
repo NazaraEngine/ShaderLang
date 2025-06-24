@@ -561,7 +561,7 @@ namespace nzsl
 		//options.removeScalarSwizzling = true;
 		options.removeSingleConstDeclaration = true;
 		//options.splitWrappedStructAssignation = true; //< TODO: Only split for base uniforms/storage
-		options.identifierSanitizer = [](std::string& identifier, Ast::IdentifierScope /*scope*/)
+		options.identifierSanitizer = [](std::string& identifier, Ast::IdentifierType /*scope*/)
 		{
 			using namespace std::string_view_literals;
 

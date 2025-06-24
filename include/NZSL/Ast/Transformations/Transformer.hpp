@@ -58,6 +58,9 @@ namespace nzsl::Ast
 			Context* m_context;
 
 		private:
+			virtual void PopScope();
+			virtual void PushScope();
+
 			template<typename T> bool TransformCurrentExpression();
 			template<typename T> bool TransformCurrentStatement();
 

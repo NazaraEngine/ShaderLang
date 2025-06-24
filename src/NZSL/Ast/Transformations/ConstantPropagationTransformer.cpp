@@ -820,7 +820,7 @@ namespace nzsl::Ast
 			case IntrinsicType::Trunc:
 				break;
 
-			// Intrinsics that cannot be evalutated at compilation time
+			// Intrinsics that can't be evalutated at compilation time
 			case IntrinsicType::TextureRead:
 			case IntrinsicType::TextureWrite:
 			case IntrinsicType::TextureSampleImplicitLod:

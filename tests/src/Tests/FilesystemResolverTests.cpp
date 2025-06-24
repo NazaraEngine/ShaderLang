@@ -33,8 +33,8 @@ uniform sampler2D tex1_Color;
 
 vec4 GenerateColor_Color()
 {
-	float cachedResult = 0.0;
-	return texture(tex1_Color, vec2(cachedResult, cachedResult));
+	float _nzsl_cachedResult = 0.0;
+	return texture(tex1_Color, vec2(_nzsl_cachedResult, _nzsl_cachedResult));
 }
 
 vec4 GetColor_Color()

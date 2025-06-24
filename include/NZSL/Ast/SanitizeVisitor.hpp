@@ -41,11 +41,9 @@ namespace nzsl::Ast
 
 			struct Options
 			{
-				std::function<bool(std::string& identifier, IdentifierScope identifierScope)> identifierSanitizer; //< ignored when performing partial sanitization
 				std::shared_ptr<ModuleResolver> moduleResolver;
 				std::unordered_map<OptionHash, ConstantValue> optionValues;
 				bool forceAutoBindingResolve = false;
-				bool makeVariableNameUnique = false;
 				bool partialSanitization = false;
 				bool removeAliases = false;
 				bool removeConstArraySize = false;
@@ -155,7 +153,7 @@ namespace nzsl::Ast
 			std::optional<ExpressionType> ResolveTypeExpr(const ExpressionValue<ExpressionType>& exprTypeValue, bool resolveAlias, const SourceLocation& sourceLocation);
 
 			MultiStatementPtr SanitizeInternal(MultiStatement& rootNode, std::string* error);
-			bool SanitizeIdentifier(std::string& identifier, IdentifierScope identifierScope);
+			bool SanitizeIdentifier(std::string& identifier, IdentifierType identifierScope);
 
 			std::string ToString(const ExpressionType& exprType, const SourceLocation& sourceLocation) const;
 			std::string ToString(const NamedPartialType& partialType, const SourceLocation& sourceLocation) const;

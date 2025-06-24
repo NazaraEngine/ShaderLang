@@ -1221,7 +1221,7 @@ NAZARA_WARNING_GCC_DISABLE("-Wmaybe-uninitialized")
 			if (!clone->name.empty())
 			{
 				fullName = fmt::format("{}_{}", clone->name, extVar.name);
-				SanitizeIdentifier(fullName, IdentifierScope::ExternalVariable);
+				SanitizeIdentifier(fullName, IdentifierType::ExternalVariable);
 			}
 
 			std::string& internalName = (!clone->name.empty()) ? fullName : extVar.name;
@@ -1317,7 +1317,7 @@ NAZARA_WARNING_GCC_DISABLE("-Wmaybe-uninitialized")
 
 			extVar.type = std::move(resolvedType).value();
 			extVar.varIndex = RegisterVariable(extVar.name, std::move(varType), extVar.varIndex, extVar.sourceLocation);
-			SanitizeIdentifier(extVar.name, IdentifierScope::ExternalVariable);
+			SanitizeIdentifier(extVar.name, IdentifierType::ExternalVariable);
 		}
 
 		if (previousEnv)
@@ -1486,7 +1486,7 @@ NAZARA_WARNING_POP()
 		std::size_t funcIndex = RegisterFunction(clone->name, std::move(funcData), node.funcIndex, node.sourceLocation);
 		clone->funcIndex = funcIndex;
 
-		SanitizeIdentifier(clone->name, IdentifierScope::Function);
+		SanitizeIdentifier(clone->name, IdentifierType::Function);
 
 		return clone;
 	}
@@ -1615,7 +1615,7 @@ NAZARA_WARNING_POP()
 				do
 				{
 					candidateName = fmt::format("{}_{}", member.name, index++);
-					SanitizeIdentifier(candidateName, IdentifierScope::Field);
+					SanitizeIdentifier(candidateName, IdentifierType::Field);
 				}
 				while (reservedIdentifiers.count(candidateName) > 0);
 
@@ -1624,7 +1624,7 @@ NAZARA_WARNING_POP()
 			}
 			else
 			{
-				if (SanitizeIdentifier(member.name, IdentifierScope::Field))
+				if (SanitizeIdentifier(member.name, IdentifierType::Field))
 					reservedIdentifiers.insert(member.name);
 			}
 
@@ -1687,7 +1687,7 @@ NAZARA_WARNING_POP()
 		clone->description.conditionIndex = m_context->currentConditionalIndex;
 
 		clone->structIndex = RegisterStruct(clone->description.name, &clone->description, clone->structIndex, clone->sourceLocation);
-		SanitizeIdentifier(clone->description.name, IdentifierScope::Struct);
+		SanitizeIdentifier(clone->description.name, IdentifierType::Struct);
 
 		return clone;
 	}
@@ -1757,7 +1757,7 @@ NAZARA_WARNING_POP()
 				if (fromExprType && wontUnroll)
 				{
 					clone->varIndex = RegisterVariable(node.varName, *fromExprType, node.varIndex, node.sourceLocation);
-					SanitizeIdentifier(node.varName, IdentifierScope::Variable);
+					SanitizeIdentifier(node.varName, IdentifierType::Variable);
 				}
 				else
 				{
@@ -1976,7 +1976,7 @@ NAZARA_WARNING_POP()
 		PushScope();
 		{
 			clone->varIndex = RegisterVariable(node.varName, innerType, node.varIndex, node.sourceLocation);
-			SanitizeIdentifier(node.varName, IdentifierScope::Variable);
+			SanitizeIdentifier(node.varName, IdentifierType::Variable);
 
 			bool wasInLoop = m_context->inLoop;
 			m_context->inLoop = true;
@@ -2856,9 +2856,9 @@ NAZARA_WARNING_POP()
 			{
 				std::string name;
 				if (columnCount == rowCount)
-					name = "mat" + std::to_string(columnCount);
+					name = fmt::format("mat{}", columnCount);
 				else
-					name = "mat" + std::to_string(columnCount) + "x" + std::to_string(rowCount);
+					name = fmt::format("mat{}x{}", columnCount, rowCount);
 
 				RegisterType(std::move(name), PartialType{
 					{ TypeParameterCategory::PrimitiveType }, {},
@@ -3547,7 +3547,7 @@ NAZARA_WARNING_POP()
 				if (!m_context->options.partialSanitization || parameter.type.IsResultingValue())
 				{
 					parameter.varIndex = RegisterVariable(parameter.name, parameter.type.GetResultingValue(), parameter.varIndex, parameter.sourceLocation);
-					SanitizeIdentifier(parameter.name, IdentifierScope::Parameter);
+					SanitizeIdentifier(parameter.name, IdentifierType::Parameter);
 				}
 				else
 					RegisterUnresolved(parameter.name);
@@ -3688,7 +3688,7 @@ NAZARA_WARNING_POP()
 		return output;
 	}
 
-	bool SanitizeVisitor::SanitizeIdentifier(std::string& identifier, IdentifierScope identifierScope)
+	bool SanitizeVisitor::SanitizeIdentifier(std::string& identifier, IdentifierType identifierScope)
 	{
 		if (!m_context->options.identifierSanitizer)
 			return false;
@@ -3700,7 +3700,7 @@ NAZARA_WARNING_POP()
 		if (!m_context->options.identifierSanitizer(identifier, identifierScope))
 			return false;
 
-		if (identifierScope != IdentifierScope::Field)
+		if (identifierScope != IdentifierType::Field)
 			RegisterReservedName(identifier);
 
 		return true;
@@ -4578,7 +4578,7 @@ NAZARA_WARNING_POP()
 		}
 
 		// SanitizeIdentifier registers the reserved name if its changes it
-		if (!SanitizeIdentifier(node.varName, IdentifierScope::Variable) && nameChanged)
+		if (!SanitizeIdentifier(node.varName, IdentifierType::Variable) && nameChanged)
 			RegisterReservedName(node.varName);
 
 		return ValidationResult::Validated;

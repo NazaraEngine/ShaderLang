@@ -104,11 +104,15 @@ namespace nzsl::Ast
 		RValue = 1
 	};
 
-	enum class IdentifierScope
+	enum class IdentifierType
 	{
+		Alias,
+		Const,
+		ExternalBlock,
 		ExternalVariable,
 		Field,
 		Function,
+		Option,
 		Parameter,
 		Struct,
 		Variable

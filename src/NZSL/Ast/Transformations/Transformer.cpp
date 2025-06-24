@@ -198,6 +198,14 @@ namespace nzsl::Ast
 		return true;
 	}
 
+	void Transformer::PopScope()
+	{
+	}
+
+	void Transformer::PushScope()
+	{
+	}
+
 	template<typename T>
 	bool Transformer::TransformCurrentExpression()
 	{
@@ -396,14 +404,20 @@ namespace nzsl::Ast
 
 		for (auto& cond : node.condStatements)
 		{
-			HandleStatement(cond.statement);
-
 			if (m_visitExpressions)
 				HandleExpression(cond.condition);
+
+			PushScope();
+			HandleStatement(cond.statement);
+			PopScope();
 		}
 
 		if (node.elseStatement)
+		{
+			PushScope();
 			HandleStatement(node.elseStatement);
+			PopScope();
+		}
 	}
 
 	void Transformer::Visit(BreakStatement& /*node*/)
@@ -416,10 +430,12 @@ namespace nzsl::Ast
 		if (TransformCurrentStatement<ConditionalStatement>())
 			return;
 
-		HandleStatement(node.statement);
-
 		if (m_visitExpressions)
 			HandleExpression(node.condition);
+
+		PushScope();
+		HandleStatement(node.statement);
+		PopScope();
 	}
 
 	void Transformer::Visit(ContinueStatement& /*node*/)
@@ -454,11 +470,13 @@ namespace nzsl::Ast
 	{
 		if (TransformCurrentStatement<DeclareFunctionStatement>())
 			return;
-
+		
+		PushScope();
 		HandleStatementList<false>(node.statements, [&](StatementPtr& statement)
 		{
 			HandleStatement(statement);
 		});
+		PopScope();
 	}
 
 	void Transformer::Visit(DeclareOptionStatement& node)
@@ -509,9 +527,6 @@ namespace nzsl::Ast
 		if (TransformCurrentStatement<ForStatement>())
 			return;
 
-		if (node.statement)
-			HandleStatement(node.statement);
-
 		if (m_visitExpressions)
 		{
 			HandleExpression(node.fromExpr);
@@ -520,6 +535,13 @@ namespace nzsl::Ast
 			if (node.stepExpr)
 				HandleExpression(node.stepExpr);
 		}
+
+		if (node.statement)
+		{
+			PushScope();
+			HandleStatement(node.statement);
+			PopScope();
+		}
 	}
 
 	void Transformer::Visit(ForEachStatement& node)
@@ -527,11 +549,15 @@ namespace nzsl::Ast
 		if (TransformCurrentStatement<ForEachStatement>())
 			return;
 
-		if (node.statement)
-			HandleStatement(node.statement);
-
 		if (m_visitExpressions)
 			HandleExpression(node.expression);
+
+		if (node.statement)
+		{
+			PushScope();
+			HandleStatement(node.statement);
+			PopScope();
+		}
 	}
 
 	void Transformer::Visit(ImportStatement& /*node*/)
@@ -569,11 +595,15 @@ namespace nzsl::Ast
 		if (TransformCurrentStatement<ScopedStatement>())
 			return;
 
+		PushScope();
+
 		std::vector<StatementPtr> statementList;
 		HandleStatementList<true>(statementList, [&]
 		{
 			HandleStatement(node.statement);
 		});
+
+		PopScope();
 
 		// To handle the case where our scoped statement does not contain a statement list but requires
 		// a new variable to be introduced, we need to be able to add a MultiStatement automatically
@@ -592,10 +622,14 @@ namespace nzsl::Ast
 		if (TransformCurrentStatement<WhileStatement>())
 			return;
 
-		if (node.body)
-			HandleStatement(node.body);
-
 		if (m_visitExpressions)
 			HandleExpression(node.condition);
+
+		if (node.body)
+		{
+			PushScope();
+			HandleStatement(node.body);
+			PopScope();
+		}
 	}
 }

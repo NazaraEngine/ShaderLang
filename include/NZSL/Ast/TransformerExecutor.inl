@@ -21,6 +21,12 @@ namespace nzsl::Ast
 
 	inline bool TransformerExecutor::Transform(Module& module, Transformer::Context& context, std::string* error) const
 	{
+		for (auto& importedModule : module.importedModules)
+		{
+			if (!Transform(*importedModule.module, context, error))
+				return false;
+		}
+
 		for (auto& passPtr : m_passes)
 		{
 			if (!passPtr->Transform(module, context, error))

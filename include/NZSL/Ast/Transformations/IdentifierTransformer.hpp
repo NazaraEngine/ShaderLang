@@ -1,0 +1,56 @@
+// Copyright (C) 2025 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
+// This file is part of the "Nazara Shading Language" project
+// For conditions of distribution and use, see copyright notice in Config.hpp
+
+#pragma once
+
+#ifndef NZSL_AST_TRANSFORMATIONS_IDENTIFIERTRANSFORMER_HPP
+#define NZSL_AST_TRANSFORMATIONS_IDENTIFIERTRANSFORMER_HPP
+
+#include <NZSL/Ast/Transformations/Transformer.hpp>
+
+namespace nzsl::Ast
+{
+	class NZSL_API IdentifierTransformer final : public Transformer
+	{
+		public:
+			struct Options;
+
+			inline IdentifierTransformer();
+
+			inline bool Transform(Module& module, Context& context, std::string* error = nullptr);
+			bool Transform(Module& module, Context& context, const Options& options, std::string* error = nullptr);
+
+			struct Options
+			{
+				std::function<bool(std::string& identifier, IdentifierType identifierScope)> identifierSanitizer;
+				bool makeVariableNameUnique = true;
+			};
+
+		private:
+			using Transformer::Transform;
+
+			void PopScope() override;
+			void PushScope() override;
+
+			void SanitizeIdentifier(std::string& identifier, IdentifierType scope);
+
+			StatementPtr Transform(DeclareAliasStatement&& statement) override;
+			StatementPtr Transform(DeclareConstStatement&& statement) override;
+			StatementPtr Transform(DeclareExternalStatement&& statement) override;
+			StatementPtr Transform(DeclareFunctionStatement&& statement) override;
+			StatementPtr Transform(DeclareOptionStatement&& statement) override;
+			StatementPtr Transform(DeclareStructStatement&& statement) override;
+			StatementPtr Transform(DeclareVariableStatement&& statement) override;
+			StatementPtr Transform(ForEachStatement&& statement) override;
+			StatementPtr Transform(ForStatement&& statement) override;
+
+			const Options* m_options;
+			std::vector<std::string> identifierInScope;
+			std::vector<std::size_t> scopeIndices;
+	};
+}
+
+#include <NZSL/Ast/Transformations/IdentifierTransformer.inl>
+
+#endif // NZSL_AST_TRANSFORMATIONS_IDENTIFIERTRANSFORMER_HPP
