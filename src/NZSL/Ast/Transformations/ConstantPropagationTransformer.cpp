@@ -688,7 +688,7 @@ namespace nzsl::Ast
 		HandleExpression(node.condition);
 		if (node.condition->GetType() != NodeType::ConstantValueExpression)
 		{
-			if (!m_context->allowPartialSanitization)
+			if (!m_context->partialSanitization)
 				throw std::runtime_error("conditional expression condition must be a constant expression");
 			
 			return nullptr;
@@ -715,7 +715,7 @@ namespace nzsl::Ast
 
 		if (!m_options->constantQueryCallback)
 		{
-			if (!m_context->allowPartialSanitization)
+			if (!m_context->partialSanitization)
 				throw std::runtime_error("constant expression encountered with no constant query callback");
 
 			return nullptr;
@@ -724,7 +724,7 @@ namespace nzsl::Ast
 		const ConstantValue* constantValue = m_options->constantQueryCallback(node.constantId);
 		if (!constantValue)
 		{
-			if (!m_context->allowPartialSanitization)
+			if (!m_context->partialSanitization)
 				throw AstInvalidConstantIndexError{ node.sourceLocation, node.constantId };
 
 			return nullptr;
@@ -925,7 +925,7 @@ namespace nzsl::Ast
 		HandleExpression(node.condition);
 		if (node.condition->GetType() != NodeType::ConstantValueExpression)
 		{
-			if (!m_context->allowPartialSanitization)
+			if (!m_context->partialSanitization)
 				throw std::runtime_error("conditional expression condition must be a constant expression");
 
 			return nullptr;

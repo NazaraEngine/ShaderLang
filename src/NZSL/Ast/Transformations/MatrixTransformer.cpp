@@ -78,7 +78,7 @@ namespace nzsl::Ast
 
 		if (!castExpr.targetType.IsResultingValue())
 		{
-			if (m_context->allowPartialSanitization)
+			if (m_context->partialSanitization)
 				return nullptr;
 
 			throw CompilerConstantExpressionRequiredError{ castExpr.targetType.GetExpression()->sourceLocation };

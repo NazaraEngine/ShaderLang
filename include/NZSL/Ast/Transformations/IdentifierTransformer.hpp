@@ -30,10 +30,12 @@ namespace nzsl::Ast
 		private:
 			using Transformer::Transform;
 
+			bool HasIdentifier(std::string_view identifierName) const;
+
 			void PopScope() override;
 			void PushScope() override;
 
-			void SanitizeIdentifier(std::string& identifier, IdentifierType scope);
+			bool SanitizeIdentifier(std::string& identifier, IdentifierType scope);
 
 			StatementPtr Transform(DeclareAliasStatement&& statement) override;
 			StatementPtr Transform(DeclareConstStatement&& statement) override;
@@ -46,8 +48,8 @@ namespace nzsl::Ast
 			StatementPtr Transform(ForStatement&& statement) override;
 
 			const Options* m_options;
-			std::vector<std::string> identifierInScope;
-			std::vector<std::size_t> scopeIndices;
+			std::vector<std::string> m_identifierInScope;
+			std::vector<std::size_t> m_scopeIndices;
 	};
 }
 

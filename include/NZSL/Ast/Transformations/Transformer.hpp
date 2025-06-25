@@ -20,7 +20,7 @@ namespace nzsl::Ast
 			struct Context
 			{
 				std::size_t nextVariableIndex;
-				bool allowPartialSanitization = false;
+				bool partialSanitization = false;
 			};
 
 			static StatementPtr Unscope(StatementPtr&& statement);
@@ -48,6 +48,12 @@ namespace nzsl::Ast
 			template<bool Single, typename F> void HandleStatementList(std::vector<StatementPtr>& statementList, F&& callback);
 			void HandleStatement(StatementPtr& expression);
 
+			Expression& MandatoryExpr(const ExpressionPtr& node, const SourceLocation& sourceLocation);
+			Statement& MandatoryStatement(const StatementPtr& node, const SourceLocation& sourceLocation);
+
+			virtual void PopScope();
+			virtual void PushScope();
+
 #define NZSL_SHADERAST_NODE(Node, Type) virtual Type##Ptr Transform(Node##Type&& node);
 #include <NZSL/Ast/NodeList.hpp>
 
@@ -58,9 +64,6 @@ namespace nzsl::Ast
 			Context* m_context;
 
 		private:
-			virtual void PopScope();
-			virtual void PushScope();
-
 			template<typename T> bool TransformCurrentExpression();
 			template<typename T> bool TransformCurrentStatement();
 

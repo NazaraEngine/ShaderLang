@@ -77,7 +77,7 @@ namespace nzsl::Ast
 
 	const ExpressionType* Transformer::GetExpressionType(Expression& expr) const
 	{
-		return GetExpressionType(expr, m_context->allowPartialSanitization);
+		return GetExpressionType(expr, m_context->partialSanitization);
 	}
 
 	const ExpressionType* Transformer::GetExpressionType(Expression& expr, bool allowEmpty) const
@@ -126,6 +126,30 @@ namespace nzsl::Ast
 		m_statementStack.push_back(&statement);
 		statement->Visit(*this);
 		m_statementStack.pop_back();
+	}
+
+	Expression& Transformer::MandatoryExpr(const ExpressionPtr& node, const SourceLocation& sourceLocation)
+	{
+		if (!node)
+			throw AstMissingExpressionError{ sourceLocation };
+
+		return *node;
+	}
+
+	Statement& Transformer::MandatoryStatement(const StatementPtr& node, const SourceLocation& sourceLocation)
+	{
+		if (!node)
+			throw AstMissingStatementError{ sourceLocation };
+
+		return *node;
+	}
+
+	void Transformer::PopScope()
+	{
+	}
+
+	void Transformer::PushScope()
+	{
 	}
 
 #define NZSL_SHADERAST_NODE(Node, Type) \
@@ -196,14 +220,6 @@ namespace nzsl::Ast
 		}
 		
 		return true;
-	}
-
-	void Transformer::PopScope()
-	{
-	}
-
-	void Transformer::PushScope()
-	{
 	}
 
 	template<typename T>
