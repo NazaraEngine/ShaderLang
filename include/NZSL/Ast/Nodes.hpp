@@ -376,6 +376,7 @@ namespace nzsl::Ast
 			SourceLocation sourceLocation;
 		};
 
+		std::optional<std::size_t> externalIndex;
 		std::string name;
 		std::string tag;
 		std::vector<ExternalVar> externalVars;

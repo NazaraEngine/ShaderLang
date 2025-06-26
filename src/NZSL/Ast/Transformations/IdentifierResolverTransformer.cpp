@@ -3,15 +3,15 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <NZSL/Ast/Transformations/IdentifierResolverTransformer.hpp>
-#include <NZSL/Lang/Errors.hpp>
 #include <NazaraUtils/Bitset.hpp>
 #include <NazaraUtils/CallOnExit.hpp>
-#include <unordered_map>
+#include <NazaraUtils/StackVector.hpp>
 #include <NZSL/Ast/ExpressionType.hpp>
 #include <NZSL/Ast/Types.hpp>
+#include <NZSL/Lang/Errors.hpp>
 #include <NZSL/Lang/LangData.hpp>
 #include <fmt/format.h>
-#include <NazaraUtils/StackVector.hpp>
+#include <unordered_map>
 
 namespace nzsl::Ast
 {
@@ -133,6 +133,12 @@ namespace nzsl::Ast
 		DeclareFunctionStatement* node;
 	};
 
+	struct IdentifierResolverTransformer::NamedExternalBlock
+	{
+		std::shared_ptr<Environment> environment;
+		std::string name;
+	};
+
 	struct IdentifierResolverTransformer::NamedPartialType
 	{
 		std::string name;
@@ -153,12 +159,6 @@ namespace nzsl::Ast
 			std::string moduleName;
 		};
 
-		struct NamedExternalBlockData
-		{
-			std::shared_ptr<Environment> environment;
-			std::string name;
-		};
-
 		struct UsedExternalData
 		{
 			unsigned int conditionalStatementIndex;
@@ -170,19 +170,23 @@ namespace nzsl::Ast
 		std::unordered_map<std::string, std::size_t> moduleByName;
 		std::unordered_map<std::string, UsedExternalData> declaredExternalVar;
 		std::vector<ModuleData> modules;
-		std::vector<NamedExternalBlockData> namedExternalBlocks;
 		IdentifierList constantValues;
 		IdentifierListWithValues<FunctionData> functions;
 		IdentifierListWithValues<Identifier> aliases;
 		IdentifierListWithValues<IntrinsicType> intrinsics;
 		IdentifierListWithValues<std::size_t> moduleIndices;
-		IdentifierListWithValues<std::size_t> namedExternalBlockIndices;
-		IdentifierListWithValues<StructDescription*> structs;
+		IdentifierListWithValues<NamedExternalBlock> namedExternalBlocks;
+		IdentifierListWithValues<StructData> structs;
 		IdentifierListWithValues<std::variant<ExpressionType, NamedPartialType>> types;
 		IdentifierList variables;
 		Module* currentModule;
 		bool allowUnknownIdentifiers = false;
 		unsigned int currentConditionalIndex = 0;
+	};
+
+	struct IdentifierResolverTransformer::StructData
+	{
+		StructDescription* description;
 	};
 
 	bool IdentifierResolverTransformer::Transform(Module& module, Context& context, const Options& options, std::string* error)
@@ -305,7 +309,6 @@ namespace nzsl::Ast
 			{
 				// Replace IdentifierExpression by VariableExpression
 				auto varExpr = std::make_unique<VariableValueExpression>();
-				varExpr->cachedExpressionType = m_states->variableTypes.Retrieve(identifierData->index, sourceLocation);
 				varExpr->sourceLocation = sourceLocation;
 				varExpr->variableId = identifierData->index;
 
@@ -814,23 +817,23 @@ namespace nzsl::Ast
 		return constantIndex;
 	}
 
-	std::size_t IdentifierResolverTransformer::RegisterExternalBlock(std::string name, std::size_t externalBlockIndex, const SourceLocation& sourceLocation)
+	std::size_t IdentifierResolverTransformer::RegisterExternalBlock(std::string name, NamedExternalBlock&& namedExternalBlock, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
 	{
 		if (!IsIdentifierAvailable(name))
 			throw CompilerIdentifierAlreadyUsedError{ sourceLocation, name };
 
-		std::size_t index = m_states->namedExternalBlockIndices.Register(externalBlockIndex, std::nullopt, {});
+		std::size_t externalBlockIndex = m_states->namedExternalBlocks.Register(std::move(namedExternalBlock), index, {});
 
 		m_states->currentEnv->identifiersInScope.push_back({
 			std::move(name),
 			{
-				index,
+				externalBlockIndex,
 				IdentifierCategory::ExternalBlock,
 				m_states->currentConditionalIndex
 			}
 		});
 
-		return index;
+		return externalBlockIndex;
 	}
 	
 	std::size_t IdentifierResolverTransformer::RegisterFunction(std::string name, std::optional<FunctionData> funcData, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
@@ -1238,7 +1241,8 @@ namespace nzsl::Ast
 			else if (IsStructAddressible(resolvedType))
 			{
 				std::size_t structIndex = ResolveStructIndex(resolvedType, indexedExpr->sourceLocation);
-				StructDescription* s = m_states->structs.Retrieve(structIndex, indexedExpr->sourceLocation);
+				StructData& structData = m_states->structs.Retrieve(structIndex, indexedExpr->sourceLocation);
+				StructDescription* s = structData.description;
 
 				// Retrieve member index (not counting disabled fields)
 				std::int32_t fieldIndex = 0;
@@ -1257,12 +1261,12 @@ namespace nzsl::Ast
 							hasUnresolvedFields = true;
 					}
 
-					if (!field.originalName.empty())
+					/*if (!field.originalName.empty())
 					{
 						if (field.originalName == identifierEntry.identifier)
 							fieldPtr = &field;
 					}
-					else
+					else*/
 					{
 						if (field.name == identifierEntry.identifier)
 							fieldPtr = &field;
@@ -1280,7 +1284,7 @@ namespace nzsl::Ast
 				if (!fieldPtr)
 				{
 					if (s->conditionIndex != m_states->currentConditionalIndex)
-						return Finish(i, exprType); //< unresolved type
+						return Finish(i, exprType); //< unresolved condition
 
 					throw CompilerUnknownFieldError{ indexedExpr->sourceLocation, identifierEntry.identifier };
 				}
@@ -1290,7 +1294,7 @@ namespace nzsl::Ast
 					if (!fieldPtr->cond.IsResultingValue())
 					{
 						if (m_context->partialSanitization)
-							return Finish(i, exprType); //< unresolved type
+							return Finish(i, exprType); //< unresolved condition
 
 						throw CompilerConstantExpressionRequiredError{ fieldPtr->cond.GetExpression()->sourceLocation };
 					}
@@ -1338,7 +1342,7 @@ namespace nzsl::Ast
 				else
 				{
 					if (fieldIndex < 0)
-						return Finish(i, exprType); //< unresolved type
+						return Finish(i, exprType); //< unresolved field
 
 					// Transform to AccessIndexExpression
 					std::unique_ptr<AccessIndexExpression> accessIndex = std::make_unique<AccessIndexExpression>();
@@ -1371,7 +1375,9 @@ namespace nzsl::Ast
 				const NamedExternalBlockType& externalBlockType = std::get<NamedExternalBlockType>(resolvedType);
 				std::size_t namedExternalBlockIndex = externalBlockType.namedExternalBlockIndex;
 
-				const IdentifierData* identifierData = FindIdentifier(*m_states->namedExternalBlocks[namedExternalBlockIndex].environment, identifierEntry.identifier);
+				NamedExternalBlock& externalBlock = m_states->namedExternalBlocks.Retrieve(namedExternalBlockIndex, identifierEntry.sourceLocation);
+
+				const IdentifierData* identifierData = FindIdentifier(*externalBlock.environment, identifierEntry.identifier);
 				if (!identifierData)
 				{
 					if (m_states->allowUnknownIdentifiers)
@@ -1477,16 +1483,17 @@ namespace nzsl::Ast
 		std::shared_ptr<Environment> previousEnv;
 		if (!statement.name.empty())
 		{
-			namedExternalBlockIndex = m_states->namedExternalBlocks.size();
-			auto& namedExternal = m_states->namedExternalBlocks.emplace_back();
-			namedExternal.environment = std::make_shared<Environment>();
+			auto environment = std::make_shared<Environment>();
+
+			NamedExternalBlock namedExternal;
+			namedExternal.environment = environment;
 			namedExternal.environment->parentEnv = m_states->currentEnv;
 			namedExternal.name = statement.name;
 
-			RegisterExternalBlock(statement.name, *namedExternalBlockIndex, statement.sourceLocation);
+			statement.externalIndex = RegisterExternalBlock(statement.name, std::move(namedExternal), statement.externalIndex, statement.sourceLocation);
 
 			previousEnv = std::move(m_states->currentEnv);
-			m_states->currentEnv = namedExternal.environment;
+			m_states->currentEnv = environment;
 		}
 
 		for (std::size_t i = 0; i < statement.externalVars.size(); ++i)
@@ -1521,37 +1528,31 @@ namespace nzsl::Ast
 
 	StatementPtr IdentifierResolverTransformer::Transform(DeclareFunctionStatement&& statement)
 	{
-		SanitizeIdentifier(statement.name, IdentifierType::Function);
-		for (auto& param : statement.parameters)
-			SanitizeIdentifier(param.name, IdentifierType::Parameter);
+		FunctionData funcData;
+		funcData.node = &statement;
 
+		statement.funcIndex = RegisterFunction(statement.name, funcData, statement.funcIndex, statement.sourceLocation);
 		return nullptr;
 	}
 
 	StatementPtr IdentifierResolverTransformer::Transform(DeclareOptionStatement&& statement)
 	{
-		SanitizeIdentifier(statement.optName, IdentifierType::Parameter);
+		statement.optIndex = RegisterConstant(statement.optName, statement.optIndex, statement.sourceLocation);
 		return nullptr;
 	}
 
 	StatementPtr IdentifierResolverTransformer::Transform(DeclareStructStatement&& statement)
 	{
-		SanitizeIdentifier(statement.description.name, IdentifierType::Struct);
-		for (auto& member : statement.description.members)
-		{
-			// FIXME: Why is this necessary?
-			if (member.originalName.empty())
-				member.originalName = member.name;
+		StructData structData;
+		structData.description = &statement.description;
 
-			SanitizeIdentifier(member.name, IdentifierType::Field);
-		}
-
+		statement.structIndex = RegisterStruct(statement.description.name, &statement.description, statement.structIndex, statement.sourceLocation);
 		return nullptr;
 	}
 
 	StatementPtr IdentifierResolverTransformer::Transform(DeclareVariableStatement&& statement)
 	{
-		SanitizeIdentifier(statement.varName, IdentifierType::Variable);
+		statement.varIndex = RegisterVariable(statement.varName, statement.varIndex, statement.sourceLocation);
 		return nullptr;
 	}
 

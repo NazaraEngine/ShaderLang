@@ -4,8 +4,8 @@
 
 #pragma once
 
-#ifndef NZSL_AST_TRANSFORMATIONS_IDENTIFIERTRANSFORMER_HPP
-#define NZSL_AST_TRANSFORMATIONS_IDENTIFIERTRANSFORMER_HPP
+#ifndef NZSL_AST_TRANSFORMATIONS_IDENTIFIERRESOLVERTRANSFORMER_HPP
+#define NZSL_AST_TRANSFORMATIONS_IDENTIFIERRESOLVERTRANSFORMER_HPP
 
 #include <NZSL/Ast/Transformations/Transformer.hpp>
 
@@ -35,10 +35,12 @@ namespace nzsl::Ast
 			struct IdentifierData;
 			struct IdentifierList;
 			template<typename T> struct IdentifierListWithValues;
+			struct NamedExternalBlock;
 			struct NamedPartialType;
 			struct PendingFunction;
 			struct Scope;
 			struct States;
+			struct StructData;
 
 			using Transformer::Transform;
 
@@ -59,7 +61,7 @@ namespace nzsl::Ast
 
 			std::size_t RegisterAlias(std::string name, std::optional<Identifier> aliasData, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
 			std::size_t RegisterConstant(std::string name, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
-			std::size_t RegisterExternalBlock(std::string name, std::size_t externalBlockIndex, const SourceLocation& sourceLocation);
+			std::size_t RegisterExternalBlock(std::string name, NamedExternalBlock&& namedExternalBlock, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
 			std::size_t RegisterFunction(std::string name, std::optional<FunctionData> funcData, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
 			std::size_t RegisterIntrinsic(std::string name, IntrinsicType type);
 			std::size_t RegisterModule(std::string moduleIdentifier, std::size_t moduleIndex);
@@ -128,4 +130,4 @@ namespace nzsl::Ast
 
 #include <NZSL/Ast/Transformations/IdentifierResolverTransformer.inl>
 
-#endif // NZSL_AST_TRANSFORMATIONS_IDENTIFIERTRANSFORMER_HPP
+#endif // NZSL_AST_TRANSFORMATIONS_IDENTIFIERRESOLVERTRANSFORMER_HPP
