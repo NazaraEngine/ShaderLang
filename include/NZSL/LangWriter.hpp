@@ -58,6 +58,7 @@ namespace nzsl
 			struct TagAttribute;
 			struct UnrollAttribute;
 			struct WorkgroupAttribute;
+			struct TargetAttribute;
 
 			void Append(const Ast::AliasType& type);
 			void Append(const Ast::ArrayType& type);
@@ -104,6 +105,7 @@ namespace nzsl
 			void AppendAttribute(TagAttribute attribute);
 			void AppendAttribute(UnrollAttribute attribute);
 			void AppendAttribute(WorkgroupAttribute attribute);
+			void AppendAttribute(TargetAttribute attribute);
 			void AppendComment(std::string_view section);
 			void AppendCommentSection(std::string_view section);
 			void AppendHeader();

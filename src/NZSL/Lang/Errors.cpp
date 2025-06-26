@@ -84,6 +84,19 @@ struct fmt::formatter<nzsl::TokenType> : formatter<string_view>
 	}
 };
 
+template<>
+struct fmt::formatter<nzsl::Ast::TargetType> : formatter<string_view>
+{
+	template<typename FormatContext>
+	auto format(const nzsl::Ast::TargetType& p, FormatContext& ctx) const -> decltype(ctx.out())
+	{
+		auto it = nzsl::LangData::s_targets.find(p);
+		assert(it != nzsl::LangData::s_targets.end());
+
+		return formatter<string_view>::format(it->second.identifier, ctx);
+	}
+};
+
 namespace nzsl
 {
 	std::string_view ToString(ErrorCategory errorCategory)

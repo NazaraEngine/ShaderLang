@@ -526,6 +526,8 @@ namespace nzsl::Ast
 		NodeType GetType() const override;
 		void Visit(StatementVisitor& visitor) override;
 
+		ExpressionValue<TargetType> targetType;
+		ExpressionValue<std::uint32_t> targetVersion;
 		StatementPtr statement;
 	};
 

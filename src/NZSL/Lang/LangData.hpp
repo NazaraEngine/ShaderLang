@@ -43,7 +43,8 @@ namespace nzsl::LangData
 		{ Ast::AttributeType::Set,                { "set" } },
 		{ Ast::AttributeType::Tag,                { "tag" } },
 		{ Ast::AttributeType::Unroll,             { "unroll" } },
-		{ Ast::AttributeType::Workgroup,          { "workgroup" } }
+		{ Ast::AttributeType::Workgroup,          { "workgroup" } },
+		{ Ast::AttributeType::Target,             { "target" } }
 	});
 
 	struct BuiltinData
@@ -258,6 +259,17 @@ namespace nzsl::LangData
 		{ Ast::LoopUnroll::Always, { "always" } },
 		{ Ast::LoopUnroll::Hint,   { "hint" } },
 		{ Ast::LoopUnroll::Never,  { "never" } }
+	});
+
+	struct TargetData
+	{
+		std::string_view identifier;
+	};
+
+	constexpr auto s_targets = frozen::make_unordered_map<Ast::TargetType, TargetData>({
+		{ Ast::TargetType::GLSL, { "glsl" } },
+		{ Ast::TargetType::GLES, { "gles" } },
+		{ Ast::TargetType::SPIRV, { "spirv" } },
 	});
 }
 

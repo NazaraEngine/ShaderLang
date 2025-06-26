@@ -332,6 +332,8 @@ namespace nzsl::Ast
 	StatementPtr Cloner::Clone(ScopedStatement& node)
 	{
 		auto clone = std::make_unique<ScopedStatement>();
+		clone->targetType = Clone(node.targetType);
+		clone->targetVersion = Clone(node.targetVersion);
 		clone->statement = CloneStatement(node.statement);
 
 		clone->sourceLocation = node.sourceLocation;
