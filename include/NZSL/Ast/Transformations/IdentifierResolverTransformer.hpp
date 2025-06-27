@@ -7,13 +7,13 @@
 #ifndef NZSL_AST_TRANSFORMATIONS_IDENTIFIERRESOLVERTRANSFORMER_HPP
 #define NZSL_AST_TRANSFORMATIONS_IDENTIFIERRESOLVERTRANSFORMER_HPP
 
-#include <NZSL/Ast/Transformations/Transformer.hpp>
+#include <NZSL/Ast/Transformations/TypeTransformer.hpp>
 
 namespace nzsl::Ast
 {
 	struct PartialType;
 
-	class NZSL_API IdentifierResolverTransformer final : public Transformer
+	class NZSL_API IdentifierResolverTransformer final : public TypeTransformer
 	{
 		public:
 			struct Options;
@@ -51,24 +51,23 @@ namespace nzsl::Ast
 
 			ExpressionPtr HandleIdentifier(const IdentifierData* identifierData, const SourceLocation& sourceLocation);
 
-			bool IsFeatureEnabled(ModuleFeature feature) const;
+			bool IsFeatureEnabled(ModuleFeature feature) const override;
 			bool IsIdentifierAvailable(std::string_view identifier, bool allowReserved = true) const;
 
 			void PopScope() override;
 			void PushScope() override;
 
-			void RegisterBuiltin();
-
 			std::size_t RegisterAlias(std::string name, std::optional<Identifier> aliasData, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
 			std::size_t RegisterConstant(std::string name, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
+			std::size_t RegisterConstant(std::string name, ConstantValue&& value, std::optional<std::size_t> index, const SourceLocation& sourceLocation) override;
 			std::size_t RegisterExternalBlock(std::string name, NamedExternalBlock&& namedExternalBlock, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
-			std::size_t RegisterFunction(std::string name, std::optional<FunctionData> funcData, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
-			std::size_t RegisterIntrinsic(std::string name, IntrinsicType type);
+			std::size_t RegisterFunction(std::string name, const FunctionData& funcData, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
+			std::size_t RegisterIntrinsic(std::string name, IntrinsicType type) override;
 			std::size_t RegisterModule(std::string moduleIdentifier, std::size_t moduleIndex);
 			void RegisterReservedName(std::string name);
-			std::size_t RegisterStruct(std::string name, std::optional<StructDescription*> description, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
-			std::size_t RegisterType(std::string name, std::optional<ExpressionType> expressionType, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
-			std::size_t RegisterType(std::string name, std::optional<PartialType> partialType, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
+			std::size_t RegisterStruct(std::string name, const StructData& description, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
+			std::size_t RegisterType(std::string name, ExpressionType&& expressionType, std::optional<std::size_t> index, const SourceLocation& sourceLocation) override;
+			std::size_t RegisterType(std::string name, PartialType&& partialType, std::optional<std::size_t> index, const SourceLocation& sourceLocation) override;
 			void RegisterUnresolved(std::string name);
 			std::size_t RegisterVariable(std::string name, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
 

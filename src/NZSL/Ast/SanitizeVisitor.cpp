@@ -2075,46 +2075,6 @@ NAZARA_WARNING_POP()
 		return clone;
 	}
 
-	auto SanitizeVisitor::FindIdentifier(std::string_view identifierName) const -> const IdentifierData*
-	{
-		return FindIdentifier(*m_context->currentEnv, identifierName);
-	}
-
-	template<typename F>
-	auto SanitizeVisitor::FindIdentifier(std::string_view identifierName, F&& functor) const -> const IdentifierData*
-	{
-		return FindIdentifier(*m_context->currentEnv, identifierName, std::forward<F>(functor));
-	}
-
-	auto SanitizeVisitor::FindIdentifier(const Environment& environment, std::string_view identifierName) const -> const IdentifierData*
-	{
-		return FindIdentifier(environment, identifierName, [](const IdentifierData& identifierData) { return identifierData.category != IdentifierCategory::ReservedName; });
-	}
-
-	template<typename F>
-	auto SanitizeVisitor::FindIdentifier(const Environment& environment, std::string_view identifierName, F&& functor) const -> const IdentifierData*
-	{
-		auto it = std::find_if(environment.identifiersInScope.rbegin(), environment.identifiersInScope.rend(), [&](const Identifier& identifier)
-		{
-			if (identifier.name == identifierName)
-			{
-				if (functor(identifier.target))
-					return true;
-			}
-
-			return false;
-		});
-		if (it == environment.identifiersInScope.rend())
-		{
-			if (environment.parentEnv)
-				return FindIdentifier(*environment.parentEnv, identifierName, std::forward<F>(functor));
-			else
-				return nullptr;
-		}
-
-		return &it->target;
-	}
-
 	const ExpressionType* SanitizeVisitor::GetExpressionType(Expression& expr) const
 	{
 		const ExpressionType* expressionType = Ast::GetExpressionType(expr);
