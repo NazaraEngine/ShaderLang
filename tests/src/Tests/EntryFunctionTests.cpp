@@ -32,7 +32,7 @@ fn main() -> FragOut
 )";
 
 				nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
-				shaderModule = SanitizeModule(*shaderModule);
+				ResolveModule(*shaderModule);
 
 				nzsl::GlslWriter::Environment glslEnv;
 				glslEnv.glES = false;
@@ -132,7 +132,7 @@ fn main() -> FragOut
 )";
 
 				nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
-				shaderModule = SanitizeModule(*shaderModule);
+				ResolveModule(*shaderModule);
 
 				nzsl::GlslWriter::Environment glslEnv;
 				glslEnv.glES = false;
@@ -234,7 +234,7 @@ fn main() -> FragOut
 )";
 
 				nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
-				shaderModule = SanitizeModule(*shaderModule);
+				ResolveModule(*shaderModule);
 
 				nzsl::GlslWriter::Environment glslEnv;
 				glslEnv.glES = true;
@@ -345,7 +345,7 @@ fn main(input: FragIn) -> FragOut
 )";
 
 				nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
-				shaderModule = SanitizeModule(*shaderModule);
+				ResolveModule(*shaderModule);
 
 				ExpectGLSL(*shaderModule, R"(
 // header end
@@ -461,7 +461,7 @@ fn main()
 )";
 
 				nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
-				shaderModule = SanitizeModule(*shaderModule);
+				ResolveModule(*shaderModule);
 
 				WHEN("OpenGL has native support")
 				{
@@ -600,7 +600,7 @@ fn main()
 )";
 
 				nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
-				shaderModule = SanitizeModule(*shaderModule);
+				ResolveModule(*shaderModule);
 
 				nzsl::GlslWriter::Environment glslEnv;
 				glslEnv.glES = false;

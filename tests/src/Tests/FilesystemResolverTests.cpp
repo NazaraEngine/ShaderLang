@@ -3,7 +3,6 @@
 #include <NZSL/LangWriter.hpp>
 #include <NZSL/ShaderBuilder.hpp>
 #include <NZSL/Parser.hpp>
-#include <NZSL/Ast/SanitizeVisitor.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <cctype>
 
@@ -18,10 +17,10 @@ TEST_CASE("FilesystemModuleResolver", "[Shader]")
 
 	nzsl::Ast::ModulePtr shaderModule = moduleResolver->Resolve("Shader");
 
-	nzsl::Ast::SanitizeVisitor::Options sanitizeOpt;
-	sanitizeOpt.moduleResolver = moduleResolver;
+	nzsl::Ast::ImportResolverTransformer::Options importOpt;
+	importOpt.moduleResolver = moduleResolver;
 
-	shaderModule = SanitizeModule(*shaderModule, sanitizeOpt);
+	ResolveModule(*shaderModule, {}, &importOpt);
 
 	ExpectGLSL(*shaderModule, R"(
 // Module Color

@@ -408,8 +408,10 @@ namespace nzsl::Ast
 #undef EnableOptimisation
 	}
 
-	ExpressionPtr ConstantPropagationTransformer::Transform(BinaryExpression&& node)
+	auto ConstantPropagationTransformer::Transform(BinaryExpression&& node) -> ExpressionTransformation
 	{
+		HandleChildren(node);
+
 		HandleExpression(node.left);
 		HandleExpression(node.right);
 
@@ -451,19 +453,18 @@ namespace nzsl::Ast
 				optimized->cachedExpressionType = node.cachedExpressionType;
 				optimized->sourceLocation = node.sourceLocation;
 				
-				return optimized;
+				return ReplaceExpression { std::move(optimized) };
 			}
 		}
 		
-		return nullptr;
+		return DontVisitChildren{};
 	}
 
-	ExpressionPtr ConstantPropagationTransformer::Transform(CastExpression&& node)
+	auto ConstantPropagationTransformer::Transform(CastExpression&& node) -> ExpressionTransformation
 	{
 		NAZARA_USE_ANONYMOUS_NAMESPACE
 
-		for (auto& expression : node.expressions)
-			HandleExpression(expression);
+		HandleChildren(node);
 
 		const ExpressionType& targetType = node.targetType.GetResultingValue();
 		
@@ -615,13 +616,13 @@ namespace nzsl::Ast
 			optimized->cachedExpressionType = node.cachedExpressionType;
 			optimized->sourceLocation = node.sourceLocation;
 
-			return optimized;
+			return ReplaceExpression{ std::move(optimized) };
 		}
 		
-		return nullptr;
+		return DontVisitChildren{};
 	}
 
-	StatementPtr ConstantPropagationTransformer::Transform(BranchStatement&& node)
+	auto ConstantPropagationTransformer::Transform(BranchStatement&& node) -> StatementTransformation
 	{
 		for (auto it = node.condStatements.begin(); it != node.condStatements.end();)
 		{
@@ -653,7 +654,7 @@ namespace nzsl::Ast
 				{
 					// First condition is true, dismiss the whole branch
 					HandleStatement(condStatement.statement);
-					return Unscope(std::move(condStatement.statement));
+					return ReplaceStatement{ Unscope(std::move(condStatement.statement)) };
 				}
 				else
 				{
@@ -661,7 +662,7 @@ namespace nzsl::Ast
 					// No need to call HandleStatement as the Transformer will do it when keeping the node
 					node.elseStatement = std::move(condStatement.statement);
 					node.condStatements.erase(it, node.condStatements.end());
-					return nullptr;
+					return VisitChildren{};
 				}
 			}
 			else
@@ -674,16 +675,16 @@ namespace nzsl::Ast
 			if (node.elseStatement)
 			{
 				HandleStatement(node.elseStatement);
-				return Unscope(std::move(node.elseStatement));
+				return ReplaceStatement{ Unscope(std::move(node.elseStatement)) };
 			}
 			else
-				return ShaderBuilder::NoOp();
+				return ReplaceStatement{ ShaderBuilder::NoOp() };
 		}
 
-		return nullptr;
+		return DontVisitChildren{};
 	}
 
-	ExpressionPtr ConstantPropagationTransformer::Transform(ConditionalExpression&& node)
+	auto ConstantPropagationTransformer::Transform(ConditionalExpression&& node) -> ExpressionTransformation
 	{
 		HandleExpression(node.condition);
 		if (node.condition->GetType() != NodeType::ConstantValueExpression)
@@ -691,7 +692,7 @@ namespace nzsl::Ast
 			if (!m_context->partialSanitization)
 				throw std::runtime_error("conditional expression condition must be a constant expression");
 			
-			return nullptr;
+			return VisitChildren{};
 		}
 
 		auto& constant = static_cast<ConstantValueExpression&>(*node.condition);
@@ -704,12 +705,12 @@ namespace nzsl::Ast
 
 		bool cValue = std::get<bool>(constant.value);
 		if (cValue)
-			return std::move(node.truePath);
+			return ReplaceExpression{ std::move(node.truePath) };
 		else
-			return std::move(node.falsePath);
+			return ReplaceExpression{ std::move(node.falsePath) };
 	}
 
-	ExpressionPtr ConstantPropagationTransformer::Transform(ConstantExpression&& node)
+	auto ConstantPropagationTransformer::Transform(ConstantExpression&& node) -> ExpressionTransformation
 	{
 		NAZARA_USE_ANONYMOUS_NAMESPACE
 
@@ -718,7 +719,7 @@ namespace nzsl::Ast
 			if (!m_context->partialSanitization)
 				throw std::runtime_error("constant expression encountered with no constant query callback");
 
-			return nullptr;
+			return VisitChildren{};
 		}
 
 		const ConstantValue* constantValue = m_options->constantQueryCallback(node.constantId);
@@ -727,29 +728,29 @@ namespace nzsl::Ast
 			if (!m_context->partialSanitization)
 				throw AstInvalidConstantIndexError{ node.sourceLocation, node.constantId };
 
-			return nullptr;
+			return VisitChildren{};
 		}
 
 		// Replace by constant value
-		return std::visit([&](auto&& arg) -> ExpressionPtr
+		return std::visit([&](auto&& arg) -> ExpressionTransformation
 		{
 			using T = std::decay_t<decltype(arg)>;
 
 			using VectorInner = GetVectorInnerType<T>;
 
 			if constexpr (VectorInner::IsVector)
-				return nullptr; //< Keep arrays as constants
+				return VisitChildren{}; //< Keep arrays as constants
 			else
 			{
 				auto constant = ShaderBuilder::ConstantValue(arg);
 				constant->sourceLocation = node.sourceLocation;
 
-				return constant;
+				return ReplaceExpression{ std::move(constant) };
 			}
 		}, *constantValue);
 	}
 
-	ExpressionPtr ConstantPropagationTransformer::Transform(IntrinsicExpression&& node)
+	auto ConstantPropagationTransformer::Transform(IntrinsicExpression&& node) -> ExpressionTransformation
 	{
 		for (auto& expression : node.parameters)
 			HandleExpression(expression);
@@ -768,7 +769,7 @@ namespace nzsl::Ast
 						auto constant = ShaderBuilder::ConstantValue(arrayType.length);
 						constant->sourceLocation = node.sourceLocation;
 
-						return constant;
+						return ReplaceExpression{ std::move(constant) };
 					}
 				}
 				break;
@@ -828,10 +829,10 @@ namespace nzsl::Ast
 				break;
 		}
 
-		return nullptr;
+		return DontVisitChildren{};
 	}
 
-	ExpressionPtr ConstantPropagationTransformer::Transform(SwizzleExpression&& node)
+	auto ConstantPropagationTransformer::Transform(SwizzleExpression&& node) -> ExpressionTransformation
 	{
 		HandleExpression(node.expression);
 
@@ -862,7 +863,7 @@ namespace nzsl::Ast
 			if (optimized)
 			{
 				optimized->sourceLocation = node.sourceLocation;
-				return optimized;
+				return ReplaceExpression { std::move(optimized) };
 			}
 		}
 		else if (node.expression->GetType() == NodeType::SwizzleExpression)
@@ -876,13 +877,13 @@ namespace nzsl::Ast
 			constantExpr.componentCount = node.componentCount;
 			constantExpr.components = newComponents;
 
-			return nullptr;
+			return DontVisitChildren{};
 		}
 
-		return nullptr;
+		return DontVisitChildren{};
 	}
 
-	ExpressionPtr ConstantPropagationTransformer::Transform(UnaryExpression&& node)
+	auto ConstantPropagationTransformer::Transform(UnaryExpression&& node) -> ExpressionTransformation
 	{
 		HandleExpression(node.expression);
 
@@ -913,14 +914,14 @@ namespace nzsl::Ast
 			if (optimized)
 			{
 				optimized->sourceLocation = node.sourceLocation;
-				return optimized;
+				return ReplaceExpression{ std::move(optimized) };
 			}
 		}
 
-		return nullptr;
+		return DontVisitChildren{};
 	}
 
-	StatementPtr ConstantPropagationTransformer::Transform(ConditionalStatement&& node)
+	auto ConstantPropagationTransformer::Transform(ConditionalStatement&& node) -> StatementTransformation
 	{
 		HandleExpression(node.condition);
 		if (node.condition->GetType() != NodeType::ConstantValueExpression)
@@ -928,7 +929,7 @@ namespace nzsl::Ast
 			if (!m_context->partialSanitization)
 				throw std::runtime_error("conditional expression condition must be a constant expression");
 
-			return nullptr;
+			return DontVisitChildren{};
 		}
 
 		auto& constant = static_cast<ConstantValueExpression&>(*node.condition);
@@ -943,10 +944,10 @@ namespace nzsl::Ast
 		if (cValue)
 		{
 			HandleStatement(node.statement);
-			return std::move(node.statement);
+			return ReplaceStatement{ std::move(node.statement) };
 		}
 		else
-			return ShaderBuilder::NoOp();
+			return ReplaceStatement{ ShaderBuilder::NoOp() };
 	}
 
 	template<typename TargetType>

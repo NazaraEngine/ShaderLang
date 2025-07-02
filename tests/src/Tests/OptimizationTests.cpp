@@ -3,7 +3,6 @@
 #include <NZSL/Parser.hpp>
 #include <NZSL/Ast/Transformations/ConstantPropagationTransformer.hpp>
 #include <NZSL/Ast/Transformations/EliminateUnusedTransformer.hpp>
-#include <NZSL/Ast/SanitizeVisitor.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <cctype>
 
@@ -11,7 +10,7 @@ void PropagateConstantAndExpect(std::string_view sourceCode, std::string_view ex
 {
 	nzsl::Ast::ModulePtr shaderModule;
 	REQUIRE_NOTHROW(shaderModule = nzsl::Parse(sourceCode));
-	shaderModule = SanitizeModule(*shaderModule);
+	ResolveModule(*shaderModule);
 
 	nzsl::Ast::ConstantPropagationTransformer::Context context; //< FIXME
 
@@ -28,7 +27,7 @@ void EliminateUnusedAndExpect(std::string_view sourceCode, std::string_view expe
 
 	nzsl::Ast::ModulePtr shaderModule;
 	REQUIRE_NOTHROW(shaderModule = nzsl::Parse(sourceCode));
-	shaderModule = SanitizeModule(*shaderModule);
+	ResolveModule(*shaderModule);
 
 	REQUIRE_NOTHROW(nzsl::Ast::EliminateUnusedPass(*shaderModule, depConfig));
 

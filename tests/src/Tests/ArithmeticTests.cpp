@@ -54,7 +54,7 @@ fn main()
 )";
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
-		shaderModule = SanitizeModule(*shaderModule);
+		ResolveModule(*shaderModule);
 
 		ExpectGLSL(*shaderModule, R"(
 void main()
@@ -300,7 +300,7 @@ fn main()
 )";
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
-		shaderModule = SanitizeModule(*shaderModule);
+		ResolveModule(*shaderModule);
 
 		ExpectGLSL(*shaderModule, R"(
 void main()
@@ -441,7 +441,7 @@ fn main()
 )";
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
-		shaderModule = SanitizeModule(*shaderModule);
+		ResolveModule(*shaderModule);
 
 		ExpectGLSL(*shaderModule, R"(
 void main()
@@ -640,7 +640,7 @@ fn main()
 )";
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
-		shaderModule = SanitizeModule(*shaderModule);
+		ResolveModule(*shaderModule);
 
 		ExpectGLSL(*shaderModule, R"(
 void main()
@@ -730,7 +730,7 @@ fn main()
 )";
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
-		shaderModule = SanitizeModule(*shaderModule);
+		ResolveModule(*shaderModule);
 
 		ExpectGLSL(*shaderModule, R"(
 void main()
@@ -880,7 +880,7 @@ fn main()
 )";
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
-		shaderModule = SanitizeModule(*shaderModule);
+		ResolveModule(*shaderModule);
 
 		ExpectGLSL(*shaderModule, R"(
 void main()
@@ -1032,7 +1032,7 @@ fn main()
 )";
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
-		shaderModule = SanitizeModule(*shaderModule);
+		ResolveModule(*shaderModule);
 
 		ExpectGLSL(*shaderModule, R"(
 void main()

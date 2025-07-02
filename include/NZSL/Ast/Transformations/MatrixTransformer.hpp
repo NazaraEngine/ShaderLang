@@ -30,8 +30,8 @@ namespace nzsl::Ast
 		private:
 			using Transformer::Transform;
 
-			ExpressionPtr Transform(BinaryExpression&& binExpr) override;
-			ExpressionPtr Transform(CastExpression&& castExpr) override;
+			ExpressionTransformation Transform(BinaryExpression&& binExpr) override;
+			ExpressionTransformation Transform(CastExpression&& castExpr) override;
 
 			const Options* m_options;
 	};

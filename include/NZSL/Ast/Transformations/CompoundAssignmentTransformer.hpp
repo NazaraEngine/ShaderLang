@@ -28,7 +28,7 @@ namespace nzsl::Ast
 
 		private:
 			using Transformer::Transform;
-			ExpressionPtr Transform(AssignExpression&& assign) override;
+			ExpressionTransformation Transform(AssignExpression&& assign) override;
 
 			const Options* m_options;
 	};

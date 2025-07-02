@@ -10,7 +10,6 @@
 #include <NZSL/Ast/Types.hpp>
 #include <NZSL/Lang/Errors.hpp>
 #include <NZSL/Lang/LangData.hpp>
-#include <NZSL/Ast/Transformations/IdentifierResolverTransformer.hpp>
 #include <fmt/format.h>
 #include <unordered_map>
 

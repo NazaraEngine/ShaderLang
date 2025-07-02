@@ -47,7 +47,7 @@ fn main() -> output
 )";
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
-		shaderModule = SanitizeModule(*shaderModule);
+		ResolveModule(*shaderModule);
 
 		ExpectGLSL(*shaderModule, R"(
 uniform sampler2D texture_;

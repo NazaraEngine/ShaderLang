@@ -10,7 +10,6 @@
 #include <NZSL/Parser.hpp>
 #include <NZSL/Ast/Cloner.hpp>
 #include <NZSL/Ast/RecursiveVisitor.hpp>
-#include <NZSL/Ast/SanitizeVisitor.hpp>
 #include <NZSL/Lang/LangData.hpp>
 #include <NZSL/SpirV/SpirvAstVisitor.hpp>
 #include <NZSL/SpirV/SpirvBlock.hpp>
@@ -23,6 +22,7 @@
 #include <NZSL/Ast/Transformations/ConstantPropagationTransformer.hpp>
 #include <NZSL/Ast/Transformations/EliminateUnusedTransformer.hpp>
 #include <NZSL/Ast/Transformations/ForToWhileTransformer.hpp>
+#include <NZSL/Ast/Transformations/IdentifierTypeResolverTransformer.hpp>
 #include <NZSL/Ast/Transformations/MatrixTransformer.hpp>
 #include <NZSL/Ast/Transformations/StructAssignmentTransformer.hpp>
 #include <NZSL/Ast/Transformations/SwizzleTransformer.hpp>
@@ -647,7 +647,7 @@ namespace nzsl
 	{
 		Ast::ModulePtr sanitizedModule;
 		Ast::Module* targetModule;
-		if (!states.sanitized)
+		/*if (!states.sanitized)
 		{
 			Ast::SanitizeVisitor::Options options = GetSanitizeOptions();
 			options.optionValues = states.optionValues;
@@ -656,7 +656,7 @@ namespace nzsl
 			sanitizedModule = Ast::Sanitize(module, options);
 			targetModule = sanitizedModule.get();
 		}
-		else
+		else*/
 		{
 			sanitizedModule = Ast::Clone(module);
 			targetModule = sanitizedModule.get();
@@ -888,6 +888,7 @@ namespace nzsl
 	Ast::TransformerExecutor SpirvWriter::GetPasses()
 	{
 		Ast::TransformerExecutor executor;
+		executor.AddPass<Ast::IdentifierTypeResolverTransformer>();
 		executor.AddPass<Ast::BranchSplitterTransformer>();
 		executor.AddPass<Ast::CompoundAssignmentTransformer>({ true });
 		executor.AddPass<Ast::ForToWhileTransformer>();
@@ -896,25 +897,6 @@ namespace nzsl
 		executor.AddPass<Ast::SwizzleTransformer>({ true });
 
 		return executor;
-	}
-
-	Ast::SanitizeVisitor::Options SpirvWriter::GetSanitizeOptions()
-	{
-		Ast::SanitizeVisitor::Options options;
-		//options.reduceLoopsToWhile = true;
-		options.removeAliases = true;
-		//options.removeCompoundAssignments = true;
-		options.removeConstArraySize = true;
-		//options.removeMatrixBinaryAddSub = true;
-		//options.removeMatrixCast = true;
-		options.removeOptionDeclaration = true;
-		options.removeSingleConstDeclaration = true;
-		//options.splitWrappedArrayAssignation = true;
-		//options.splitMultipleBranches = true;
-		//options.splitWrappedStructAssignation = true;
-		options.useIdentifierAccessesForStructs = false;
-
-		return options;
 	}
 
 	std::uint32_t SpirvWriter::AllocateResultId()

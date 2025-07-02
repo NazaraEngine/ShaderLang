@@ -15,10 +15,10 @@ namespace nzsl::Ast
 		return TransformModule(module, context, error);
 	}
 
-	ExpressionPtr CompoundAssignmentTransformer::Transform(AssignExpression&& assign)
+	auto CompoundAssignmentTransformer::Transform(AssignExpression&& assign) -> ExpressionTransformation
 	{
 		if (assign.op == AssignType::Simple || !m_options->removeCompoundAssignment)
-			return nullptr;
+			return VisitChildren{};
 
 		BinaryType binaryType;
 		switch (assign.op)
@@ -36,6 +36,6 @@ namespace nzsl::Ast
 		assign.op = AssignType::Simple;
 		assign.right = ShaderBuilder::Binary(binaryType, Clone(*assign.left), std::move(assign.right));
 
-		return nullptr;
+		return VisitChildren{};
 	}
 }

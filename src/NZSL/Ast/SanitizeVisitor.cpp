@@ -1176,7 +1176,6 @@ NAZARA_WARNING_POP()
 
 		// Function content is resolved in a second pass
 		auto& pendingFunc = m_context->currentEnv->pendingFunctions.emplace_back();
-		pendingFunc.cloneNode = clone.get();
 		pendingFunc.node = &node;
 
 		FunctionData funcData;
@@ -3370,618 +3369,15 @@ NAZARA_WARNING_POP()
 		return ValidationResult::Validated;
 	}
 
-	auto SanitizeVisitor::Validate(IntrinsicExpression& node) -> ValidationResult
+	auto SanitizeVisitor::Validate(IntrinsicExpression& statement) -> ValidationResult
 	{
 		auto IsUnresolved = [](ValidationResult result) { return result == ValidationResult::Unresolved; };
 
-		auto intrinsicIt = LangData::s_intrinsicData.find(node.intrinsic);
+		auto intrinsicIt = LangData::s_intrinsicData.find(statement.intrinsic);
 		if (intrinsicIt == LangData::s_intrinsicData.end())
-			throw AstInternalError{ node.sourceLocation, "missing intrinsic data for intrinsic " + std::to_string(Nz::UnderlyingCast(node.intrinsic)) };
+			throw AstInternalError{ statement.sourceLocation, "missing intrinsic data for intrinsic " + std::to_string(Nz::UnderlyingCast(statement.intrinsic)) };
 
 		const auto& intrinsicData = intrinsicIt->second;
-
-		std::size_t paramIndex = 0;
-		std::size_t lastSameComponentCountBarrierIndex = 0;
-		std::size_t lastSameParamBarrierIndex = 0;
-		for (std::size_t i = 0; i < intrinsicData.parameterCount; ++i)
-		{
-			using namespace LangData::IntrinsicHelper;
-
-			switch (intrinsicData.parameterTypes[i])
-			{
-				case ParameterType::ArrayDyn:
-				{
-					auto Check = [](const ExpressionType& type)
-					{
-						return IsArrayType(type) || IsDynArrayType(type);
-					};
-
-					if (IsUnresolved(ValidateIntrinsicParameterType(node, Check, "array/dyn-array", paramIndex++)))
-						return ValidationResult::Unresolved;
-
-					break;
-				}
-
-				case ParameterType::BValVec:
-				{
-					auto Check = [](const ExpressionType& type)
-					{
-						PrimitiveType primitiveType;
-						if (IsPrimitiveType(type))
-							primitiveType = std::get<PrimitiveType>(type);
-						else if (IsVectorType(type))
-							primitiveType = std::get<VectorType>(type).type;
-						else
-							return false;
-
-						if (primitiveType != PrimitiveType::Boolean)
-							return false;
-
-						return true;
-					};
-
-					if (IsUnresolved(ValidateIntrinsicParameterType(node, Check, "boolean value or vector", paramIndex++)))
-						return ValidationResult::Unresolved;
-
-					break;
-				}
-
-				case ParameterType::F32:
-				{
-					auto Check = [](const ExpressionType& type)
-					{
-						return type == ExpressionType{ PrimitiveType::Float32 };
-					};
-
-					if (IsUnresolved(ValidateIntrinsicParameterType(node, Check, "f32", paramIndex++)))
-						return ValidationResult::Unresolved;
-
-					break;
-				}
-
-				case ParameterType::FVal:
-				{
-					auto Check = [](const ExpressionType& type)
-					{
-						PrimitiveType primitiveType;
-						if (IsPrimitiveType(type))
-							primitiveType = std::get<PrimitiveType>(type);
-						else
-							return false;
-
-						if (primitiveType != PrimitiveType::Float32 && primitiveType != PrimitiveType::Float64)
-							return false;
-
-						return true;
-					};
-
-					if (IsUnresolved(ValidateIntrinsicParameterType(node, Check, "floating-point value", paramIndex++)))
-						return ValidationResult::Unresolved;
-
-					break;
-				}
-
-				case ParameterType::FValVec:
-				{
-					auto Check = [](const ExpressionType& type)
-					{
-						PrimitiveType primitiveType;
-						if (IsPrimitiveType(type))
-							primitiveType = std::get<PrimitiveType>(type);
-						else if (IsVectorType(type))
-							primitiveType = std::get<VectorType>(type).type;
-						else
-							return false;
-
-						// no float16 for now
-						if (primitiveType != PrimitiveType::Float32 && primitiveType != PrimitiveType::Float64)
-							return false;
-
-						return true;
-					};
-
-					if (IsUnresolved(ValidateIntrinsicParameterType(node, Check, "floating-point value or vector", paramIndex++)))
-						return ValidationResult::Unresolved;
-
-					break;
-				}
-
-				case ParameterType::FValVec1632:
-				{
-					auto Check = [](const ExpressionType& type)
-					{
-						PrimitiveType primitiveType;
-						if (IsPrimitiveType(type))
-							primitiveType = std::get<PrimitiveType>(type);
-						else if (IsVectorType(type))
-							primitiveType = std::get<VectorType>(type).type;
-						else
-							return false;
-
-						// no float16 for now
-						if (primitiveType != PrimitiveType::Float32)
-							return false;
-
-						return true;
-					};
-
-					if (IsUnresolved(ValidateIntrinsicParameterType(node, Check, "16/32bits floating-point value or vector", paramIndex++)))
-						return ValidationResult::Unresolved;
-
-					break;
-				}
-
-				case ParameterType::FVec:
-				{
-					auto Check = [](const ExpressionType& type)
-					{
-						PrimitiveType primitiveType;
-						if (IsVectorType(type))
-							primitiveType = std::get<VectorType>(type).type;
-						else
-							return false;
-
-						if (primitiveType != PrimitiveType::Float32 && primitiveType != PrimitiveType::Float64)
-							return false;
-
-						return true;
-					};
-
-					if (IsUnresolved(ValidateIntrinsicParameterType(node, Check, "floating-point vector", paramIndex++)))
-						return ValidationResult::Unresolved;
-
-					break;
-				}
-
-				case ParameterType::FVec3:
-				{
-					auto Check = [](const ExpressionType& type)
-					{
-						if (!IsVectorType(type))
-							return false;
-
-						const VectorType& vectorType = std::get<VectorType>(type);
-						if (vectorType.componentCount != 3)
-							return false;
-
-						return vectorType.type == PrimitiveType::Float32 || vectorType.type == PrimitiveType::Float64;
-					};
-
-					if (IsUnresolved(ValidateIntrinsicParameterType(node, Check, "floating-point vec3", paramIndex++)))
-						return ValidationResult::Unresolved;
-
-					break;
-				}
-
-				case ParameterType::Matrix:
-				{
-					if (IsUnresolved(ValidateIntrinsicParameterType(node, IsMatrixType, "matrix", paramIndex++)))
-						return ValidationResult::Unresolved;
-
-					break;
-				}
-
-				case ParameterType::MatrixSquare:
-				{
-					auto Check = [](const ExpressionType& type)
-					{
-						if (!IsMatrixType(type))
-							return false;
-
-						const MatrixType& matrixType = std::get<MatrixType>(type);
-						return matrixType.columnCount == matrixType.rowCount;
-					};
-
-					if (IsUnresolved(ValidateIntrinsicParameterType(node, Check, "square matrix", paramIndex++)))
-						return ValidationResult::Unresolved;
-
-					break;
-				}
-
-				case ParameterType::Numerical:
-				{
-					auto Check = [](const ExpressionType& type)
-					{
-						PrimitiveType primitiveType;
-						if (IsPrimitiveType(type))
-							primitiveType = std::get<PrimitiveType>(type);
-						else
-							return false;
-
-						switch (primitiveType)
-						{
-							case PrimitiveType::Boolean:
-							case PrimitiveType::String:
-								break;
-
-							case PrimitiveType::Float32:
-							case PrimitiveType::Float64:
-							case PrimitiveType::Int32:
-							case PrimitiveType::UInt32:
-								return true;
-						}
-
-						return false;
-					};
-
-					if (IsUnresolved(ValidateIntrinsicParameterType(node, Check, "scalar value or vector", paramIndex++)))
-						return ValidationResult::Unresolved;
-
-					break;
-				}
-
-				case ParameterType::NumericalVec:
-				{
-					auto Check = [](const ExpressionType& type)
-					{
-						PrimitiveType primitiveType;
-						if (IsPrimitiveType(type))
-							primitiveType = std::get<PrimitiveType>(type);
-						else if (IsVectorType(type))
-							primitiveType = std::get<VectorType>(type).type;
-						else
-							return false;
-
-						switch (primitiveType)
-						{
-							case PrimitiveType::Boolean:
-							case PrimitiveType::String:
-								break;
-
-							case PrimitiveType::Float32:
-							case PrimitiveType::Float64:
-							case PrimitiveType::Int32:
-							case PrimitiveType::UInt32:
-								return true;
-						}
-
-						return false;
-					};
-
-					if (IsUnresolved(ValidateIntrinsicParameterType(node, Check, "scalar value or vector", paramIndex++)))
-						return ValidationResult::Unresolved;
-
-					break;
-				}
-
-				case ParameterType::SampleCoordinates:
-				{
-					// Special check: vector dimensions must match sample type
-					const SamplerType& samplerType = std::get<SamplerType>(ResolveAlias(GetExpressionTypeSecure(*node.parameters[0])));
-					std::size_t requiredComponentCount = 0;
-					switch (samplerType.dim)
-					{
-						case ImageType::E1D:
-							requiredComponentCount = 1;
-							break;
-
-						case ImageType::E1D_Array:
-						case ImageType::E2D:
-							requiredComponentCount = 2;
-							break;
-
-						case ImageType::E2D_Array:
-						case ImageType::E3D:
-						case ImageType::Cubemap:
-							requiredComponentCount = 3;
-							break;
-					}
-
-					if (requiredComponentCount == 0)
-						throw AstInternalError{ node.parameters[0]->sourceLocation, "unhandled sampler dimensions" };
-
-					if (requiredComponentCount > 1)
-					{
-						// Vector coordinates
-						auto Check = [=](const ExpressionType& type)
-						{
-							if (!IsVectorType(type))
-								return false;
-
-							const VectorType& vectorType = std::get<VectorType>(type);
-							if (vectorType.componentCount != requiredComponentCount)
-								return false;
-
-							return vectorType.type == PrimitiveType::Float32 || vectorType.type == PrimitiveType::Float64;
-						};
-
-						char errMessage[] = "floating-point vector of X components";
-						assert(requiredComponentCount < 9);
-						errMessage[25] = Nz::SafeCast<char>('0' + requiredComponentCount);
-
-						if (IsUnresolved(ValidateIntrinsicParameterType(node, Check, errMessage, paramIndex++)))
-							return ValidationResult::Unresolved;
-					}
-					else
-					{
-						// Scalar coordinates
-						auto Check = [=](const ExpressionType& type)
-						{
-							if (!IsPrimitiveType(type))
-								return false;
-
-							PrimitiveType primitiveType = std::get<PrimitiveType>(type);
-							return primitiveType == PrimitiveType::Float32 || primitiveType == PrimitiveType::Float64;
-						};
-
-						if (IsUnresolved(ValidateIntrinsicParameterType(node, Check, "floating-point value", paramIndex++)))
-							return ValidationResult::Unresolved;
-					}
-
-					break;
-				}
-				
-				case ParameterType::Scalar:
-				{
-					auto Check = [](const ExpressionType& type)
-					{
-						PrimitiveType primitiveType;
-						if (IsPrimitiveType(type))
-							primitiveType = std::get<PrimitiveType>(type);
-						else
-							return false;
-
-						switch (primitiveType)
-						{
-							case PrimitiveType::String:
-								break;
-
-							case PrimitiveType::Boolean:
-							case PrimitiveType::Float32:
-							case PrimitiveType::Float64:
-							case PrimitiveType::Int32:
-							case PrimitiveType::UInt32:
-								return true;
-						}
-
-						return false;
-					};
-
-					if (IsUnresolved(ValidateIntrinsicParameterType(node, Check, "scalar value or vector", paramIndex++)))
-						return ValidationResult::Unresolved;
-
-					break;
-				}
-
-				case ParameterType::ScalarVec:
-				{
-					auto Check = [](const ExpressionType& type)
-					{
-						PrimitiveType primitiveType;
-						if (IsPrimitiveType(type))
-							primitiveType = std::get<PrimitiveType>(type);
-						else if (IsVectorType(type))
-							primitiveType = std::get<VectorType>(type).type;
-						else
-							return false;
-
-						switch (primitiveType)
-						{
-							case PrimitiveType::String:
-								break;
-
-							case PrimitiveType::Boolean:
-							case PrimitiveType::Float32:
-							case PrimitiveType::Float64:
-							case PrimitiveType::Int32:
-							case PrimitiveType::UInt32:
-								return true;
-						}
-
-						return false;
-					};
-
-					if (IsUnresolved(ValidateIntrinsicParameterType(node, Check, "scalar value or vector", paramIndex++)))
-						return ValidationResult::Unresolved;
-
-					break;
-				}
-
-				case ParameterType::SignedNumerical:
-				{
-					auto Check = [](const ExpressionType& type)
-					{
-						PrimitiveType primitiveType;
-						if (IsPrimitiveType(type))
-							primitiveType = std::get<PrimitiveType>(type);
-						else
-							return false;
-
-						switch (primitiveType)
-						{
-							case PrimitiveType::Boolean:
-							case PrimitiveType::String:
-							case PrimitiveType::UInt32:
-								break;
-
-							case PrimitiveType::Float32:
-							case PrimitiveType::Float64:
-							case PrimitiveType::Int32:
-								return true;
-						}
-
-						return false;
-					};
-
-					if (IsUnresolved(ValidateIntrinsicParameterType(node, Check, "scalar value or vector", paramIndex++)))
-						return ValidationResult::Unresolved;
-
-					break;
-				}
-
-				case ParameterType::SignedNumericalVec:
-				{
-					auto Check = [](const ExpressionType& type)
-					{
-						PrimitiveType primitiveType;
-						if (IsPrimitiveType(type))
-							primitiveType = std::get<PrimitiveType>(type);
-						else if (IsVectorType(type))
-							primitiveType = std::get<VectorType>(type).type;
-						else
-							return false;
-
-						switch (primitiveType)
-						{
-							case PrimitiveType::Boolean:
-							case PrimitiveType::String:
-							case PrimitiveType::UInt32:
-								break;
-
-							case PrimitiveType::Float32:
-							case PrimitiveType::Float64:
-							case PrimitiveType::Int32:
-								return true;
-						}
-
-						return false;
-					};
-
-					if (IsUnresolved(ValidateIntrinsicParameterType(node, Check, "scalar value or vector", paramIndex++)))
-						return ValidationResult::Unresolved;
-
-					break;
-				}
-
-				case ParameterType::Sampler:
-				{
-					if (IsUnresolved(ValidateIntrinsicParameterType(node, IsSamplerType, "sampler type", paramIndex++)))
-						return ValidationResult::Unresolved;
-
-					break;
-				}
-
-				case ParameterType::SameType:
-				{
-					if (IsUnresolved(ValidateIntrinsicParamMatchingType(node, lastSameParamBarrierIndex, paramIndex)))
-						return ValidationResult::Unresolved;
-
-					break;
-				}
-
-				case ParameterType::SameTypeBarrier:
-				{
-					lastSameParamBarrierIndex = paramIndex;
-					break; //< Handled by SameType
-				}
-
-				case ParameterType::SameVecComponentCount:
-				{
-					if (IsUnresolved(ValidateIntrinsicParamMatchingVecComponent(node, lastSameComponentCountBarrierIndex, paramIndex)))
-						return ValidationResult::Unresolved;
-
-					break;
-				}
-
-				case ParameterType::SameVecComponentCountBarrier:
-				{
-					lastSameComponentCountBarrierIndex = paramIndex;
-					break; //< Handled by SameType
-				}
-
-				case ParameterType::Texture:
-				{
-					if (IsUnresolved(ValidateIntrinsicParameterType(node, IsTextureType, "texture type", paramIndex++)))
-						return ValidationResult::Unresolved;
-
-					break;
-				}
-				
-				case ParameterType::TextureCoordinates:
-				{
-					// Special check: vector dimensions must match sample type
-					const TextureType& textureType = std::get<TextureType>(ResolveAlias(GetExpressionTypeSecure(*node.parameters[0])));
-					std::size_t requiredComponentCount = 0;
-					switch (textureType.dim)
-					{
-						case ImageType::E1D:
-							requiredComponentCount = 1;
-							break;
-
-						case ImageType::E1D_Array:
-						case ImageType::E2D:
-							requiredComponentCount = 2;
-							break;
-
-						case ImageType::E2D_Array:
-						case ImageType::E3D:
-						case ImageType::Cubemap:
-							requiredComponentCount = 3;
-							break;
-					}
-
-					if (requiredComponentCount == 0)
-						throw AstInternalError{ node.parameters[0]->sourceLocation, "unhandled texture dimensions" };
-
-					if (requiredComponentCount > 1)
-					{
-						// Vector coordinates
-						auto Check = [=](const ExpressionType& type)
-						{
-							if (!IsVectorType(type))
-								return false;
-
-							const VectorType& vectorType = std::get<VectorType>(type);
-							if (vectorType.componentCount != requiredComponentCount)
-								return false;
-
-							return vectorType.type == PrimitiveType::Int32;
-						};
-
-						char errMessage[] = "integer vector of X components";
-						assert(requiredComponentCount < 9);
-						errMessage[18] = Nz::SafeCast<char>('0' + requiredComponentCount);
-
-						if (IsUnresolved(ValidateIntrinsicParameterType(node, Check, errMessage, paramIndex++)))
-							return ValidationResult::Unresolved;
-					}
-					else
-					{
-						// Scalar coordinates
-						auto Check = [=](const ExpressionType& type)
-						{
-							if (!IsPrimitiveType(type))
-								return false;
-
-							PrimitiveType primitiveType = std::get<PrimitiveType>(type);
-							return primitiveType == PrimitiveType::Int32;
-						};
-
-						if (IsUnresolved(ValidateIntrinsicParameterType(node, Check, "integer value", paramIndex++)))
-							return ValidationResult::Unresolved;
-					}
-
-					break;
-				}
-
-				case ParameterType::TextureData:
-				{
-					// Special check: vector data
-					const TextureType& textureType = std::get<TextureType>(ResolveAlias(GetExpressionTypeSecure(*node.parameters[0])));
-
-					// Vector data
-					auto Check = [=](const ExpressionType& type)
-					{
-						if (!IsVectorType(type))
-							return false;
-
-						const VectorType& vectorType = std::get<VectorType>(type);
-						if (vectorType.componentCount != 4)
-							return false;
-
-						return vectorType.type == textureType.baseType;
-					};
-
-					if (IsUnresolved(ValidateIntrinsicParameterType(node, Check, "texture-type vector of 4 components", paramIndex++)))
-						return ValidationResult::Unresolved;
-
-					break;
-				}
-			}
-		}
-
-		if (node.parameters.size() != paramIndex)
-			throw CompilerIntrinsicExpectedParameterCountError{ node.sourceLocation, Nz::SafeCast<std::uint32_t>(paramIndex) };
 
 		// return type attribution
 		switch (intrinsicData.returnType)
@@ -3990,67 +3386,67 @@ NAZARA_WARNING_POP()
 
 			case ReturnType::Param0SampledValue:
 			{
-				const ExpressionType& paramType = ResolveAlias(GetExpressionTypeSecure(*node.parameters[0]));
+				const ExpressionType& paramType = ResolveAlias(GetExpressionTypeSecure(*statement.parameters[0]));
 				if (!IsSamplerType(paramType))
-					throw AstInternalError{ node.sourceLocation, "intrinsic " + std::string(intrinsicData.functionName) + " first parameter is not a sampler" };
+					throw AstInternalError{ statement.sourceLocation, "intrinsic " + std::string(intrinsicData.functionName) + " first parameter is not a sampler" };
 
 				const SamplerType& samplerType = std::get<SamplerType>(paramType);
 				if (samplerType.depth)
-					node.cachedExpressionType = PrimitiveType::Float32;
+					statement.cachedExpressionType = PrimitiveType::Float32;
 				else
-					node.cachedExpressionType = VectorType{ 4, samplerType.sampledType };
+					statement.cachedExpressionType = VectorType{ 4, samplerType.sampledType };
 				break;
 			}
 
 			case ReturnType::Param0TextureValue:
 			{
-				const ExpressionType& paramType = ResolveAlias(GetExpressionTypeSecure(*node.parameters[0]));
+				const ExpressionType& paramType = ResolveAlias(GetExpressionTypeSecure(*statement.parameters[0]));
 				if (!IsTextureType(paramType))
-					throw AstInternalError{ node.sourceLocation, "intrinsic " + std::string(intrinsicData.functionName) + " first parameter is not a sampler" };
+					throw AstInternalError{ statement.sourceLocation, "intrinsic " + std::string(intrinsicData.functionName) + " first parameter is not a sampler" };
 
 				const TextureType& textureType = std::get<TextureType>(paramType);
-				node.cachedExpressionType = VectorType{ 4, textureType.baseType };
+				statement.cachedExpressionType = VectorType{ 4, textureType.baseType };
 				break;
 			}
 
 			case ReturnType::Param0Transposed:
 			{
-				const ExpressionType& paramType = ResolveAlias(GetExpressionTypeSecure(*node.parameters[0]));
+				const ExpressionType& paramType = ResolveAlias(GetExpressionTypeSecure(*statement.parameters[0]));
 				if (!IsMatrixType(paramType))
-					throw AstInternalError{ node.sourceLocation, "intrinsic " + std::string(intrinsicData.functionName) + " first parameter is not a matrix" };
+					throw AstInternalError{ statement.sourceLocation, "intrinsic " + std::string(intrinsicData.functionName) + " first parameter is not a matrix" };
 
 				MatrixType matrixType = std::get<MatrixType>(paramType);
 				std::swap(matrixType.columnCount, matrixType.rowCount);
 
-				node.cachedExpressionType = matrixType;
+				statement.cachedExpressionType = matrixType;
 				break;
 			}
 
 			case ReturnType::Param0Type:
-				node.cachedExpressionType = GetExpressionTypeSecure(*node.parameters.front());
+				statement.cachedExpressionType = GetExpressionTypeSecure(*statement.parameters.front());
 				break;
 
 			case ReturnType::Param1Type:
-				node.cachedExpressionType = GetExpressionTypeSecure(*node.parameters[1]);
+				statement.cachedExpressionType = GetExpressionTypeSecure(*statement.parameters[1]);
 				break;
 
 			case ReturnType::Param0VecComponent:
 			{
-				const ExpressionType& paramType = ResolveAlias(GetExpressionTypeSecure(*node.parameters[0]));
+				const ExpressionType& paramType = ResolveAlias(GetExpressionTypeSecure(*statement.parameters[0]));
 				if (!IsVectorType(paramType))
-					throw AstInternalError{ node.sourceLocation, "intrinsic " + std::string(intrinsicData.functionName) + " first parameter is not a vector" };
+					throw AstInternalError{ statement.sourceLocation, "intrinsic " + std::string(intrinsicData.functionName) + " first parameter is not a vector" };
 
 				const VectorType& vecType = std::get<VectorType>(paramType);
-				node.cachedExpressionType = vecType.type;
+				statement.cachedExpressionType = vecType.type;
 				break;
 			}
 
 			case ReturnType::U32:
-				node.cachedExpressionType = ExpressionType{ PrimitiveType::UInt32 };
+				statement.cachedExpressionType = ExpressionType{ PrimitiveType::UInt32 };
 				break;
 
 			case ReturnType::Void:
-				node.cachedExpressionType = ExpressionType{ NoType{} };
+				statement.cachedExpressionType = ExpressionType{ NoType{} };
 				break;
 		}
 

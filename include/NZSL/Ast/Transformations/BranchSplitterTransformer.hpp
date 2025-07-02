@@ -27,7 +27,8 @@ namespace nzsl::Ast
 
 		private:
 			using Transformer::Transform;
-			StatementPtr Transform(BranchStatement&& statement) override;
+
+			StatementTransformation Transform(BranchStatement&& statement) override;
 
 			const Options* m_options;
 	};

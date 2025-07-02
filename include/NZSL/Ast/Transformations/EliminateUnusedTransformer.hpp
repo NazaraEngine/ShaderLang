@@ -31,12 +31,12 @@ namespace nzsl::Ast
 			EliminateUnusedTransformer& operator=(EliminateUnusedTransformer&&) = delete;
 
 		private:
-			StatementPtr Transform(DeclareAliasStatement&& node) override;
-			StatementPtr Transform(DeclareConstStatement&& node) override;
-			StatementPtr Transform(DeclareExternalStatement&& node) override;
-			StatementPtr Transform(DeclareFunctionStatement&& node) override;
-			StatementPtr Transform(DeclareStructStatement&& node) override;
-			StatementPtr Transform(DeclareVariableStatement&& node) override;
+			StatementTransformation Transform(DeclareAliasStatement&& node) override;
+			StatementTransformation Transform(DeclareConstStatement&& node) override;
+			StatementTransformation Transform(DeclareExternalStatement&& node) override;
+			StatementTransformation Transform(DeclareFunctionStatement&& node) override;
+			StatementTransformation Transform(DeclareStructStatement&& node) override;
+			StatementTransformation Transform(DeclareVariableStatement&& node) override;
 
 			bool IsAliasUsed(std::size_t aliasIndex) const;
 			bool IsConstantUsed(std::size_t constantIndex) const;

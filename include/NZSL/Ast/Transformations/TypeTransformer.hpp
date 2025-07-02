@@ -27,6 +27,6 @@ namespace nzsl::Ast
 	};
 }
 
-#include <NZSL/Ast/Transformations/IdentifierResolverTransformer.inl>
+#include <NZSL/Ast/Transformations/TypeTransformer.inl>
 
 #endif // NZSL_AST_TRANSFORMATIONS_TYPETRANSFORMER_HPP

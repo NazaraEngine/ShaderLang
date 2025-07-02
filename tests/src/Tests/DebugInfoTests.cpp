@@ -12,11 +12,12 @@ TEST_CASE("debug info", "[Shader]")
 		auto directoryModuleResolver = std::make_shared<nzsl::FilesystemModuleResolver>();
 		directoryModuleResolver->RegisterDirectory("../resources/modules");
 
-		nzsl::Ast::SanitizeVisitor::Options sanitizeOptions;
-		sanitizeOptions.moduleResolver = std::move(directoryModuleResolver);
-
 		nzsl::Ast::ModulePtr shaderModule = nzsl::ParseFromFile("../resources/Shader.nzsl");
-		shaderModule = SanitizeModule(*shaderModule, sanitizeOptions);
+
+		nzsl::Ast::ImportResolverTransformer::Options importOpt;
+		importOpt.moduleResolver = directoryModuleResolver;
+
+		ResolveModule(*shaderModule, {}, &importOpt);
 
 		WHEN("Generating with no debug info")
 		{

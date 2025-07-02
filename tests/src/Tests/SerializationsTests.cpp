@@ -5,17 +5,22 @@
 #include <NZSL/Parser.hpp>
 #include <NZSL/Ast/AstSerializer.hpp>
 #include <NZSL/Ast/Compare.hpp>
-#include <NZSL/Ast/SanitizeVisitor.hpp>
+#include <NZSL/Ast/TransformerExecutor.hpp>
+#include <NZSL/Ast/Transformations/IdentifierTypeResolverTransformer.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <cctype>
 
-void ParseSerializeDeserialize(std::string_view sourceCode, bool sanitize)
+void ParseSerializeDeserialize(std::string_view sourceCode, bool resolve)
 {
 	nzsl::Ast::ModulePtr shaderModule;
 	REQUIRE_NOTHROW(shaderModule = nzsl::Parse(sourceCode));
 
-	if (sanitize)
-		REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(*shaderModule));
+	if (resolve)
+	{
+		nzsl::Ast::TransformerExecutor executor;
+		executor.AddPass<nzsl::Ast::IdentifierTypeResolverTransformer>();
+		REQUIRE_NOTHROW(executor.Transform(*shaderModule));
+	}
 
 	// Text serialisation
 	{

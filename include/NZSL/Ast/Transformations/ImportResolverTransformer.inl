@@ -4,12 +4,12 @@
 
 namespace nzsl::Ast
 {
-	inline IdentifierTransformer::IdentifierTransformer() :
-	Transformer(false)
+	inline ImportResolverTransformer::ImportResolverTransformer() :
+	Transformer(true)
 	{
 	}
 
-	inline bool IdentifierTransformer::Transform(Module& module, Context& context, std::string* error)
+	inline bool ImportResolverTransformer::Transform(Module& module, Context& context, std::string* error)
 	{
 		return Transform(module, context, {}, error);
 	}

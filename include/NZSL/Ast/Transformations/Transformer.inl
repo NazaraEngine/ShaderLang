@@ -9,6 +9,13 @@ namespace nzsl::Ast
 	{
 	}
 
+	template<typename T>
+	void Transformer::HandleExpressionValue(ExpressionValue<T>& expressionValue)
+	{
+		if (expressionValue.IsExpression())
+			HandleExpression(expressionValue.GetExpression());
+	}
+
 	template<bool Single, typename F>
 	void Transformer::HandleStatementList(std::vector<StatementPtr>& statementList, F&& callback)
 	{

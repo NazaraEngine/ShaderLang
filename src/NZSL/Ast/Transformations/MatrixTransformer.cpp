@@ -16,10 +16,10 @@ namespace nzsl::Ast
 		return TransformModule(module, context, error);
 	}
 
-	ExpressionPtr MatrixTransformer::Transform(BinaryExpression&& binExpr)
+	auto MatrixTransformer::Transform(BinaryExpression&& binExpr) -> ExpressionTransformation
 	{
 		if (!m_options->removeMatrixBinaryAddSub)
-			return nullptr;
+			return VisitChildren{};
 
 		if (binExpr.op == BinaryType::Add || binExpr.op == BinaryType::Subtract)
 		{
@@ -64,22 +64,22 @@ namespace nzsl::Ast
 				ExpressionPtr expr = std::move(result);
 				HandleExpression(expr);
 
-				return expr;
+				return ReplaceExpression{ std::move(expr) };
 			}
 		}
 
-		return nullptr;
+		return VisitChildren{};
 	}
 
-	ExpressionPtr MatrixTransformer::Transform(CastExpression&& castExpr)
+	auto MatrixTransformer::Transform(CastExpression&& castExpr) -> ExpressionTransformation
 	{
 		if (!m_options->removeMatrixCast)
-			return nullptr;
+			return VisitChildren{};
 
 		if (!castExpr.targetType.IsResultingValue())
 		{
 			if (m_context->partialSanitization)
-				return nullptr;
+				return VisitChildren{};
 
 			throw CompilerConstantExpressionRequiredError{ castExpr.targetType.GetExpression()->sourceLocation };
 		}
@@ -95,7 +95,7 @@ namespace nzsl::Ast
 			{
 				const ExpressionType* exprType = GetExpressionType(*castExpr.expressions[i]);
 				if (!exprType)
-					return nullptr; //< unresolved type
+					return VisitChildren{}; //< unresolved type
 			}
 
 			const ExpressionType& resolvedFrontExprType = *GetResolvedExpressionType(*castExpr.expressions.front());
@@ -103,7 +103,7 @@ namespace nzsl::Ast
 			if (isMatrixCast && std::get<MatrixType>(resolvedFrontExprType) == targetMatrixType)
 			{
 				// Nothing to do
-				return std::move(castExpr.expressions.front());
+				return ReplaceExpression{ std::move(castExpr.expressions.front()) };
 			}
 
 			auto* variableDeclaration = DeclareVariable("matrix", targetType, castExpr.sourceLocation);
@@ -216,9 +216,9 @@ namespace nzsl::Ast
 				AppendStatement(ShaderBuilder::ExpressionStatement(std::move(assignExpr)));
 			}
 
-			return ShaderBuilder::Variable(variableIndex, targetType, castExpr.sourceLocation);
+			return ReplaceExpression{ ShaderBuilder::Variable(variableIndex, targetType, castExpr.sourceLocation) };
 		}
 
-		return nullptr;
+		return VisitChildren{};
 	}
 }

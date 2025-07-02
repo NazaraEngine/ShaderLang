@@ -33,7 +33,7 @@ fn main() -> FragOut
 )";
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
-		shaderModule = SanitizeModule(*shaderModule);
+		ResolveModule(*shaderModule);
 
 		ExpectGLSL(*shaderModule, R"(
 float GetValue()
@@ -125,7 +125,7 @@ fn foo() -> f32
 )";
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
-		shaderModule = SanitizeModule(*shaderModule);
+		ResolveModule(*shaderModule);
 
 		ExpectGLSL(*shaderModule, R"(
 float bar()
@@ -246,7 +246,7 @@ fn main() -> FragOut
 )";
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
-		shaderModule = SanitizeModule(*shaderModule);
+		ResolveModule(*shaderModule);
 
 		ExpectGLSL(*shaderModule, R"(
 void Half(inout vec3 color, out float value, float inValue, float inValue2)
@@ -396,7 +396,7 @@ fn main() -> FragOut
 )";
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
-		shaderModule = SanitizeModule(*shaderModule);
+		ResolveModule(*shaderModule);
 
 		ExpectGLSL(*shaderModule, R"(
 vec4 sample_center(sampler2D tex)
@@ -524,7 +524,7 @@ fn main() -> FragOut
 )";
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
-		shaderModule = SanitizeModule(*shaderModule);
+		ResolveModule(*shaderModule);
 
 		ExpectGLSL(*shaderModule, R"(
 vec4 sample_center(sampler2D tex[3])

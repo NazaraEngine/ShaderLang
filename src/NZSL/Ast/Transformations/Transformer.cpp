@@ -128,6 +128,373 @@ namespace nzsl::Ast
 		m_statementStack.pop_back();
 	}
 
+	void Transformer::HandleChildren(AccessIdentifierExpression& node)
+	{
+		HandleExpression(node.expr);
+	}
+
+	void Transformer::HandleChildren(AccessIndexExpression& node)
+	{
+		HandleExpression(node.expr);
+		for (auto& index : node.indices)
+			HandleExpression(index);
+	}
+
+	void Transformer::HandleChildren(AliasValueExpression& /*node*/)
+	{
+	}
+
+	void Transformer::HandleChildren(AssignExpression& node)
+	{
+		HandleExpression(node.left);
+		HandleExpression(node.right);
+	}
+
+	void Transformer::HandleChildren(BinaryExpression& node)
+	{
+		HandleExpression(node.left);
+		HandleExpression(node.right);
+	}
+
+	void Transformer::HandleChildren(CallFunctionExpression& node)
+	{
+		for (auto& param : node.parameters)
+			HandleExpression(param.expr);
+
+		HandleExpression(node.targetFunction);
+	}
+
+	void Transformer::HandleChildren(CallMethodExpression& node)
+	{
+		HandleExpression(node.object);
+
+		for (auto& param : node.parameters)
+			HandleExpression(param);
+	}
+
+	void Transformer::HandleChildren(CastExpression& node)
+	{
+		if (m_visitExpressions)
+			HandleExpressionValue(node.targetType);
+
+		for (auto& expr : node.expressions)
+			HandleExpression(expr);
+	}
+
+	void Transformer::HandleChildren(ConditionalExpression& node)
+	{
+		HandleExpression(node.truePath);
+		HandleExpression(node.falsePath);
+	}
+
+	void Transformer::HandleChildren(ConstantExpression& /*node*/)
+	{
+	}
+
+	void Transformer::HandleChildren(ConstantArrayValueExpression& /*node*/)
+	{
+	}
+
+	void Transformer::HandleChildren(ConstantValueExpression& /*node*/)
+	{
+	}
+
+	void Transformer::HandleChildren(FunctionExpression& /*node*/)
+	{
+	}
+
+	void Transformer::HandleChildren(IdentifierExpression& /*node*/)
+	{
+	}
+
+	void Transformer::HandleChildren(IntrinsicExpression& node)
+	{
+		for (auto& param : node.parameters)
+			HandleExpression(param);
+	}
+
+	void Transformer::HandleChildren(IntrinsicFunctionExpression& /*node*/)
+	{
+	}
+
+	void Transformer::HandleChildren(ModuleExpression& /*node*/)
+	{
+	}
+
+	void Transformer::HandleChildren(NamedExternalBlockExpression& /*node*/)
+	{
+	}
+
+	void Transformer::HandleChildren(StructTypeExpression& /*node*/)
+	{
+	}
+
+	void Transformer::HandleChildren(SwizzleExpression& node)
+	{
+		if (node.expression)
+			HandleExpression(node.expression);
+	}
+
+	void Transformer::HandleChildren(TypeExpression& /*node*/)
+	{
+	}
+
+	void Transformer::HandleChildren(VariableValueExpression& /*node*/)
+	{
+	}
+
+	void Transformer::HandleChildren(UnaryExpression& node)
+	{
+		if (node.expression)
+			HandleExpression(node.expression);
+	}
+
+	void Transformer::HandleChildren(BranchStatement& node)
+	{
+		for (auto& cond : node.condStatements)
+		{
+			if (m_visitExpressions)
+				HandleExpression(cond.condition);
+
+			PushScope();
+			HandleStatement(cond.statement);
+			PopScope();
+		}
+
+		if (node.elseStatement)
+		{
+			PushScope();
+			HandleStatement(node.elseStatement);
+			PopScope();
+		}
+	}
+
+	void Transformer::HandleChildren(BreakStatement& /*node*/)
+	{
+	}
+
+	void Transformer::HandleChildren(ConditionalStatement& node)
+	{
+		if (m_visitExpressions)
+			HandleExpression(node.condition);
+
+		PushScope();
+		HandleStatement(node.statement);
+		PopScope();
+	}
+
+	void Transformer::HandleChildren(ContinueStatement& /*node*/)
+	{
+	}
+
+	void Transformer::HandleChildren(DeclareAliasStatement& node)
+	{
+		if (m_visitExpressions)
+			HandleExpression(node.expression);
+	}
+
+	void Transformer::HandleChildren(DeclareConstStatement& node)
+	{
+		if (m_visitExpressions)
+		{
+			HandleExpressionValue(node.isExported);
+			HandleExpressionValue(node.type);
+
+			HandleExpression(node.expression);
+		}
+	}
+
+	void Transformer::HandleChildren(DeclareExternalStatement& node)
+	{
+		if (m_visitExpressions)
+		{
+			HandleExpressionValue(node.autoBinding);
+			HandleExpressionValue(node.bindingSet);
+
+			for (auto& externalVar : node.externalVars)
+			{
+				HandleExpressionValue(externalVar.bindingIndex);
+				HandleExpressionValue(externalVar.bindingSet);
+				HandleExpressionValue(externalVar.type);
+			}
+		}
+	}
+
+	void Transformer::HandleChildren(DeclareFunctionStatement& node)
+	{
+		PushScope();
+
+		if (m_visitExpressions)
+		{
+			HandleExpressionValue(node.depthWrite);
+			HandleExpressionValue(node.returnType);
+			HandleExpressionValue(node.entryStage);
+			HandleExpressionValue(node.workgroupSize);
+			HandleExpressionValue(node.earlyFragmentTests);
+			HandleExpressionValue(node.isExported);
+
+			for (auto& param : node.parameters)
+				HandleExpressionValue(param.type);
+		}
+
+		HandleStatementList<false>(node.statements, [&](StatementPtr& statement)
+		{
+			HandleStatement(statement);
+		});
+		PopScope();
+	}
+
+	void Transformer::HandleChildren(DeclareOptionStatement& node)
+	{
+		if (m_visitExpressions)
+		{
+			HandleExpressionValue(node.optType);
+
+			if (node.defaultValue)
+				HandleExpression(node.defaultValue);
+		}
+	}
+
+	void Transformer::HandleChildren(DeclareStructStatement& node)
+	{
+		if (m_visitExpressions)
+		{
+			HandleExpressionValue(node.isExported);
+			HandleExpressionValue(node.description.layout);
+
+			for (auto& member : node.description.members)
+			{
+				HandleExpressionValue(member.builtin);
+				HandleExpressionValue(member.cond);
+				HandleExpressionValue(member.interp);
+				HandleExpressionValue(member.locationIndex);
+				HandleExpressionValue(member.type);
+			}
+		}
+	}
+
+	void Transformer::HandleChildren(DeclareVariableStatement& node)
+	{
+		if (m_visitExpressions)
+		{
+			HandleExpressionValue(node.varType);
+
+			if (node.initialExpression)
+				HandleExpression(node.initialExpression);
+		}
+	}
+
+	void Transformer::HandleChildren(DiscardStatement& /*node*/)
+	{
+	}
+
+	void Transformer::HandleChildren(ExpressionStatement& node)
+	{
+		if (m_visitExpressions)
+			HandleExpression(node.expression);
+	}
+
+	void Transformer::HandleChildren(ForStatement& node)
+	{
+		if (m_visitExpressions)
+		{
+			HandleExpression(node.fromExpr);
+			HandleExpression(node.toExpr);
+
+			if (node.stepExpr)
+				HandleExpression(node.stepExpr);
+
+			HandleExpressionValue(node.unroll);
+		}
+
+		if (node.statement)
+		{
+			PushScope();
+			HandleStatement(node.statement);
+			PopScope();
+		}
+	}
+
+	void Transformer::HandleChildren(ForEachStatement& node)
+	{
+		if (m_visitExpressions)
+		{
+			HandleExpression(node.expression);
+
+			HandleExpressionValue(node.unroll);
+		}
+
+		if (node.statement)
+		{
+			PushScope();
+			HandleStatement(node.statement);
+			PopScope();
+		}
+	}
+
+	void Transformer::HandleChildren(ImportStatement& /*node*/)
+	{
+	}
+
+	void Transformer::HandleChildren(MultiStatement& node)
+	{
+		HandleStatementList<false>(node.statements, [&](StatementPtr& statement)
+		{
+			HandleStatement(statement);
+		});
+	}
+
+	void Transformer::HandleChildren(NoOpStatement& /*node*/)
+	{
+	}
+
+	void Transformer::HandleChildren(ReturnStatement& node)
+	{
+		if (m_visitExpressions && node.returnExpr)
+			HandleExpression(node.returnExpr);
+	}
+
+	void Transformer::HandleChildren(ScopedStatement& node)
+	{
+		PushScope();
+
+		std::vector<StatementPtr> statementList;
+		HandleStatementList<true>(statementList, [&]
+		{
+			HandleStatement(node.statement);
+		});
+
+		PopScope();
+
+		// To handle the case where our scoped statement does not contain a statement list but requires
+		// a new variable to be introduced, we need to be able to add a MultiStatement automatically
+		if (!statementList.empty())
+		{
+			// Turn the scoped statement into a scoped + multi statement
+			statementList.push_back(std::move(node.statement));
+
+			node.statement = ShaderBuilder::MultiStatement(std::move(statementList));
+			node.statement->sourceLocation = node.sourceLocation;
+		}
+	}
+
+	void Transformer::HandleChildren(WhileStatement& node)
+	{
+		if (m_visitExpressions)
+		{
+			HandleExpression(node.condition);
+
+			HandleExpressionValue(node.unroll);
+		}
+
+		if (node.body)
+		{
+			PushScope();
+			HandleStatement(node.body);
+			PopScope();
+		}
+	}
+
 	Expression& Transformer::MandatoryExpr(const ExpressionPtr& node, const SourceLocation& sourceLocation)
 	{
 		if (!node)
@@ -153,9 +520,9 @@ namespace nzsl::Ast
 	}
 
 #define NZSL_SHADERAST_NODE(Node, Type) \
-	Type##Ptr Transformer::Transform(Node##Type&& /*node*/) \
+	auto Transformer::Transform(Node##Type&& /*node*/) -> Type##Transformation \
 	{ \
-		return nullptr; \
+		return VisitChildren{}; \
 	}
 
 #include <NZSL/Ast/NodeList.hpp>
@@ -180,7 +547,7 @@ namespace nzsl::Ast
 		return true;
 	}
 
-	bool Transformer::TransformModule(Module& module, Context& context, std::string* error)
+	bool Transformer::TransformModule(Module& module, Context& context, std::string* error, Nz::FunctionRef<void()> postCallback)
 	{
 		m_context = &context;
 
@@ -189,6 +556,9 @@ namespace nzsl::Ast
 			StatementPtr root = std::move(module.rootNode);
 			HandleStatement(root);
 			module.rootNode = Nz::StaticUniquePointerCast<MultiStatement>(std::move(root));
+
+			if (postCallback)
+				postCallback();
 		}
 		catch(const std::exception& e)
 		{
@@ -225,427 +595,41 @@ namespace nzsl::Ast
 	template<typename T>
 	bool Transformer::TransformCurrentExpression()
 	{
-		ExpressionPtr newExpression = Transform(std::move(Nz::SafeCast<T&>(*GetCurrentExpressionPtr())));
-		if (!newExpression)
-		{
-			assert(GetCurrentExpressionPtr());
-			return false;
-		}
-
-		GetCurrentExpressionPtr() = std::move(newExpression);
-		return true;
+		ExpressionTransformation transformation = Transform(std::move(Nz::SafeCast<T&>(*GetCurrentExpressionPtr())));
+		return std::visit(Nz::Overloaded{
+			[](DontVisitChildren) { return false; },
+			[](VisitChildren) { return true; },
+			[this](ReplaceExpression& expr)
+			{
+				GetCurrentExpressionPtr() = std::move(expr.expression);
+				return false;
+			}
+		}, transformation);
 	}
 
 	template<typename T>
 	bool Transformer::TransformCurrentStatement()
 	{
-		StatementPtr newStatement = Transform(std::move(Nz::SafeCast<T&>(*GetCurrentStatementPtr())));
-		if (!newStatement)
-		{
-			assert(GetCurrentStatementPtr());
-			return false;
-		}
-
-		GetCurrentStatementPtr() = std::move(newStatement);
-		return true;
+		StatementTransformation transformation = Transform(std::move(Nz::SafeCast<T&>(*GetCurrentStatementPtr())));
+		return std::visit(Nz::Overloaded{
+			[](DontVisitChildren) { return false; },
+			[](VisitChildren) { return true; },
+			[this](ReplaceStatement& stmt)
+			{
+				GetCurrentStatementPtr() = std::move(stmt.statement);
+				return false;
+			}
+		}, transformation);
 	}
 
-	void Transformer::Visit(AccessIdentifierExpression& node)
-	{
-		if (TransformCurrentExpression<AccessIdentifierExpression>())
-			return;
-
-		HandleExpression(node.expr);
+#define NZSL_SHADERAST_NODE(Node, Type) \
+	void Transformer::Visit(Node##Type& node) \
+	{ \
+		if (TransformCurrent##Type<Node##Type>()) \
+			return; \
+\
+		HandleChildren(node); \
 	}
+#include <NZSL/Ast/NodeList.hpp>
 
-	void Transformer::Visit(AccessIndexExpression& node)
-	{
-		if (TransformCurrentExpression<AccessIndexExpression>())
-			return;
-
-		HandleExpression(node.expr);
-		for (auto& index : node.indices)
-			HandleExpression(index);
-	}
-
-	void Transformer::Visit(AliasValueExpression& /*node*/)
-	{
-		TransformCurrentExpression<AliasValueExpression>();
-	}
-
-	void Transformer::Visit(AssignExpression& node)
-	{
-		if (TransformCurrentExpression<AssignExpression>())
-			return;
-
-		HandleExpression(node.left);
-		HandleExpression(node.right);
-	}
-
-	void Transformer::Visit(BinaryExpression& node)
-	{
-		if (TransformCurrentExpression<BinaryExpression>())
-			return;
-
-		HandleExpression(node.left);
-		HandleExpression(node.right);
-	}
-
-	void Transformer::Visit(CallFunctionExpression& node)
-	{
-		if (TransformCurrentExpression<CallFunctionExpression>())
-			return;
-
-		for (auto& param : node.parameters)
-			HandleExpression(param.expr);
-
-		HandleExpression(node.targetFunction);
-	}
-
-	void Transformer::Visit(CallMethodExpression& node)
-	{
-		if (TransformCurrentExpression<CallMethodExpression>())
-			return;
-
-		HandleExpression(node.object);
-
-		for (auto& param : node.parameters)
-			HandleExpression(param);
-	}
-
-	void Transformer::Visit(CastExpression& node)
-	{
-		if (TransformCurrentExpression<CastExpression>())
-			return;
-
-		for (auto& expr : node.expressions)
-			HandleExpression(expr);
-	}
-
-	void Transformer::Visit(ConditionalExpression& node)
-	{
-		if (TransformCurrentExpression<ConditionalExpression>())
-			return;
-
-		HandleExpression(node.truePath);
-		HandleExpression(node.falsePath);
-	}
-
-	void Transformer::Visit(ConstantExpression& /*node*/)
-	{
-		TransformCurrentExpression<ConstantExpression>();
-	}
-
-	void Transformer::Visit(ConstantArrayValueExpression& /*node*/)
-	{
-		TransformCurrentExpression<ConstantArrayValueExpression>();
-	}
-
-	void Transformer::Visit(ConstantValueExpression& /*node*/)
-	{
-		TransformCurrentExpression<ConstantValueExpression>();
-	}
-
-	void Transformer::Visit(FunctionExpression& /*node*/)
-	{
-		TransformCurrentExpression<FunctionExpression>();
-	}
-
-	void Transformer::Visit(IdentifierExpression& /*node*/)
-	{
-		TransformCurrentExpression<IdentifierExpression>();
-	}
-
-	void Transformer::Visit(IntrinsicExpression& node)
-	{
-		if (TransformCurrentExpression<IntrinsicExpression>())
-			return;
-
-		for (auto& param : node.parameters)
-			HandleExpression(param);
-	}
-
-	void Transformer::Visit(IntrinsicFunctionExpression& /*node*/)
-	{
-		TransformCurrentExpression<IntrinsicFunctionExpression>();
-	}
-
-	void Transformer::Visit(ModuleExpression& node)
-	{
-		TransformCurrentExpression<ModuleExpression>();
-	}
-
-	void Transformer::Visit(NamedExternalBlockExpression& node)
-	{
-		TransformCurrentExpression<NamedExternalBlockExpression>();
-	}
-
-	void Transformer::Visit(StructTypeExpression& /*node*/)
-	{
-		TransformCurrentExpression<StructTypeExpression>();
-	}
-
-	void Transformer::Visit(SwizzleExpression& node)
-	{
-		if (TransformCurrentExpression<SwizzleExpression>())
-			return;
-
-		if (node.expression)
-			HandleExpression(node.expression);
-	}
-
-	void Transformer::Visit(TypeExpression& /*node*/)
-	{
-		TransformCurrentExpression<TypeExpression>();
-	}
-
-	void Transformer::Visit(VariableValueExpression& /*node*/)
-	{
-		TransformCurrentExpression<VariableValueExpression>();
-	}
-
-	void Transformer::Visit(UnaryExpression& node)
-	{
-		if (TransformCurrentExpression<UnaryExpression>())
-			return;
-
-		if (node.expression)
-			HandleExpression(node.expression);
-	}
-
-	void Transformer::Visit(BranchStatement& node)
-	{
-		if (TransformCurrentStatement<BranchStatement>())
-			return;
-
-		for (auto& cond : node.condStatements)
-		{
-			if (m_visitExpressions)
-				HandleExpression(cond.condition);
-
-			PushScope();
-			HandleStatement(cond.statement);
-			PopScope();
-		}
-
-		if (node.elseStatement)
-		{
-			PushScope();
-			HandleStatement(node.elseStatement);
-			PopScope();
-		}
-	}
-
-	void Transformer::Visit(BreakStatement& /*node*/)
-	{
-		TransformCurrentStatement<BreakStatement>();
-	}
-
-	void Transformer::Visit(ConditionalStatement& node)
-	{
-		if (TransformCurrentStatement<ConditionalStatement>())
-			return;
-
-		if (m_visitExpressions)
-			HandleExpression(node.condition);
-
-		PushScope();
-		HandleStatement(node.statement);
-		PopScope();
-	}
-
-	void Transformer::Visit(ContinueStatement& /*node*/)
-	{
-		TransformCurrentStatement<ContinueStatement>();
-	}
-
-	void Transformer::Visit(DeclareAliasStatement& node)
-	{
-		if (TransformCurrentStatement<DeclareAliasStatement>())
-			return;
-
-		if (m_visitExpressions)
-			HandleExpression(node.expression);
-	}
-
-	void Transformer::Visit(DeclareConstStatement& node)
-	{
-		if (TransformCurrentStatement<DeclareConstStatement>())
-			return;
-
-		if (m_visitExpressions)
-			HandleExpression(node.expression);
-	}
-
-	void Transformer::Visit(DeclareExternalStatement& /*node*/)
-	{
-		TransformCurrentStatement<DeclareExternalStatement>();
-	}
-
-	void Transformer::Visit(DeclareFunctionStatement& node)
-	{
-		if (TransformCurrentStatement<DeclareFunctionStatement>())
-			return;
-		
-		PushScope();
-		HandleStatementList<false>(node.statements, [&](StatementPtr& statement)
-		{
-			HandleStatement(statement);
-		});
-		PopScope();
-	}
-
-	void Transformer::Visit(DeclareOptionStatement& node)
-	{
-		if (TransformCurrentStatement<DeclareOptionStatement>())
-			return;
-
-		if (m_visitExpressions)
-		{
-			if (node.defaultValue)
-				HandleExpression(node.defaultValue);
-		}
-	}
-
-	void Transformer::Visit(DeclareStructStatement& /*node*/)
-	{
-		TransformCurrentStatement<DeclareStructStatement>();
-	}
-
-	void Transformer::Visit(DeclareVariableStatement& node)
-	{
-		if (TransformCurrentStatement<DeclareVariableStatement>())
-			return;
-
-		if (m_visitExpressions)
-		{
-			if (node.initialExpression)
-				HandleExpression(node.initialExpression);
-		}
-	}
-
-	void Transformer::Visit(DiscardStatement& /*node*/)
-	{
-		TransformCurrentStatement<DiscardStatement>();
-	}
-
-	void Transformer::Visit(ExpressionStatement& node)
-	{
-		if (TransformCurrentStatement<DeclareOptionStatement>())
-			return;
-
-		if (m_visitExpressions)
-			HandleExpression(node.expression);
-	}
-
-	void Transformer::Visit(ForStatement& node)
-	{
-		if (TransformCurrentStatement<ForStatement>())
-			return;
-
-		if (m_visitExpressions)
-		{
-			HandleExpression(node.fromExpr);
-			HandleExpression(node.toExpr);
-
-			if (node.stepExpr)
-				HandleExpression(node.stepExpr);
-		}
-
-		if (node.statement)
-		{
-			PushScope();
-			HandleStatement(node.statement);
-			PopScope();
-		}
-	}
-
-	void Transformer::Visit(ForEachStatement& node)
-	{
-		if (TransformCurrentStatement<ForEachStatement>())
-			return;
-
-		if (m_visitExpressions)
-			HandleExpression(node.expression);
-
-		if (node.statement)
-		{
-			PushScope();
-			HandleStatement(node.statement);
-			PopScope();
-		}
-	}
-
-	void Transformer::Visit(ImportStatement& /*node*/)
-	{
-		TransformCurrentStatement<ImportStatement>();
-	}
-
-	void Transformer::Visit(MultiStatement& node)
-	{
-		if (TransformCurrentStatement<MultiStatement>())
-			return;
-
-		HandleStatementList<false>(node.statements, [&](StatementPtr& statement)
-		{
-			HandleStatement(statement);
-		});
-	}
-
-	void Transformer::Visit(NoOpStatement& /*node*/)
-	{
-		TransformCurrentStatement<NoOpStatement>();
-	}
-
-	void Transformer::Visit(ReturnStatement& node)
-	{
-		if (TransformCurrentStatement<ReturnStatement>())
-			return;
-
-		if (m_visitExpressions && node.returnExpr)
-			HandleExpression(node.returnExpr);
-	}
-
-	void Transformer::Visit(ScopedStatement& node)
-	{
-		if (TransformCurrentStatement<ScopedStatement>())
-			return;
-
-		PushScope();
-
-		std::vector<StatementPtr> statementList;
-		HandleStatementList<true>(statementList, [&]
-		{
-			HandleStatement(node.statement);
-		});
-
-		PopScope();
-
-		// To handle the case where our scoped statement does not contain a statement list but requires
-		// a new variable to be introduced, we need to be able to add a MultiStatement automatically
-		if (!statementList.empty())
-		{
-			// Turn the scoped statement into a scoped + multi statement
-			statementList.push_back(std::move(node.statement));
-
-			node.statement = ShaderBuilder::MultiStatement(std::move(statementList));
-			node.statement->sourceLocation = node.sourceLocation;
-		}
-	}
-
-	void Transformer::Visit(WhileStatement& node)
-	{
-		if (TransformCurrentStatement<WhileStatement>())
-			return;
-
-		if (m_visitExpressions)
-			HandleExpression(node.condition);
-
-		if (node.body)
-		{
-			PushScope();
-			HandleStatement(node.body);
-			PopScope();
-		}
-	}
 }

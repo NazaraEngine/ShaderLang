@@ -14,14 +14,14 @@ namespace nzsl::Ast
 		return TransformModule(module, context, error);
 	}
 
-	StatementPtr ForToWhileTransformer::Transform(ForEachStatement&& forEachStatement)
+	auto ForToWhileTransformer::Transform(ForEachStatement&& forEachStatement) -> StatementTransformation
 	{
 		if (!m_options->reduceForEachLoopsToWhile)
-			return nullptr;
+			return VisitChildren{};
 
 		const ExpressionType* exprType = GetResolvedExpressionType(*forEachStatement.expression);
 		if (!exprType)
-			return nullptr;
+			return VisitChildren{};
 
 		if (!IsArrayType(*exprType))
 			throw CompilerForEachUnsupportedTypeError{ forEachStatement.sourceLocation, ToString(*exprType) };
@@ -70,18 +70,18 @@ namespace nzsl::Ast
 
 		multi->statements.emplace_back(std::move(whileStatement));
 
-		return ShaderBuilder::Scoped(std::move(multi));
+		return ReplaceStatement{ ShaderBuilder::Scoped(std::move(multi)) };
 	}
 
-	StatementPtr ForToWhileTransformer::Transform(ForStatement&& forStatement)
+	auto ForToWhileTransformer::Transform(ForStatement&& forStatement) -> StatementTransformation
 	{
 		if (!m_options->reduceForLoopsToWhile)
-			return nullptr;
+			return VisitChildren{};
 
 		Expression& fromExpr = *forStatement.fromExpr;
 		const ExpressionType* fromExprType = GetResolvedExpressionType(fromExpr);
 		if (!fromExprType)
-			return nullptr;
+			return VisitChildren{};
 
 		if (!IsPrimitiveType(*fromExprType))
 			throw CompilerForFromTypeExpectIntegerTypeError{ fromExpr.sourceLocation, ToString(*fromExprType) };
@@ -159,6 +159,6 @@ namespace nzsl::Ast
 
 		multi->statements.emplace_back(std::move(whileStatement));
 
-		return ShaderBuilder::Scoped(std::move(multi));
+		return ReplaceStatement{ ShaderBuilder::Scoped(std::move(multi)) };
 	}
 }

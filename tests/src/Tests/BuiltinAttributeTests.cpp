@@ -45,7 +45,7 @@ fn main(input: Input) -> Output
 )";
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
-		shaderModule = SanitizeModule(*shaderModule);
+		ResolveModule(*shaderModule);
 
 		nzsl::GlslWriter::Environment glslEnv;
 
@@ -276,7 +276,7 @@ fn main(input: Input) -> Output
 )";
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
-		shaderModule = SanitizeModule(*shaderModule);
+		ResolveModule(*shaderModule);
 
 		ExpectGLSL(*shaderModule, R"(
 struct Input
@@ -348,7 +348,7 @@ fn main() -> Output
 )";
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
-		shaderModule = SanitizeModule(*shaderModule);
+		ResolveModule(*shaderModule);
 
 		nzsl::GlslWriter::Environment env;
 

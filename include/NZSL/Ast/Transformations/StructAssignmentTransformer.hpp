@@ -30,9 +30,10 @@ namespace nzsl::Ast
 
 		private:
 			using Transformer::Transform;
-			ExpressionPtr Transform(AssignExpression&& assign) override;
-			StatementPtr Transform(DeclareStructStatement&& declStruct) override;
-			StatementPtr Transform(DeclareVariableStatement&& declVariable) override;
+
+			ExpressionTransformation Transform(AssignExpression&& assign) override;
+			StatementTransformation Transform(DeclareStructStatement&& declStruct) override;
+			StatementTransformation Transform(DeclareVariableStatement&& declVariable) override;
 
 			const Options* m_options;
 			std::unordered_map<std::size_t /*structIndex*/, const StructDescription*> m_structDescs;

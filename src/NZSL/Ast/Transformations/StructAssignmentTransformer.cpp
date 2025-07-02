@@ -16,17 +16,17 @@ namespace nzsl::Ast
 		return TransformModule(module, context, error);
 	}
 
-	ExpressionPtr StructAssignmentTransformer::Transform(AssignExpression&& assign)
+	auto StructAssignmentTransformer::Transform(AssignExpression&& assign) -> ExpressionTransformation
 	{
 		if (m_options->splitWrappedStructAssignation || m_options->splitWrappedArrayAssignation)
 		{
 			const ExpressionType* targetType = GetResolvedExpressionType(*assign.left);
 			if (!targetType)
-				return nullptr;
+				return VisitChildren{};
 
 			const ExpressionType* sourceType = GetResolvedExpressionType(*assign.right);
 			if (!sourceType)
-				return nullptr;
+				return VisitChildren{};
 
 			if (m_options->splitWrappedStructAssignation && IsStructType(*targetType) && *targetType != *sourceType)
 			{
@@ -95,7 +95,7 @@ namespace nzsl::Ast
 					memberIndex++;
 				}
 
-				return dstVar;
+				return ReplaceExpression{ std::move(dstVar) };
 			}
 			else if (m_options->splitWrappedArrayAssignation && IsArrayType(*targetType) && *targetType != *sourceType)
 			{
@@ -123,40 +123,40 @@ namespace nzsl::Ast
 						AppendStatement(ShaderBuilder::ExpressionStatement(std::move(memberAssign)));
 				}
 
-				return dstVar;
+				return ReplaceExpression{ std::move(dstVar) };
 			}
 		}
 
-		return nullptr;
+		return VisitChildren{};
 	}
 
-	StatementPtr StructAssignmentTransformer::Transform(DeclareStructStatement&& declStruct)
+	auto StructAssignmentTransformer::Transform(DeclareStructStatement&& declStruct) -> StatementTransformation
 	{
 		if (declStruct.structIndex)
 			m_structDescs[*declStruct.structIndex] = &declStruct.description;
 
-		return nullptr;
+		return DontVisitChildren{};
 	}
 
-	StatementPtr StructAssignmentTransformer::Transform(DeclareVariableStatement&& declVariable)
+	auto StructAssignmentTransformer::Transform(DeclareVariableStatement&& declVariable) -> StatementTransformation
 	{
 		if (!declVariable.initialExpression)
-			return nullptr;
+			return DontVisitChildren{};
 
 		const ExpressionType* initialType = GetResolvedExpressionType(*declVariable.initialExpression);
 		if (!initialType)
-			return nullptr;
+			return DontVisitChildren{};
 
 		// Check if we should split
 		ExpressionType unwrappedType = UnwrapExternalType(*initialType);
 		if (*initialType == unwrappedType)
-			return nullptr; //< not wrapped
+			return DontVisitChildren{}; //< not wrapped
 
 		if (IsArrayType(unwrappedType) && !m_options->splitWrappedArrayAssignation)
-			return nullptr;
+			return DontVisitChildren{};
 
 		if (IsStructType(unwrappedType) && !m_options->splitWrappedStructAssignation)
-			return nullptr;
+			return DontVisitChildren{};
 
 		// Split variable declaration and assignation
 		ExpressionPtr assign = ShaderBuilder::Assign(AssignType::Simple, ShaderBuilder::Variable(*declVariable.varIndex, std::move(unwrappedType), declVariable.sourceLocation), std::move(declVariable.initialExpression));
@@ -175,6 +175,6 @@ namespace nzsl::Ast
 
 		multiStatement->statements.insert(multiStatement->statements.begin(), std::move(GetCurrentStatementPtr()));
 
-		return multiStatement;
+		return ReplaceStatement{ std::move(multiStatement) };
 	}
 }

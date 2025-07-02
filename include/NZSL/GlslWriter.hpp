@@ -11,7 +11,6 @@
 #include <NZSL/ShaderWriter.hpp>
 #include <NZSL/Ast/ExpressionVisitorExcept.hpp>
 #include <NZSL/Ast/Module.hpp>
-#include <NZSL/Ast/SanitizeVisitor.hpp>
 #include <NZSL/Ast/StatementVisitorExcept.hpp>
 #include <NZSL/Ast/TransformerExecutor.hpp>
 #include <string>
@@ -71,7 +70,6 @@ namespace nzsl
 			static std::string_view GetDrawParameterDrawIndexUniformName();
 			static std::string_view GetFlipYUniformName();
 			static Ast::TransformerExecutor GetPasses();
-			static Ast::SanitizeVisitor::Options GetSanitizeOptions();
 
 		private:
 			void Append(const Ast::AliasType& aliasType);

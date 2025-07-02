@@ -16,7 +16,7 @@ namespace nzsl::Ast
 
 	bool IdentifierTransformer::HasIdentifier(std::string_view identifierName) const
 	{
-		return std::find_if(m_identifierInScope.rbegin(), m_identifierInScope.rend(), [&](const std::string& identifier) { identifier == identifierName; }) != m_identifierInScope.rend();
+		return std::find_if(m_identifierInScope.rbegin(), m_identifierInScope.rend(), [&](const std::string& identifier) { return identifier == identifierName; }) != m_identifierInScope.rend();
 	}
 
 	void IdentifierTransformer::PopScope()
@@ -35,24 +35,24 @@ namespace nzsl::Ast
 	{
 		// Don't sanitize identifiers when performing partial sanitization (as it could break future compilation)
 		if (!m_options->identifierSanitizer || m_context->partialSanitization)
-			return;
+			return false;
 
 		return m_options->identifierSanitizer(identifier, scope);
 	}
 
-	StatementPtr IdentifierTransformer::Transform(DeclareAliasStatement&& statement)
+	auto IdentifierTransformer::Transform(DeclareAliasStatement&& statement) -> StatementTransformation
 	{
 		SanitizeIdentifier(statement.name, IdentifierType::Alias);
-		return nullptr;
+		return VisitChildren{};
 	}
 
-	StatementPtr IdentifierTransformer::Transform(DeclareConstStatement&& statement)
+	auto IdentifierTransformer::Transform(DeclareConstStatement&& statement) -> StatementTransformation
 	{
 		SanitizeIdentifier(statement.name, IdentifierType::Const);
-		return nullptr;
+		return VisitChildren{};
 	}
 
-	StatementPtr IdentifierTransformer::Transform(DeclareExternalStatement&& statement)
+	auto IdentifierTransformer::Transform(DeclareExternalStatement&& statement) -> StatementTransformation
 	{
 		if (!statement.name.empty())
 		{
@@ -66,25 +66,25 @@ namespace nzsl::Ast
 		if (!statement.name.empty())
 			PopScope();
 
-		return nullptr;
+		return VisitChildren{};
 	}
 
-	StatementPtr IdentifierTransformer::Transform(DeclareFunctionStatement&& statement)
+	auto IdentifierTransformer::Transform(DeclareFunctionStatement&& statement) -> StatementTransformation
 	{
 		SanitizeIdentifier(statement.name, IdentifierType::Function);
 		for (auto& param : statement.parameters)
 			SanitizeIdentifier(param.name, IdentifierType::Parameter);
 
-		return nullptr;
+		return VisitChildren{};
 	}
 
-	StatementPtr IdentifierTransformer::Transform(DeclareOptionStatement&& statement)
+	auto IdentifierTransformer::Transform(DeclareOptionStatement&& statement) -> StatementTransformation
 	{
 		SanitizeIdentifier(statement.optName, IdentifierType::Parameter);
-		return nullptr;
+		return VisitChildren{};
 	}
 
-	StatementPtr IdentifierTransformer::Transform(DeclareStructStatement&& statement)
+	auto IdentifierTransformer::Transform(DeclareStructStatement&& statement) -> StatementTransformation
 	{
 		SanitizeIdentifier(statement.description.name, IdentifierType::Struct);
 		for (auto& member : statement.description.members)
@@ -96,24 +96,24 @@ namespace nzsl::Ast
 			SanitizeIdentifier(member.name, IdentifierType::Field);
 		}
 
-		return nullptr;
+		return VisitChildren{};
 	}
 
-	StatementPtr IdentifierTransformer::Transform(DeclareVariableStatement&& statement)
+	auto IdentifierTransformer::Transform(DeclareVariableStatement&& statement) -> StatementTransformation
 	{
 		SanitizeIdentifier(statement.varName, IdentifierType::Variable);
-		return nullptr;
+		return VisitChildren{};
 	}
 
-	StatementPtr IdentifierTransformer::Transform(ForEachStatement&& statement)
+	auto IdentifierTransformer::Transform(ForEachStatement&& statement) -> StatementTransformation
 	{
 		SanitizeIdentifier(statement.varName, IdentifierType::Variable);
-		return nullptr;
+		return VisitChildren{};
 	}
 
-	StatementPtr IdentifierTransformer::Transform(ForStatement&& statement)
+	auto IdentifierTransformer::Transform(ForStatement&& statement) -> StatementTransformation
 	{
 		SanitizeIdentifier(statement.varName, IdentifierType::Variable);
-		return nullptr;
+		return VisitChildren{};
 	}
 }

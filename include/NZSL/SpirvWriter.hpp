@@ -11,7 +11,6 @@
 #include <NZSL/ShaderWriter.hpp>
 #include <NZSL/Ast/ConstantValue.hpp>
 #include <NZSL/Ast/Module.hpp>
-#include <NZSL/Ast/SanitizeVisitor.hpp>
 #include <NZSL/Ast/TransformerExecutor.hpp>
 #include <NZSL/SpirV/SpirvConstantCache.hpp>
 #include <NZSL/SpirV/SpirvVariable.hpp>
@@ -56,7 +55,6 @@ namespace nzsl
 			
 			static std::pair<std::uint32_t, std::uint32_t> GetMaximumSupportedVersion(std::uint32_t vkMajorVersion, std::uint32_t vkMinorVersion);
 			static Ast::TransformerExecutor GetPasses();
-			static Ast::SanitizeVisitor::Options GetSanitizeOptions();
 
 		private:
 			struct FunctionParameter;

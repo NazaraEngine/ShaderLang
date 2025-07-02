@@ -49,7 +49,7 @@ fn main(input: In) -> FragOut
 )";
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
-		shaderModule = SanitizeModule(*shaderModule);
+		ResolveModule(*shaderModule);
 
 		ExpectGLSL(*shaderModule, R"(
 void main()
@@ -135,19 +135,19 @@ fn main() -> FragOut
 
 		WHEN("We perform a partial sanitization")
 		{
-			nzsl::Ast::SanitizeVisitor::Options options;
-			options.partialSanitization = true;
+			nzsl::Ast::Transformer::Context context;
+			context.partialSanitization = true;
 		
-			shaderModule = SanitizeModule(*shaderModule, options);
+			ResolveModule(*shaderModule, context);
 		}
 
 		WHEN("We enable ForwardPass")
 		{
-			nzsl::Ast::SanitizeVisitor::Options options;
-			options.optionValues[nzsl::Ast::HashOption("ForwardPass")] = true;
-			options.removeOptionDeclaration = true;
+			nzsl::Ast::Transformer::Context context;
+			context.optionValues[nzsl::Ast::HashOption("ForwardPass")] = true;
+			//options.removeOptionDeclaration = true;
 
-			shaderModule = SanitizeModule(*shaderModule, options);
+			ResolveModule(*shaderModule, context);
 
 			ExpectGLSL(*shaderModule, R"(
 struct ForwardOutput
@@ -213,11 +213,11 @@ OpFunctionEnd)");
 
 		WHEN("We disable ForwardPass")
 		{
-			nzsl::Ast::SanitizeVisitor::Options options;
-			options.optionValues[nzsl::Ast::HashOption("ForwardPass")] = false;
-			options.removeOptionDeclaration = true;
+			nzsl::Ast::Transformer::Context context;
+			context.optionValues[nzsl::Ast::HashOption("ForwardPass")] = false;
+			//options.removeOptionDeclaration = true;
 
-			shaderModule = SanitizeModule(*shaderModule, options);
+			ResolveModule(*shaderModule, context);
 			
 			ExpectGLSL(*shaderModule, R"(
 struct ForwardOutput

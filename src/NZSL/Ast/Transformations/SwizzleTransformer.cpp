@@ -15,11 +15,11 @@ namespace nzsl::Ast
 		return TransformModule(module, context, error);
 	}
 
-	ExpressionPtr SwizzleTransformer::Transform(SwizzleExpression&& swizzle)
+	auto SwizzleTransformer::Transform(SwizzleExpression&& swizzle) -> ExpressionTransformation
 	{
 		const ExpressionType* exprType = GetResolvedExpressionType(*swizzle.expression);
 		if (!exprType)
-			return nullptr;
+			return VisitChildren{};
 
 		if (m_options->removeScalarSwizzling && IsPrimitiveType(*exprType))
 		{
@@ -30,7 +30,7 @@ namespace nzsl::Ast
 			}
 
 			if (swizzle.componentCount == 1)
-				return std::move(swizzle.expression); //< remove swizzle expression (a.x => a)
+				return ReplaceExpression{ std::move(swizzle.expression) }; //< remove swizzle expression (a.x => a)
 
 			// Use a Cast expression to replace swizzle
 			ExpressionPtr expression = CacheExpression(std::move(swizzle.expression)); //< Since we are going to use a value multiple times, cache it if required
@@ -49,9 +49,9 @@ namespace nzsl::Ast
 				HandleExpression(cast->expressions.back());
 			}
 
-			return cast;
+			return ReplaceExpression{ std::move(cast) };
 		}
 
-		return nullptr;
+		return VisitChildren{};
 	}
 }

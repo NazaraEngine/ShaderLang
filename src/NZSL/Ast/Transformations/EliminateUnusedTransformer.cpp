@@ -38,29 +38,29 @@ namespace nzsl::Ast
 		return TransformStatement(statement, context, error);
 	}
 
-	StatementPtr EliminateUnusedTransformer::Transform(DeclareAliasStatement&& node)
+	auto EliminateUnusedTransformer::Transform(DeclareAliasStatement&& node) -> StatementTransformation
 	{
 		if NAZARA_UNLIKELY(!node.aliasIndex)
 			throw AstExpectedIndexError{ node.sourceLocation, "alias" };
 
 		if (!IsAliasUsed(*node.aliasIndex))
-			return ShaderBuilder::NoOp();
+			return ReplaceStatement{ ShaderBuilder::NoOp() };
 
-		return nullptr;
+		return DontVisitChildren{};
 	}
 
-	StatementPtr EliminateUnusedTransformer::Transform(DeclareConstStatement&& node)
+	auto EliminateUnusedTransformer::Transform(DeclareConstStatement&& node) -> StatementTransformation
 	{
 		if NAZARA_UNLIKELY(!node.constIndex)
 			throw AstExpectedIndexError{ node.sourceLocation, "const" };
 
 		if (!IsConstantUsed(*node.constIndex))
-			return ShaderBuilder::NoOp();
+			return ReplaceStatement{ ShaderBuilder::NoOp() };
 
-		return nullptr;
+		return DontVisitChildren{};
 	}
 
-	StatementPtr EliminateUnusedTransformer::Transform(DeclareExternalStatement&& node)
+	auto EliminateUnusedTransformer::Transform(DeclareExternalStatement&& node) -> StatementTransformation
 	{
 		for (auto it = node.externalVars.begin(); it != node.externalVars.end(); )
 		{
@@ -77,42 +77,42 @@ namespace nzsl::Ast
 		}
 
 		if (node.externalVars.empty())
-			return ShaderBuilder::NoOp();
+			return ReplaceStatement{ ShaderBuilder::NoOp() };
 
-		return nullptr;
+		return DontVisitChildren{};
 	}
 
-	StatementPtr EliminateUnusedTransformer::Transform(DeclareFunctionStatement&& node)
+	auto EliminateUnusedTransformer::Transform(DeclareFunctionStatement&& node) -> StatementTransformation
 	{
 		if NAZARA_UNLIKELY(!node.funcIndex)
 			throw AstExpectedIndexError{ node.sourceLocation, "function" };
 
 		if (!IsFunctionUsed(*node.funcIndex))
-			return ShaderBuilder::NoOp();
+			return ReplaceStatement{ ShaderBuilder::NoOp() };
 
-		return nullptr;
+		return DontVisitChildren{};
 	}
 
-	StatementPtr EliminateUnusedTransformer::Transform(DeclareStructStatement&& node)
+	auto EliminateUnusedTransformer::Transform(DeclareStructStatement&& node) -> StatementTransformation
 	{
 		if NAZARA_UNLIKELY(!node.structIndex)
 			throw AstExpectedIndexError{ node.sourceLocation, "struct" };
 
 		if (!IsStructUsed(*node.structIndex))
-			return ShaderBuilder::NoOp();
+			return ReplaceStatement{ ShaderBuilder::NoOp() };
 
-		return nullptr;
+		return DontVisitChildren{};
 	}
 
-	StatementPtr EliminateUnusedTransformer::Transform(DeclareVariableStatement&& node)
+	auto EliminateUnusedTransformer::Transform(DeclareVariableStatement&& node) -> StatementTransformation
 	{
 		if NAZARA_UNLIKELY(!node.varIndex)
 			throw AstExpectedIndexError{ node.sourceLocation, "variable" };
 
 		if (!IsVariableUsed(*node.varIndex))
-			return ShaderBuilder::NoOp();
-		
-		return nullptr;
+			return ReplaceStatement{ ShaderBuilder::NoOp() };
+
+		return DontVisitChildren{};
 	}
 
 	bool EliminateUnusedTransformer::IsAliasUsed(std::size_t aliasIndex) const

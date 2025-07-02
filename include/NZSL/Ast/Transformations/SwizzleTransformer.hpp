@@ -28,7 +28,8 @@ namespace nzsl::Ast
 
 		private:
 			using Transformer::Transform;
-			ExpressionPtr Transform(SwizzleExpression&& swizzle) override;
+
+			ExpressionTransformation Transform(SwizzleExpression&& swizzle) override;
 
 			const Options* m_options;
 	};

@@ -37,7 +37,7 @@ fn main()
 )";
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
-		shaderModule = SanitizeModule(*shaderModule);
+		ResolveModule(*shaderModule);
 
 		// We need GLSL 4.0 for fp64
 		nzsl::GlslWriter::Environment glslEnv;

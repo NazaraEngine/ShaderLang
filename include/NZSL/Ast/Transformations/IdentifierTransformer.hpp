@@ -37,15 +37,15 @@ namespace nzsl::Ast
 
 			bool SanitizeIdentifier(std::string& identifier, IdentifierType scope);
 
-			StatementPtr Transform(DeclareAliasStatement&& statement) override;
-			StatementPtr Transform(DeclareConstStatement&& statement) override;
-			StatementPtr Transform(DeclareExternalStatement&& statement) override;
-			StatementPtr Transform(DeclareFunctionStatement&& statement) override;
-			StatementPtr Transform(DeclareOptionStatement&& statement) override;
-			StatementPtr Transform(DeclareStructStatement&& statement) override;
-			StatementPtr Transform(DeclareVariableStatement&& statement) override;
-			StatementPtr Transform(ForEachStatement&& statement) override;
-			StatementPtr Transform(ForStatement&& statement) override;
+			StatementTransformation Transform(DeclareAliasStatement&& statement) override;
+			StatementTransformation Transform(DeclareConstStatement&& statement) override;
+			StatementTransformation Transform(DeclareExternalStatement&& statement) override;
+			StatementTransformation Transform(DeclareFunctionStatement&& statement) override;
+			StatementTransformation Transform(DeclareOptionStatement&& statement) override;
+			StatementTransformation Transform(DeclareStructStatement&& statement) override;
+			StatementTransformation Transform(DeclareVariableStatement&& statement) override;
+			StatementTransformation Transform(ForEachStatement&& statement) override;
+			StatementTransformation Transform(ForStatement&& statement) override;
 
 			const Options* m_options;
 			std::vector<std::string> m_identifierInScope;

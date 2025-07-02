@@ -46,7 +46,7 @@ fn main(input: VertIn) -> VertOut
 )";
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
-		shaderModule = SanitizeModule(*shaderModule);
+		ResolveModule(*shaderModule);
 
 		ExpectGLSL(*shaderModule, R"(
 vec3 vertices[3] = vec3[3](

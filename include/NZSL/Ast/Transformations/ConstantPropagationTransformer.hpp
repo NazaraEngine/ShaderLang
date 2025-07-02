@@ -39,15 +39,16 @@ namespace nzsl::Ast
 			};
 
 		protected:
-			ExpressionPtr Transform(BinaryExpression&& node) override;
-			ExpressionPtr Transform(CastExpression&& node) override;
-			ExpressionPtr Transform(ConditionalExpression&& node) override;
-			ExpressionPtr Transform(ConstantExpression&& node) override;
-			ExpressionPtr Transform(IntrinsicExpression&& node) override;
-			ExpressionPtr Transform(SwizzleExpression&& node) override;
-			ExpressionPtr Transform(UnaryExpression&& node) override;
-			StatementPtr Transform(BranchStatement&& node) override;
-			StatementPtr Transform(ConditionalStatement&& node) override;
+			ExpressionTransformation Transform(BinaryExpression&& node) override;
+			ExpressionTransformation Transform(CastExpression&& node) override;
+			ExpressionTransformation Transform(ConditionalExpression&& node) override;
+			ExpressionTransformation Transform(ConstantExpression&& node) override;
+			ExpressionTransformation Transform(IntrinsicExpression&& node) override;
+			ExpressionTransformation Transform(SwizzleExpression&& node) override;
+			ExpressionTransformation Transform(UnaryExpression&& node) override;
+
+			StatementTransformation Transform(BranchStatement&& node) override;
+			StatementTransformation Transform(ConditionalStatement&& node) override;
 
 			ExpressionPtr PropagateBinaryArithmeticsConstant(BinaryType type, const ConstantValueExpression& lhs, const ConstantValueExpression& rhs, const SourceLocation& sourceLocation);
 			ExpressionPtr PropagateBinaryComparisonConstant(BinaryType type, const ConstantValueExpression& lhs, const ConstantValueExpression& rhs, const SourceLocation& sourceLocation);
