@@ -366,6 +366,18 @@ namespace nzsl::Ast
 		return clone;
 	}
 
+	ExpressionPtr Cloner::Clone(AccessFieldExpression& node)
+	{
+		auto clone = std::make_unique<AccessFieldExpression>();
+		clone->fieldIndex = node.fieldIndex;
+		clone->expr = CloneExpression(node.expr);
+
+		clone->cachedExpressionType = node.cachedExpressionType;
+		clone->sourceLocation = node.sourceLocation;
+
+		return clone;
+	}
+
 	ExpressionPtr Cloner::Clone(AccessIdentifierExpression& node)
 	{
 		auto clone = std::make_unique<AccessIdentifierExpression>();

@@ -182,6 +182,7 @@ NZSL_SHADERLANG_AST_ERROR(InvalidMethodIndex, "invalid method index #{} for type
 NZSL_SHADERLANG_AST_ERROR(InvalidIndex, "invalid index {}", std::size_t)
 NZSL_SHADERLANG_AST_ERROR(MissingExpression, "a mandatory expression is missing")
 NZSL_SHADERLANG_AST_ERROR(MissingStatement, "a mandatory statement is missing")
+NZSL_SHADERLANG_AST_ERROR(MissingType, "a mandatory type is missing")
 NZSL_SHADERLANG_AST_ERROR(NoIdentifier, "at least one identifier is required")
 NZSL_SHADERLANG_AST_ERROR(NoIndex, "at least one index is required")
 NZSL_SHADERLANG_AST_ERROR(UnexpectedIdentifier, "unexpected identifier of type {}", std::string)

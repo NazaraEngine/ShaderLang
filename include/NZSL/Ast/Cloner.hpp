@@ -43,6 +43,7 @@ namespace nzsl::Ast
 			virtual StatementPtr CloneStatement(Statement& statement);
 			virtual ExpressionValue<ExpressionType> CloneType(const ExpressionValue<ExpressionType>& exprType);
 
+			virtual ExpressionPtr Clone(AccessFieldExpression& node);
 			virtual ExpressionPtr Clone(AccessIdentifierExpression& node);
 			virtual ExpressionPtr Clone(AccessIndexExpression& node);
 			virtual ExpressionPtr Clone(AliasValueExpression& node);

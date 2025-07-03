@@ -12,6 +12,7 @@
 #include <NZSL/Ast/ExpressionType.hpp>
 #include <NZSL/Ast/IndexRemapperVisitor.hpp>
 #include <NZSL/Ast/Option.hpp>
+#include <NZSL/Ast/ReflectVisitor.hpp>
 #include <NZSL/Ast/Types.hpp>
 #include <NZSL/Lang/Errors.hpp>
 #include <NZSL/Lang/LangData.hpp>
@@ -21,7 +22,6 @@
 #include <tsl/ordered_map.h>
 #include <unordered_map>
 #include <unordered_set>
-#include <NZSL/Ast/ReflectVisitor.hpp>
 
 namespace nzsl::Ast
 {
@@ -308,14 +308,17 @@ namespace nzsl::Ast
 			{
 				if (!std::holds_alternative<T>(*value))
 				{
-					// HAAAAAX
-					if (std::holds_alternative<std::int32_t>(*value) && std::is_same_v<T, std::uint32_t>)
+					if constexpr (std::is_same_v<T, std::uint32_t>)
 					{
-						std::int32_t intVal = std::get<std::int32_t>(*value);
-						if (intVal < 0)
-							throw CompilerAttributeUnexpectedNegativeError{ expr->sourceLocation, Ast::ToString(intVal) };
-					
-						attribute = static_cast<std::uint32_t>(intVal);
+						// HAAAAAX
+						if (std::holds_alternative<std::int32_t>(*value))
+						{
+							std::int32_t intVal = std::get<std::int32_t>(*value);
+							if (intVal < 0)
+								throw CompilerAttributeUnexpectedNegativeError{ expr->sourceLocation, Ast::ToString(intVal) };
+
+							attribute = static_cast<std::uint32_t>(intVal);
+						}
 					}
 					else
 						throw CompilerAttributeUnexpectedTypeError{ expr->sourceLocation, ToString(GetConstantExpressionType<T>(), sourceLocation), ToString(GetExpressionTypeSecure(*expr), sourceLocation) };
@@ -488,6 +491,7 @@ namespace nzsl::Ast
 			{
 				// Replace IdentifierExpression by VariableExpression
 				auto varExpr = std::make_unique<VariableValueExpression>();
+				varExpr->cachedExpressionType = m_states->variableTypes.Retrieve(identifierData->index, sourceLocation);
 				varExpr->sourceLocation = sourceLocation;
 				varExpr->variableId = identifierData->index;
 
@@ -1356,7 +1360,12 @@ namespace nzsl::Ast
 	ExpressionType IdentifierTypeResolverTransformer::ResolveType(const ExpressionType& exprType, bool resolveAlias, const SourceLocation& sourceLocation)
 	{
 		if (!IsTypeExpression(exprType))
-			return exprType;
+		{
+			if (resolveAlias || m_options->removeAliases)
+				return ResolveAlias(exprType);
+			else
+				return exprType;
+		}
 
 		std::size_t typeIndex = std::get<Type>(exprType).typeIndex;
 
@@ -1644,11 +1653,11 @@ namespace nzsl::Ast
 					if (fieldIndex < 0)
 						return Finish(i, exprType); //< unresolved field
 
-					// Transform to AccessIndexExpression
-					std::unique_ptr<AccessIndexExpression> accessIndex = std::make_unique<AccessIndexExpression>();
+					// Transform to AccessFieldExpression
+					std::unique_ptr<AccessFieldExpression> accessIndex = std::make_unique<AccessFieldExpression>();
 					accessIndex->sourceLocation = indexedExpr->sourceLocation;
 					accessIndex->expr = std::move(indexedExpr);
-					accessIndex->indices.push_back(ShaderBuilder::ConstantValue(fieldIndex, fieldPtr->sourceLocation));
+					accessIndex->fieldIndex = static_cast<std::uint32_t>(fieldIndex);
 					accessIndex->cachedExpressionType = std::move(resolvedFieldTypeOpt);
 
 					indexedExpr = std::move(accessIndex);
@@ -1735,7 +1744,7 @@ namespace nzsl::Ast
 		
 		const ExpressionType* exprType = GetExpressionType(*accessIndexExpr.expr);
 		if (!exprType)
-			return VisitChildren{};
+			return DontVisitChildren{};
 
 		ExpressionType resolvedExprType = ResolveAlias(*exprType);
 
@@ -1933,7 +1942,43 @@ namespace nzsl::Ast
 		}
 
 		// TODO: Handle AccessIndex on structs with m_context->options.useIdentifierAccessesForStructs
-		return VisitChildren{};
+		return DontVisitChildren{};
+	}
+
+	auto IdentifierTypeResolverTransformer::Transform(AliasValueExpression&& accessIndexExpr) -> ExpressionTransformation
+	{
+		if (accessIndexExpr.cachedExpressionType)
+			return DontVisitChildren{};
+
+		const Identifier* targetIdentifier = ResolveAliasIdentifier(&m_states->aliases.Retrieve(accessIndexExpr.aliasId, accessIndexExpr.sourceLocation), accessIndexExpr.sourceLocation);
+		ExpressionPtr targetExpr = HandleIdentifier(&targetIdentifier->target, accessIndexExpr.sourceLocation);
+
+		if (!m_options->removeAliases)
+			return ReplaceExpression{ std::move(targetExpr) };
+
+		AliasType aliasType;
+		aliasType.aliasIndex = accessIndexExpr.aliasId;
+		aliasType.targetType = std::make_unique<ContainedType>();
+		aliasType.targetType->type = *targetExpr->cachedExpressionType;
+
+		accessIndexExpr.cachedExpressionType = std::move(aliasType);
+		return DontVisitChildren{};
+	}
+
+	auto IdentifierTypeResolverTransformer::Transform(BinaryExpression&& binaryExpression) -> ExpressionTransformation
+	{
+		HandleChildren(binaryExpression);
+
+		const ExpressionType* leftExprType = GetExpressionType(MandatoryExpr(binaryExpression.left, binaryExpression.sourceLocation));
+		if (!leftExprType)
+			return DontVisitChildren{};
+
+		const ExpressionType* rightExprType = GetExpressionType(MandatoryExpr(binaryExpression.right, binaryExpression.sourceLocation));
+		if (!rightExprType)
+			return DontVisitChildren{};
+
+		binaryExpression.cachedExpressionType = ValidateBinaryOp(binaryExpression.op, ResolveAlias(*leftExprType), ResolveAlias(*rightExprType), binaryExpression.sourceLocation);
+		return DontVisitChildren{};
 	}
 
 	auto IdentifierTypeResolverTransformer::Transform(IntrinsicExpression&& intrinsicExpr) -> ExpressionTransformation
@@ -2046,45 +2091,177 @@ namespace nzsl::Ast
 		return VisitChildren{};
 	}
 
-	auto IdentifierTypeResolverTransformer::Transform(CallFunctionExpression&& intrinsicExpr) -> ExpressionTransformation
+	auto IdentifierTypeResolverTransformer::Transform(CallFunctionExpression&& callFuncExpr) -> ExpressionTransformation
 	{
-		std::size_t targetFuncIndex;
-		if (intrinsicExpr.targetFunction->GetType() == NodeType::FunctionExpression)
-			targetFuncIndex = static_cast<FunctionExpression&>(*intrinsicExpr.targetFunction).funcId;
-		else if (intrinsicExpr.targetFunction->GetType() == NodeType::AliasValueExpression)
+		HandleChildren(callFuncExpr);
+
+		const ExpressionType* targetExprType = GetExpressionType(*callFuncExpr.targetFunction);
+		if (!targetExprType)
+			return DontVisitChildren{}; //< unresolved type
+
+		const ExpressionType& resolvedType = ResolveAlias(*targetExprType);
+
+		if (IsFunctionType(resolvedType))
 		{
-			const auto& alias = static_cast<AliasValueExpression&>(*intrinsicExpr.targetFunction);
+			std::size_t targetFuncIndex;
+			if (callFuncExpr.targetFunction->GetType() == NodeType::FunctionExpression)
+				targetFuncIndex = static_cast<FunctionExpression&>(*callFuncExpr.targetFunction).funcId;
+			else if (callFuncExpr.targetFunction->GetType() == NodeType::AliasValueExpression)
+			{
+				const auto& alias = static_cast<AliasValueExpression&>(*callFuncExpr.targetFunction);
 
-			const Identifier* aliasIdentifier = ResolveAliasIdentifier(&m_states->aliases.Retrieve(alias.aliasId, intrinsicExpr.sourceLocation), intrinsicExpr.sourceLocation);
-			if (aliasIdentifier->target.category != IdentifierCategory::Function)
-				throw CompilerFunctionCallExpectedFunctionError{ intrinsicExpr.sourceLocation };
+				const Identifier* aliasIdentifier = ResolveAliasIdentifier(&m_states->aliases.Retrieve(alias.aliasId, callFuncExpr.sourceLocation), callFuncExpr.sourceLocation);
+				if (aliasIdentifier->target.category != IdentifierCategory::Function)
+					throw CompilerFunctionCallExpectedFunctionError{ callFuncExpr.sourceLocation };
 
-			targetFuncIndex = aliasIdentifier->target.index;
+				targetFuncIndex = aliasIdentifier->target.index;
+			}
+			else
+				throw CompilerFunctionCallExpectedFunctionError{ callFuncExpr.sourceLocation };
+
+			auto& funcData = m_states->functions.Retrieve(targetFuncIndex, callFuncExpr.sourceLocation);
+
+			const DeclareFunctionStatement* referenceDeclaration = funcData.node;
+
+			callFuncExpr.cachedExpressionType = referenceDeclaration->returnType.GetResultingValue();
+		}
+		else if (IsIntrinsicFunctionType(resolvedType))
+		{
+			if (callFuncExpr.targetFunction->GetType() != NodeType::IntrinsicFunctionExpression)
+				throw CompilerExpectedIntrinsicFunctionError{ callFuncExpr.targetFunction->sourceLocation };
+
+			std::size_t targetIntrinsicId = static_cast<IntrinsicFunctionExpression&>(*callFuncExpr.targetFunction).intrinsicId;
+
+			std::vector<ExpressionPtr> parameters;
+			parameters.reserve(callFuncExpr.parameters.size());
+
+			for (auto& parameter : callFuncExpr.parameters)
+				parameters.push_back(std::move(parameter.expr));
+
+			ExpressionPtr intrinsic = ShaderBuilder::Intrinsic(m_states->intrinsics.Retrieve(targetIntrinsicId, callFuncExpr.sourceLocation), std::move(parameters));
+			intrinsic->sourceLocation = callFuncExpr.sourceLocation;
+			HandleExpression(intrinsic);
+
+			return ReplaceExpression{ std::move(intrinsic) };
+		}
+		else if (IsMethodType(resolvedType))
+		{
+			const MethodType& methodType = std::get<MethodType>(resolvedType);
+
+			std::vector<ExpressionPtr> parameters;
+			parameters.reserve(callFuncExpr.parameters.size() + 1);
+
+			// TODO: Add MethodExpression
+			assert(callFuncExpr.targetFunction->GetType() == NodeType::AccessIdentifierExpression);
+
+			parameters.push_back(std::move(static_cast<AccessIdentifierExpression&>(*callFuncExpr.targetFunction).expr));
+			for (auto& parameter : callFuncExpr.parameters)
+				parameters.push_back(std::move(parameter.expr));
+
+			const ExpressionType& objectType = methodType.objectType->type;
+			if (IsArrayType(objectType) || IsDynArrayType(objectType))
+			{
+				if (methodType.methodIndex != 0)
+					throw AstInvalidMethodIndexError{ callFuncExpr.sourceLocation, methodType.methodIndex, ToString(objectType, callFuncExpr.sourceLocation) };
+
+				ExpressionPtr intrinsic = ShaderBuilder::Intrinsic(IntrinsicType::ArraySize, std::move(parameters));
+				intrinsic->sourceLocation = callFuncExpr.sourceLocation;
+				HandleExpression(intrinsic);
+
+				return ReplaceExpression{ std::move(intrinsic) };
+			}
+			else if (IsSamplerType(objectType))
+			{
+				IntrinsicType intrinsicType;
+				switch (methodType.methodIndex)
+				{
+					case 0: intrinsicType = IntrinsicType::TextureSampleImplicitLod; break;
+					case 1: intrinsicType = IntrinsicType::TextureSampleImplicitLodDepthComp; break;
+					default:
+						throw AstInvalidMethodIndexError{ callFuncExpr.sourceLocation, methodType.methodIndex, ToString(objectType, callFuncExpr.sourceLocation) };
+				}
+
+				ExpressionPtr intrinsic = ShaderBuilder::Intrinsic(intrinsicType, std::move(parameters));
+				intrinsic->sourceLocation = callFuncExpr.sourceLocation;
+				HandleExpression(intrinsic);
+
+				return ReplaceExpression{ std::move(intrinsic) };
+			}
+			else if (IsTextureType(objectType))
+			{
+				IntrinsicType intrinsicType;
+				switch (methodType.methodIndex)
+				{
+					case 0: intrinsicType = IntrinsicType::TextureRead; break;
+					case 1: intrinsicType = IntrinsicType::TextureWrite; break;
+					default:
+						throw AstInvalidMethodIndexError{ callFuncExpr.sourceLocation, methodType.methodIndex, ToString(objectType, callFuncExpr.sourceLocation) };
+				}
+
+				ExpressionPtr intrinsic = ShaderBuilder::Intrinsic(intrinsicType, std::move(parameters));
+				intrinsic->sourceLocation = callFuncExpr.sourceLocation;
+				HandleExpression(intrinsic);
+
+				return ReplaceExpression{ std::move(intrinsic) };
+			}
+			else
+				throw AstInvalidMethodIndexError{ callFuncExpr.sourceLocation, 0, ToString(objectType, callFuncExpr.sourceLocation) };
 		}
 		else
-			throw CompilerFunctionCallExpectedFunctionError{ intrinsicExpr.sourceLocation };
+		{
+			// Calling a type - vec3[f32](0.0, 1.0, 2.0) - it's a cast
+			auto castExpr = std::make_unique<CastExpression>();
+			castExpr->sourceLocation = callFuncExpr.sourceLocation;
+			castExpr->targetType = *targetExprType;
 
-		auto& funcData = m_states->functions.Retrieve(targetFuncIndex, intrinsicExpr.sourceLocation);
+			castExpr->expressions.reserve(callFuncExpr.parameters.size());
+			for (std::size_t i = 0; i < callFuncExpr.parameters.size(); ++i)
+				castExpr->expressions.push_back(std::move(callFuncExpr.parameters[i].expr));
 
-		const DeclareFunctionStatement* referenceDeclaration = funcData.node;
+			ExpressionPtr expr = std::move(castExpr);
+			HandleExpression(expr);
 
-		intrinsicExpr.cachedExpressionType = referenceDeclaration->returnType.GetResultingValue();
+			return ReplaceExpression{ std::move(expr) };
+		}
+
 		return VisitChildren{};
 	}
 
-	auto IdentifierTypeResolverTransformer::Transform(CastExpression&& intrinsicExpr) -> ExpressionTransformation
+	auto IdentifierTypeResolverTransformer::Transform(CastExpression&& castExpr) -> ExpressionTransformation
 	{
-		HandleChildren(intrinsicExpr);
+		HandleChildren(castExpr);
 
-		std::optional<ExpressionType> targetTypeOpt = ResolveTypeExpr(intrinsicExpr.targetType, false, intrinsicExpr.sourceLocation);
+		std::optional<ExpressionType> targetTypeOpt = ResolveTypeExpr(castExpr.targetType, false, castExpr.sourceLocation);
 		if (!targetTypeOpt)
 			return DontVisitChildren{}; //< unresolved
 
 		ExpressionType& targetType = *targetTypeOpt;
 
-		intrinsicExpr.cachedExpressionType = targetType;
-		intrinsicExpr.targetType = std::move(targetType);
+		castExpr.cachedExpressionType = targetType;
+		castExpr.targetType = std::move(targetType);
 		return DontVisitChildren{};
+	}
+
+	auto IdentifierTypeResolverTransformer::Transform(IdentifierExpression&& identifierExpr) -> ExpressionTransformation
+	{
+		assert(m_context);
+
+		const IdentifierData* identifierData = FindIdentifier(identifierExpr.identifier);
+		if (!identifierData)
+		{
+			if (m_context->allowUnknownIdentifiers)
+				return DontVisitChildren{};
+
+			throw CompilerUnknownIdentifierError{ identifierExpr.sourceLocation, identifierExpr.identifier };
+		}
+
+		if (identifierData->category == IdentifierCategory::Unresolved)
+			return DontVisitChildren{};
+
+		if (m_context->partialSanitization && identifierData->conditionalIndex != m_states->currentConditionalIndex)
+			return DontVisitChildren{};
+
+		return ReplaceExpression{ HandleIdentifier(identifierData, identifierExpr.sourceLocation) };
 	}
 
 	auto IdentifierTypeResolverTransformer::Transform(SwizzleExpression&& swizzleExpr) -> ExpressionTransformation
@@ -2260,6 +2437,9 @@ namespace nzsl::Ast
 			throw CompilerAliasUnexpectedTypeError{ declAlias.sourceLocation, ToString(*exprType, declAlias.expression->sourceLocation) };
 
 		declAlias.aliasIndex = RegisterAlias(declAlias.name, std::move(aliasIdentifier), declAlias.aliasIndex, declAlias.sourceLocation);
+		if (m_options->removeAliases)
+			return ReplaceStatement{ ShaderBuilder::NoOp() };
+
 		return DontVisitChildren{};
 	}
 
@@ -2337,6 +2517,12 @@ namespace nzsl::Ast
 			m_states->currentEnv = environment;
 		}
 
+		if (declExternal.bindingSet.HasValue())
+			ComputeExprValue(declExternal.bindingSet, declExternal.sourceLocation);
+
+		if (declExternal.autoBinding.HasValue())
+			ComputeExprValue(declExternal.autoBinding, declExternal.sourceLocation);
+
 		for (std::size_t i = 0; i < declExternal.externalVars.size(); ++i)
 		{
 			auto& extVar = declExternal.externalVars[i];
@@ -2390,6 +2576,15 @@ namespace nzsl::Ast
 			if (IsNoType(varType))
 				throw CompilerExtTypeNotAllowedError{ extVar.sourceLocation, extVar.name, ToString(*resolvedType, extVar.sourceLocation) };
 
+			if (!IsPushConstantType(targetType))
+			{
+				if (extVar.bindingSet.HasValue())
+					ComputeExprValue(extVar.bindingSet, extVar.sourceLocation);
+
+				if (extVar.bindingIndex.HasValue())
+					ComputeExprValue(extVar.bindingIndex, extVar.sourceLocation);
+			}
+
 			ValidateConcreteType(varType, extVar.sourceLocation);
 
 			extVar.type = std::move(resolvedType).value();
@@ -2404,6 +2599,39 @@ namespace nzsl::Ast
 
 	auto IdentifierTypeResolverTransformer::Transform(DeclareFunctionStatement&& declFunction) -> StatementTransformation
 	{
+		for (auto& parameter : declFunction.parameters)
+		{
+			Transform(parameter.type);
+
+			if (parameter.type.IsResultingValue())
+				ValidateConcreteType(parameter.type.GetResultingValue(), parameter.sourceLocation);
+		}
+
+		if (declFunction.returnType.HasValue())
+		{
+			Transform(declFunction.returnType);
+
+			if (declFunction.returnType.IsResultingValue())
+				ValidateConcreteType(declFunction.returnType.GetResultingValue(), declFunction.sourceLocation);
+		}
+		else
+			declFunction.returnType = ExpressionType{ NoType{} };
+
+		if (declFunction.depthWrite.HasValue())
+			ComputeExprValue(declFunction.depthWrite, declFunction.sourceLocation);
+
+		if (declFunction.earlyFragmentTests.HasValue())
+			ComputeExprValue(declFunction.earlyFragmentTests, declFunction.sourceLocation);
+
+		if (declFunction.entryStage.HasValue())
+			ComputeExprValue(declFunction.entryStage, declFunction.sourceLocation);
+
+		if (declFunction.isExported.HasValue())
+			ComputeExprValue(declFunction.isExported, declFunction.sourceLocation);
+
+		if (declFunction.workgroupSize.HasValue())
+			ComputeExprValue(declFunction.workgroupSize, declFunction.sourceLocation);
+
 		// Function content is resolved in a second pass
 		auto& pendingFunc = m_states->currentEnv->pendingFunctions.emplace_back();
 		pendingFunc.node = &declFunction;
@@ -2507,7 +2735,12 @@ namespace nzsl::Ast
 
 			declaredMembers.insert(member.name);
 
-			if (member.type.HasValue() && member.type.IsExpression())
+			if (!member.type.HasValue())
+				throw AstMissingExpressionError{ member.sourceLocation };
+
+			HandleExpressionValue(member.type);
+
+			if (member.type.IsExpression())
 			{
 				assert(m_context->partialSanitization);
 				continue;
@@ -2668,6 +2901,227 @@ namespace nzsl::Ast
 		}
 
 		return DontVisitChildren{};
+	}
+
+	void IdentifierTypeResolverTransformer::Transform(ExpressionValue<ExpressionType>& expressionType)
+	{
+		if (!expressionType.HasValue())
+			return;
+
+		std::optional<ExpressionType> resolvedType = ResolveTypeExpr(expressionType, false, {});
+		if (!resolvedType.has_value())
+			return;
+
+		expressionType = std::move(resolvedType).value();
+	}
+
+	ExpressionType IdentifierTypeResolverTransformer::ValidateBinaryOp(BinaryType op, const ExpressionType& leftExprType, const ExpressionType& rightExprType, const SourceLocation& sourceLocation)
+	{
+		if (!IsPrimitiveType(leftExprType) && !IsMatrixType(leftExprType) && !IsVectorType(leftExprType))
+			throw CompilerBinaryUnsupportedError{ sourceLocation, "left", ToString(leftExprType, sourceLocation) };
+
+		if (!IsPrimitiveType(rightExprType) && !IsMatrixType(rightExprType) && !IsVectorType(rightExprType))
+			throw CompilerBinaryUnsupportedError{ sourceLocation, "right", ToString(rightExprType, sourceLocation) };
+
+		auto TypeMustMatch = [this](const ExpressionType& left, const ExpressionType& right, const SourceLocation& sourceLocation)
+		{
+			if (ResolveAlias(left) != ResolveAlias(right))
+				throw CompilerUnmatchingTypesError{ sourceLocation, ToString(left, sourceLocation), ToString(right, sourceLocation) };
+		};
+
+		if (IsPrimitiveType(leftExprType))
+		{
+			PrimitiveType leftType = std::get<PrimitiveType>(leftExprType);
+			switch (op)
+			{
+				case BinaryType::CompGe:
+				case BinaryType::CompGt:
+				case BinaryType::CompLe:
+				case BinaryType::CompLt:
+					if (leftType == PrimitiveType::Boolean)
+						throw CompilerBinaryUnsupportedError{ sourceLocation, "left", ToString(leftExprType, sourceLocation) };
+
+					[[fallthrough]];
+				case BinaryType::CompEq:
+				case BinaryType::CompNe:
+				{
+					TypeMustMatch(leftExprType, rightExprType, sourceLocation);
+					return PrimitiveType::Boolean;
+				}
+
+				case BinaryType::Add:
+				case BinaryType::Subtract:
+					TypeMustMatch(leftExprType, rightExprType, sourceLocation);
+					return leftExprType;
+
+				case BinaryType::Modulo:
+				case BinaryType::Multiply:
+				case BinaryType::Divide:
+				{
+					switch (leftType)
+					{
+						case PrimitiveType::Float32:
+						case PrimitiveType::Float64:
+						case PrimitiveType::Int32:
+						case PrimitiveType::UInt32:
+						{
+							if (IsMatrixType(rightExprType))
+							{
+								TypeMustMatch(leftType, std::get<MatrixType>(rightExprType).type, sourceLocation);
+								return rightExprType;
+							}
+							else if (IsPrimitiveType(rightExprType))
+							{
+								TypeMustMatch(leftType, rightExprType, sourceLocation);
+								return leftExprType;
+							}
+							else if (IsVectorType(rightExprType))
+							{
+								TypeMustMatch(leftType, std::get<VectorType>(rightExprType).type, sourceLocation);
+								return rightExprType;
+							}
+							else
+								throw CompilerBinaryIncompatibleTypesError{ sourceLocation, ToString(leftExprType, sourceLocation), ToString(rightExprType, sourceLocation) };
+
+							break;
+						}
+
+						case PrimitiveType::Boolean:
+							throw CompilerBinaryUnsupportedError{ sourceLocation, "left", ToString(leftExprType, sourceLocation) };
+
+						default:
+							throw CompilerBinaryIncompatibleTypesError{ sourceLocation, ToString(leftExprType, sourceLocation), ToString(rightExprType, sourceLocation) };
+					}
+				}
+
+				case BinaryType::BitwiseAnd:
+				case BinaryType::BitwiseOr:
+				case BinaryType::BitwiseXor:
+				case BinaryType::ShiftLeft:
+				case BinaryType::ShiftRight:
+				{
+					if (leftType != PrimitiveType::Int32 && leftType != PrimitiveType::UInt32)
+						throw CompilerBinaryUnsupportedError{ sourceLocation, "left", ToString(leftExprType, sourceLocation) };
+
+					return leftExprType;
+				}
+
+				case BinaryType::LogicalAnd:
+				case BinaryType::LogicalOr:
+				{
+					if (leftType != PrimitiveType::Boolean)
+						throw CompilerBinaryUnsupportedError{ sourceLocation, "left", ToString(leftExprType, sourceLocation) };
+
+					TypeMustMatch(leftExprType, rightExprType, sourceLocation);
+					return PrimitiveType::Boolean;
+				}
+			}
+		}
+		else if (IsMatrixType(leftExprType))
+		{
+			const MatrixType& leftType = std::get<MatrixType>(leftExprType);
+			switch (op)
+			{
+				case BinaryType::Add:
+				case BinaryType::Subtract:
+					TypeMustMatch(leftExprType, rightExprType, sourceLocation);
+					return leftExprType;
+
+				case BinaryType::Multiply:
+				{
+					if (IsMatrixType(rightExprType))
+					{
+						TypeMustMatch(leftExprType, rightExprType, sourceLocation);
+						return leftExprType; //< FIXME
+					}
+					else if (IsPrimitiveType(rightExprType))
+					{
+						TypeMustMatch(leftType.type, rightExprType, sourceLocation);
+						return leftExprType;
+					}
+					else if (IsVectorType(rightExprType))
+					{
+						const VectorType& rightType = std::get<VectorType>(rightExprType);
+						TypeMustMatch(leftType.type, rightType.type, sourceLocation);
+
+						if (leftType.columnCount != rightType.componentCount)
+							throw CompilerBinaryIncompatibleTypesError{ sourceLocation, ToString(leftExprType, sourceLocation), ToString(rightExprType, sourceLocation) };
+
+						return rightExprType;
+					}
+					else
+						throw CompilerBinaryIncompatibleTypesError{ sourceLocation, ToString(leftExprType, sourceLocation), ToString(rightExprType, sourceLocation) };
+				}
+
+				case BinaryType::BitwiseAnd:
+				case BinaryType::BitwiseOr:
+				case BinaryType::BitwiseXor:
+				case BinaryType::CompGe:
+				case BinaryType::CompGt:
+				case BinaryType::CompLe:
+				case BinaryType::CompLt:
+				case BinaryType::CompEq:
+				case BinaryType::CompNe:
+				case BinaryType::Divide:
+				case BinaryType::LogicalAnd:
+				case BinaryType::LogicalOr:
+				case BinaryType::Modulo:
+				case BinaryType::ShiftLeft:
+				case BinaryType::ShiftRight:
+					throw CompilerBinaryUnsupportedError{ sourceLocation, "left", ToString(leftExprType, sourceLocation) };
+			}
+		}
+		else if (IsVectorType(leftExprType))
+		{
+			const VectorType& leftType = std::get<VectorType>(leftExprType);
+			switch (op)
+			{
+				case BinaryType::CompEq:
+				case BinaryType::CompNe:
+				case BinaryType::CompGe:
+				case BinaryType::CompGt:
+				case BinaryType::CompLe:
+				case BinaryType::CompLt:
+					TypeMustMatch(leftExprType, rightExprType, sourceLocation);
+					return VectorType{ leftType.componentCount, PrimitiveType::Boolean };
+
+				case BinaryType::Add:
+				case BinaryType::Subtract:
+					TypeMustMatch(leftExprType, rightExprType, sourceLocation);
+					return leftExprType;
+
+				case BinaryType::Modulo:
+				case BinaryType::Multiply:
+				case BinaryType::Divide:
+				{
+					if (IsPrimitiveType(rightExprType))
+					{
+						TypeMustMatch(leftType.type, rightExprType, sourceLocation);
+						return leftExprType;
+					}
+					else if (IsVectorType(rightExprType))
+					{
+						TypeMustMatch(leftType, rightExprType, sourceLocation);
+						return rightExprType;
+					}
+					else
+						throw CompilerBinaryIncompatibleTypesError{ sourceLocation, ToString(leftExprType, sourceLocation), ToString(rightExprType, sourceLocation) };
+
+					break;
+				}
+
+				case BinaryType::BitwiseAnd:
+				case BinaryType::BitwiseOr:
+				case BinaryType::BitwiseXor:
+				case BinaryType::LogicalAnd:
+				case BinaryType::LogicalOr:
+				case BinaryType::ShiftLeft:
+				case BinaryType::ShiftRight:
+					throw CompilerBinaryUnsupportedError{ sourceLocation, "left", ToString(leftExprType, sourceLocation) };
+			}
+		}
+
+		throw AstInternalError{ sourceLocation, "unchecked operation" };
 	}
 
 	void IdentifierTypeResolverTransformer::ValidateConcreteType(const ExpressionType& exprType, const SourceLocation& sourceLocation)

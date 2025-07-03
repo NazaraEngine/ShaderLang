@@ -30,12 +30,14 @@ namespace nzsl::Ast
 		private:
 			using Transformer::Transform;
 
+			bool HandleIdentifier(std::string& identifier, IdentifierType scope);
+
 			bool HasIdentifier(std::string_view identifierName) const;
+			void RegisterIdentifier(std::string identifier);
 
 			void PopScope() override;
 			void PushScope() override;
 
-			bool SanitizeIdentifier(std::string& identifier, IdentifierType scope);
 
 			StatementTransformation Transform(DeclareAliasStatement&& statement) override;
 			StatementTransformation Transform(DeclareConstStatement&& statement) override;

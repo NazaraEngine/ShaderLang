@@ -8,7 +8,9 @@
 #include <NazaraUtils/StackArray.hpp>
 #include <NazaraUtils/StackVector.hpp>
 #include <NZSL/ShaderBuilder.hpp>
+#include <NZSL/Ast/ConstantPropagationVisitor.hpp>
 #include <NZSL/Ast/DependencyCheckerVisitor.hpp>
+#include <NZSL/Ast/EliminateUnusedPassVisitor.hpp>
 #include <NZSL/Ast/ExportVisitor.hpp>
 #include <NZSL/Ast/ExpressionType.hpp>
 #include <NZSL/Ast/IndexRemapperVisitor.hpp>
@@ -16,8 +18,6 @@
 #include <NZSL/Ast/Utils.hpp>
 #include <NZSL/Lang/Errors.hpp>
 #include <NZSL/Lang/LangData.hpp>
-#include <NZSL/Ast/Transformations/ConstantPropagationTransformer.hpp>
-#include <NZSL/Ast/Transformations/EliminateUnusedTransformer.hpp>
 #include <fmt/format.h>
 #include <frozen/unordered_map.h>
 #include <tsl/ordered_map.h>
@@ -296,7 +296,7 @@ namespace nzsl::Ast
 			{
 				moduleData.dependenciesVisitor->Resolve(true); //< allow unknown identifiers since we may be referencing other modules
 
-				EliminateUnusedPass(*importedModule.module, moduleData.dependenciesVisitor->GetUsage());
+				importedModule.module = EliminateUnusedPass(*importedModule.module, moduleData.dependenciesVisitor->GetUsage());
 			}
 		}
 
@@ -313,6 +313,341 @@ namespace nzsl::Ast
 			return Cloner::CloneType(exprType);
 
 		return std::move(resolvedType).value();
+	}
+
+	ExpressionPtr SanitizeVisitor::Clone(AccessIdentifierExpression& node)
+	{
+		if (node.identifiers.empty())
+			throw AstNoIdentifierError{ node.sourceLocation };
+
+		MandatoryExpr(node.expr, node.sourceLocation);
+
+		auto previousEnv = m_context->currentEnv;
+
+		ExpressionPtr indexedExpr = CloneExpression(node.expr);
+		for (const auto& identifierEntry : node.identifiers)
+		{
+			if (identifierEntry.identifier.empty())
+				throw AstEmptyIdentifierError{ identifierEntry.sourceLocation };
+
+			const ExpressionType* exprType = GetExpressionType(*indexedExpr);
+			if (!exprType)
+				return Cloner::Clone(node); //< unresolved type
+
+			const ExpressionType& resolvedType = ResolveAlias(*exprType);
+			// TODO: Add proper support for methods
+			if (IsSamplerType(resolvedType))
+			{
+				MethodType methodType;
+
+				// FIXME
+				if (identifierEntry.identifier == "Sample")
+					methodType.methodIndex = 0;
+				else if (identifierEntry.identifier == "SampleDepthComp")
+					methodType.methodIndex = 1;
+				else
+					throw CompilerUnknownMethodError{ identifierEntry.sourceLocation, ToString(resolvedType, indexedExpr->sourceLocation), identifierEntry.identifier };
+
+				methodType.objectType = std::make_unique<ContainedType>();
+				methodType.objectType->type = resolvedType;
+
+				// TODO: Add a MethodExpression?
+				auto identifierExpr = std::make_unique<AccessIdentifierExpression>();
+				identifierExpr->expr = std::move(indexedExpr);
+				identifierExpr->identifiers.emplace_back().identifier = identifierEntry.identifier;
+				identifierExpr->cachedExpressionType = std::move(methodType);
+				indexedExpr = std::move(identifierExpr);
+			}
+			else if (IsTextureType(resolvedType))
+			{
+				MethodType methodType;
+
+				// FIXME
+				if (identifierEntry.identifier == "Read")
+					methodType.methodIndex = 0;
+				else if (identifierEntry.identifier == "Write")
+					methodType.methodIndex = 1;
+				else
+					throw CompilerUnknownMethodError{ identifierEntry.sourceLocation, ToString(resolvedType, indexedExpr->sourceLocation), identifierEntry.identifier };
+
+				methodType.objectType = std::make_unique<ContainedType>();
+				methodType.objectType->type = resolvedType;
+
+				// TODO: Add a MethodExpression?
+				auto identifierExpr = std::make_unique<AccessIdentifierExpression>();
+				identifierExpr->expr = std::move(indexedExpr);
+				identifierExpr->identifiers.emplace_back().identifier = identifierEntry.identifier;
+				identifierExpr->cachedExpressionType = std::move(methodType);
+				indexedExpr = std::move(identifierExpr);
+			}
+			else if (IsArrayType(resolvedType) || IsDynArrayType(resolvedType))
+			{
+				if (identifierEntry.identifier == "Size")
+				{
+					// TODO: Add a MethodExpression?
+					auto identifierExpr = std::make_unique<AccessIdentifierExpression>();
+					identifierExpr->expr = std::move(indexedExpr);
+					identifierExpr->identifiers.emplace_back().identifier = identifierEntry.identifier;
+
+					MethodType methodType;
+					methodType.methodIndex = 0; //< FIXME
+					methodType.objectType = std::make_unique<ContainedType>();
+					methodType.objectType->type = resolvedType;
+
+					identifierExpr->cachedExpressionType = std::move(methodType);
+					indexedExpr = std::move(identifierExpr);
+				}
+				else
+					throw CompilerUnknownMethodError{ identifierEntry.sourceLocation, ToString(resolvedType, indexedExpr->sourceLocation), identifierEntry.identifier };
+			}
+			else if (IsStructAddressible(resolvedType))
+			{
+				std::size_t structIndex = ResolveStructIndex(resolvedType, indexedExpr->sourceLocation);
+				const StructDescription* s = m_context->structs.Retrieve(structIndex, indexedExpr->sourceLocation);
+
+				// Retrieve member index (not counting disabled fields)
+				std::int32_t fieldIndex = 0;
+				const StructDescription::StructMember* fieldPtr = nullptr;
+				bool hasUnresolvedFields = false;
+				for (const auto& field : s->members)
+				{
+					if (field.cond.HasValue())
+					{
+						if (field.cond.IsResultingValue())
+						{
+							if (!field.cond.GetResultingValue())
+								continue;
+						}
+						else
+							hasUnresolvedFields = true;
+					}
+
+					if (!field.originalName.empty())
+					{
+						if (field.originalName == identifierEntry.identifier)
+							fieldPtr = &field;
+					}
+					else
+					{
+						if (field.name == identifierEntry.identifier)
+							fieldPtr = &field;
+					}
+
+					if (fieldPtr)
+						break;
+
+					fieldIndex++;
+				}
+
+				if (hasUnresolvedFields)
+					fieldIndex = -1; //< field index is not unknown because some fields before it are not resolved
+
+				if (!fieldPtr)
+				{
+					if (s->conditionIndex != m_context->currentConditionalIndex)
+						return Cloner::Clone(node); //< unresolved
+
+					throw CompilerUnknownFieldError{ indexedExpr->sourceLocation, identifierEntry.identifier };
+				}
+
+				if (fieldPtr->cond.HasValue())
+				{
+					if (!fieldPtr->cond.IsResultingValue())
+					{
+						if (m_context->options.partialSanitization)
+							return Cloner::Clone(node); //< unresolved
+
+						throw CompilerConstantExpressionRequiredError{ fieldPtr->cond.GetExpression()->sourceLocation };
+					}
+					else if (!fieldPtr->cond.GetResultingValue())
+						throw AstInternalError{ indexedExpr->sourceLocation, "field with a disabled condition was not skipped" };
+				}
+
+				if (fieldPtr->builtin.HasValue() && fieldPtr->builtin.IsResultingValue())
+				{
+					BuiltinEntry builtin = fieldPtr->builtin.GetResultingValue();
+					m_context->currentFunction->usedBuiltins.emplace(builtin, node.sourceLocation);
+				}
+
+				std::optional<ExpressionType> resolvedFieldTypeOpt = ResolveTypeExpr(fieldPtr->type, false, identifierEntry.sourceLocation);
+
+				// Preserve uniform/storage type on inner struct types
+				if (resolvedFieldTypeOpt.has_value())
+				{
+					// Preserve uniform/storage type on inner struct types
+					if (IsUniformType(resolvedType))
+						resolvedFieldTypeOpt = WrapExternalType<UniformType>(*resolvedFieldTypeOpt);
+					else if (IsStorageType(resolvedType))
+						resolvedFieldTypeOpt = WrapExternalType<StorageType>(*resolvedFieldTypeOpt);
+				}
+
+				if (m_context->options.useIdentifierAccessesForStructs)
+				{
+					// Use a AccessIdentifierExpression
+					AccessIdentifierExpression* accessIdentifierPtr;
+					if (indexedExpr->GetType() != NodeType::AccessIdentifierExpression)
+					{
+						std::unique_ptr<AccessIdentifierExpression> accessIndex = std::make_unique<AccessIdentifierExpression>();
+						accessIndex->sourceLocation = node.sourceLocation;
+						accessIndex->expr = std::move(indexedExpr);
+
+						accessIdentifierPtr = accessIndex.get();
+						indexedExpr = std::move(accessIndex);
+					}
+					else
+					{
+						accessIdentifierPtr = static_cast<AccessIdentifierExpression*>(indexedExpr.get());
+						accessIdentifierPtr->sourceLocation.ExtendToRight(indexedExpr->sourceLocation);
+					}
+
+					accessIdentifierPtr->cachedExpressionType = std::move(resolvedFieldTypeOpt);
+
+					auto& newIdentifierEntry = accessIdentifierPtr->identifiers.emplace_back();
+					newIdentifierEntry.identifier = fieldPtr->name;
+					newIdentifierEntry.sourceLocation = indexedExpr->sourceLocation;
+				}
+				else
+				{
+					if (fieldIndex < 0)
+						return Cloner::Clone(node); //< unresolved
+
+					// Transform to AccessIndexExpression
+					std::unique_ptr<AccessIndexExpression> accessIndex = std::make_unique<AccessIndexExpression>();
+					accessIndex->sourceLocation = indexedExpr->sourceLocation;
+					accessIndex->expr = std::move(indexedExpr);
+					accessIndex->indices.push_back(ShaderBuilder::ConstantValue(fieldIndex, fieldPtr->sourceLocation));
+					accessIndex->cachedExpressionType = std::move(resolvedFieldTypeOpt);
+
+					indexedExpr = std::move(accessIndex);
+				}
+			}
+			else if (IsPrimitiveType(resolvedType) || IsVectorType(resolvedType))
+			{
+				// Swizzle expression
+				std::size_t swizzleComponentCount = identifierEntry.identifier.size();
+				if (swizzleComponentCount > 4)
+					throw CompilerInvalidSwizzleError{ identifierEntry.sourceLocation };
+
+				if (m_context->options.removeScalarSwizzling && IsPrimitiveType(resolvedType))
+				{
+					for (std::size_t j = 0; j < swizzleComponentCount; ++j)
+					{
+						if (ToSwizzleIndex(identifierEntry.identifier[j], identifierEntry.sourceLocation) != 0)
+							throw CompilerInvalidScalarSwizzleError{ identifierEntry.sourceLocation };
+					}
+
+					if (swizzleComponentCount == 1)
+						continue; //< ignore this swizzle (a.x == a)
+
+					// Use a Cast expression to replace swizzle
+					indexedExpr = CacheResult(std::move(indexedExpr)); //< Since we are going to use a value multiple times, cache it if required
+
+					PrimitiveType baseType;
+					if (IsVectorType(resolvedType))
+						baseType = std::get<VectorType>(resolvedType).type;
+					else
+						baseType = std::get<PrimitiveType>(resolvedType);
+
+					auto cast = std::make_unique<CastExpression>();
+					cast->targetType = ExpressionType{ VectorType{ swizzleComponentCount, baseType } };
+
+					cast->expressions.reserve(swizzleComponentCount);
+					for (std::size_t j = 0; j < swizzleComponentCount; ++j)
+						cast->expressions.push_back(CloneExpression(indexedExpr));
+
+					Validate(*cast);
+
+					indexedExpr = std::move(cast);
+				}
+				else
+				{
+					auto swizzle = std::make_unique<SwizzleExpression>();
+					swizzle->expression = std::move(indexedExpr);
+
+					swizzle->componentCount = swizzleComponentCount;
+					for (std::size_t j = 0; j < swizzleComponentCount; ++j)
+						swizzle->components[j] = ToSwizzleIndex(identifierEntry.identifier[j], identifierEntry.sourceLocation);
+
+					Validate(*swizzle);
+
+					indexedExpr = std::move(swizzle);
+				}
+			}
+			else if (IsNamedExternalBlockType(resolvedType))
+			{
+				const NamedExternalBlockType& externalBlockType = std::get<NamedExternalBlockType>(resolvedType);
+				std::size_t namedExternalBlockIndex = externalBlockType.namedExternalBlockIndex;
+
+				const IdentifierData* identifierData = FindIdentifier(*m_context->namedExternalBlocks[namedExternalBlockIndex].environment, identifierEntry.identifier);
+				if (!identifierData)
+				{
+					if (m_context->allowUnknownIdentifiers)
+						return Cloner::Clone(node);
+
+					throw CompilerUnknownIdentifierError{ node.sourceLocation, identifierEntry.identifier };
+				}
+
+				if (identifierData->category == IdentifierCategory::Unresolved)
+					return Cloner::Clone(node);
+
+				if (m_context->options.partialSanitization && identifierData->conditionalIndex != m_context->currentConditionalIndex)
+					return Cloner::Clone(node);
+
+				indexedExpr = HandleIdentifier(identifierData, identifierEntry.sourceLocation);
+			}
+			else if (IsModuleType(resolvedType))
+			{
+				const ModuleType& moduleType = std::get<ModuleType>(resolvedType);
+				std::size_t moduleId = moduleType.moduleIndex;
+
+				m_context->currentEnv = m_context->modules[moduleId].environment;
+
+				const IdentifierData* identifierData = FindIdentifier(*m_context->currentEnv, identifierEntry.identifier);
+				if (!identifierData)
+				{
+					if (m_context->allowUnknownIdentifiers)
+						return Cloner::Clone(node);
+
+					throw CompilerUnknownIdentifierError{ node.sourceLocation, identifierEntry.identifier };
+				}
+
+				if (identifierData->category == IdentifierCategory::Unresolved)
+					return Cloner::Clone(node);
+
+				if (m_context->options.partialSanitization && identifierData->conditionalIndex != m_context->currentConditionalIndex)
+					return Cloner::Clone(node);
+
+				auto& dependencyCheckerPtr = m_context->modules[moduleId].dependenciesVisitor;
+				if (dependencyCheckerPtr) //< dependency checker can be null when performing partial sanitization
+				{
+					switch (identifierData->category)
+					{
+						case IdentifierCategory::Constant:
+							dependencyCheckerPtr->MarkConstantAsUsed(identifierData->index);
+							break;
+
+						case IdentifierCategory::Function:
+							dependencyCheckerPtr->MarkFunctionAsUsed(identifierData->index);
+							break;
+
+						case IdentifierCategory::Struct:
+							dependencyCheckerPtr->MarkStructAsUsed(identifierData->index);
+							break;
+
+						default:
+							break;
+					}
+				}
+
+				indexedExpr = HandleIdentifier(identifierData, identifierEntry.sourceLocation);
+			}
+			else
+				throw CompilerUnexpectedAccessedTypeError{ node.sourceLocation };
+		}
+
+		m_context->currentEnv = std::move(previousEnv);
+
+		return indexedExpr;
 	}
 
 	ExpressionPtr SanitizeVisitor::Clone(AccessIndexExpression& node)
@@ -357,6 +692,85 @@ namespace nzsl::Ast
 		if (Validate(*clone) == ValidationResult::Unresolved)
 			return clone;
 
+		if (m_context->options.splitWrappedStructAssignation || m_context->options.splitWrappedArrayAssignation)
+		{
+			const ExpressionType& targetType = ResolveAlias(GetExpressionTypeSecure(*clone->left));
+			const ExpressionType& sourceType = ResolveAlias(GetExpressionTypeSecure(*clone->right));
+			if (m_context->options.splitWrappedStructAssignation && IsStructType(targetType) && targetType != sourceType)
+			{
+				std::size_t structIndex = std::get<StructType>(targetType).structIndex;
+				const StructDescription* desc = m_context->structs.Retrieve(structIndex, clone->sourceLocation);
+
+				auto dstVar = CacheResult(std::move(clone->left));
+				auto srcVar = CacheResult(std::move(clone->right));
+
+				std::int32_t memberIndex = 0;
+				for (auto& member : desc->members)
+				{
+					if (member.cond.IsResultingValue() && !member.cond.GetResultingValue())
+					{
+						memberIndex++;
+						continue;
+					}
+
+					ExpressionPtr dstAccess;
+					ExpressionPtr srcAccess;
+					if (m_context->options.useIdentifierAccessesForStructs)
+					{
+						dstAccess = ShaderBuilder::AccessMember(CloneExpression(*dstVar), { member.name });
+						srcAccess = ShaderBuilder::AccessMember(CloneExpression(*srcVar), { member.name });
+					}
+					else
+					{
+						dstAccess = ShaderBuilder::AccessIndex(CloneExpression(*dstVar), memberIndex);
+						srcAccess = ShaderBuilder::AccessIndex(CloneExpression(*srcVar), memberIndex);
+					}
+
+					dstAccess->sourceLocation = clone->sourceLocation;
+					srcAccess->sourceLocation = clone->sourceLocation;
+
+					auto assign = ShaderBuilder::Assign(AssignType::Simple, std::move(dstAccess), std::move(srcAccess));
+					assign->sourceLocation = clone->sourceLocation;
+
+					StatementPtr assignStatement = ShaderBuilder::ExpressionStatement(std::move(assign));
+
+					if (member.cond.IsExpression())
+						assignStatement = ShaderBuilder::ConstBranch(CloneExpression(*member.cond.GetExpression()), std::move(assignStatement));
+					
+					m_context->currentStatementList->push_back(CloneStatement(*assignStatement));
+
+					memberIndex++;
+				}
+
+				return dstVar;
+			}
+			else if (m_context->options.splitWrappedArrayAssignation && IsArrayType(targetType) && targetType != sourceType)
+			{
+				const auto& arrayType = std::get<ArrayType>(targetType);
+
+				auto dstVar = CacheResult(std::move(clone->left));
+				auto srcVar = CacheResult(std::move(clone->right));
+
+				for (std::uint32_t i = 0; i < arrayType.length; ++i)
+				{
+					ExpressionPtr dstAccess = ShaderBuilder::AccessIndex(CloneExpression(*dstVar), Nz::SafeCast<std::int32_t>(i));
+					ExpressionPtr srcAccess = ShaderBuilder::AccessIndex(CloneExpression(*srcVar), Nz::SafeCast<std::int32_t>(i));
+
+					dstAccess->sourceLocation = clone->sourceLocation;
+					srcAccess->sourceLocation = clone->sourceLocation;
+
+					auto assign = ShaderBuilder::Assign(AssignType::Simple, std::move(dstAccess), std::move(srcAccess));
+					assign->sourceLocation = clone->sourceLocation;
+
+					StatementPtr assignStatement = ShaderBuilder::ExpressionStatement(std::move(assign));
+
+					m_context->currentStatementList->push_back(CloneStatement(*assignStatement));
+				}
+
+				return dstVar;
+			}
+		}
+
 		return clone;
 	}
 
@@ -365,6 +779,48 @@ namespace nzsl::Ast
 		auto clone = Nz::StaticUniquePointerCast<BinaryExpression>(Cloner::Clone(node));
 		if (Validate(*clone) == ValidationResult::Unresolved)
 			return clone;
+
+		if (m_context->options.removeMatrixBinaryAddSub && (clone->op == BinaryType::Add || clone->op == BinaryType::Subtract))
+		{
+			const ExpressionType& leftExprType = GetExpressionTypeSecure(*clone->left);
+			const ExpressionType& rightExprType = GetExpressionTypeSecure(*clone->right);
+			if (IsMatrixType(leftExprType) && IsMatrixType(rightExprType))
+			{
+				const MatrixType& matrixType = std::get<MatrixType>(leftExprType);
+				assert(leftExprType == rightExprType);
+
+				// Since we're going to access both matrices multiples times, make sure we cache them into variables if required
+				auto leftMatrix = CacheResult(std::move(clone->left));
+				auto rightMatrix = CacheResult(std::move(clone->right));
+
+				std::vector<ExpressionPtr> columnExpressions(matrixType.columnCount);
+
+				for (std::size_t i = 0; i < matrixType.columnCount; ++i)
+				{
+					// mat[i]
+					auto leftColumnExpr = ShaderBuilder::AccessIndex(CloneExpression(leftMatrix), ShaderBuilder::ConstantValue(std::uint32_t(i), clone->sourceLocation));
+					auto rightColumnExpr = ShaderBuilder::AccessIndex(CloneExpression(rightMatrix), ShaderBuilder::ConstantValue(std::uint32_t(i), clone->sourceLocation));
+
+					Validate(*leftColumnExpr);
+					Validate(*rightColumnExpr);
+
+					// lhs[i] +- rhs[i]
+					auto binOp = ShaderBuilder::Binary(clone->op, std::move(leftColumnExpr), std::move(rightColumnExpr));
+					binOp->sourceLocation = clone->sourceLocation;
+
+					Validate(*binOp);
+
+					columnExpressions[i] = std::move(binOp);
+				}
+
+				// Build resulting matrix
+				auto result = ShaderBuilder::Cast(leftExprType, std::move(columnExpressions));
+				result->sourceLocation = clone->sourceLocation;
+
+				// Re-clone resulting cast operation, so it can be transformed again if required
+				return Clone(*result);
+			}
+		}
 
 		return clone;
 	}
@@ -530,6 +986,133 @@ namespace nzsl::Ast
 		if (Validate(*clone) == ValidationResult::Unresolved)
 			return clone; //< unresolved
 
+		const ExpressionType& targetType = clone->targetType.GetResultingValue();
+
+		if (m_context->options.removeMatrixCast && IsMatrixType(targetType))
+		{
+			const MatrixType& targetMatrixType = std::get<MatrixType>(targetType);
+
+			const ExpressionType& frontExprType = ResolveAlias(GetExpressionTypeSecure(*clone->expressions.front()));
+			bool isMatrixCast = IsMatrixType(frontExprType);
+			if (isMatrixCast && std::get<MatrixType>(frontExprType) == targetMatrixType)
+			{
+				// Nothing to do
+				return std::move(clone->expressions.front());
+			}
+
+			auto variableDeclaration = ShaderBuilder::DeclareVariable("temp", targetType); //< Validation will prevent name-clash if required
+			variableDeclaration->sourceLocation = node.sourceLocation;
+			Validate(*variableDeclaration);
+
+			std::size_t variableIndex = *variableDeclaration->varIndex;
+
+			m_context->currentStatementList->emplace_back(std::move(variableDeclaration));
+
+			ExpressionPtr cachedDiagonalValue;
+
+			for (std::size_t i = 0; i < targetMatrixType.columnCount; ++i)
+			{
+				// temp[i]
+				auto columnExpr = ShaderBuilder::AccessIndex(ShaderBuilder::Variable(variableIndex, targetType, node.sourceLocation), ShaderBuilder::ConstantValue(std::uint32_t(i), node.sourceLocation));
+				Validate(*columnExpr);
+
+				// vector expression
+				ExpressionPtr vectorExpr;
+				std::size_t vectorComponentCount;
+				if (isMatrixCast)
+				{
+					// fromMatrix[i]
+					auto matrixColumnExpr = ShaderBuilder::AccessIndex(CloneExpression(clone->expressions.front()), ShaderBuilder::ConstantValue(std::uint32_t(i), node.sourceLocation));
+					Validate(*matrixColumnExpr);
+
+					vectorExpr = std::move(matrixColumnExpr);
+					vectorComponentCount = std::get<MatrixType>(frontExprType).rowCount;
+				}
+				else if (IsVectorType(frontExprType))
+				{
+					// parameter #i
+					vectorExpr = std::move(clone->expressions[i]);
+					vectorComponentCount = std::get<VectorType>(ResolveAlias(GetExpressionTypeSecure(*vectorExpr))).componentCount;
+				}
+				else
+				{
+					assert(IsPrimitiveType(frontExprType));
+
+					// Use a Cast expression to replace swizzle
+					std::vector<ExpressionPtr> expressions(targetMatrixType.rowCount);
+					SourceLocation location;
+					for (std::size_t j = 0; j < targetMatrixType.rowCount; ++j)
+					{
+						if (clone->expressions.size() == 1) //< diagonal value
+						{
+							if (!cachedDiagonalValue)
+								cachedDiagonalValue = CacheResult(std::move(clone->expressions.front()));
+
+							if (i == j)
+								expressions[j] = CloneExpression(cachedDiagonalValue);
+							else
+								expressions[j] = ShaderBuilder::ConstantValue(ExpressionType{ targetMatrixType.type }, 0, node.sourceLocation);
+						}
+						else
+							expressions[j] = std::move(clone->expressions[i * targetMatrixType.rowCount + j]);
+					
+						if (j == 0)
+							location = expressions[j]->sourceLocation;
+						else
+							location.ExtendToRight(expressions[j]->sourceLocation);
+					}
+
+					auto buildVec = ShaderBuilder::Cast(ExpressionType{ VectorType{ targetMatrixType.rowCount, targetMatrixType.type } }, std::move(expressions));
+					buildVec->sourceLocation = location;
+					Validate(*buildVec);
+
+					vectorExpr = std::move(buildVec);
+					vectorComponentCount = targetMatrixType.rowCount;
+				}
+
+				// cast expression (turn fromMatrix[i] to vec3[f32](fromMatrix[i]))
+				ExpressionPtr castExpr;
+				if (vectorComponentCount != targetMatrixType.rowCount)
+				{
+					CastExpressionPtr vecCast;
+					if (vectorComponentCount < targetMatrixType.rowCount)
+					{
+						std::vector<ExpressionPtr> expressions;
+						expressions.push_back(std::move(vectorExpr));
+						for (std::size_t j = 0; j < targetMatrixType.rowCount - vectorComponentCount; ++j)
+							expressions.push_back(ShaderBuilder::ConstantValue(ExpressionType{ targetMatrixType.type }, (i == j + vectorComponentCount) ? 1 : 0, node.sourceLocation)); //< set 1 to diagonal
+
+						vecCast = ShaderBuilder::Cast(ExpressionType{ VectorType{ targetMatrixType.rowCount, targetMatrixType.type } }, std::move(expressions));
+						vecCast->sourceLocation = node.sourceLocation;
+						Validate(*vecCast);
+
+						castExpr = std::move(vecCast);
+					}
+					else
+					{
+						std::array<std::uint32_t, 4> swizzleComponents;
+						std::iota(swizzleComponents.begin(), swizzleComponents.begin() + targetMatrixType.rowCount, 0);
+
+						auto swizzleExpr = ShaderBuilder::Swizzle(std::move(vectorExpr), swizzleComponents, targetMatrixType.rowCount);
+						swizzleExpr->sourceLocation = node.sourceLocation;
+						Validate(*swizzleExpr);
+
+						castExpr = std::move(swizzleExpr);
+					}
+				}
+				else
+					castExpr = std::move(vectorExpr);
+
+				// temp[i] = castExpr
+				auto assignExpr = ShaderBuilder::Assign(AssignType::Simple, std::move(columnExpr), std::move(castExpr));
+				assignExpr->sourceLocation = node.sourceLocation;
+
+				m_context->currentStatementList->emplace_back(ShaderBuilder::ExpressionStatement(std::move(assignExpr)));
+			}
+
+			return ShaderBuilder::Variable(variableIndex, targetType, node.sourceLocation);
+		}
+
 		return clone;
 	}
 
@@ -541,7 +1124,7 @@ namespace nzsl::Ast
 
 		ExpressionPtr cloneCondition = Cloner::Clone(*node.condition);
 
-		std::optional<ConstantValue> conditionValue = ComputeConstantValue(cloneCondition);
+		std::optional<ConstantValue> conditionValue = ComputeConstantValue(*cloneCondition);
 		if (!conditionValue.has_value())
 		{
 			// Unresolvable condition
@@ -678,15 +1261,52 @@ namespace nzsl::Ast
 
 			return swizzleExpr;
 		}
-		
-		auto clone = std::make_unique<SwizzleExpression>();
-		clone->componentCount = node.componentCount;
-		clone->components = node.components;
-		clone->expression = std::move(expression);
-		clone->sourceLocation = node.sourceLocation;
-		Validate(*clone);
 
-		return clone;
+		const ExpressionType& resolvedExprType = ResolveAlias(*exprType);
+
+		if (m_context->options.removeScalarSwizzling && IsPrimitiveType(resolvedExprType))
+		{
+			for (std::size_t i = 0; i < node.componentCount; ++i)
+			{
+				if (node.components[i] != 0)
+					throw CompilerInvalidScalarSwizzleError{ node.sourceLocation };
+			}
+
+			if (node.componentCount == 1)
+				return expression; //< ignore this swizzle (a.x == a)
+
+			// Use a Cast expression to replace swizzle
+			expression = CacheResult(std::move(expression)); //< Since we are going to use a value multiple times, cache it if required
+
+			PrimitiveType baseType;
+			if (IsVectorType(resolvedExprType))
+				baseType = std::get<VectorType>(resolvedExprType).type;
+			else
+				baseType = std::get<PrimitiveType>(resolvedExprType);
+
+			auto cast = std::make_unique<CastExpression>();
+			cast->sourceLocation = node.sourceLocation;
+			cast->targetType = ExpressionType{ VectorType{ node.componentCount, baseType } };
+
+			cast->expressions.reserve(node.componentCount);
+			for (std::size_t j = 0; j < node.componentCount; ++j)
+				cast->expressions.push_back(CloneExpression(expression));
+
+			Validate(*cast);
+
+			return cast;
+		}
+		else
+		{
+			auto clone = std::make_unique<SwizzleExpression>();
+			clone->componentCount = node.componentCount;
+			clone->components = node.components;
+			clone->expression = std::move(expression);
+			clone->sourceLocation = node.sourceLocation;
+			Validate(*clone);
+
+			return clone;
+		}
 	}
 
 	ExpressionPtr SanitizeVisitor::Clone(UnaryExpression& node)
@@ -713,8 +1333,8 @@ namespace nzsl::Ast
 			for (auto& cond : node.condStatements)
 			{
 				MandatoryExpr(cond.condition, node.sourceLocation);
-				ExpressionPtr condExpr = Cloner::Clone(*cond.condition);
-				std::optional<ConstantValue> conditionValue = ComputeConstantValue(condExpr);
+
+				std::optional<ConstantValue> conditionValue = ComputeConstantValue(*Cloner::Clone(*cond.condition));
 				if (!conditionValue.has_value())
 					return Cloner::Clone(node); //< Unresolvable condition
 
@@ -762,8 +1382,21 @@ namespace nzsl::Ast
 				return ValidationResult::Validated;
 			};
 
-			if (BuildCondStatement(clone->condStatements.emplace_back()) == ValidationResult::Unresolved)
-				return Cloner::Clone(node);
+			if (m_context->options.splitMultipleBranches && condIndex > 0)
+			{
+				auto currentBranch = std::make_unique<BranchStatement>();
+
+				if (BuildCondStatement(currentBranch->condStatements.emplace_back()) == ValidationResult::Unresolved)
+					return Cloner::Clone(node);
+
+				root->elseStatement = std::move(currentBranch);
+				root = static_cast<BranchStatement*>(root->elseStatement.get());
+			}
+			else
+			{
+				if (BuildCondStatement(clone->condStatements.emplace_back()) == ValidationResult::Unresolved)
+					return Cloner::Clone(node);
+			}
 		}
 
 		if (node.elseStatement)
@@ -791,7 +1424,7 @@ namespace nzsl::Ast
 
 		ExpressionPtr cloneCondition = Cloner::Clone(*node.condition);
 
-		std::optional<ConstantValue> conditionValue = ComputeConstantValue(cloneCondition);
+		std::optional<ConstantValue> conditionValue = ComputeConstantValue(*cloneCondition);
 
 		if (!conditionValue.has_value())
 		{
@@ -920,7 +1553,7 @@ NAZARA_WARNING_GCC_DISABLE("-Wmaybe-uninitialized")
 			if (!clone->name.empty())
 			{
 				fullName = fmt::format("{}_{}", clone->name, extVar.name);
-				SanitizeIdentifier(fullName, IdentifierType::ExternalVariable);
+				HandleIdentifier(fullName, IdentifierScope::ExternalVariable);
 			}
 
 			std::string& internalName = (!clone->name.empty()) ? fullName : extVar.name;
@@ -1016,7 +1649,7 @@ NAZARA_WARNING_GCC_DISABLE("-Wmaybe-uninitialized")
 
 			extVar.type = std::move(resolvedType).value();
 			extVar.varIndex = RegisterVariable(extVar.name, std::move(varType), extVar.varIndex, extVar.sourceLocation);
-			SanitizeIdentifier(extVar.name, IdentifierType::ExternalVariable);
+			HandleIdentifier(extVar.name, IdentifierScope::ExternalVariable);
 		}
 
 		if (previousEnv)
@@ -1176,6 +1809,7 @@ NAZARA_WARNING_POP()
 
 		// Function content is resolved in a second pass
 		auto& pendingFunc = m_context->currentEnv->pendingFunctions.emplace_back();
+		pendingFunc.cloneNode = clone.get();
 		pendingFunc.node = &node;
 
 		FunctionData funcData;
@@ -1184,7 +1818,7 @@ NAZARA_WARNING_POP()
 		std::size_t funcIndex = RegisterFunction(clone->name, std::move(funcData), node.funcIndex, node.sourceLocation);
 		clone->funcIndex = funcIndex;
 
-		SanitizeIdentifier(clone->name, IdentifierType::Function);
+		HandleIdentifier(clone->name, IdentifierScope::Function);
 
 		return clone;
 	}
@@ -1250,7 +1884,7 @@ NAZARA_WARNING_POP()
 				if (!clone->defaultValue)
 					throw CompilerMissingOptionValueError{ node.sourceLocation, clone->optName };
 
-				clone->optIndex = RegisterConstant(clone->optName, ComputeConstantValue(clone->defaultValue), node.optIndex, node.sourceLocation);
+				clone->optIndex = RegisterConstant(clone->optName, ComputeConstantValue(*clone->defaultValue), node.optIndex, node.sourceLocation);
 			}
 		}
 
@@ -1313,7 +1947,7 @@ NAZARA_WARNING_POP()
 				do
 				{
 					candidateName = fmt::format("{}_{}", member.name, index++);
-					SanitizeIdentifier(candidateName, IdentifierType::Field);
+					HandleIdentifier(candidateName, IdentifierScope::Field);
 				}
 				while (reservedIdentifiers.count(candidateName) > 0);
 
@@ -1322,7 +1956,7 @@ NAZARA_WARNING_POP()
 			}
 			else
 			{
-				if (SanitizeIdentifier(member.name, IdentifierType::Field))
+				if (HandleIdentifier(member.name, IdentifierScope::Field))
 					reservedIdentifiers.insert(member.name);
 			}
 
@@ -1385,7 +2019,7 @@ NAZARA_WARNING_POP()
 		clone->description.conditionIndex = m_context->currentConditionalIndex;
 
 		clone->structIndex = RegisterStruct(clone->description.name, &clone->description, clone->structIndex, clone->sourceLocation);
-		SanitizeIdentifier(clone->description.name, IdentifierType::Struct);
+		HandleIdentifier(clone->description.name, IdentifierScope::Struct);
 
 		return clone;
 	}
@@ -1398,6 +2032,45 @@ NAZARA_WARNING_POP()
 		auto clone = Nz::StaticUniquePointerCast<DeclareVariableStatement>(Cloner::Clone(node));
 		if (Validate(*clone) == ValidationResult::Unresolved)
 			return clone;
+
+		if (clone->initialExpression)
+		{
+			const ExpressionType& resolvedType = ResolveAlias(clone->varType.GetResultingValue());
+
+			auto ShouldSplit = [&]
+			{
+				if (m_context->options.splitWrappedStructAssignation && IsStructType(resolvedType))
+				{
+					return resolvedType != ResolveAlias(GetExpressionTypeSecure(*clone->initialExpression));
+				}
+				else if (m_context->options.splitWrappedArrayAssignation && IsArrayType(resolvedType))
+				{
+					return resolvedType != ResolveAlias(GetExpressionTypeSecure(*clone->initialExpression));
+				}
+
+				return false;
+			};
+
+			if (ShouldSplit())
+			{
+				// Split variable declaration and assignation
+				ExpressionPtr assign = ShaderBuilder::Assign(AssignType::Simple, ShaderBuilder::Variable(*clone->varIndex, clone->varType.GetResultingValue(), clone->sourceLocation), std::move(clone->initialExpression));
+
+				MultiStatementPtr multiStatement = ShaderBuilder::MultiStatement();
+				multiStatement->sourceLocation = clone->sourceLocation;
+				multiStatement->statements.push_back(std::move(clone));
+
+				std::vector<StatementPtr>* previousList = m_context->currentStatementList;
+				m_context->currentStatementList = &multiStatement->statements;
+
+				// Clone assign to replace it with a per-field assignation
+				multiStatement->statements.push_back(CloneStatement(ShaderBuilder::ExpressionStatement(std::move(assign))));
+
+				m_context->currentStatementList = previousList;
+
+				return multiStatement;
+			}
+		}
 
 		return clone;
 	}
@@ -1455,7 +2128,7 @@ NAZARA_WARNING_POP()
 				if (fromExprType && wontUnroll)
 				{
 					clone->varIndex = RegisterVariable(node.varName, *fromExprType, node.varIndex, node.sourceLocation);
-					SanitizeIdentifier(node.varName, IdentifierType::Variable);
+					HandleIdentifier(node.varName, IdentifierScope::Variable);
 				}
 				else
 				{
@@ -1508,15 +2181,15 @@ NAZARA_WARNING_POP()
 			assert(unrollValue.IsResultingValue());
 			if (unrollValue.GetResultingValue() == LoopUnroll::Always)
 			{
-				std::optional<ConstantValue> fromValue = ComputeConstantValue(fromExpr);
-				std::optional<ConstantValue> toValue = ComputeConstantValue(toExpr);
+				std::optional<ConstantValue> fromValue = ComputeConstantValue(*fromExpr);
+				std::optional<ConstantValue> toValue = ComputeConstantValue(*toExpr);
 				if (!fromValue.has_value() || !toValue.has_value())
 					return CloneFor(); //< can't resolve step value
 
 				std::optional<ConstantValue> stepValue;
 				if (stepExpr)
 				{
-					stepValue = ComputeConstantValue(stepExpr);
+					stepValue = ComputeConstantValue(*stepExpr);
 					if (!stepValue.has_value())
 						return CloneFor(); //< can't resolve step value
 				}
@@ -1581,7 +2254,93 @@ NAZARA_WARNING_POP()
 			}
 		}
 
-		return CloneFor();
+		if (m_context->options.reduceLoopsToWhile)
+		{
+			PushScope();
+			NAZARA_DEFER({ PopScope(); });
+
+			auto multi = std::make_unique<MultiStatement>();
+			multi->sourceLocation = node.sourceLocation;
+
+			// Counter variable
+			auto counterVariable = ShaderBuilder::DeclareVariable(node.varName, std::move(fromExpr));
+			counterVariable->sourceLocation = node.sourceLocation;
+			counterVariable->varIndex = node.varIndex;
+			Validate(*counterVariable);
+
+			std::size_t counterVarIndex = counterVariable->varIndex.value();
+			multi->statements.emplace_back(std::move(counterVariable));
+
+			// Target variable
+			auto targetVariable = ShaderBuilder::DeclareVariable("to", std::move(toExpr));
+			targetVariable->sourceLocation = node.sourceLocation;
+			Validate(*targetVariable);
+
+			std::size_t targetVarIndex = targetVariable->varIndex.value();
+			multi->statements.emplace_back(std::move(targetVariable));
+
+			// Step variable
+			std::optional<std::size_t> stepVarIndex;
+
+			if (stepExpr)
+			{
+				auto stepVariable = ShaderBuilder::DeclareVariable("step", std::move(stepExpr));
+				stepVariable->sourceLocation = node.sourceLocation;
+				Validate(*stepVariable);
+
+				stepVarIndex = stepVariable->varIndex;
+				multi->statements.emplace_back(std::move(stepVariable));
+			}
+
+			// While
+			auto whileStatement = std::make_unique<WhileStatement>();
+			whileStatement->sourceLocation = node.sourceLocation;
+			whileStatement->unroll = std::move(unrollValue);
+
+			// While condition
+			auto conditionCounterVariable = ShaderBuilder::Variable(counterVarIndex, counterType, node.sourceLocation);
+			auto conditionTargetVariable = ShaderBuilder::Variable(targetVarIndex, counterType, node.sourceLocation);
+
+			auto condition = ShaderBuilder::Binary(BinaryType::CompLt, std::move(conditionCounterVariable), std::move(conditionTargetVariable));
+			condition->sourceLocation = node.sourceLocation;
+			Validate(*condition);
+
+			whileStatement->condition = std::move(condition);
+
+			// While body
+			auto body = std::make_unique<MultiStatement>();
+			body->statements.reserve(2);
+			{
+				bool wasInLoop = m_context->inLoop;
+				m_context->inLoop = true;
+				NAZARA_DEFER({ m_context->inLoop = wasInLoop; });
+
+				body->statements.emplace_back(Unscope(CloneStatement(node.statement)));
+			}
+
+			// Counter and increment
+			ExpressionPtr incrExpr;
+			if (stepVarIndex)
+				incrExpr = ShaderBuilder::Variable(*stepVarIndex, counterType, node.sourceLocation);
+			else
+				incrExpr = (counterType == PrimitiveType::Int32) ? ShaderBuilder::ConstantValue(1, node.sourceLocation) : ShaderBuilder::ConstantValue(1u, node.sourceLocation);
+
+			incrExpr->sourceLocation = node.sourceLocation;
+
+			auto incrCounter = ShaderBuilder::Assign(AssignType::CompoundAdd, ShaderBuilder::Variable(counterVarIndex, counterType, node.sourceLocation), std::move(incrExpr));
+			incrCounter->sourceLocation = node.sourceLocation;
+			Validate(*incrCounter);
+
+			body->statements.emplace_back(ShaderBuilder::ExpressionStatement(std::move(incrCounter)));
+
+			whileStatement->body = std::move(body);
+
+			multi->statements.emplace_back(std::move(whileStatement));
+
+			return ShaderBuilder::Scoped(std::move(multi));
+		}
+		else
+			return CloneFor();
 	}
 
 	StatementPtr SanitizeVisitor::Clone(ForEachStatement& node)
@@ -1665,26 +2424,93 @@ NAZARA_WARNING_POP()
 			}
 		}
 
-		auto clone = std::make_unique<ForEachStatement>();
-		clone->expression = std::move(expr);
-		clone->varName = node.varName;
-		clone->unroll = std::move(unrollValue);
-		clone->sourceLocation = node.sourceLocation;
-
-		PushScope();
+		if (m_context->options.reduceLoopsToWhile)
 		{
-			clone->varIndex = RegisterVariable(node.varName, innerType, node.varIndex, node.sourceLocation);
-			SanitizeIdentifier(node.varName, IdentifierType::Variable);
+			PushScope();
+			NAZARA_DEFER({ PopScope(); });
 
-			bool wasInLoop = m_context->inLoop;
-			m_context->inLoop = true;
-			Nz::CallOnExit restoreLoop([=] { m_context->inLoop = wasInLoop; });
+			auto multi = std::make_unique<MultiStatement>();
+			multi->sourceLocation = node.sourceLocation;
 
-			clone->statement = CloneStatement(node.statement);
+			if (IsArrayType(resolvedExprType))
+			{
+				const ArrayType& arrayType = std::get<ArrayType>(resolvedExprType);
+
+				multi->statements.reserve(2);
+
+				// Counter variable
+				auto counterVariable = ShaderBuilder::DeclareVariable("i", ShaderBuilder::ConstantValue(0u));
+				counterVariable->sourceLocation = node.sourceLocation;
+
+				Validate(*counterVariable);
+
+				std::size_t counterVarIndex = counterVariable->varIndex.value();
+
+				multi->statements.emplace_back(std::move(counterVariable));
+
+				auto whileStatement = std::make_unique<WhileStatement>();
+				whileStatement->unroll = std::move(unrollValue);
+
+				// While condition
+				auto condition = ShaderBuilder::Binary(BinaryType::CompLt, ShaderBuilder::Variable(counterVarIndex, PrimitiveType::UInt32, node.sourceLocation), ShaderBuilder::ConstantValue(arrayType.length, node.sourceLocation));
+				Validate(*condition);
+				whileStatement->condition = std::move(condition);
+
+				// While body
+				auto body = std::make_unique<MultiStatement>();
+				body->statements.reserve(3);
+
+				auto accessIndex = ShaderBuilder::AccessIndex(std::move(expr), ShaderBuilder::Variable(counterVarIndex, PrimitiveType::UInt32, node.sourceLocation));
+				Validate(*accessIndex);
+
+				auto elementVariable = ShaderBuilder::DeclareVariable(node.varName, std::move(accessIndex));
+				elementVariable->varIndex = node.varIndex; //< Preserve var index
+				Validate(*elementVariable);
+				body->statements.emplace_back(std::move(elementVariable));
+
+				{
+					bool wasInLoop = m_context->inLoop;
+					m_context->inLoop = true;
+					NAZARA_DEFER({ m_context->inLoop = wasInLoop; });
+
+					body->statements.emplace_back(Unscope(CloneStatement(node.statement)));
+				}
+
+				auto incrCounter = ShaderBuilder::Assign(AssignType::CompoundAdd, ShaderBuilder::Variable(counterVarIndex, PrimitiveType::UInt32, node.sourceLocation), ShaderBuilder::ConstantValue(1u, node.sourceLocation));
+				Validate(*incrCounter);
+
+				body->statements.emplace_back(ShaderBuilder::ExpressionStatement(std::move(incrCounter)));
+
+				whileStatement->body = std::move(body);
+
+				multi->statements.emplace_back(std::move(whileStatement));
+			}
+
+			return ShaderBuilder::Scoped(std::move(multi));
 		}
-		PopScope();
+		else
+		{
+			auto clone = std::make_unique<ForEachStatement>();
+			clone->expression = std::move(expr);
+			clone->varName = node.varName;
+			clone->unroll = std::move(unrollValue);
+			clone->sourceLocation = node.sourceLocation;
 
-		return clone;
+			PushScope();
+			{
+				clone->varIndex = RegisterVariable(node.varName, innerType, node.varIndex, node.sourceLocation);
+				HandleIdentifier(node.varName, IdentifierScope::Variable);
+
+				bool wasInLoop = m_context->inLoop;
+				m_context->inLoop = true;
+				NAZARA_DEFER({ m_context->inLoop = wasInLoop; });
+
+				clone->statement = CloneStatement(node.statement);
+			}
+			PopScope();
+
+			return clone;
+		}
 	}
 
 	StatementPtr SanitizeVisitor::Clone(ImportStatement& node)
@@ -2074,6 +2900,46 @@ NAZARA_WARNING_POP()
 		return clone;
 	}
 
+	auto SanitizeVisitor::FindIdentifier(std::string_view identifierName) const -> const IdentifierData*
+	{
+		return FindIdentifier(*m_context->currentEnv, identifierName);
+	}
+
+	template<typename F>
+	auto SanitizeVisitor::FindIdentifier(std::string_view identifierName, F&& functor) const -> const IdentifierData*
+	{
+		return FindIdentifier(*m_context->currentEnv, identifierName, std::forward<F>(functor));
+	}
+
+	auto SanitizeVisitor::FindIdentifier(const Environment& environment, std::string_view identifierName) const -> const IdentifierData*
+	{
+		return FindIdentifier(environment, identifierName, [](const IdentifierData& identifierData) { return identifierData.category != IdentifierCategory::ReservedName; });
+	}
+
+	template<typename F>
+	auto SanitizeVisitor::FindIdentifier(const Environment& environment, std::string_view identifierName, F&& functor) const -> const IdentifierData*
+	{
+		auto it = std::find_if(environment.identifiersInScope.rbegin(), environment.identifiersInScope.rend(), [&](const Identifier& identifier)
+		{
+			if (identifier.name == identifierName)
+			{
+				if (functor(identifier.target))
+					return true;
+			}
+
+			return false;
+		});
+		if (it == environment.identifiersInScope.rend())
+		{
+			if (environment.parentEnv)
+				return FindIdentifier(*environment.parentEnv, identifierName, std::forward<F>(functor));
+			else
+				return nullptr;
+		}
+
+		return &it->target;
+	}
+
 	const ExpressionType* SanitizeVisitor::GetExpressionType(Expression& expr) const
 	{
 		const ExpressionType* expressionType = Ast::GetExpressionType(expr);
@@ -2095,10 +2961,129 @@ NAZARA_WARNING_POP()
 		return *expressionType;
 	}
 
+	ExpressionPtr SanitizeVisitor::HandleIdentifier(const IdentifierData* identifierData, const SourceLocation& sourceLocation)
+	{
+		switch (identifierData->category)
+		{
+			case IdentifierCategory::Alias:
+			{
+				AliasValueExpression aliasValue;
+				aliasValue.aliasId = identifierData->index;
+				aliasValue.sourceLocation = sourceLocation;
+
+				return Clone(aliasValue);
+			}
+
+			case IdentifierCategory::Constant:
+			{
+				// Replace IdentifierExpression by Constant(Value)Expression
+				ConstantExpression constantExpr;
+				constantExpr.constantId = identifierData->index;
+				constantExpr.sourceLocation = sourceLocation;
+
+				return Clone(constantExpr); //< Turn ConstantExpression into ConstantValueExpression
+			}
+
+			case IdentifierCategory::ExternalBlock:
+			{
+				// Replace IdentifierExpression by NamedExternalBlockExpression
+				auto moduleExpr = std::make_unique<NamedExternalBlockExpression>();
+				moduleExpr->cachedExpressionType = NamedExternalBlockType{ identifierData->index };
+				moduleExpr->sourceLocation = sourceLocation;
+				moduleExpr->externalBlockId = identifierData->index;
+
+				return moduleExpr;
+			}
+
+			case IdentifierCategory::Function:
+			{
+				// Replace IdentifierExpression by FunctionExpression
+				auto funcExpr = std::make_unique<FunctionExpression>();
+				funcExpr->cachedExpressionType = FunctionType{ identifierData->index }; //< FIXME: Functions (and intrinsic) should be typed by their parameters/return type
+				funcExpr->funcId = identifierData->index;
+				funcExpr->sourceLocation = sourceLocation;
+
+				return funcExpr;
+			}
+
+			case IdentifierCategory::Intrinsic:
+			{
+				IntrinsicType intrinsicType = m_context->intrinsics.Retrieve(identifierData->index, sourceLocation);
+
+				// Replace IdentifierExpression by IntrinsicFunctionExpression
+				auto intrinsicExpr = std::make_unique<IntrinsicFunctionExpression>();
+				intrinsicExpr->cachedExpressionType = IntrinsicFunctionType{ intrinsicType }; //< FIXME: Functions (and intrinsic) should be typed by their parameters/return type
+				intrinsicExpr->intrinsicId = identifierData->index;
+				intrinsicExpr->sourceLocation = sourceLocation;
+
+				return intrinsicExpr;
+			}
+
+			case IdentifierCategory::Module:
+			{
+				// Replace IdentifierExpression by ModuleExpression
+				auto moduleExpr = std::make_unique<ModuleExpression>();
+				moduleExpr->cachedExpressionType = ModuleType{ identifierData->index };
+				moduleExpr->sourceLocation = sourceLocation;
+				moduleExpr->moduleId = identifierData->index;
+
+				return moduleExpr;
+			}
+
+			case IdentifierCategory::Struct:
+			{
+				// Replace IdentifierExpression by StructTypeExpression
+				auto structExpr = std::make_unique<StructTypeExpression>();
+				structExpr->cachedExpressionType = StructType{ identifierData->index };
+				structExpr->sourceLocation = sourceLocation;
+				structExpr->structTypeId = identifierData->index;
+
+				return structExpr;
+			}
+
+			case IdentifierCategory::Type:
+			{
+				auto typeExpr = std::make_unique<TypeExpression>();
+				typeExpr->cachedExpressionType = Type{ identifierData->index };
+				typeExpr->sourceLocation = sourceLocation;
+				typeExpr->typeId = identifierData->index;
+
+				return typeExpr;
+			}
+
+			case IdentifierCategory::ReservedName:
+				throw AstUnexpectedIdentifierError{ sourceLocation, "reserved" };
+
+			case IdentifierCategory::Unresolved:
+				throw AstUnexpectedIdentifierError{ sourceLocation, "unresolved" };
+
+			case IdentifierCategory::Variable:
+			{
+				// Replace IdentifierExpression by VariableExpression
+				auto varExpr = std::make_unique<VariableValueExpression>();
+				varExpr->cachedExpressionType = m_context->variableTypes.Retrieve(identifierData->index, sourceLocation);
+				varExpr->sourceLocation = sourceLocation;
+				varExpr->variableId = identifierData->index;
+
+				return varExpr;
+			}
+		}
+
+		throw AstInternalError{ sourceLocation, "unhandled identifier category" };
+	}
+
 	bool SanitizeVisitor::IsFeatureEnabled(ModuleFeature feature) const
 	{
 		const std::vector<ModuleFeature>& enabledFeatures = m_context->currentModule->metadata->enabledFeatures;
 		return std::find(enabledFeatures.begin(), enabledFeatures.end(), feature) != enabledFeatures.end();
+	}
+
+	bool SanitizeVisitor::IsIdentifierAvailable(std::string_view identifier, bool allowReserved) const
+	{
+		if (allowReserved)
+			return FindIdentifier(identifier) == nullptr;
+		else
+			return FindIdentifier(identifier, [](const IdentifierData&) { return true; }) == nullptr;
 	}
 
 	void SanitizeVisitor::PushScope()
@@ -2135,28 +3120,28 @@ NAZARA_WARNING_POP()
 		return varExpr;
 	}
 
-	std::optional<ConstantValue> SanitizeVisitor::ComputeConstantValue(ExpressionPtr& expr) const
+	std::optional<ConstantValue> SanitizeVisitor::ComputeConstantValue(Expression& expr) const
 	{
 		// Run optimizer on constant value to hopefully retrieve a single constant value
-		PropagateConstants(expr);
-		if (expr->GetType() == NodeType::ConstantValueExpression)
+		ExpressionPtr optimizedExpr = PropagateConstants(expr);
+		if (optimizedExpr->GetType() == NodeType::ConstantValueExpression)
 		{
 			return std::visit([&](auto&& value) -> ConstantValue
 			{
 				return value;
-			}, static_cast<ConstantValueExpression&>(*expr).value);
+			}, static_cast<ConstantValueExpression&>(*optimizedExpr).value);
 		}
-		else if (expr->GetType() == NodeType::ConstantArrayValueExpression)
+		else if (optimizedExpr->GetType() == NodeType::ConstantArrayValueExpression)
 		{
 			return std::visit([&](auto&& values) -> ConstantValue
 			{
 				return values;
-			}, static_cast<ConstantArrayValueExpression&>(*expr).values);
+			}, static_cast<ConstantArrayValueExpression&>(*optimizedExpr).values);
 		}
 		else
 		{
 			if (!m_context->options.partialSanitization)
-				throw CompilerConstantExpressionRequiredError{ expr->sourceLocation };
+				throw CompilerConstantExpressionRequiredError{ expr.sourceLocation };
 
 			return std::nullopt;
 		}
@@ -2170,7 +3155,7 @@ NAZARA_WARNING_POP()
 
 		if (attribute.IsExpression())
 		{
-			ExpressionPtr expr = Ast::Clone(*attribute.GetExpression());
+			auto& expr = *attribute.GetExpression();
 
 			std::optional<ConstantValue> value = ComputeConstantValue(expr);
 			if (!value)
@@ -2185,18 +3170,18 @@ NAZARA_WARNING_POP()
 					{
 						std::int32_t intVal = std::get<std::int32_t>(*value);
 						if (intVal < 0)
-							throw CompilerAttributeUnexpectedNegativeError{ expr->sourceLocation, Ast::ToString(intVal) };
+							throw CompilerAttributeUnexpectedNegativeError{ expr.sourceLocation, Ast::ToString(intVal) };
 					
 						attribute = static_cast<std::uint32_t>(intVal);
 					}
 					else
-						throw CompilerAttributeUnexpectedTypeError{ expr->sourceLocation, ToString(GetConstantExpressionType<T>(), sourceLocation), ToString(GetExpressionTypeSecure(*expr), sourceLocation) };
+						throw CompilerAttributeUnexpectedTypeError{ expr.sourceLocation, ToString(GetConstantExpressionType<T>(), sourceLocation), ToString(GetExpressionTypeSecure(expr), sourceLocation) };
 				}
 				else
 					attribute = std::get<T>(*value);
 			}
 			else
-				throw CompilerAttributeUnexpectedExpressionError{ expr->sourceLocation };
+				throw CompilerAttributeUnexpectedExpressionError{ expr.sourceLocation };
 		}
 
 		return ValidationResult::Validated;
@@ -2210,12 +3195,12 @@ NAZARA_WARNING_POP()
 
 		if (attribute.IsExpression())
 		{
-			ExpressionPtr expr = Ast::Clone(*attribute.GetExpression());
+			auto& expr = *attribute.GetExpression();
 
-			std::optional<ConstantValue> value = ComputeConstantValue(expr);
+			std::optional<ConstantValue> value = ComputeConstantValue(*Cloner::Clone(expr));
 			if (!value)
 			{
-				targetAttribute = Cloner::Clone(*expr);
+				targetAttribute = Cloner::Clone(expr);
 				return ValidationResult::Unresolved;
 			}
 
@@ -2230,21 +3215,21 @@ NAZARA_WARNING_POP()
 						{
 							std::int32_t intVal = std::get<std::int32_t>(*value);
 							if (intVal < 0)
-								throw CompilerAttributeUnexpectedNegativeError{ expr->sourceLocation, Ast::ToString(intVal) };
+								throw CompilerAttributeUnexpectedNegativeError{ expr.sourceLocation, Ast::ToString(intVal) };
 
 							targetAttribute = static_cast<std::uint32_t>(intVal);
 						}
 						else
-							throw CompilerAttributeUnexpectedTypeError{ expr->sourceLocation, ToString(GetConstantExpressionType<T>(), sourceLocation), ToString(GetExpressionTypeSecure(*expr), sourceLocation) };
+							throw CompilerAttributeUnexpectedTypeError{ expr.sourceLocation, ToString(GetConstantExpressionType<T>(), sourceLocation), ToString(GetExpressionTypeSecure(expr), sourceLocation) };
 					}
 					else
-						throw CompilerAttributeUnexpectedTypeError{ expr->sourceLocation, ToString(GetConstantExpressionType<T>(), sourceLocation), ToString(GetExpressionTypeSecure(*expr), sourceLocation) };
+						throw CompilerAttributeUnexpectedTypeError{ expr.sourceLocation, ToString(GetConstantExpressionType<T>(), sourceLocation), ToString(GetExpressionTypeSecure(expr), sourceLocation) };
 				}
 				else
 					targetAttribute = std::get<T>(*value);
 			}
 			else
-				throw CompilerAttributeUnexpectedExpressionError{ expr->sourceLocation };
+				throw CompilerAttributeUnexpectedExpressionError{ expr.sourceLocation };
 		}
 		else
 		{
@@ -2255,25 +3240,21 @@ NAZARA_WARNING_POP()
 		return ValidationResult::Validated;
 	}
 
-	void SanitizeVisitor::PropagateConstants(ExpressionPtr& expr) const
+	template<typename T>
+	std::unique_ptr<T> SanitizeVisitor::PropagateConstants(T& node) const
 	{
-		// Run optimizer on constant value to hopefully retrieve a single constant value
-
-		ConstantPropagationTransformer::Options optimizerOptions;
+		ConstantPropagationVisitor::Options optimizerOptions;
 		optimizerOptions.constantQueryCallback = [&](std::size_t constantId) -> const ConstantValue*
 		{
-			const ConstantValue* value = m_context->constantValues.TryRetrieve(constantId, expr->sourceLocation);
+			const ConstantValue* value = m_context->constantValues.TryRetrieve(constantId, node.sourceLocation);
 			if (!value && !m_context->options.partialSanitization)
-				throw AstInvalidConstantIndexError{ expr->sourceLocation, constantId };
+				throw AstInvalidConstantIndexError{ node.sourceLocation, constantId };
 
 			return value;
 		};
 
-		ConstantPropagationTransformer::Context context;
-		context.partialSanitization = m_context->options.partialSanitization;
-
-		ConstantPropagationTransformer constantPropagation;
-		constantPropagation.Transform(expr, context, optimizerOptions);
+		// Run optimizer on constant value to hopefully retrieve a single constant value
+		return Nz::StaticUniquePointerCast<T>(Ast::PropagateConstants(node, optimizerOptions));
 	}
 
 	void SanitizeVisitor::PreregisterIndices(const Module& module)
@@ -2312,6 +3293,760 @@ NAZARA_WARNING_POP()
 			PropagateFunctionRequirements(callingFunction, i, seen);
 	}
 
+	void SanitizeVisitor::RegisterBuiltin()
+	{
+		// Primitive types
+		RegisterType("bool", PrimitiveType::Boolean, std::nullopt, {});
+		RegisterType("f32",  PrimitiveType::Float32, std::nullopt, {});
+		RegisterType("i32",  PrimitiveType::Int32,   std::nullopt, {});
+		RegisterType("u32",  PrimitiveType::UInt32,  std::nullopt, {});
+
+		if (IsFeatureEnabled(ModuleFeature::Float64))
+			RegisterType("f64", PrimitiveType::Float64, std::nullopt, {});
+
+		// Partial types
+
+		// Array
+		RegisterType("array", PartialType {
+			{ TypeParameterCategory::FullType }, { TypeParameterCategory::ConstantValue },
+			[=](const TypeParameter* parameters, std::size_t parameterCount, const SourceLocation& sourceLocation) -> ExpressionType
+			{
+				assert(parameterCount >= 1 && parameterCount <= 2);
+				
+				assert(std::holds_alternative<ExpressionType>(parameters[0]));
+				const ExpressionType& exprType = std::get<ExpressionType>(parameters[0]);
+
+				std::uint32_t lengthValue;
+				if (parameterCount >= 2)
+				{
+					assert(std::holds_alternative<ConstantValue>(parameters[1]));
+					const ConstantValue& length = std::get<ConstantValue>(parameters[1]);
+
+					if (std::holds_alternative<std::int32_t>(length))
+					{
+						std::int32_t value = std::get<std::int32_t>(length);
+						if (value <= 0)
+							throw CompilerArrayLengthError{ sourceLocation, Ast::ToString(value) };
+
+						lengthValue = Nz::SafeCast<std::uint32_t>(value);
+					}
+					else if (std::holds_alternative<std::uint32_t>(length))
+					{
+						lengthValue = std::get<std::uint32_t>(length);
+						if (lengthValue == 0)
+							throw CompilerArrayLengthError{ sourceLocation, Ast::ToString(lengthValue) };
+					}
+					else
+						throw CompilerArrayLengthError{ sourceLocation, ToString(GetConstantType(length), sourceLocation) };
+				}
+				else
+					lengthValue = 0;
+				
+				ArrayType arrayType;
+				arrayType.containedType = std::make_unique<ContainedType>();
+				arrayType.containedType->type = exprType;
+				arrayType.length = lengthValue;
+
+				return arrayType;
+			}
+		}, std::nullopt, {});
+
+		// Dynamic array
+		RegisterType("dyn_array", PartialType {
+			{ TypeParameterCategory::FullType }, {},
+			[=](const TypeParameter* parameters, [[maybe_unused]] std::size_t parameterCount, const SourceLocation& /*sourceLocation*/) -> ExpressionType
+			{
+				assert(parameterCount == 1);
+				assert(std::holds_alternative<ExpressionType>(parameters[0]));
+
+				const ExpressionType& exprType = std::get<ExpressionType>(parameters[0]);
+
+				DynArrayType arrayType;
+				arrayType.containedType = std::make_unique<ContainedType>();
+				arrayType.containedType->type = exprType;
+
+				return arrayType;
+			}
+		}, std::nullopt, {});
+
+		// matX | matAxB
+		for (std::size_t columnCount = 2; columnCount <= 4; ++columnCount)
+		{
+			for (std::size_t rowCount = 2; rowCount <= 4; ++rowCount)
+			{
+				std::string name;
+				if (columnCount == rowCount)
+					name = "mat" + std::to_string(columnCount);
+				else
+					name = "mat" + std::to_string(columnCount) + "x" + std::to_string(rowCount);
+
+				RegisterType(std::move(name), PartialType{
+					{ TypeParameterCategory::PrimitiveType }, {},
+					[=](const TypeParameter* parameters, [[maybe_unused]] std::size_t parameterCount, const SourceLocation& sourceLocation) -> ExpressionType
+					{
+						assert(parameterCount == 1);
+						assert(std::holds_alternative<ExpressionType>(*parameters));
+
+						const ExpressionType& exprType = std::get<ExpressionType>(*parameters);
+						assert(IsPrimitiveType(exprType));
+
+						PrimitiveType primitiveType = std::get<PrimitiveType>(exprType);
+						if (primitiveType != PrimitiveType::Float32 && primitiveType != PrimitiveType::Float64)
+							throw CompilerMatrixExpectedFloatError{ sourceLocation, Ast::ToString(exprType) };
+
+						return MatrixType {
+							columnCount, rowCount, primitiveType
+						};
+					}
+				}, std::nullopt, {});
+			}
+		}
+
+		// vecX
+		for (std::size_t componentCount = 2; componentCount <= 4; ++componentCount)
+		{
+			RegisterType("vec" + std::to_string(componentCount), PartialType {
+				{ TypeParameterCategory::PrimitiveType }, {},
+				[=](const TypeParameter* parameters, [[maybe_unused]] std::size_t parameterCount, const SourceLocation& /*sourceLocation*/) -> ExpressionType
+				{
+					assert(parameterCount == 1);
+					assert(std::holds_alternative<ExpressionType>(*parameters));
+
+					const ExpressionType& exprType = std::get<ExpressionType>(*parameters);
+					assert(IsPrimitiveType(exprType));
+
+					return VectorType {
+						componentCount, std::get<PrimitiveType>(exprType)
+					};
+				}
+			}, std::nullopt, {});
+		}
+
+		// samplers
+		struct SamplerInfo
+		{
+			std::string_view typeName;
+			ImageType imageType;
+			std::optional<ModuleFeature> requiredFeature;
+			bool depthSampler;
+		};
+
+		constexpr std::array<SamplerInfo, 11> samplerInfos = {
+			{
+				// Regular samplers
+				{
+					"sampler1D",
+					ImageType::E1D,
+					ModuleFeature::Texture1D,
+					false
+				},
+				{
+					"sampler1D_array",
+					ImageType::E1D_Array,
+					ModuleFeature::Texture1D,
+					false
+				},
+				{
+					"sampler2D",
+					ImageType::E2D,
+					std::nullopt,
+					false
+				},
+				{
+					"sampler2D_array",
+					ImageType::E2D_Array,
+					std::nullopt,
+					false
+				},
+				{
+					"sampler3D",
+					ImageType::E3D,
+					std::nullopt,
+					false
+				},
+				{
+					"sampler_cube",
+					ImageType::Cubemap,
+					std::nullopt,
+					false
+				},
+				// Depth samplers
+				{
+					"depth_sampler1D",
+					ImageType::E1D,
+					ModuleFeature::Texture1D,
+					true
+				},
+				{
+					"depth_sampler1D_array",
+					ImageType::E1D_Array,
+					ModuleFeature::Texture1D,
+					true
+				},
+				{
+					"depth_sampler2D",
+					ImageType::E2D,
+					std::nullopt,
+					true
+				},
+				{
+					"depth_sampler2D_array",
+					ImageType::E2D_Array,
+					std::nullopt,
+					true
+				},
+				{
+					"depth_sampler_cube",
+					ImageType::Cubemap,
+					std::nullopt,
+					true
+				}
+			}
+		};
+
+		for (const SamplerInfo& sampler : samplerInfos)
+		{
+			if (sampler.requiredFeature.has_value() && !IsFeatureEnabled(*sampler.requiredFeature))
+				continue;
+
+			RegisterType(std::string(sampler.typeName), PartialType {
+				{ TypeParameterCategory::PrimitiveType }, {},
+				[=](const TypeParameter* parameters, [[maybe_unused]] std::size_t parameterCount, const SourceLocation& sourceLocation) -> ExpressionType
+				{
+					assert(parameterCount == 1);
+					assert(std::holds_alternative<ExpressionType>(*parameters));
+
+					const ExpressionType& exprType = std::get<ExpressionType>(*parameters);
+					assert(IsPrimitiveType(exprType));
+
+					PrimitiveType primitiveType = std::get<PrimitiveType>(exprType);
+
+					// TODO: Add support for integer samplers
+					if (primitiveType != PrimitiveType::Float32)
+						throw CompilerSamplerUnexpectedTypeError{ sourceLocation, ToString(exprType, sourceLocation) };
+
+					return SamplerType {
+						sampler.imageType, primitiveType, sampler.depthSampler
+					};
+				}
+			}, std::nullopt, {});
+		}
+
+		// texture
+		struct TextureInfo
+		{
+			std::string_view typeName;
+			ImageType imageType;
+			std::optional<ModuleFeature> requiredFeature;
+		};
+
+		constexpr std::array<TextureInfo, 6> textureInfos = {
+			{
+				{
+					"texture1D",
+					ImageType::E1D,
+					ModuleFeature::Texture1D
+				},
+				{
+					"texture1D_array",
+					ImageType::E1D_Array,
+					ModuleFeature::Texture1D
+				},
+				{
+					"texture2D",
+					ImageType::E2D,
+					std::nullopt
+				},
+				{
+					"texture2D_array",
+					ImageType::E2D_Array,
+					std::nullopt
+				},
+				{
+					"texture3D",
+					ImageType::E3D,
+					std::nullopt
+				},
+				{
+					"texture_cube",
+					ImageType::Cubemap,
+					std::nullopt
+				}
+			}
+		};
+
+		for (const TextureInfo& texture : textureInfos)
+		{
+			if (texture.requiredFeature.has_value() && !IsFeatureEnabled(*texture.requiredFeature))
+				continue;
+
+			RegisterType(std::string(texture.typeName), PartialType {
+				{ TypeParameterCategory::PrimitiveType, TypeParameterCategory::ConstantValue }, { TypeParameterCategory::ConstantValue },
+				[=](const TypeParameter* parameters, std::size_t parameterCount, const SourceLocation& sourceLocation) -> ExpressionType
+				{
+					assert(std::holds_alternative<ExpressionType>(parameters[0]));
+					const ExpressionType& exprType = std::get<ExpressionType>(parameters[0]);
+					assert(IsPrimitiveType(exprType));
+
+					PrimitiveType primitiveType = std::get<PrimitiveType>(exprType);
+
+					// TODO: Add support for integer textures
+					if (primitiveType != PrimitiveType::Float32)
+						throw CompilerTextureUnexpectedTypeError{ sourceLocation, ToString(exprType, sourceLocation) };
+
+					assert(std::holds_alternative<ConstantValue>(parameters[1]));
+					const ConstantValue& accessValue = std::get<ConstantValue>(parameters[1]);
+					if (!std::holds_alternative<std::uint32_t>(accessValue))
+						throw CompilerTextureUnexpectedAccessError{ sourceLocation, "<TODO>" };
+
+					AccessPolicy access = static_cast<AccessPolicy>(std::get<std::uint32_t>(accessValue));
+
+					std::optional<ImageFormat> formatOpt;
+					if (parameterCount >= 3)
+					{
+						assert(std::holds_alternative<ConstantValue>(parameters[2]));
+						const ConstantValue& formatValue = std::get<ConstantValue>(parameters[2]);
+						if (!std::holds_alternative<std::uint32_t>(formatValue))
+							throw CompilerTextureUnexpectedFormatError{ sourceLocation, "<TODO>" };
+
+						ImageFormat format = static_cast<ImageFormat>(std::get<std::uint32_t>(formatValue));
+						if (format != ImageFormat::RGBA8) //< TODO: Add support for more formats
+							throw CompilerTextureUnexpectedFormatError{ sourceLocation, "<TODO>" };
+
+						formatOpt = format;
+					}
+
+					return TextureType {
+						access, formatOpt.value_or(ImageFormat::Unknown), texture.imageType, primitiveType
+					};
+				}
+			}, std::nullopt, {});
+		}
+
+		// storage
+		RegisterType("storage", PartialType {
+			{ TypeParameterCategory::StructType }, { TypeParameterCategory::ConstantValue },
+			[=](const TypeParameter* parameters, std::size_t parameterCount, const SourceLocation& sourceLocation) -> ExpressionType
+			{
+				assert(parameterCount >= 1);
+				assert(std::holds_alternative<ExpressionType>(*parameters));
+
+				const ExpressionType& exprType = std::get<ExpressionType>(*parameters);
+				assert(IsStructType(exprType));
+
+				AccessPolicy access = AccessPolicy::ReadWrite;
+				if (parameterCount > 1)
+				{
+					assert(std::holds_alternative<ConstantValue>(parameters[1]));
+					const ConstantValue& accessValue = std::get<ConstantValue>(parameters[1]);
+					if (!std::holds_alternative<std::uint32_t>(accessValue))
+						throw CompilerStorageUnexpectedAccessError{ sourceLocation, "<TODO>" };
+
+					access = static_cast<AccessPolicy>(std::get<std::uint32_t>(accessValue));
+				}
+
+				StructType structType = std::get<StructType>(exprType);
+				return StorageType {
+					access,
+					structType
+				};
+			}
+		}, std::nullopt, {});
+		
+		// uniform
+		RegisterType("uniform", PartialType {
+			{ TypeParameterCategory::StructType }, {},
+			[=](const TypeParameter* parameters, [[maybe_unused]] std::size_t parameterCount, const SourceLocation& /*sourceLocation*/) -> ExpressionType
+			{
+				assert(parameterCount == 1);
+				assert(std::holds_alternative<ExpressionType>(*parameters));
+
+				const ExpressionType& exprType = std::get<ExpressionType>(*parameters);
+				assert(IsStructType(exprType));
+
+				StructType structType = std::get<StructType>(exprType);
+				return UniformType {
+					structType
+				};
+			}
+		}, std::nullopt, {});
+
+		// push constant
+		RegisterType("push_constant", PartialType {
+			{ TypeParameterCategory::StructType }, {},
+			[=](const TypeParameter* parameters, [[maybe_unused]] std::size_t parameterCount, const SourceLocation& /*sourceLocation*/) -> ExpressionType
+			{
+				assert(parameterCount == 1);
+				assert(std::holds_alternative<ExpressionType>(*parameters));
+
+				const ExpressionType& exprType = std::get<ExpressionType>(*parameters);
+				assert(IsStructType(exprType));
+
+				StructType structType = std::get<StructType>(exprType);
+				return PushConstantType {
+					structType
+				};
+			}
+		}, std::nullopt, {});
+
+		// Intrinsics
+		for (const auto& [intrinsic, data] : LangData::s_intrinsicData)
+		{
+			if (!data.functionName.empty())
+				RegisterIntrinsic(std::string(data.functionName), intrinsic);
+		}
+
+		// Constants
+		RegisterConstant("readonly", Nz::SafeCast<std::uint32_t>(AccessPolicy::ReadOnly), std::nullopt, {});
+		RegisterConstant("readwrite", Nz::SafeCast<std::uint32_t>(AccessPolicy::ReadWrite), std::nullopt, {});
+		RegisterConstant("writeonly", Nz::SafeCast<std::uint32_t>(AccessPolicy::WriteOnly), std::nullopt, {});
+
+		// TODO: Register more image formats
+		RegisterConstant("rgba8", Nz::SafeCast<std::uint32_t>(ImageFormat::RGBA8), std::nullopt, {});
+	}
+
+	std::size_t SanitizeVisitor::RegisterAlias(std::string name, std::optional<Identifier> aliasData, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
+	{
+		bool unresolved = false;
+		if (const IdentifierData* identifierData = FindIdentifier(name))
+		{
+			if (identifierData->conditionalIndex == m_context->currentConditionalIndex)
+				throw CompilerIdentifierAlreadyUsedError{ sourceLocation, name };
+			else
+				unresolved = true;
+		}
+
+		std::size_t aliasIndex;
+		if (aliasData)
+			aliasIndex = m_context->aliases.Register(std::move(*aliasData), index, sourceLocation);
+		else if (index)
+		{
+			m_context->aliases.PreregisterIndex(*index, sourceLocation);
+			aliasIndex = *index;
+		}
+		else
+			aliasIndex = m_context->aliases.RegisterNewIndex(true);
+
+		if (!unresolved)
+		{
+			m_context->currentEnv->identifiersInScope.push_back({
+				std::move(name),
+				{
+					aliasIndex,
+					IdentifierCategory::Alias,
+					m_context->currentConditionalIndex
+				}
+			});
+		}
+		else
+			RegisterUnresolved(std::move(name));
+
+		return aliasIndex;
+	}
+
+	std::size_t SanitizeVisitor::RegisterConstant(std::string name, std::optional<ConstantValue> value, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
+	{
+		if (!IsIdentifierAvailable(name))
+			throw CompilerIdentifierAlreadyUsedError{ sourceLocation, name };
+
+		std::size_t constantIndex;
+		if (value)
+			constantIndex = m_context->constantValues.Register(std::move(*value), index, sourceLocation);
+		else if (index)
+		{
+			m_context->constantValues.PreregisterIndex(*index, sourceLocation);
+			constantIndex = *index;
+		}
+		else
+			constantIndex = m_context->constantValues.RegisterNewIndex(true);
+
+		m_context->currentEnv->identifiersInScope.push_back({
+			std::move(name),
+			{
+				constantIndex,
+				IdentifierCategory::Constant,
+				m_context->currentConditionalIndex
+			}
+		});
+
+		return constantIndex;
+	}
+
+	std::size_t SanitizeVisitor::RegisterExternalBlock(std::string name, std::size_t externalBlockIndex, const SourceLocation& sourceLocation)
+	{
+		if (!IsIdentifierAvailable(name))
+			throw CompilerIdentifierAlreadyUsedError{ sourceLocation, name };
+
+		std::size_t index = m_context->namedExternalBlockIndices.Register(externalBlockIndex, std::nullopt, {});
+
+		m_context->currentEnv->identifiersInScope.push_back({
+			std::move(name),
+			{
+				index,
+				IdentifierCategory::ExternalBlock,
+				m_context->currentConditionalIndex
+			}
+		});
+
+		return index;
+	}
+	
+	std::size_t SanitizeVisitor::RegisterFunction(std::string name, std::optional<FunctionData> funcData, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
+	{
+		if (auto* identifier = FindIdentifier(name))
+		{
+			// Functions can be conditionally defined and condition not resolved yet, allow duplicates when partially sanitizing
+			bool duplicate = !m_context->options.partialSanitization;
+
+			// Functions cannot be declared twice, except for entry ones if their stages are different
+			if (funcData)
+			{
+				if (funcData->node->entryStage.HasValue() && identifier->category == IdentifierCategory::Function)
+				{
+					auto& otherFunction = m_context->functions.Retrieve(identifier->index, sourceLocation);
+					if (funcData->node->entryStage.GetResultingValue() != otherFunction.node->entryStage.GetResultingValue())
+						duplicate = false;
+				}
+			}
+			else
+			{
+				if (!m_context->options.partialSanitization)
+					throw AstInternalError{ sourceLocation, "unexpected missing function data" };
+
+				duplicate = false;
+			}
+
+			if (duplicate)
+				throw CompilerIdentifierAlreadyUsedError{ sourceLocation, name };
+		}
+
+		std::size_t functionIndex;
+		if (funcData)
+			functionIndex = m_context->functions.Register(std::move(*funcData), index, sourceLocation);
+		else if (index)
+		{
+			m_context->functions.PreregisterIndex(*index, sourceLocation);
+			functionIndex = *index;
+		}
+		else
+			functionIndex = m_context->functions.RegisterNewIndex(true);
+
+		m_context->currentEnv->identifiersInScope.push_back({
+			std::move(name),
+			{
+				functionIndex,
+				IdentifierCategory::Function,
+				m_context->currentConditionalIndex
+			}
+		});
+
+		return functionIndex;
+	}
+
+	std::size_t SanitizeVisitor::RegisterIntrinsic(std::string name, IntrinsicType type)
+	{
+		if (!IsIdentifierAvailable(name))
+			throw CompilerIdentifierAlreadyUsedError{ {}, name };
+
+		std::size_t intrinsicIndex = m_context->intrinsics.Register(std::move(type), std::nullopt, {});
+
+		m_context->currentEnv->identifiersInScope.push_back({
+			std::move(name),
+			{
+				intrinsicIndex,
+				IdentifierCategory::Intrinsic,
+				m_context->currentConditionalIndex
+			}
+		});
+
+		return intrinsicIndex;
+	}
+
+	std::size_t SanitizeVisitor::RegisterModule(std::string moduleIdentifier, std::size_t index)
+	{
+		if (!IsIdentifierAvailable(moduleIdentifier))
+			throw CompilerIdentifierAlreadyUsedError{ {}, moduleIdentifier };
+
+		std::size_t moduleIndex = m_context->moduleIndices.Register(index, std::nullopt, {});
+
+		m_context->currentEnv->identifiersInScope.push_back({
+			std::move(moduleIdentifier),
+			{
+				moduleIndex,
+				IdentifierCategory::Module,
+				m_context->currentConditionalIndex
+			}
+		});
+
+		return moduleIndex;
+	}
+
+	void SanitizeVisitor::RegisterReservedName(std::string name)
+	{
+		m_context->currentEnv->identifiersInScope.push_back({
+			std::move(name),
+			{
+				std::numeric_limits<std::size_t>::max(),
+				IdentifierCategory::ReservedName,
+				m_context->currentConditionalIndex
+			}
+		});
+	}
+
+	std::size_t SanitizeVisitor::RegisterStruct(std::string name, std::optional<StructDescription*> description, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
+	{
+		bool unresolved = false;
+		if (const IdentifierData* identifierData = FindIdentifier(name))
+		{
+			if (identifierData->conditionalIndex == m_context->currentConditionalIndex)
+				throw CompilerIdentifierAlreadyUsedError{ sourceLocation, name };
+			else
+				unresolved = true;
+		}
+
+		std::size_t structIndex;
+		if (description)
+			structIndex = m_context->structs.Register(*description, index, sourceLocation);
+		else if (index)
+		{
+			m_context->structs.PreregisterIndex(*index, sourceLocation);
+			structIndex = *index;
+		}
+		else
+			structIndex = m_context->structs.RegisterNewIndex(true);
+
+		if (!unresolved)
+		{
+			m_context->currentEnv->identifiersInScope.push_back({
+				std::move(name),
+				{
+					structIndex,
+					IdentifierCategory::Struct,
+					m_context->currentConditionalIndex
+				}
+			});
+		}
+		else
+			RegisterUnresolved(std::move(name));
+
+		return structIndex;
+	}
+
+	std::size_t SanitizeVisitor::RegisterType(std::string name, std::optional<ExpressionType> expressionType, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
+	{
+		if (!IsIdentifierAvailable(name))
+			throw CompilerIdentifierAlreadyUsedError{ sourceLocation, name };
+
+		std::size_t typeIndex;
+		if (expressionType)
+			typeIndex = m_context->types.Register(std::move(*expressionType), index, sourceLocation);
+		else if (index)
+		{
+			m_context->types.PreregisterIndex(*index, sourceLocation);
+			typeIndex = *index;
+		}
+		else
+			typeIndex = m_context->types.RegisterNewIndex(true);
+
+		m_context->currentEnv->identifiersInScope.push_back({
+			std::move(name),
+			{
+				typeIndex,
+				IdentifierCategory::Type,
+				m_context->currentConditionalIndex
+			}
+		});
+
+		return typeIndex;
+	}
+
+	std::size_t SanitizeVisitor::RegisterType(std::string name, std::optional<PartialType> partialType, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
+	{
+		if (!IsIdentifierAvailable(name))
+			throw CompilerIdentifierAlreadyUsedError{ sourceLocation, name };
+
+		std::size_t typeIndex;
+		if (partialType)
+		{
+			NamedPartialType namedPartial;
+			namedPartial.name = name;
+			namedPartial.type = std::move(*partialType);
+
+			typeIndex = m_context->types.Register(std::move(namedPartial), index, sourceLocation);
+		}
+		else if (index)
+		{
+			m_context->types.PreregisterIndex(*index, sourceLocation);
+			typeIndex = *index;
+		}
+		else
+			typeIndex = m_context->types.RegisterNewIndex(true);
+
+		m_context->currentEnv->identifiersInScope.push_back({
+			std::move(name),
+			{
+				typeIndex,
+				IdentifierCategory::Type,
+				m_context->currentConditionalIndex
+			}
+		});
+
+		return typeIndex;
+	}
+
+	void SanitizeVisitor::RegisterUnresolved(std::string name)
+	{
+		m_context->currentEnv->identifiersInScope.push_back({
+			std::move(name),
+			{
+				std::numeric_limits<std::size_t>::max(),
+				IdentifierCategory::Unresolved,
+				m_context->currentConditionalIndex
+			}
+		});
+	}
+
+	std::size_t SanitizeVisitor::RegisterVariable(std::string name, std::optional<ExpressionType> type, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
+	{
+		bool unresolved = false;
+		if (auto* identifier = FindIdentifier(name))
+		{
+			// Allow variable shadowing
+			if (identifier->category != IdentifierCategory::Variable)
+				throw CompilerIdentifierAlreadyUsedError{ sourceLocation, name };
+
+			if (identifier->conditionalIndex != m_context->currentConditionalIndex)
+				unresolved = true; //< right variable isn't know from this point
+		}
+
+		std::size_t varIndex;
+		if (type)
+			varIndex = m_context->variableTypes.Register(std::move(*type), index, sourceLocation);
+		else if (index)
+		{
+			m_context->variableTypes.PreregisterIndex(*index, sourceLocation);
+			varIndex = *index;
+		}
+		else
+			varIndex = m_context->variableTypes.RegisterNewIndex(true);
+
+		if (!unresolved)
+		{
+			m_context->currentEnv->identifiersInScope.push_back({
+				std::move(name),
+				{
+					varIndex,
+					IdentifierCategory::Variable,
+					m_context->currentConditionalIndex
+				}
+			});
+		}
+		else
+			RegisterUnresolved(std::move(name));
+
+		return varIndex;
+	}
+
 	auto SanitizeVisitor::ResolveAliasIdentifier(const Identifier* identifier, const SourceLocation& sourceLocation) const -> const Identifier*
 	{
 		while (identifier->target.category == IdentifierCategory::Alias)
@@ -2332,7 +4067,7 @@ NAZARA_WARNING_POP()
 				if (!m_context->options.partialSanitization || parameter.type.IsResultingValue())
 				{
 					parameter.varIndex = RegisterVariable(parameter.name, parameter.type.GetResultingValue(), parameter.varIndex, parameter.sourceLocation);
-					SanitizeIdentifier(parameter.name, IdentifierType::Parameter);
+					HandleIdentifier(parameter.name, IdentifierScope::Parameter);
 				}
 				else
 					RegisterUnresolved(parameter.name);
@@ -2473,7 +4208,7 @@ NAZARA_WARNING_POP()
 		return output;
 	}
 
-	bool SanitizeVisitor::SanitizeIdentifier(std::string& identifier, IdentifierType identifierScope)
+	bool SanitizeVisitor::HandleIdentifier(std::string& identifier, IdentifierScope identifierScope)
 	{
 		if (!m_context->options.identifierSanitizer)
 			return false;
@@ -2485,7 +4220,7 @@ NAZARA_WARNING_POP()
 		if (!m_context->options.identifierSanitizer(identifier, identifierScope))
 			return false;
 
-		if (identifierScope != IdentifierType::Field)
+		if (identifierScope != IdentifierScope::Field)
 			RegisterReservedName(identifier);
 
 		return true;
@@ -2681,14 +4416,14 @@ NAZARA_WARNING_POP()
 			Nz::StackVector<TypeParameter> parameters = NazaraStackVector(TypeParameter, node.indices.size());
 			for (std::size_t i = 0; i < node.indices.size(); ++i)
 			{
-				ExpressionPtr& indexExpr = node.indices[i];
+				const ExpressionPtr& indexExpr = node.indices[i];
 
 				TypeParameterCategory typeCategory = (i < requiredParameterCount) ? partialType.type.parameters[i] : partialType.type.optParameters[i - requiredParameterCount];
 				switch (typeCategory)
 				{
 					case TypeParameterCategory::ConstantValue:
 					{
-						std::optional<ConstantValue> value = ComputeConstantValue(indexExpr);
+						std::optional<ConstantValue> value = ComputeConstantValue(*indexExpr);
 						if (!value.has_value())
 							return ValidationResult::Unresolved;
 
@@ -2746,7 +4481,7 @@ NAZARA_WARNING_POP()
 			if (node.indices.size() != 1)
 				throw AstNoIndexError{ node.sourceLocation };
 
-			for (auto& indexExpr : node.indices)
+			for (const auto& indexExpr : node.indices)
 			{
 				const ExpressionType* indexType = GetExpressionType(*indexExpr);
 				if (!indexType)
@@ -2776,7 +4511,7 @@ NAZARA_WARNING_POP()
 					if (primitiveIndexType != PrimitiveType::Int32)
 						throw CompilerIndexStructRequiresInt32IndicesError{ node.sourceLocation, ToString(*indexType, indexExpr->sourceLocation) };
 
-					std::optional<ConstantValue> constantValue = ComputeConstantValue(indexExpr);
+					std::optional<ConstantValue> constantValue = ComputeConstantValue(*indexExpr);
 					if (!constantValue.has_value())
 						return ValidationResult::Unresolved;
 
@@ -2890,6 +4625,12 @@ NAZARA_WARNING_POP()
 		{
 			ExpressionType expressionType = ValidateBinaryOp(*binaryType, ResolveAlias(*leftExprType), UnwrapExternalType(ResolveAlias(*rightExprType)), node.sourceLocation);
 			TypeMustMatch(UnwrapExternalType(*leftExprType), expressionType, node.sourceLocation);
+
+			if (m_context->options.removeCompoundAssignments)
+			{
+				node.op = AssignType::Simple;
+				node.right = Clone(*ShaderBuilder::Binary(*binaryType, Cloner::Clone(*node.left), std::move(node.right)));
+			}
 		}
 
 		node.cachedExpressionType = *leftExprType;
@@ -3252,9 +4993,9 @@ NAZARA_WARNING_POP()
 				throw CompilerExpectedConstantTypeError{ node.sourceLocation, ToString(*constType, node.sourceLocation) };
 		}
 
-		PropagateConstants(node.expression);
+		ExpressionPtr constantExpr = PropagateConstants(*node.expression);
 
-		NodeType constantType = node.expression->GetType();
+		NodeType constantType = constantExpr->GetType();
 		if (constantType != NodeType::ConstantValueExpression && constantType != NodeType::ConstantArrayValueExpression)
 		{
 			// Constant propagation failed
@@ -3268,17 +5009,18 @@ NAZARA_WARNING_POP()
 		ExpressionType expressionType;
 		if (constantType == NodeType::ConstantValueExpression)
 		{
-			const auto& constant = static_cast<ConstantValueExpression&>(*node.expression);
+			const auto& constant = static_cast<ConstantValueExpression&>(*constantExpr);
 			expressionType = GetConstantType(constant.value);
 
 			node.constIndex = RegisterConstant(node.name, ToConstantValue(constant.value), node.constIndex, node.sourceLocation);
 		}
 		else if (constantType == NodeType::ConstantArrayValueExpression)
 		{
-			const auto& constant = static_cast<ConstantArrayValueExpression&>(*node.expression);
+			const auto& constant = static_cast<ConstantArrayValueExpression&>(*constantExpr);
 			expressionType = GetConstantType(constant.values);
 
 			node.constIndex = RegisterConstant(node.name, ToConstantValue(constant.values), node.constIndex, node.sourceLocation);
+			node.expression = std::move(constantExpr); //< FIXME: Should const arrays be allowed?
 		}
 
 		if (constType.has_value() && ResolveAlias(*constType) != ResolveAlias(expressionType))
@@ -3363,21 +5105,624 @@ NAZARA_WARNING_POP()
 		}
 
 		// SanitizeIdentifier registers the reserved name if its changes it
-		if (!SanitizeIdentifier(node.varName, IdentifierType::Variable) && nameChanged)
+		if (!HandleIdentifier(node.varName, IdentifierScope::Variable) && nameChanged)
 			RegisterReservedName(node.varName);
 
 		return ValidationResult::Validated;
 	}
 
-	auto SanitizeVisitor::Validate(IntrinsicExpression& statement) -> ValidationResult
+	auto SanitizeVisitor::Validate(IntrinsicExpression& node) -> ValidationResult
 	{
 		auto IsUnresolved = [](ValidationResult result) { return result == ValidationResult::Unresolved; };
 
-		auto intrinsicIt = LangData::s_intrinsicData.find(statement.intrinsic);
+		auto intrinsicIt = LangData::s_intrinsicData.find(node.intrinsic);
 		if (intrinsicIt == LangData::s_intrinsicData.end())
-			throw AstInternalError{ statement.sourceLocation, "missing intrinsic data for intrinsic " + std::to_string(Nz::UnderlyingCast(statement.intrinsic)) };
+			throw AstInternalError{ node.sourceLocation, "missing intrinsic data for intrinsic " + std::to_string(Nz::UnderlyingCast(node.intrinsic)) };
 
 		const auto& intrinsicData = intrinsicIt->second;
+
+		std::size_t paramIndex = 0;
+		std::size_t lastSameComponentCountBarrierIndex = 0;
+		std::size_t lastSameParamBarrierIndex = 0;
+		for (std::size_t i = 0; i < intrinsicData.parameterCount; ++i)
+		{
+			using namespace LangData::IntrinsicHelper;
+
+			switch (intrinsicData.parameterTypes[i])
+			{
+				case ParameterType::ArrayDyn:
+				{
+					auto Check = [](const ExpressionType& type)
+					{
+						return IsArrayType(type) || IsDynArrayType(type);
+					};
+
+					if (IsUnresolved(ValidateIntrinsicParameterType(node, Check, "array/dyn-array", paramIndex++)))
+						return ValidationResult::Unresolved;
+
+					break;
+				}
+
+				case ParameterType::BValVec:
+				{
+					auto Check = [](const ExpressionType& type)
+					{
+						PrimitiveType primitiveType;
+						if (IsPrimitiveType(type))
+							primitiveType = std::get<PrimitiveType>(type);
+						else if (IsVectorType(type))
+							primitiveType = std::get<VectorType>(type).type;
+						else
+							return false;
+
+						if (primitiveType != PrimitiveType::Boolean)
+							return false;
+
+						return true;
+					};
+
+					if (IsUnresolved(ValidateIntrinsicParameterType(node, Check, "boolean value or vector", paramIndex++)))
+						return ValidationResult::Unresolved;
+
+					break;
+				}
+
+				case ParameterType::F32:
+				{
+					auto Check = [](const ExpressionType& type)
+					{
+						return type == ExpressionType{ PrimitiveType::Float32 };
+					};
+
+					if (IsUnresolved(ValidateIntrinsicParameterType(node, Check, "f32", paramIndex++)))
+						return ValidationResult::Unresolved;
+
+					break;
+				}
+
+				case ParameterType::FVal:
+				{
+					auto Check = [](const ExpressionType& type)
+					{
+						PrimitiveType primitiveType;
+						if (IsPrimitiveType(type))
+							primitiveType = std::get<PrimitiveType>(type);
+						else
+							return false;
+
+						if (primitiveType != PrimitiveType::Float32 && primitiveType != PrimitiveType::Float64)
+							return false;
+
+						return true;
+					};
+
+					if (IsUnresolved(ValidateIntrinsicParameterType(node, Check, "floating-point value", paramIndex++)))
+						return ValidationResult::Unresolved;
+
+					break;
+				}
+
+				case ParameterType::FValVec:
+				{
+					auto Check = [](const ExpressionType& type)
+					{
+						PrimitiveType primitiveType;
+						if (IsPrimitiveType(type))
+							primitiveType = std::get<PrimitiveType>(type);
+						else if (IsVectorType(type))
+							primitiveType = std::get<VectorType>(type).type;
+						else
+							return false;
+
+						// no float16 for now
+						if (primitiveType != PrimitiveType::Float32 && primitiveType != PrimitiveType::Float64)
+							return false;
+
+						return true;
+					};
+
+					if (IsUnresolved(ValidateIntrinsicParameterType(node, Check, "floating-point value or vector", paramIndex++)))
+						return ValidationResult::Unresolved;
+
+					break;
+				}
+
+				case ParameterType::FValVec1632:
+				{
+					auto Check = [](const ExpressionType& type)
+					{
+						PrimitiveType primitiveType;
+						if (IsPrimitiveType(type))
+							primitiveType = std::get<PrimitiveType>(type);
+						else if (IsVectorType(type))
+							primitiveType = std::get<VectorType>(type).type;
+						else
+							return false;
+
+						// no float16 for now
+						if (primitiveType != PrimitiveType::Float32)
+							return false;
+
+						return true;
+					};
+
+					if (IsUnresolved(ValidateIntrinsicParameterType(node, Check, "16/32bits floating-point value or vector", paramIndex++)))
+						return ValidationResult::Unresolved;
+
+					break;
+				}
+
+				case ParameterType::FVec:
+				{
+					auto Check = [](const ExpressionType& type)
+					{
+						PrimitiveType primitiveType;
+						if (IsVectorType(type))
+							primitiveType = std::get<VectorType>(type).type;
+						else
+							return false;
+
+						if (primitiveType != PrimitiveType::Float32 && primitiveType != PrimitiveType::Float64)
+							return false;
+
+						return true;
+					};
+
+					if (IsUnresolved(ValidateIntrinsicParameterType(node, Check, "floating-point vector", paramIndex++)))
+						return ValidationResult::Unresolved;
+
+					break;
+				}
+
+				case ParameterType::FVec3:
+				{
+					auto Check = [](const ExpressionType& type)
+					{
+						if (!IsVectorType(type))
+							return false;
+
+						const VectorType& vectorType = std::get<VectorType>(type);
+						if (vectorType.componentCount != 3)
+							return false;
+
+						return vectorType.type == PrimitiveType::Float32 || vectorType.type == PrimitiveType::Float64;
+					};
+
+					if (IsUnresolved(ValidateIntrinsicParameterType(node, Check, "floating-point vec3", paramIndex++)))
+						return ValidationResult::Unresolved;
+
+					break;
+				}
+
+				case ParameterType::Matrix:
+				{
+					if (IsUnresolved(ValidateIntrinsicParameterType(node, IsMatrixType, "matrix", paramIndex++)))
+						return ValidationResult::Unresolved;
+
+					break;
+				}
+
+				case ParameterType::MatrixSquare:
+				{
+					auto Check = [](const ExpressionType& type)
+					{
+						if (!IsMatrixType(type))
+							return false;
+
+						const MatrixType& matrixType = std::get<MatrixType>(type);
+						return matrixType.columnCount == matrixType.rowCount;
+					};
+
+					if (IsUnresolved(ValidateIntrinsicParameterType(node, Check, "square matrix", paramIndex++)))
+						return ValidationResult::Unresolved;
+
+					break;
+				}
+
+				case ParameterType::Numerical:
+				{
+					auto Check = [](const ExpressionType& type)
+					{
+						PrimitiveType primitiveType;
+						if (IsPrimitiveType(type))
+							primitiveType = std::get<PrimitiveType>(type);
+						else
+							return false;
+
+						switch (primitiveType)
+						{
+							case PrimitiveType::Boolean:
+							case PrimitiveType::String:
+								break;
+
+							case PrimitiveType::Float32:
+							case PrimitiveType::Float64:
+							case PrimitiveType::Int32:
+							case PrimitiveType::UInt32:
+								return true;
+						}
+
+						return false;
+					};
+
+					if (IsUnresolved(ValidateIntrinsicParameterType(node, Check, "scalar value or vector", paramIndex++)))
+						return ValidationResult::Unresolved;
+
+					break;
+				}
+
+				case ParameterType::NumericalVec:
+				{
+					auto Check = [](const ExpressionType& type)
+					{
+						PrimitiveType primitiveType;
+						if (IsPrimitiveType(type))
+							primitiveType = std::get<PrimitiveType>(type);
+						else if (IsVectorType(type))
+							primitiveType = std::get<VectorType>(type).type;
+						else
+							return false;
+
+						switch (primitiveType)
+						{
+							case PrimitiveType::Boolean:
+							case PrimitiveType::String:
+								break;
+
+							case PrimitiveType::Float32:
+							case PrimitiveType::Float64:
+							case PrimitiveType::Int32:
+							case PrimitiveType::UInt32:
+								return true;
+						}
+
+						return false;
+					};
+
+					if (IsUnresolved(ValidateIntrinsicParameterType(node, Check, "scalar value or vector", paramIndex++)))
+						return ValidationResult::Unresolved;
+
+					break;
+				}
+
+				case ParameterType::SampleCoordinates:
+				{
+					// Special check: vector dimensions must match sample type
+					const SamplerType& samplerType = std::get<SamplerType>(ResolveAlias(GetExpressionTypeSecure(*node.parameters[0])));
+					std::size_t requiredComponentCount = 0;
+					switch (samplerType.dim)
+					{
+						case ImageType::E1D:
+							requiredComponentCount = 1;
+							break;
+
+						case ImageType::E1D_Array:
+						case ImageType::E2D:
+							requiredComponentCount = 2;
+							break;
+
+						case ImageType::E2D_Array:
+						case ImageType::E3D:
+						case ImageType::Cubemap:
+							requiredComponentCount = 3;
+							break;
+					}
+
+					if (requiredComponentCount == 0)
+						throw AstInternalError{ node.parameters[0]->sourceLocation, "unhandled sampler dimensions" };
+
+					if (requiredComponentCount > 1)
+					{
+						// Vector coordinates
+						auto Check = [=](const ExpressionType& type)
+						{
+							if (!IsVectorType(type))
+								return false;
+
+							const VectorType& vectorType = std::get<VectorType>(type);
+							if (vectorType.componentCount != requiredComponentCount)
+								return false;
+
+							return vectorType.type == PrimitiveType::Float32 || vectorType.type == PrimitiveType::Float64;
+						};
+
+						char errMessage[] = "floating-point vector of X components";
+						assert(requiredComponentCount < 9);
+						errMessage[25] = Nz::SafeCast<char>('0' + requiredComponentCount);
+
+						if (IsUnresolved(ValidateIntrinsicParameterType(node, Check, errMessage, paramIndex++)))
+							return ValidationResult::Unresolved;
+					}
+					else
+					{
+						// Scalar coordinates
+						auto Check = [=](const ExpressionType& type)
+						{
+							if (!IsPrimitiveType(type))
+								return false;
+
+							PrimitiveType primitiveType = std::get<PrimitiveType>(type);
+							return primitiveType == PrimitiveType::Float32 || primitiveType == PrimitiveType::Float64;
+						};
+
+						if (IsUnresolved(ValidateIntrinsicParameterType(node, Check, "floating-point value", paramIndex++)))
+							return ValidationResult::Unresolved;
+					}
+
+					break;
+				}
+				
+				case ParameterType::Scalar:
+				{
+					auto Check = [](const ExpressionType& type)
+					{
+						PrimitiveType primitiveType;
+						if (IsPrimitiveType(type))
+							primitiveType = std::get<PrimitiveType>(type);
+						else
+							return false;
+
+						switch (primitiveType)
+						{
+							case PrimitiveType::String:
+								break;
+
+							case PrimitiveType::Boolean:
+							case PrimitiveType::Float32:
+							case PrimitiveType::Float64:
+							case PrimitiveType::Int32:
+							case PrimitiveType::UInt32:
+								return true;
+						}
+
+						return false;
+					};
+
+					if (IsUnresolved(ValidateIntrinsicParameterType(node, Check, "scalar value or vector", paramIndex++)))
+						return ValidationResult::Unresolved;
+
+					break;
+				}
+
+				case ParameterType::ScalarVec:
+				{
+					auto Check = [](const ExpressionType& type)
+					{
+						PrimitiveType primitiveType;
+						if (IsPrimitiveType(type))
+							primitiveType = std::get<PrimitiveType>(type);
+						else if (IsVectorType(type))
+							primitiveType = std::get<VectorType>(type).type;
+						else
+							return false;
+
+						switch (primitiveType)
+						{
+							case PrimitiveType::String:
+								break;
+
+							case PrimitiveType::Boolean:
+							case PrimitiveType::Float32:
+							case PrimitiveType::Float64:
+							case PrimitiveType::Int32:
+							case PrimitiveType::UInt32:
+								return true;
+						}
+
+						return false;
+					};
+
+					if (IsUnresolved(ValidateIntrinsicParameterType(node, Check, "scalar value or vector", paramIndex++)))
+						return ValidationResult::Unresolved;
+
+					break;
+				}
+
+				case ParameterType::SignedNumerical:
+				{
+					auto Check = [](const ExpressionType& type)
+					{
+						PrimitiveType primitiveType;
+						if (IsPrimitiveType(type))
+							primitiveType = std::get<PrimitiveType>(type);
+						else
+							return false;
+
+						switch (primitiveType)
+						{
+							case PrimitiveType::Boolean:
+							case PrimitiveType::String:
+							case PrimitiveType::UInt32:
+								break;
+
+							case PrimitiveType::Float32:
+							case PrimitiveType::Float64:
+							case PrimitiveType::Int32:
+								return true;
+						}
+
+						return false;
+					};
+
+					if (IsUnresolved(ValidateIntrinsicParameterType(node, Check, "scalar value or vector", paramIndex++)))
+						return ValidationResult::Unresolved;
+
+					break;
+				}
+
+				case ParameterType::SignedNumericalVec:
+				{
+					auto Check = [](const ExpressionType& type)
+					{
+						PrimitiveType primitiveType;
+						if (IsPrimitiveType(type))
+							primitiveType = std::get<PrimitiveType>(type);
+						else if (IsVectorType(type))
+							primitiveType = std::get<VectorType>(type).type;
+						else
+							return false;
+
+						switch (primitiveType)
+						{
+							case PrimitiveType::Boolean:
+							case PrimitiveType::String:
+							case PrimitiveType::UInt32:
+								break;
+
+							case PrimitiveType::Float32:
+							case PrimitiveType::Float64:
+							case PrimitiveType::Int32:
+								return true;
+						}
+
+						return false;
+					};
+
+					if (IsUnresolved(ValidateIntrinsicParameterType(node, Check, "scalar value or vector", paramIndex++)))
+						return ValidationResult::Unresolved;
+
+					break;
+				}
+
+				case ParameterType::Sampler:
+				{
+					if (IsUnresolved(ValidateIntrinsicParameterType(node, IsSamplerType, "sampler type", paramIndex++)))
+						return ValidationResult::Unresolved;
+
+					break;
+				}
+
+				case ParameterType::SameType:
+				{
+					if (IsUnresolved(ValidateIntrinsicParamMatchingType(node, lastSameParamBarrierIndex, paramIndex)))
+						return ValidationResult::Unresolved;
+
+					break;
+				}
+
+				case ParameterType::SameTypeBarrier:
+				{
+					lastSameParamBarrierIndex = paramIndex;
+					break; //< Handled by SameType
+				}
+
+				case ParameterType::SameVecComponentCount:
+				{
+					if (IsUnresolved(ValidateIntrinsicParamMatchingVecComponent(node, lastSameComponentCountBarrierIndex, paramIndex)))
+						return ValidationResult::Unresolved;
+
+					break;
+				}
+
+				case ParameterType::SameVecComponentCountBarrier:
+				{
+					lastSameComponentCountBarrierIndex = paramIndex;
+					break; //< Handled by SameType
+				}
+
+				case ParameterType::Texture:
+				{
+					if (IsUnresolved(ValidateIntrinsicParameterType(node, IsTextureType, "texture type", paramIndex++)))
+						return ValidationResult::Unresolved;
+
+					break;
+				}
+				
+				case ParameterType::TextureCoordinates:
+				{
+					// Special check: vector dimensions must match sample type
+					const TextureType& textureType = std::get<TextureType>(ResolveAlias(GetExpressionTypeSecure(*node.parameters[0])));
+					std::size_t requiredComponentCount = 0;
+					switch (textureType.dim)
+					{
+						case ImageType::E1D:
+							requiredComponentCount = 1;
+							break;
+
+						case ImageType::E1D_Array:
+						case ImageType::E2D:
+							requiredComponentCount = 2;
+							break;
+
+						case ImageType::E2D_Array:
+						case ImageType::E3D:
+						case ImageType::Cubemap:
+							requiredComponentCount = 3;
+							break;
+					}
+
+					if (requiredComponentCount == 0)
+						throw AstInternalError{ node.parameters[0]->sourceLocation, "unhandled texture dimensions" };
+
+					if (requiredComponentCount > 1)
+					{
+						// Vector coordinates
+						auto Check = [=](const ExpressionType& type)
+						{
+							if (!IsVectorType(type))
+								return false;
+
+							const VectorType& vectorType = std::get<VectorType>(type);
+							if (vectorType.componentCount != requiredComponentCount)
+								return false;
+
+							return vectorType.type == PrimitiveType::Int32;
+						};
+
+						char errMessage[] = "integer vector of X components";
+						assert(requiredComponentCount < 9);
+						errMessage[18] = Nz::SafeCast<char>('0' + requiredComponentCount);
+
+						if (IsUnresolved(ValidateIntrinsicParameterType(node, Check, errMessage, paramIndex++)))
+							return ValidationResult::Unresolved;
+					}
+					else
+					{
+						// Scalar coordinates
+						auto Check = [=](const ExpressionType& type)
+						{
+							if (!IsPrimitiveType(type))
+								return false;
+
+							PrimitiveType primitiveType = std::get<PrimitiveType>(type);
+							return primitiveType == PrimitiveType::Int32;
+						};
+
+						if (IsUnresolved(ValidateIntrinsicParameterType(node, Check, "integer value", paramIndex++)))
+							return ValidationResult::Unresolved;
+					}
+
+					break;
+				}
+
+				case ParameterType::TextureData:
+				{
+					// Special check: vector data
+					const TextureType& textureType = std::get<TextureType>(ResolveAlias(GetExpressionTypeSecure(*node.parameters[0])));
+
+					// Vector data
+					auto Check = [=](const ExpressionType& type)
+					{
+						if (!IsVectorType(type))
+							return false;
+
+						const VectorType& vectorType = std::get<VectorType>(type);
+						if (vectorType.componentCount != 4)
+							return false;
+
+						return vectorType.type == textureType.baseType;
+					};
+
+					if (IsUnresolved(ValidateIntrinsicParameterType(node, Check, "texture-type vector of 4 components", paramIndex++)))
+						return ValidationResult::Unresolved;
+
+					break;
+				}
+			}
+		}
+
+		if (node.parameters.size() != paramIndex)
+			throw CompilerIntrinsicExpectedParameterCountError{ node.sourceLocation, Nz::SafeCast<std::uint32_t>(paramIndex) };
 
 		// return type attribution
 		switch (intrinsicData.returnType)
@@ -3386,67 +5731,67 @@ NAZARA_WARNING_POP()
 
 			case ReturnType::Param0SampledValue:
 			{
-				const ExpressionType& paramType = ResolveAlias(GetExpressionTypeSecure(*statement.parameters[0]));
+				const ExpressionType& paramType = ResolveAlias(GetExpressionTypeSecure(*node.parameters[0]));
 				if (!IsSamplerType(paramType))
-					throw AstInternalError{ statement.sourceLocation, "intrinsic " + std::string(intrinsicData.functionName) + " first parameter is not a sampler" };
+					throw AstInternalError{ node.sourceLocation, "intrinsic " + std::string(intrinsicData.functionName) + " first parameter is not a sampler" };
 
 				const SamplerType& samplerType = std::get<SamplerType>(paramType);
 				if (samplerType.depth)
-					statement.cachedExpressionType = PrimitiveType::Float32;
+					node.cachedExpressionType = PrimitiveType::Float32;
 				else
-					statement.cachedExpressionType = VectorType{ 4, samplerType.sampledType };
+					node.cachedExpressionType = VectorType{ 4, samplerType.sampledType };
 				break;
 			}
 
 			case ReturnType::Param0TextureValue:
 			{
-				const ExpressionType& paramType = ResolveAlias(GetExpressionTypeSecure(*statement.parameters[0]));
+				const ExpressionType& paramType = ResolveAlias(GetExpressionTypeSecure(*node.parameters[0]));
 				if (!IsTextureType(paramType))
-					throw AstInternalError{ statement.sourceLocation, "intrinsic " + std::string(intrinsicData.functionName) + " first parameter is not a sampler" };
+					throw AstInternalError{ node.sourceLocation, "intrinsic " + std::string(intrinsicData.functionName) + " first parameter is not a sampler" };
 
 				const TextureType& textureType = std::get<TextureType>(paramType);
-				statement.cachedExpressionType = VectorType{ 4, textureType.baseType };
+				node.cachedExpressionType = VectorType{ 4, textureType.baseType };
 				break;
 			}
 
 			case ReturnType::Param0Transposed:
 			{
-				const ExpressionType& paramType = ResolveAlias(GetExpressionTypeSecure(*statement.parameters[0]));
+				const ExpressionType& paramType = ResolveAlias(GetExpressionTypeSecure(*node.parameters[0]));
 				if (!IsMatrixType(paramType))
-					throw AstInternalError{ statement.sourceLocation, "intrinsic " + std::string(intrinsicData.functionName) + " first parameter is not a matrix" };
+					throw AstInternalError{ node.sourceLocation, "intrinsic " + std::string(intrinsicData.functionName) + " first parameter is not a matrix" };
 
 				MatrixType matrixType = std::get<MatrixType>(paramType);
 				std::swap(matrixType.columnCount, matrixType.rowCount);
 
-				statement.cachedExpressionType = matrixType;
+				node.cachedExpressionType = matrixType;
 				break;
 			}
 
 			case ReturnType::Param0Type:
-				statement.cachedExpressionType = GetExpressionTypeSecure(*statement.parameters.front());
+				node.cachedExpressionType = GetExpressionTypeSecure(*node.parameters.front());
 				break;
 
 			case ReturnType::Param1Type:
-				statement.cachedExpressionType = GetExpressionTypeSecure(*statement.parameters[1]);
+				node.cachedExpressionType = GetExpressionTypeSecure(*node.parameters[1]);
 				break;
 
 			case ReturnType::Param0VecComponent:
 			{
-				const ExpressionType& paramType = ResolveAlias(GetExpressionTypeSecure(*statement.parameters[0]));
+				const ExpressionType& paramType = ResolveAlias(GetExpressionTypeSecure(*node.parameters[0]));
 				if (!IsVectorType(paramType))
-					throw AstInternalError{ statement.sourceLocation, "intrinsic " + std::string(intrinsicData.functionName) + " first parameter is not a vector" };
+					throw AstInternalError{ node.sourceLocation, "intrinsic " + std::string(intrinsicData.functionName) + " first parameter is not a vector" };
 
 				const VectorType& vecType = std::get<VectorType>(paramType);
-				statement.cachedExpressionType = vecType.type;
+				node.cachedExpressionType = vecType.type;
 				break;
 			}
 
 			case ReturnType::U32:
-				statement.cachedExpressionType = ExpressionType{ PrimitiveType::UInt32 };
+				node.cachedExpressionType = ExpressionType{ PrimitiveType::UInt32 };
 				break;
 
 			case ReturnType::Void:
-				statement.cachedExpressionType = ExpressionType{ NoType{} };
+				node.cachedExpressionType = ExpressionType{ NoType{} };
 				break;
 		}
 
@@ -3468,6 +5813,9 @@ NAZARA_WARNING_POP()
 		std::size_t componentCount;
 		if (IsPrimitiveType(resolvedExprType))
 		{
+			if (m_context->options.removeScalarSwizzling)
+				throw AstInternalError{ node.sourceLocation, "scalar swizzling should have been removed before validating" };
+
 			baseType = std::get<PrimitiveType>(resolvedExprType);
 			componentCount = 1;
 		}
@@ -3909,5 +6257,65 @@ NAZARA_WARNING_POP()
 			return std::move(static_cast<ScopedStatement&>(*node).statement);
 		else
 			return node;
+	}
+
+	ExpressionType SanitizeVisitor::UnwrapExternalType(const ExpressionType& exprType)
+	{
+		if (IsStorageType(exprType))
+			return std::get<StorageType>(exprType).containedType;
+		else if (IsUniformType(exprType))
+			return std::get<UniformType>(exprType).containedType;
+		else if (IsArrayType(exprType))
+		{
+			const ArrayType& arrayType = std::get<ArrayType>(exprType);
+
+			ArrayType wrappedArrayType;
+			wrappedArrayType.containedType = std::make_unique<ContainedType>();
+			wrappedArrayType.containedType->type = UnwrapExternalType(arrayType.containedType->type);
+			wrappedArrayType.length = arrayType.length;
+
+			return wrappedArrayType;
+		}
+		else
+			return exprType;
+	}
+
+	template<typename T>
+	ExpressionType SanitizeVisitor::WrapExternalType(const ExpressionType& exprType)
+	{
+		if (IsStructType(exprType))
+		{
+			std::size_t innerStructIndex = std::get<StructType>(exprType).structIndex;
+
+			T wrappedType;
+			wrappedType.containedType = StructType{ innerStructIndex };
+
+			return wrappedType;
+		}
+		else if (IsArrayType(exprType))
+		{
+			const ArrayType& arrayType = std::get<ArrayType>(exprType);
+
+			ArrayType wrappedArrayType;
+			wrappedArrayType.containedType = std::make_unique<ContainedType>();
+			wrappedArrayType.containedType->type = WrapExternalType<T>(arrayType.containedType->type);
+			wrappedArrayType.length = arrayType.length;
+			wrappedArrayType.isWrapped = true;
+
+			return wrappedArrayType;
+		}
+		else if (IsDynArrayType(exprType))
+		{
+			const DynArrayType& arrayType = std::get<DynArrayType>(exprType);
+			ExpressionType wrapperInnerType = WrapExternalType<T>(arrayType.containedType->type);
+
+			DynArrayType wrappedDynArrayType;
+			wrappedDynArrayType.containedType = std::make_unique<ContainedType>();
+			wrappedDynArrayType.containedType->type = wrapperInnerType;
+
+			return wrappedDynArrayType;
+		}
+		else
+			return exprType;
 	}
 }

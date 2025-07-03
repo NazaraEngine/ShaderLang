@@ -70,6 +70,15 @@ namespace nzsl::Ast
 		std::optional<ExpressionType> cachedExpressionType;
 	};
 
+	struct NZSL_API AccessFieldExpression : Expression
+	{
+		NodeType GetType() const override;
+		void Visit(ExpressionVisitor& visitor) override;
+
+		std::uint32_t fieldIndex;
+		ExpressionPtr expr;
+	};
+
 	struct NZSL_API AccessIdentifierExpression : Expression
 	{
 		NodeType GetType() const override;

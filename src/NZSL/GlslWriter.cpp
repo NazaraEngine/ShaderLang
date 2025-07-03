@@ -14,6 +14,7 @@
 #include <NZSL/Ast/RecursiveVisitor.hpp>
 #include <NZSL/Ast/Utils.hpp>
 #include <NZSL/Lang/LangData.hpp>
+#include <NZSL/Ast/Transformations/BindingResolverTransformer.hpp>
 #include <NZSL/Ast/Transformations/ConstantPropagationTransformer.hpp>
 #include <NZSL/Ast/Transformations/EliminateUnusedTransformer.hpp>
 #include <NZSL/Ast/Transformations/ForToWhileTransformer.hpp>
@@ -586,10 +587,11 @@ namespace nzsl
 		};
 
 		Ast::TransformerExecutor executor;
-		executor.AddPass<Ast::IdentifierTypeResolverTransformer>();
+		executor.AddPass<Ast::IdentifierTypeResolverTransformer>({ true });
 		executor.AddPass<Ast::ForToWhileTransformer>();
-		executor.AddPass<Ast::StructAssignmentTransformer>({ false, true, true }); //< TODO: Only split for base uniforms/storage
+		executor.AddPass<Ast::StructAssignmentTransformer>({ false, true }); //< TODO: Only split for base uniforms/storage
 		executor.AddPass<Ast::SwizzleTransformer>({ true });
+		executor.AddPass<Ast::BindingResolverTransformer>();
 		executor.AddPass<Ast::IdentifierTransformer>(identifierOptions);
 
 		return executor;
@@ -1686,6 +1688,36 @@ namespace nzsl
 			Append(")");
 	}
 
+	void GlslWriter::Visit(Ast::AccessFieldExpression& node)
+	{
+		Visit(node.expr, true);
+
+		const Ast::ExpressionType* exprType = GetExpressionType(*node.expr);
+		NazaraUnused(exprType);
+		assert(exprType);
+		assert(IsStructAddressible(*exprType));
+
+		std::size_t structIndex = Ast::ResolveStructIndex(*exprType);
+		assert(structIndex != std::numeric_limits<std::size_t>::max());
+
+		const auto& structData = Nz::Retrieve(m_currentState->structs, structIndex);
+
+		std::uint32_t remainingIndices = node.fieldIndex;
+		for (const auto& member : structData.desc->members)
+		{
+			if (member.cond.HasValue() && !member.cond.GetResultingValue())
+				continue;
+
+			if (remainingIndices == 0)
+			{
+				Append(".", member.name);
+				break;
+			}
+
+			remainingIndices--;
+		}
+	}
+
 	void GlslWriter::Visit(Ast::AccessIdentifierExpression& node)
 	{
 		Visit(node.expr, true);
@@ -1708,8 +1740,9 @@ namespace nzsl
 		assert(exprType);
 		assert(!IsStructAddressible(*exprType));
 
-		// Array access
 		assert(node.indices.size() == 1);
+
+		// Array access
 		Append("[");
 		Visit(node.indices.front());
 		Append("]");

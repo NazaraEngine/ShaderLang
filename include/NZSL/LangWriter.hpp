@@ -121,7 +121,7 @@ namespace nzsl
 			void RegisterConstant(std::size_t constantIndex, std::string constantName);
 			void RegisterFunction(std::size_t funcIndex, std::string functionName);
 			void RegisterModule(std::size_t moduleIndex, std::string moduleName);
-			void RegisterStruct(std::size_t structIndex, std::string structName);
+			void RegisterStruct(std::size_t structIndex, const Ast::StructDescription& structDescription);
 			void RegisterVariable(std::size_t varIndex, std::string varName);
 
 			void ScopeVisit(Ast::Statement& node);
@@ -129,6 +129,7 @@ namespace nzsl
 			void Visit(Ast::ExpressionPtr& expr, bool encloseIfRequired = false);
 
 			using ExpressionVisitorExcept::Visit;
+			void Visit(Ast::AccessFieldExpression& node) override;
 			void Visit(Ast::AccessIdentifierExpression& node) override;
 			void Visit(Ast::AccessIndexExpression& node) override;
 			void Visit(Ast::AliasValueExpression& node) override;

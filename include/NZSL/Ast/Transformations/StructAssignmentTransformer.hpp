@@ -25,7 +25,6 @@ namespace nzsl::Ast
 			{
 				bool splitWrappedArrayAssignation = false;
 				bool splitWrappedStructAssignation = false;
-				bool useIdentifierAccessesForStructs = true;
 			};
 
 		private:

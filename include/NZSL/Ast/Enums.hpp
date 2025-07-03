@@ -205,6 +205,7 @@ namespace nzsl::Ast
 		None = -1,
 
 		// Expressions
+		AccessFieldExpression        = 44,
 		AccessIdentifierExpression   = 0,
 		AccessIndexExpression        = 1,
 		AliasValueExpression         = 2,
@@ -252,7 +253,7 @@ namespace nzsl::Ast
 		ScopedStatement          = 38,
 		WhileStatement           = 39,
 
-		Max = NamedExternalBlockExpression
+		Max = AccessFieldExpression
 	};
 
 	enum class PrimitiveType

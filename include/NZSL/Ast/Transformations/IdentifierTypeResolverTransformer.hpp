@@ -25,6 +25,7 @@ namespace nzsl::Ast
 
 			struct Options
 			{
+				bool removeAliases = false;
 			};
 
 		private:
@@ -45,7 +46,6 @@ namespace nzsl::Ast
 			std::optional<ConstantValue> ComputeConstantValue(ExpressionPtr& expr) const;
 
 			template<typename T> bool ComputeExprValue(ExpressionValue<T>& attribute, const SourceLocation& sourceLocation) const;
-			template<typename T> bool ComputeExprValue(const ExpressionValue<T>& attribute, ExpressionValue<T>& targetAttribute, const SourceLocation& sourceLocation);
 
 			const IdentifierData* FindIdentifier(std::string_view identifierName) const;
 			template<typename F> const IdentifierData* FindIdentifier(std::string_view identifierName, F&& functor) const;
@@ -93,9 +93,12 @@ namespace nzsl::Ast
 
 			ExpressionTransformation Transform(AccessIdentifierExpression&& accessIdentifierExpr) override;
 			ExpressionTransformation Transform(AccessIndexExpression&& accessIndexExpr) override;
+			ExpressionTransformation Transform(AliasValueExpression&& accessIndexExpr) override;
+			ExpressionTransformation Transform(BinaryExpression&& binaryExpression) override;
+			ExpressionTransformation Transform(CallFunctionExpression&& callFuncExpression) override;
+			ExpressionTransformation Transform(CastExpression&& castExpression) override;
 			ExpressionTransformation Transform(IntrinsicExpression&& intrinsicExpr) override;
-			ExpressionTransformation Transform(CallFunctionExpression&& intrinsicExpr) override;
-			ExpressionTransformation Transform(CastExpression&& intrinsicExpr) override;
+			ExpressionTransformation Transform(IdentifierExpression&& identifierExpr) override;
 			ExpressionTransformation Transform(SwizzleExpression&& swizzleExpr) override;
 			ExpressionTransformation Transform(UnaryExpression&& unaryExpr) override;
 			ExpressionTransformation Transform(VariableValueExpression&& variableValExpr) override;
@@ -110,6 +113,9 @@ namespace nzsl::Ast
 			StatementTransformation Transform(DeclareVariableStatement&& statement) override;
 			StatementTransformation Transform(ImportStatement&& importStatement) override;
 
+			void Transform(ExpressionValue<ExpressionType>& expressionType) override;
+
+			ExpressionType ValidateBinaryOp(BinaryType op, const ExpressionType& leftExprType, const ExpressionType& rightExprType, const SourceLocation& sourceLocation);
 			void ValidateConcreteType(const ExpressionType& exprType, const SourceLocation& sourceLocation);
 
 			static std::uint32_t ToSwizzleIndex(char c, const SourceLocation& sourceLocation);

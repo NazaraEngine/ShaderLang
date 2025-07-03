@@ -83,6 +83,41 @@ namespace nzsl
 		}, m_value);
 	}
 
+	void SpirvExpressionStore::Visit(Ast::AccessFieldExpression& node)
+	{
+		node.expr->Visit(*this);
+
+		const Ast::ExpressionType* exprType = GetExpressionType(node);
+		assert(exprType);
+
+		std::int32_t compositeIndex = static_cast<std::int32_t>(node.fieldIndex);
+
+
+		std::visit(Nz::Overloaded
+		{
+			[&](const Pointer& pointer)
+			{
+				// FIXME: Preregister this constant as well
+				std::uint32_t constantId = m_writer.RegisterSingleConstant(compositeIndex);
+
+				std::uint32_t resultId = m_visitor.AllocateResultId();
+
+				std::int32_t index = -1;
+
+				SpirvConstantCache::TypePtr nextTypePtr = SpirvConstantCache::GetIndexedType(*pointer.pointedTypePtr, compositeIndex);
+				std::uint32_t pointerType = m_writer.RegisterPointerType(nextTypePtr, pointer.storage);
+
+				m_block.Append(SpirvOp::OpAccessChain, pointerType, resultId, pointer.pointerId, constantId);
+
+				m_value = Pointer { nextTypePtr, pointer.storage, resultId };
+			},
+			[](std::monostate)
+			{
+				throw std::runtime_error("an internal error occurred");
+			}
+		}, m_value);
+	}
+
 	void SpirvExpressionStore::Visit(Ast::AccessIndexExpression& node)
 	{
 		node.expr->Visit(*this);

@@ -58,10 +58,12 @@ namespace nzsl::Ast
 			const ExpressionType* GetResolvedExpressionType(Expression& expr, bool allowEmpty) const;
 
 			void HandleExpression(ExpressionPtr& expression);
+			inline void HandleExpressionValue(ExpressionValue<ExpressionType>& expressionValue);
 			template<typename T> void HandleExpressionValue(ExpressionValue<T>& expressionValue);
 			template<bool Single, typename F> void HandleStatementList(std::vector<StatementPtr>& statementList, F&& callback);
 			void HandleStatement(StatementPtr& expression);
 
+			void HandleChildren(AccessFieldExpression& node);
 			void HandleChildren(AccessIdentifierExpression& node);
 			void HandleChildren(AccessIndexExpression& node);
 			void HandleChildren(AliasValueExpression& node);
@@ -116,6 +118,8 @@ namespace nzsl::Ast
 
 #define NZSL_SHADERAST_NODE(Node, Type) virtual Type##Transformation Transform(Node##Type&& node);
 #include <NZSL/Ast/NodeList.hpp>
+
+			virtual void Transform(ExpressionValue<ExpressionType>& expressionValue);
 
 			bool TransformExpression(ExpressionPtr& expression, Context& context, std::string* error);
 			bool TransformModule(Module& module, Context& context, std::string* error, Nz::FunctionRef<void()> postCallback = nullptr);

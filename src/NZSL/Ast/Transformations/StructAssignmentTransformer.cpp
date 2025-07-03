@@ -40,7 +40,7 @@ namespace nzsl::Ast
 				auto dstVar = CacheExpression(std::move(assign.left));
 				auto srcVar = CacheExpression(std::move(assign.right));
 
-				std::int32_t memberIndex = 0;
+				std::uint32_t memberIndex = 0;
 				for (auto& member : structDesc->members)
 				{
 					if (member.cond.IsResultingValue() && !member.cond.GetResultingValue())
@@ -58,18 +58,8 @@ namespace nzsl::Ast
 						continue;
 					}
 
-					ExpressionPtr dstAccess;
-					ExpressionPtr srcAccess;
-					if (m_options->useIdentifierAccessesForStructs)
-					{
-						dstAccess = ShaderBuilder::AccessMember(Clone(*dstVar), { member.name });
-						srcAccess = ShaderBuilder::AccessMember(Clone(*srcVar), { member.name });
-					}
-					else
-					{
-						dstAccess = ShaderBuilder::AccessIndex(Clone(*dstVar), memberIndex);
-						srcAccess = ShaderBuilder::AccessIndex(Clone(*srcVar), memberIndex);
-					}
+					ExpressionPtr dstAccess = ShaderBuilder::AccessField(Clone(*dstVar), memberIndex);
+					ExpressionPtr srcAccess = ShaderBuilder::AccessField(Clone(*srcVar), memberIndex);
 
 					dstAccess->cachedExpressionType = member.type.GetResultingValue();
 					dstAccess->sourceLocation = assign.sourceLocation;

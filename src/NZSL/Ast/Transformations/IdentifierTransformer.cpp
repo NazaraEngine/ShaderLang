@@ -4,6 +4,7 @@
 
 #include <NZSL/Ast/Transformations/IdentifierTransformer.hpp>
 #include <NZSL/Lang/Errors.hpp>
+#include <fmt/format.h>
 
 namespace nzsl::Ast
 {
@@ -19,6 +20,11 @@ namespace nzsl::Ast
 		return std::find_if(m_identifierInScope.rbegin(), m_identifierInScope.rend(), [&](const std::string& identifier) { return identifier == identifierName; }) != m_identifierInScope.rend();
 	}
 
+	void IdentifierTransformer::RegisterIdentifier(std::string identifier)
+	{
+		m_identifierInScope.emplace_back(std::move(identifier));
+	}
+
 	void IdentifierTransformer::PopScope()
 	{
 		assert(!m_scopeIndices.empty());
@@ -31,24 +37,48 @@ namespace nzsl::Ast
 		m_scopeIndices.push_back(m_identifierInScope.size());
 	}
 
-	bool IdentifierTransformer::SanitizeIdentifier(std::string& identifier, IdentifierType scope)
+	bool IdentifierTransformer::HandleIdentifier(std::string& identifier, IdentifierType scope)
 	{
-		// Don't sanitize identifiers when performing partial sanitization (as it could break future compilation)
-		if (!m_options->identifierSanitizer || m_context->partialSanitization)
+		// Don't rename identifiers when performing partial sanitization (as it could break future compilation)
+		if (m_context->partialSanitization)
 			return false;
 
-		return m_options->identifierSanitizer(identifier, scope);
+		bool nameChanged = false;
+		if (m_options->identifierSanitizer)
+			nameChanged = m_options->identifierSanitizer(identifier, scope);
+		
+		if (m_options->makeVariableNameUnique)
+		{
+			if (HasIdentifier(identifier))
+			{
+				// Try to make identifier unique by appending _X to its name (incrementing X until it's unique) until it's unique
+				unsigned int cloneIndex = 2;
+				std::string candidateName;
+				do
+				{
+					candidateName = fmt::format("{}_{}", identifier, cloneIndex++);
+				}
+				while (HasIdentifier(candidateName));
+
+				identifier = std::move(candidateName);
+				nameChanged = true;
+			}
+
+			RegisterIdentifier(identifier);
+		}
+
+		return nameChanged;
 	}
 
 	auto IdentifierTransformer::Transform(DeclareAliasStatement&& statement) -> StatementTransformation
 	{
-		SanitizeIdentifier(statement.name, IdentifierType::Alias);
+		HandleIdentifier(statement.name, IdentifierType::Alias);
 		return VisitChildren{};
 	}
 
 	auto IdentifierTransformer::Transform(DeclareConstStatement&& statement) -> StatementTransformation
 	{
-		SanitizeIdentifier(statement.name, IdentifierType::Const);
+		HandleIdentifier(statement.name, IdentifierType::Const);
 		return VisitChildren{};
 	}
 
@@ -56,12 +86,12 @@ namespace nzsl::Ast
 	{
 		if (!statement.name.empty())
 		{
-			SanitizeIdentifier(statement.name, IdentifierType::ExternalBlock);
+			HandleIdentifier(statement.name, IdentifierType::ExternalBlock);
 			PushScope();
 		}
 
 		for (auto& externalVar : statement.externalVars)
-			SanitizeIdentifier(externalVar.name, IdentifierType::ExternalVariable);
+			HandleIdentifier(externalVar.name, IdentifierType::ExternalVariable);
 
 		if (!statement.name.empty())
 			PopScope();
@@ -71,49 +101,52 @@ namespace nzsl::Ast
 
 	auto IdentifierTransformer::Transform(DeclareFunctionStatement&& statement) -> StatementTransformation
 	{
-		SanitizeIdentifier(statement.name, IdentifierType::Function);
+		HandleIdentifier(statement.name, IdentifierType::Function);
 		for (auto& param : statement.parameters)
-			SanitizeIdentifier(param.name, IdentifierType::Parameter);
+			HandleIdentifier(param.name, IdentifierType::Parameter);
 
 		return VisitChildren{};
 	}
 
 	auto IdentifierTransformer::Transform(DeclareOptionStatement&& statement) -> StatementTransformation
 	{
-		SanitizeIdentifier(statement.optName, IdentifierType::Parameter);
+		HandleIdentifier(statement.optName, IdentifierType::Parameter);
 		return VisitChildren{};
 	}
 
 	auto IdentifierTransformer::Transform(DeclareStructStatement&& statement) -> StatementTransformation
 	{
-		SanitizeIdentifier(statement.description.name, IdentifierType::Struct);
+		HandleIdentifier(statement.description.name, IdentifierType::Struct);
+		
+		PushScope();
 		for (auto& member : statement.description.members)
 		{
 			// FIXME: Why is this necessary?
 			if (member.originalName.empty())
 				member.originalName = member.name;
 
-			SanitizeIdentifier(member.name, IdentifierType::Field);
+			HandleIdentifier(member.name, IdentifierType::Field);
 		}
+		PopScope();
 
 		return VisitChildren{};
 	}
 
 	auto IdentifierTransformer::Transform(DeclareVariableStatement&& statement) -> StatementTransformation
 	{
-		SanitizeIdentifier(statement.varName, IdentifierType::Variable);
+		HandleIdentifier(statement.varName, IdentifierType::Variable);
 		return VisitChildren{};
 	}
 
 	auto IdentifierTransformer::Transform(ForEachStatement&& statement) -> StatementTransformation
 	{
-		SanitizeIdentifier(statement.varName, IdentifierType::Variable);
+		HandleIdentifier(statement.varName, IdentifierType::Variable);
 		return VisitChildren{};
 	}
 
 	auto IdentifierTransformer::Transform(ForStatement&& statement) -> StatementTransformation
 	{
-		SanitizeIdentifier(statement.varName, IdentifierType::Variable);
+		HandleIdentifier(statement.varName, IdentifierType::Variable);
 		return VisitChildren{};
 	}
 }

@@ -9,6 +9,11 @@ namespace nzsl::Ast
 	{
 	}
 
+	inline void Transformer::HandleExpressionValue(ExpressionValue<ExpressionType>& expressionValue)
+	{
+		Transform(expressionValue);
+	}
+
 	template<typename T>
 	void Transformer::HandleExpressionValue(ExpressionValue<T>& expressionValue)
 	{

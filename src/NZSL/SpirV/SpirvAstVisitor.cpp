@@ -52,6 +52,14 @@ namespace nzsl
 			return m_writer.GetExtVar(varIndex);
 	}
 
+	void SpirvAstVisitor::Visit(Ast::AccessFieldExpression& node)
+	{
+		HandleSourceLocation(node.sourceLocation);
+
+		SpirvExpressionLoad accessMemberVisitor(m_writer, *this, *m_currentBlock);
+		PushResultId((m_isEvaluatingPointer) ? accessMemberVisitor.EvaluatePointer(node) : accessMemberVisitor.EvaluateValue(node));
+	}
+
 	void SpirvAstVisitor::Visit(Ast::AccessIndexExpression& node)
 	{
 		HandleSourceLocation(node.sourceLocation);

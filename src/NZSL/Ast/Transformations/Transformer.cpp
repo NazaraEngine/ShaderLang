@@ -128,6 +128,11 @@ namespace nzsl::Ast
 		m_statementStack.pop_back();
 	}
 
+	void Transformer::HandleChildren(AccessFieldExpression& node)
+	{
+		HandleExpression(node.expr);
+	}
+
 	void Transformer::HandleChildren(AccessIdentifierExpression& node)
 	{
 		HandleExpression(node.expr);
@@ -158,10 +163,10 @@ namespace nzsl::Ast
 
 	void Transformer::HandleChildren(CallFunctionExpression& node)
 	{
+		HandleExpression(node.targetFunction);
+
 		for (auto& param : node.parameters)
 			HandleExpression(param.expr);
-
-		HandleExpression(node.targetFunction);
 	}
 
 	void Transformer::HandleChildren(CallMethodExpression& node)
@@ -527,6 +532,12 @@ namespace nzsl::Ast
 
 #include <NZSL/Ast/NodeList.hpp>
 
+	void Transformer::Transform(ExpressionValue<ExpressionType>& expressionValue)
+	{
+		if (expressionValue.IsExpression())
+			HandleExpression(expressionValue.GetExpression());
+	}
+
 	bool Transformer::TransformExpression(ExpressionPtr& expression, Context& context, std::string* error)
 	{
 		m_context = &context;
@@ -625,7 +636,7 @@ namespace nzsl::Ast
 #define NZSL_SHADERAST_NODE(Node, Type) \
 	void Transformer::Visit(Node##Type& node) \
 	{ \
-		if (TransformCurrent##Type<Node##Type>()) \
+		if (!TransformCurrent##Type<Node##Type>()) \
 			return; \
 \
 		HandleChildren(node); \

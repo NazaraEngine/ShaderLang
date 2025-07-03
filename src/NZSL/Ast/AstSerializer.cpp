@@ -37,6 +37,12 @@ namespace nzsl::Ast
 		};
 	}
 
+	void SerializerBase::Serialize(AccessFieldExpression& node)
+	{
+		Node(node.expr);
+		Value(node.fieldIndex);
+	}
+
 	void SerializerBase::Serialize(AccessIdentifierExpression& node)
 	{
 		Node(node.expr);

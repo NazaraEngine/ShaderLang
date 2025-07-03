@@ -17,6 +17,7 @@
 #include <NZSL/SpirV/SpirvData.hpp>
 #include <NZSL/SpirV/SpirvGenData.hpp>
 #include <NZSL/SpirV/SpirvSection.hpp>
+#include <NZSL/Ast/Transformations/BindingResolverTransformer.hpp>
 #include <NZSL/Ast/Transformations/BranchSplitterTransformer.hpp>
 #include <NZSL/Ast/Transformations/CompoundAssignmentTransformer.hpp>
 #include <NZSL/Ast/Transformations/ConstantPropagationTransformer.hpp>
@@ -84,6 +85,13 @@ namespace nzsl
 				});
 
 				spirvCapabilities.insert(SpirvCapability::Shader);
+			}
+
+			void Visit(Ast::AccessFieldExpression& node) override
+			{
+				RecursiveVisitor::Visit(node);
+
+				m_constantCache.Register(*m_constantCache.BuildType(node.cachedExpressionType.value()));
 			}
 
 			void Visit(Ast::AccessIndexExpression& node) override
@@ -888,13 +896,14 @@ namespace nzsl
 	Ast::TransformerExecutor SpirvWriter::GetPasses()
 	{
 		Ast::TransformerExecutor executor;
-		executor.AddPass<Ast::IdentifierTypeResolverTransformer>();
+		executor.AddPass<Ast::IdentifierTypeResolverTransformer>({ true });
 		executor.AddPass<Ast::BranchSplitterTransformer>();
 		executor.AddPass<Ast::CompoundAssignmentTransformer>({ true });
 		executor.AddPass<Ast::ForToWhileTransformer>();
 		executor.AddPass<Ast::MatrixTransformer>({ true, true });
-		executor.AddPass<Ast::StructAssignmentTransformer>({ true, true, false });
+		executor.AddPass<Ast::StructAssignmentTransformer>({ true, true });
 		executor.AddPass<Ast::SwizzleTransformer>({ true });
+		executor.AddPass<Ast::BindingResolverTransformer>();
 
 		return executor;
 	}

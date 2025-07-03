@@ -30,6 +30,7 @@ namespace nzsl::Ast
 		private:
 			using ExpressionVisitor::Visit;
 
+			void Visit(AccessFieldExpression& node) override;
 			void Visit(AccessIdentifierExpression& node) override;
 			void Visit(AccessIndexExpression& node) override;
 			void Visit(AliasValueExpression& node) override;

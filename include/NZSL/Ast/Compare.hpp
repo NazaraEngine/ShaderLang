@@ -44,6 +44,7 @@ namespace nzsl::Ast
 	inline bool Compare(const StructDescription& lhs, const StructDescription& rhs, const ComparisonParams& params = {});
 	inline bool Compare(const StructDescription::StructMember& lhs, const StructDescription::StructMember& rhs, const ComparisonParams& params = {});
 
+	inline bool Compare(const AccessFieldExpression& lhs, const AccessFieldExpression& rhs, const ComparisonParams& params = {});
 	inline bool Compare(const AccessIdentifierExpression& lhs, const AccessIdentifierExpression& rhs, const ComparisonParams& params = {});
 	inline bool Compare(const AccessIndexExpression& lhs, const AccessIndexExpression& rhs, const ComparisonParams& params = {});
 	inline bool Compare(const AliasValueExpression& lhs, const AliasValueExpression& rhs, const ComparisonParams& params = {});
