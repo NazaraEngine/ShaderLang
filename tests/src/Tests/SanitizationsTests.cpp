@@ -526,10 +526,10 @@ external
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
 
-		//nzsl::Ast::SanitizeVisitor::Options options;
-		//options.removeAliases = true;
+		nzsl::Ast::TransformerExecutor executor;
+		executor.AddPass<nzsl::Ast::IdentifierTypeResolverTransformer>({ true });
 
-		//REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(*shaderModule, options));
+		REQUIRE_NOTHROW(executor.Transform(*shaderModule));
 
 		ExpectNZSL(*shaderModule, R"(
 struct inputStruct
@@ -568,6 +568,7 @@ fn main()
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
 
 		nzsl::Ast::TransformerExecutor executor;
+		executor.AddPass<nzsl::Ast::IdentifierTypeResolverTransformer>();
 		executor.AddPass<nzsl::Ast::SwizzleTransformer>({ true });
 
 		REQUIRE_NOTHROW(executor.Transform(*shaderModule));
@@ -648,6 +649,7 @@ fn main()
 		context.partialCompilation = true;
 
 		nzsl::Ast::TransformerExecutor executor;
+		executor.AddPass<nzsl::Ast::IdentifierTypeResolverTransformer>();
 		executor.AddPass<nzsl::Ast::StructAssignmentTransformer>({ true, true });
 
 		REQUIRE_NOTHROW(executor.Transform(*shaderModule));

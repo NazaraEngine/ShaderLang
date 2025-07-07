@@ -76,15 +76,15 @@ fn main() -> FragOut
 
 				ExpectSPIRV(*shaderModule, R"(
       OpMemoryModel AddressingModel(Logical) MemoryModel(GLSL450)
-      OpEntryPoint ExecutionModel(Fragment) %11 "main" %5
-      OpExecutionMode %11 ExecutionMode(OriginUpperLeft)
-      OpExecutionMode %11 ExecutionMode(DepthReplacing)
-      OpExecutionMode %11 ExecutionMode(DepthGreater)
+      OpEntryPoint ExecutionModel(Fragment) %9 "main" %5
+      OpExecutionMode %9 ExecutionMode(OriginUpperLeft)
+      OpExecutionMode %9 ExecutionMode(DepthReplacing)
+      OpExecutionMode %9 ExecutionMode(DepthGreater)
       OpSource SourceLanguage(NZSL) 100
       OpName %6 "FragOut"
       OpMemberName %6 0 "depth"
       OpName %5 "frag_depth"
-      OpName %11 "main"
+      OpName %9 "main"
       OpDecorate %5 Decoration(BuiltIn) BuiltIn(FragDepth)
       OpMemberDecorate %6 0 Decoration(Offset) 0
  %1 = OpTypeVoid

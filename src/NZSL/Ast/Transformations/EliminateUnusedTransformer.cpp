@@ -23,6 +23,9 @@ namespace nzsl::Ast
 		m_options = &options;
 		NAZARA_DEFER(m_options = nullptr;);
 
+		if (!TransformImportedModules(shaderModule, context, error))
+			return false;
+
 		return TransformModule(shaderModule, context, error);
 	}
 

@@ -15,8 +15,8 @@
 #include <NZSL/Ast/Utils.hpp>
 #include <NZSL/Lang/LangData.hpp>
 #include <NZSL/Ast/Transformations/BindingResolverTransformer.hpp>
-#include <NZSL/Ast/Transformations/ConstantRemovalTransformer.hpp>
 #include <NZSL/Ast/Transformations/ConstantPropagationTransformer.hpp>
+#include <NZSL/Ast/Transformations/ConstantRemovalTransformer.hpp>
 #include <NZSL/Ast/Transformations/EliminateUnusedTransformer.hpp>
 #include <NZSL/Ast/Transformations/ForToWhileTransformer.hpp>
 #include <NZSL/Ast/Transformations/IdentifierTransformer.hpp>
@@ -391,7 +391,7 @@ namespace nzsl
 		unsigned int indentLevel = 0;
 	};
 
-	auto GlslWriter::Generate(std::optional<ShaderStageType> shaderStage, const Ast::Module& module, const Parameters& parameters, const States& states) -> GlslWriter::Output
+	auto GlslWriter::Generate(std::optional<ShaderStageType> shaderStage, Ast::Module& module, const Parameters& parameters, const States& states) -> GlslWriter::Output
 	{
 		State state(parameters);
 		state.states = &states;
@@ -400,7 +400,7 @@ namespace nzsl
 		NAZARA_DEFER({ m_currentState = nullptr; });
 
 		Ast::ModulePtr sanitizedModule;
-		Ast::Module* targetModule;
+		Ast::Module* targetModule = &module;
 		/*if (!states.sanitized)
 		{
 			Ast::SanitizeVisitor::Options options = GetSanitizeOptions();
@@ -410,11 +410,11 @@ namespace nzsl
 			sanitizedModule = Ast::Sanitize(module, options);
 			targetModule = sanitizedModule.get();
 		}
-		else*/
+		else
 		{
 			sanitizedModule = Ast::Clone(module);
 			targetModule = sanitizedModule.get();
-		}
+		}*/
 
 		Ast::TransformerExecutor executor = GetPasses();
 		executor.Transform(*targetModule);
@@ -563,13 +563,6 @@ namespace nzsl
 			if (identifier.compare(0, 3, "gl_") == 0)
 			{
 				identifier.replace(0, 3, "_gl_"sv);
-				nameChanged = true;
-			}
-
-			// Identifier can't start with _nzsl
-			if (identifier.compare(0, 5, "_nzsl") == 0)
-			{
-				identifier.replace(0, 5, "_"sv);
 				nameChanged = true;
 			}
 

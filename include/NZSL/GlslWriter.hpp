@@ -33,8 +33,8 @@ namespace nzsl
 			GlslWriter(GlslWriter&&) = delete;
 			~GlslWriter() = default;
 
-			inline Output Generate(const Ast::Module& module, const Parameters& parameters = {}, const States& states = {});
-			Output Generate(std::optional<ShaderStageType> shaderStage, const Ast::Module& module, const Parameters& parameters = {}, const States& states = {});
+			inline Output Generate(Ast::Module& module, const Parameters& parameters = {}, const States& states = {});
+			Output Generate(std::optional<ShaderStageType> shaderStage, Ast::Module& module, const Parameters& parameters = {}, const States& states = {});
 
 			void SetEnv(Environment environment);
 
