@@ -131,11 +131,15 @@ namespace nzsl::Ast
 	void Transformer::HandleChildren(AccessFieldExpression& node)
 	{
 		HandleExpression(node.expr);
+		if (node.cachedExpressionType)
+			Transform(*node.cachedExpressionType);
 	}
 
 	void Transformer::HandleChildren(AccessIdentifierExpression& node)
 	{
 		HandleExpression(node.expr);
+		if (node.cachedExpressionType)
+			Transform(*node.cachedExpressionType);
 	}
 
 	void Transformer::HandleChildren(AccessIndexExpression& node)
@@ -143,22 +147,33 @@ namespace nzsl::Ast
 		HandleExpression(node.expr);
 		for (auto& index : node.indices)
 			HandleExpression(index);
+
+		if (node.cachedExpressionType)
+			Transform(*node.cachedExpressionType);
 	}
 
-	void Transformer::HandleChildren(AliasValueExpression& /*node*/)
+	void Transformer::HandleChildren(AliasValueExpression& node)
 	{
+		if (node.cachedExpressionType)
+			Transform(*node.cachedExpressionType);
 	}
 
 	void Transformer::HandleChildren(AssignExpression& node)
 	{
 		HandleExpression(node.left);
 		HandleExpression(node.right);
+
+		if (node.cachedExpressionType)
+			Transform(*node.cachedExpressionType);
 	}
 
 	void Transformer::HandleChildren(BinaryExpression& node)
 	{
 		HandleExpression(node.left);
 		HandleExpression(node.right);
+
+		if (node.cachedExpressionType)
+			Transform(*node.cachedExpressionType);
 	}
 
 	void Transformer::HandleChildren(CallFunctionExpression& node)
@@ -167,6 +182,9 @@ namespace nzsl::Ast
 
 		for (auto& param : node.parameters)
 			HandleExpression(param.expr);
+
+		if (node.cachedExpressionType)
+			Transform(*node.cachedExpressionType);
 	}
 
 	void Transformer::HandleChildren(CallMethodExpression& node)
@@ -175,6 +193,9 @@ namespace nzsl::Ast
 
 		for (auto& param : node.parameters)
 			HandleExpression(param);
+
+		if (node.cachedExpressionType)
+			Transform(*node.cachedExpressionType);
 	}
 
 	void Transformer::HandleChildren(CastExpression& node)
@@ -184,74 +205,111 @@ namespace nzsl::Ast
 
 		for (auto& expr : node.expressions)
 			HandleExpression(expr);
+
+		if (node.cachedExpressionType)
+			Transform(*node.cachedExpressionType);
 	}
 
 	void Transformer::HandleChildren(ConditionalExpression& node)
 	{
 		HandleExpression(node.truePath);
 		HandleExpression(node.falsePath);
+
+		if (node.cachedExpressionType)
+			Transform(*node.cachedExpressionType);
 	}
 
-	void Transformer::HandleChildren(ConstantExpression& /*node*/)
+	void Transformer::HandleChildren(ConstantExpression& node)
 	{
+		if (node.cachedExpressionType)
+			Transform(*node.cachedExpressionType);
 	}
 
-	void Transformer::HandleChildren(ConstantArrayValueExpression& /*node*/)
+	void Transformer::HandleChildren(ConstantArrayValueExpression& node)
 	{
+		if (node.cachedExpressionType)
+			Transform(*node.cachedExpressionType);
 	}
 
-	void Transformer::HandleChildren(ConstantValueExpression& /*node*/)
+	void Transformer::HandleChildren(ConstantValueExpression& node)
 	{
+		if (node.cachedExpressionType)
+			Transform(*node.cachedExpressionType);
 	}
 
-	void Transformer::HandleChildren(FunctionExpression& /*node*/)
+	void Transformer::HandleChildren(FunctionExpression& node)
 	{
+		if (node.cachedExpressionType)
+			Transform(*node.cachedExpressionType);
 	}
 
-	void Transformer::HandleChildren(IdentifierExpression& /*node*/)
+	void Transformer::HandleChildren(IdentifierExpression& node)
 	{
+		if (node.cachedExpressionType)
+			Transform(*node.cachedExpressionType);
 	}
 
 	void Transformer::HandleChildren(IntrinsicExpression& node)
 	{
 		for (auto& param : node.parameters)
 			HandleExpression(param);
+
+		if (node.cachedExpressionType)
+			Transform(*node.cachedExpressionType);
 	}
 
-	void Transformer::HandleChildren(IntrinsicFunctionExpression& /*node*/)
+	void Transformer::HandleChildren(IntrinsicFunctionExpression& node)
 	{
+		if (node.cachedExpressionType)
+			Transform(*node.cachedExpressionType);
 	}
 
-	void Transformer::HandleChildren(ModuleExpression& /*node*/)
+	void Transformer::HandleChildren(ModuleExpression& node)
 	{
+		if (node.cachedExpressionType)
+			Transform(*node.cachedExpressionType);
 	}
 
-	void Transformer::HandleChildren(NamedExternalBlockExpression& /*node*/)
+	void Transformer::HandleChildren(NamedExternalBlockExpression& node)
 	{
+		if (node.cachedExpressionType)
+			Transform(*node.cachedExpressionType);
 	}
 
-	void Transformer::HandleChildren(StructTypeExpression& /*node*/)
+	void Transformer::HandleChildren(StructTypeExpression& node)
 	{
+		if (node.cachedExpressionType)
+			Transform(*node.cachedExpressionType);
 	}
 
 	void Transformer::HandleChildren(SwizzleExpression& node)
 	{
 		if (node.expression)
 			HandleExpression(node.expression);
+
+		if (node.cachedExpressionType)
+			Transform(*node.cachedExpressionType);
 	}
 
-	void Transformer::HandleChildren(TypeExpression& /*node*/)
+	void Transformer::HandleChildren(TypeExpression& node)
 	{
-	}
-
-	void Transformer::HandleChildren(VariableValueExpression& /*node*/)
-	{
+		if (node.cachedExpressionType)
+			Transform(*node.cachedExpressionType);
 	}
 
 	void Transformer::HandleChildren(UnaryExpression& node)
 	{
 		if (node.expression)
 			HandleExpression(node.expression);
+
+		if (node.cachedExpressionType)
+			Transform(*node.cachedExpressionType);
+	}
+
+	void Transformer::HandleChildren(VariableValueExpression& node)
+	{
+		if (node.cachedExpressionType)
+			Transform(*node.cachedExpressionType);
 	}
 
 	void Transformer::HandleChildren(BranchStatement& node)
@@ -532,10 +590,16 @@ namespace nzsl::Ast
 
 #include <NZSL/Ast/NodeList.hpp>
 
+	void Transformer::Transform(ExpressionType& /*expressionType*/)
+	{
+	}
+
 	void Transformer::Transform(ExpressionValue<ExpressionType>& expressionValue)
 	{
 		if (expressionValue.IsExpression())
 			HandleExpression(expressionValue.GetExpression());
+		else if (expressionValue.IsResultingValue())
+			Transform(expressionValue.GetResultingValue());
 	}
 
 	bool Transformer::TransformExpression(ExpressionPtr& expression, Context& context, std::string* error)
@@ -555,6 +619,17 @@ namespace nzsl::Ast
 			return false;
 		}
 		
+		return true;
+	}
+
+	bool Transformer::TransformImportedModules(Module& module, Context& context, std::string* error)
+	{
+		for (auto& importedModule : module.importedModules)
+		{
+			if (!TransformModule(*importedModule.module, context, error))
+				return false;
+		}
+
 		return true;
 	}
 

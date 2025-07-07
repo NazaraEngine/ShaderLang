@@ -31,6 +31,7 @@ namespace nzsl::Ast
 			};
 
 		private:
+			struct ConstantData;
 			struct Environment;
 			struct FunctionData;
 			struct Identifier;
@@ -69,7 +70,7 @@ namespace nzsl::Ast
 
 			std::size_t RegisterAlias(std::string name, std::optional<Identifier> aliasData, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
 			void RegisterBuiltin();
-			std::size_t RegisterConstant(std::string name, std::optional<ConstantValue>&& value, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
+			std::size_t RegisterConstant(std::string name, std::optional<ConstantData>&& value, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
 			std::size_t RegisterExternalBlock(std::string name, NamedExternalBlock&& namedExternalBlock, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
 			std::size_t RegisterFunction(std::string name, std::optional<FunctionData>&& funcData, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
 			std::size_t RegisterIntrinsic(std::string name, IntrinsicType type);
@@ -95,6 +96,7 @@ namespace nzsl::Ast
 
 			ExpressionTransformation Transform(AccessIdentifierExpression&& accessIdentifierExpr) override;
 			ExpressionTransformation Transform(AccessIndexExpression&& accessIndexExpr) override;
+			ExpressionTransformation Transform(AssignExpression&& assignExpr) override;
 			ExpressionTransformation Transform(AliasValueExpression&& accessIndexExpr) override;
 			ExpressionTransformation Transform(BinaryExpression&& binaryExpression) override;
 			ExpressionTransformation Transform(CallFunctionExpression&& callFuncExpression) override;
@@ -119,6 +121,7 @@ namespace nzsl::Ast
 			StatementTransformation Transform(ForStatement&& forStatement) override;
 			StatementTransformation Transform(ImportStatement&& importStatement) override;
 
+			void Transform(ExpressionType& expressionType) override;
 			void Transform(ExpressionValue<ExpressionType>& expressionType) override;
 
 			ExpressionType ValidateBinaryOp(BinaryType op, const ExpressionType& leftExprType, const ExpressionType& rightExprType, const SourceLocation& sourceLocation);

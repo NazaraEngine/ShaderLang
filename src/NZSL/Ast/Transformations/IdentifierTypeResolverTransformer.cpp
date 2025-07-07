@@ -118,10 +118,15 @@ namespace nzsl::Ast
 		std::size_t previousSize;
 	};
 
+	struct IdentifierTypeResolverTransformer::ConstantData
+	{
+		std::size_t moduleIndex;
+		std::optional<ConstantValue> value;
+	};
+
 	struct IdentifierTypeResolverTransformer::Environment
 	{
 		std::shared_ptr<Environment> parentEnv;
-		std::string moduleId;
 		std::vector<Identifier> identifiersInScope;
 		std::vector<PendingFunction> pendingFunctions;
 		std::vector<Scope> scopes;
@@ -129,6 +134,7 @@ namespace nzsl::Ast
 
 	struct IdentifierTypeResolverTransformer::FunctionData
 	{
+		std::size_t moduleIndex;
 		DeclareFunctionStatement* node;
 		std::optional<ShaderStageType> entryStage;
 	};
@@ -165,15 +171,17 @@ namespace nzsl::Ast
 			unsigned int conditionalStatementIndex;
 		};
 
+		static constexpr std::size_t MainModule = std::numeric_limits<std::size_t>::max();
 		static constexpr std::size_t ModuleIdSentinel = std::numeric_limits<std::size_t>::max();
 
 		std::shared_ptr<Environment> globalEnv;
 		std::shared_ptr<Environment> currentEnv;
 		std::shared_ptr<Environment> moduleEnv;
+		std::size_t currentModuleId;
 		std::unordered_map<std::string, std::size_t> moduleByName;
 		std::unordered_map<std::string, UsedExternalData> declaredExternalVar;
 		std::vector<ModuleData> modules;
-		IdentifierList<ConstantValue> constantValues;
+		IdentifierList<ConstantData> constants;
 		IdentifierList<FunctionData> functions;
 		IdentifierList<Identifier> aliases;
 		IdentifierList<IntrinsicType> intrinsics;
@@ -190,6 +198,7 @@ namespace nzsl::Ast
 
 	struct IdentifierTypeResolverTransformer::StructData
 	{
+		std::size_t moduleIndex;
 		StructDescription* description;
 	};
 
@@ -209,7 +218,6 @@ namespace nzsl::Ast
 		RegisterBuiltin();
 
 		m_states->moduleEnv = std::make_shared<Environment>();
-		m_states->moduleEnv->moduleId = module.metadata->moduleName;
 		m_states->moduleEnv->parentEnv = m_states->globalEnv;
 
 		for (std::size_t moduleId = 0; moduleId < module.importedModules.size(); ++moduleId)
@@ -222,12 +230,12 @@ namespace nzsl::Ast
 				throw std::runtime_error("imported modules cannot have imported modules themselves");
 
 			auto importedModuleEnv = std::make_shared<Environment>();
-			importedModuleEnv->moduleId = importedModule.module->metadata->moduleName;
 			importedModuleEnv->parentEnv = m_states->globalEnv;
 
 			m_states->currentEnv = importedModuleEnv;
+			m_states->currentModuleId = moduleId;
 
-			if (!TransformModule(*importedModule.module, context, error))
+			if (!TransformModule(*importedModule.module, context, error, [&]{ ResolveFunctions(); }))
 				return false;
 
 			m_states->moduleByName[importedModule.module->metadata->moduleName] = moduleId;
@@ -235,11 +243,18 @@ namespace nzsl::Ast
 			moduleData.environment = std::move(importedModuleEnv);
 			moduleData.moduleName = importedModule.identifier;
 
+			if (!m_context->partialCompilation)
+			{
+				moduleData.dependenciesVisitor = std::make_unique<DependencyCheckerVisitor>();
+				moduleData.dependenciesVisitor->Register(*importedModule.module->rootNode);
+			}
+
 			m_states->currentEnv = m_states->globalEnv;
 			RegisterModule(importedModule.identifier, moduleId);
 		}
 
 		m_states->currentEnv = m_states->moduleEnv;
+		m_states->currentModuleId = States::MainModule;
 
 		return TransformModule(module, context, error, [&]
 		{
@@ -421,6 +436,9 @@ namespace nzsl::Ast
 				const Identifier* targetIdentifier = ResolveAliasIdentifier(&m_states->aliases.Retrieve(identifierData->index, sourceLocation), sourceLocation);
 				ExpressionPtr targetExpr = HandleIdentifier(&targetIdentifier->target, sourceLocation);
 
+				if (m_options->removeAliases)
+					return targetExpr;
+
 				AliasType aliasType;
 				aliasType.aliasIndex = identifierData->index;
 				aliasType.targetType = std::make_unique<ContainedType>();
@@ -564,11 +582,16 @@ namespace nzsl::Ast
 		ConstantPropagationTransformer::Options optimizerOptions;
 		optimizerOptions.constantQueryCallback = [&](std::size_t constantId) -> const ConstantValue*
 		{
-			const ConstantValue* value = m_states->constantValues.TryRetrieve(constantId, expr->sourceLocation);
-			if (!value && !m_context->partialCompilation)
-				throw AstInvalidConstantIndexError{ expr->sourceLocation, constantId };
+			const ConstantData* constantData = m_states->constants.TryRetrieve(constantId, expr->sourceLocation);
+			if (!constantData || !constantData->value)
+			{
+				if (!m_context->partialCompilation)
+					throw AstInvalidConstantIndexError{ expr->sourceLocation, constantId };
 
-			return value;
+				return nullptr;
+			}
+
+			return &constantData->value.value();
 		};
 
 		ConstantPropagationTransformer constantPropagation;
@@ -1024,29 +1047,29 @@ namespace nzsl::Ast
 		}
 
 		// Constants
-		RegisterConstant("readonly", Nz::SafeCast<std::uint32_t>(AccessPolicy::ReadOnly), std::nullopt, {});
-		RegisterConstant("readwrite", Nz::SafeCast<std::uint32_t>(AccessPolicy::ReadWrite), std::nullopt, {});
-		RegisterConstant("writeonly", Nz::SafeCast<std::uint32_t>(AccessPolicy::WriteOnly), std::nullopt, {});
+		RegisterConstant("readonly", ConstantData{ States::MainModule, Nz::SafeCast<std::uint32_t>(AccessPolicy::ReadOnly) }, std::nullopt, {});
+		RegisterConstant("readwrite", ConstantData{ States::MainModule, Nz::SafeCast<std::uint32_t>(AccessPolicy::ReadWrite) }, std::nullopt, {});
+		RegisterConstant("writeonly", ConstantData{ States::MainModule, Nz::SafeCast<std::uint32_t>(AccessPolicy::WriteOnly) }, std::nullopt, {});
 
 		// TODO: Register more image formats
-		RegisterConstant("rgba8", Nz::SafeCast<std::uint32_t>(ImageFormat::RGBA8), std::nullopt, {});
+		RegisterConstant("rgba8", ConstantData{ States::MainModule, Nz::SafeCast<std::uint32_t>(ImageFormat::RGBA8) }, std::nullopt, {});
 	}
 
-	std::size_t IdentifierTypeResolverTransformer::RegisterConstant(std::string name, std::optional<ConstantValue>&& value, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
+	std::size_t IdentifierTypeResolverTransformer::RegisterConstant(std::string name, std::optional<ConstantData>&& value, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
 	{
 		if (!IsIdentifierAvailable(name))
 			throw CompilerIdentifierAlreadyUsedError{ sourceLocation, name };
 
 		std::size_t constantIndex;
 		if (value)
-			constantIndex = m_states->constantValues.Register(std::move(*value), index, sourceLocation);
+			constantIndex = m_states->constants.Register(std::move(*value), index, sourceLocation);
 		else if (index)
 		{
-			m_states->constantValues.PreregisterIndex(*index, sourceLocation);
+			m_states->constants.PreregisterIndex(*index, sourceLocation);
 			constantIndex = *index;
 		}
 		else
-			constantIndex = m_states->constantValues.RegisterNewIndex(true);
+			constantIndex = m_states->constants.RegisterNewIndex(true);
 
 		m_states->currentEnv->identifiersInScope.push_back({
 			std::move(name),
@@ -1334,9 +1357,9 @@ namespace nzsl::Ast
 
 		ReflectVisitor::Callbacks registerCallbacks;
 		registerCallbacks.onAliasIndex = [this](const std::string& /*name*/, std::size_t index, const SourceLocation& sourceLocation) { m_states->aliases.PreregisterIndex(index, sourceLocation); };
-		registerCallbacks.onConstIndex = [this](const std::string& /*name*/, std::size_t index, const SourceLocation& sourceLocation) { m_states->constantValues.PreregisterIndex(index, sourceLocation); };
+		registerCallbacks.onConstIndex = [this](const std::string& /*name*/, std::size_t index, const SourceLocation& sourceLocation) { m_states->constants.PreregisterIndex(index, sourceLocation); };
 		registerCallbacks.onFunctionIndex = [this](const std::string& /*name*/, std::size_t index, const SourceLocation& sourceLocation) { m_states->functions.PreregisterIndex(index, sourceLocation); };
-		registerCallbacks.onOptionIndex = [this](const std::string& /*name*/, std::size_t index, const SourceLocation& sourceLocation) { m_states->constantValues.PreregisterIndex(index, sourceLocation); };
+		registerCallbacks.onOptionIndex = [this](const std::string& /*name*/, std::size_t index, const SourceLocation& sourceLocation) { m_states->constants.PreregisterIndex(index, sourceLocation); };
 		registerCallbacks.onStructIndex = [this](const std::string& /*name*/, std::size_t index, const SourceLocation& sourceLocation) { m_states->structs.PreregisterIndex(index, sourceLocation); };
 		registerCallbacks.onVariableIndex = [this](const std::string& /*name*/, std::size_t index, const SourceLocation& sourceLocation) { m_states->variableTypes.PreregisterIndex(index, sourceLocation); };
 
@@ -1415,7 +1438,10 @@ namespace nzsl::Ast
 			return NoType{};
 
 		if (exprTypeValue.IsResultingValue())
+		{
+			Transform(exprTypeValue.GetResultingValue());
 			return ResolveType(exprTypeValue.GetResultingValue(), resolveAlias, sourceLocation);
+		}
 
 		assert(exprTypeValue.IsExpression());
 		ExpressionPtr& expression = exprTypeValue.GetExpression();
@@ -1424,6 +1450,8 @@ namespace nzsl::Ast
 		const ExpressionType* exprType = GetExpressionType(*expression);
 		if (!exprType)
 			return std::nullopt;
+
+		Transform(*expression->cachedExpressionType);
 
 		//if (!IsTypeType(exprType))
 		//	throw AstError{ "type expected" };
@@ -1732,6 +1760,28 @@ namespace nzsl::Ast
 				if (m_context->partialCompilation && identifierData->conditionalIndex != m_states->currentConditionalIndex)
 					return Finish(i, exprType); //< unresolved type
 
+				auto& dependencyCheckerPtr = m_states->modules[moduleId].dependenciesVisitor;
+				if (dependencyCheckerPtr) //< dependency checker can be null when performing partial sanitization
+				{
+					switch (identifierData->category)
+					{
+						case IdentifierCategory::Constant:
+							dependencyCheckerPtr->MarkConstantAsUsed(identifierData->index);
+							break;
+
+						case IdentifierCategory::Function:
+							dependencyCheckerPtr->MarkFunctionAsUsed(identifierData->index);
+							break;
+
+						case IdentifierCategory::Struct:
+							dependencyCheckerPtr->MarkStructAsUsed(identifierData->index);
+							break;
+
+						default:
+							break;
+					}
+				}
+
 				indexedExpr = HandleIdentifier(identifierData, identifierEntry.sourceLocation);
 			}
 			else
@@ -1952,15 +2002,28 @@ namespace nzsl::Ast
 		return DontVisitChildren{};
 	}
 
+	auto IdentifierTypeResolverTransformer::Transform(AssignExpression&& assignExpr) -> ExpressionTransformation
+	{
+		HandleChildren(assignExpr);
+
+		const ExpressionType* leftExprType = GetExpressionType(MandatoryExpr(assignExpr.left, assignExpr.sourceLocation));
+		if (!leftExprType)
+			return DontVisitChildren{};
+
+		assignExpr.cachedExpressionType = *leftExprType;
+
+		return DontVisitChildren{};
+	}
+
 	auto IdentifierTypeResolverTransformer::Transform(AliasValueExpression&& accessIndexExpr) -> ExpressionTransformation
 	{
-		if (accessIndexExpr.cachedExpressionType)
+		if (accessIndexExpr.cachedExpressionType && !m_options->removeAliases)
 			return DontVisitChildren{};
 
 		const Identifier* targetIdentifier = ResolveAliasIdentifier(&m_states->aliases.Retrieve(accessIndexExpr.aliasId, accessIndexExpr.sourceLocation), accessIndexExpr.sourceLocation);
 		ExpressionPtr targetExpr = HandleIdentifier(&targetIdentifier->target, accessIndexExpr.sourceLocation);
 
-		if (!m_options->removeAliases)
+		if (m_options->removeAliases)
 			return ReplaceExpression{ std::move(targetExpr) };
 
 		AliasType aliasType;
@@ -2260,8 +2323,8 @@ namespace nzsl::Ast
 	{
 		NAZARA_USE_ANONYMOUS_NAMESPACE
 
-		const ConstantValue* value = m_states->constantValues.TryRetrieve(constantExpression.constantId, constantExpression.sourceLocation);
-		if (!value)
+		const ConstantData* constantData = m_states->constants.TryRetrieve(constantExpression.constantId, constantExpression.sourceLocation);
+		if (!constantData || !constantData->value)
 		{
 			if (!m_context->partialCompilation)
 				throw AstInvalidConstantIndexError{ constantExpression.sourceLocation, constantExpression.constantId };
@@ -2269,7 +2332,13 @@ namespace nzsl::Ast
 			return VisitChildren{}; //< unresolved
 		}
 
-		constantExpression.cachedExpressionType = GetConstantType(*value);
+		if (constantData->moduleIndex != m_states->currentModuleId)
+		{
+			assert(constantData->moduleIndex < m_states->modules.size());
+			m_states->modules[constantData->moduleIndex].dependenciesVisitor->MarkConstantAsUsed(constantExpression.constantId);
+		}
+
+		constantExpression.cachedExpressionType = GetConstantType(*constantData->value);
 		return VisitChildren{};
 	}
 
@@ -2472,11 +2541,25 @@ namespace nzsl::Ast
 		{
 			std::size_t structIndex = ResolveStructIndex(resolvedType, declAlias.expression->sourceLocation);
 			aliasIdentifier.target = { structIndex, IdentifierCategory::Struct };
+
+			auto& structData = m_states->structs.Retrieve(structIndex, declAlias.sourceLocation);
+			if (structData.moduleIndex != m_states->currentModuleId)
+			{
+				assert(structData.moduleIndex < m_states->modules.size());
+				m_states->modules[structData.moduleIndex].dependenciesVisitor->MarkStructAsUsed(structIndex);
+			}
 		}
 		else if (IsFunctionType(resolvedType))
 		{
 			std::size_t funcIndex = std::get<FunctionType>(resolvedType).funcIndex;
 			aliasIdentifier.target = { funcIndex, IdentifierCategory::Function };
+
+			auto& funcData = m_states->functions.Retrieve(funcIndex, declAlias.sourceLocation);
+			if (funcData.moduleIndex != m_states->currentModuleId)
+			{
+				assert(funcData.moduleIndex < m_states->modules.size());
+				m_states->modules[funcData.moduleIndex].dependenciesVisitor->MarkFunctionAsUsed(funcIndex);
+			}
 		}
 		else if (IsAliasType(resolvedType))
 		{
@@ -2515,33 +2598,54 @@ namespace nzsl::Ast
 
 		HandleChildren(declConst);
 
-		PropagateConstants(declConst.expression);
-
-		NodeType constantType = declConst.expression->GetType();
-		if (constantType != NodeType::ConstantValueExpression && constantType != NodeType::ConstantArrayValueExpression)
-		{
-			// Constant propagation failed
-			if (!m_context->partialCompilation)
-				throw CompilerConstantExpressionRequiredError{ declConst.expression->sourceLocation };
-
-			declConst.constIndex = RegisterConstant(declConst.name, std::nullopt, declConst.constIndex, declConst.sourceLocation);
-			return DontVisitChildren{};
-		}
-
+		// Handle const alias
 		ExpressionType expressionType;
-		if (constantType == NodeType::ConstantValueExpression)
+		if (declConst.expression->GetType() == NodeType::ConstantExpression)
 		{
-			const auto& constant = static_cast<ConstantValueExpression&>(*declConst.expression);
-			expressionType = GetConstantType(constant.value);
+			const auto& constantExpr = static_cast<ConstantExpression&>(*declConst.expression);
 
-			declConst.constIndex = RegisterConstant(declConst.name, ToConstantValue(constant.value), declConst.constIndex, declConst.sourceLocation);
+			std::size_t constantId = constantExpr.constantId;
+			auto& constantData = m_states->constants.Retrieve(constantId, declConst.sourceLocation);
+			if (constantData.moduleIndex != m_states->currentModuleId)
+			{
+				assert(constantData.moduleIndex < m_states->modules.size());
+				m_states->modules[constantData.moduleIndex].dependenciesVisitor->MarkConstantAsUsed(constantId);
+			}
+
+			declConst.constIndex = RegisterConstant(declConst.name, ConstantData{ m_states->currentModuleId, constantData.value }, declConst.constIndex, declConst.sourceLocation);
+
+			if (constantData.value)
+				expressionType = GetConstantType(*constantData.value);
 		}
-		else if (constantType == NodeType::ConstantArrayValueExpression)
+		else
 		{
-			const auto& constant = static_cast<ConstantArrayValueExpression&>(*declConst.expression);
-			expressionType = GetConstantType(constant.values);
+			PropagateConstants(declConst.expression);
 
-			declConst.constIndex = RegisterConstant(declConst.name, ToConstantValue(constant.values), declConst.constIndex, declConst.sourceLocation);
+			NodeType constantType = declConst.expression->GetType();
+			if (constantType != NodeType::ConstantValueExpression && constantType != NodeType::ConstantArrayValueExpression)
+			{
+				// Constant propagation failed
+				if (!m_context->partialCompilation)
+					throw CompilerConstantExpressionRequiredError{ declConst.expression->sourceLocation };
+
+				declConst.constIndex = RegisterConstant(declConst.name, ConstantData{ m_states->currentModuleId, std::nullopt }, declConst.constIndex, declConst.sourceLocation);
+				return DontVisitChildren{};
+			}
+
+			if (constantType == NodeType::ConstantValueExpression)
+			{
+				const auto& constant = static_cast<ConstantValueExpression&>(*declConst.expression);
+				expressionType = GetConstantType(constant.value);
+
+				declConst.constIndex = RegisterConstant(declConst.name, ConstantData{ m_states->currentModuleId, ToConstantValue(constant.value) }, declConst.constIndex, declConst.sourceLocation);
+			}
+			else if (constantType == NodeType::ConstantArrayValueExpression)
+			{
+				const auto& constant = static_cast<ConstantArrayValueExpression&>(*declConst.expression);
+				expressionType = GetConstantType(constant.values);
+
+				declConst.constIndex = RegisterConstant(declConst.name, ConstantData{ m_states->currentModuleId, ToConstantValue(constant.values) }, declConst.constIndex, declConst.sourceLocation);
+			}
 		}
 
 		if (constType.has_value() && ResolveAlias(*constType) != ResolveAlias(expressionType))
@@ -2692,6 +2796,7 @@ namespace nzsl::Ast
 		pendingFunc.node = &declFunction;
 
 		FunctionData funcData;
+		funcData.moduleIndex = m_states->currentModuleId;
 		funcData.node = &declFunction;
 
 		declFunction.funcIndex = RegisterFunction(declFunction.name, funcData, declFunction.funcIndex, declFunction.sourceLocation);
@@ -2727,25 +2832,28 @@ namespace nzsl::Ast
 			}
 		}
 
-		declOption.optType = std::move(resolvedType);
+		if (m_options->removeAliases)
+			declOption.optType = targetType;
+		else
+			declOption.optType = std::move(resolvedType);
 
 		OptionHash optionHash = HashOption(declOption.optName.data());
 
 		if (auto optionValueIt = m_context->optionValues.find(optionHash); optionValueIt != m_context->optionValues.end())
-			declOption.optIndex = RegisterConstant(declOption.optName, optionValueIt->second, declOption.optIndex, declOption.sourceLocation);
+			declOption.optIndex = RegisterConstant(declOption.optName, ConstantData{ m_states->currentModuleId, optionValueIt->second }, declOption.optIndex, declOption.sourceLocation);
 		else
 		{
 			if (m_context->partialCompilation)
 			{
 				// Partial sanitization, we cannot give a value to this option
-				declOption.optIndex = RegisterConstant(declOption.optName, std::nullopt, declOption.optIndex, declOption.sourceLocation);
+				declOption.optIndex = RegisterConstant(declOption.optName, ConstantData{ m_states->currentModuleId, std::nullopt }, declOption.optIndex, declOption.sourceLocation);
 			}
 			else
 			{
 				if (!declOption.defaultValue)
 					throw CompilerMissingOptionValueError{ declOption.sourceLocation, declOption.optName };
 
-				declOption.optIndex = RegisterConstant(declOption.optName, ComputeConstantValue(declOption.defaultValue), declOption.optIndex, declOption.sourceLocation);
+				declOption.optIndex = RegisterConstant(declOption.optName, ConstantData{ m_states->currentModuleId, ComputeConstantValue(declOption.defaultValue) }, declOption.optIndex, declOption.sourceLocation);
 			}
 		}
 
@@ -2842,6 +2950,7 @@ namespace nzsl::Ast
 
 		StructData structData;
 		structData.description = &declStruct.description;
+		structData.moduleIndex = m_states->currentModuleId;
 
 		declStruct.structIndex = RegisterStruct(declStruct.description.name, structData, declStruct.structIndex, declStruct.sourceLocation);
 		return DontVisitChildren{};
@@ -2977,7 +3086,7 @@ namespace nzsl::Ast
 						// Remap indices (as unrolling the loop will reuse them) 
 						IndexRemapperVisitor::Options indexCallbacks;
 						indexCallbacks.aliasIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_states->aliases.RegisterNewIndex(true); };
-						indexCallbacks.constIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_states->constantValues.RegisterNewIndex(true); };
+						indexCallbacks.constIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_states->constants.RegisterNewIndex(true); };
 						indexCallbacks.funcIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_states->functions.RegisterNewIndex(true); };
 						indexCallbacks.structIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_states->structs.RegisterNewIndex(true); };
 						indexCallbacks.varIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_states->variableTypes.RegisterNewIndex(true); };
@@ -3086,7 +3195,7 @@ namespace nzsl::Ast
 						// Remap indices (as unrolling the loop will reuse them) 
 						IndexRemapperVisitor::Options indexCallbacks;
 						indexCallbacks.aliasIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_states->aliases.RegisterNewIndex(true); };
-						indexCallbacks.constIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_states->constantValues.RegisterNewIndex(true); };
+						indexCallbacks.constIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_states->constants.RegisterNewIndex(true); };
 						indexCallbacks.funcIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_states->functions.RegisterNewIndex(true); };
 						indexCallbacks.structIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_states->structs.RegisterNewIndex(true); };
 						indexCallbacks.varIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_states->variableTypes.RegisterNewIndex(true); };
@@ -3103,7 +3212,6 @@ namespace nzsl::Ast
 					}
 				};
 
-				const ExpressionType* fromExprType = GetExpressionType(*forStatement.fromExpr);
 				if (fromExprType)
 				{
 					const ExpressionType& resolvedFromExprType = ResolveAlias(*fromExprType);
@@ -3138,6 +3246,8 @@ namespace nzsl::Ast
 
 	auto IdentifierTypeResolverTransformer::Transform(ImportStatement&& importStatement) -> StatementTransformation
 	{
+		// ImportStatement are only expected in partial compilation (as ImportResolverTransformer should have handled them)
+
 		tsl::ordered_map<std::string, std::vector<std::string>> importedSymbols;
 		bool importEverythingElse = false;
 		for (const auto& entry : importStatement.identifiers)
@@ -3196,6 +3306,41 @@ namespace nzsl::Ast
 		}
 
 		return DontVisitChildren{};
+	}
+
+	void IdentifierTypeResolverTransformer::Transform(ExpressionType& expressionType)
+	{
+		ExpressionType resolvedType;
+		if (IsAliasType(expressionType))
+			resolvedType = ResolveAlias(expressionType);
+		else
+			resolvedType = expressionType;
+
+		if (m_options->removeAliases)
+			expressionType = resolvedType;
+
+		if (IsStructAddressible(resolvedType))
+		{
+			std::size_t structIndex = ResolveStructIndex(resolvedType, SourceLocation{});
+
+			auto& structData = m_states->structs.Retrieve(structIndex, SourceLocation{});
+			if (structData.moduleIndex != m_states->currentModuleId)
+			{
+				assert(structData.moduleIndex < m_states->modules.size());
+				m_states->modules[structData.moduleIndex].dependenciesVisitor->MarkStructAsUsed(structIndex);
+			}
+		}
+		else if (IsFunctionType(resolvedType))
+		{
+			std::size_t funcIndex = std::get<FunctionType>(resolvedType).funcIndex;
+
+			auto& funcData = m_states->functions.Retrieve(funcIndex, SourceLocation{});
+			if (funcData.moduleIndex != m_states->currentModuleId)
+			{
+				assert(funcData.moduleIndex < m_states->modules.size());
+				m_states->modules[funcData.moduleIndex].dependenciesVisitor->MarkFunctionAsUsed(funcIndex);
+			}
+		}
 	}
 
 	void IdentifierTypeResolverTransformer::Transform(ExpressionValue<ExpressionType>& expressionType)

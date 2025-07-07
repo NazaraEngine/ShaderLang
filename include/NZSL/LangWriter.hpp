@@ -26,7 +26,7 @@ namespace nzsl
 			LangWriter(LangWriter&&) = delete;
 			~LangWriter() = default;
 
-			std::string Generate(const Ast::Module& module, const States& states = {});
+			std::string Generate(Ast::Module& module, const States& states = {});
 
 			void SetEnv(Environment environment);
 

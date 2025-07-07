@@ -6,9 +6,9 @@
 #include <NazaraUtils/Bitset.hpp>
 #include <NazaraUtils/StackVector.hpp>
 #include <NZSL/ModuleResolver.hpp>
+#include <NZSL/Ast/Cloner.hpp>
 #include <NZSL/Ast/ExportVisitor.hpp>
 #include <NZSL/Ast/ExpressionType.hpp>
-#include <NZSL/Ast/IndexRemapperVisitor.hpp>
 #include <NZSL/Lang/Errors.hpp>
 #include <NZSL/Lang/LangData.hpp>
 #include <tsl/ordered_map.h>
@@ -18,6 +18,11 @@ namespace nzsl::Ast
 {
 	struct ImportResolverTransformer::States
 	{
+		struct ModuleData
+		{
+			std::string identifier;
+		};
+
 		struct UsedExternalData
 		{
 			unsigned int conditionalStatementIndex;
@@ -26,19 +31,20 @@ namespace nzsl::Ast
 		static constexpr std::size_t ModuleIdSentinel = std::numeric_limits<std::size_t>::max();
 
 		std::unordered_map<std::string, std::size_t> moduleByName;
-		std::vector<std::string> modules;
+		std::vector<ModuleData> modules;
 		Module* currentModule;
-		const std::string* currentModuleName;
 	};
 
 	bool ImportResolverTransformer::Transform(Module& module, Context& context, const Options& options, std::string* error)
 	{
 		States states;
 		states.currentModule = &module;
-		states.currentModuleName = &module.metadata->moduleName;
 
 		m_states = &states;
 		m_options = &options;
+
+		if (!TransformImportedModules(module, context, error))
+			return false;
 
 		return TransformModule(module, context, error);
 	}
@@ -140,8 +146,6 @@ namespace nzsl::Ast
 			ModulePtr sanitizedModule = std::make_shared<Module>(targetModule->metadata);
 			sanitizedModule->rootNode = Nz::StaticUniquePointerCast<MultiStatement>(Ast::Clone(*targetModule->rootNode));
 
-			m_states->currentModuleName = &moduleName;
-
 			std::string error;
 			if (!TransformModule(*sanitizedModule, *m_context, &error))
 				throw CompilerModuleCompilationFailedError{ importStatement.sourceLocation, importStatement.moduleName, error };
@@ -150,11 +154,12 @@ namespace nzsl::Ast
 
 			assert(m_states->modules.size() == moduleIndex);
 			auto& moduleData = m_states->modules.emplace_back();
+			moduleData.identifier = identifier;
 
 			// Don't run dependency checker when partially sanitizing
 			assert(m_states->currentModule->importedModules.size() == moduleIndex);
 			auto& importedModule = m_states->currentModule->importedModules.emplace_back();
-			importedModule.identifier = identifier;
+			importedModule.identifier = std::move(identifier);
 			importedModule.module = std::move(sanitizedModule);
 
 			m_states->moduleByName[moduleName] = moduleIndex;
@@ -203,7 +208,7 @@ namespace nzsl::Ast
 
 				auto BuildConstant = [&]() -> ExpressionPtr
 				{
-					return ShaderBuilder::AccessMember(ShaderBuilder::Identifier(*m_states->currentModuleName), { node.name });
+					return ShaderBuilder::AccessMember(ShaderBuilder::Identifier(moduleData.identifier), { node.name });
 				};
 
 				for (const std::string& aliasName : aliasesName)
@@ -218,7 +223,7 @@ namespace nzsl::Ast
 
 				auto BuildConstant = [&]() -> ExpressionPtr
 				{
-					return ShaderBuilder::AccessMember(ShaderBuilder::Identifier(*m_states->currentModuleName), { node.name });
+					return ShaderBuilder::AccessMember(ShaderBuilder::Identifier(moduleData.identifier), { node.name });
 				};
 
 				for (const std::string& aliasName : aliasesName)
@@ -233,7 +238,7 @@ namespace nzsl::Ast
 
 				auto BuildConstant = [&]() -> ExpressionPtr
 				{
-					return ShaderBuilder::AccessMember(ShaderBuilder::Identifier(*m_states->currentModuleName), { node.description.name });
+					return ShaderBuilder::AccessMember(ShaderBuilder::Identifier(moduleData.identifier), { node.description.name });
 				};
 
 				for (const std::string& aliasName : aliasesName)

@@ -20,8 +20,8 @@
 #include <NZSL/Ast/Transformations/BindingResolverTransformer.hpp>
 #include <NZSL/Ast/Transformations/BranchSplitterTransformer.hpp>
 #include <NZSL/Ast/Transformations/CompoundAssignmentTransformer.hpp>
-#include <NZSL/Ast/Transformations/ConstantRemovalTransformer.hpp>
 #include <NZSL/Ast/Transformations/ConstantPropagationTransformer.hpp>
+#include <NZSL/Ast/Transformations/ConstantRemovalTransformer.hpp>
 #include <NZSL/Ast/Transformations/EliminateUnusedTransformer.hpp>
 #include <NZSL/Ast/Transformations/ForToWhileTransformer.hpp>
 #include <NZSL/Ast/Transformations/IdentifierTypeResolverTransformer.hpp>
@@ -652,10 +652,10 @@ namespace nzsl
 	{
 	}
 
-	std::vector<std::uint32_t> SpirvWriter::Generate(const Ast::Module& module, const States& states)
+	std::vector<std::uint32_t> SpirvWriter::Generate(Ast::Module& module, const States& states)
 	{
 		Ast::ModulePtr sanitizedModule;
-		Ast::Module* targetModule;
+		Ast::Module* targetModule = &module;
 		/*if (!states.sanitized)
 		{
 			Ast::SanitizeVisitor::Options options = GetSanitizeOptions();
@@ -665,11 +665,11 @@ namespace nzsl
 			sanitizedModule = Ast::Sanitize(module, options);
 			targetModule = sanitizedModule.get();
 		}
-		else*/
+		else
 		{
 			sanitizedModule = Ast::Clone(module);
 			targetModule = sanitizedModule.get();
-		}
+		}*/
 
 		Ast::TransformerExecutor executor = GetPasses();
 		executor.Transform(*targetModule);
@@ -899,10 +899,10 @@ namespace nzsl
 		Ast::TransformerExecutor executor;
 		executor.AddPass<Ast::IdentifierTypeResolverTransformer>({ true });
 		executor.AddPass<Ast::BranchSplitterTransformer>();
-		executor.AddPass<Ast::CompoundAssignmentTransformer>({ true });
 		executor.AddPass<Ast::ForToWhileTransformer>();
-		executor.AddPass<Ast::MatrixTransformer>({ true, true });
 		executor.AddPass<Ast::StructAssignmentTransformer>({ true, true });
+		executor.AddPass<Ast::CompoundAssignmentTransformer>({ true });
+		executor.AddPass<Ast::MatrixTransformer>({ true, true });
 		executor.AddPass<Ast::SwizzleTransformer>({ true });
 		executor.AddPass<Ast::BindingResolverTransformer>();
 		executor.AddPass<Ast::ConstantRemovalTransformer>();

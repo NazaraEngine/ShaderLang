@@ -39,7 +39,7 @@ namespace nzsl
 			SpirvWriter(SpirvWriter&&) = delete;
 			~SpirvWriter() = default;
 
-			std::vector<std::uint32_t> Generate(const Ast::Module& module, const States& states = {});
+			std::vector<std::uint32_t> Generate(Ast::Module& module, const States& states = {});
 
 			const SpirvVariable& GetConstantVariable(std::size_t constIndex) const;
 
