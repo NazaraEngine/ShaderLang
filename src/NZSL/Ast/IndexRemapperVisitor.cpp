@@ -27,7 +27,7 @@ namespace nzsl::Ast
 		std::unordered_map<std::size_t, std::size_t> newVarIndices;
 	};
 
-	StatementPtr IndexRemapperVisitor::Clone(Statement& statement, const Options& options)
+	void IndexRemapperVisitor::Remap(Statement& statement, const Options& options)
 	{
 		assert(options.aliasIndexGenerator);
 		assert(options.constIndexGenerator);
@@ -40,55 +40,236 @@ namespace nzsl::Ast
 		context.options = &options;
 		m_context = &context;
 
-		return Cloner::Clone(statement);
+		statement.Visit(*this);
 	}
 
-	ExpressionPtr IndexRemapperVisitor::CloneExpression(Expression& expr)
+	void IndexRemapperVisitor::RemapExpression(Expression& expr)
 	{
-		auto clonedExpr = Cloner::CloneExpression(expr);
-		if (clonedExpr->cachedExpressionType)
-			clonedExpr->cachedExpressionType = RemapType(*clonedExpr->cachedExpressionType);
-
-		return clonedExpr;
+		if (expr.cachedExpressionType)
+			expr.cachedExpressionType = RemapType(*expr.cachedExpressionType);
 	}
 
-	StatementPtr IndexRemapperVisitor::Clone(DeclareAliasStatement& node)
+	void IndexRemapperVisitor::Visit(AccessFieldExpression& node)
 	{
-		DeclareAliasStatementPtr clone = Nz::StaticUniquePointerCast<DeclareAliasStatement>(Cloner::Clone(node));
+		RecursiveVisitor::Visit(node);
 
-		if (clone->aliasIndex)
+		RemapExpression(node);
+	}
+
+	void IndexRemapperVisitor::Visit(AccessIdentifierExpression& node)
+	{
+		RecursiveVisitor::Visit(node);
+
+		RemapExpression(node);
+	}
+
+	void IndexRemapperVisitor::Visit(AccessIndexExpression& node)
+	{
+		RecursiveVisitor::Visit(node);
+
+		RemapExpression(node);
+	}
+
+	void IndexRemapperVisitor::Visit(AliasValueExpression& node)
+	{
+		RecursiveVisitor::Visit(node);
+
+		auto it = m_context->newAliasIndices.find(node.aliasId);
+		if (it != m_context->newAliasIndices.end())
+			node.aliasId = it->second;
+
+		RemapExpression(node);
+	}
+
+	void IndexRemapperVisitor::Visit(AssignExpression& node)
+	{
+		RecursiveVisitor::Visit(node);
+
+		RemapExpression(node);
+	}
+
+	void IndexRemapperVisitor::Visit(BinaryExpression& node)
+	{
+		RecursiveVisitor::Visit(node);
+
+		RemapExpression(node);
+	}
+
+	void IndexRemapperVisitor::Visit(CallFunctionExpression& node)
+	{
+		RecursiveVisitor::Visit(node);
+
+		RemapExpression(node);
+	}
+
+	void IndexRemapperVisitor::Visit(CallMethodExpression& node)
+	{
+		RecursiveVisitor::Visit(node);
+
+		RemapExpression(node);
+	}
+
+	void IndexRemapperVisitor::Visit(CastExpression& node)
+	{
+		RecursiveVisitor::Visit(node);
+
+		RemapExpression(node);
+	}
+
+	void IndexRemapperVisitor::Visit(ConditionalExpression& node)
+	{
+		RecursiveVisitor::Visit(node);
+
+		RemapExpression(node);
+	}
+
+	void IndexRemapperVisitor::Visit(ConstantExpression& node)
+	{
+		RecursiveVisitor::Visit(node);
+
+		auto it = m_context->newConstIndices.find(node.constantId);
+		if (it == m_context->newConstIndices.end())
+			node.constantId = it->second;
+
+		RemapExpression(node);
+	}
+
+	void IndexRemapperVisitor::Visit(ConstantArrayValueExpression& node)
+	{
+		RecursiveVisitor::Visit(node);
+
+		RemapExpression(node);
+	}
+
+	void IndexRemapperVisitor::Visit(ConstantValueExpression& node)
+	{
+		RecursiveVisitor::Visit(node);
+
+		RemapExpression(node);
+	}
+
+	void IndexRemapperVisitor::Visit(FunctionExpression& node)
+	{
+		RecursiveVisitor::Visit(node);
+
+		auto it = m_context->newFuncIndices.find(node.funcId);
+		if (it == m_context->newFuncIndices.end())
+			node.funcId = it->second;
+
+		RemapExpression(node);
+	}
+
+	void IndexRemapperVisitor::Visit(IdentifierExpression& node)
+	{
+		RecursiveVisitor::Visit(node);
+
+		RemapExpression(node);
+	}
+
+	void IndexRemapperVisitor::Visit(IntrinsicExpression& node)
+	{
+		RecursiveVisitor::Visit(node);
+
+		RemapExpression(node);
+	}
+
+	void IndexRemapperVisitor::Visit(IntrinsicFunctionExpression& node)
+	{
+		RecursiveVisitor::Visit(node);
+
+		RemapExpression(node);
+	}
+
+	void IndexRemapperVisitor::Visit(ModuleExpression& node)
+	{
+		RecursiveVisitor::Visit(node);
+
+		RemapExpression(node);
+	}
+
+	void IndexRemapperVisitor::Visit(NamedExternalBlockExpression& node)
+	{
+		RecursiveVisitor::Visit(node);
+
+		RemapExpression(node);
+	}
+
+	void IndexRemapperVisitor::Visit(StructTypeExpression& node)
+	{
+		RecursiveVisitor::Visit(node);
+
+		auto it = m_context->newStructIndices.find(node.structTypeId);
+		if (it == m_context->newStructIndices.end())
+			node.structTypeId = it->second;
+
+		RemapExpression(node);
+	}
+
+	void IndexRemapperVisitor::Visit(SwizzleExpression& node)
+	{
+		RecursiveVisitor::Visit(node);
+
+		RemapExpression(node);
+	}
+
+	void IndexRemapperVisitor::Visit(TypeExpression& node)
+	{
+		RecursiveVisitor::Visit(node);
+
+		RemapExpression(node);
+	}
+
+	void IndexRemapperVisitor::Visit(VariableValueExpression& node)
+	{
+		RecursiveVisitor::Visit(node);
+
+		auto it = m_context->newVarIndices.find(node.variableId);
+		if (it == m_context->newVarIndices.end())
+			node.variableId = it->second;
+
+		RemapExpression(node);
+	}
+
+	void IndexRemapperVisitor::Visit(UnaryExpression& node)
+	{
+		RecursiveVisitor::Visit(node);
+
+		RemapExpression(node);
+	}
+
+	void IndexRemapperVisitor::Visit(DeclareAliasStatement& node)
+	{
+		RecursiveVisitor::Visit(node);
+
+		if (node.aliasIndex)
 		{
-			std::size_t newAliasIndex = m_context->options->aliasIndexGenerator(*clone->aliasIndex);
-			UniqueInsert(m_context->newAliasIndices, *clone->aliasIndex, newAliasIndex);
-			clone->aliasIndex = newAliasIndex;
+			std::size_t newAliasIndex = m_context->options->aliasIndexGenerator(*node.aliasIndex);
+			UniqueInsert(m_context->newAliasIndices, *node.aliasIndex, newAliasIndex);
+			node.aliasIndex = newAliasIndex;
 		}
 		else if (m_context->options->forceIndexGeneration)
-			clone->aliasIndex = m_context->options->aliasIndexGenerator(std::numeric_limits<std::size_t>::max());
-
-		return clone;
+			node.aliasIndex = m_context->options->aliasIndexGenerator(std::numeric_limits<std::size_t>::max());
 	}
 
-	StatementPtr IndexRemapperVisitor::Clone(DeclareConstStatement& node)
+	void IndexRemapperVisitor::Visit(DeclareConstStatement& node)
 	{
-		DeclareConstStatementPtr clone = Nz::StaticUniquePointerCast<DeclareConstStatement>(Cloner::Clone(node));
+		RecursiveVisitor::Visit(node);
 
-		if (clone->constIndex)
+		if (node.constIndex)
 		{
-			std::size_t newConstIndex = m_context->options->constIndexGenerator(*clone->constIndex);
-			UniqueInsert(m_context->newConstIndices, *clone->constIndex, newConstIndex);
-			clone->constIndex = newConstIndex;
+			std::size_t newConstIndex = m_context->options->constIndexGenerator(*node.constIndex);
+			UniqueInsert(m_context->newConstIndices, *node.constIndex, newConstIndex);
+			node.constIndex = newConstIndex;
 		}
 		else if (m_context->options->forceIndexGeneration)
-			clone->constIndex = m_context->options->constIndexGenerator(std::numeric_limits<std::size_t>::max());
-
-		return clone;
+			node.constIndex = m_context->options->constIndexGenerator(std::numeric_limits<std::size_t>::max());
 	}
 
-	StatementPtr IndexRemapperVisitor::Clone(DeclareExternalStatement& node)
+	void IndexRemapperVisitor::Visit(DeclareExternalStatement& node)
 	{
-		DeclareExternalStatementPtr clone = Nz::StaticUniquePointerCast<DeclareExternalStatement>(Cloner::Clone(node));
+		RecursiveVisitor::Visit(node);
 
-		for (auto& extVar : clone->externalVars)
+		for (auto& extVar : node.externalVars)
 		{
 			if (extVar.varIndex)
 			{
@@ -99,11 +280,9 @@ namespace nzsl::Ast
 			else if (m_context->options->forceIndexGeneration)
 				extVar.varIndex = m_context->options->varIndexGenerator(std::numeric_limits<std::size_t>::max());
 		}
-
-		return clone;
 	}
 
-	StatementPtr IndexRemapperVisitor::Clone(DeclareFunctionStatement& node)
+	void IndexRemapperVisitor::Visit(DeclareFunctionStatement& node)
 	{
 		// We have to handle parameters before handling the function statements
 		for (auto& parameter : node.parameters)
@@ -115,20 +294,20 @@ namespace nzsl::Ast
 			}
 		}
 
-		DeclareFunctionStatementPtr clone = Nz::StaticUniquePointerCast<DeclareFunctionStatement>(Cloner::Clone(node));
+		RecursiveVisitor::Visit(node);
 
-		if (clone->funcIndex)
+		if (node.funcIndex)
 		{
-			std::size_t newFuncIndex = m_context->options->funcIndexGenerator(*clone->funcIndex);
-			UniqueInsert(m_context->newFuncIndices, *clone->funcIndex, newFuncIndex);
-			clone->funcIndex = newFuncIndex;
+			std::size_t newFuncIndex = m_context->options->funcIndexGenerator(*node.funcIndex);
+			UniqueInsert(m_context->newFuncIndices, *node.funcIndex, newFuncIndex);
+			node.funcIndex = newFuncIndex;
 		}
 		else if (m_context->options->forceIndexGeneration)
-			clone->funcIndex = m_context->options->funcIndexGenerator(std::numeric_limits<std::size_t>::max());
+			node.funcIndex = m_context->options->funcIndexGenerator(std::numeric_limits<std::size_t>::max());
 
-		if (!clone->parameters.empty())
+		if (!node.parameters.empty())
 		{
-			for (auto& parameter : clone->parameters)
+			for (auto& parameter : node.parameters)
 			{
 				if (parameter.varIndex)
 				{
@@ -143,66 +322,58 @@ namespace nzsl::Ast
 			}
 		}
 
-		if (clone->returnType.HasValue())
-			HandleType(clone->returnType);
-
-		return clone;
+		if (node.returnType.HasValue())
+			HandleType(node.returnType);
 	}
 
-	StatementPtr IndexRemapperVisitor::Clone(DeclareOptionStatement& node)
+	void IndexRemapperVisitor::Visit(DeclareOptionStatement& node)
 	{
-		DeclareOptionStatementPtr clone = Nz::StaticUniquePointerCast<DeclareOptionStatement>(Cloner::Clone(node));
+		RecursiveVisitor::Visit(node);
 
-		if (clone->optIndex)
+		if (node.optIndex)
 		{
-			std::size_t newConstIndex = m_context->options->constIndexGenerator(*clone->optIndex);
-			UniqueInsert(m_context->newConstIndices, *clone->optIndex, newConstIndex);
-			clone->optIndex = newConstIndex;
+			std::size_t newConstIndex = m_context->options->constIndexGenerator(*node.optIndex);
+			UniqueInsert(m_context->newConstIndices, *node.optIndex, newConstIndex);
+			node.optIndex = newConstIndex;
 		}
 		else if (m_context->options->forceIndexGeneration)
-			clone->optIndex = m_context->options->constIndexGenerator(std::numeric_limits<std::size_t>::max());
-
-		return clone;
+			node.optIndex = m_context->options->constIndexGenerator(std::numeric_limits<std::size_t>::max());
 	}
 
-	StatementPtr IndexRemapperVisitor::Clone(DeclareStructStatement& node)
+	void IndexRemapperVisitor::Visit(DeclareStructStatement& node)
 	{
-		DeclareStructStatementPtr clone = Nz::StaticUniquePointerCast<DeclareStructStatement>(Cloner::Clone(node));
+		RecursiveVisitor::Visit(node);
 
-		if (clone->structIndex)
+		if (node.structIndex)
 		{
-			std::size_t newStructIndex = m_context->options->structIndexGenerator(*clone->structIndex);
-			UniqueInsert(m_context->newStructIndices, *clone->structIndex, newStructIndex);
-			clone->structIndex = newStructIndex;
+			std::size_t newStructIndex = m_context->options->structIndexGenerator(*node.structIndex);
+			UniqueInsert(m_context->newStructIndices, *node.structIndex, newStructIndex);
+			node.structIndex = newStructIndex;
 		}
 		else if (m_context->options->forceIndexGeneration)
-			clone->structIndex = m_context->options->structIndexGenerator(std::numeric_limits<std::size_t>::max());
+			node.structIndex = m_context->options->structIndexGenerator(std::numeric_limits<std::size_t>::max());
 
-		for (auto& structMember : clone->description.members)
+		for (auto& structMember : node.description.members)
 			HandleType(structMember.type);
-
-		return clone;
 	}
 
-	StatementPtr IndexRemapperVisitor::Clone(DeclareVariableStatement& node)
+	void IndexRemapperVisitor::Visit(DeclareVariableStatement& node)
 	{
-		DeclareVariableStatementPtr clone = Nz::StaticUniquePointerCast<DeclareVariableStatement>(Cloner::Clone(node));
+		RecursiveVisitor::Visit(node);
 
-		if (clone->varIndex)
+		if (node.varIndex)
 		{
-			std::size_t newVarIndex = m_context->options->varIndexGenerator(*clone->varIndex);
-			UniqueInsert(m_context->newVarIndices, *clone->varIndex, newVarIndex);
-			clone->varIndex = newVarIndex;
+			std::size_t newVarIndex = m_context->options->varIndexGenerator(*node.varIndex);
+			UniqueInsert(m_context->newVarIndices, *node.varIndex, newVarIndex);
+			node.varIndex = newVarIndex;
 		}
 		else if (m_context->options->forceIndexGeneration)
-			clone->varIndex = m_context->options->varIndexGenerator(std::numeric_limits<std::size_t>::max());
+			node.varIndex = m_context->options->varIndexGenerator(std::numeric_limits<std::size_t>::max());
 
-		HandleType(clone->varType);
-
-		return clone;
+		HandleType(node.varType);
 	}
 
-	StatementPtr IndexRemapperVisitor::Clone(ForStatement& node)
+	void IndexRemapperVisitor::Visit(ForStatement& node)
 	{
 		// We have to handle the for each var index before its content
 		std::optional<std::size_t> varIndex = node.varIndex;
@@ -215,13 +386,11 @@ namespace nzsl::Ast
 		else if (m_context->options->forceIndexGeneration)
 			varIndex = m_context->options->varIndexGenerator(std::numeric_limits<std::size_t>::max());
 
-		ForStatementPtr clone = Nz::StaticUniquePointerCast<ForStatement>(Cloner::Clone(node));
-		clone->varIndex = varIndex;
-
-		return clone;
+		RecursiveVisitor::Visit(node);
+		node.varIndex = varIndex;
 	}
 
-	StatementPtr IndexRemapperVisitor::Clone(ForEachStatement& node)
+	void IndexRemapperVisitor::Visit(ForEachStatement& node)
 	{
 		// We have to handle the for each var index before its content
 		std::optional<std::size_t> varIndex = node.varIndex;
@@ -234,70 +403,8 @@ namespace nzsl::Ast
 		else if (m_context->options->forceIndexGeneration)
 			varIndex = m_context->options->varIndexGenerator(std::numeric_limits<std::size_t>::max());
 
-		ForEachStatementPtr clone = Nz::StaticUniquePointerCast<ForEachStatement>(Cloner::Clone(node));
-		clone->varIndex = varIndex;
-
-		return clone;
-	}
-
-	ExpressionPtr IndexRemapperVisitor::Clone(AliasValueExpression& node)
-	{
-		auto it = m_context->newAliasIndices.find(node.aliasId);
-		if (it == m_context->newAliasIndices.end())
-			return Cloner::Clone(node);
-
-		AliasValueExpressionPtr clone = Nz::StaticUniquePointerCast<AliasValueExpression>(Cloner::Clone(node));
-		clone->aliasId = it->second;
-
-		return clone;
-	}
-
-	ExpressionPtr IndexRemapperVisitor::Clone(ConstantExpression& node)
-	{
-		auto it = m_context->newConstIndices.find(node.constantId);
-		if (it == m_context->newConstIndices.end())
-			return Cloner::Clone(node);
-
-		ConstantExpressionPtr clone = Nz::StaticUniquePointerCast<ConstantExpression>(Cloner::Clone(node));
-		clone->constantId = it->second;
-
-		return clone;
-	}
-
-	ExpressionPtr IndexRemapperVisitor::Clone(FunctionExpression& node)
-	{
-		auto it = m_context->newFuncIndices.find(node.funcId);
-		if (it == m_context->newFuncIndices.end())
-			return Cloner::Clone(node);
-
-		FunctionExpressionPtr clone = Nz::StaticUniquePointerCast<FunctionExpression>(Cloner::Clone(node));
-		clone->funcId = it->second;
-
-		return clone;
-	}
-
-	ExpressionPtr IndexRemapperVisitor::Clone(StructTypeExpression& node)
-	{
-		auto it = m_context->newStructIndices.find(node.structTypeId);
-		if (it == m_context->newStructIndices.end())
-			return Cloner::Clone(node);
-
-		StructTypeExpressionPtr clone = Nz::StaticUniquePointerCast<StructTypeExpression>(Cloner::Clone(node));
-		clone->structTypeId = it->second;
-
-		return clone;
-	}
-
-	ExpressionPtr IndexRemapperVisitor::Clone(VariableValueExpression& node)
-	{
-		auto it = m_context->newVarIndices.find(node.variableId);
-		if (it == m_context->newVarIndices.end())
-			return Cloner::Clone(node);
-
-		VariableValueExpressionPtr clone = Nz::StaticUniquePointerCast<VariableValueExpression>(Cloner::Clone(node));
-		clone->variableId = it->second;
-
-		return clone;
+		RecursiveVisitor::Visit(node);
+		node.varIndex = varIndex;
 	}
 
 	void IndexRemapperVisitor::HandleType(ExpressionValue<ExpressionType>& exprType)
