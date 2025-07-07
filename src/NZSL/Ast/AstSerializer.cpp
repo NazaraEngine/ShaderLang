@@ -408,6 +408,9 @@ namespace nzsl::Ast
 			ExprValue(parameter.type);
 			OptSizeT(parameter.varIndex);
 			SourceLoc(parameter.sourceLocation);
+
+			if (IsVersionGreaterOrEqual(12))
+				Enum(parameter.semantic);
 		}
 
 		Container(node.statements);
