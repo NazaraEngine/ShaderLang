@@ -3,6 +3,7 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <NZSL/Ast/Transformations/IdentifierTransformer.hpp>
+#include <NazaraUtils/CallOnExit.hpp>
 #include <NZSL/Lang/Errors.hpp>
 #include <fmt/format.h>
 
@@ -11,6 +12,9 @@ namespace nzsl::Ast
 	bool IdentifierTransformer::Transform(Module& module, Context& context, const Options& options, std::string* error)
 	{
 		m_options = &options;
+
+		if (!TransformImportedModules(module, context, error))
+			return false;
 
 		return TransformModule(module, context, error);
 	}
@@ -102,6 +106,9 @@ namespace nzsl::Ast
 	auto IdentifierTransformer::Transform(DeclareFunctionStatement&& statement) -> StatementTransformation
 	{
 		HandleIdentifier(statement.name, IdentifierType::Function);
+		PushScope();
+		NAZARA_DEFER({ PopScope(); });
+
 		for (auto& param : statement.parameters)
 			HandleIdentifier(param.name, IdentifierType::Parameter);
 

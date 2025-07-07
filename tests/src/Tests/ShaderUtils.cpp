@@ -343,7 +343,7 @@ void ExpectNZSL(nzsl::Ast::Module& shaderModule, std::string_view expectedOutput
 			nzsl::Ast::IdentifierTypeResolverTransformer resolver;
 			REQUIRE_NOTHROW(resolver.Transform(*moduleClone, context));
 		}
-		const nzsl::Ast::Module& targetModule = (sanitizedModule) ? *sanitizedModule : *moduleClone;
+		nzsl::Ast::Module& targetModule = (sanitizedModule) ? *sanitizedModule : *moduleClone;
 
 		nzsl::LangWriter writer;
 		std::string output = SanitizeSource(writer.Generate(targetModule, options));
@@ -380,7 +380,7 @@ void ExpectSPIRV(nzsl::Ast::Module& shaderModule, std::string_view expectedOutpu
 			nzsl::Ast::IdentifierTypeResolverTransformer resolver;
 			REQUIRE_NOTHROW(resolver.Transform(*moduleClone, context));
 		}
-		const nzsl::Ast::Module& targetModule = (sanitizedModule) ? *sanitizedModule : *moduleClone;
+		nzsl::Ast::Module& targetModule = (sanitizedModule) ? *sanitizedModule : *moduleClone;
 
 		nzsl::SpirvWriter writer;
 		writer.SetEnv(env);
@@ -397,7 +397,12 @@ void ExpectSPIRV(nzsl::Ast::Module& shaderModule, std::string_view expectedOutpu
 		SECTION("Validating expected code")
 		{
 			if (output.find(source) == std::string::npos)
+			{
+				nzsl::LangWriter langWriter;
+				INFO("AST to NZSL (for debugging):\n" << langWriter.Generate(targetModule, options));
+
 				HandleSourceError("SPIR-V", source, output);
+			}
 		}
 
 		SECTION("Validating full SPIR-V code (using libspirv)")
@@ -420,6 +425,9 @@ void ExpectSPIRV(nzsl::Ast::Module& shaderModule, std::string_view expectedOutpu
 			spvtools::SpirvTools spirvTools(targetEnv);
 			spirvTools.SetMessageConsumer([&](spv_message_level_t /*level*/, const char* /*source*/, const spv_position_t& /*position*/, const char* message)
 			{
+				nzsl::LangWriter langWriter;
+				UNSCOPED_INFO("AST to NZSL (for debugging):\n" << langWriter.Generate(targetModule, options));
+
 				std::string fullSpirv;
 				if (!spirvTools.Disassemble(spirv, &fullSpirv))
 					fullSpirv = "<failed to disassemble SPIR-V>";

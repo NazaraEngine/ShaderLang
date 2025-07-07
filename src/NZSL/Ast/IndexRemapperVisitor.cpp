@@ -128,7 +128,7 @@ namespace nzsl::Ast
 		RecursiveVisitor::Visit(node);
 
 		auto it = m_context->newConstIndices.find(node.constantId);
-		if (it == m_context->newConstIndices.end())
+		if (it != m_context->newConstIndices.end())
 			node.constantId = it->second;
 
 		RemapExpression(node);
@@ -153,7 +153,7 @@ namespace nzsl::Ast
 		RecursiveVisitor::Visit(node);
 
 		auto it = m_context->newFuncIndices.find(node.funcId);
-		if (it == m_context->newFuncIndices.end())
+		if (it != m_context->newFuncIndices.end())
 			node.funcId = it->second;
 
 		RemapExpression(node);
@@ -199,7 +199,7 @@ namespace nzsl::Ast
 		RecursiveVisitor::Visit(node);
 
 		auto it = m_context->newStructIndices.find(node.structTypeId);
-		if (it == m_context->newStructIndices.end())
+		if (it != m_context->newStructIndices.end())
 			node.structTypeId = it->second;
 
 		RemapExpression(node);
@@ -224,7 +224,7 @@ namespace nzsl::Ast
 		RecursiveVisitor::Visit(node);
 
 		auto it = m_context->newVarIndices.find(node.variableId);
-		if (it == m_context->newVarIndices.end())
+		if (it != m_context->newVarIndices.end())
 			node.variableId = it->second;
 
 		RemapExpression(node);

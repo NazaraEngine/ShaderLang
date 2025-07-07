@@ -175,7 +175,7 @@ fn main()
 void main()
 {
 	float _nzsl_cachedResult = max(2.0, 1.0);
-	vec3 v = vec3(cachedResult, _nzsl_cachedResult, _nzsl_cachedResult);
+	vec3 v = vec3(_nzsl_cachedResult, _nzsl_cachedResult, _nzsl_cachedResult);
 	float _nzsl_cachedResult_2 = min(2.0, 1.0);
 	vec3 v2 = vec3(_nzsl_cachedResult_2, _nzsl_cachedResult_2, _nzsl_cachedResult_2);
 }

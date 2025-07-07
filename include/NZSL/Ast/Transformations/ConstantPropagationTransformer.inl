@@ -28,6 +28,10 @@ namespace nzsl::Ast
 	inline bool ConstantPropagationTransformer::Transform(Module& shaderModule, Context& context, const Options& options, std::string* error)
 	{
 		m_options = &options;
+
+		if (!TransformImportedModules(shaderModule, context, error))
+			return false;
+
 		return TransformModule(shaderModule, context, error);
 	}
 

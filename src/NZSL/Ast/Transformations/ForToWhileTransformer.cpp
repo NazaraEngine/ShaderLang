@@ -11,6 +11,9 @@ namespace nzsl::Ast
 	{
 		m_options = &options;
 
+		if (!TransformImportedModules(module, context, error))
+			return false;
+
 		return TransformModule(module, context, error);
 	}
 
@@ -61,7 +64,7 @@ namespace nzsl::Ast
 		accessIndex->cachedExpressionType = innerType;
 		accessIndex->sourceLocation = forEachStatement.sourceLocation;
 
-		auto elementVariable = ShaderBuilder::DeclareVariable(forEachStatement.varName, std::move(accessIndex));
+		auto elementVariable = ShaderBuilder::DeclareVariable(forEachStatement.varName, innerType, std::move(accessIndex));
 		elementVariable->sourceLocation = forEachStatement.sourceLocation;
 		elementVariable->varIndex = forEachStatement.varIndex; //< Preserve var index
 
@@ -102,7 +105,7 @@ namespace nzsl::Ast
 		multi->sourceLocation = forStatement.sourceLocation;
 
 		// Counter variable
-		auto counterVariable = ShaderBuilder::DeclareVariable(forStatement.varName, std::move(forStatement.fromExpr));
+		auto counterVariable = ShaderBuilder::DeclareVariable(forStatement.varName, ExpressionType{ counterType }, std::move(forStatement.fromExpr));
 		counterVariable->sourceLocation = forStatement.sourceLocation;
 		counterVariable->varIndex = forStatement.varIndex;
 
