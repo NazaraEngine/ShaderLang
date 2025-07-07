@@ -20,8 +20,8 @@
 #include <NZSL/Ast/Transformations/BindingResolverTransformer.hpp>
 #include <NZSL/Ast/Transformations/BranchSplitterTransformer.hpp>
 #include <NZSL/Ast/Transformations/CompoundAssignmentTransformer.hpp>
-#include <NZSL/Ast/Transformations/ConstantRemovalTransformer.hpp>
 #include <NZSL/Ast/Transformations/ConstantPropagationTransformer.hpp>
+#include <NZSL/Ast/Transformations/ConstantRemovalTransformer.hpp>
 #include <NZSL/Ast/Transformations/EliminateUnusedTransformer.hpp>
 #include <NZSL/Ast/Transformations/ForToWhileTransformer.hpp>
 #include <NZSL/Ast/Transformations/IdentifierTypeResolverTransformer.hpp>

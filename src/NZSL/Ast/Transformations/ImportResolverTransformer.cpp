@@ -6,9 +6,9 @@
 #include <NazaraUtils/Bitset.hpp>
 #include <NazaraUtils/StackVector.hpp>
 #include <NZSL/ModuleResolver.hpp>
+#include <NZSL/Ast/Cloner.hpp>
 #include <NZSL/Ast/ExportVisitor.hpp>
 #include <NZSL/Ast/ExpressionType.hpp>
-#include <NZSL/Ast/IndexRemapperVisitor.hpp>
 #include <NZSL/Lang/Errors.hpp>
 #include <NZSL/Lang/LangData.hpp>
 #include <tsl/ordered_map.h>

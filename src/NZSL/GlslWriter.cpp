@@ -15,8 +15,8 @@
 #include <NZSL/Ast/Utils.hpp>
 #include <NZSL/Lang/LangData.hpp>
 #include <NZSL/Ast/Transformations/BindingResolverTransformer.hpp>
-#include <NZSL/Ast/Transformations/ConstantRemovalTransformer.hpp>
 #include <NZSL/Ast/Transformations/ConstantPropagationTransformer.hpp>
+#include <NZSL/Ast/Transformations/ConstantRemovalTransformer.hpp>
 #include <NZSL/Ast/Transformations/EliminateUnusedTransformer.hpp>
 #include <NZSL/Ast/Transformations/ForToWhileTransformer.hpp>
 #include <NZSL/Ast/Transformations/IdentifierTransformer.hpp>
