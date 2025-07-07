@@ -53,7 +53,7 @@ namespace nzsl::Ast
 	{
 		if (!m_options->moduleResolver)
 		{
-			if (!m_context->partialSanitization)
+			if (!m_context->partialCompilation)
 				throw CompilerNoModuleResolverError{ importStatement.sourceLocation };
 		}
 
@@ -96,7 +96,7 @@ namespace nzsl::Ast
 
 		if (!m_options->moduleResolver)
 		{
-			if (!m_context->partialSanitization)
+			if (!m_context->partialCompilation)
 				throw CompilerNoModuleResolverError{ importStatement.sourceLocation };
 
 			// when partially sanitizing, importing a whole module could register any identifier, so at this point we can't see unknown identifiers as errors
@@ -197,8 +197,6 @@ namespace nzsl::Ast
 			ExportVisitor::Callbacks callbacks;
 			callbacks.onExportedConst = [&](DeclareConstStatement& node)
 			{
-				assert(node.constIndex);
-
 				auto [imported, aliasesName] = CheckImport(node.name);
 				if (!imported)
 					return;
@@ -214,8 +212,6 @@ namespace nzsl::Ast
 
 			callbacks.onExportedFunc = [&](DeclareFunctionStatement& node)
 			{
-				assert(node.funcIndex);
-
 				auto [imported, aliasesName] = CheckImport(node.name);
 				if (!imported)
 					return;
@@ -231,8 +227,6 @@ namespace nzsl::Ast
 
 			callbacks.onExportedStruct = [&](DeclareStructStatement& node)
 			{
-				assert(node.structIndex);
-
 				auto [imported, aliasesName] = CheckImport(node.description.name);
 				if (!imported)
 					return;

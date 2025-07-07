@@ -86,7 +86,31 @@ namespace nzsl::Ast
 			return GetConstantExpressionType<T>();
 		}, constant);
 	}
-	
+
+	std::string ConstantToString(NoValue value)
+	{
+		// This overload exists only to help avoid ambiguous calls
+		throw std::runtime_error("invalid type (value expected)");
+	}
+
+	std::string ConstantToString(const ConstantArrayValue& value)
+	{
+		return std::visit([&](auto&& arg) -> std::string
+		{
+			using T = std::decay_t<decltype(arg)>;
+
+			if constexpr (std::is_same_v<T, Ast::NoValue>)
+				throw std::runtime_error("invalid type (value expected)");
+			else
+			{
+				using VectorInner = GetVectorInnerType<T>;
+				using Type = typename VectorInner::type;
+
+				return fmt::format("array of {} {}", Ast::ToString(GetConstantExpressionType<Type>()), arg.size());
+			}
+		}, value);
+	}
+
 	std::string ConstantToString(const ConstantSingleValue& value)
 	{
 		return std::visit([&](auto&& arg) -> std::string

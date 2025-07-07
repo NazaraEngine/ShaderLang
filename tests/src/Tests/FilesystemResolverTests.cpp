@@ -20,7 +20,10 @@ TEST_CASE("FilesystemModuleResolver", "[Shader]")
 	nzsl::Ast::ImportResolverTransformer::Options importOpt;
 	importOpt.moduleResolver = moduleResolver;
 
-	ResolveModule(*shaderModule, {}, &importOpt);
+	ResolveOptions resolveOptions;
+	resolveOptions.importOptions = &importOpt;
+
+	ResolveModule(*shaderModule, resolveOptions);
 
 	ExpectGLSL(*shaderModule, R"(
 // Module Color

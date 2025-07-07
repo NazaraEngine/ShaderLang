@@ -17,7 +17,10 @@ TEST_CASE("debug info", "[Shader]")
 		nzsl::Ast::ImportResolverTransformer::Options importOpt;
 		importOpt.moduleResolver = directoryModuleResolver;
 
-		ResolveModule(*shaderModule, {}, &importOpt);
+		ResolveOptions resolveOptions;
+		resolveOptions.importOptions = &importOpt;
+
+		ResolveModule(*shaderModule, resolveOptions);
 
 		WHEN("Generating with no debug info")
 		{

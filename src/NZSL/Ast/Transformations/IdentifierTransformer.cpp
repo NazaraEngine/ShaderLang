@@ -40,7 +40,7 @@ namespace nzsl::Ast
 	bool IdentifierTransformer::HandleIdentifier(std::string& identifier, IdentifierType scope)
 	{
 		// Don't rename identifiers when performing partial sanitization (as it could break future compilation)
-		if (m_context->partialSanitization)
+		if (m_context->partialCompilation)
 			return false;
 
 		bool nameChanged = false;

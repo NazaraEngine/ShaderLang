@@ -90,7 +90,7 @@ namespace nzsl::Ast
 		if (!IsFunctionUsed(*node.funcIndex))
 			return ReplaceStatement{ ShaderBuilder::NoOp() };
 
-		return DontVisitChildren{};
+		return VisitChildren{};
 	}
 
 	auto EliminateUnusedTransformer::Transform(DeclareStructStatement&& node) -> StatementTransformation

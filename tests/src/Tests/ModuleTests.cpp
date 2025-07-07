@@ -11,7 +11,7 @@ void RegisterModule(const std::shared_ptr<nzsl::FilesystemModuleResolver>& modul
 	WHEN("Compiling module")
 	{
 		nzsl::Ast::Transformer::Context context;
-		context.partialSanitization = true;
+		context.partialCompilation = true;
 
 		nzsl::Ast::IdentifierTypeResolverTransformer transformer;
 
@@ -106,7 +106,10 @@ fn main(input: InputData) -> OutputData
 		nzsl::Ast::ImportResolverTransformer::Options importOpt;
 		importOpt.moduleResolver = directoryModuleResolver;
 
-		ResolveModule(*shaderModule, {}, &importOpt);
+		ResolveOptions resolveOptions;
+		resolveOptions.importOptions = &importOpt;
+
+		ResolveModule(*shaderModule, resolveOptions);
 
 		ExpectGLSL(*shaderModule, R"(
 // Module SimpleModule
@@ -352,7 +355,10 @@ fn main(input: Input) -> OutputData
 		nzsl::Ast::ImportResolverTransformer::Options importOpt;
 		importOpt.moduleResolver = directoryModuleResolver;
 
-		ResolveModule(*shaderModule, {}, &importOpt);
+		ResolveOptions resolveOptions;
+		resolveOptions.importOptions = &importOpt;
+
+		ResolveModule(*shaderModule, resolveOptions);
 
 		ExpectGLSL(*shaderModule, R"(
 // Module Modules.Data
@@ -562,7 +568,10 @@ fn main()
 		nzsl::Ast::ImportResolverTransformer::Options importOpt;
 		importOpt.moduleResolver = directoryModuleResolver;
 
-		ResolveModule(*shaderModule, {}, &importOpt);
+		ResolveOptions resolveOptions;
+		resolveOptions.importOptions = &importOpt;
+
+		ResolveModule(*shaderModule, resolveOptions);
 
 		ExpectGLSL(*shaderModule, R"(
 // Module Modules.Data
@@ -889,13 +898,13 @@ fn FragMain() -> FragOut
 		RegisterModule(directoryModuleResolver, gbufferOutput);
 
 		nzsl::Ast::Transformer::Context context;
-		context.partialSanitization = true;
+		context.partialCompilation = true;
 
 		nzsl::Ast::IdentifierTypeResolverTransformer transformer;
 
 		REQUIRE_NOTHROW(transformer.Transform(*shaderModule, context));
 
-		context.partialSanitization = false;
+		context.partialCompilation = false;
 
 		WHEN("Trying ForwardPass=true")
 		{
@@ -1187,7 +1196,10 @@ fn main(input: Module.InputData) -> Module.OutputData
 		nzsl::Ast::ImportResolverTransformer::Options importOpt;
 		importOpt.moduleResolver = directoryModuleResolver;
 
-		ResolveModule(*shaderModule, {}, &importOpt);
+		ResolveOptions resolveOptions;
+		resolveOptions.importOptions = &importOpt;
+
+		ResolveModule(*shaderModule, resolveOptions);
 
 		ExpectGLSL(*shaderModule, R"(
 // Module Simple.Module
@@ -1417,7 +1429,10 @@ fn main(input: SimpleModule.InputData) -> SimpleModule.OutputData
 		nzsl::Ast::ImportResolverTransformer::Options importOpt;
 		importOpt.moduleResolver = directoryModuleResolver;
 
-		ResolveModule(*shaderModule, {}, &importOpt);
+		ResolveOptions resolveOptions;
+		resolveOptions.importOptions = &importOpt;
+
+		ResolveModule(*shaderModule, resolveOptions);
 
 		ExpectGLSL(*shaderModule, R"(
 // Module Simple.Module

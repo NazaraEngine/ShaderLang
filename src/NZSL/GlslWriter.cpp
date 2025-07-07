@@ -15,6 +15,7 @@
 #include <NZSL/Ast/Utils.hpp>
 #include <NZSL/Lang/LangData.hpp>
 #include <NZSL/Ast/Transformations/BindingResolverTransformer.hpp>
+#include <NZSL/Ast/Transformations/ConstantRemovalTransformer.hpp>
 #include <NZSL/Ast/Transformations/ConstantPropagationTransformer.hpp>
 #include <NZSL/Ast/Transformations/EliminateUnusedTransformer.hpp>
 #include <NZSL/Ast/Transformations/ForToWhileTransformer.hpp>
@@ -592,6 +593,7 @@ namespace nzsl
 		executor.AddPass<Ast::StructAssignmentTransformer>({ false, true }); //< TODO: Only split for base uniforms/storage
 		executor.AddPass<Ast::SwizzleTransformer>({ true });
 		executor.AddPass<Ast::BindingResolverTransformer>();
+		executor.AddPass<Ast::ConstantRemovalTransformer>({ false, true, true });
 		executor.AddPass<Ast::IdentifierTransformer>(identifierOptions);
 
 		return executor;

@@ -51,7 +51,7 @@ namespace nzsl::Ast
 
 					if (!member.type.IsResultingValue())
 					{
-						if (!m_context->partialSanitization)
+						if (!m_context->partialCompilation)
 							throw CompilerConstantExpressionRequiredError{ member.type.GetExpression()->sourceLocation };
 
 						memberIndex++;

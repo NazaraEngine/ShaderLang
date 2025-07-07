@@ -77,7 +77,7 @@ namespace nzsl::Ast
 
 	const ExpressionType* Transformer::GetExpressionType(Expression& expr) const
 	{
-		return GetExpressionType(expr, m_context->partialSanitization);
+		return GetExpressionType(expr, m_context->partialCompilation);
 	}
 
 	const ExpressionType* Transformer::GetExpressionType(Expression& expr, bool allowEmpty) const

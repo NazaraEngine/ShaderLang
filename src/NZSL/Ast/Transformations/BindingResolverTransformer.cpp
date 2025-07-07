@@ -39,7 +39,7 @@ namespace nzsl::Ast
 				defaultBlockSet = externalStatement.bindingSet.GetResultingValue();
 			else
 			{
-				if (!m_context->partialSanitization)
+				if (!m_context->partialCompilation)
 					throw CompilerConstantExpressionRequiredError{ externalStatement.sourceLocation };
 
 				defaultBlockSet.reset(); //< Unresolved value
@@ -53,7 +53,7 @@ namespace nzsl::Ast
 				hasAutoBinding = externalStatement.autoBinding.GetResultingValue();
 			else
 			{
-				if (!m_context->partialSanitization)
+				if (!m_context->partialCompilation)
 					throw CompilerConstantExpressionRequiredError{ externalStatement.sourceLocation };
 
 				hasAutoBinding.reset(); //< Unresolved value
@@ -65,18 +65,18 @@ namespace nzsl::Ast
 			return std::uint64_t(bindingSet) << 32 | bindingIndex;
 		};
 
-		auto RegisterBinding = [&](std::uint32_t count, std::uint32_t bindingSet, std::uint32_t bindingIndex, unsigned int conditionalStatementIndex, const SourceLocation& sourceLoc)
+		auto RegisterBinding = [&](std::uint32_t count, std::uint32_t bindingSet, std::uint32_t bindingIndex, const SourceLocation& sourceLoc)
 		{
 			for (std::uint32_t i = 0; i < count; ++i)
 			{
 				std::uint64_t bindingKey = BuildBindingKey(bindingSet, bindingIndex + i);
 				if (auto it = m_usedBindingIndexes.find(bindingKey); it != m_usedBindingIndexes.end())
 				{
-					if (it->second == m_currentConditionalIndex || conditionalStatementIndex == m_currentConditionalIndex)
+					if ((it->second == 0 || it->second == m_currentConditionalIndex))
 						throw CompilerExtBindingAlreadyUsedError{ sourceLoc, bindingSet, bindingIndex };
 				}
 
-				m_usedBindingIndexes.emplace(bindingKey, conditionalStatementIndex);
+				m_usedBindingIndexes.emplace(bindingKey, m_currentConditionalIndex);
 			}
 		};
 
@@ -88,7 +88,7 @@ namespace nzsl::Ast
 
 			if (!extVar.type.IsResultingValue())
 			{
-				if (!m_context->partialSanitization)
+				if (!m_context->partialCompilation)
 					throw AstMissingTypeError{ extVar.sourceLocation };
 
 				continue;
@@ -108,7 +108,7 @@ namespace nzsl::Ast
 				else if (hasAutoBinding == true && extVar.bindingSet.IsResultingValue())
 				{
 					// Don't resolve binding indices (?) when performing a partial compilation
-					if (!m_context->partialSanitization || m_options->forceAutoBindingResolve)
+					if (!m_context->partialCompilation || m_options->forceAutoBindingResolve)
 						autoBindingEntries.push_back(i);
 				}
 			}
@@ -119,7 +119,46 @@ namespace nzsl::Ast
 				std::uint32_t bindingIndex = extVar.bindingIndex.GetResultingValue();
 
 				std::uint32_t arraySize = (IsArrayType(targetType)) ? std::get<ArrayType>(targetType).length : 1;
-				RegisterBinding(arraySize, bindingSet, bindingIndex, m_currentConditionalIndex, extVar.sourceLocation);
+				RegisterBinding(arraySize, bindingSet, bindingIndex, extVar.sourceLocation);
+			}
+		}
+
+		if (!hasUnresolved)
+		{
+			for (std::size_t extVarIndex : autoBindingEntries)
+			{
+				auto& extVar = externalStatement.externalVars[extVarIndex];
+
+				// Since we're not in a partial compilation at this point, binding set has a known value
+				assert(extVar.bindingSet.IsResultingValue());
+
+				// Find first binding range
+				std::uint32_t bindingSet = extVar.bindingSet.GetResultingValue();
+				std::uint32_t bindingIndex = 0;
+
+				// Type cannot be unresolved here
+				const ExpressionType& targetType = ResolveAlias(extVar.type.GetResultingValue());
+				std::uint32_t arraySize = (IsArrayType(targetType)) ? std::get<ArrayType>(targetType).length : 1;
+
+				auto SearchFreeBindingRange = [&](std::uint32_t& binding)
+				{
+					for (std::uint32_t i = 0; i < arraySize; ++i)
+					{
+						if (m_usedBindingIndexes.find(BuildBindingKey(bindingSet, binding + i)) != m_usedBindingIndexes.end())
+						{
+							binding += i;
+							return false;
+						}
+					}
+
+					return true;
+				};
+
+				while (!SearchFreeBindingRange(bindingIndex))
+					bindingIndex++;
+
+				extVar.bindingIndex = bindingIndex;
+				RegisterBinding(arraySize, bindingSet, bindingIndex, extVar.sourceLocation);
 			}
 		}
 

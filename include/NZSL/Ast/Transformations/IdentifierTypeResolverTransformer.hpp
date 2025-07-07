@@ -44,8 +44,8 @@ namespace nzsl::Ast
 			using Transformer::Transform;
 
 			std::optional<ConstantValue> ComputeConstantValue(ExpressionPtr& expr) const;
-
-			template<typename T> bool ComputeExprValue(ExpressionValue<T>& attribute, const SourceLocation& sourceLocation) const;
+			template<typename T> bool ComputeExprValue(ExpressionValue<T>& attribute, const SourceLocation& sourceLocation);
+			ExpressionType ComputeSwizzleType(const ExpressionType& type, std::size_t componentCount, const SourceLocation& sourceLocation) const;
 
 			const IdentifierData* FindIdentifier(std::string_view identifierName) const;
 			template<typename F> const IdentifierData* FindIdentifier(std::string_view identifierName, F&& functor) const;
@@ -97,12 +97,14 @@ namespace nzsl::Ast
 			ExpressionTransformation Transform(BinaryExpression&& binaryExpression) override;
 			ExpressionTransformation Transform(CallFunctionExpression&& callFuncExpression) override;
 			ExpressionTransformation Transform(CastExpression&& castExpression) override;
+			ExpressionTransformation Transform(ConstantExpression&& constantExpression) override;
 			ExpressionTransformation Transform(IntrinsicExpression&& intrinsicExpr) override;
 			ExpressionTransformation Transform(IdentifierExpression&& identifierExpr) override;
 			ExpressionTransformation Transform(SwizzleExpression&& swizzleExpr) override;
 			ExpressionTransformation Transform(UnaryExpression&& unaryExpr) override;
 			ExpressionTransformation Transform(VariableValueExpression&& variableValExpr) override;
 
+			StatementTransformation Transform(BranchStatement&& branchStatement) override;
 			StatementTransformation Transform(ConditionalStatement&& statement) override;
 			StatementTransformation Transform(DeclareAliasStatement&& statement) override;
 			StatementTransformation Transform(DeclareConstStatement&& statement) override;
@@ -111,6 +113,8 @@ namespace nzsl::Ast
 			StatementTransformation Transform(DeclareOptionStatement&& statement) override;
 			StatementTransformation Transform(DeclareStructStatement&& statement) override;
 			StatementTransformation Transform(DeclareVariableStatement&& statement) override;
+			StatementTransformation Transform(ForEachStatement&& forEachStatement) override;
+			StatementTransformation Transform(ForStatement&& forStatement) override;
 			StatementTransformation Transform(ImportStatement&& importStatement) override;
 
 			void Transform(ExpressionValue<ExpressionType>& expressionType) override;

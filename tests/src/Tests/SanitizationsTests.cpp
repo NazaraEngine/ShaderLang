@@ -422,13 +422,14 @@ fn testMat4CompoundMinusMat4(x: mat4[f32], y: mat4[f32]) -> mat4[f32]
 )";
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
+		nzsl::Ast::Transformer::Context transformContext;
 		{
 			nzsl::Ast::TransformerExecutor executor;
 			executor.AddPass<nzsl::Ast::IdentifierTypeResolverTransformer>();
 			executor.AddPass<nzsl::Ast::CompoundAssignmentTransformer>({ true });
 			executor.AddPass<nzsl::Ast::MatrixTransformer>({ true, false });
 
-			REQUIRE_NOTHROW(executor.Transform(*shaderModule));
+			REQUIRE_NOTHROW(executor.Transform(*shaderModule, transformContext));
 		}
 
 		ExpectNZSL(*shaderModule, R"(
@@ -466,7 +467,7 @@ fn testMat4CompoundMinusMat4(x: mat4[f32], y: mat4[f32]) -> mat4[f32]
 			nzsl::Ast::TransformerExecutor executor;
 			executor.AddPass<nzsl::Ast::MatrixTransformer>({ false, true });
 
-			REQUIRE_NOTHROW(executor.Transform(*shaderModule));
+			REQUIRE_NOTHROW(executor.Transform(*shaderModule, transformContext));
 
 			ExpectNZSL(*shaderModule, R"(
 fn testMat4PlusMat4(x: mat4[f32], y: mat4[f32]) -> mat4[f32]
@@ -644,7 +645,7 @@ fn main()
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
 
 		nzsl::Ast::Transformer::Context context;
-		context.partialSanitization = true;
+		context.partialCompilation = true;
 
 		nzsl::Ast::TransformerExecutor executor;
 		executor.AddPass<nzsl::Ast::StructAssignmentTransformer>({ true, true });

@@ -62,6 +62,8 @@ namespace nzsl::Ast
 	NZSL_API ExpressionType GetConstantType(const ConstantArrayValue& constantArray);
 	NZSL_API ExpressionType GetConstantType(const ConstantSingleValue& constant);
 
+	NZSL_API std::string ConstantToString(NoValue value);
+	NZSL_API std::string ConstantToString(const ConstantArrayValue& value);
 	NZSL_API std::string ConstantToString(const ConstantSingleValue& value);
 
 	NZSL_API std::string ToString(bool value);

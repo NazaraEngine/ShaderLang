@@ -8,9 +8,7 @@
 #include <NazaraUtils/StackVector.hpp>
 #include <NZSL/ModuleResolver.hpp>
 #include <NZSL/Ast/DependencyCheckerVisitor.hpp>
-#include <NZSL/Ast/ExportVisitor.hpp>
 #include <NZSL/Ast/ExpressionType.hpp>
-#include <NZSL/Ast/IndexRemapperVisitor.hpp>
 #include <NZSL/Ast/Option.hpp>
 #include <NZSL/Ast/ReflectVisitor.hpp>
 #include <NZSL/Ast/Types.hpp>
@@ -246,6 +244,9 @@ namespace nzsl::Ast
 		{
 			ResolveFunctions();
 
+			// TODO: Implement FindLastBit
+			context.nextVariableIndex = m_states->variableTypes.availableIndices.GetSize(); 
+
 			// Remove unused statements of imported modules
 			for (std::size_t moduleId = 0; moduleId < module.importedModules.size(); ++moduleId)
 			{
@@ -283,15 +284,42 @@ namespace nzsl::Ast
 		}
 		else
 		{
-			if (!m_context->partialSanitization)
+			if (!m_context->partialCompilation)
 				throw CompilerConstantExpressionRequiredError{ expr->sourceLocation };
 
 			return std::nullopt;
 		}
 	}
 	
+	ExpressionType IdentifierTypeResolverTransformer::ComputeSwizzleType(const ExpressionType& type, std::size_t componentCount, const SourceLocation& sourceLocation) const
+	{
+		assert(IsPrimitiveType(type) || IsVectorType(type));
+
+		PrimitiveType baseType;
+		if (IsPrimitiveType(type))
+			baseType = std::get<PrimitiveType>(type);
+		else
+		{
+			const VectorType& vecType = std::get<VectorType>(type);
+			baseType = vecType.type;
+		}
+
+		if (componentCount > 1)
+		{
+			if (componentCount > 4)
+				throw CompilerInvalidSwizzleError{ sourceLocation };
+
+			return VectorType{
+				componentCount,
+				baseType
+			};
+		}
+		else
+			return baseType;
+	}
+
 	template<typename T>
-	bool IdentifierTypeResolverTransformer::ComputeExprValue(ExpressionValue<T>& attribute, const SourceLocation& sourceLocation) const
+	bool IdentifierTypeResolverTransformer::ComputeExprValue(ExpressionValue<T>& attribute, const SourceLocation& sourceLocation)
 	{
 		if (!attribute.HasValue())
 			throw AstAttributeRequiresValueError{ sourceLocation };
@@ -299,6 +327,7 @@ namespace nzsl::Ast
 		if (attribute.IsExpression())
 		{
 			ExpressionPtr& expr = attribute.GetExpression();
+			HandleExpression(expr);
 
 			std::optional<ConstantValue> value = ComputeConstantValue(expr);
 			if (!value)
@@ -411,7 +440,10 @@ namespace nzsl::Ast
 				constantExpr->constantId = identifierData->index;
 				constantExpr->sourceLocation = sourceLocation;
 
-				return constantExpr;
+				ExpressionPtr expr = std::move(constantExpr);
+				HandleExpression(expr);
+
+				return expr;
 			}
 
 			case IdentifierCategory::ExternalBlock:
@@ -532,7 +564,7 @@ namespace nzsl::Ast
 		optimizerOptions.constantQueryCallback = [&](std::size_t constantId) -> const ConstantValue*
 		{
 			const ConstantValue* value = m_states->constantValues.TryRetrieve(constantId, expr->sourceLocation);
-			if (!value && !m_context->partialSanitization)
+			if (!value && !m_context->partialCompilation)
 				throw AstInvalidConstantIndexError{ expr->sourceLocation, constantId };
 
 			return value;
@@ -553,7 +585,7 @@ namespace nzsl::Ast
 		bool unresolved = false;
 		if (const IdentifierData* identifierData = FindIdentifier(name))
 		{
-			if (identifierData->conditionalIndex == m_states->currentConditionalIndex)
+			if (identifierData->conditionalIndex == 0 || identifierData->conditionalIndex == m_states->currentConditionalIndex)
 				throw CompilerIdentifierAlreadyUsedError{ sourceLocation, name };
 			else
 				unresolved = true;
@@ -1051,7 +1083,7 @@ namespace nzsl::Ast
 		if (auto* identifier = FindIdentifier(name))
 		{
 			// Functions can be conditionally defined and condition not resolved yet, allow duplicates when partially sanitizing
-			bool duplicate = !m_context->partialSanitization;
+			bool duplicate = !m_context->partialCompilation;
 
 			// Functions cannot be declared twice, except for entry ones if their stages are different
 			if (funcData)
@@ -1065,7 +1097,7 @@ namespace nzsl::Ast
 			}
 			else
 			{
-				if (!m_context->partialSanitization)
+				if (!m_context->partialCompilation)
 					throw AstInternalError{ sourceLocation, "unexpected missing function data" };
 
 				duplicate = false;
@@ -1144,7 +1176,7 @@ namespace nzsl::Ast
 		bool unresolved = false;
 		if (const IdentifierData* identifierData = FindIdentifier(name))
 		{
-			if (identifierData->conditionalIndex == m_states->currentConditionalIndex)
+			if (identifierData->conditionalIndex == 0 || identifierData->conditionalIndex == m_states->currentConditionalIndex)
 				throw CompilerIdentifierAlreadyUsedError{ sourceLocation, name };
 			else
 				unresolved = true;
@@ -1331,7 +1363,7 @@ namespace nzsl::Ast
 
 			for (auto& parameter : pendingFunc.node->parameters)
 			{
-				if (!m_context->partialSanitization || parameter.type.IsResultingValue())
+				if (!m_context->partialCompilation || parameter.type.IsResultingValue())
 					parameter.varIndex = RegisterVariable(parameter.name, parameter.type.GetResultingValue(), parameter.varIndex, parameter.sourceLocation);
 				else
 					RegisterUnresolved(parameter.name);
@@ -1602,7 +1634,7 @@ namespace nzsl::Ast
 				{
 					if (!fieldPtr->cond.IsResultingValue())
 					{
-						if (m_context->partialSanitization)
+						if (m_context->partialCompilation)
 							return Finish(i, exprType); //< unresolved condition
 
 						throw CompilerConstantExpressionRequiredError{ fieldPtr->cond.GetExpression()->sourceLocation };
@@ -1623,45 +1655,17 @@ namespace nzsl::Ast
 						resolvedFieldTypeOpt = WrapExternalType<StorageType>(*resolvedFieldTypeOpt);
 				}
 
-				/*if (m_options->useIdentifierAccessesForStructs)
-				{
-					// Use a AccessIdentifierExpression
-					AccessIdentifierExpression* accessIdentifierPtr;
-					if (indexedExpr->GetType() != NodeType::AccessIdentifierExpression)
-					{
-						std::unique_ptr<AccessIdentifierExpression> accessIndex = std::make_unique<AccessIdentifierExpression>();
-						accessIndex->sourceLocation = accessIdentifier.sourceLocation;
-						accessIndex->expr = std::move(indexedExpr);
+				if (fieldIndex < 0)
+					return Finish(i, exprType); //< unresolved field
 
-						accessIdentifierPtr = accessIndex.get();
-						indexedExpr = std::move(accessIndex);
-					}
-					else
-					{
-						accessIdentifierPtr = static_cast<AccessIdentifierExpression*>(indexedExpr.get());
-						accessIdentifierPtr->sourceLocation.ExtendToRight(indexedExpr->sourceLocation);
-					}
+				// Transform to AccessFieldExpression
+				std::unique_ptr<AccessFieldExpression> accessIndex = std::make_unique<AccessFieldExpression>();
+				accessIndex->sourceLocation = indexedExpr->sourceLocation;
+				accessIndex->expr = std::move(indexedExpr);
+				accessIndex->fieldIndex = static_cast<std::uint32_t>(fieldIndex);
+				accessIndex->cachedExpressionType = std::move(resolvedFieldTypeOpt);
 
-					accessIdentifierPtr->cachedExpressionType = std::move(resolvedFieldTypeOpt);
-
-					auto& newIdentifierEntry = accessIdentifierPtr->identifiers.emplace_back();
-					newIdentifierEntry.identifier = fieldPtr->name;
-					newIdentifierEntry.sourceLocation = indexedExpr->sourceLocation;
-				}
-				else*/
-				{
-					if (fieldIndex < 0)
-						return Finish(i, exprType); //< unresolved field
-
-					// Transform to AccessFieldExpression
-					std::unique_ptr<AccessFieldExpression> accessIndex = std::make_unique<AccessFieldExpression>();
-					accessIndex->sourceLocation = indexedExpr->sourceLocation;
-					accessIndex->expr = std::move(indexedExpr);
-					accessIndex->fieldIndex = static_cast<std::uint32_t>(fieldIndex);
-					accessIndex->cachedExpressionType = std::move(resolvedFieldTypeOpt);
-
-					indexedExpr = std::move(accessIndex);
-				}
+				indexedExpr = std::move(accessIndex);
 			}
 			else if (IsPrimitiveType(resolvedType) || IsVectorType(resolvedType))
 			{
@@ -1676,6 +1680,8 @@ namespace nzsl::Ast
 				swizzle->componentCount = swizzleComponentCount;
 				for (std::size_t j = 0; j < swizzleComponentCount; ++j)
 					swizzle->components[j] = ToSwizzleIndex(identifierEntry.identifier[j], identifierEntry.sourceLocation);
+
+				swizzle->cachedExpressionType = ComputeSwizzleType(resolvedType, swizzleComponentCount, identifierEntry.sourceLocation);
 
 				indexedExpr = std::move(swizzle);
 			}
@@ -1698,7 +1704,7 @@ namespace nzsl::Ast
 				if (identifierData->category == IdentifierCategory::Unresolved)
 					return Finish(i, exprType); //< unresolved type
 
-				if (m_context->partialSanitization && identifierData->conditionalIndex != m_states->currentConditionalIndex)
+				if (m_context->partialCompilation && identifierData->conditionalIndex != m_states->currentConditionalIndex)
 					return Finish(i, exprType); //< unresolved type
 
 				indexedExpr = HandleIdentifier(identifierData, identifierEntry.sourceLocation);
@@ -1722,7 +1728,7 @@ namespace nzsl::Ast
 				if (identifierData->category == IdentifierCategory::Unresolved)
 					return Finish(i, exprType); //< unresolved type
 
-				if (m_context->partialSanitization && identifierData->conditionalIndex != m_states->currentConditionalIndex)
+				if (m_context->partialCompilation && identifierData->conditionalIndex != m_states->currentConditionalIndex)
 					return Finish(i, exprType); //< unresolved type
 
 				indexedExpr = HandleIdentifier(identifierData, identifierEntry.sourceLocation);
@@ -2237,9 +2243,33 @@ namespace nzsl::Ast
 
 		ExpressionType& targetType = *targetTypeOpt;
 
+		if (IsArrayType(targetType))
+		{
+			ArrayType& targetArrayType = std::get<ArrayType>(targetType);
+			if (targetArrayType.length == 0)
+				targetArrayType.length = Nz::SafeCast<std::uint32_t>(castExpr.expressions.size());
+		}
+
 		castExpr.cachedExpressionType = targetType;
 		castExpr.targetType = std::move(targetType);
 		return DontVisitChildren{};
+	}
+
+	auto IdentifierTypeResolverTransformer::Transform(ConstantExpression&& constantExpression) -> ExpressionTransformation
+	{
+		NAZARA_USE_ANONYMOUS_NAMESPACE
+
+		const ConstantValue* value = m_states->constantValues.TryRetrieve(constantExpression.constantId, constantExpression.sourceLocation);
+		if (!value)
+		{
+			if (!m_context->partialCompilation)
+				throw AstInvalidConstantIndexError{ constantExpression.sourceLocation, constantExpression.constantId };
+
+			return VisitChildren{}; //< unresolved
+		}
+
+		constantExpression.cachedExpressionType = GetConstantType(*value);
+		return VisitChildren{};
 	}
 
 	auto IdentifierTypeResolverTransformer::Transform(IdentifierExpression&& identifierExpr) -> ExpressionTransformation
@@ -2258,7 +2288,7 @@ namespace nzsl::Ast
 		if (identifierData->category == IdentifierCategory::Unresolved)
 			return DontVisitChildren{};
 
-		if (m_context->partialSanitization && identifierData->conditionalIndex != m_states->currentConditionalIndex)
+		if (m_context->partialCompilation && identifierData->conditionalIndex > 0 && identifierData->conditionalIndex != m_states->currentConditionalIndex)
 			return DontVisitChildren{};
 
 		return ReplaceExpression{ HandleIdentifier(identifierData, identifierExpr.sourceLocation) };
@@ -2278,32 +2308,7 @@ namespace nzsl::Ast
 		if (!IsPrimitiveType(resolvedExprType) && !IsVectorType(resolvedExprType))
 			throw CompilerSwizzleUnexpectedTypeError{ swizzleExpr.sourceLocation, ToString(*exprType, swizzleExpr.expression->sourceLocation) };
 
-		PrimitiveType baseType;
-		std::size_t componentCount;
-		if (IsPrimitiveType(resolvedExprType))
-		{
-			baseType = std::get<PrimitiveType>(resolvedExprType);
-			componentCount = 1;
-		}
-		else
-		{
-			const VectorType& vecType = std::get<VectorType>(resolvedExprType);
-			baseType = vecType.type;
-			componentCount = vecType.componentCount;
-		}
-
-		if (swizzleExpr.componentCount > 1)
-		{
-			if (swizzleExpr.componentCount > 4)
-				throw CompilerInvalidSwizzleError{ swizzleExpr.sourceLocation };
-
-			swizzleExpr.cachedExpressionType = VectorType{
-				swizzleExpr.componentCount,
-				baseType
-			};
-		}
-		else
-			swizzleExpr.cachedExpressionType = baseType;
+		swizzleExpr.cachedExpressionType = ComputeSwizzleType(resolvedExprType, swizzleExpr.componentCount, swizzleExpr.sourceLocation);
 
 		return DontVisitChildren{};
 	}
@@ -2362,6 +2367,55 @@ namespace nzsl::Ast
 	{
 		node.cachedExpressionType = m_states->variableTypes.Retrieve(node.variableId, node.sourceLocation);
 		return VisitChildren{};
+	}
+
+	auto IdentifierTypeResolverTransformer::Transform(BranchStatement&& branchStatement) -> StatementTransformation
+	{
+		if (!branchStatement.isConst)
+			return VisitChildren{};
+
+		// Evaluate every condition at compilation and select the right statement
+		for (std::size_t i = 0; i < branchStatement.condStatements.size(); ++i)
+		{
+			auto& cond = branchStatement.condStatements[i];
+			MandatoryExpr(cond.condition, branchStatement.sourceLocation);
+
+			HandleExpression(cond.condition);
+
+			std::optional<ConstantValue> conditionValue = ComputeConstantValue(cond.condition);
+			if (!conditionValue.has_value())
+			{
+				for (++i; i < branchStatement.condStatements.size(); ++i)
+				{
+					auto& otherCond = branchStatement.condStatements[i];
+					HandleExpression(otherCond.condition);
+
+					PushScope();
+					HandleStatement(otherCond.statement);
+					PopScope();
+				}
+
+				return DontVisitChildren{}; //< Unresolvable condition
+			}
+
+			if (GetConstantType(*conditionValue) != ExpressionType{ PrimitiveType::Boolean })
+				throw CompilerConditionExpectedBoolError{ cond.condition->sourceLocation, ToString(GetConstantType(*conditionValue), cond.condition->sourceLocation) };
+
+			if (std::get<bool>(*conditionValue))
+			{
+				PushScope();
+				HandleStatement(cond.statement);
+				PopScope();
+		
+				return ReplaceStatement{ std::move(cond.statement) };
+			}
+		}
+
+		// Every condition failed, fallback to else if any
+		if (branchStatement.elseStatement)
+			return ReplaceStatement{ std::move(branchStatement.elseStatement) };
+		else
+			return ReplaceStatement{ ShaderBuilder::NoOp() };
 	}
 
 	auto IdentifierTypeResolverTransformer::Transform(ConditionalStatement&& condStatement) -> StatementTransformation
@@ -2466,7 +2520,7 @@ namespace nzsl::Ast
 		if (constantType != NodeType::ConstantValueExpression && constantType != NodeType::ConstantArrayValueExpression)
 		{
 			// Constant propagation failed
-			if (!m_context->partialSanitization)
+			if (!m_context->partialCompilation)
 				throw CompilerConstantExpressionRequiredError{ declConst.expression->sourceLocation };
 
 			declConst.constIndex = RegisterConstant(declConst.name, std::nullopt, declConst.constIndex, declConst.sourceLocation);
@@ -2538,7 +2592,7 @@ namespace nzsl::Ast
 
 			if (auto it = m_states->declaredExternalVar.find(internalName); it != m_states->declaredExternalVar.end())
 			{
-				if (it->second.conditionalStatementIndex == m_states->currentConditionalIndex || usedBindingData.conditionalStatementIndex == m_states->currentConditionalIndex)
+				if ((it->second.conditionalStatementIndex == 0 || it->second.conditionalStatementIndex == m_states->currentConditionalIndex) || (usedBindingData.conditionalStatementIndex == 0 || usedBindingData.conditionalStatementIndex == m_states->currentConditionalIndex))
 					throw CompilerExtAlreadyDeclaredError{ extVar.sourceLocation, extVar.name };
 			}
 
@@ -2680,7 +2734,7 @@ namespace nzsl::Ast
 			declOption.optIndex = RegisterConstant(declOption.optName, optionValueIt->second, declOption.optIndex, declOption.sourceLocation);
 		else
 		{
-			if (m_context->partialSanitization)
+			if (m_context->partialCompilation)
 			{
 				// Partial sanitization, we cannot give a value to this option
 				declOption.optIndex = RegisterConstant(declOption.optName, std::nullopt, declOption.optIndex, declOption.sourceLocation);
@@ -2729,7 +2783,7 @@ namespace nzsl::Ast
 
 			if (declaredMembers.find(member.name) != declaredMembers.end())
 			{
-				if ((!member.cond.HasValue() || !member.cond.IsResultingValue()) && !m_context->partialSanitization)
+				if ((!member.cond.HasValue() || !member.cond.IsResultingValue()) && !m_context->partialCompilation)
 					throw CompilerStructFieldMultipleError{ member.sourceLocation, member.name };
 			}
 
@@ -2742,7 +2796,7 @@ namespace nzsl::Ast
 
 			if (member.type.IsExpression())
 			{
-				assert(m_context->partialSanitization);
+				assert(m_context->partialCompilation);
 				continue;
 			}
 
@@ -2840,7 +2894,84 @@ namespace nzsl::Ast
 		declVariable.varType = std::move(resolvedType);
 		return DontVisitChildren{};
 	}
-	
+
+	auto IdentifierTypeResolverTransformer::Transform(ForEachStatement&& forEachStatement) -> StatementTransformation
+	{
+		if (forEachStatement.varName.empty())
+			throw AstEmptyIdentifierError{ forEachStatement.sourceLocation };
+
+		HandleExpression(forEachStatement.expression);
+
+		const ExpressionType* exprType = GetExpressionType(*forEachStatement.expression);
+		if (!exprType)
+		{
+			if (forEachStatement.statement)
+			{
+				PushScope();
+				HandleStatement(forEachStatement.statement);
+				PopScope();
+			}
+
+			return DontVisitChildren{};
+		}
+
+		const ExpressionType& resolvedExprType = ResolveAlias(*exprType);
+
+		ExpressionType innerType;
+		if (IsArrayType(resolvedExprType))
+		{
+			const ArrayType& arrayType = std::get<ArrayType>(resolvedExprType);
+			innerType = arrayType.containedType->type;
+		}
+		else
+			throw CompilerForEachUnsupportedTypeError{ forEachStatement.sourceLocation, ToString(*exprType, forEachStatement.sourceLocation) };
+
+		if (forEachStatement.unroll.HasValue())
+			ComputeExprValue(forEachStatement.unroll, forEachStatement.sourceLocation);
+
+		PushScope();
+		{
+			forEachStatement.varIndex = RegisterVariable(forEachStatement.varName, innerType, forEachStatement.varIndex, forEachStatement.sourceLocation);
+
+			HandleStatement(forEachStatement.statement);
+		}
+		PopScope();
+
+		return DontVisitChildren{};
+	}
+
+	auto IdentifierTypeResolverTransformer::Transform(ForStatement&& forStatement) -> StatementTransformation
+	{
+		MandatoryExpr(forStatement.fromExpr, forStatement.sourceLocation);
+		MandatoryExpr(forStatement.toExpr, forStatement.sourceLocation);
+
+		HandleExpression(forStatement.fromExpr);
+		HandleExpression(forStatement.toExpr);
+		if (forStatement.stepExpr)
+			HandleExpression(forStatement.stepExpr);
+
+		const ExpressionType* fromExprType = GetExpressionType(*forStatement.fromExpr);
+
+		if (forStatement.unroll.HasValue())
+			ComputeExprValue(forStatement.unroll, forStatement.sourceLocation);
+
+		bool wontUnroll = !forStatement.unroll.HasValue() || (forStatement.unroll.IsResultingValue() && forStatement.unroll.GetResultingValue() != LoopUnroll::Always);
+
+		PushScope();
+		{
+			// We can't register the counter as a variable if we need to unroll the loop later (because the counter will become const)
+			if (fromExprType && wontUnroll)
+				forStatement.varIndex = RegisterVariable(forStatement.varName, *fromExprType, forStatement.varIndex, forStatement.sourceLocation);
+			else
+				RegisterUnresolved(forStatement.varName);
+
+			HandleStatement(forStatement.statement);
+		}
+		PopScope();
+
+		return DontVisitChildren{};
+	}
+
 	auto IdentifierTypeResolverTransformer::Transform(ImportStatement&& importStatement) -> StatementTransformation
 	{
 		tsl::ordered_map<std::string, std::vector<std::string>> importedSymbols;
@@ -2880,7 +3011,7 @@ namespace nzsl::Ast
 			}
 		}
 
-		if (!m_context->partialSanitization)
+		if (!m_context->partialCompilation)
 			throw CompilerNoModuleResolverError{ importStatement.sourceLocation };
 
 		// when partially sanitizing, importing a whole module could register any identifier, so at this point we can't see unknown identifiers as errors

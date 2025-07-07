@@ -78,7 +78,7 @@ namespace nzsl::Ast
 
 		if (!castExpr.targetType.IsResultingValue())
 		{
-			if (m_context->partialSanitization)
+			if (m_context->partialCompilation)
 				return VisitChildren{};
 
 			throw CompilerConstantExpressionRequiredError{ castExpr.targetType.GetExpression()->sourceLocation };
@@ -170,6 +170,7 @@ namespace nzsl::Ast
 					}
 
 					auto buildVec = ShaderBuilder::Cast(ExpressionType{ VectorType{ targetMatrixType.rowCount, targetMatrixType.type } }, std::move(expressions));
+					buildVec->cachedExpressionType = buildVec->targetType.GetResultingValue();
 					buildVec->sourceLocation = location;
 
 					vectorExpr = std::move(buildVec);
@@ -211,6 +212,7 @@ namespace nzsl::Ast
 
 				// temp[i] = columnCastExpr
 				auto assignExpr = ShaderBuilder::Assign(AssignType::Simple, std::move(columnExpr), std::move(columnCastExpr));
+				assignExpr->cachedExpressionType = assignExpr->right->cachedExpressionType;
 				assignExpr->sourceLocation = castExpr.sourceLocation;
 
 				AppendStatement(ShaderBuilder::ExpressionStatement(std::move(assignExpr)));

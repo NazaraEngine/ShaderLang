@@ -3,6 +3,7 @@
 #include <NZSL/Parser.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <cctype>
+#include <NZSL/Ast/Transformations/ConstantRemovalTransformer.hpp>
 
 TEST_CASE("aliases", "[Shader]")
 {
@@ -136,18 +137,26 @@ fn main() -> FragOut
 		WHEN("We perform a partial sanitization")
 		{
 			nzsl::Ast::Transformer::Context context;
-			context.partialSanitization = true;
-		
-			ResolveModule(*shaderModule, context);
+			context.partialCompilation = true;
+
+			nzsl::Ast::ConstantRemovalTransformer::Options constantRemovalOpt;
+
+			ResolveOptions resolveOptions;
+			resolveOptions.partialCompilation = true;
+			resolveOptions.constantRemovalOptions = &constantRemovalOpt;
+
+			ResolveModule(*shaderModule, resolveOptions);
 		}
 
 		WHEN("We enable ForwardPass")
 		{
-			nzsl::Ast::Transformer::Context context;
-			context.optionValues[nzsl::Ast::HashOption("ForwardPass")] = true;
-			//options.removeOptionDeclaration = true;
+			nzsl::Ast::ConstantRemovalTransformer::Options constantRemovalOpt;
 
-			ResolveModule(*shaderModule, context);
+			ResolveOptions resolveOptions;
+			resolveOptions.optionValues[nzsl::Ast::HashOption("ForwardPass")] = true;
+			resolveOptions.constantRemovalOptions = &constantRemovalOpt;
+
+			ResolveModule(*shaderModule, resolveOptions);
 
 			ExpectGLSL(*shaderModule, R"(
 struct ForwardOutput
@@ -213,12 +222,14 @@ OpFunctionEnd)");
 
 		WHEN("We disable ForwardPass")
 		{
-			nzsl::Ast::Transformer::Context context;
-			context.optionValues[nzsl::Ast::HashOption("ForwardPass")] = false;
-			//options.removeOptionDeclaration = true;
+			nzsl::Ast::ConstantRemovalTransformer::Options constantRemovalOpt;
 
-			ResolveModule(*shaderModule, context);
-			
+			ResolveOptions resolveOptions;
+			resolveOptions.optionValues[nzsl::Ast::HashOption("ForwardPass")] = false;
+			resolveOptions.constantRemovalOptions = &constantRemovalOpt;
+
+			ResolveModule(*shaderModule, resolveOptions);
+
 			ExpectGLSL(*shaderModule, R"(
 struct ForwardOutput
 {

@@ -22,10 +22,10 @@ namespace nzsl::Ast
 		public:
 			struct Context
 			{
-				std::size_t nextVariableIndex;
+				std::size_t nextVariableIndex = 0;
 				std::unordered_map<OptionHash, ConstantValue> optionValues;
 				bool allowUnknownIdentifiers = false;
-				bool partialSanitization = false;
+				bool partialCompilation = false;
 			};
 
 			static StatementPtr Unscope(StatementPtr&& statement);

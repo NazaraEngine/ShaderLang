@@ -642,7 +642,7 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 		using namespace std::literals;
 
 		nzsl::Ast::Transformer::Context sanitizeOptions;
-		sanitizeOptions.partialSanitization = m_options.count("partial") > 0;
+		sanitizeOptions.partialCompilation = m_options.count("partial") > 0;
 
 		nzsl::Ast::TransformerExecutor executor;
 

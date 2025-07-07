@@ -12,6 +12,7 @@
 #include <NZSL/SpirV/SpirvExpressionStore.hpp>
 #include <NZSL/SpirV/SpirvGenData.hpp>
 #include <NZSL/SpirV/SpirvSection.hpp>
+#include <fmt/format.h>
 
 namespace nzsl
 {
@@ -1465,7 +1466,7 @@ namespace nzsl
 				break;
 		}
 
-		throw std::runtime_error("unexpected type " + ToString(basicType) + " for lerp intrinsic");
+		throw std::runtime_error(fmt::format("unexpected type {} for lerp intrinsic", ToString(basicType)));
 	}
 
 	SpirvGlslStd450Op SpirvAstVisitor::SelectMaxMin(const Ast::IntrinsicExpression& node)
@@ -1503,7 +1504,7 @@ namespace nzsl
 				break;
 		}
 
-		throw std::runtime_error("unexpected type " + ToString(basicType) + " for max/min intrinsic");
+		throw std::runtime_error(fmt::format("unexpected type {} for max/min intrinsic", ToString(basicType)));
 	}
 
 	SpirvGlslStd450Op SpirvAstVisitor::SelectSign(const Ast::IntrinsicExpression& node)
@@ -1536,7 +1537,7 @@ namespace nzsl
 				break;
 		}
 
-		throw std::runtime_error("unexpected type " + ToString(basicType) + " for sign intrinsic");
+		throw std::runtime_error(fmt::format("unexpected type {} for sign intrinsic", ToString(basicType)));
 	}
 
 	void SpirvAstVisitor::HandleSourceLocation(const SourceLocation& sourceLocation)

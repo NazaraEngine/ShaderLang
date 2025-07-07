@@ -77,6 +77,7 @@ NZSL_SHADERLANG_COMPILER_ERROR(CastMatrixExpectedVectorOrScalar, "expected vecto
 NZSL_SHADERLANG_COMPILER_ERROR(CastMatrixVectorComponentMismatch, "vector component count ({}) doesn't match target matrix row count ({})", std::uint32_t, std::uint32_t)
 NZSL_SHADERLANG_COMPILER_ERROR(CircularImport, "circular import detected on {}", std::string)
 NZSL_SHADERLANG_COMPILER_ERROR(ConditionExpectedBool, "expected boolean for condition, got {}", std::string)
+NZSL_SHADERLANG_COMPILER_ERROR(ConflictingOptionDefaultValues, "option {} has already been declared with a conflicting default values (previous value: {})", std::string, std::string)
 NZSL_SHADERLANG_COMPILER_ERROR(ConstMissingExpression, "const variables must have an expression")
 NZSL_SHADERLANG_COMPILER_ERROR(ConstantExpectedValue, "expected a value")
 NZSL_SHADERLANG_COMPILER_ERROR(ConstantExpressionRequired, "a constant expression is required in this context")
@@ -169,7 +170,7 @@ NZSL_SHADERLANG_COMPILER_ERROR(UnexpectedAttributeOnPushConstant, "unexpected at
 
 // AST errors
 NZSL_SHADERLANG_AST_ERROR(AlreadyUsedIndex, "index {} is already used", std::size_t)
-NZSL_SHADERLANG_AST_ERROR(AttributeRequiresValue, "index {} is already used", std::size_t)
+NZSL_SHADERLANG_AST_ERROR(AttributeRequiresValue, "attribute is missing a value or expression", std::size_t)
 NZSL_SHADERLANG_AST_ERROR(AlreadyUsedIndexPreregister, "cannot preregister used index {} as its already used", std::size_t)
 NZSL_SHADERLANG_AST_ERROR(ConditionExpectedBool, "expected boolean for condition, got {}", std::string)
 NZSL_SHADERLANG_AST_ERROR(EmptyIdentifier, "identifier cannot be empty")

@@ -866,10 +866,10 @@ fn main()
 
 		WHEN("Performing a partial compilation")
 		{
-			nzsl::Ast::Transformer::Context context;
-			context.partialSanitization = true;
+			ResolveOptions resolveOptions;
+			resolveOptions.partialCompilation = true;
 
-			ResolveModule(*shaderModule, context);
+			ResolveModule(*shaderModule, resolveOptions);
 
 			ExpectNZSL(*shaderModule, R"(
 struct Foo
@@ -909,10 +909,14 @@ fn main()
 
 		WHEN("Performing a partial compilation and forcing auto_binding resolve")
 		{
-			nzsl::Ast::Transformer::Context context;
-			context.partialSanitization = true;
+			nzsl::Ast::BindingResolverTransformer::Options bindingResolverOpt;
+			bindingResolverOpt.forceAutoBindingResolve = true;
 
-			ResolveModule(*shaderModule, context);
+			ResolveOptions resolveOptions;
+			resolveOptions.partialCompilation = true;
+			resolveOptions.bindingResolverOptions = &bindingResolverOpt;
+
+			ResolveModule(*shaderModule, resolveOptions);
 
 			ExpectNZSL(*shaderModule, R"(
 struct Foo

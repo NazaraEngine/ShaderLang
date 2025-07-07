@@ -181,7 +181,6 @@ namespace nzsl
 
 		assert(node.indices.size() == 1);
 		auto& indexExpr = node.indices.front();
-		assert(indexExpr->GetType() != Ast::NodeType::ConstantValueExpression);
 
 		std::uint32_t typeId = m_writer.GetTypeId(*exprType);
 

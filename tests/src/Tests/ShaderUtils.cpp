@@ -10,6 +10,8 @@
 #include <catch2/catch_test_macros.hpp>
 #include <glslang/Public/ShaderLang.h>
 #include <spirv-tools/libspirv.hpp>
+#include <NZSL/Ast/Transformations/BindingResolverTransformer.hpp>
+#include <NZSL/Ast/Cloner.hpp>
 
 namespace NAZARA_ANONYMOUS_NAMESPACE
 {
@@ -219,6 +221,9 @@ void ExpectGLSL(nzsl::ShaderStageType stageType, nzsl::Ast::Module& shaderModule
 {
 	NAZARA_USE_ANONYMOUS_NAMESPACE
 
+	// Clone to avoid cross-test changes
+	nzsl::Ast::ModulePtr moduleClone = nzsl::Ast::Clone(shaderModule);
+
 	std::string expectedSource = SanitizeSource(expectedOutput);
 
 	std::string_view stageName;
@@ -235,7 +240,7 @@ void ExpectGLSL(nzsl::ShaderStageType stageType, nzsl::Ast::Module& shaderModule
 		{
 			nzsl::Ast::Transformer::Context context;
 			nzsl::Ast::IdentifierTypeResolverTransformer resolver;
-			REQUIRE_NOTHROW(resolver.Transform(shaderModule, context));
+			REQUIRE_NOTHROW(resolver.Transform(*moduleClone, context));
 		}
 
 		nzsl::GlslWriter writer;
@@ -243,7 +248,7 @@ void ExpectGLSL(nzsl::ShaderStageType stageType, nzsl::Ast::Module& shaderModule
 
 		nzsl::GlslWriter::Parameters parameters;
 
-		nzsl::GlslWriter::Output output = writer.Generate(stageType, shaderModule, parameters, options);
+		nzsl::GlslWriter::Output output = writer.Generate(stageType, *moduleClone, parameters, options);
 
 		SECTION("Validating expected code")
 		{
@@ -324,6 +329,9 @@ void ExpectNZSL(nzsl::Ast::Module& shaderModule, std::string_view expectedOutput
 {
 	NAZARA_USE_ANONYMOUS_NAMESPACE
 
+	// Clone to avoid cross-test changes
+	nzsl::Ast::ModulePtr moduleClone = nzsl::Ast::Clone(shaderModule);
+
 	std::string source = SanitizeSource(expectedOutput);
 
 	SECTION("Generating NZSL")
@@ -333,9 +341,9 @@ void ExpectNZSL(nzsl::Ast::Module& shaderModule, std::string_view expectedOutput
 		{
 			nzsl::Ast::Transformer::Context context;
 			nzsl::Ast::IdentifierTypeResolverTransformer resolver;
-			REQUIRE_NOTHROW(resolver.Transform(shaderModule, context));
+			REQUIRE_NOTHROW(resolver.Transform(*moduleClone, context));
 		}
-		const nzsl::Ast::Module& targetModule = (sanitizedModule) ? *sanitizedModule : shaderModule;
+		const nzsl::Ast::Module& targetModule = (sanitizedModule) ? *sanitizedModule : *moduleClone;
 
 		nzsl::LangWriter writer;
 		std::string output = SanitizeSource(writer.Generate(targetModule, options));
@@ -357,6 +365,9 @@ void ExpectNZSL(nzsl::Ast::Module& shaderModule, std::string_view expectedOutput
 void ExpectSPIRV(nzsl::Ast::Module& shaderModule, std::string_view expectedOutput, const nzsl::ShaderWriter::States& options, const nzsl::SpirvWriter::Environment& env, bool outputParameter, const spvtools::ValidatorOptions& validatorOptions)
 {
 	NAZARA_USE_ANONYMOUS_NAMESPACE
+	
+	// Clone to avoid cross-test changes
+	nzsl::Ast::ModulePtr moduleClone = nzsl::Ast::Clone(shaderModule);
 
 	std::string source = SanitizeSource(expectedOutput);
 
@@ -367,9 +378,9 @@ void ExpectSPIRV(nzsl::Ast::Module& shaderModule, std::string_view expectedOutpu
 		{
 			nzsl::Ast::Transformer::Context context;
 			nzsl::Ast::IdentifierTypeResolverTransformer resolver;
-			REQUIRE_NOTHROW(resolver.Transform(shaderModule, context));
+			REQUIRE_NOTHROW(resolver.Transform(*moduleClone, context));
 		}
-		const nzsl::Ast::Module& targetModule = (sanitizedModule) ? *sanitizedModule : shaderModule;
+		const nzsl::Ast::Module& targetModule = (sanitizedModule) ? *sanitizedModule : *moduleClone;
 
 		nzsl::SpirvWriter writer;
 		writer.SetEnv(env);
@@ -435,29 +446,30 @@ std::filesystem::path GetResourceDir()
 	return resourceDir;
 }
 
-void ResolveModule(nzsl::Ast::Module& module)
+void ResolveModule(nzsl::Ast::Module& module, const ResolveOptions& resolveOptions)
 {
-	nzsl::Ast::IdentifierTypeResolverTransformer::Options defaultOptions;
-	nzsl::Ast::Transformer::Context context;
-	return ResolveModule(module, context, defaultOptions, nullptr);
-}
+	nzsl::Ast::Module* targetModule = &module;
+	nzsl::Ast::ModulePtr reparsedModule;
 
-void ResolveModule(nzsl::Ast::Module& module, const nzsl::Ast::IdentifierTypeResolverTransformer::Options& resolverOptions, const nzsl::Ast::ImportResolverTransformer::Options* importOptions)
-{
-	nzsl::Ast::Transformer::Context context;
-	return ResolveModule(module, context, resolverOptions, importOptions);
-}
-
-void ResolveModule(nzsl::Ast::Module& module, nzsl::Ast::Transformer::Context& context, const nzsl::Ast::IdentifierTypeResolverTransformer::Options& resolverOptions, const nzsl::Ast::ImportResolverTransformer::Options* importOptions)
-{
 	bool hasBeenResolved = false;
 	auto Resolve = [&]
 	{
-		nzsl::Ast::TransformerExecutor executor;
-		if (importOptions)
-			executor.AddPass<nzsl::Ast::ImportResolverTransformer>(*importOptions);
+		nzsl::Ast::Transformer::Context context;
+		context.optionValues = resolveOptions.optionValues;
+		context.partialCompilation = resolveOptions.partialCompilation;
 
-		executor.AddPass<nzsl::Ast::IdentifierTypeResolverTransformer>();
+		nzsl::Ast::TransformerExecutor executor;
+		if (resolveOptions.importOptions)
+			executor.AddPass<nzsl::Ast::ImportResolverTransformer>(*resolveOptions.importOptions);
+
+		if (resolveOptions.identifierResolverOptions)
+			executor.AddPass<nzsl::Ast::IdentifierTypeResolverTransformer>(*resolveOptions.identifierResolverOptions);
+
+		if (resolveOptions.constantRemovalOptions)
+			executor.AddPass<nzsl::Ast::ConstantRemovalTransformer>(*resolveOptions.constantRemovalOptions);
+
+		if (resolveOptions.bindingResolverOptions)
+			executor.AddPass<nzsl::Ast::BindingResolverTransformer>(*resolveOptions.bindingResolverOptions);
 
 		REQUIRE_NOTHROW(executor.Transform(module, context));
 		hasBeenResolved = true;
@@ -467,14 +479,15 @@ void ResolveModule(nzsl::Ast::Module& module, nzsl::Ast::Transformer::Context& c
 	{
 		nzsl::LangWriter langWriter;
 		std::string outputCode = langWriter.Generate(module);
-		nzsl::Ast::IdentifierTypeResolverTransformer resolver;
-		REQUIRE_NOTHROW(resolver.Transform(*nzsl::Parse(outputCode), context, resolverOptions));
+		reparsedModule = nzsl::Parse(outputCode);
+		targetModule = reparsedModule.get();
+		Resolve();
 	};
 
 	auto Serialize = [&]
 	{
 		nzsl::Serializer serializer;
-		REQUIRE_NOTHROW(nzsl::Ast::SerializeShader(serializer, module));
+		REQUIRE_NOTHROW(nzsl::Ast::SerializeShader(serializer, *targetModule));
 
 		const std::vector<std::uint8_t>& data = serializer.GetData();
 
@@ -482,7 +495,7 @@ void ResolveModule(nzsl::Ast::Module& module, nzsl::Ast::Transformer::Context& c
 		nzsl::Ast::ModulePtr deserializedShader;
 		REQUIRE_NOTHROW(deserializedShader = nzsl::Ast::DeserializeShader(deserializer));
 
-		CHECK(nzsl::Ast::Compare(module, *deserializedShader));
+		CHECK(nzsl::Ast::Compare(*targetModule, *deserializedShader));
 	};
 
 	WHEN("We resolve the shader")
@@ -524,3 +537,6 @@ void ResolveModule(nzsl::Ast::Module& module, nzsl::Ast::Transformer::Context& c
 	if (!hasBeenResolved)
 		Resolve();
 }
+
+const nzsl::Ast::BindingResolverTransformer::Options ResolveOptions::defaultBindingResolverOptions;
+const nzsl::Ast::IdentifierTypeResolverTransformer::Options ResolveOptions::defaultIdentifierResolveOptions;

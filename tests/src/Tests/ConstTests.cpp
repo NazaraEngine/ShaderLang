@@ -5,18 +5,17 @@
 #include <catch2/catch_test_macros.hpp>
 #include <cctype>
 
-void ExpectOutput(nzsl::Ast::Module& shaderModule, nzsl::Ast::Transformer::Context& context, std::string_view expectedOptimizedResult)
+void ExpectOutput(nzsl::Ast::Module& shaderModule, const ResolveOptions& resolveOptions, std::string_view expectedOptimizedResult)
 {
-	nzsl::Ast::ModulePtr sanitizedShader;
-	ResolveModule(shaderModule, context);
+	ResolveModule(shaderModule, resolveOptions);
 
-	ExpectNZSL(*sanitizedShader, expectedOptimizedResult);
+	ExpectNZSL(shaderModule, expectedOptimizedResult);
 }
 
 void ExpectOutput(nzsl::Ast::Module& shaderModule, std::string_view expectedOptimizedResult)
 {
-	nzsl::Ast::Transformer::Context context;
-	ExpectOutput(shaderModule, context, expectedOptimizedResult);
+	ResolveOptions resolveOptions;
+	ExpectOutput(shaderModule, resolveOptions, expectedOptimizedResult);
 }
 
 TEST_CASE("const", "[Shader]")
@@ -99,15 +98,15 @@ fn main()
 		nzsl::Ast::ModulePtr shaderModule;
 		REQUIRE_NOTHROW(shaderModule = nzsl::Parse(sourceCode));
 
-		nzsl::Ast::Transformer::Context context;
+		ResolveOptions resolveOptions;
 
 		WHEN("Enabling option")
 		{
 			using namespace nzsl::Ast::Literals;
 
-			context.optionValues["UseInt"_opt] = true;
+			resolveOptions.optionValues["UseInt"_opt] = true;
 
-			ExpectOutput(*shaderModule, context, R"(
+			ExpectOutput(*shaderModule, resolveOptions, R"(
 struct inputStruct
 {
 	value: i32
@@ -134,9 +133,9 @@ fn main()
 		{
 			using namespace nzsl::Ast::Literals;
 			
-			context.optionValues["UseInt"_opt] = false;
+			resolveOptions.optionValues["UseInt"_opt] = false;
 
-			ExpectOutput(*shaderModule, context, R"(
+			ExpectOutput(*shaderModule, resolveOptions, R"(
 struct inputStruct
 {
 	value: f32
@@ -349,7 +348,7 @@ fn main()
 		nzsl::Ast::IdentifierTypeResolverTransformer resolverTransformer;
 		{
 			nzsl::Ast::Transformer::Context context;
-			context.partialSanitization = true;
+			context.partialCompilation = true;
 
 			REQUIRE_NOTHROW(resolverTransformer.Transform(*shaderModule, context, {}));
 		}
