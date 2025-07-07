@@ -181,6 +181,7 @@ namespace nzsl::Ast
 		{
 			auto& cloneParam = clone->parameters.emplace_back();
 			cloneParam.name = parameter.name;
+			cloneParam.semantic = parameter.semantic;
 			cloneParam.type = Clone(parameter.type);
 			cloneParam.varIndex = parameter.varIndex;
 
