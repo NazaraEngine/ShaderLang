@@ -5,9 +5,9 @@
 
 namespace nzsl::Ast
 {
-	StatementPtr RemapIndices(Statement& statement, const IndexRemapperVisitor::Options& options)
+	void RemapIndices(Statement& statement, const IndexRemapperVisitor::Options& options)
 	{
 		IndexRemapperVisitor visitor;
-		return visitor.Clone(statement, options);
+		return visitor.Remap(statement, options);
 	}
 }
