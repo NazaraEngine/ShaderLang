@@ -26,6 +26,8 @@ namespace nzsl::Ast
 			struct Options
 			{
 				bool removeAliases = false;
+				bool unrollForLoops = true;
+				bool unrollForEachLoops = true;
 			};
 
 		private:
