@@ -33,6 +33,9 @@ namespace nzsl::Ast
 		m_constantSingleValues.clear();
 		m_optionValues.clear();
 
+		if (!TransformImportedModules(module, context, error))
+			return false;
+
 		return TransformModule(module, context, error);
 	}
 
@@ -58,8 +61,8 @@ namespace nzsl::Ast
 				if constexpr (VectorInner::IsVector)
 					return DontVisitChildren{};
 				else
-					return ReplaceExpression{  ShaderBuilder::ConstantValue(arg, constExpr.sourceLocation) };
-			}, *optIt->second);
+					return ReplaceExpression{ ShaderBuilder::ConstantValue(arg, constExpr.sourceLocation) };
+			}, optIt->second);
 		}
 
 		return VisitChildren{};
@@ -125,7 +128,7 @@ namespace nzsl::Ast
 		OptionHash optionHash = HashOption(declOption.optName.data());
 		auto optionValueIt = m_context->optionValues.find(optionHash);
 		if (optionValueIt != m_context->optionValues.end())
-			m_optionValues.emplace(*declOption.optIndex, &optionValueIt->second);
+			m_optionValues.emplace(*declOption.optIndex, optionValueIt->second);
 		else
 		{
 			if (m_context->partialCompilation)
@@ -135,8 +138,11 @@ namespace nzsl::Ast
 				throw CompilerMissingOptionValueError{ declOption.sourceLocation, declOption.optName };
 			
 			//throw CompilerConflictingOptionDefaultValuesError{ declOption.sourceLocation, declOption.optName, Ast::ConstantToString(*declOption.defaultValue) };
-
-			m_optionValues.emplace(*declOption.optIndex, &optionValueIt->second);
+			if (declOption.defaultValue->GetType() == NodeType::ConstantValueExpression)
+			{
+				const auto& constant = static_cast<ConstantValueExpression&>(*declOption.defaultValue);
+				m_constantSingleValues.emplace(*declOption.optIndex, constant.value);
+			}
 		}
 
 		if (m_options->removeOptionDeclaration)

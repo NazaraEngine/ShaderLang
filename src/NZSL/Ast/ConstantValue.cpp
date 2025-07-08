@@ -87,7 +87,7 @@ namespace nzsl::Ast
 		}, constant);
 	}
 
-	std::string ConstantToString(NoValue value)
+	std::string ConstantToString(NoValue /*value*/)
 	{
 		// This overload exists only to help avoid ambiguous calls
 		throw std::runtime_error("invalid type (value expected)");

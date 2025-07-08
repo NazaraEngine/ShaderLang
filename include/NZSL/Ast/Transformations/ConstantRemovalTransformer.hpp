@@ -39,7 +39,7 @@ namespace nzsl::Ast
 
 			const Options* m_options;
 			std::unordered_map<std::size_t /*constIndex*/, ConstantSingleValue> m_constantSingleValues;
-			std::unordered_map<std::size_t /*optionIndex*/, const ConstantValue*> m_optionValues;
+			std::unordered_map<std::size_t /*optionIndex*/, ConstantValue> m_optionValues;
 	};
 }
 

@@ -227,7 +227,7 @@ namespace nzsl::Ast
 
 			m_states->currentEnv = importedModuleEnv;
 
-			if (!TransformModule(*importedModule.module, context, error))
+			if (!TransformModule(*importedModule.module, context, error, [&]{ ResolveFunctions(); }))
 				return false;
 
 			m_states->moduleByName[importedModule.module->metadata->moduleName] = moduleId;
@@ -420,6 +420,9 @@ namespace nzsl::Ast
 			{
 				const Identifier* targetIdentifier = ResolveAliasIdentifier(&m_states->aliases.Retrieve(identifierData->index, sourceLocation), sourceLocation);
 				ExpressionPtr targetExpr = HandleIdentifier(&targetIdentifier->target, sourceLocation);
+
+				if (m_options->removeAliases)
+					return targetExpr;
 
 				AliasType aliasType;
 				aliasType.aliasIndex = identifierData->index;
@@ -1954,13 +1957,13 @@ namespace nzsl::Ast
 
 	auto IdentifierTypeResolverTransformer::Transform(AliasValueExpression&& accessIndexExpr) -> ExpressionTransformation
 	{
-		if (accessIndexExpr.cachedExpressionType)
+		if (accessIndexExpr.cachedExpressionType && !m_options->removeAliases)
 			return DontVisitChildren{};
 
 		const Identifier* targetIdentifier = ResolveAliasIdentifier(&m_states->aliases.Retrieve(accessIndexExpr.aliasId, accessIndexExpr.sourceLocation), accessIndexExpr.sourceLocation);
 		ExpressionPtr targetExpr = HandleIdentifier(&targetIdentifier->target, accessIndexExpr.sourceLocation);
 
-		if (!m_options->removeAliases)
+		if (m_options->removeAliases)
 			return ReplaceExpression{ std::move(targetExpr) };
 
 		AliasType aliasType;
@@ -2727,7 +2730,7 @@ namespace nzsl::Ast
 			}
 		}
 
-		declOption.optType = std::move(resolvedType);
+		declOption.optType = (m_options->removeAliases) ? targetType : std::move(resolvedType);
 
 		OptionHash optionHash = HashOption(declOption.optName.data());
 
@@ -3103,7 +3106,6 @@ namespace nzsl::Ast
 					}
 				};
 
-				const ExpressionType* fromExprType = GetExpressionType(*forStatement.fromExpr);
 				if (fromExprType)
 				{
 					const ExpressionType& resolvedFromExprType = ResolveAlias(*fromExprType);
@@ -3196,6 +3198,12 @@ namespace nzsl::Ast
 		}
 
 		return DontVisitChildren{};
+	}
+
+	void IdentifierTypeResolverTransformer::Transform(ExpressionType& expressionType)
+	{
+		if (m_options->removeAliases && IsAliasType(expressionType))
+			expressionType = ResolveAlias(expressionType);
 	}
 
 	void IdentifierTypeResolverTransformer::Transform(ExpressionValue<ExpressionType>& expressionType)

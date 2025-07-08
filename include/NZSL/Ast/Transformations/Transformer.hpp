@@ -119,9 +119,11 @@ namespace nzsl::Ast
 #define NZSL_SHADERAST_NODE(Node, Type) virtual Type##Transformation Transform(Node##Type&& node);
 #include <NZSL/Ast/NodeList.hpp>
 
+			virtual void Transform(ExpressionType& expressionType);
 			virtual void Transform(ExpressionValue<ExpressionType>& expressionValue);
 
 			bool TransformExpression(ExpressionPtr& expression, Context& context, std::string* error);
+			bool TransformImportedModules(Module& module, Context& context, std::string* error);
 			bool TransformModule(Module& module, Context& context, std::string* error, Nz::FunctionRef<void()> postCallback = nullptr);
 			bool TransformStatement(StatementPtr& statement, Context& context, std::string* error);
 

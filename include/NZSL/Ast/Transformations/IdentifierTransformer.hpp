@@ -38,7 +38,6 @@ namespace nzsl::Ast
 			void PopScope() override;
 			void PushScope() override;
 
-
 			StatementTransformation Transform(DeclareAliasStatement&& statement) override;
 			StatementTransformation Transform(DeclareConstStatement&& statement) override;
 			StatementTransformation Transform(DeclareExternalStatement&& statement) override;

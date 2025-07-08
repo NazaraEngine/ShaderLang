@@ -119,6 +119,7 @@ namespace nzsl::Ast
 			StatementTransformation Transform(ForStatement&& forStatement) override;
 			StatementTransformation Transform(ImportStatement&& importStatement) override;
 
+			void Transform(ExpressionType& expressionType) override;
 			void Transform(ExpressionValue<ExpressionType>& expressionType) override;
 
 			ExpressionType ValidateBinaryOp(BinaryType op, const ExpressionType& leftExprType, const ExpressionType& rightExprType, const SourceLocation& sourceLocation);

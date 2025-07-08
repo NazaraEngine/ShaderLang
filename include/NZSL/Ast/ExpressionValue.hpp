@@ -32,6 +32,7 @@ namespace nzsl::Ast
 			ExpressionPtr& GetExpression() &;
 			ExpressionPtr&& GetExpression() &&;
 			const ExpressionPtr& GetExpression() const &;
+			T& GetResultingValue();
 			const T& GetResultingValue() const;
 
 			bool IsExpression() const;

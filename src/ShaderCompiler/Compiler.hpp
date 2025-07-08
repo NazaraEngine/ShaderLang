@@ -53,7 +53,7 @@ namespace nzslc
 			void CompileToGLSL(std::filesystem::path outputPath, const nzsl::Ast::Module& module);
 			void CompileToNZSL(std::filesystem::path outputPath, const nzsl::Ast::Module& module);
 			void CompileToNZSLB(std::filesystem::path outputPath, const nzsl::Ast::Module& module);
-			void CompileToSPV(std::filesystem::path outputPath, const nzsl::Ast::Module& module, bool textual);
+			void CompileToSPV(std::filesystem::path outputPath, nzsl::Ast::Module& module, bool textual);
 			void PrintTime();
 			void OutputFile(std::filesystem::path filePath, const void* data, std::size_t size, bool disallowHeader = false);
 			void OutputToStdout(std::string_view str);

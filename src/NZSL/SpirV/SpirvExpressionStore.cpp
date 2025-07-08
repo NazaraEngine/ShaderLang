@@ -92,7 +92,6 @@ namespace nzsl
 
 		std::int32_t compositeIndex = static_cast<std::int32_t>(node.fieldIndex);
 
-
 		std::visit(Nz::Overloaded
 		{
 			[&](const Pointer& pointer)

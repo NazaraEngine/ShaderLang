@@ -489,7 +489,7 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 		OutputFile(std::move(outputPath), data.data(), data.size());
 	}
 
-	void Compiler::CompileToSPV(std::filesystem::path outputPath, const nzsl::Ast::Module& module, bool textual)
+	void Compiler::CompileToSPV(std::filesystem::path outputPath, nzsl::Ast::Module& module, bool textual)
 	{
 		nzsl::SpirvWriter::Environment env;
 		if (m_options.count("spv-version"))

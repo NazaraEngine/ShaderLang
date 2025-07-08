@@ -16,6 +16,9 @@ namespace nzsl::Ast
 		m_nextConditionalIndex = 1;
 		m_options = &options;
 
+		if (!TransformImportedModules(module, context, error))
+			return false;
+
 		return TransformModule(module, context, error);
 	}
 

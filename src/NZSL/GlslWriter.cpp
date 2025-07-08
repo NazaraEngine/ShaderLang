@@ -566,13 +566,6 @@ namespace nzsl
 				nameChanged = true;
 			}
 
-			// Identifier can't start with _nzsl
-			if (identifier.compare(0, 5, "_nzsl") == 0)
-			{
-				identifier.replace(0, 5, "_"sv);
-				nameChanged = true;
-			}
-
 			// Replace __ by _X_
 			std::size_t startPos = 0;
 			while ((startPos = identifier.find("__"sv, startPos)) != std::string::npos)
