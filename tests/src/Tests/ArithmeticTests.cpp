@@ -473,113 +473,153 @@ fn main()
 )");
 
 		ExpectSPIRV(*shaderModule, R"(
-%14 = OpFunction %1 FunctionControl(0) %2
-%15 = OpLabel
-%16 = OpVariable %6 StorageClass(Function)
-%17 = OpVariable %8 StorageClass(Function)
-%18 = OpVariable %6 StorageClass(Function)
-%19 = OpVariable %6 StorageClass(Function)
-%20 = OpVariable %8 StorageClass(Function)
-%21 = OpVariable %6 StorageClass(Function)
-%22 = OpVariable %6 StorageClass(Function)
-%23 = OpVariable %6 StorageClass(Function)
-%24 = OpVariable %6 StorageClass(Function)
-%25 = OpVariable %6 StorageClass(Function)
-%26 = OpVariable %6 StorageClass(Function)
-      OpStore %17 %7
-%27 = OpLoad %3 %17
-%28 = OpCompositeConstruct %4 %27 %7 %7
-%29 = OpAccessChain %30 %16 %10
-      OpStore %29 %28
-%31 = OpLoad %3 %17
-%32 = OpCompositeConstruct %4 %7 %31 %7
-%33 = OpAccessChain %30 %16 %11
-      OpStore %33 %32
-%34 = OpLoad %3 %17
-%35 = OpCompositeConstruct %4 %7 %7 %34
-%36 = OpAccessChain %30 %16 %12
-      OpStore %36 %35
-%37 = OpLoad %5 %16
-      OpStore %18 %37
-      OpStore %20 %13
-%38 = OpLoad %3 %20
-%39 = OpCompositeConstruct %4 %38 %7 %7
-%40 = OpAccessChain %30 %19 %10
-      OpStore %40 %39
-%41 = OpLoad %3 %20
-%42 = OpCompositeConstruct %4 %7 %41 %7
-%43 = OpAccessChain %30 %19 %11
-      OpStore %43 %42
-%44 = OpLoad %3 %20
-%45 = OpCompositeConstruct %4 %7 %7 %44
-%46 = OpAccessChain %30 %19 %12
-      OpStore %46 %45
-%47 = OpLoad %5 %19
-      OpStore %21 %47
-%48 = OpAccessChain %30 %18 %10
-%49 = OpLoad %4 %48
-%50 = OpAccessChain %30 %21 %10
-%51 = OpLoad %4 %50
-%52 = OpFAdd %4 %49 %51
-%53 = OpAccessChain %30 %22 %10
-      OpStore %53 %52
-%54 = OpAccessChain %30 %18 %11
-%55 = OpLoad %4 %54
-%56 = OpAccessChain %30 %21 %11
-%57 = OpLoad %4 %56
-%58 = OpFAdd %4 %55 %57
-%59 = OpAccessChain %30 %22 %11
-      OpStore %59 %58
-%60 = OpAccessChain %30 %18 %12
-%61 = OpLoad %4 %60
-%62 = OpAccessChain %30 %21 %12
-%63 = OpLoad %4 %62
-%64 = OpFAdd %4 %61 %63
-%65 = OpAccessChain %30 %22 %12
-      OpStore %65 %64
-%66 = OpLoad %5 %22
-      OpStore %23 %66
-%67 = OpAccessChain %30 %18 %10
-%68 = OpLoad %4 %67
-%69 = OpAccessChain %30 %21 %10
-%70 = OpLoad %4 %69
-%71 = OpFSub %4 %68 %70
-%72 = OpAccessChain %30 %24 %10
-      OpStore %72 %71
-%73 = OpAccessChain %30 %18 %11
-%74 = OpLoad %4 %73
-%75 = OpAccessChain %30 %21 %11
-%76 = OpLoad %4 %75
-%77 = OpFSub %4 %74 %76
-%78 = OpAccessChain %30 %24 %11
-      OpStore %78 %77
-%79 = OpAccessChain %30 %18 %12
-%80 = OpLoad %4 %79
-%81 = OpAccessChain %30 %21 %12
-%82 = OpLoad %4 %81
-%83 = OpFSub %4 %80 %82
-%84 = OpAccessChain %30 %24 %12
-      OpStore %84 %83
-%85 = OpLoad %5 %24
-      OpStore %25 %85
-%86 = OpLoad %5 %18
-%87 = OpLoad %5 %21
-%88 = OpMatrixTimesMatrix %5 %86 %87
-      OpStore %26 %88
-%89 = OpLoad %5 %18
-%90 = OpLoad %5 %21
-%91 = OpFAdd %5 %89 %90
-      OpStore %18 %91
-%92 = OpLoad %5 %18
-%93 = OpLoad %5 %21
-%94 = OpFSub %5 %92 %93
-      OpStore %18 %94
-%95 = OpLoad %5 %18
-%96 = OpLoad %5 %21
-%97 = OpMatrixTimesMatrix %5 %95 %96
-      OpStore %18 %97
-      OpReturn
-      OpFunctionEnd)", {}, {}, true);
+ %14 = OpFunction %1 FunctionControl(0) %2
+ %15 = OpLabel
+ %16 = OpVariable %6 StorageClass(Function)
+ %17 = OpVariable %8 StorageClass(Function)
+ %18 = OpVariable %6 StorageClass(Function)
+ %19 = OpVariable %6 StorageClass(Function)
+ %20 = OpVariable %8 StorageClass(Function)
+ %21 = OpVariable %6 StorageClass(Function)
+ %22 = OpVariable %6 StorageClass(Function)
+ %23 = OpVariable %6 StorageClass(Function)
+ %24 = OpVariable %6 StorageClass(Function)
+ %25 = OpVariable %6 StorageClass(Function)
+ %26 = OpVariable %6 StorageClass(Function)
+ %27 = OpVariable %6 StorageClass(Function)
+ %28 = OpVariable %6 StorageClass(Function)
+       OpStore %17 %7
+ %29 = OpLoad %3 %17
+ %30 = OpCompositeConstruct %4 %29 %7 %7
+ %31 = OpAccessChain %32 %16 %10
+       OpStore %31 %30
+ %33 = OpLoad %3 %17
+ %34 = OpCompositeConstruct %4 %7 %33 %7
+ %35 = OpAccessChain %32 %16 %11
+       OpStore %35 %34
+ %36 = OpLoad %3 %17
+ %37 = OpCompositeConstruct %4 %7 %7 %36
+ %38 = OpAccessChain %32 %16 %12
+       OpStore %38 %37
+ %39 = OpLoad %5 %16
+       OpStore %18 %39
+       OpStore %20 %13
+ %40 = OpLoad %3 %20
+ %41 = OpCompositeConstruct %4 %40 %7 %7
+ %42 = OpAccessChain %32 %19 %10
+       OpStore %42 %41
+ %43 = OpLoad %3 %20
+ %44 = OpCompositeConstruct %4 %7 %43 %7
+ %45 = OpAccessChain %32 %19 %11
+       OpStore %45 %44
+ %46 = OpLoad %3 %20
+ %47 = OpCompositeConstruct %4 %7 %7 %46
+ %48 = OpAccessChain %32 %19 %12
+       OpStore %48 %47
+ %49 = OpLoad %5 %19
+       OpStore %21 %49
+ %50 = OpAccessChain %32 %18 %10
+ %51 = OpLoad %4 %50
+ %52 = OpAccessChain %32 %21 %10
+ %53 = OpLoad %4 %52
+ %54 = OpFAdd %4 %51 %53
+ %55 = OpAccessChain %32 %22 %10
+       OpStore %55 %54
+ %56 = OpAccessChain %32 %18 %11
+ %57 = OpLoad %4 %56
+ %58 = OpAccessChain %32 %21 %11
+ %59 = OpLoad %4 %58
+ %60 = OpFAdd %4 %57 %59
+ %61 = OpAccessChain %32 %22 %11
+       OpStore %61 %60
+ %62 = OpAccessChain %32 %18 %12
+ %63 = OpLoad %4 %62
+ %64 = OpAccessChain %32 %21 %12
+ %65 = OpLoad %4 %64
+ %66 = OpFAdd %4 %63 %65
+ %67 = OpAccessChain %32 %22 %12
+       OpStore %67 %66
+ %68 = OpLoad %5 %22
+       OpStore %23 %68
+ %69 = OpAccessChain %32 %18 %10
+ %70 = OpLoad %4 %69
+ %71 = OpAccessChain %32 %21 %10
+ %72 = OpLoad %4 %71
+ %73 = OpFSub %4 %70 %72
+ %74 = OpAccessChain %32 %24 %10
+       OpStore %74 %73
+ %75 = OpAccessChain %32 %18 %11
+ %76 = OpLoad %4 %75
+ %77 = OpAccessChain %32 %21 %11
+ %78 = OpLoad %4 %77
+ %79 = OpFSub %4 %76 %78
+ %80 = OpAccessChain %32 %24 %11
+       OpStore %80 %79
+ %81 = OpAccessChain %32 %18 %12
+ %82 = OpLoad %4 %81
+ %83 = OpAccessChain %32 %21 %12
+ %84 = OpLoad %4 %83
+ %85 = OpFSub %4 %82 %84
+ %86 = OpAccessChain %32 %24 %12
+       OpStore %86 %85
+ %87 = OpLoad %5 %24
+       OpStore %25 %87
+ %88 = OpLoad %5 %18
+ %89 = OpLoad %5 %21
+ %90 = OpMatrixTimesMatrix %5 %88 %89
+       OpStore %26 %90
+ %91 = OpAccessChain %32 %18 %10
+ %92 = OpLoad %4 %91
+ %93 = OpAccessChain %32 %21 %10
+ %94 = OpLoad %4 %93
+ %95 = OpFAdd %4 %92 %94
+ %96 = OpAccessChain %32 %27 %10
+       OpStore %96 %95
+ %97 = OpAccessChain %32 %18 %11
+ %98 = OpLoad %4 %97
+ %99 = OpAccessChain %32 %21 %11
+%100 = OpLoad %4 %99
+%101 = OpFAdd %4 %98 %100
+%102 = OpAccessChain %32 %27 %11
+       OpStore %102 %101
+%103 = OpAccessChain %32 %18 %12
+%104 = OpLoad %4 %103
+%105 = OpAccessChain %32 %21 %12
+%106 = OpLoad %4 %105
+%107 = OpFAdd %4 %104 %106
+%108 = OpAccessChain %32 %27 %12
+       OpStore %108 %107
+%109 = OpLoad %5 %27
+       OpStore %18 %109
+%110 = OpAccessChain %32 %18 %10
+%111 = OpLoad %4 %110
+%112 = OpAccessChain %32 %21 %10
+%113 = OpLoad %4 %112
+%114 = OpFSub %4 %111 %113
+%115 = OpAccessChain %32 %28 %10
+       OpStore %115 %114
+%116 = OpAccessChain %32 %18 %11
+%117 = OpLoad %4 %116
+%118 = OpAccessChain %32 %21 %11
+%119 = OpLoad %4 %118
+%120 = OpFSub %4 %117 %119
+%121 = OpAccessChain %32 %28 %11
+       OpStore %121 %120
+%122 = OpAccessChain %32 %18 %12
+%123 = OpLoad %4 %122
+%124 = OpAccessChain %32 %21 %12
+%125 = OpLoad %4 %124
+%126 = OpFSub %4 %123 %125
+%127 = OpAccessChain %32 %28 %12
+       OpStore %127 %126
+%128 = OpLoad %5 %28
+       OpStore %18 %128
+%129 = OpLoad %5 %18
+%130 = OpLoad %5 %21
+%131 = OpMatrixTimesMatrix %5 %129 %130
+       OpStore %18 %131
+       OpReturn
+       OpFunctionEnd)", {}, {}, true);
 	}
 	
 	SECTION("Matrix/scalars operations")

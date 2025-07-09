@@ -7,6 +7,7 @@
 #ifndef NZSL_AST_TRANSFORMATIONS_TRANSFORMER_HPP
 #define NZSL_AST_TRANSFORMATIONS_TRANSFORMER_HPP
 
+#include <NazaraUtils/Bitset.hpp>
 #include <NazaraUtils/FunctionRef.hpp>
 #include <NZSL/Config.hpp>
 #include <NZSL/Ast/ExpressionVisitor.hpp>
@@ -85,8 +86,8 @@ namespace nzsl::Ast
 			void HandleChildren(StructTypeExpression& node);
 			void HandleChildren(SwizzleExpression& node);
 			void HandleChildren(TypeExpression& node);
-			void HandleChildren(VariableValueExpression& node);
 			void HandleChildren(UnaryExpression& node);
+			void HandleChildren(VariableValueExpression& node);
 
 			void HandleChildren(BranchStatement& node);
 			void HandleChildren(BreakStatement& node);

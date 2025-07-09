@@ -204,14 +204,11 @@ namespace nzsl
 		unsigned int indentLevel = 0;
 	};
 
-	std::string LangWriter::Generate(const Ast::Module& module, const States& /*states*/)
+	std::string LangWriter::Generate(Ast::Module& module, const States& /*states*/)
 	{
 		State state;
 		m_currentState = &state;
-		Nz::CallOnExit onExit([this]()
-		{
-			m_currentState = nullptr;
-		});
+		NAZARA_DEFER({ m_currentState = nullptr; });
 
 		state.module = &module;
 

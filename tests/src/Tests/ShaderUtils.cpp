@@ -343,7 +343,7 @@ void ExpectNZSL(nzsl::Ast::Module& shaderModule, std::string_view expectedOutput
 			nzsl::Ast::IdentifierTypeResolverTransformer resolver;
 			REQUIRE_NOTHROW(resolver.Transform(*moduleClone, context));
 		}
-		const nzsl::Ast::Module& targetModule = (sanitizedModule) ? *sanitizedModule : *moduleClone;
+		nzsl::Ast::Module& targetModule = (sanitizedModule) ? *sanitizedModule : *moduleClone;
 
 		nzsl::LangWriter writer;
 		std::string output = SanitizeSource(writer.Generate(targetModule, options));

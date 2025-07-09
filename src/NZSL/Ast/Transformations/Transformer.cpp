@@ -297,17 +297,17 @@ namespace nzsl::Ast
 			Transform(*node.cachedExpressionType);
 	}
 
-	void Transformer::HandleChildren(VariableValueExpression& node)
-	{
-		if (node.cachedExpressionType)
-			Transform(*node.cachedExpressionType);
-	}
-
 	void Transformer::HandleChildren(UnaryExpression& node)
 	{
 		if (node.expression)
 			HandleExpression(node.expression);
 
+		if (node.cachedExpressionType)
+			Transform(*node.cachedExpressionType);
+	}
+
+	void Transformer::HandleChildren(VariableValueExpression& node)
+	{
 		if (node.cachedExpressionType)
 			Transform(*node.cachedExpressionType);
 	}

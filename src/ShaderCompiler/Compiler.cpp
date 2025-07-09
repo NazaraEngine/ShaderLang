@@ -317,7 +317,7 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 		}
 	}
 
-	void Compiler::CompileToGLSL(std::filesystem::path outputPath, const nzsl::Ast::Module& module)
+	void Compiler::CompileToGLSL(std::filesystem::path outputPath, nzsl::Ast::Module& module)
 	{
 		nzsl::GlslWriter::Environment env;
 		if (m_options.count("gl-es") > 0)
@@ -451,7 +451,7 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 		}
 	}
 
-	void Compiler::CompileToNZSL(std::filesystem::path outputPath, const nzsl::Ast::Module& module)
+	void Compiler::CompileToNZSL(std::filesystem::path outputPath, nzsl::Ast::Module& module)
 	{
 		nzsl::ShaderWriter::States states = BuildWriterOptions();
 
@@ -468,7 +468,7 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 		OutputFile(std::move(outputPath), nzsl.data(), nzsl.size());
 	}
 
-	void Compiler::CompileToNZSLB(std::filesystem::path outputPath, const nzsl::Ast::Module& module)
+	void Compiler::CompileToNZSLB(std::filesystem::path outputPath, nzsl::Ast::Module& module)
 	{
 		nzsl::Serializer serializer;
 		nzsl::Ast::SerializeShader(serializer, module);
