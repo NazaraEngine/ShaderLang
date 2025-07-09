@@ -546,9 +546,11 @@ namespace nzsl
 			"abs", "acos", "acosh", "asin", "asinh", "atan", "atanh", "ceil", "clamp", "cos", "cosh", "cross", "degrees", "distance", "dot", "exp", "exp2", "floor", "fract", "imageLoad", "imageStore", "inverse", "inversesqrt", "length", "log", "log2", "max", "min", "mix", "normalize", "pow", "radians", "reflect", "round", "roundEven", "sign", "sin", "sinh", "sqrt", "tan", "tanh", "texture", "transpose", "trunc",
 		});
 
-		Ast::IdentifierTransformer::Options identifierOptions;
-		identifierOptions.makeVariableNameUnique = true;
-		identifierOptions.identifierSanitizer = [](std::string& identifier, Ast::IdentifierType /*scope*/)
+		// We need two identifiers passes, the first one to rename reserved/forbidden variable names and the second one to ensure all variables name are uniques (which isn't guaranteed by the transformation passes)
+		// We can't do this at once at the end because transformations passes will introduce variables prefixed by _nzsl which is forbidden in user code
+		Ast::IdentifierTransformer::Options firstIdentifierPassOptions;
+		firstIdentifierPassOptions.makeVariableNameUnique = false;
+		firstIdentifierPassOptions.identifierSanitizer = [](std::string& identifier, Ast::IdentifierType /*scope*/)
 		{
 			using namespace std::string_view_literals;
 
@@ -566,6 +568,13 @@ namespace nzsl
 				nameChanged = true;
 			}
 
+			// Identifier can't start with _nzsl
+			if (identifier.compare(0, 5, "_nzsl") == 0)
+			{
+				identifier.replace(0, 5, "_"sv);
+				nameChanged = true;
+			}
+
 			// Replace __ by _X_
 			std::size_t startPos = 0;
 			while ((startPos = identifier.find("__"sv, startPos)) != std::string::npos)
@@ -580,14 +589,18 @@ namespace nzsl
 			return nameChanged;
 		};
 
+		Ast::IdentifierTransformer::Options secondIdentifierPassOptions;
+		firstIdentifierPassOptions.makeVariableNameUnique = true;
+
 		Ast::TransformerExecutor executor;
 		executor.AddPass<Ast::IdentifierTypeResolverTransformer>({ true });
+		executor.AddPass<Ast::IdentifierTransformer>(firstIdentifierPassOptions);
 		executor.AddPass<Ast::ForToWhileTransformer>();
 		executor.AddPass<Ast::StructAssignmentTransformer>({ false, true }); //< TODO: Only split for base uniforms/storage
 		executor.AddPass<Ast::SwizzleTransformer>({ true });
 		executor.AddPass<Ast::BindingResolverTransformer>();
 		executor.AddPass<Ast::ConstantRemovalTransformer>({ false, true, true });
-		executor.AddPass<Ast::IdentifierTransformer>(identifierOptions);
+		executor.AddPass<Ast::IdentifierTransformer>(secondIdentifierPassOptions);
 
 		return executor;
 	}
