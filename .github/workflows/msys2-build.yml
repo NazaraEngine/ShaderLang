@@ -93,7 +93,7 @@ jobs:
 
     # Run unit tests
     - name: Run unit tests
-      run: xmake run UnitTests sanitizing
+      run: xmake run UnitTests
 
     # Install the result files
     - name: Install NZSL
