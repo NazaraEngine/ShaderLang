@@ -96,8 +96,7 @@ namespace nzsl
 		{
 			[&](const Pointer& pointer)
 			{
-				// FIXME: Preregister this constant as well
-				std::uint32_t constantId = m_writer.RegisterSingleConstant(compositeIndex);
+				std::uint32_t constantId = m_writer.GetSingleConstantId(compositeIndex);
 
 				std::uint32_t resultId = m_visitor.AllocateResultId();
 
