@@ -903,7 +903,6 @@ namespace nzsl
 		executor.AddPass<Ast::StructAssignmentTransformer>({ true, true });
 		executor.AddPass<Ast::CompoundAssignmentTransformer>({ true });
 		executor.AddPass<Ast::MatrixTransformer>({ true, true });
-		executor.AddPass<Ast::SwizzleTransformer>({ true });
 		executor.AddPass<Ast::BindingResolverTransformer>();
 		executor.AddPass<Ast::ConstantRemovalTransformer>();
 
