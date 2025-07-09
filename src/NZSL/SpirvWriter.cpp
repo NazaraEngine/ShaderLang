@@ -92,6 +92,7 @@ namespace nzsl
 			{
 				RecursiveVisitor::Visit(node);
 
+				m_constantCache.Register(*m_constantCache.BuildConstant(std::int32_t(node.fieldIndex)));
 				m_constantCache.Register(*m_constantCache.BuildType(node.cachedExpressionType.value()));
 			}
 
