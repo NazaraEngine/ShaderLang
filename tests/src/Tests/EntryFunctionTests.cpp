@@ -76,15 +76,15 @@ fn main() -> FragOut
 
 				ExpectSPIRV(*shaderModule, R"(
       OpMemoryModel AddressingModel(Logical) MemoryModel(GLSL450)
-      OpEntryPoint ExecutionModel(Fragment) %9 "main" %5
-      OpExecutionMode %9 ExecutionMode(OriginUpperLeft)
-      OpExecutionMode %9 ExecutionMode(DepthReplacing)
-      OpExecutionMode %9 ExecutionMode(DepthGreater)
+      OpEntryPoint ExecutionModel(Fragment) %11 "main" %5
+      OpExecutionMode %11 ExecutionMode(OriginUpperLeft)
+      OpExecutionMode %11 ExecutionMode(DepthReplacing)
+      OpExecutionMode %11 ExecutionMode(DepthGreater)
       OpSource SourceLanguage(NZSL) 100
       OpName %6 "FragOut"
       OpMemberName %6 0 "depth"
       OpName %5 "frag_depth"
-      OpName %9 "main"
+      OpName %11 "main"
       OpDecorate %5 Decoration(BuiltIn) BuiltIn(FragDepth)
       OpMemberDecorate %6 0 Decoration(Offset) 0
  %1 = OpTypeVoid
@@ -93,17 +93,17 @@ fn main() -> FragOut
  %4 = OpTypePointer StorageClass(Output) %3
  %6 = OpTypeStruct %3
  %7 = OpTypePointer StorageClass(Function) %6
- %8 = OpConstant %3 f32(1)
-%12 = OpTypeInt 32 1
-%13 = OpConstant %12 i32(0)
+ %8 = OpTypeInt 32 1
+ %9 = OpConstant %8 i32(0)
+%10 = OpConstant %3 f32(1)
 %15 = OpTypePointer StorageClass(Function) %3
  %5 = OpVariable %4 StorageClass(Output)
- %9 = OpFunction %1 FunctionControl(0) %2
-%10 = OpLabel
-%11 = OpVariable %7 StorageClass(Function)
-%14 = OpAccessChain %15 %11 %13
-      OpStore %14 %8
-%16 = OpLoad %6 %11
+%11 = OpFunction %1 FunctionControl(0) %2
+%12 = OpLabel
+%13 = OpVariable %7 StorageClass(Function)
+%14 = OpAccessChain %15 %13 %9
+      OpStore %14 %10
+%16 = OpLoad %6 %13
 %17 = OpCompositeExtract %3 %16 0
       OpStore %5 %17
       OpReturn
