@@ -1943,7 +1943,7 @@ namespace nzsl
 		if (targetAttribute.HasValue())
 			throw ParserAttributeMultipleUniqueError{ attribute.sourceLocation, attribute.type };
 
-		//FIXME: This should be handled with global values at sanitization stage
+		//FIXME: This should be handled with global values at resolving stage
 		if (!attribute.args.empty())
 		{
 			if (attribute.args.size() != 1)
