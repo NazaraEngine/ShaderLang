@@ -64,7 +64,7 @@ fn main(input: VertIn) -> VertOut
 )";
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
-		shaderModule = SanitizeModule(*shaderModule);
+		ResolveModule(*shaderModule);
 
 		nzsl::GlslWriter::Environment glslEnv;
 		glslEnv.glES = false;

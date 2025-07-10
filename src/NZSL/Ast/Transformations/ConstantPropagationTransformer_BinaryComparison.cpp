@@ -4,8 +4,8 @@
 
 #include <NazaraUtils/TypeTraits.hpp>
 #include <NZSL/ShaderBuilder.hpp>
-#include <NZSL/Ast/ConstantPropagationVisitor.hpp>
 #include <NZSL/Lang/Errors.hpp>
+#include <NZSL/Ast/Transformations/ConstantPropagationTransformer.hpp>
 #include <cassert>
 #include <cmath>
 #include <stdexcept>
@@ -159,7 +159,7 @@ namespace nzsl::Ast
 #undef EnableOptimisation
 	}
 	
-	ExpressionPtr ConstantPropagationVisitor::PropagateBinaryComparisonConstant(BinaryType type, const ConstantValueExpression& lhs, const ConstantValueExpression& rhs, const SourceLocation& sourceLocation)
+	ExpressionPtr ConstantPropagationTransformer::PropagateBinaryComparisonConstant(BinaryType type, const ConstantValueExpression& lhs, const ConstantValueExpression& rhs, const SourceLocation& sourceLocation)
 	{
 		switch (type)
 		{
@@ -175,7 +175,7 @@ namespace nzsl::Ast
 	}
 
 	template<BinaryType Type>
-	ExpressionPtr ConstantPropagationVisitor::PropagateBinaryComparisonConstant(const ConstantValueExpression& lhs, const ConstantValueExpression& rhs, const SourceLocation& sourceLocation)
+	ExpressionPtr ConstantPropagationTransformer::PropagateBinaryComparisonConstant(const ConstantValueExpression& lhs, const ConstantValueExpression& rhs, const SourceLocation& sourceLocation)
 	{
 		NAZARA_USE_ANONYMOUS_NAMESPACE
 

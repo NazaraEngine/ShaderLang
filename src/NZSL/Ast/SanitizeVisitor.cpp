@@ -1553,7 +1553,7 @@ NAZARA_WARNING_GCC_DISABLE("-Wmaybe-uninitialized")
 			if (!clone->name.empty())
 			{
 				fullName = fmt::format("{}_{}", clone->name, extVar.name);
-				SanitizeIdentifier(fullName, IdentifierScope::ExternalVariable);
+				HandleIdentifier(fullName, IdentifierScope::ExternalVariable);
 			}
 
 			std::string& internalName = (!clone->name.empty()) ? fullName : extVar.name;
@@ -1649,7 +1649,7 @@ NAZARA_WARNING_GCC_DISABLE("-Wmaybe-uninitialized")
 
 			extVar.type = std::move(resolvedType).value();
 			extVar.varIndex = RegisterVariable(extVar.name, std::move(varType), extVar.varIndex, extVar.sourceLocation);
-			SanitizeIdentifier(extVar.name, IdentifierScope::ExternalVariable);
+			HandleIdentifier(extVar.name, IdentifierScope::ExternalVariable);
 		}
 
 		if (previousEnv)
@@ -1818,7 +1818,7 @@ NAZARA_WARNING_POP()
 		std::size_t funcIndex = RegisterFunction(clone->name, std::move(funcData), node.funcIndex, node.sourceLocation);
 		clone->funcIndex = funcIndex;
 
-		SanitizeIdentifier(clone->name, IdentifierScope::Function);
+		HandleIdentifier(clone->name, IdentifierScope::Function);
 
 		return clone;
 	}
@@ -1947,7 +1947,7 @@ NAZARA_WARNING_POP()
 				do
 				{
 					candidateName = fmt::format("{}_{}", member.name, index++);
-					SanitizeIdentifier(candidateName, IdentifierScope::Field);
+					HandleIdentifier(candidateName, IdentifierScope::Field);
 				}
 				while (reservedIdentifiers.count(candidateName) > 0);
 
@@ -1956,7 +1956,7 @@ NAZARA_WARNING_POP()
 			}
 			else
 			{
-				if (SanitizeIdentifier(member.name, IdentifierScope::Field))
+				if (HandleIdentifier(member.name, IdentifierScope::Field))
 					reservedIdentifiers.insert(member.name);
 			}
 
@@ -2019,7 +2019,7 @@ NAZARA_WARNING_POP()
 		clone->description.conditionIndex = m_context->currentConditionalIndex;
 
 		clone->structIndex = RegisterStruct(clone->description.name, &clone->description, clone->structIndex, clone->sourceLocation);
-		SanitizeIdentifier(clone->description.name, IdentifierScope::Struct);
+		HandleIdentifier(clone->description.name, IdentifierScope::Struct);
 
 		return clone;
 	}
@@ -2128,7 +2128,7 @@ NAZARA_WARNING_POP()
 				if (fromExprType && wontUnroll)
 				{
 					clone->varIndex = RegisterVariable(node.varName, *fromExprType, node.varIndex, node.sourceLocation);
-					SanitizeIdentifier(node.varName, IdentifierScope::Variable);
+					HandleIdentifier(node.varName, IdentifierScope::Variable);
 				}
 				else
 				{
@@ -2499,7 +2499,7 @@ NAZARA_WARNING_POP()
 			PushScope();
 			{
 				clone->varIndex = RegisterVariable(node.varName, innerType, node.varIndex, node.sourceLocation);
-				SanitizeIdentifier(node.varName, IdentifierScope::Variable);
+				HandleIdentifier(node.varName, IdentifierScope::Variable);
 
 				bool wasInLoop = m_context->inLoop;
 				m_context->inLoop = true;
@@ -2557,7 +2557,7 @@ NAZARA_WARNING_POP()
 			if (!m_context->options.partialSanitization)
 				throw CompilerNoModuleResolverError{ node.sourceLocation };
 
-			// when partially sanitizing, importing a whole module could register any identifier, so at this point we can't see unknown identifiers as errors
+			// when partially compiling, importing a whole module could register any identifier, so at this point we can't see unknown identifiers as errors
 			if (importEverythingElse)
 				m_context->allowUnknownIdentifiers = true;
 			else
@@ -2637,7 +2637,7 @@ NAZARA_WARNING_POP()
 			assert(m_context->modules.size() == moduleIndex);
 			auto& moduleData = m_context->modules.emplace_back();
 
-			// Don't run dependency checker when partially sanitizing
+			// Don't run dependency checker when partially compiling
 			if (!m_context->options.partialSanitization)
 			{
 				moduleData.dependenciesVisitor = std::make_unique<DependencyCheckerVisitor>();
@@ -3795,7 +3795,7 @@ NAZARA_WARNING_POP()
 	{
 		if (auto* identifier = FindIdentifier(name))
 		{
-			// Functions can be conditionally defined and condition not resolved yet, allow duplicates when partially sanitizing
+			// Functions can be conditionally defined and condition not resolved yet, allow duplicates when partially compiling
 			bool duplicate = !m_context->options.partialSanitization;
 
 			// Functions cannot be declared twice, except for entry ones if their stages are different
@@ -4067,7 +4067,7 @@ NAZARA_WARNING_POP()
 				if (!m_context->options.partialSanitization || parameter.type.IsResultingValue())
 				{
 					parameter.varIndex = RegisterVariable(parameter.name, parameter.type.GetResultingValue(), parameter.varIndex, parameter.sourceLocation);
-					SanitizeIdentifier(parameter.name, IdentifierScope::Parameter);
+					HandleIdentifier(parameter.name, IdentifierScope::Parameter);
 				}
 				else
 					RegisterUnresolved(parameter.name);
@@ -4208,7 +4208,7 @@ NAZARA_WARNING_POP()
 		return output;
 	}
 
-	bool SanitizeVisitor::SanitizeIdentifier(std::string& identifier, IdentifierScope identifierScope)
+	bool SanitizeVisitor::HandleIdentifier(std::string& identifier, IdentifierScope identifierScope)
 	{
 		if (!m_context->options.identifierSanitizer)
 			return false;
@@ -5105,7 +5105,7 @@ NAZARA_WARNING_POP()
 		}
 
 		// SanitizeIdentifier registers the reserved name if its changes it
-		if (!SanitizeIdentifier(node.varName, IdentifierScope::Variable) && nameChanged)
+		if (!HandleIdentifier(node.varName, IdentifierScope::Variable) && nameChanged)
 			RegisterReservedName(node.varName);
 
 		return ValidationResult::Validated;

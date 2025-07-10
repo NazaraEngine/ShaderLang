@@ -31,6 +31,7 @@ namespace nzsl
 			std::uint32_t EvaluateValue(Ast::Expression& node);
 
 			using ExpressionVisitorExcept::Visit;
+			void Visit(Ast::AccessFieldExpression& node) override;
 			void Visit(Ast::AccessIndexExpression& node) override;
 			void Visit(Ast::ConstantExpression& node) override;
 			void Visit(Ast::VariableValueExpression& node) override;

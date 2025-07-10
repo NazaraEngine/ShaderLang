@@ -7,10 +7,11 @@
 #include <NZSL/Ast/AstSerializer.hpp>
 #include <NZSL/Ast/Compare.hpp>
 #include <NZSL/Ast/ReflectVisitor.hpp>
-#include <NZSL/Ast/SanitizeVisitor.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <glslang/Public/ShaderLang.h>
 #include <spirv-tools/libspirv.hpp>
+#include <NZSL/Ast/Transformations/BindingResolverTransformer.hpp>
+#include <NZSL/Ast/Cloner.hpp>
 
 namespace NAZARA_ANONYMOUS_NAMESPACE
 {
@@ -186,9 +187,9 @@ namespace NAZARA_ANONYMOUS_NAMESPACE
 
 	void HandleSourceError(std::string_view lang, std::string_view expectedCode, std::string_view outputCode)
 	{
-		constexpr std::size_t PartialMatchLength = 20;
+		constexpr std::size_t PartialMatchLength = 30;
 		constexpr std::size_t PartialMatchPrefix = 20;
-		constexpr std::size_t PartialMatchSuffixLength = 50;
+		constexpr std::size_t PartialMatchSuffixLength = 100;
 
 		// Find difference byte (only works when expecting full output)
 		if (std::size_t offset = expectedCode.find(CappedView(outputCode, PartialMatchLength)); offset != expectedCode.npos)
@@ -205,20 +206,23 @@ namespace NAZARA_ANONYMOUS_NAMESPACE
 				index -= PartialMatchPrefix;
 
 			INFO("difference happens after " << offset << " bytes");
-			INFO(lang << " output[" << index << ":]:\n\n" << CappedStr(&outputCode[index], PartialMatchSuffixLength) << "\nexcepted output[" << index << ":]:\n\n" << CappedStr(&expectedCode[index], PartialMatchSuffixLength));
+			INFO(lang << " output[" << index << ":]:\n\n" << CappedStr(&outputCode[index], PartialMatchSuffixLength) << "\nexpected output[" << index << ":]:\n\n" << CappedStr(&expectedCode[index], PartialMatchSuffixLength));
 			REQUIRE(false);
 		}
 		else
 		{
-			INFO("full " << lang << " output:\n" << outputCode << "\nexcepted output : \n" << expectedCode);
+			INFO("full " << lang << " output:\n" << outputCode << "\nexpected output : \n" << expectedCode);
 			REQUIRE(false);
 		}
 	}
 }
 
-void ExpectGLSL(nzsl::ShaderStageType stageType, const nzsl::Ast::Module& shaderModule, std::string_view expectedOutput, const nzsl::ShaderWriter::States& options, const nzsl::GlslWriter::Environment& env, bool testShaderCompilation)
+void ExpectGLSL(nzsl::ShaderStageType stageType, nzsl::Ast::Module& shaderModule, std::string_view expectedOutput, const nzsl::ShaderWriter::States& options, const nzsl::GlslWriter::Environment& env, bool testShaderCompilation)
 {
 	NAZARA_USE_ANONYMOUS_NAMESPACE
+
+	// Clone to avoid cross-test changes
+	nzsl::Ast::ModulePtr moduleClone = nzsl::Ast::Clone(shaderModule);
 
 	std::string expectedSource = SanitizeSource(expectedOutput);
 
@@ -232,19 +236,19 @@ void ExpectGLSL(nzsl::ShaderStageType stageType, const nzsl::Ast::Module& shader
 
 	DYNAMIC_SECTION("Generating GLSL for " << stageName << " stage")
 	{
-		nzsl::Ast::ModulePtr sanitizedModule;
-		WHEN("Sanitizing a second time")
+		WHEN("Resolving a second time")
 		{
-			CHECK_NOTHROW(sanitizedModule = nzsl::Ast::Sanitize(shaderModule));
+			nzsl::Ast::Transformer::Context context;
+			nzsl::Ast::IdentifierTypeResolverTransformer resolver;
+			REQUIRE_NOTHROW(resolver.Transform(*moduleClone, context));
 		}
-		const nzsl::Ast::Module& targetModule = (sanitizedModule) ? *sanitizedModule : shaderModule;
 
 		nzsl::GlslWriter writer;
 		writer.SetEnv(env);
 
 		nzsl::GlslWriter::Parameters parameters;
 
-		nzsl::GlslWriter::Output output = writer.Generate(stageType, targetModule, parameters, options);
+		nzsl::GlslWriter::Output output = writer.Generate(stageType, *moduleClone, parameters, options);
 
 		SECTION("Validating expected code")
 		{
@@ -296,7 +300,7 @@ void ExpectGLSL(nzsl::ShaderStageType stageType, const nzsl::Ast::Module& shader
 	}
 }
 
-void ExpectGLSL(const nzsl::Ast::Module& shaderModule, std::string_view expectedOutput, const nzsl::ShaderWriter::States& options, const nzsl::GlslWriter::Environment& env, bool testShaderCompilation)
+void ExpectGLSL(nzsl::Ast::Module& shaderModule, std::string_view expectedOutput, const nzsl::ShaderWriter::States& options, const nzsl::GlslWriter::Environment& env, bool testShaderCompilation)
 {
 	// Retrieve entry-point to get shader type
 	std::optional<nzsl::ShaderStageType> entryShaderStage;
@@ -321,20 +325,25 @@ void ExpectGLSL(const nzsl::Ast::Module& shaderModule, std::string_view expected
 	ExpectGLSL(entryShaderStage.value(), shaderModule, expectedOutput, options, env, testShaderCompilation);
 }
 
-void ExpectNZSL(const nzsl::Ast::Module& shaderModule, std::string_view expectedOutput, const nzsl::ShaderWriter::States& options)
+void ExpectNZSL(nzsl::Ast::Module& shaderModule, std::string_view expectedOutput, const nzsl::ShaderWriter::States& options)
 {
 	NAZARA_USE_ANONYMOUS_NAMESPACE
+
+	// Clone to avoid cross-test changes
+	nzsl::Ast::ModulePtr moduleClone = nzsl::Ast::Clone(shaderModule);
 
 	std::string source = SanitizeSource(expectedOutput);
 
 	SECTION("Generating NZSL")
 	{
 		nzsl::Ast::ModulePtr sanitizedModule;
-		WHEN("Sanitizing a second time")
+		WHEN("Resolving a second time")
 		{
-			CHECK_NOTHROW(sanitizedModule = nzsl::Ast::Sanitize(shaderModule));
+			nzsl::Ast::Transformer::Context context;
+			nzsl::Ast::IdentifierTypeResolverTransformer resolver;
+			REQUIRE_NOTHROW(resolver.Transform(*moduleClone, context));
 		}
-		const nzsl::Ast::Module& targetModule = (sanitizedModule) ? *sanitizedModule : shaderModule;
+		nzsl::Ast::Module& targetModule = (sanitizedModule) ? *sanitizedModule : *moduleClone;
 
 		nzsl::LangWriter writer;
 		std::string output = SanitizeSource(writer.Generate(targetModule, options));
@@ -353,9 +362,12 @@ void ExpectNZSL(const nzsl::Ast::Module& shaderModule, std::string_view expected
 	}
 }
 
-void ExpectSPIRV(const nzsl::Ast::Module& shaderModule, std::string_view expectedOutput, const nzsl::ShaderWriter::States& options, const nzsl::SpirvWriter::Environment& env, bool outputParameter, const spvtools::ValidatorOptions& validatorOptions)
+void ExpectSPIRV(nzsl::Ast::Module& shaderModule, std::string_view expectedOutput, const nzsl::ShaderWriter::States& options, const nzsl::SpirvWriter::Environment& env, bool outputParameter, const spvtools::ValidatorOptions& validatorOptions)
 {
 	NAZARA_USE_ANONYMOUS_NAMESPACE
+	
+	// Clone to avoid cross-test changes
+	nzsl::Ast::ModulePtr moduleClone = nzsl::Ast::Clone(shaderModule);
 
 	std::string source = SanitizeSource(expectedOutput);
 
@@ -364,9 +376,11 @@ void ExpectSPIRV(const nzsl::Ast::Module& shaderModule, std::string_view expecte
 		nzsl::Ast::ModulePtr sanitizedModule;
 		WHEN("Sanitizing a second time")
 		{
-			CHECK_NOTHROW(sanitizedModule = nzsl::Ast::Sanitize(shaderModule));
+			nzsl::Ast::Transformer::Context context;
+			nzsl::Ast::IdentifierTypeResolverTransformer resolver;
+			REQUIRE_NOTHROW(resolver.Transform(*moduleClone, context));
 		}
-		const nzsl::Ast::Module& targetModule = (sanitizedModule) ? *sanitizedModule : shaderModule;
+		nzsl::Ast::Module& targetModule = (sanitizedModule) ? *sanitizedModule : *moduleClone;
 
 		nzsl::SpirvWriter writer;
 		writer.SetEnv(env);
@@ -383,7 +397,12 @@ void ExpectSPIRV(const nzsl::Ast::Module& shaderModule, std::string_view expecte
 		SECTION("Validating expected code")
 		{
 			if (output.find(source) == std::string::npos)
+			{
+				nzsl::LangWriter langWriter;
+				INFO("AST to NZSL (for debugging):\n" << langWriter.Generate(targetModule, options));
+
 				HandleSourceError("SPIR-V", source, output);
+			}
 		}
 
 		SECTION("Validating full SPIR-V code (using libspirv)")
@@ -406,6 +425,9 @@ void ExpectSPIRV(const nzsl::Ast::Module& shaderModule, std::string_view expecte
 			spvtools::SpirvTools spirvTools(targetEnv);
 			spirvTools.SetMessageConsumer([&](spv_message_level_t /*level*/, const char* /*source*/, const spv_position_t& /*position*/, const char* message)
 			{
+				nzsl::LangWriter langWriter;
+				UNSCOPED_INFO("AST to NZSL (for debugging):\n" << langWriter.Generate(targetModule, options));
+
 				std::string fullSpirv;
 				if (!spirvTools.Disassemble(spirv, &fullSpirv))
 					fullSpirv = "<failed to disassemble SPIR-V>";
@@ -432,33 +454,45 @@ std::filesystem::path GetResourceDir()
 	return resourceDir;
 }
 
-nzsl::Ast::ModulePtr SanitizeModule(const nzsl::Ast::Module& module)
+void ResolveModule(nzsl::Ast::Module& module, const ResolveOptions& resolveOptions)
 {
-	nzsl::Ast::SanitizeVisitor::Options defaultOptions;
-	return SanitizeModule(module, defaultOptions);
-}
+	nzsl::Ast::Module* targetModule = &module;
+	nzsl::Ast::ModulePtr reparsedModule;
 
-nzsl::Ast::ModulePtr SanitizeModule(const nzsl::Ast::Module& module, const nzsl::Ast::SanitizeVisitor::Options& options)
-{
-	nzsl::Ast::ModulePtr shaderModule;
-	auto Sanitize = [&]
+	bool hasBeenResolved = false;
+	auto Resolve = [&]
 	{
-		REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(module, options));
+		nzsl::Ast::Transformer::Context context;
+		context.optionValues = resolveOptions.optionValues;
+		context.partialCompilation = resolveOptions.partialCompilation;
+
+		nzsl::Ast::TransformerExecutor executor;
+		if (resolveOptions.identifierResolverOptions)
+			executor.AddPass<nzsl::Ast::IdentifierTypeResolverTransformer>(*resolveOptions.identifierResolverOptions);
+
+		if (resolveOptions.constantRemovalOptions)
+			executor.AddPass<nzsl::Ast::ConstantRemovalTransformer>(*resolveOptions.constantRemovalOptions);
+
+		if (resolveOptions.bindingResolverOptions)
+			executor.AddPass<nzsl::Ast::BindingResolverTransformer>(*resolveOptions.bindingResolverOptions);
+
+		REQUIRE_NOTHROW(executor.Transform(module, context));
+		hasBeenResolved = true;
 	};
 
 	auto Reparse = [&]
 	{
 		nzsl::LangWriter langWriter;
-		std::string outputCode = langWriter.Generate((shaderModule) ? *shaderModule : module);
-		REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(*nzsl::Parse(outputCode), options));
+		std::string outputCode = langWriter.Generate(module);
+		reparsedModule = nzsl::Parse(outputCode);
+		targetModule = reparsedModule.get();
+		Resolve();
 	};
 
 	auto Serialize = [&]
 	{
-		const nzsl::Ast::Module& targetModule = (shaderModule) ? *shaderModule : module;
-
 		nzsl::Serializer serializer;
-		REQUIRE_NOTHROW(nzsl::Ast::SerializeShader(serializer, targetModule));
+		REQUIRE_NOTHROW(nzsl::Ast::SerializeShader(serializer, *targetModule));
 
 		const std::vector<std::uint8_t>& data = serializer.GetData();
 
@@ -466,12 +500,12 @@ nzsl::Ast::ModulePtr SanitizeModule(const nzsl::Ast::Module& module, const nzsl:
 		nzsl::Ast::ModulePtr deserializedShader;
 		REQUIRE_NOTHROW(deserializedShader = nzsl::Ast::DeserializeShader(deserializer));
 
-		CHECK(nzsl::Ast::Compare(targetModule, *deserializedShader));
+		CHECK(nzsl::Ast::Compare(*targetModule, *deserializedShader));
 	};
 
-	WHEN("We sanitize the shader")
+	WHEN("We resolve the shader")
 	{
-		Sanitize();
+		Resolve();
 
 		WHEN("We output NZSL and try to parse it again")
 		{
@@ -504,9 +538,10 @@ nzsl::Ast::ModulePtr SanitizeModule(const nzsl::Ast::Module& module, const nzsl:
 		Serialize();
 	}
 
-	// Ensure sanitization
-	if (!shaderModule)
-		REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(module, options));
-
-	return shaderModule;
+	// Ensure resolving
+	if (!hasBeenResolved)
+		Resolve();
 }
+
+const nzsl::Ast::BindingResolverTransformer::Options ResolveOptions::defaultBindingResolverOptions;
+const nzsl::Ast::IdentifierTypeResolverTransformer::Options ResolveOptions::defaultIdentifierResolveOptions;

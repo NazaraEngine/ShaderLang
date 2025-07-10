@@ -21,10 +21,19 @@ namespace nzsl::Ast
 	}
 
 	template<typename T>
+	ExpressionPtr& ExpressionValue<T>::GetExpression() &
+	{
+		if (!IsExpression())
+			throw std::runtime_error("expected expression");
+
+		return std::get<ExpressionPtr>(m_value);
+	}
+
+	template<typename T>
 	ExpressionPtr&& ExpressionValue<T>::GetExpression() &&
 	{
 		if (!IsExpression())
-			throw std::runtime_error("excepted expression");
+			throw std::runtime_error("expected expression");
 
 		return std::get<ExpressionPtr>(std::move(m_value));
 	}
@@ -33,17 +42,26 @@ namespace nzsl::Ast
 	const ExpressionPtr& ExpressionValue<T>::GetExpression() const &
 	{
 		if (!IsExpression())
-			throw std::runtime_error("excepted expression");
+			throw std::runtime_error("expected expression");
 
 		assert(std::get<ExpressionPtr>(m_value));
 		return std::get<ExpressionPtr>(m_value);
 	}
 
 	template<typename T>
+	T& ExpressionValue<T>::GetResultingValue()
+	{
+		if (!IsResultingValue())
+			throw std::runtime_error("expected resulting value");
+
+		return std::get<T>(m_value);
+	}
+
+	template<typename T>
 	const T& ExpressionValue<T>::GetResultingValue() const
 	{
 		if (!IsResultingValue())
-			throw std::runtime_error("excepted resulting value");
+			throw std::runtime_error("expected resulting value");
 
 		return std::get<T>(m_value);
 	}

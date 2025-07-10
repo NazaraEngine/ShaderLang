@@ -43,6 +43,7 @@ namespace nzsl
 			using ExpressionVisitorExcept::Visit;
 			using StatementVisitorExcept::Visit;
 
+			void Visit(Ast::AccessFieldExpression& node) override;
 			void Visit(Ast::AccessIndexExpression& node) override;
 			void Visit(Ast::AssignExpression& node) override;
 			void Visit(Ast::BinaryExpression& node) override;

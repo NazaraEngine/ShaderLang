@@ -54,7 +54,7 @@ fn main()
 )";
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
-		shaderModule = SanitizeModule(*shaderModule);
+		ResolveModule(*shaderModule);
 
 		ExpectGLSL(*shaderModule, R"(
 void main()
@@ -300,7 +300,7 @@ fn main()
 )";
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
-		shaderModule = SanitizeModule(*shaderModule);
+		ResolveModule(*shaderModule);
 
 		ExpectGLSL(*shaderModule, R"(
 void main()
@@ -441,7 +441,7 @@ fn main()
 )";
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
-		shaderModule = SanitizeModule(*shaderModule);
+		ResolveModule(*shaderModule);
 
 		ExpectGLSL(*shaderModule, R"(
 void main()
@@ -518,106 +518,106 @@ fn main()
        OpStore %48 %47
  %49 = OpLoad %5 %19
        OpStore %21 %49
- %52 = OpAccessChain %32 %18 %51
+ %50 = OpAccessChain %32 %18 %10
+ %51 = OpLoad %4 %50
+ %52 = OpAccessChain %32 %21 %10
  %53 = OpLoad %4 %52
- %54 = OpAccessChain %32 %21 %51
- %55 = OpLoad %4 %54
- %56 = OpFAdd %4 %53 %55
- %57 = OpAccessChain %32 %22 %10
-       OpStore %57 %56
- %59 = OpAccessChain %32 %18 %58
- %60 = OpLoad %4 %59
- %61 = OpAccessChain %32 %21 %58
- %62 = OpLoad %4 %61
- %63 = OpFAdd %4 %60 %62
- %64 = OpAccessChain %32 %22 %11
-       OpStore %64 %63
- %66 = OpAccessChain %32 %18 %65
- %67 = OpLoad %4 %66
- %68 = OpAccessChain %32 %21 %65
- %69 = OpLoad %4 %68
- %70 = OpFAdd %4 %67 %69
- %71 = OpAccessChain %32 %22 %12
-       OpStore %71 %70
- %72 = OpLoad %5 %22
-       OpStore %23 %72
- %73 = OpAccessChain %32 %18 %51
- %74 = OpLoad %4 %73
- %75 = OpAccessChain %32 %21 %51
+ %54 = OpFAdd %4 %51 %53
+ %55 = OpAccessChain %32 %22 %10
+       OpStore %55 %54
+ %56 = OpAccessChain %32 %18 %11
+ %57 = OpLoad %4 %56
+ %58 = OpAccessChain %32 %21 %11
+ %59 = OpLoad %4 %58
+ %60 = OpFAdd %4 %57 %59
+ %61 = OpAccessChain %32 %22 %11
+       OpStore %61 %60
+ %62 = OpAccessChain %32 %18 %12
+ %63 = OpLoad %4 %62
+ %64 = OpAccessChain %32 %21 %12
+ %65 = OpLoad %4 %64
+ %66 = OpFAdd %4 %63 %65
+ %67 = OpAccessChain %32 %22 %12
+       OpStore %67 %66
+ %68 = OpLoad %5 %22
+       OpStore %23 %68
+ %69 = OpAccessChain %32 %18 %10
+ %70 = OpLoad %4 %69
+ %71 = OpAccessChain %32 %21 %10
+ %72 = OpLoad %4 %71
+ %73 = OpFSub %4 %70 %72
+ %74 = OpAccessChain %32 %24 %10
+       OpStore %74 %73
+ %75 = OpAccessChain %32 %18 %11
  %76 = OpLoad %4 %75
- %77 = OpFSub %4 %74 %76
- %78 = OpAccessChain %32 %24 %10
-       OpStore %78 %77
- %79 = OpAccessChain %32 %18 %58
- %80 = OpLoad %4 %79
- %81 = OpAccessChain %32 %21 %58
+ %77 = OpAccessChain %32 %21 %11
+ %78 = OpLoad %4 %77
+ %79 = OpFSub %4 %76 %78
+ %80 = OpAccessChain %32 %24 %11
+       OpStore %80 %79
+ %81 = OpAccessChain %32 %18 %12
  %82 = OpLoad %4 %81
- %83 = OpFSub %4 %80 %82
- %84 = OpAccessChain %32 %24 %11
-       OpStore %84 %83
- %85 = OpAccessChain %32 %18 %65
- %86 = OpLoad %4 %85
- %87 = OpAccessChain %32 %21 %65
- %88 = OpLoad %4 %87
- %89 = OpFSub %4 %86 %88
- %90 = OpAccessChain %32 %24 %12
-       OpStore %90 %89
- %91 = OpLoad %5 %24
-       OpStore %25 %91
- %92 = OpLoad %5 %18
- %93 = OpLoad %5 %21
- %94 = OpMatrixTimesMatrix %5 %92 %93
-       OpStore %26 %94
- %95 = OpAccessChain %32 %18 %51
- %96 = OpLoad %4 %95
- %97 = OpAccessChain %32 %21 %51
+ %83 = OpAccessChain %32 %21 %12
+ %84 = OpLoad %4 %83
+ %85 = OpFSub %4 %82 %84
+ %86 = OpAccessChain %32 %24 %12
+       OpStore %86 %85
+ %87 = OpLoad %5 %24
+       OpStore %25 %87
+ %88 = OpLoad %5 %18
+ %89 = OpLoad %5 %21
+ %90 = OpMatrixTimesMatrix %5 %88 %89
+       OpStore %26 %90
+ %91 = OpAccessChain %32 %18 %10
+ %92 = OpLoad %4 %91
+ %93 = OpAccessChain %32 %21 %10
+ %94 = OpLoad %4 %93
+ %95 = OpFAdd %4 %92 %94
+ %96 = OpAccessChain %32 %27 %10
+       OpStore %96 %95
+ %97 = OpAccessChain %32 %18 %11
  %98 = OpLoad %4 %97
- %99 = OpFAdd %4 %96 %98
-%100 = OpAccessChain %32 %27 %10
-       OpStore %100 %99
-%101 = OpAccessChain %32 %18 %58
-%102 = OpLoad %4 %101
-%103 = OpAccessChain %32 %21 %58
+ %99 = OpAccessChain %32 %21 %11
+%100 = OpLoad %4 %99
+%101 = OpFAdd %4 %98 %100
+%102 = OpAccessChain %32 %27 %11
+       OpStore %102 %101
+%103 = OpAccessChain %32 %18 %12
 %104 = OpLoad %4 %103
-%105 = OpFAdd %4 %102 %104
-%106 = OpAccessChain %32 %27 %11
-       OpStore %106 %105
-%107 = OpAccessChain %32 %18 %65
-%108 = OpLoad %4 %107
-%109 = OpAccessChain %32 %21 %65
-%110 = OpLoad %4 %109
-%111 = OpFAdd %4 %108 %110
-%112 = OpAccessChain %32 %27 %12
-       OpStore %112 %111
-%113 = OpLoad %5 %27
-       OpStore %18 %113
-%114 = OpAccessChain %32 %18 %51
-%115 = OpLoad %4 %114
-%116 = OpAccessChain %32 %21 %51
+%105 = OpAccessChain %32 %21 %12
+%106 = OpLoad %4 %105
+%107 = OpFAdd %4 %104 %106
+%108 = OpAccessChain %32 %27 %12
+       OpStore %108 %107
+%109 = OpLoad %5 %27
+       OpStore %18 %109
+%110 = OpAccessChain %32 %18 %10
+%111 = OpLoad %4 %110
+%112 = OpAccessChain %32 %21 %10
+%113 = OpLoad %4 %112
+%114 = OpFSub %4 %111 %113
+%115 = OpAccessChain %32 %28 %10
+       OpStore %115 %114
+%116 = OpAccessChain %32 %18 %11
 %117 = OpLoad %4 %116
-%118 = OpFSub %4 %115 %117
-%119 = OpAccessChain %32 %28 %10
-       OpStore %119 %118
-%120 = OpAccessChain %32 %18 %58
-%121 = OpLoad %4 %120
-%122 = OpAccessChain %32 %21 %58
+%118 = OpAccessChain %32 %21 %11
+%119 = OpLoad %4 %118
+%120 = OpFSub %4 %117 %119
+%121 = OpAccessChain %32 %28 %11
+       OpStore %121 %120
+%122 = OpAccessChain %32 %18 %12
 %123 = OpLoad %4 %122
-%124 = OpFSub %4 %121 %123
-%125 = OpAccessChain %32 %28 %11
-       OpStore %125 %124
-%126 = OpAccessChain %32 %18 %65
-%127 = OpLoad %4 %126
-%128 = OpAccessChain %32 %21 %65
-%129 = OpLoad %4 %128
-%130 = OpFSub %4 %127 %129
-%131 = OpAccessChain %32 %28 %12
-       OpStore %131 %130
-%132 = OpLoad %5 %28
-       OpStore %18 %132
-%133 = OpLoad %5 %18
-%134 = OpLoad %5 %21
-%135 = OpMatrixTimesMatrix %5 %133 %134
-       OpStore %18 %135
+%124 = OpAccessChain %32 %21 %12
+%125 = OpLoad %4 %124
+%126 = OpFSub %4 %123 %125
+%127 = OpAccessChain %32 %28 %12
+       OpStore %127 %126
+%128 = OpLoad %5 %28
+       OpStore %18 %128
+%129 = OpLoad %5 %18
+%130 = OpLoad %5 %21
+%131 = OpMatrixTimesMatrix %5 %129 %130
+       OpStore %18 %131
        OpReturn
        OpFunctionEnd)", {}, {}, true);
 	}
@@ -640,7 +640,7 @@ fn main()
 )";
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
-		shaderModule = SanitizeModule(*shaderModule);
+		ResolveModule(*shaderModule);
 
 		ExpectGLSL(*shaderModule, R"(
 void main()
@@ -730,7 +730,7 @@ fn main()
 )";
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
-		shaderModule = SanitizeModule(*shaderModule);
+		ResolveModule(*shaderModule);
 
 		ExpectGLSL(*shaderModule, R"(
 void main()
@@ -880,7 +880,7 @@ fn main()
 )";
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
-		shaderModule = SanitizeModule(*shaderModule);
+		ResolveModule(*shaderModule);
 
 		ExpectGLSL(*shaderModule, R"(
 void main()
@@ -1032,7 +1032,7 @@ fn main()
 )";
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
-		shaderModule = SanitizeModule(*shaderModule);
+		ResolveModule(*shaderModule);
 
 		ExpectGLSL(*shaderModule, R"(
 void main()

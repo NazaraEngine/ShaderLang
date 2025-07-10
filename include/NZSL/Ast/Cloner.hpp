@@ -15,6 +15,9 @@
 
 namespace nzsl::Ast
 {
+	class Module;
+	using ModulePtr = std::shared_ptr<Module>;
+
 	class NZSL_API Cloner : public ExpressionVisitor, public StatementVisitor
 	{
 		public:
@@ -25,8 +28,9 @@ namespace nzsl::Ast
 
 			template<typename T> ExpressionValue<T> Clone(const ExpressionValue<T>& expressionValue);
 			inline ExpressionValue<ExpressionType> Clone(const ExpressionValue<ExpressionType>& expressionValue);
-			ExpressionPtr Clone(Expression& statement);
-			StatementPtr Clone(Statement& statement);
+			ExpressionPtr Clone(const Expression& statement);
+			ModulePtr Clone(const Module& module);
+			StatementPtr Clone(const Statement& statement);
 
 			Cloner& operator=(const Cloner&) = delete;
 			Cloner& operator=(Cloner&&) = delete;
@@ -39,6 +43,7 @@ namespace nzsl::Ast
 			virtual StatementPtr CloneStatement(Statement& statement);
 			virtual ExpressionValue<ExpressionType> CloneType(const ExpressionValue<ExpressionType>& exprType);
 
+			virtual ExpressionPtr Clone(AccessFieldExpression& node);
 			virtual ExpressionPtr Clone(AccessIdentifierExpression& node);
 			virtual ExpressionPtr Clone(AccessIndexExpression& node);
 			virtual ExpressionPtr Clone(AliasValueExpression& node);
@@ -100,8 +105,9 @@ namespace nzsl::Ast
 	};
 
 	template<typename T> ExpressionValue<T> Clone(const ExpressionValue<T>& attribute);
-	inline ExpressionPtr Clone(Expression& node);
-	inline StatementPtr Clone(Statement& node);
+	inline ExpressionPtr Clone(const Expression& node);
+	inline ModulePtr Clone(const Module& module);
+	inline StatementPtr Clone(const Statement& node);
 }
 
 #include <NZSL/Ast/Cloner.inl>

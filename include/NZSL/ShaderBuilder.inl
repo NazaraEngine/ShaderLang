@@ -6,6 +6,15 @@
 
 namespace nzsl::ShaderBuilder
 {
+	inline Ast::AccessFieldExpressionPtr nzsl::ShaderBuilder::Impl::AccessField::operator()(Ast::ExpressionPtr expr, std::uint32_t fieldIndex) const
+	{
+		auto accessFieldNode = std::make_unique<Ast::AccessFieldExpression>();
+		accessFieldNode->expr = std::move(expr);
+		accessFieldNode->fieldIndex = fieldIndex;
+
+		return accessFieldNode;
+	}
+
 	inline Ast::AccessIdentifierExpressionPtr Impl::AccessMember::operator()(Ast::ExpressionPtr expr, std::vector<std::string> memberIdentifiers) const
 	{
 		auto accessMemberNode = std::make_unique<Ast::AccessIdentifierExpression>();

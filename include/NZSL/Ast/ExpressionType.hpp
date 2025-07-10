@@ -246,7 +246,7 @@ namespace nzsl::Ast
 			ExpressionValue<std::uint32_t> locationIndex;
 			ExpressionValue<ExpressionType> type;
 			SourceLocation sourceLocation;
-			std::string originalName; //< used when sanitizing field name
+			std::string originalName; //< used when compiling field name
 			std::string name;
 			std::string tag;
 		};
@@ -338,6 +338,10 @@ namespace nzsl::Ast
 	NZSL_API std::string ToString(const Type& type, const Stringifier& stringifier = {});
 	NZSL_API std::string ToString(const UniformType& type, const Stringifier& stringifier = {});
 	NZSL_API std::string ToString(const VectorType& type, const Stringifier& stringifier = {});
+
+	inline ExpressionType UnwrapExternalType(const ExpressionType& exprType);
+	template<typename T> ExpressionType WrapExternalType(const ExpressionType& exprType);
+	inline ExpressionType WrapExternalType(const ExpressionType& exprType, const ExpressionType& referenceType);
 }
 
 NAZARA_WARNING_POP()
