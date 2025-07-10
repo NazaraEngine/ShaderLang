@@ -898,7 +898,7 @@ namespace nzsl
 	Ast::TransformerExecutor SpirvWriter::GetPasses()
 	{
 		Ast::TransformerExecutor executor;
-		executor.AddPass<Ast::IdentifierTypeResolverTransformer>({ true });
+		executor.AddPass<Ast::IdentifierTypeResolverTransformer>({ nullptr, true });
 		executor.AddPass<Ast::BranchSplitterTransformer>();
 		executor.AddPass<Ast::ForToWhileTransformer>();
 		executor.AddPass<Ast::StructAssignmentTransformer>({ true, true });
