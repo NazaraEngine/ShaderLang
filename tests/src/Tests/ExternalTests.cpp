@@ -336,8 +336,8 @@ void main()
 {
 	{
 		int i = 0;
-		int to = 47;
-		while (i < to)
+		int _nzsl_to = 47;
+		while (i < _nzsl_to)
 		{
 			outData.values[i] = inData.values[i];
 			i += 1;
@@ -1108,8 +1108,8 @@ void main()
 {
 	{
 		uint lightIndex = uint(0);
-		uint to = lightData.directionalLightCount;
-		while (lightIndex < to)
+		uint _nzsl_to = lightData.directionalLightCount;
+		while (lightIndex < _nzsl_to)
 		{
 			DirectionalLight light;
 			light.color = lightData.directionalLights[lightIndex].color;

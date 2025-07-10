@@ -189,7 +189,7 @@ fn main()
 		let _nzsl_counter: u32 = u32(0);
 		while (_nzsl_counter < (u32(10)))
 		{
-			let v = data.value[_nzsl_counter];
+			let v: f32 = data.value[_nzsl_counter];
 			x += v;
 			_nzsl_counter += u32(1);
 		}

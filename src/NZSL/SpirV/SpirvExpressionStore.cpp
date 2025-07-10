@@ -100,8 +100,6 @@ namespace nzsl
 
 				std::uint32_t resultId = m_visitor.AllocateResultId();
 
-				std::int32_t index = -1;
-
 				SpirvConstantCache::TypePtr nextTypePtr = SpirvConstantCache::GetIndexedType(*pointer.pointedTypePtr, compositeIndex);
 				std::uint32_t pointerType = m_writer.RegisterPointerType(nextTypePtr, pointer.storage);
 

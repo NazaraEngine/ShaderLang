@@ -1,8 +1,10 @@
 #include <Tests/ShaderUtils.hpp>
 #include <NZSL/ShaderBuilder.hpp>
 #include <NZSL/Parser.hpp>
+#include <NZSL/Ast/TransformerExecutor.hpp>
 #include <NZSL/Ast/Transformations/ConstantPropagationTransformer.hpp>
 #include <NZSL/Ast/Transformations/EliminateUnusedTransformer.hpp>
+#include <NZSL/Ast/Transformations/IdentifierTypeResolverTransformer.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <cctype>
 
@@ -12,10 +14,11 @@ void PropagateConstantAndExpect(std::string_view sourceCode, std::string_view ex
 	REQUIRE_NOTHROW(shaderModule = nzsl::Parse(sourceCode));
 	ResolveModule(*shaderModule);
 
-	nzsl::Ast::ConstantPropagationTransformer::Context context; //< FIXME
-
-	nzsl::Ast::ConstantPropagationTransformer constantPropagation;
-	constantPropagation.Transform(*shaderModule, context);
+	nzsl::Ast::TransformerExecutor executor;
+	executor.AddPass<nzsl::Ast::IdentifierTypeResolverTransformer>();
+	executor.AddPass<nzsl::Ast::ConstantPropagationTransformer>();
+	
+	REQUIRE_NOTHROW(executor.Transform(*shaderModule));
 
 	ExpectNZSL(*shaderModule, expectedOptimizedResult);
 }

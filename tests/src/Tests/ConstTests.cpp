@@ -310,7 +310,7 @@ fn main()
 		// Special test for a bug where a shader is partially compiled with a variable declaration inside a loop meant to be unrolled (but not unrolled on the first compilation)
 		// This way, the variable is attributed an index which causes AST issue when the loop is unrolled on the second compilation pass
 
-		// Use a module to prevent loop unrolling on first pass (partial compilation doesn't resolve modules)
+		// Use a module to prevent loop unrolling on first pass (and don't resolve modules)
 		std::string_view importedSource = R"(
 [nzsl_version("1.0")]
 module ValueModule;

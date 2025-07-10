@@ -11,6 +11,10 @@ namespace nzsl::Ast
 {
 	bool IdentifierTransformer::Transform(Module& module, Context& context, const Options& options, std::string* error)
 	{
+		// Don't rename identifiers when performing partial compilation (as it could break future compilation)
+		if (context.partialCompilation)
+			return true;
+
 		m_options = &options;
 
 		if (!TransformImportedModules(module, context, error))
@@ -43,14 +47,7 @@ namespace nzsl::Ast
 
 	bool IdentifierTransformer::HandleIdentifier(std::string& identifier, IdentifierType scope)
 	{
-		// Don't rename identifiers when performing partial sanitization (as it could break future compilation)
-		if (m_context->partialCompilation)
-			return false;
-
 		bool nameChanged = false;
-		if (m_options->identifierSanitizer)
-			nameChanged = m_options->identifierSanitizer(identifier, scope);
-		
 		if (m_options->makeVariableNameUnique)
 		{
 			if (HasIdentifier(identifier))
@@ -70,6 +67,13 @@ namespace nzsl::Ast
 
 			RegisterIdentifier(identifier);
 		}
+
+		if (m_options->identifierSanitizer)
+			nameChanged = m_options->identifierSanitizer(identifier, scope);
+
+		// If name changed, register it again
+		if (nameChanged)
+			RegisterIdentifier(identifier);
 
 		return nameChanged;
 	}

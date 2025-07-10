@@ -191,7 +191,6 @@ namespace nzsl::Ast
 		IdentifierList<std::variant<ExpressionType, NamedPartialType>> types;
 		IdentifierList<ExpressionType> variableTypes;
 		Module* currentModule;
-		bool allowUnknownIdentifiers = false;
 		unsigned int currentConditionalIndex = 0;
 		unsigned int nextConditionalIndex = 1;
 	};
@@ -234,6 +233,17 @@ namespace nzsl::Ast
 
 			m_states->currentEnv = importedModuleEnv;
 			m_states->currentModuleId = moduleId;
+
+			// Remap indices in imported modules to avoid conflicts
+			// TODO: Do this only when necessary (when an already compiled module is imported)
+			IndexRemapperVisitor::Options indexCallbacks;
+			indexCallbacks.aliasIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_states->aliases.RegisterNewIndex(true); };
+			indexCallbacks.constIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_states->constants.RegisterNewIndex(true); };
+			indexCallbacks.funcIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_states->functions.RegisterNewIndex(true); };
+			indexCallbacks.structIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_states->structs.RegisterNewIndex(true); };
+			indexCallbacks.varIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_states->variableTypes.RegisterNewIndex(true); };
+
+			RemapIndices(*importedModule.module->rootNode, indexCallbacks);
 
 			if (!TransformModule(*importedModule.module, context, error, [&]{ ResolveFunctions(); }))
 				return false;
@@ -1724,7 +1734,7 @@ namespace nzsl::Ast
 				const IdentifierData* identifierData = FindIdentifier(*externalBlock.environment, identifierEntry.identifier);
 				if (!identifierData)
 				{
-					if (m_states->allowUnknownIdentifiers)
+					if (m_context->allowUnknownIdentifiers)
 						return Finish(i, exprType); //< unresolved type
 
 					throw CompilerUnknownIdentifierError{ accessIdentifier.sourceLocation, identifierEntry.identifier };
@@ -1748,7 +1758,7 @@ namespace nzsl::Ast
 				const IdentifierData* identifierData = FindIdentifier(*m_states->currentEnv, identifierEntry.identifier);
 				if (!identifierData)
 				{
-					if (m_states->allowUnknownIdentifiers)
+					if (m_context->allowUnknownIdentifiers)
 						return Finish(i, exprType); //< unresolved type
 
 					throw CompilerUnknownIdentifierError{ accessIdentifier.sourceLocation, identifierEntry.identifier };
@@ -2483,7 +2493,10 @@ namespace nzsl::Ast
 
 		// Every condition failed, fallback to else if any
 		if (branchStatement.elseStatement)
+		{
+			HandleStatement(branchStatement.elseStatement);
 			return ReplaceStatement{ std::move(branchStatement.elseStatement) };
+		}
 		else
 			return ReplaceStatement{ ShaderBuilder::NoOp() };
 	}
@@ -2798,6 +2811,9 @@ namespace nzsl::Ast
 		FunctionData funcData;
 		funcData.moduleIndex = m_states->currentModuleId;
 		funcData.node = &declFunction;
+
+		if (declFunction.entryStage.IsResultingValue())
+			funcData.entryStage = declFunction.entryStage.GetResultingValue();
 
 		declFunction.funcIndex = RegisterFunction(declFunction.name, funcData, declFunction.funcIndex, declFunction.sourceLocation);
 		return DontVisitChildren{};
@@ -3288,9 +3304,9 @@ namespace nzsl::Ast
 		if (!m_context->partialCompilation)
 			throw CompilerNoModuleResolverError{ importStatement.sourceLocation };
 
-		// when partially compiling, importing a whole module could register any identifier, so at this point we can't see unknown identifiers as errors
+		// when partially compiling, importing a whole module could register any identifier, so at this point we can no longer see unknown identifiers as errors
 		if (importEverythingElse)
-			m_states->allowUnknownIdentifiers = true;
+			m_context->allowUnknownIdentifiers = true;
 		else
 		{
 			for (const auto& [identifier, aliases] : importedSymbols)

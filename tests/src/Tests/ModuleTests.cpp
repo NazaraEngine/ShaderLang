@@ -1,7 +1,9 @@
 #include <Tests/ShaderUtils.hpp>
 #include <NZSL/FilesystemModuleResolver.hpp>
 #include <NZSL/Parser.hpp>
+#include <NZSL/Ast/TransformerExecutor.hpp>
 #include <NZSL/Ast/Transformations/IdentifierTypeResolverTransformer.hpp>
+#include <NZSL/Ast/Transformations/ImportResolverTransformer.hpp>
 #include <catch2/catch_test_macros.hpp>
 
 void RegisterModule(const std::shared_ptr<nzsl::FilesystemModuleResolver>& moduleResolver, std::string_view source)
@@ -594,8 +596,8 @@ vec4 SumLightColor_Modules_Func(Lights_Modules_Data lightData)
 	vec4 color = vec4(0.0, 0.0, 0.0, 0.0);
 	{
 		uint index = uint(0);
-		uint to = uint(lightData.lights.length());
-		while (index < to)
+		uint _nzsl_to = uint(lightData.lights.length());
+		while (index < _nzsl_to)
 		{
 			color += lightData.lights[index].color;
 			index += 1u;
@@ -610,12 +612,12 @@ ivec2 SumLightIntensities_Modules_Func(Lights_Modules_Data lightData)
 {
 	ivec2 intensities = ivec2(0, 0);
 	{
-		uint i = 0u;
-		while (i < (3u))
+		uint _nzsl_counter = 0u;
+		while (_nzsl_counter < (3u))
 		{
-			Light_Modules_Data light = lightData.lights[i];
+			Light_Modules_Data light = lightData.lights[_nzsl_counter];
 			intensities += light.intensities;
-			i += 1u;
+			_nzsl_counter += 1u;
 		}
 
 	}
@@ -894,23 +896,29 @@ fn FragMain() -> FragOut
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
 
-		auto directoryModuleResolver = std::make_shared<nzsl::FilesystemModuleResolver>();
-		RegisterModule(directoryModuleResolver, gbufferOutput);
-
 		nzsl::Ast::Transformer::Context context;
 		context.partialCompilation = true;
 
-		nzsl::Ast::IdentifierTypeResolverTransformer transformer;
+		nzsl::Ast::IdentifierTypeResolverTransformer resolverTransformer;
 
-		REQUIRE_NOTHROW(transformer.Transform(*shaderModule, context));
+		REQUIRE_NOTHROW(resolverTransformer.Transform(*shaderModule, context));
 
 		context.partialCompilation = false;
+
+		auto directoryModuleResolver = std::make_shared<nzsl::FilesystemModuleResolver>();
+		RegisterModule(directoryModuleResolver, gbufferOutput);
+
+		nzsl::Ast::ImportResolverTransformer::Options importOptions;
+		importOptions.moduleResolver = directoryModuleResolver;
+
+		nzsl::Ast::ImportResolverTransformer importTransformer;
 
 		WHEN("Trying ForwardPass=true")
 		{
 			context.optionValues[nzsl::Ast::HashOption("ForwardPass")] = true;
 
-			REQUIRE_NOTHROW(transformer.Transform(*shaderModule, context));
+			REQUIRE_NOTHROW(importTransformer.Transform(*shaderModule, context, importOptions));
+			REQUIRE_NOTHROW(resolverTransformer.Transform(*shaderModule, context));
 
 			ExpectNZSL(*shaderModule, R"(
 struct FragOut
@@ -932,12 +940,12 @@ fn FragMain() -> FragOut
 )");
 		}
 
-
 		WHEN("Trying ForwardPass=false")
 		{
 			context.optionValues[nzsl::Ast::HashOption("ForwardPass")] = false;
 
-			REQUIRE_NOTHROW(transformer.Transform(*shaderModule, context));
+			REQUIRE_NOTHROW(importTransformer.Transform(*shaderModule, context, importOptions));
+			REQUIRE_NOTHROW(resolverTransformer.Transform(*shaderModule, context));
 
 			ExpectNZSL(*shaderModule, R"(
 [nzsl_version("1.0")]
@@ -952,6 +960,7 @@ module _DeferredShading_GBuffer
 }
 alias GBufferOutput = _DeferredShading_GBuffer.GBufferOutput;
 
+option ForwardPass: bool = true;
 alias FragOut = GBufferOutput;
 
 [entry(frag)]
@@ -1078,7 +1087,7 @@ module _Lighting_Phong
 
 	fn ComputeLighting(light: LightData, worldPos: vec3[f32]) -> vec3[f32]
 	{
-		let color: vec3[f32] = light.color;
+		let color = light.color;
 		return color * (max((distance(light.pos, worldPos)) / light.radius, 1.0));
 	}
 
