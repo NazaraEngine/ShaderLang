@@ -554,6 +554,22 @@ namespace nzsl
 		{
 			using namespace std::string_view_literals;
 
+			// Identifier can't start with _nzsl
+			if (identifier.compare(0, 5, "_nzsl") == 0)
+			{
+				identifier.replace(0, 5, "_"sv);
+				return true;
+			}
+
+			return false;
+		};
+
+		Ast::IdentifierTransformer::Options secondIdentifierPassOptions;
+		secondIdentifierPassOptions.makeVariableNameUnique = true;
+		secondIdentifierPassOptions.identifierSanitizer = [](std::string& identifier, Ast::IdentifierType /*scope*/)
+		{
+			using namespace std::string_view_literals;
+
 			bool nameChanged = false;
 			while (s_reservedKeywords.count(frozen::string(identifier)) != 0)
 			{
@@ -565,13 +581,6 @@ namespace nzsl
 			if (identifier.compare(0, 3, "gl_") == 0)
 			{
 				identifier.replace(0, 3, "_gl_"sv);
-				nameChanged = true;
-			}
-
-			// Identifier can't start with _nzsl
-			if (identifier.compare(0, 5, "_nzsl") == 0)
-			{
-				identifier.replace(0, 5, "_"sv);
 				nameChanged = true;
 			}
 
@@ -588,9 +597,6 @@ namespace nzsl
 
 			return nameChanged;
 		};
-
-		Ast::IdentifierTransformer::Options secondIdentifierPassOptions;
-		firstIdentifierPassOptions.makeVariableNameUnique = true;
 
 		Ast::TransformerExecutor executor;
 		executor.AddPass<Ast::IdentifierTypeResolverTransformer>({ true });

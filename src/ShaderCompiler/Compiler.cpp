@@ -16,7 +16,10 @@
 #include <NZSL/SpirvWriter.hpp>
 #include <NZSL/Serializer.hpp>
 #include <NZSL/Ast/AstSerializer.hpp>
+#include <NZSL/Ast/Cloner.hpp>
 #include <NZSL/Ast/ReflectVisitor.hpp>
+#include <NZSL/Ast/Transformations/ImportResolverTransformer.hpp>
+#include <NZSL/Ast/Transformations/IdentifierTypeResolverTransformer.hpp>
 #include <fmt/color.h>
 #include <fmt/format.h>
 #include <frozen/string.h>
@@ -26,9 +29,6 @@
 #include <chrono>
 #include <fstream>
 #include <stdexcept>
-#include <NZSL/Ast/Transformations/ImportResolverTransformer.hpp>
-#include <NZSL/Ast/Transformations/IdentifierTypeResolverTransformer.hpp>
-#include <NZSL/Ast/Cloner.hpp>
 
 namespace nzslc
 {
@@ -655,8 +655,8 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 	{
 		using namespace std::literals;
 
-		nzsl::Ast::Transformer::Context sanitizeOptions;
-		sanitizeOptions.partialCompilation = m_options.count("partial") > 0;
+		nzsl::Ast::Transformer::Context context;
+		context.partialCompilation = m_options.count("partial") > 0;
 
 		nzsl::Ast::TransformerExecutor executor;
 
@@ -686,7 +686,7 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 
 		executor.AddPass<nzsl::Ast::IdentifierTypeResolverTransformer>();
 
-		Step("AST processing"sv, [&] { executor.Transform(*m_shaderModule, sanitizeOptions); });
+		Step("AST processing"sv, [&] { executor.Transform(*m_shaderModule, context); });
 	}
 
 	template<typename F, typename... Args>

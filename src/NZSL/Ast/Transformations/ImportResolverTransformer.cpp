@@ -13,14 +13,25 @@
 #include <NZSL/Lang/LangData.hpp>
 #include <tsl/ordered_map.h>
 #include <unordered_map>
+#include <unordered_set>
 
 namespace nzsl::Ast
 {
 	struct ImportResolverTransformer::States
 	{
+		struct ExportedSet
+		{
+			// Store exported nodes (since we don't have indices at this point)
+			// pointers are stables since we're only removing ImportStatement
+			std::unordered_set<DeclareConstStatement*> exportedConst;
+			std::unordered_set<DeclareFunctionStatement*> exportedFunc;
+			std::unordered_set<DeclareStructStatement*> exportedStruct;
+		};
+
 		struct ModuleData
 		{
 			std::string identifier;
+			std::unordered_map<std::string, ExportedSet> exportedSetByModule;
 		};
 
 		struct UsedExternalData
@@ -33,19 +44,18 @@ namespace nzsl::Ast
 		std::unordered_map<std::string, std::size_t> moduleByName;
 		std::vector<ModuleData> modules;
 		Module* currentModule;
+		Module* rootModule;
 	};
 
 	bool ImportResolverTransformer::Transform(Module& module, Context& context, const Options& options, std::string* error)
 	{
 		States states;
-		states.currentModule = &module;
+		states.rootModule = &module;
 
 		m_states = &states;
 		m_options = &options;
 
-		if (!TransformImportedModules(module, context, error))
-			return false;
-
+		states.currentModule = &module;
 		return TransformModule(module, context, error);
 	}
 
@@ -143,12 +153,17 @@ namespace nzsl::Ast
 			});
 
 			// Clone module since it will be modified
-			ModulePtr sanitizedModule = std::make_shared<Module>(targetModule->metadata);
-			sanitizedModule->rootNode = Nz::StaticUniquePointerCast<MultiStatement>(Ast::Clone(*targetModule->rootNode));
+			ModulePtr moduleClone = std::make_shared<Module>(targetModule->metadata);
+			moduleClone->rootNode = Nz::StaticUniquePointerCast<MultiStatement>(Ast::Clone(*targetModule->rootNode));
+
+			Module* previousModule = m_states->currentModule;
+			m_states->currentModule = moduleClone.get();
 
 			std::string error;
-			if (!TransformModule(*sanitizedModule, *m_context, &error))
+			if (!TransformModule(*moduleClone, *m_context, &error))
 				throw CompilerModuleCompilationFailedError{ importStatement.sourceLocation, importStatement.moduleName, error };
+
+			m_states->currentModule = previousModule;
 
 			moduleIndex = m_states->modules.size();
 
@@ -156,11 +171,10 @@ namespace nzsl::Ast
 			auto& moduleData = m_states->modules.emplace_back();
 			moduleData.identifier = identifier;
 
-			// Don't run dependency checker when partially compiling
-			assert(m_states->currentModule->importedModules.size() == moduleIndex);
-			auto& importedModule = m_states->currentModule->importedModules.emplace_back();
+			assert(m_states->rootModule->importedModules.size() == moduleIndex);
+			auto& importedModule = m_states->rootModule->importedModules.emplace_back();
 			importedModule.identifier = std::move(identifier);
-			importedModule.module = std::move(sanitizedModule);
+			importedModule.module = std::move(moduleClone);
 
 			m_states->moduleByName[moduleName] = moduleIndex;
 		}
@@ -180,6 +194,8 @@ namespace nzsl::Ast
 		if (!importedSymbols.empty() || importEverythingElse)
 		{
 			// Importing module symbols in global scope
+			auto& exportedSet = moduleData.exportedSetByModule[m_states->currentModule->metadata->moduleName];
+
 			auto CheckImport = [&](const std::string& identifier) -> std::pair<bool, std::vector<std::string>>
 			{
 				auto it = importedSymbols.find(identifier);
@@ -212,7 +228,19 @@ namespace nzsl::Ast
 				};
 
 				for (const std::string& aliasName : aliasesName)
-					constStatements.emplace_back(ShaderBuilder::DeclareConst((!aliasName.empty()) ? aliasName : node.name, BuildConstant()));
+				{
+					if (aliasName.empty())
+					{
+						// symbol not renamed, export it once
+						if (exportedSet.exportedConst.count(&node))
+							return;
+
+						exportedSet.exportedConst.insert(&node);
+						constStatements.emplace_back(ShaderBuilder::DeclareConst(node.name, BuildConstant()));
+					}
+					else
+						constStatements.emplace_back(ShaderBuilder::DeclareConst(aliasName, BuildConstant()));
+				}
 			};
 
 			callbacks.onExportedFunc = [&](DeclareFunctionStatement& node)
@@ -227,7 +255,19 @@ namespace nzsl::Ast
 				};
 
 				for (const std::string& aliasName : aliasesName)
-					aliasStatements.emplace_back(ShaderBuilder::DeclareAlias((!aliasName.empty()) ? aliasName : node.name, BuildConstant()));
+				{
+					if (aliasName.empty())
+					{
+						// symbol not renamed, export it once
+						if (exportedSet.exportedFunc.count(&node))
+							return;
+
+						exportedSet.exportedFunc.insert(&node);
+						aliasStatements.emplace_back(ShaderBuilder::DeclareAlias(node.name, BuildConstant()));
+					}
+					else
+						aliasStatements.emplace_back(ShaderBuilder::DeclareAlias(aliasName, BuildConstant()));
+				}
 			};
 
 			callbacks.onExportedStruct = [&](DeclareStructStatement& node)
@@ -242,11 +282,23 @@ namespace nzsl::Ast
 				};
 
 				for (const std::string& aliasName : aliasesName)
-					aliasStatements.emplace_back(ShaderBuilder::DeclareAlias((!aliasName.empty()) ? aliasName : node.description.name, BuildConstant()));
+				{
+					if (aliasName.empty())
+					{
+						// symbol not renamed, export it once
+						if (exportedSet.exportedStruct.count(&node))
+							return;
+
+						exportedSet.exportedStruct.insert(&node);
+						aliasStatements.emplace_back(ShaderBuilder::DeclareAlias(node.description.name, BuildConstant()));
+					}
+					else
+						aliasStatements.emplace_back(ShaderBuilder::DeclareAlias(aliasName, BuildConstant()));
+				}
 			};
 
 			ExportVisitor exportVisitor;
-			exportVisitor.Visit(*m_states->currentModule->importedModules[moduleIndex].module->rootNode, callbacks);
+			exportVisitor.Visit(*m_states->rootModule->importedModules[moduleIndex].module->rootNode, callbacks);
 
 			if (!importedSymbols.empty())
 			{
