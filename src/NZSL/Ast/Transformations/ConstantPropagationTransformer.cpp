@@ -868,16 +868,18 @@ namespace nzsl::Ast
 		}
 		else if (node.expression->GetType() == NodeType::SwizzleExpression)
 		{
-			SwizzleExpression& constantExpr = static_cast<SwizzleExpression&>(*node.expression);
+			SwizzleExpression& swizzleExpr = static_cast<SwizzleExpression&>(*node.expression);
 
 			std::array<std::uint32_t, 4> newComponents = {};
 			for (std::size_t i = 0; i < node.componentCount; ++i)
-				newComponents[i] = constantExpr.components[node.components[i]];
+				newComponents[i] = swizzleExpr.components[node.components[i]];
 			
-			constantExpr.componentCount = node.componentCount;
-			constantExpr.components = newComponents;
+			swizzleExpr.componentCount = node.componentCount;
+			swizzleExpr.components = newComponents;
+			swizzleExpr.cachedExpressionType = node.cachedExpressionType;
+			swizzleExpr.sourceLocation = node.sourceLocation;
 
-			return DontVisitChildren{};
+			return ReplaceExpression{ std::move(node.expression) };
 		}
 
 		return DontVisitChildren{};
