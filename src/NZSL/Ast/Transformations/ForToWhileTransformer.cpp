@@ -22,6 +22,8 @@ namespace nzsl::Ast
 		if (!m_options->reduceForEachLoopsToWhile)
 			return VisitChildren{};
 
+		HandleStatement(forEachStatement.statement);
+
 		const ExpressionType* exprType = GetResolvedExpressionType(*forEachStatement.expression);
 		if (!exprType)
 			return VisitChildren{};
@@ -88,6 +90,8 @@ namespace nzsl::Ast
 	{
 		if (!m_options->reduceForLoopsToWhile)
 			return VisitChildren{};
+
+		HandleStatement(forStatement.statement);
 
 		Expression& fromExpr = *forStatement.fromExpr;
 		const ExpressionType* fromExprType = GetResolvedExpressionType(fromExpr);
