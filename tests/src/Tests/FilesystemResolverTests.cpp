@@ -17,11 +17,11 @@ TEST_CASE("FilesystemModuleResolver", "[Shader]")
 
 	nzsl::Ast::ModulePtr shaderModule = moduleResolver->Resolve("Shader");
 
-	nzsl::Ast::ImportResolverTransformer::Options importOpt;
-	importOpt.moduleResolver = moduleResolver;
+	nzsl::Ast::IdentifierTypeResolverTransformer::Options resolverOptions;
+	resolverOptions.moduleResolver = moduleResolver;
 
 	ResolveOptions resolveOptions;
-	resolveOptions.importOptions = &importOpt;
+	resolveOptions.identifierResolverOptions = &resolverOptions;
 
 	ResolveModule(*shaderModule, resolveOptions);
 

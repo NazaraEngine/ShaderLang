@@ -355,14 +355,12 @@ fn main()
 
 		// Second pass
 		{
-			nzsl::Ast::ImportResolverTransformer importTransformer;
-			nzsl::Ast::ImportResolverTransformer::Options importOptions;
-			importOptions.moduleResolver = resolver;
+			nzsl::Ast::IdentifierTypeResolverTransformer::Options resolverOptions;
+			resolverOptions.moduleResolver = resolver;
 
 			nzsl::Ast::Transformer::Context context;
 
-			REQUIRE_NOTHROW(importTransformer.Transform(*shaderModule, context, importOptions));
-			REQUIRE_NOTHROW(resolverTransformer.Transform(*shaderModule, context, {}));
+			REQUIRE_NOTHROW(resolverTransformer.Transform(*shaderModule, context, resolverOptions));
 		}
 
 		ExpectOutput(*shaderModule, R"(

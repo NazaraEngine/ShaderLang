@@ -21,6 +21,7 @@
 #include <tsl/ordered_map.h>
 #include <unordered_map>
 #include <unordered_set>
+#include <NZSL/Ast/ExportVisitor.hpp>
 
 namespace nzsl::Ast
 {
@@ -127,6 +128,7 @@ namespace nzsl::Ast
 	struct IdentifierTypeResolverTransformer::Environment
 	{
 		std::shared_ptr<Environment> parentEnv;
+		std::string moduleId;
 		std::vector<Identifier> identifiersInScope;
 		std::vector<PendingFunction> pendingFunctions;
 		std::vector<Scope> scopes;
@@ -233,17 +235,6 @@ namespace nzsl::Ast
 
 			m_states->currentEnv = importedModuleEnv;
 			m_states->currentModuleId = moduleId;
-
-			// Remap indices in imported modules to avoid conflicts
-			// TODO: Do this only when necessary (when an already compiled module is imported)
-			IndexRemapperVisitor::Options indexCallbacks;
-			indexCallbacks.aliasIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_states->aliases.RegisterNewIndex(true); };
-			indexCallbacks.constIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_states->constants.RegisterNewIndex(true); };
-			indexCallbacks.funcIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_states->functions.RegisterNewIndex(true); };
-			indexCallbacks.structIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_states->structs.RegisterNewIndex(true); };
-			indexCallbacks.varIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_states->variableTypes.RegisterNewIndex(true); };
-
-			RemapIndices(*importedModule.module->rootNode, indexCallbacks);
 
 			if (!TransformModule(*importedModule.module, context, error, [&]{ ResolveFunctions(); }))
 				return false;
@@ -3262,8 +3253,6 @@ namespace nzsl::Ast
 
 	auto IdentifierTypeResolverTransformer::Transform(ImportStatement&& importStatement) -> StatementTransformation
 	{
-		// ImportStatement are only expected in partial compilation (as ImportResolverTransformer should have handled them)
-
 		tsl::ordered_map<std::string, std::vector<std::string>> importedSymbols;
 		bool importEverythingElse = false;
 		for (const auto& entry : importStatement.identifiers)
@@ -3301,27 +3290,290 @@ namespace nzsl::Ast
 			}
 		}
 
-		if (!m_context->partialCompilation)
-			throw CompilerNoModuleResolverError{ importStatement.sourceLocation };
-
-		// when partially compiling, importing a whole module could register any identifier, so at this point we can no longer see unknown identifiers as errors
-		if (importEverythingElse)
-			m_context->allowUnknownIdentifiers = true;
-		else
+		if (!m_options->moduleResolver)
 		{
-			for (const auto& [identifier, aliases] : importedSymbols)
+			if (!m_context->partialCompilation)
+				throw CompilerNoModuleResolverError{ importStatement.sourceLocation };
+
+			// when partially compiling, importing a whole module could register any identifier, so at this point we can't see unknown identifiers as errors
+			if (importEverythingElse)
+				m_context->allowUnknownIdentifiers = true;
+			else
 			{
-				for (const std::string& alias : aliases)
+				for (const auto& [identifier, aliases] : importedSymbols)
 				{
-					if (alias.empty())
-						RegisterUnresolved(identifier);
-					else
-						RegisterUnresolved(alias);
+					for (const std::string& alias : aliases)
+					{
+						if (alias.empty())
+							RegisterUnresolved(identifier);
+						else
+							RegisterUnresolved(alias);
+					}
 				}
 			}
+
+			return VisitChildren{};
 		}
 
-		return DontVisitChildren{};
+		// Resolve module everytime and get module name from its metadata, this way we allow multiple names resolving to the same modules (path, url, etc.)
+		ModulePtr targetModule = m_options->moduleResolver->Resolve(importStatement.moduleName);
+		if (!targetModule)
+			throw CompilerModuleNotFoundError{ importStatement.sourceLocation, importStatement.moduleName };
+
+		// Check enabled features
+		for (ModuleFeature feature : targetModule->metadata->enabledFeatures)
+		{
+			if (!IsFeatureEnabled(feature))
+				throw CompilerModuleFeatureMismatchError{ importStatement.sourceLocation, importStatement.moduleName, feature };
+		}
+
+		std::size_t moduleIndex;
+
+		const std::string& moduleName = targetModule->metadata->moduleName;
+
+		auto it = m_states->moduleByName.find(importStatement.moduleName);
+		if (it == m_states->moduleByName.end())
+		{
+			ModulePtr targetModule = m_options->moduleResolver->Resolve(importStatement.moduleName);
+			if (!targetModule)
+				throw CompilerModuleNotFoundError{ importStatement.sourceLocation, importStatement.moduleName };
+
+			m_states->moduleByName[importStatement.moduleName] = States::ModuleIdSentinel;
+
+			// Generate module identifier (based on module name)
+			std::string identifier;
+
+			// Identifier cannot start with a number
+			identifier += '_';
+
+			std::transform(moduleName.begin(), moduleName.end(), std::back_inserter(identifier), [](char c)
+			{
+				return (std::isalnum(c)) ? c : '_';
+			});
+
+			// Load new module
+			auto moduleEnvironment = std::make_shared<Environment>();
+			moduleEnvironment->moduleId = moduleName;
+			moduleEnvironment->parentEnv = m_states->globalEnv;
+
+			auto previousEnv = m_states->currentEnv;
+			m_states->currentEnv = moduleEnvironment;
+
+			ModulePtr moduleClone = std::make_shared<Module>(targetModule->metadata);
+			moduleClone->rootNode = Nz::StaticUniquePointerCast<MultiStatement>(Ast::Clone(*targetModule->rootNode));
+
+			// Remap already used indices
+			IndexRemapperVisitor::Options indexCallbacks;
+			indexCallbacks.aliasIndexGenerator  = [this](std::size_t /*previousIndex*/) { return m_states->aliases.RegisterNewIndex(true); };
+			indexCallbacks.constIndexGenerator  = [this](std::size_t /*previousIndex*/) { return m_states->constants.RegisterNewIndex(true); };
+			indexCallbacks.funcIndexGenerator   = [this](std::size_t /*previousIndex*/) { return m_states->functions.RegisterNewIndex(true); };
+			indexCallbacks.structIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_states->structs.RegisterNewIndex(true); };
+			indexCallbacks.varIndexGenerator    = [this](std::size_t /*previousIndex*/) { return m_states->variableTypes.RegisterNewIndex(true); };
+
+			RemapIndices(*moduleClone->rootNode, indexCallbacks);
+
+			std::string error;
+			if (!TransformModule(*moduleClone, *m_context, &error, [&] { ResolveFunctions(); }))
+				throw CompilerModuleCompilationFailedError{ importStatement.sourceLocation, importStatement.moduleName, error };
+
+			moduleIndex = m_states->modules.size();
+
+			assert(m_states->modules.size() == moduleIndex);
+			auto& moduleData = m_states->modules.emplace_back();
+
+			// Don't run dependency checker when partially compiling
+			if (!m_context->partialCompilation)
+			{
+				moduleData.dependenciesVisitor = std::make_unique<DependencyCheckerVisitor>();
+				moduleData.dependenciesVisitor->Register(*moduleClone->rootNode);
+			}
+
+			moduleData.environment = std::move(moduleEnvironment);
+
+			assert(m_states->currentModule->importedModules.size() == moduleIndex);
+			auto& importedModule = m_states->currentModule->importedModules.emplace_back();
+			importedModule.identifier = identifier;
+			importedModule.module = std::move(moduleClone);
+
+			m_states->currentEnv = std::move(previousEnv);
+
+			RegisterModule(identifier, moduleIndex);
+
+			m_states->moduleByName[moduleName] = moduleIndex;
+		}
+		else
+		{
+			// Module has already been imported
+			moduleIndex = it->second;
+			if (moduleIndex == States::ModuleIdSentinel)
+				throw CompilerCircularImportError{ importStatement.sourceLocation, importStatement.moduleName };
+		}
+
+		auto& moduleData = m_states->modules[moduleIndex];
+
+		// Extract exported nodes and their dependencies
+		std::vector<StatementPtr> aliasStatements;
+		std::vector<StatementPtr> constStatements;
+		if (!importedSymbols.empty() || importEverythingElse)
+		{
+			// Importing module symbols in global scope
+			auto& exportedSet = moduleData.exportedSetByModule[m_states->currentEnv->moduleId];
+
+			auto CheckImport = [&](const std::string& identifier) -> std::pair<bool, std::vector<std::string>>
+			{
+				auto it = importedSymbols.find(identifier);
+				if (it == importedSymbols.end())
+				{
+					if (!importEverythingElse)
+						return { false, {} };
+
+					return { true, { std::string{} } };
+				}
+				else
+				{
+					std::vector<std::string> imports = std::move(it.value());
+					importedSymbols.erase(it);
+
+					return { true, std::move(imports) };
+				}
+			};
+
+			ExportVisitor::Callbacks callbacks;
+			callbacks.onExportedConst = [&](DeclareConstStatement& node)
+			{
+				assert(node.constIndex);
+
+				auto [imported, aliasesName] = CheckImport(node.name);
+				if (!imported)
+					return;
+
+				if (moduleData.dependenciesVisitor)
+					moduleData.dependenciesVisitor->MarkConstantAsUsed(*node.constIndex);
+
+				auto BuildConstant = [&]() -> ExpressionPtr
+				{
+					const ConstantData* constantData = m_states->constants.TryRetrieve(*node.constIndex, node.sourceLocation);
+					if (!constantData || !constantData->value)
+						throw AstInvalidConstantIndexError{ node.sourceLocation, *node.constIndex };
+
+					return ShaderBuilder::Constant(*node.constIndex, GetConstantType(*constantData->value));
+				};
+
+				for (const std::string& aliasName : aliasesName)
+				{
+					if (aliasName.empty())
+					{
+						// symbol not renamed, export it once
+						if (exportedSet.usedConstants.UnboundedTest(*node.constIndex))
+							return;
+
+						exportedSet.usedConstants.UnboundedSet(*node.constIndex);
+						constStatements.emplace_back(ShaderBuilder::DeclareConst(node.name, BuildConstant()));
+					}
+					else
+						constStatements.emplace_back(ShaderBuilder::DeclareConst(aliasName, BuildConstant()));
+				}
+			};
+
+			callbacks.onExportedFunc = [&](DeclareFunctionStatement& node)
+			{
+				assert(node.funcIndex);
+
+				auto [imported, aliasesName] = CheckImport(node.name);
+				if (!imported)
+					return;
+
+				if (moduleData.dependenciesVisitor)
+					moduleData.dependenciesVisitor->MarkFunctionAsUsed(*node.funcIndex);
+
+				for (const std::string& aliasName : aliasesName)
+				{
+					if (aliasName.empty())
+					{
+						// symbol not renamed, export it once
+						if (exportedSet.usedFunctions.UnboundedTest(*node.funcIndex))
+							return;
+
+						exportedSet.usedFunctions.UnboundedSet(*node.funcIndex);
+						aliasStatements.emplace_back(ShaderBuilder::DeclareAlias(node.name, ShaderBuilder::Function(*node.funcIndex)));
+					}
+					else
+						aliasStatements.emplace_back(ShaderBuilder::DeclareAlias(aliasName, ShaderBuilder::Function(*node.funcIndex)));
+				}
+			};
+
+			callbacks.onExportedStruct = [&](DeclareStructStatement& node)
+			{
+				assert(node.structIndex);
+
+				auto [imported, aliasesName] = CheckImport(node.description.name);
+				if (!imported)
+					return;
+
+				if (moduleData.dependenciesVisitor)
+					moduleData.dependenciesVisitor->MarkStructAsUsed(*node.structIndex);
+
+				for (const std::string& aliasName : aliasesName)
+				{
+					if (aliasName.empty())
+					{
+						// symbol not renamed, export it once
+						if (exportedSet.usedStructs.UnboundedTest(*node.structIndex))
+							return;
+
+						exportedSet.usedStructs.UnboundedSet(*node.structIndex);
+						aliasStatements.emplace_back(ShaderBuilder::DeclareAlias(node.description.name, ShaderBuilder::StructType(*node.structIndex)));
+					}
+					else
+						aliasStatements.emplace_back(ShaderBuilder::DeclareAlias(aliasName, ShaderBuilder::StructType(*node.structIndex)));
+				}
+			};
+
+			ExportVisitor exportVisitor;
+			exportVisitor.Visit(*m_states->currentModule->importedModules[moduleIndex].module->rootNode, callbacks);
+
+			if (!importedSymbols.empty())
+			{
+				std::string symbolList;
+				for (const auto& [identifier, _] : importedSymbols)
+				{
+					if (!symbolList.empty())
+						symbolList += ", ";
+
+					symbolList += identifier;
+				}
+
+				throw CompilerImportIdentifierNotFoundError{ importStatement.sourceLocation, symbolList, importStatement.moduleName };
+			}
+
+			if (aliasStatements.empty() && constStatements.empty())
+				return ReplaceStatement{ ShaderBuilder::NoOp() };
+		}
+		else
+			aliasStatements.emplace_back(ShaderBuilder::DeclareAlias(importStatement.moduleIdentifier, ShaderBuilder::ModuleExpr(moduleIndex)));
+
+		// Register aliases
+		for (auto& aliasPtr : aliasStatements)
+			HandleStatement(aliasPtr);
+
+		for (auto& constPtr : constStatements)
+			HandleStatement(constPtr);
+
+		if (m_options->removeAliases)
+			return ReplaceStatement{ ShaderBuilder::NoOp() };
+
+		// Generate alias statements
+		MultiStatementPtr aliasBlock = std::make_unique<MultiStatement>();
+		for (auto& aliasPtr : aliasStatements)
+			aliasBlock->statements.push_back(std::move(aliasPtr));
+
+		for (auto& constPtr : constStatements)
+			aliasBlock->statements.push_back(std::move(constPtr));
+
+		//m_context->allowUnknownIdentifiers = true; //< if module uses a unresolved and non-exported symbol, we need to allow unknown identifiers
+		// ^ wtf?
+
+		return ReplaceStatement{ std::move(aliasBlock) };
 	}
 
 	void IdentifierTypeResolverTransformer::Transform(ExpressionType& expressionType)

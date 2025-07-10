@@ -3,7 +3,6 @@
 #include <NZSL/Parser.hpp>
 #include <NZSL/Ast/TransformerExecutor.hpp>
 #include <NZSL/Ast/Transformations/IdentifierTypeResolverTransformer.hpp>
-#include <NZSL/Ast/Transformations/ImportResolverTransformer.hpp>
 #include <catch2/catch_test_macros.hpp>
 
 void RegisterModule(const std::shared_ptr<nzsl::FilesystemModuleResolver>& moduleResolver, std::string_view source)
@@ -105,11 +104,11 @@ fn main(input: InputData) -> OutputData
 		auto directoryModuleResolver = std::make_shared<nzsl::FilesystemModuleResolver>();
 		RegisterModule(directoryModuleResolver, importedSource);
 
-		nzsl::Ast::ImportResolverTransformer::Options importOpt;
-		importOpt.moduleResolver = directoryModuleResolver;
+		nzsl::Ast::IdentifierTypeResolverTransformer::Options resolverOptions;
+		resolverOptions.moduleResolver = directoryModuleResolver;
 
 		ResolveOptions resolveOptions;
-		resolveOptions.importOptions = &importOpt;
+		resolveOptions.identifierResolverOptions = &resolverOptions;
 
 		ResolveModule(*shaderModule, resolveOptions);
 
@@ -354,11 +353,11 @@ fn main(input: Input) -> OutputData
 		RegisterModule(directoryModuleResolver, blockModule);
 		RegisterModule(directoryModuleResolver, inputOutputModule);
 
-		nzsl::Ast::ImportResolverTransformer::Options importOpt;
-		importOpt.moduleResolver = directoryModuleResolver;
+		nzsl::Ast::IdentifierTypeResolverTransformer::Options resolverOptions;
+		resolverOptions.moduleResolver = directoryModuleResolver;
 
 		ResolveOptions resolveOptions;
-		resolveOptions.importOptions = &importOpt;
+		resolveOptions.identifierResolverOptions = &resolverOptions;
 
 		ResolveModule(*shaderModule, resolveOptions);
 
@@ -567,11 +566,11 @@ fn main()
 		RegisterModule(directoryModuleResolver, dataModule);
 		RegisterModule(directoryModuleResolver, funcModule);
 
-		nzsl::Ast::ImportResolverTransformer::Options importOpt;
-		importOpt.moduleResolver = directoryModuleResolver;
+		nzsl::Ast::IdentifierTypeResolverTransformer::Options resolverOptions;
+		resolverOptions.moduleResolver = directoryModuleResolver;
 
 		ResolveOptions resolveOptions;
-		resolveOptions.importOptions = &importOpt;
+		resolveOptions.identifierResolverOptions = &resolverOptions;
 
 		ResolveModule(*shaderModule, resolveOptions);
 
@@ -908,17 +907,14 @@ fn FragMain() -> FragOut
 		auto directoryModuleResolver = std::make_shared<nzsl::FilesystemModuleResolver>();
 		RegisterModule(directoryModuleResolver, gbufferOutput);
 
-		nzsl::Ast::ImportResolverTransformer::Options importOptions;
-		importOptions.moduleResolver = directoryModuleResolver;
-
-		nzsl::Ast::ImportResolverTransformer importTransformer;
+		nzsl::Ast::IdentifierTypeResolverTransformer::Options resolverOptions;
+		resolverOptions.moduleResolver = directoryModuleResolver;
 
 		WHEN("Trying ForwardPass=true")
 		{
 			context.optionValues[nzsl::Ast::HashOption("ForwardPass")] = true;
 
-			REQUIRE_NOTHROW(importTransformer.Transform(*shaderModule, context, importOptions));
-			REQUIRE_NOTHROW(resolverTransformer.Transform(*shaderModule, context));
+			REQUIRE_NOTHROW(resolverTransformer.Transform(*shaderModule, context, resolverOptions));
 
 			ExpectNZSL(*shaderModule, R"(
 struct FragOut
@@ -944,8 +940,7 @@ fn FragMain() -> FragOut
 		{
 			context.optionValues[nzsl::Ast::HashOption("ForwardPass")] = false;
 
-			REQUIRE_NOTHROW(importTransformer.Transform(*shaderModule, context, importOptions));
-			REQUIRE_NOTHROW(resolverTransformer.Transform(*shaderModule, context));
+			REQUIRE_NOTHROW(resolverTransformer.Transform(*shaderModule, context, resolverOptions));
 
 			ExpectNZSL(*shaderModule, R"(
 [nzsl_version("1.0")]
@@ -1006,7 +1001,7 @@ import LightData from Lighting.LightData;
 [export]
 fn ComputeLighting(light: LightData, worldPos: vec3[f32]) -> vec3[f32]
 {
-	let color = light.color;
+	let color: vec3[f32] = light.color;
 	return color * max(distance(light.pos, worldPos) / light.radius, 1.0);
 }
 )";
@@ -1056,14 +1051,14 @@ fn FragMain() -> FragOut
 		RegisterModule(directoryModuleResolver, lightingPhongData);
 		RegisterModule(directoryModuleResolver, lightingShadowData);
 
-		nzsl::Ast::ImportResolverTransformer::Options importOpt;
-		importOpt.moduleResolver = directoryModuleResolver;
+		nzsl::Ast::IdentifierTypeResolverTransformer::Options resolverOptions;
+		resolverOptions.moduleResolver = directoryModuleResolver;
 
-		nzsl::Ast::ImportResolverTransformer importResolver;
+		nzsl::Ast::IdentifierTypeResolverTransformer identifierResolver;
 		nzsl::Ast::Transformer::Context context;
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(mainSource);
-		REQUIRE_NOTHROW(importResolver.Transform(*shaderModule, context, importOpt));
+		REQUIRE_NOTHROW(identifierResolver.Transform(*shaderModule, context, resolverOptions));
 
 		ExpectNZSL(*shaderModule, R"(
 [nzsl_version("1.0")]
@@ -1087,7 +1082,7 @@ module _Lighting_Phong
 
 	fn ComputeLighting(light: LightData, worldPos: vec3[f32]) -> vec3[f32]
 	{
-		let color = light.color;
+		let color: vec3[f32] = light.color;
 		return color * (max((distance(light.pos, worldPos)) / light.radius, 1.0));
 	}
 
@@ -1202,11 +1197,11 @@ fn main(input: Module.InputData) -> Module.OutputData
 		auto directoryModuleResolver = std::make_shared<nzsl::FilesystemModuleResolver>();
 		RegisterModule(directoryModuleResolver, importedSource);
 
-		nzsl::Ast::ImportResolverTransformer::Options importOpt;
-		importOpt.moduleResolver = directoryModuleResolver;
+		nzsl::Ast::IdentifierTypeResolverTransformer::Options resolverOptions;
+		resolverOptions.moduleResolver = directoryModuleResolver;
 
 		ResolveOptions resolveOptions;
-		resolveOptions.importOptions = &importOpt;
+		resolveOptions.identifierResolverOptions = &resolverOptions;
 
 		ResolveModule(*shaderModule, resolveOptions);
 
@@ -1435,11 +1430,11 @@ fn main(input: SimpleModule.InputData) -> SimpleModule.OutputData
 		auto directoryModuleResolver = std::make_shared<nzsl::FilesystemModuleResolver>();
 		RegisterModule(directoryModuleResolver, importedSource);
 
-		nzsl::Ast::ImportResolverTransformer::Options importOpt;
-		importOpt.moduleResolver = directoryModuleResolver;
+		nzsl::Ast::IdentifierTypeResolverTransformer::Options resolverOptions;
+		resolverOptions.moduleResolver = directoryModuleResolver;
 
 		ResolveOptions resolveOptions;
-		resolveOptions.importOptions = &importOpt;
+		resolveOptions.identifierResolverOptions = &resolverOptions;
 
 		ResolveModule(*shaderModule, resolveOptions);
 

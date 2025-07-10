@@ -14,11 +14,11 @@ TEST_CASE("debug info", "[Shader]")
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::ParseFromFile("../resources/Shader.nzsl");
 
-		nzsl::Ast::ImportResolverTransformer::Options importOpt;
-		importOpt.moduleResolver = directoryModuleResolver;
+		nzsl::Ast::IdentifierTypeResolverTransformer::Options resolverOptions;
+		resolverOptions.moduleResolver = directoryModuleResolver;
 
 		ResolveOptions resolveOptions;
-		resolveOptions.importOptions = &importOpt;
+		resolveOptions.identifierResolverOptions = &resolverOptions;
 
 		ResolveModule(*shaderModule, resolveOptions);
 
