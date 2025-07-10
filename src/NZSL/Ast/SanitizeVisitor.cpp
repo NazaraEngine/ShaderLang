@@ -2557,7 +2557,7 @@ NAZARA_WARNING_POP()
 			if (!m_context->options.partialSanitization)
 				throw CompilerNoModuleResolverError{ node.sourceLocation };
 
-			// when partially sanitizing, importing a whole module could register any identifier, so at this point we can't see unknown identifiers as errors
+			// when partially compiling, importing a whole module could register any identifier, so at this point we can't see unknown identifiers as errors
 			if (importEverythingElse)
 				m_context->allowUnknownIdentifiers = true;
 			else
@@ -2637,7 +2637,7 @@ NAZARA_WARNING_POP()
 			assert(m_context->modules.size() == moduleIndex);
 			auto& moduleData = m_context->modules.emplace_back();
 
-			// Don't run dependency checker when partially sanitizing
+			// Don't run dependency checker when partially compiling
 			if (!m_context->options.partialSanitization)
 			{
 				moduleData.dependenciesVisitor = std::make_unique<DependencyCheckerVisitor>();
@@ -3795,7 +3795,7 @@ NAZARA_WARNING_POP()
 	{
 		if (auto* identifier = FindIdentifier(name))
 		{
-			// Functions can be conditionally defined and condition not resolved yet, allow duplicates when partially sanitizing
+			// Functions can be conditionally defined and condition not resolved yet, allow duplicates when partially compiling
 			bool duplicate = !m_context->options.partialSanitization;
 
 			// Functions cannot be declared twice, except for entry ones if their stages are different

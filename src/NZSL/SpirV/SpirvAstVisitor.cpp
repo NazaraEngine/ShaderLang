@@ -72,7 +72,7 @@ namespace nzsl
 	void SpirvAstVisitor::Visit(Ast::AssignExpression& node)
 	{
 		if (node.op != Ast::AssignType::Simple)
-			throw std::runtime_error("unexpected assign expression (should have been removed by sanitization)");
+			throw std::runtime_error("unexpected assign expression (should have been removed by a previous pass)");
 
 		std::uint32_t resultId = EvaluateExpression(*node.right);
 

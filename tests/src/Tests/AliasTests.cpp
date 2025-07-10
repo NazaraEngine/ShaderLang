@@ -134,7 +134,7 @@ fn main() -> FragOut
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
 
-		WHEN("We perform a partial sanitization")
+		WHEN("We perform a partial compilation")
 		{
 			nzsl::Ast::Transformer::Context context;
 			context.partialCompilation = true;

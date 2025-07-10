@@ -1106,7 +1106,7 @@ namespace nzsl::Ast
 	{
 		if (auto* identifier = FindIdentifier(name))
 		{
-			// Functions can be conditionally defined and condition not resolved yet, allow duplicates when partially sanitizing
+			// Functions can be conditionally defined and condition not resolved yet, allow duplicates when partially compiling
 			bool duplicate = !m_context->partialCompilation;
 
 			// Functions cannot be declared twice, except for entry ones if their stages are different
@@ -1761,7 +1761,7 @@ namespace nzsl::Ast
 					return Finish(i, exprType); //< unresolved type
 
 				auto& dependencyCheckerPtr = m_states->modules[moduleId].dependenciesVisitor;
-				if (dependencyCheckerPtr) //< dependency checker can be null when performing partial sanitization
+				if (dependencyCheckerPtr) //< dependency checker can be null when performing partial compilation
 				{
 					switch (identifierData->category)
 					{
@@ -2845,7 +2845,7 @@ namespace nzsl::Ast
 		{
 			if (m_context->partialCompilation)
 			{
-				// Partial sanitization, we cannot give a value to this option
+				// we cannot give a value to this option even if it has a default value as it may change later
 				declOption.optIndex = RegisterConstant(declOption.optName, ConstantData{ m_states->currentModuleId, std::nullopt }, declOption.optIndex, declOption.sourceLocation);
 			}
 			else
@@ -3288,7 +3288,7 @@ namespace nzsl::Ast
 		if (!m_context->partialCompilation)
 			throw CompilerNoModuleResolverError{ importStatement.sourceLocation };
 
-		// when partially sanitizing, importing a whole module could register any identifier, so at this point we can't see unknown identifiers as errors
+		// when partially compiling, importing a whole module could register any identifier, so at this point we can't see unknown identifiers as errors
 		if (importEverythingElse)
 			m_states->allowUnknownIdentifiers = true;
 		else

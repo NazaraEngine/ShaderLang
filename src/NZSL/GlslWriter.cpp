@@ -2066,7 +2066,7 @@ namespace nzsl
 			// select using mix (order of parameters)
 			case Ast::IntrinsicType::Select:
 			{
-				//FIXME: All of this should be handled as sanitization level, depending on integer mix support
+				//FIXME: All of this should be handled as compilation level, depending on integer mix support
 
 				const Ast::ExpressionType& condParamType = ResolveAlias(EnsureExpressionType(*node.parameters[0]));
 				const Ast::ExpressionType& firstParamType = ResolveAlias(EnsureExpressionType(*node.parameters[1]));

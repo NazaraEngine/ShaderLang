@@ -189,7 +189,7 @@ namespace NAZARA_ANONYMOUS_NAMESPACE
 	{
 		constexpr std::size_t PartialMatchLength = 20;
 		constexpr std::size_t PartialMatchPrefix = 20;
-		constexpr std::size_t PartialMatchSuffixLength = 50;
+		constexpr std::size_t PartialMatchSuffixLength = 100;
 
 		// Find difference byte (only works when expecting full output)
 		if (std::size_t offset = expectedCode.find(CappedView(outputCode, PartialMatchLength)); offset != expectedCode.npos)
@@ -206,12 +206,12 @@ namespace NAZARA_ANONYMOUS_NAMESPACE
 				index -= PartialMatchPrefix;
 
 			INFO("difference happens after " << offset << " bytes");
-			INFO(lang << " output[" << index << ":]:\n\n" << CappedStr(&outputCode[index], PartialMatchSuffixLength) << "\nexcepted output[" << index << ":]:\n\n" << CappedStr(&expectedCode[index], PartialMatchSuffixLength));
+			INFO(lang << " output[" << index << ":]:\n\n" << CappedStr(&outputCode[index], PartialMatchSuffixLength) << "\nexpected output[" << index << ":]:\n\n" << CappedStr(&expectedCode[index], PartialMatchSuffixLength));
 			REQUIRE(false);
 		}
 		else
 		{
-			INFO("full " << lang << " output:\n" << outputCode << "\nexcepted output : \n" << expectedCode);
+			INFO("full " << lang << " output:\n" << outputCode << "\nexpected output : \n" << expectedCode);
 			REQUIRE(false);
 		}
 	}
