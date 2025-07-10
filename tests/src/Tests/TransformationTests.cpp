@@ -14,7 +14,7 @@
 #include <cctype>
 #include <string>
 
-TEST_CASE("sanitizing", "[Shader]")
+TEST_CASE("transformations", "[Shader]")
 {
 	WHEN("splitting branches")
 	{
@@ -130,7 +130,7 @@ fn main()
 {
 	let x: f32 = 0.0;
 	{
-		let i = 0;
+		let i: i32 = 0;
 		let _nzsl_to: i32 = 10;
 		while (i < _nzsl_to)
 		{
@@ -164,7 +164,7 @@ external
 [entry(frag)]
 fn main()
 {
-	let x = 0.0;
+	let x: f32 = 0.0;
 	for v in data.value
 	{
 		x += v;
@@ -652,7 +652,7 @@ fn main()
 		executor.AddPass<nzsl::Ast::IdentifierTypeResolverTransformer>();
 		executor.AddPass<nzsl::Ast::StructAssignmentTransformer>({ true, true });
 
-		REQUIRE_NOTHROW(executor.Transform(*shaderModule));
+		REQUIRE_NOTHROW(executor.Transform(*shaderModule, context));
 
 		ExpectNZSL(*shaderModule, R"(
 [nzsl_version("1.0")]
@@ -694,7 +694,7 @@ struct Foo
 
 external
 {
-	[set(0), binding(0)] foo: storage[Foo]
+	[binding(0)] foo: storage[Foo]
 }
 
 fn main()
