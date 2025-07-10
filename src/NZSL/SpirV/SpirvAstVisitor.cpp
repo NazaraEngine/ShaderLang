@@ -1277,40 +1277,28 @@ namespace nzsl
 
 	void SpirvAstVisitor::BuildArraySizeIntrinsic(const Ast::IntrinsicExpression& node)
 	{
-		// First parameter must be an AccessIndex from the external variable to the member index
+		// First parameter must be an AccessFieldExpression from the external variable to the member index
 		std::uint32_t typeId = m_writer.GetTypeId(Ast::PrimitiveType::UInt32);
 
 		if (node.parameters.size() != 1)
 			throw std::runtime_error("ArraySize intrinsic: unexpected parameter count");
 
 		const Ast::ExpressionPtr& firstParameter = node.parameters.front();
-		if (firstParameter->GetType() != Ast::NodeType::AccessIndexExpression)
-			throw std::runtime_error("ArraySize intrinsic: parameter is not AccessIndex");
+		if (firstParameter->GetType() != Ast::NodeType::AccessFieldExpression)
+			throw std::runtime_error("ArraySize intrinsic: parameter is not an AccessFieldExpression");
 
-		const Ast::AccessIndexExpression& accessIndex = Nz::SafeCast<const Ast::AccessIndexExpression&>(*firstParameter);
-		if (accessIndex.expr->GetType() != Ast::NodeType::VariableValueExpression)
-			throw std::runtime_error("ArraySize intrinsic: AccessIndex expr is not a variable");
+		const Ast::AccessFieldExpression& accessField = Nz::SafeCast<const Ast::AccessFieldExpression&>(*firstParameter);
+		if (accessField.expr->GetType() != Ast::NodeType::VariableValueExpression)
+			throw std::runtime_error("ArraySize intrinsic: AccessFieldExpression target expression is not a VariableValueExpression");
 
-		if (accessIndex.indices.size() != 1)
-			throw std::runtime_error("ArraySize intrinsic: AcessIndex should have exactly one index");
-
-		if (accessIndex.indices[0]->GetType() != Ast::NodeType::ConstantValueExpression)
-			throw std::runtime_error("ArraySize intrinsic: AcessIndex index must be a constant value");
-
-		const Ast::VariableValueExpression& structVar = static_cast<const Ast::VariableValueExpression&>(*accessIndex.expr);
+		const Ast::VariableValueExpression& structVar = Nz::SafeCast<const Ast::VariableValueExpression&>(*accessField.expr);
 
 		std::uint32_t structId = m_writer.GetExtVar(structVar.variableId).pointerId;
-
-		const Ast::ConstantValueExpression& memberConstant = Nz::SafeCast<const Ast::ConstantValueExpression&>(*accessIndex.indices[0]);
-		if (!std::holds_alternative<std::int32_t>(memberConstant.value))
-			throw std::runtime_error("ArraySize intrinsic: AcessIndex index constant value must be a int32");
-
-		std::uint32_t arrayMemberIndex = Nz::SafeCast<std::uint32_t>(std::get<std::int32_t>(memberConstant.value));
 
 		HandleSourceLocation(node.sourceLocation);
 
 		std::uint32_t resultId = m_writer.AllocateResultId();
-		m_currentBlock->Append(SpirvOp::OpArrayLength, typeId, resultId, structId, arrayMemberIndex);
+		m_currentBlock->Append(SpirvOp::OpArrayLength, typeId, resultId, structId, accessField.fieldIndex);
 
 		PushResultId(resultId);
 	}
