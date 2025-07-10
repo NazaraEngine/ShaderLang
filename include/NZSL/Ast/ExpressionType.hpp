@@ -246,7 +246,7 @@ namespace nzsl::Ast
 			ExpressionValue<std::uint32_t> locationIndex;
 			ExpressionValue<ExpressionType> type;
 			SourceLocation sourceLocation;
-			std::string originalName; //< used when sanitizing field name
+			std::string originalName; //< used when compiling field name
 			std::string name;
 			std::string tag;
 		};
