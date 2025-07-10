@@ -9,6 +9,11 @@
 
 #include <NZSL/Ast/Transformations/Transformer.hpp>
 
+namespace nzsl
+{
+	class ModuleResolver;
+}
+
 namespace nzsl::Ast
 {
 	struct PartialType;
@@ -25,6 +30,7 @@ namespace nzsl::Ast
 
 			struct Options
 			{
+				std::shared_ptr<ModuleResolver> moduleResolver;
 				bool removeAliases = false;
 				bool unrollForLoops = true;
 				bool unrollForEachLoops = true;

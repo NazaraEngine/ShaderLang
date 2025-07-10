@@ -599,7 +599,7 @@ namespace nzsl
 		};
 
 		Ast::TransformerExecutor executor;
-		executor.AddPass<Ast::IdentifierTypeResolverTransformer>({ true });
+		executor.AddPass<Ast::IdentifierTypeResolverTransformer>({ nullptr, true });
 		executor.AddPass<Ast::IdentifierTransformer>(firstIdentifierPassOptions);
 		executor.AddPass<Ast::ForToWhileTransformer>();
 		executor.AddPass<Ast::StructAssignmentTransformer>({ false, true }); //< TODO: Only split for base uniforms/storage

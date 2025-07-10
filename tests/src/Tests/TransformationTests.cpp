@@ -527,7 +527,7 @@ external
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
 
 		nzsl::Ast::TransformerExecutor executor;
-		executor.AddPass<nzsl::Ast::IdentifierTypeResolverTransformer>({ true });
+		executor.AddPass<nzsl::Ast::IdentifierTypeResolverTransformer>({ nullptr, true });
 
 		REQUIRE_NOTHROW(executor.Transform(*shaderModule));
 
