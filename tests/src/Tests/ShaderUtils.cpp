@@ -467,9 +467,6 @@ void ResolveModule(nzsl::Ast::Module& module, const ResolveOptions& resolveOptio
 		context.partialCompilation = resolveOptions.partialCompilation;
 
 		nzsl::Ast::TransformerExecutor executor;
-		if (resolveOptions.importOptions)
-			executor.AddPass<nzsl::Ast::ImportResolverTransformer>(*resolveOptions.importOptions);
-
 		if (resolveOptions.identifierResolverOptions)
 			executor.AddPass<nzsl::Ast::IdentifierTypeResolverTransformer>(*resolveOptions.identifierResolverOptions);
 

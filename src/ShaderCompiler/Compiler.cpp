@@ -18,7 +18,6 @@
 #include <NZSL/Ast/AstSerializer.hpp>
 #include <NZSL/Ast/Cloner.hpp>
 #include <NZSL/Ast/ReflectVisitor.hpp>
-#include <NZSL/Ast/Transformations/ImportResolverTransformer.hpp>
 #include <NZSL/Ast/Transformations/IdentifierTypeResolverTransformer.hpp>
 #include <fmt/color.h>
 #include <fmt/format.h>
@@ -658,6 +657,8 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 		nzsl::Ast::Transformer::Context context;
 		context.partialCompilation = m_options.count("partial") > 0;
 
+		nzsl::Ast::IdentifierTypeResolverTransformer::Options resolverOpt;
+
 		nzsl::Ast::TransformerExecutor executor;
 
 		if (m_options.count("module") > 0)
@@ -681,10 +682,10 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 					throw std::runtime_error(modulePath + " is not a path nor a directory");
 			}
 
-			executor.AddPass<nzsl::Ast::ImportResolverTransformer>({ std::move(resolver) });
+			resolverOpt.moduleResolver = std::move(resolver);
 		}
 
-		executor.AddPass<nzsl::Ast::IdentifierTypeResolverTransformer>();
+		executor.AddPass<nzsl::Ast::IdentifierTypeResolverTransformer>(std::move(resolverOpt));
 
 		Step("AST processing"sv, [&] { executor.Transform(*m_shaderModule, context); });
 	}
