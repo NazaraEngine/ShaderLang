@@ -187,7 +187,7 @@ namespace NAZARA_ANONYMOUS_NAMESPACE
 
 	void HandleSourceError(std::string_view lang, std::string_view expectedCode, std::string_view outputCode)
 	{
-		constexpr std::size_t PartialMatchLength = 20;
+		constexpr std::size_t PartialMatchLength = 30;
 		constexpr std::size_t PartialMatchPrefix = 20;
 		constexpr std::size_t PartialMatchSuffixLength = 100;
 

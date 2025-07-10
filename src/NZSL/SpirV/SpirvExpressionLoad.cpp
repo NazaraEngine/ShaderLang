@@ -180,8 +180,6 @@ namespace nzsl
 		assert(node.indices.size() == 1);
 		auto& indexExpr = node.indices.front();
 
-		std::uint32_t typeId = m_writer.GetTypeId(*exprType);
-
 		std::uint32_t indexId = m_visitor.EvaluateExpression(*indexExpr);
 
 		std::visit(Nz::Overloaded
