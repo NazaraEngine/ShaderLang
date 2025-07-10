@@ -46,10 +46,23 @@ namespace nzsl::Ast
 				std::uint32_t memberIndex = 0;
 				for (auto& member : structDesc->members)
 				{
-					if (member.cond.IsResultingValue() && !member.cond.GetResultingValue())
+					if (member.cond.HasValue())
 					{
-						memberIndex++;
-						continue;
+						if (member.cond.IsResultingValue())
+						{
+							if (!member.cond.GetResultingValue())
+							{
+								if (memberIndex != Nz::MaxValue<std::uint32_t>())
+									memberIndex++;
+								
+								continue;
+							}
+						}
+						else
+						{
+							assert(m_context->partialCompilation);
+							memberIndex = Nz::MaxValue(); //< memberIndex becomes unknown from there
+						}
 					}
 
 					if (!member.type.IsResultingValue())
@@ -57,12 +70,24 @@ namespace nzsl::Ast
 						if (!m_context->partialCompilation)
 							throw CompilerConstantExpressionRequiredError{ member.type.GetExpression()->sourceLocation };
 
-						memberIndex++;
+						if (memberIndex != Nz::MaxValue<std::uint32_t>())
+							memberIndex++;
+
 						continue;
 					}
 
-					ExpressionPtr dstAccess = ShaderBuilder::AccessField(Clone(*dstVar), memberIndex);
-					ExpressionPtr srcAccess = ShaderBuilder::AccessField(Clone(*srcVar), memberIndex);
+					ExpressionPtr dstAccess;
+					ExpressionPtr srcAccess;
+					if (memberIndex != Nz::MaxValue<std::uint32_t>())
+					{
+						dstAccess = ShaderBuilder::AccessField(Clone(*dstVar), memberIndex);
+						srcAccess = ShaderBuilder::AccessField(Clone(*srcVar), memberIndex);
+					}
+					else
+					{
+						dstAccess = ShaderBuilder::AccessMember(Clone(*dstVar), { member.name });
+						srcAccess = ShaderBuilder::AccessMember(Clone(*srcVar), { member.name });
+					}
 
 					dstAccess->cachedExpressionType = member.type.GetResultingValue();
 					dstAccess->sourceLocation = assign.sourceLocation;
@@ -85,7 +110,8 @@ namespace nzsl::Ast
 						AppendStatement(std::move(assignStatement));
 					}
 
-					memberIndex++;
+					if (memberIndex != Nz::MaxValue<std::uint32_t>())
+						memberIndex++;
 				}
 
 				return ReplaceExpression{ std::move(dstVar) };
