@@ -105,7 +105,7 @@ namespace nzsl::Ast
 			if (!m_context->partialCompilation)
 				throw CompilerNoModuleResolverError{ importStatement.sourceLocation };
 
-			// when partially sanitizing, importing a whole module could register any identifier, so at this point we can't see unknown identifiers as errors
+			// when partially compiling, importing a whole module could register any identifier, so at this point we can't see unknown identifiers as errors
 			if (importEverythingElse)
 				m_context->allowUnknownIdentifiers = true;
 
@@ -156,7 +156,7 @@ namespace nzsl::Ast
 			auto& moduleData = m_states->modules.emplace_back();
 			moduleData.identifier = identifier;
 
-			// Don't run dependency checker when partially sanitizing
+			// Don't run dependency checker when partially compiling
 			assert(m_states->currentModule->importedModules.size() == moduleIndex);
 			auto& importedModule = m_states->currentModule->importedModules.emplace_back();
 			importedModule.identifier = std::move(identifier);
