@@ -1689,13 +1689,13 @@ namespace nzsl::Ast
 					return Finish(i, exprType); //< unresolved field
 
 				// Transform to AccessFieldExpression
-				std::unique_ptr<AccessFieldExpression> accessIndex = std::make_unique<AccessFieldExpression>();
-				accessIndex->sourceLocation = indexedExpr->sourceLocation;
-				accessIndex->expr = std::move(indexedExpr);
-				accessIndex->fieldIndex = static_cast<std::uint32_t>(fieldIndex);
-				accessIndex->cachedExpressionType = std::move(resolvedFieldTypeOpt);
+				std::unique_ptr<AccessFieldExpression> accessField = std::make_unique<AccessFieldExpression>();
+				accessField->sourceLocation = indexedExpr->sourceLocation;
+				accessField->expr = std::move(indexedExpr);
+				accessField->fieldIndex = static_cast<std::uint32_t>(fieldIndex);
+				accessField->cachedExpressionType = std::move(resolvedFieldTypeOpt);
 
-				indexedExpr = std::move(accessIndex);
+				indexedExpr = std::move(accessField);
 			}
 			else if (IsPrimitiveType(resolvedType) || IsVectorType(resolvedType))
 			{
@@ -1792,6 +1792,68 @@ namespace nzsl::Ast
 		return ReplaceExpression{ std::move(indexedExpr) };
 	}
 
+	auto IdentifierTypeResolverTransformer::Transform(AccessFieldExpression&& accessFieldExpr) -> ExpressionTransformation
+	{
+		if (accessFieldExpr.cachedExpressionType)
+			return VisitChildren{};
+
+		MandatoryExpr(accessFieldExpr.expr, accessFieldExpr.sourceLocation);
+
+		HandleChildren(accessFieldExpr);
+
+		const ExpressionType* exprType = GetExpressionType(*accessFieldExpr.expr);
+		if (!exprType)
+			return DontVisitChildren{};
+
+		ExpressionType resolvedExprType = ResolveAlias(*exprType);
+		if (!IsStructAddressible(resolvedExprType))
+			throw CompilerFieldUnexpectedTypeError{ accessFieldExpr.sourceLocation, ToString(resolvedExprType, accessFieldExpr.sourceLocation) };
+
+		std::size_t structIndex = ResolveStructIndex(resolvedExprType, accessFieldExpr.sourceLocation);
+		const StructData& s = m_states->structs.Retrieve(structIndex, accessFieldExpr.sourceLocation);
+
+		// We can't manually index field using fieldIndex because some fields may be disabled
+		std::uint32_t remainingIndex = accessFieldExpr.fieldIndex;
+		StructDescription::StructMember* fieldPtr = nullptr;
+		for (auto& field : s.description->members)
+		{
+			if (field.cond.HasValue())
+			{
+				if (!field.cond.IsResultingValue())
+					return DontVisitChildren{}; //< unresolved
+
+				if (!field.cond.GetResultingValue())
+					continue;
+			}
+
+			if (remainingIndex == 0)
+			{
+				fieldPtr = &field;
+				break;
+			}
+
+			remainingIndex--;
+		}
+
+		if (!fieldPtr)
+			throw AstIndexOutOfBoundsError{ accessFieldExpr.sourceLocation, "struct", accessFieldExpr.fieldIndex };
+
+		std::optional<ExpressionType> resolvedFieldTypeOpt = ResolveTypeExpr(fieldPtr->type, true, accessFieldExpr.sourceLocation);
+		if (!resolvedFieldTypeOpt.has_value())
+			return DontVisitChildren{}; //< unresolved
+
+		ExpressionType resolvedFieldType = std::move(resolvedFieldTypeOpt).value();
+
+		// Preserve uniform/storage type on inner struct types
+		if (IsUniformType(resolvedExprType))
+			resolvedFieldType = WrapExternalType<UniformType>(resolvedFieldType);
+		else if (IsStorageType(resolvedExprType))
+			resolvedFieldType = WrapExternalType<StorageType>(resolvedFieldType);
+
+		accessFieldExpr.cachedExpressionType = std::move(resolvedFieldType);
+		return DontVisitChildren{};
+	}
+
 	auto IdentifierTypeResolverTransformer::Transform(AccessIndexExpression&& accessIndexExpr) -> ExpressionTransformation
 	{
 		MandatoryExpr(accessIndexExpr.expr, accessIndexExpr.sourceLocation);
@@ -1837,7 +1899,7 @@ namespace nzsl::Ast
 					{
 						std::optional<ConstantValue> value = ComputeConstantValue(indexExpr);
 						if (!value.has_value())
-							return VisitChildren{}; //< unresolved
+							return DontVisitChildren{}; //< unresolved
 
 						parameters.push_back(std::move(*value));
 						break;
@@ -1849,7 +1911,7 @@ namespace nzsl::Ast
 					{
 						const ExpressionType* indexExprType = GetExpressionType(*indexExpr);
 						if (!indexExprType)
-							return VisitChildren{}; //< unresolved
+							return DontVisitChildren{}; //< unresolved
 
 						ExpressionType resolvedType = ResolveType(*indexExprType, typeCategory != TypeParameterCategory::FullType, accessIndexExpr.sourceLocation);
 
@@ -1897,7 +1959,7 @@ namespace nzsl::Ast
 			{
 				const ExpressionType* indexType = GetExpressionType(*indexExpr);
 				if (!indexType)
-					return VisitChildren{}; //< unresolved
+					return DontVisitChildren{}; //< unresolved
 
 				if (!IsPrimitiveType(*indexType))
 					throw CompilerIndexRequiresIntegerIndicesError{ accessIndexExpr.sourceLocation, ToString(*indexType, indexExpr->sourceLocation) };
@@ -1925,7 +1987,7 @@ namespace nzsl::Ast
 
 					std::optional<ConstantValue> constantValue = ComputeConstantValue(indexExpr);
 					if (!constantValue.has_value())
-						return VisitChildren{}; //< unresolved
+						return DontVisitChildren{}; //< unresolved
 
 					if (!std::holds_alternative<std::int32_t>(*constantValue))
 						throw AstInternalError{ indexExpr->sourceLocation, "node index typed as i32 yield a non-i32 value (of type " + Ast::ToString(GetConstantType(*constantValue)) + ")" };
@@ -1945,7 +2007,7 @@ namespace nzsl::Ast
 						if (field.cond.HasValue())
 						{
 							if (!field.cond.IsResultingValue())
-								return VisitChildren{}; //< unresolved
+								return DontVisitChildren{}; //< unresolved
 							
 							if (!field.cond.GetResultingValue())
 								continue;
@@ -1965,17 +2027,16 @@ namespace nzsl::Ast
 
 					std::optional<ExpressionType> resolvedFieldTypeOpt = ResolveTypeExpr(fieldPtr->type, true, indexExpr->sourceLocation);
 					if (!resolvedFieldTypeOpt.has_value())
-						return VisitChildren{}; //< unresolved
+						return DontVisitChildren{}; //< unresolved
 
-					ExpressionType resolvedFieldType = std::move(resolvedFieldTypeOpt).value();
+					// Transform to AccessFieldExpression
+					std::unique_ptr<AccessFieldExpression> accessField = std::make_unique<AccessFieldExpression>();
+					accessField->sourceLocation = accessIndexExpr.sourceLocation;
+					accessField->expr = std::move(accessIndexExpr.expr);
+					accessField->fieldIndex = static_cast<std::uint32_t>(fieldIndex);
+					accessField->cachedExpressionType = std::move(resolvedFieldTypeOpt);
 
-					// Preserve uniform/storage type on inner struct types
-					if (IsUniformType(resolvedExprType))
-						resolvedFieldType = WrapExternalType<UniformType>(resolvedFieldType);
-					else if (IsStorageType(resolvedExprType))
-						resolvedFieldType = WrapExternalType<StorageType>(resolvedFieldType);
-
-					resolvedExprType = std::move(resolvedFieldType);
+					return ReplaceExpression{ std::move(accessField) };
 				}
 				else if (IsMatrixType(resolvedExprType))
 				{
@@ -1999,7 +2060,6 @@ namespace nzsl::Ast
 			accessIndexExpr.cachedExpressionType = std::move(resolvedExprType);
 		}
 
-		// TODO: Handle AccessIndex on structs with m_context->options.useIdentifierAccessesForStructs
 		return DontVisitChildren{};
 	}
 
