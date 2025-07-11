@@ -100,6 +100,7 @@ namespace nzsl::Ast
 			std::string ToString(const NamedPartialType& partialType, const SourceLocation& sourceLocation) const;
 			template<typename... Args> std::string ToString(const std::variant<Args...>& value, const SourceLocation& sourceLocation) const;
 
+			ExpressionTransformation Transform(AccessFieldExpression&& accessFieldExpr) override;
 			ExpressionTransformation Transform(AccessIdentifierExpression&& accessIdentifierExpr) override;
 			ExpressionTransformation Transform(AccessIndexExpression&& accessIndexExpr) override;
 			ExpressionTransformation Transform(AssignExpression&& assignExpr) override;
