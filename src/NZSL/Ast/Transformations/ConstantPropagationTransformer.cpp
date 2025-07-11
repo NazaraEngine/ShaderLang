@@ -568,7 +568,8 @@ namespace nzsl::Ast
 		else if (IsArrayType(targetType))
 		{
 			const auto& arrayType = std::get<ArrayType>(targetType);
-			assert(arrayType.length == node.expressions.size());
+			if (arrayType.length != node.expressions.size())
+				throw CompilerCastComponentMismatchError{ node.sourceLocation, Nz::SafeCast<std::uint32_t>(node.expressions.size()), arrayType.length };
 
 			if (!node.expressions.empty())
 			{
