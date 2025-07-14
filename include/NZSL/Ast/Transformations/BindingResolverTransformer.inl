@@ -5,7 +5,7 @@
 namespace nzsl::Ast
 {
 	inline BindingResolverTransformer::BindingResolverTransformer() :
-	Transformer(false)
+	Transformer(TransformerFlag::IgnoreExpressions | TransformerFlag::IgnoreFunctionContent)
 	{
 	}
 

@@ -4,11 +4,6 @@
 
 namespace nzsl::Ast
 {
-	inline MatrixTransformer::MatrixTransformer() :
-	Transformer(true)
-	{
-	}
-
 	inline bool MatrixTransformer::Transform(Module& module, Context& context, std::string* error)
 	{
 		return Transform(module, context, {}, error);

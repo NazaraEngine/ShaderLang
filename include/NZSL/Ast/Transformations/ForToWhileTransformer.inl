@@ -5,7 +5,7 @@
 namespace nzsl::Ast
 {
 	inline ForToWhileTransformer::ForToWhileTransformer() :
-	Transformer(false)
+	Transformer(TransformerFlag::IgnoreExpressions)
 	{
 	}
 

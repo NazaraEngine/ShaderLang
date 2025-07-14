@@ -4,11 +4,6 @@
 
 namespace nzsl::Ast
 {
-	inline ConstantPropagationTransformer::ConstantPropagationTransformer() :
-	Transformer(true)
-	{
-	}
-
 	inline bool ConstantPropagationTransformer::Transform(ExpressionPtr& expression, Context& context, std::string* error)
 	{
 		return Transform(expression, context, {}, error);

@@ -16,7 +16,7 @@ namespace nzsl::Ast
 		public:
 			struct Options;
 
-			inline SwizzleTransformer();
+			SwizzleTransformer() = default;
 
 			inline bool Transform(Module& module, Context& context, std::string* error = nullptr);
 			bool Transform(Module& module, Context& context, const Options& options, std::string* error = nullptr);

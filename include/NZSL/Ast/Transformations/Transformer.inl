@@ -4,8 +4,8 @@
 
 namespace nzsl::Ast
 {
-	inline Transformer::Transformer(bool visitExpressions) :
-	m_visitExpressions(visitExpressions)
+	inline Transformer::Transformer(TransformerFlags flags) :
+	m_flags(flags)
 	{
 	}
 
