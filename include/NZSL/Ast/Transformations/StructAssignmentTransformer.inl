@@ -4,11 +4,6 @@
 
 namespace nzsl::Ast
 {
-	inline StructAssignmentTransformer::StructAssignmentTransformer() :
-	Transformer(true)
-	{
-	}
-
 	inline bool StructAssignmentTransformer::Transform(Module& module, Context& context, std::string* error)
 	{
 		return Transform(module, context, {}, error);

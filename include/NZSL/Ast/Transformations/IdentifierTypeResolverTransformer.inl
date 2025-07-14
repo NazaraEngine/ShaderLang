@@ -4,11 +4,6 @@
 
 namespace nzsl::Ast
 {
-	inline IdentifierTypeResolverTransformer::IdentifierTypeResolverTransformer() :
-	Transformer(true)
-	{
-	}
-
 	inline bool IdentifierTypeResolverTransformer::Transform(Module& module, Context& context, std::string* error)
 	{
 		return Transform(module, context, {}, error);

@@ -4,11 +4,6 @@
 
 namespace nzsl::Ast
 {
-	inline SwizzleTransformer::SwizzleTransformer() :
-	Transformer(true)
-	{
-	}
-
 	inline bool SwizzleTransformer::Transform(Module& module, Context& context, std::string* error)
 	{
 		return Transform(module, context, {}, error);

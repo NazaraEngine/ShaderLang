@@ -200,7 +200,7 @@ namespace nzsl::Ast
 
 	void Transformer::HandleChildren(CastExpression& node)
 	{
-		if (m_visitExpressions)
+		if (!m_flags.Test(TransformerFlag::IgnoreExpressions))
 			HandleExpressionValue(node.targetType);
 
 		for (auto& expr : node.expressions)
@@ -316,7 +316,7 @@ namespace nzsl::Ast
 	{
 		for (auto& cond : node.condStatements)
 		{
-			if (m_visitExpressions)
+			if (!m_flags.Test(TransformerFlag::IgnoreExpressions))
 				HandleExpression(cond.condition);
 
 			PushScope();
@@ -338,7 +338,7 @@ namespace nzsl::Ast
 
 	void Transformer::HandleChildren(ConditionalStatement& node)
 	{
-		if (m_visitExpressions)
+		if (!m_flags.Test(TransformerFlag::IgnoreExpressions))
 			HandleExpression(node.condition);
 
 		PushScope();
@@ -352,13 +352,13 @@ namespace nzsl::Ast
 
 	void Transformer::HandleChildren(DeclareAliasStatement& node)
 	{
-		if (m_visitExpressions)
+		if (!m_flags.Test(TransformerFlag::IgnoreExpressions))
 			HandleExpression(node.expression);
 	}
 
 	void Transformer::HandleChildren(DeclareConstStatement& node)
 	{
-		if (m_visitExpressions)
+		if (!m_flags.Test(TransformerFlag::IgnoreExpressions))
 		{
 			HandleExpressionValue(node.isExported);
 			HandleExpressionValue(node.type);
@@ -369,7 +369,7 @@ namespace nzsl::Ast
 
 	void Transformer::HandleChildren(DeclareExternalStatement& node)
 	{
-		if (m_visitExpressions)
+		if (!m_flags.Test(TransformerFlag::IgnoreExpressions))
 		{
 			HandleExpressionValue(node.autoBinding);
 			HandleExpressionValue(node.bindingSet);
@@ -387,7 +387,7 @@ namespace nzsl::Ast
 	{
 		PushScope();
 
-		if (m_visitExpressions)
+		if (!m_flags.Test(TransformerFlag::IgnoreExpressions))
 		{
 			HandleExpressionValue(node.depthWrite);
 			HandleExpressionValue(node.returnType);
@@ -400,16 +400,20 @@ namespace nzsl::Ast
 				HandleExpressionValue(param.type);
 		}
 
-		HandleStatementList<false>(node.statements, [&](StatementPtr& statement)
+		if (!m_flags.Test(TransformerFlag::IgnoreFunctionContent))
 		{
-			HandleStatement(statement);
-		});
+			HandleStatementList<false>(node.statements, [&](StatementPtr& statement)
+			{
+				HandleStatement(statement);
+			});
+		}
+
 		PopScope();
 	}
 
 	void Transformer::HandleChildren(DeclareOptionStatement& node)
 	{
-		if (m_visitExpressions)
+		if (!m_flags.Test(TransformerFlag::IgnoreExpressions))
 		{
 			HandleExpressionValue(node.optType);
 
@@ -420,7 +424,7 @@ namespace nzsl::Ast
 
 	void Transformer::HandleChildren(DeclareStructStatement& node)
 	{
-		if (m_visitExpressions)
+		if (!m_flags.Test(TransformerFlag::IgnoreExpressions))
 		{
 			HandleExpressionValue(node.isExported);
 			HandleExpressionValue(node.description.layout);
@@ -438,7 +442,7 @@ namespace nzsl::Ast
 
 	void Transformer::HandleChildren(DeclareVariableStatement& node)
 	{
-		if (m_visitExpressions)
+		if (!m_flags.Test(TransformerFlag::IgnoreExpressions))
 		{
 			HandleExpressionValue(node.varType);
 
@@ -453,13 +457,13 @@ namespace nzsl::Ast
 
 	void Transformer::HandleChildren(ExpressionStatement& node)
 	{
-		if (m_visitExpressions)
+		if (!m_flags.Test(TransformerFlag::IgnoreExpressions))
 			HandleExpression(node.expression);
 	}
 
 	void Transformer::HandleChildren(ForStatement& node)
 	{
-		if (m_visitExpressions)
+		if (!m_flags.Test(TransformerFlag::IgnoreExpressions))
 		{
 			HandleExpression(node.fromExpr);
 			HandleExpression(node.toExpr);
@@ -480,7 +484,7 @@ namespace nzsl::Ast
 
 	void Transformer::HandleChildren(ForEachStatement& node)
 	{
-		if (m_visitExpressions)
+		if (!m_flags.Test(TransformerFlag::IgnoreExpressions))
 		{
 			HandleExpression(node.expression);
 
@@ -513,7 +517,7 @@ namespace nzsl::Ast
 
 	void Transformer::HandleChildren(ReturnStatement& node)
 	{
-		if (m_visitExpressions && node.returnExpr)
+		if (!m_flags.Test(TransformerFlag::IgnoreExpressions) && node.returnExpr)
 			HandleExpression(node.returnExpr);
 	}
 
@@ -543,7 +547,7 @@ namespace nzsl::Ast
 
 	void Transformer::HandleChildren(WhileStatement& node)
 	{
-		if (m_visitExpressions)
+		if (!m_flags.Test(TransformerFlag::IgnoreExpressions))
 		{
 			HandleExpression(node.condition);
 

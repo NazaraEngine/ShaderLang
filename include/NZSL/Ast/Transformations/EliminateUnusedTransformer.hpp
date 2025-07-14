@@ -7,9 +7,7 @@
 #ifndef NZSL_AST_TRANSFORMATIONS_ELIMINATEUNUSEDTRANSFORMER_HPP
 #define NZSL_AST_TRANSFORMATIONS_ELIMINATEUNUSEDTRANSFORMER_HPP
 
-#include <NazaraUtils/Bitset.hpp>
-#include <NZSL/Config.hpp>
-#include <NZSL/Ast/Cloner.hpp>
+ #include <NZSL/Config.hpp>
 #include <NZSL/Ast/DependencyCheckerVisitor.hpp>
 #include <NZSL/Ast/Module.hpp>
 #include <NZSL/Ast/Transformations/Transformer.hpp>
