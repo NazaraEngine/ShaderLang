@@ -23,6 +23,8 @@ namespace nzsl::Ast
 		if (assign.op == AssignType::Simple || !m_options->removeCompoundAssignment)
 			return VisitChildren{};
 
+		HandleChildren(assign);
+
 		BinaryType binaryType;
 		switch (assign.op)
 		{
