@@ -7,7 +7,9 @@
 #include <NazaraUtils/CallOnExit.hpp>
 #include <NazaraUtils/StackVector.hpp>
 #include <NZSL/ModuleResolver.hpp>
+#include <NZSL/Ast/Cloner.hpp>
 #include <NZSL/Ast/DependencyCheckerVisitor.hpp>
+#include <NZSL/Ast/ExportVisitor.hpp>
 #include <NZSL/Ast/ExpressionType.hpp>
 #include <NZSL/Ast/IndexRemapperVisitor.hpp>
 #include <NZSL/Ast/Option.hpp>
@@ -21,7 +23,6 @@
 #include <tsl/ordered_map.h>
 #include <unordered_map>
 #include <unordered_set>
-#include <NZSL/Ast/ExportVisitor.hpp>
 
 namespace nzsl::Ast
 {
@@ -3394,10 +3395,6 @@ namespace nzsl::Ast
 		auto it = m_states->moduleByName.find(importStatement.moduleName);
 		if (it == m_states->moduleByName.end())
 		{
-			ModulePtr targetModule = m_options->moduleResolver->Resolve(importStatement.moduleName);
-			if (!targetModule)
-				throw CompilerModuleNotFoundError{ importStatement.sourceLocation, importStatement.moduleName };
-
 			m_states->moduleByName[importStatement.moduleName] = States::ModuleIdSentinel;
 
 			// Generate module identifier (based on module name)
