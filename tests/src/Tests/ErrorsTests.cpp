@@ -3,7 +3,7 @@
 #include <NZSL/Parser.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers.hpp>
-#if 0
+
 TEST_CASE("errors", "[Shader]")
 {
 	SECTION("Checking lexer errors")
@@ -997,15 +997,15 @@ import * from Module;
 			auto directoryModuleResolver = std::make_shared<nzsl::FilesystemModuleResolver>();
 			directoryModuleResolver->RegisterModule(importedSource);
 
-			nzsl::Ast::ImportResolverTransformer::Options importOpt;
-			importOpt.moduleResolver = directoryModuleResolver;
+			nzsl::Ast::IdentifierTypeResolverTransformer::Options resolveOptions;
+			resolveOptions.moduleResolver = directoryModuleResolver;
 
 			shaderModule = nzsl::Parse(wildcardImportSource);
 			
-			nzsl::Ast::ImportResolverTransformer importResolver;
+			nzsl::Ast::IdentifierTypeResolverTransformer resolver;
 			nzsl::Ast::Transformer::Context context;
 
-			CHECK_THROWS_WITH(importResolver.Transform(*shaderModule, context, importOpt), "(5,1 -> 21): CModuleFeatureMismatch error: module Module requires feature primitive_externals");
+			CHECK_THROWS_WITH(resolver.Transform(*shaderModule, context, resolveOptions), "(5,1 -> 21): CModuleFeatureMismatch error: module Module requires feature primitive_externals");
 
 			std::string_view nonExistentImportShaderSource = R"(
 [nzsl_version("1.0")]
@@ -1016,7 +1016,7 @@ import Foo from Module;
 )";
 
 			shaderModule = nzsl::Parse(nonExistentImportShaderSource);
-			CHECK_THROWS_WITH(importResolver.Transform(*shaderModule, context, importOpt), "(6,1 -> 23): CImportIdentifierNotFound error: identifier(s) Foo not found in module Module");
+			CHECK_THROWS_WITH(resolver.Transform(*shaderModule, context, resolveOptions), "(6,1 -> 23): CImportIdentifierNotFound error: identifier(s) Foo not found in module Module");
 
 			std::string_view multipleNonExistentImportShaderSource = R"(
 [nzsl_version("1.0")]
@@ -1027,7 +1027,7 @@ import Foo, Bar, Baz as Qix from Module;
 )";
 
 			shaderModule = nzsl::Parse(multipleNonExistentImportShaderSource);
-			CHECK_THROWS_WITH(importResolver.Transform(*shaderModule, context, importOpt), "(6,1 -> 40): CImportIdentifierNotFound error: identifier(s) Foo, Baz not found in module Module");
+			CHECK_THROWS_WITH(resolver.Transform(*shaderModule, context, resolveOptions), "(6,1 -> 40): CImportIdentifierNotFound error: identifier(s) Foo, Baz not found in module Module");
 		}
 
 		/************************************************************************/
@@ -1101,4 +1101,3 @@ fn main()
 		}
 	}
 }
-#endif
