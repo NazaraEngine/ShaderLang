@@ -18,7 +18,7 @@ namespace nzsl::Ast
 		public:
 			struct Options;
 
-			inline ConstantPropagationTransformer();
+			ConstantPropagationTransformer() = default;
 			ConstantPropagationTransformer(const ConstantPropagationTransformer&) = delete;
 			ConstantPropagationTransformer(ConstantPropagationTransformer&&) = delete;
 			~ConstantPropagationTransformer() = default;

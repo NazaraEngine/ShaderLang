@@ -5,7 +5,7 @@
 namespace nzsl::Ast
 {
 	inline IdentifierTransformer::IdentifierTransformer() :
-	Transformer(false)
+	Transformer(TransformerFlag::IgnoreExpressions)
 	{
 	}
 

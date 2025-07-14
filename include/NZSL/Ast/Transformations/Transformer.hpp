@@ -18,6 +18,18 @@
 
 namespace nzsl::Ast
 {
+	enum class TransformerFlag
+	{
+		IgnoreExpressions,
+		IgnoreFunctionContent,
+
+		Max = IgnoreFunctionContent
+	};
+
+	constexpr bool EnableEnumAsNzFlags(TransformerFlag) { return true; }
+
+	using TransformerFlags = Nz::Flags<TransformerFlag>;
+
 	class NZSL_API Transformer : public ExpressionVisitor, public StatementVisitor
 	{
 		public:
@@ -40,7 +52,7 @@ namespace nzsl::Ast
 			using ExpressionTransformation = std::variant<DontVisitChildren, VisitChildren, ReplaceExpression>;
 			using StatementTransformation = std::variant<DontVisitChildren, VisitChildren, ReplaceStatement>;
 
-			inline Transformer(bool visitExpressions);
+			inline Transformer(TransformerFlags flags = {});
 
 			void AppendStatement(StatementPtr statement);
 
@@ -141,7 +153,7 @@ namespace nzsl::Ast
 			std::vector<ExpressionPtr*> m_expressionStack;
 			std::vector<StatementPtr*> m_statementStack;
 			std::vector<StatementPtr>* m_currentStatementList;
-			bool m_visitExpressions;
+			TransformerFlags m_flags;
 	};
 }
 

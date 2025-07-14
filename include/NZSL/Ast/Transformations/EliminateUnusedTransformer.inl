@@ -2,11 +2,10 @@
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
-
 namespace nzsl::Ast
 {
 	inline EliminateUnusedTransformer::EliminateUnusedTransformer() :
-	Transformer(false)
+	Transformer(TransformerFlag::IgnoreExpressions)
 	{
 	}
 

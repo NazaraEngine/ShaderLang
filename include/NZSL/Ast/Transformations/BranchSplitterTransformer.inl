@@ -5,7 +5,7 @@
 namespace nzsl::Ast
 {
 	inline BranchSplitterTransformer::BranchSplitterTransformer() :
-	Transformer(false)
+	Transformer(TransformerFlag::IgnoreExpressions)
 	{
 	}
 

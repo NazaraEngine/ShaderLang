@@ -4,11 +4,6 @@
 
 namespace nzsl::Ast
 {
-	inline ConstantRemovalTransformer::ConstantRemovalTransformer() :
-	Transformer(true)
-	{
-	}
-
 	inline bool ConstantRemovalTransformer::Transform(Module& module, Context& context, std::string* error)
 	{
 		return Transform(module, context, {}, error);

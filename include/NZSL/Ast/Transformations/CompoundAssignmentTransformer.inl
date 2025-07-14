@@ -4,11 +4,6 @@
 
 namespace nzsl::Ast
 {
-	inline CompoundAssignmentTransformer::CompoundAssignmentTransformer() :
-	Transformer(true)
-	{
-	}
-
 	inline bool CompoundAssignmentTransformer::Transform(Module& module, Context& context, std::string* error)
 	{
 		return Transform(module, context, {}, error);
