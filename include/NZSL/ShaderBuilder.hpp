@@ -32,6 +32,7 @@ namespace nzsl::ShaderBuilder
 
 		struct AccessMember
 		{
+			inline Ast::AccessIdentifierExpressionPtr operator()(Ast::ExpressionPtr expr, std::string memberIdentifier, const SourceLocation& sourceLocation) const;
 			inline Ast::AccessIdentifierExpressionPtr operator()(Ast::ExpressionPtr expr, std::vector<std::string> memberIdentifiers) const;
 		};
 

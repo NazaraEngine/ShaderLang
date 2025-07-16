@@ -536,7 +536,9 @@ void main()
       OpLine %32 15 5
       OpLine %32 15 12
 %35 = OpLoad %3 %5
+      OpLine %32 15 24
 %36 = OpCompositeConstruct %11 %8 %8
+      OpLine %32 15 12
 %37 = OpImageSampleImplicitLod %6 %35 %36
       OpReturnValue %37
       OpFunctionEnd
@@ -582,8 +584,10 @@ void main()
       OpStore %49 %52
       OpLine %31 29 20
 %53 = OpFunctionCall %6 %29 %49
+      OpLine %31 29 45
 %55 = OpAccessChain %54 %20 %10
 %56 = OpLoad %6 %55
+      OpLine %31 29 20
 %57 = OpFMul %6 %53 %56
       OpLine %31 29 5
 %58 = OpAccessChain %42 %48 %10
@@ -973,7 +977,9 @@ struct Output
       OpLine %32 15 5
       OpLine %32 15 12
 %35 = OpLoad %3 %5
+      OpLine %32 15 24
 %36 = OpCompositeConstruct %11 %8 %8
+      OpLine %32 15 12
 %37 = OpImageSampleImplicitLod %6 %35 %36
       OpReturnValue %37
       OpFunctionEnd
@@ -1019,8 +1025,10 @@ struct Output
       OpStore %49 %52
       OpLine %31 29 20
 %53 = OpFunctionCall %6 %29 %49
+      OpLine %31 29 45
 %55 = OpAccessChain %54 %20 %10
 %56 = OpLoad %6 %55
+      OpLine %31 29 20
 %57 = OpFMul %6 %53 %56
       OpLine %31 29 5
 %58 = OpAccessChain %42 %48 %10

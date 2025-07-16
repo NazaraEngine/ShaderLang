@@ -108,6 +108,7 @@ option enable: bool;
 			nzsl::Ast::TransformerExecutor executor;
 			executor.AddPass<nzsl::Ast::IdentifierTypeResolverTransformer>();
 			executor.AddPass<nzsl::Ast::ValidationTransformer>();
+			executor.AddPass<nzsl::Ast::BindingResolverTransformer>();
 
 			executor.Transform(*nzsl::Parse(sourceCode));
 		};
@@ -277,7 +278,7 @@ fn test(input: Input) -> vec4[f32]
 fn main(input: Input) 
 {
 	test(input);
-})"), "(12,9 -> 17): CBuiltinUnsupportedStage error: builtin position is not available in fragment stage");
+})"), "(7,22 -> 24): CBuiltinUnsupportedStage error: builtin position is not available in fragment stage");
 		}
 
 		/************************************************************************/
@@ -398,12 +399,16 @@ const V = u32(42) >> u32(82);
 [nzsl_version("1.0")]
 module;
 
-external
+struct Foo
 {
-	foo: i32
 }
 
-)"), "(7,2 -> 9): CExtMissingBindingIndex error: external variable requires a binding index");
+external
+{
+	foo: uniform[Foo]
+}
+
+)"), "(11,2 -> 18): CExtMissingBindingIndex error: external variable requires a binding index");
 
 			CHECK_THROWS_WITH(Compile(R"(
 [nzsl_version("1.0")]
@@ -415,10 +420,10 @@ struct Foo
 
 external
 {
-	[set(0)] foo : push_constant[Foo]
+	[set(0)] foo: push_constant[Foo]
 }
 
-)"), "(11,11 -> 34): CUnexpectedAttributeOnPushConstant error: unexpected attribute set on push_constant");
+)"), "(11,11 -> 33): CUnexpectedAttributeOnPushConstant error: unexpected attribute set on push_constant");
 
 			CHECK_THROWS_WITH(Compile(R"(
 [nzsl_version("1.0")]
@@ -466,12 +471,16 @@ external
 [nzsl_version("1.0")]
 module;
 
-external
+struct Foo
 {
-	[binding("Hello")] foo: i32
 }
 
-)"), "(7,11 -> 17): CAttributeUnexpectedType error: unexpected attribute type (expected u32, got string)");
+external
+{
+	[binding("Hello")] foo: storage[Foo]
+}
+
+)"), "(11,11 -> 17): CAttributeUnexpectedType error: unexpected attribute type (expected u32, got string)");
 
 			CHECK_THROWS_WITH(Compile(R"(
 [nzsl_version("1.0")]
