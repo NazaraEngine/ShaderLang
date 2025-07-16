@@ -125,6 +125,7 @@ NZSL_SHADERLANG_COMPILER_ERROR(IntrinsicExpectedType, "expected type {1} for par
 NZSL_SHADERLANG_COMPILER_ERROR(IntrinsicUnexpectedBoolean, "boolean parameters are not allowed")
 NZSL_SHADERLANG_COMPILER_ERROR(IntrinsicUnmatchingParameterType, "unmatching intrinsic types (param #{}->#{} types must match)", std::uint32_t, std::uint32_t)
 NZSL_SHADERLANG_COMPILER_ERROR(IntrinsicUnmatchingVecComponent, "unmatching intrinsic types (param #{}->#{} types must match)", std::uint32_t, std::uint32_t)
+NZSL_SHADERLANG_COMPILER_ERROR(IntrinsicUnresolvedParameter, "parameter {} has not been resolved", std::size_t)
 NZSL_SHADERLANG_COMPILER_ERROR(InvalidCast, "invalid cast to type {}", std::string)
 NZSL_SHADERLANG_COMPILER_ERROR(InvalidScalarSwizzle, "invalid swizzle for scalar")
 NZSL_SHADERLANG_COMPILER_ERROR(InvalidStageDependency, "this is only valid in the {} stage but this functions gets called in the {} stage", ShaderStageType, ShaderStageType)
