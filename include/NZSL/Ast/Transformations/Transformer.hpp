@@ -22,8 +22,9 @@ namespace nzsl::Ast
 	{
 		IgnoreExpressions,
 		IgnoreFunctionContent,
+		IgnoreLoopContent,
 
-		Max = IgnoreFunctionContent
+		Max = IgnoreLoopContent
 	};
 
 	constexpr bool EnableEnumAsNzFlags(TransformerFlag) { return true; }
@@ -137,7 +138,7 @@ namespace nzsl::Ast
 
 			bool TransformExpression(ExpressionPtr& expression, Context& context, std::string* error);
 			bool TransformImportedModules(Module& module, Context& context, std::string* error);
-			bool TransformModule(Module& module, Context& context, std::string* error, Nz::FunctionRef<void()> postCallback = nullptr);
+			virtual bool TransformModule(Module& module, Context& context, std::string* error, Nz::FunctionRef<void()> postCallback = nullptr);
 			bool TransformStatement(StatementPtr& statement, Context& context, std::string* error);
 
 			Context* m_context;

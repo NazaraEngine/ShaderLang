@@ -36,7 +36,7 @@ namespace nzsl::Ast
 				std::size_t structIndex = std::get<StructType>(*targetType).structIndex;
 				auto structIt = m_structDescs.find(structIndex);
 				if (structIt == m_structDescs.end())
-					throw AstInvalidIndexError{ assign.sourceLocation, structIndex };
+					throw AstInvalidIndexError{ assign.sourceLocation, "struct", structIndex };
 
 				const StructDescription* structDesc = structIt->second;
 

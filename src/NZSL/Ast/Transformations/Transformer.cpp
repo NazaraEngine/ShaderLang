@@ -474,7 +474,7 @@ namespace nzsl::Ast
 			HandleExpressionValue(node.unroll);
 		}
 
-		if (node.statement)
+		if (node.statement && !m_flags.Test(TransformerFlag::IgnoreLoopContent))
 		{
 			PushScope();
 			HandleStatement(node.statement);
@@ -491,7 +491,7 @@ namespace nzsl::Ast
 			HandleExpressionValue(node.unroll);
 		}
 
-		if (node.statement)
+		if (node.statement && !m_flags.Test(TransformerFlag::IgnoreLoopContent))
 		{
 			PushScope();
 			HandleStatement(node.statement);
@@ -554,7 +554,7 @@ namespace nzsl::Ast
 			HandleExpressionValue(node.unroll);
 		}
 
-		if (node.body)
+		if (node.body && !m_flags.Test(TransformerFlag::IgnoreLoopContent))
 		{
 			PushScope();
 			HandleStatement(node.body);
