@@ -54,7 +54,7 @@ namespace nzsl
 			};
 			
 			static std::pair<std::uint32_t, std::uint32_t> GetMaximumSupportedVersion(std::uint32_t vkMajorVersion, std::uint32_t vkMinorVersion);
-			static Ast::TransformerExecutor GetPasses();
+			static Ast::TransformerExecutor GetPasses(bool resolve, bool validate);
 
 		private:
 			struct FunctionParameter;
