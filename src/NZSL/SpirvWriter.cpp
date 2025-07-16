@@ -24,8 +24,8 @@
 #include <NZSL/Ast/Transformations/ConstantRemovalTransformer.hpp>
 #include <NZSL/Ast/Transformations/EliminateUnusedTransformer.hpp>
 #include <NZSL/Ast/Transformations/ForToWhileTransformer.hpp>
-#include <NZSL/Ast/Transformations/IdentifierTypeResolverTransformer.hpp>
 #include <NZSL/Ast/Transformations/MatrixTransformer.hpp>
+#include <NZSL/Ast/Transformations/ResolveTransformer.hpp>
 #include <NZSL/Ast/Transformations/StructAssignmentTransformer.hpp>
 #include <NZSL/Ast/Transformations/SwizzleTransformer.hpp>
 #include <NZSL/Ast/Transformations/ValidationTransformer.hpp>
@@ -881,7 +881,7 @@ namespace nzsl
 	{
 		Ast::TransformerExecutor executor;
 		if (resolve)
-			executor.AddPass<Ast::IdentifierTypeResolverTransformer>({ nullptr, true });
+			executor.AddPass<Ast::ResolveTransformer>({ nullptr, true });
 
 		if (validate)
 			executor.AddPass<Ast::ValidationTransformer>();

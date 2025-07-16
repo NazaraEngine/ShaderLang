@@ -2,7 +2,7 @@
 #include <NZSL/FilesystemModuleResolver.hpp>
 #include <NZSL/Parser.hpp>
 #include <NZSL/Ast/TransformerExecutor.hpp>
-#include <NZSL/Ast/Transformations/IdentifierTypeResolverTransformer.hpp>
+#include <NZSL/Ast/Transformations/ResolveTransformer.hpp>
 #include <catch2/catch_test_macros.hpp>
 
 void RegisterModule(const std::shared_ptr<nzsl::FilesystemModuleResolver>& moduleResolver, std::string_view source)
@@ -14,7 +14,7 @@ void RegisterModule(const std::shared_ptr<nzsl::FilesystemModuleResolver>& modul
 		nzsl::Ast::Transformer::Context context;
 		context.partialCompilation = true;
 
-		nzsl::Ast::IdentifierTypeResolverTransformer transformer;
+		nzsl::Ast::ResolveTransformer transformer;
 
 		compiledModule = nzsl::Parse(source);
 		transformer.Transform(*compiledModule, context);
@@ -104,7 +104,7 @@ fn main(input: InputData) -> OutputData
 		auto directoryModuleResolver = std::make_shared<nzsl::FilesystemModuleResolver>();
 		RegisterModule(directoryModuleResolver, importedSource);
 
-		nzsl::Ast::IdentifierTypeResolverTransformer::Options resolverOptions;
+		nzsl::Ast::ResolveTransformer::Options resolverOptions;
 		resolverOptions.moduleResolver = directoryModuleResolver;
 
 		ResolveOptions resolveOptions;
@@ -353,7 +353,7 @@ fn main(input: Input) -> OutputData
 		RegisterModule(directoryModuleResolver, blockModule);
 		RegisterModule(directoryModuleResolver, inputOutputModule);
 
-		nzsl::Ast::IdentifierTypeResolverTransformer::Options resolverOptions;
+		nzsl::Ast::ResolveTransformer::Options resolverOptions;
 		resolverOptions.moduleResolver = directoryModuleResolver;
 
 		ResolveOptions resolveOptions;
@@ -566,7 +566,7 @@ fn main()
 		RegisterModule(directoryModuleResolver, dataModule);
 		RegisterModule(directoryModuleResolver, funcModule);
 
-		nzsl::Ast::IdentifierTypeResolverTransformer::Options resolverOptions;
+		nzsl::Ast::ResolveTransformer::Options resolverOptions;
 		resolverOptions.moduleResolver = directoryModuleResolver;
 
 		ResolveOptions resolveOptions;
@@ -898,7 +898,7 @@ fn FragMain() -> FragOut
 		nzsl::Ast::Transformer::Context context;
 		context.partialCompilation = true;
 
-		nzsl::Ast::IdentifierTypeResolverTransformer resolverTransformer;
+		nzsl::Ast::ResolveTransformer resolverTransformer;
 
 		REQUIRE_NOTHROW(resolverTransformer.Transform(*shaderModule, context));
 
@@ -907,7 +907,7 @@ fn FragMain() -> FragOut
 		auto directoryModuleResolver = std::make_shared<nzsl::FilesystemModuleResolver>();
 		RegisterModule(directoryModuleResolver, gbufferOutput);
 
-		nzsl::Ast::IdentifierTypeResolverTransformer::Options resolverOptions;
+		nzsl::Ast::ResolveTransformer::Options resolverOptions;
 		resolverOptions.moduleResolver = directoryModuleResolver;
 
 		WHEN("Trying ForwardPass=true")
@@ -1051,10 +1051,10 @@ fn FragMain() -> FragOut
 		RegisterModule(directoryModuleResolver, lightingPhongData);
 		RegisterModule(directoryModuleResolver, lightingShadowData);
 
-		nzsl::Ast::IdentifierTypeResolverTransformer::Options resolverOptions;
+		nzsl::Ast::ResolveTransformer::Options resolverOptions;
 		resolverOptions.moduleResolver = directoryModuleResolver;
 
-		nzsl::Ast::IdentifierTypeResolverTransformer identifierResolver;
+		nzsl::Ast::ResolveTransformer identifierResolver;
 		nzsl::Ast::Transformer::Context context;
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(mainSource);
@@ -1197,7 +1197,7 @@ fn main(input: Module.InputData) -> Module.OutputData
 		auto directoryModuleResolver = std::make_shared<nzsl::FilesystemModuleResolver>();
 		RegisterModule(directoryModuleResolver, importedSource);
 
-		nzsl::Ast::IdentifierTypeResolverTransformer::Options resolverOptions;
+		nzsl::Ast::ResolveTransformer::Options resolverOptions;
 		resolverOptions.moduleResolver = directoryModuleResolver;
 
 		ResolveOptions resolveOptions;
@@ -1430,7 +1430,7 @@ fn main(input: SimpleModule.InputData) -> SimpleModule.OutputData
 		auto directoryModuleResolver = std::make_shared<nzsl::FilesystemModuleResolver>();
 		RegisterModule(directoryModuleResolver, importedSource);
 
-		nzsl::Ast::IdentifierTypeResolverTransformer::Options resolverOptions;
+		nzsl::Ast::ResolveTransformer::Options resolverOptions;
 		resolverOptions.moduleResolver = directoryModuleResolver;
 
 		ResolveOptions resolveOptions;

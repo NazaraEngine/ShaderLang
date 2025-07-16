@@ -17,7 +17,7 @@ TEST_CASE("FilesystemModuleResolver", "[Shader]")
 
 	nzsl::Ast::ModulePtr shaderModule = moduleResolver->Resolve("Shader");
 
-	nzsl::Ast::IdentifierTypeResolverTransformer::Options resolverOptions;
+	nzsl::Ast::ResolveTransformer::Options resolverOptions;
 	resolverOptions.moduleResolver = moduleResolver;
 
 	ResolveOptions resolveOptions;

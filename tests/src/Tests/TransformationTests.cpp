@@ -119,7 +119,7 @@ fn main()
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
 
 		nzsl::Ast::TransformerExecutor executor;
-		executor.AddPass<nzsl::Ast::IdentifierTypeResolverTransformer>();
+		executor.AddPass<nzsl::Ast::ResolveTransformer>();
 		executor.AddPass<nzsl::Ast::ForToWhileTransformer>();
 
 		REQUIRE_NOTHROW(executor.Transform(*shaderModule));
@@ -175,7 +175,7 @@ fn main()
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
 
 		nzsl::Ast::TransformerExecutor executor;
-		executor.AddPass<nzsl::Ast::IdentifierTypeResolverTransformer>();
+		executor.AddPass<nzsl::Ast::ResolveTransformer>();
 		executor.AddPass<nzsl::Ast::ForToWhileTransformer>();
 
 		REQUIRE_NOTHROW(executor.Transform(*shaderModule));
@@ -301,7 +301,7 @@ fn testMat4ToMat4(input: mat4[f32]) -> mat4[f32]
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
 
 		nzsl::Ast::TransformerExecutor executor;
-		executor.AddPass<nzsl::Ast::IdentifierTypeResolverTransformer>();
+		executor.AddPass<nzsl::Ast::ResolveTransformer>();
 		executor.AddPass<nzsl::Ast::MatrixTransformer>({ false, true });
 
 		REQUIRE_NOTHROW(executor.Transform(*shaderModule));
@@ -425,7 +425,7 @@ fn testMat4CompoundMinusMat4(x: mat4[f32], y: mat4[f32]) -> mat4[f32]
 		nzsl::Ast::Transformer::Context transformContext;
 		{
 			nzsl::Ast::TransformerExecutor executor;
-			executor.AddPass<nzsl::Ast::IdentifierTypeResolverTransformer>();
+			executor.AddPass<nzsl::Ast::ResolveTransformer>();
 			executor.AddPass<nzsl::Ast::CompoundAssignmentTransformer>({ true });
 			executor.AddPass<nzsl::Ast::MatrixTransformer>({ true, false });
 
@@ -527,7 +527,7 @@ external
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
 
 		nzsl::Ast::TransformerExecutor executor;
-		executor.AddPass<nzsl::Ast::IdentifierTypeResolverTransformer>({ nullptr, true });
+		executor.AddPass<nzsl::Ast::ResolveTransformer>({ nullptr, true });
 
 		REQUIRE_NOTHROW(executor.Transform(*shaderModule));
 
@@ -568,7 +568,7 @@ fn main()
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
 
 		nzsl::Ast::TransformerExecutor executor;
-		executor.AddPass<nzsl::Ast::IdentifierTypeResolverTransformer>();
+		executor.AddPass<nzsl::Ast::ResolveTransformer>();
 		executor.AddPass<nzsl::Ast::SwizzleTransformer>({ true });
 
 		REQUIRE_NOTHROW(executor.Transform(*shaderModule));
@@ -649,7 +649,7 @@ fn main()
 		context.partialCompilation = true;
 
 		nzsl::Ast::TransformerExecutor executor;
-		executor.AddPass<nzsl::Ast::IdentifierTypeResolverTransformer>();
+		executor.AddPass<nzsl::Ast::ResolveTransformer>();
 		executor.AddPass<nzsl::Ast::StructAssignmentTransformer>({ true, true });
 
 		REQUIRE_NOTHROW(executor.Transform(*shaderModule, context));
