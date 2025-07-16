@@ -95,6 +95,8 @@ namespace nzsl::Ast
 
 	std::string ConstantToString(const ConstantArrayValue& value)
 	{
+		NAZARA_USE_ANONYMOUS_NAMESPACE
+
 		return std::visit([&](auto&& arg) -> std::string
 		{
 			using T = std::decay_t<decltype(arg)>;

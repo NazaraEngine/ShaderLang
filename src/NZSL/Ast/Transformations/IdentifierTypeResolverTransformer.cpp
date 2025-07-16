@@ -162,6 +162,12 @@ namespace nzsl::Ast
 		DeclareFunctionStatement* node;
 	};
 
+	struct IdentifierTypeResolverTransformer::StructData
+	{
+		std::size_t moduleIndex;
+		StructDescription* description;
+	};
+
 	struct IdentifierTypeResolverTransformer::States
 	{
 		struct ModuleData
@@ -201,11 +207,6 @@ namespace nzsl::Ast
 		unsigned int nextConditionalIndex = 1;
 	};
 
-	struct IdentifierTypeResolverTransformer::StructData
-	{
-		std::size_t moduleIndex;
-		StructDescription* description;
-	};
 
 	bool IdentifierTypeResolverTransformer::Transform(Module& module, Context& context, const Options& options, std::string* error)
 	{
@@ -2304,8 +2305,6 @@ namespace nzsl::Ast
 
 	auto IdentifierTypeResolverTransformer::Transform(ConstantExpression&& constantExpression) -> ExpressionTransformation
 	{
-		NAZARA_USE_ANONYMOUS_NAMESPACE
-
 		const ConstantData* constantData = m_states->constants.TryRetrieve(constantExpression.constantId, constantExpression.sourceLocation);
 		if (!constantData || !constantData->value)
 		{
