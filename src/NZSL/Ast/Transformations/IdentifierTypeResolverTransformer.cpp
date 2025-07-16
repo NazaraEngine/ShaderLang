@@ -12,6 +12,7 @@
 #include <NZSL/Ast/ExportVisitor.hpp>
 #include <NZSL/Ast/ExpressionType.hpp>
 #include <NZSL/Ast/IndexRemapperVisitor.hpp>
+#include <NZSL/Ast/Nodes.hpp>
 #include <NZSL/Ast/Option.hpp>
 #include <NZSL/Ast/ReflectVisitor.hpp>
 #include <NZSL/Ast/Types.hpp>
@@ -20,6 +21,7 @@
 #include <NZSL/Lang/LangData.hpp>
 #include <NZSL/Ast/Transformations/ConstantPropagationTransformer.hpp>
 #include <NZSL/Ast/Transformations/EliminateUnusedTransformer.hpp>
+#include <NZSL/Ast/Transformations/ValidationTransformer.hpp>
 #include <fmt/format.h>
 #include <tsl/ordered_map.h>
 #include <unordered_map>
@@ -336,7 +338,21 @@ namespace nzsl::Ast
 		else
 		{
 			if (!m_context->partialCompilation)
+			{
+				// Propagation failure may be because of misuse, try to run ValidationTransformer to produce a better error message before throwing ConstantExpressionRequired
+
+				Stringifier stringifier = BuildStringifier(expr->sourceLocation);
+
+				ValidationTransformer::Options validationOpts;
+				validationOpts.checkIndices = false;
+				validationOpts.stringifier = &stringifier;
+
+				ValidationTransformer validation;
+				validation.TransformExpression(*m_states->currentModule, expr, *m_context, validationOpts);
+
+				// No exception, validation passed, fallback to more generic error
 				throw CompilerConstantExpressionRequiredError{ expr->sourceLocation };
+			}
 
 			return std::nullopt;
 		}
@@ -399,6 +415,8 @@ namespace nzsl::Ast
 
 							attribute = static_cast<std::uint32_t>(intVal);
 						}
+						else
+							throw CompilerAttributeUnexpectedTypeError{ expr->sourceLocation, ToString(GetConstantExpressionType<T>(), sourceLocation), ToString(GetExpressionTypeSecure(*expr), sourceLocation) };
 					}
 					else
 						throw CompilerAttributeUnexpectedTypeError{ expr->sourceLocation, ToString(GetConstantExpressionType<T>(), sourceLocation), ToString(GetExpressionTypeSecure(*expr), sourceLocation) };
@@ -2697,33 +2715,16 @@ namespace nzsl::Ast
 		}
 		else
 		{
-			PropagateConstants(declConst.expression);
-
-			NodeType constantType = declConst.expression->GetType();
-			if (constantType != NodeType::ConstantValueExpression && constantType != NodeType::ConstantArrayValueExpression)
+			std::optional<ConstantValue> value = ComputeConstantValue(declConst.expression);
+			if (!value)
 			{
-				// Constant propagation failed
-				if (!m_context->partialCompilation)
-					throw CompilerConstantExpressionRequiredError{ declConst.expression->sourceLocation };
-
+				// Constant propagation failed (and we're in partial compilation)
 				declConst.constIndex = RegisterConstant(declConst.name, ConstantData{ m_states->currentModuleId, std::nullopt }, declConst.constIndex, declConst.sourceLocation);
 				return DontVisitChildren{};
 			}
 
-			if (constantType == NodeType::ConstantValueExpression)
-			{
-				const auto& constant = static_cast<ConstantValueExpression&>(*declConst.expression);
-				expressionType = GetConstantType(constant.value);
-
-				declConst.constIndex = RegisterConstant(declConst.name, ConstantData{ m_states->currentModuleId, ToConstantValue(constant.value) }, declConst.constIndex, declConst.sourceLocation);
-			}
-			else if (constantType == NodeType::ConstantArrayValueExpression)
-			{
-				const auto& constant = static_cast<ConstantArrayValueExpression&>(*declConst.expression);
-				expressionType = GetConstantType(constant.values);
-
-				declConst.constIndex = RegisterConstant(declConst.name, ConstantData{ m_states->currentModuleId, ToConstantValue(constant.values) }, declConst.constIndex, declConst.sourceLocation);
-			}
+			expressionType = GetConstantType(*value);
+			declConst.constIndex = RegisterConstant(declConst.name, ConstantData{ m_states->currentModuleId, *value }, declConst.constIndex, declConst.sourceLocation);
 		}
 
 		if (constType.has_value() && ResolveAlias(*constType) != ResolveAlias(expressionType))
