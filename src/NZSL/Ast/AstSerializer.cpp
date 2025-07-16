@@ -447,8 +447,12 @@ namespace nzsl::Ast
 			SourceLoc(member.sourceLocation);
 			if (IsVersionGreaterOrEqual(3))
 				Value(member.tag);
-			if (IsVersionGreaterOrEqual(7))
-				Value(member.originalName);
+			if (IsVersionGreaterOrEqual(7) && !IsVersionGreaterOrEqual(13))
+			{
+				// originalName was removed in binary version >= 13 but must still be deserialized between 7 and 12
+				std::string originalName;
+				Value(originalName);
+			}
 			if (IsVersionGreaterOrEqual(9))
 				ExprValue(member.interp);
 		}
