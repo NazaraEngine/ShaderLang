@@ -322,9 +322,6 @@ namespace nzsl::Ast
 		if (!Compare(lhs.name, rhs.name, params))
 			return false;
 
-		if (!Compare(lhs.originalName, rhs.originalName, params))
-			return false;
-
 		if (!Compare(lhs.type, rhs.type, params))
 			return false;
 

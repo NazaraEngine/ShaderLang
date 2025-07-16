@@ -1664,16 +1664,8 @@ namespace nzsl::Ast
 							hasUnresolvedFields = true;
 					}
 
-					/*if (!field.originalName.empty())
-					{
-						if (field.originalName == identifierEntry.identifier)
-							fieldPtr = &field;
-					}
-					else*/
-					{
-						if (field.name == identifierEntry.identifier)
-							fieldPtr = &field;
-					}
+					if (field.name == identifierEntry.identifier)
+						fieldPtr = &field;
 
 					if (fieldPtr)
 						break;

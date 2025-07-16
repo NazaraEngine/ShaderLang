@@ -130,14 +130,10 @@ namespace nzsl::Ast
 		HandleIdentifier(statement.description.name, IdentifierType::Struct);
 		
 		PushScope();
-		for (auto& member : statement.description.members)
-		{
-			// FIXME: Why is this necessary?
-			if (member.originalName.empty())
-				member.originalName = member.name;
 
+		for (auto& member : statement.description.members)
 			HandleIdentifier(member.name, IdentifierType::Field);
-		}
+
 		PopScope();
 
 		return VisitChildren{};

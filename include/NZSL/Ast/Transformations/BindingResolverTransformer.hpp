@@ -30,6 +30,8 @@ namespace nzsl::Ast
 			};
 
 		private:
+			using Transformer::Transform;
+
 			StatementTransformation Transform(ConditionalStatement&& statement) override;
 			StatementTransformation Transform(DeclareExternalStatement&& statement) override;
 

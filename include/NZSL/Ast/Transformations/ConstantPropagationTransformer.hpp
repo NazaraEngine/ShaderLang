@@ -39,6 +39,8 @@ namespace nzsl::Ast
 			};
 
 		protected:
+			using Transformer::Transform;
+
 			ExpressionTransformation Transform(BinaryExpression&& node) override;
 			ExpressionTransformation Transform(CastExpression&& node) override;
 			ExpressionTransformation Transform(ConditionalExpression&& node) override;
