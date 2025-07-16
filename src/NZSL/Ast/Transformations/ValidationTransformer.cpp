@@ -3,13 +3,14 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <NZSL/Ast/Transformations/ValidationTransformer.hpp>
+#include <NazaraUtils/CallOnExit.hpp>
 #include <NZSL/Ast/ExpressionType.hpp>
+#include <NZSL/Ast/Utils.hpp>
 #include <NZSL/Lang/Errors.hpp>
 #include <NZSL/Lang/LangData.hpp>
-#include <NZSL/Ast/Utils.hpp>
 #include <fmt/format.h>
+#include <tsl/ordered_map.h>
 #include <unordered_map>
-#include <NazaraUtils/CallOnExit.hpp>
 
 namespace nzsl::Ast
 {
@@ -43,10 +44,12 @@ namespace nzsl::Ast
 		Nz::HybridBitset<Nz::UInt64, 256> registeredStructs;
 		Nz::HybridBitset<Nz::UInt64, 256> registeredVariables;
 
-		std::unordered_map<std::size_t, FunctionData> functions;
+		std::unordered_map<OptionHash, std::string> declaredOptions;
 		std::unordered_map<std::size_t, const StructDescription*> structs;
 		std::vector<DeclareFunctionStatement*> pendingFunctions;
 		std::vector<Scope> scopes;
+		tsl::ordered_map<std::size_t, FunctionData> functions;
+		SourceLocation pushConstantLocation;
 		FunctionData* currentFunction = nullptr;
 		Module* rootModule;
 		unsigned int loopCounter = 0;
@@ -66,18 +69,26 @@ namespace nzsl::Ast
 		return TransformModule(module, context, error);
 	}
 
-	bool ValidationTransformer::TransformModule(Module& module, Context& context, std::string* error, Nz::FunctionRef<void()> postCallback)
+	bool ValidationTransformer::TransformExpression(Module& module, ExpressionPtr& expression, Context& context, const Options& options, std::string* error)
 	{
-		m_states->pendingFunctions.clear();
+		m_options = &options;
 
-		PushScope();
-		NAZARA_DEFER({ PopScope(); });
+		States states;
+		states.rootModule = &module;
+		m_states = &states;
 
-		if (!Transformer::TransformModule(module, context, error, postCallback))
-			return false;
+		return Transformer::TransformExpression(expression, context, error);
+	}
 
-		ResolveFunctions();
-		return true;
+	bool ValidationTransformer::TransformStatement(Module& module, StatementPtr& statement, Context& context, const Options& options, std::string* error)
+	{
+		m_options = &options;
+
+		States states;
+		states.rootModule = &module;
+		m_states = &states;
+
+		return Transformer::TransformStatement(statement, context, error);
 	}
 
 	Stringifier ValidationTransformer::BuildStringifier(const SourceLocation& sourceLocation) const
@@ -115,6 +126,8 @@ namespace nzsl::Ast
 
 	void ValidationTransformer::CheckAliasIndex(std::optional<std::size_t> aliasIndex, const SourceLocation& sourceLocation) const
 	{
+		assert(m_options->checkIndices);
+
 		if (aliasIndex)
 		{
 			if (!m_states->registeredAliases.UnboundedTest(*aliasIndex))
@@ -129,6 +142,8 @@ namespace nzsl::Ast
 
 	void ValidationTransformer::CheckConstIndex(std::optional<std::size_t> constIndex, const SourceLocation& sourceLocation) const
 	{
+		assert(m_options->checkIndices);
+
 		if (constIndex)
 		{
 			if (!m_states->registeredConsts.UnboundedTest(*constIndex))
@@ -143,6 +158,8 @@ namespace nzsl::Ast
 
 	void ValidationTransformer::CheckExternalIndex(std::optional<std::size_t> externalIndex, const SourceLocation& sourceLocation) const
 	{
+		assert(m_options->checkIndices);
+
 		if (externalIndex)
 		{
 			if (!m_states->registeredExternals.UnboundedTest(*externalIndex))
@@ -157,6 +174,8 @@ namespace nzsl::Ast
 
 	void ValidationTransformer::CheckFuncIndex(std::optional<std::size_t> funcIndex, const SourceLocation& sourceLocation) const
 	{
+		assert(m_options->checkIndices);
+
 		if (funcIndex)
 		{
 			if (!m_states->registeredFuncs.UnboundedTest(*funcIndex))
@@ -171,6 +190,8 @@ namespace nzsl::Ast
 
 	void ValidationTransformer::CheckStructIndex(std::optional<std::size_t> structIndex, const SourceLocation& sourceLocation) const
 	{
+		assert(m_options->checkIndices);
+
 		if (structIndex)
 		{
 			if (!m_states->registeredStructs.UnboundedTest(*structIndex))
@@ -185,6 +206,8 @@ namespace nzsl::Ast
 
 	void ValidationTransformer::CheckVariableIndex(std::optional<std::size_t> variableIndex, const SourceLocation& sourceLocation) const
 	{
+		assert(m_options->checkIndices);
+
 		if (variableIndex)
 		{
 			if (!m_states->registeredVariables.UnboundedTest(*variableIndex))
@@ -237,6 +260,8 @@ namespace nzsl::Ast
 
 	void ValidationTransformer::RegisterAlias(std::size_t aliasIndex, const SourceLocation& sourceLocation)
 	{
+		assert(m_options->checkIndices);
+
 		if (m_states->registeredAliases.UnboundedTest(aliasIndex))
 			throw AstAlreadyUsedIndexError{ sourceLocation, aliasIndex };
 
@@ -247,6 +272,8 @@ namespace nzsl::Ast
 
 	void ValidationTransformer::RegisterConst(std::size_t constIndex, const SourceLocation& sourceLocation)
 	{
+		assert(m_options->checkIndices);
+
 		if (m_states->registeredConsts.UnboundedTest(constIndex))
 			throw AstAlreadyUsedIndexError{ sourceLocation, constIndex };
 
@@ -257,6 +284,8 @@ namespace nzsl::Ast
 
 	void ValidationTransformer::RegisterExternal(std::size_t externalIndex, const SourceLocation& sourceLocation)
 	{
+		assert(m_options->checkIndices);
+
 		if (m_states->registeredExternals.UnboundedTest(externalIndex))
 			throw AstAlreadyUsedIndexError{ sourceLocation, externalIndex };
 
@@ -267,6 +296,8 @@ namespace nzsl::Ast
 
 	void ValidationTransformer::RegisterFunc(std::size_t funcIndex, const SourceLocation& sourceLocation)
 	{
+		assert(m_options->checkIndices);
+
 		if (m_states->registeredFuncs.UnboundedTest(funcIndex))
 			throw AstAlreadyUsedIndexError{ sourceLocation, funcIndex };
 
@@ -277,6 +308,8 @@ namespace nzsl::Ast
 
 	void ValidationTransformer::RegisterStruct(std::size_t structIndex, const SourceLocation& sourceLocation)
 	{
+		assert(m_options->checkIndices);
+
 		if (m_states->registeredStructs.UnboundedTest(structIndex))
 			throw AstAlreadyUsedIndexError{ sourceLocation, structIndex };
 
@@ -287,6 +320,8 @@ namespace nzsl::Ast
 
 	void ValidationTransformer::RegisterVariable(std::size_t variableIndex, const SourceLocation& sourceLocation)
 	{
+		assert(m_options->checkIndices);
+
 		if (m_states->registeredVariables.UnboundedTest(variableIndex))
 			throw AstAlreadyUsedIndexError{ sourceLocation, variableIndex };
 
@@ -302,16 +337,22 @@ namespace nzsl::Ast
 		{
 			PushScope();
 
-			for (auto& parameter : pendingFunc->parameters)
+			if (m_options->checkIndices)
 			{
-				if (parameter.varIndex)
-					RegisterVariable(*parameter.varIndex, parameter.sourceLocation);
+				for (auto& parameter : pendingFunc->parameters)
+				{
+					if (parameter.varIndex)
+						RegisterVariable(*parameter.varIndex, parameter.sourceLocation);
+				}
 			}
 			
 			assert(pendingFunc->funcIndex);
 			std::size_t funcIndex = *pendingFunc->funcIndex;
 
-			auto& funcData = Nz::Retrieve(m_states->functions, funcIndex);
+			auto it = m_states->functions.find(funcIndex);
+			assert(it != m_states->functions.end());
+
+			auto& funcData = it.value();
 			if (funcData.node->entryStage.IsResultingValue())
 				funcData.calledByStages = funcData.node->entryStage.GetResultingValue();
 
@@ -326,7 +367,10 @@ namespace nzsl::Ast
 
 			for (std::size_t calledFunctionIndex : funcData.calledFunctions.IterBits())
 			{
-				auto& targetFunc = Nz::Retrieve(m_states->functions, calledFunctionIndex);
+				auto calledFuncIt = m_states->functions.find(calledFunctionIndex);
+				assert(calledFuncIt != m_states->functions.end());
+
+				auto& targetFunc = calledFuncIt.value();
 				targetFunc.calledByFunctions.UnboundedSet(*pendingFunc->funcIndex);
 			}
 
@@ -336,21 +380,25 @@ namespace nzsl::Ast
 		Nz::HybridBitset<Nz::UInt32, 32> calledByFunctions;
 		Nz::HybridBitset<Nz::UInt32, 32> seen;
 		Nz::HybridBitset<Nz::UInt32, 32> temp;
-		for (std::size_t funcIndex : m_states->registeredFuncs.IterBits())
+		for (auto it = m_states->functions.begin(); it != m_states->functions.end(); ++it)
 		{
+			std::size_t funcIndex = it.key();
+			auto& funcData = it.value();
+
 			seen.Clear();
 			seen.UnboundedSet(funcIndex);
 
-			auto& funcData = m_states->functions[funcIndex];
-
 			calledByFunctions.Clear();
 			calledByFunctions |= funcData.calledByFunctions;
-			for (std::size_t i : calledByFunctions.IterBits())
-			{
-				seen.UnboundedSet(funcIndex);
 
-				auto& callingFunctionData = Nz::Retrieve(m_states->functions, funcIndex);
-				funcData.calledByStages |= funcData.calledByStages;
+			std::size_t callingFuncIndex;
+			while ((callingFuncIndex = calledByFunctions.FindFirst()) != calledByFunctions.npos)
+			{
+				auto callingFuncIt = m_states->functions.find(callingFuncIndex);
+				assert(callingFuncIt != m_states->functions.end());
+
+				auto& callingFunctionData = callingFuncIt.value();
+				funcData.calledByStages |= callingFunctionData.calledByStages;
 
 				calledByFunctions |= callingFunctionData.calledByFunctions;
 				
@@ -358,6 +406,8 @@ namespace nzsl::Ast
 				// calledByFunctions &= ~seen;
 				temp.PerformsNOT(seen);
 				calledByFunctions &= temp;
+
+				seen.UnboundedSet(callingFuncIndex);
 			}
 
 			for (std::size_t flagIndex = 0; flagIndex <= static_cast<std::size_t>(ShaderStageType::Max); ++flagIndex)
@@ -399,7 +449,7 @@ namespace nzsl::Ast
 
 	std::string ValidationTransformer::ToString(const ExpressionType& exprType, const SourceLocation& sourceLocation) const
 	{
-		return Ast::ToString(exprType, BuildStringifier(sourceLocation));
+		return Ast::ToString(exprType, (m_options->stringifier) ? *m_options->stringifier : BuildStringifier(sourceLocation));
 	}
 
 	auto ValidationTransformer::Transform(AccessFieldExpression&& node) -> ExpressionTransformation
@@ -413,6 +463,8 @@ namespace nzsl::Ast
 		std::size_t structIndex = ResolveStructIndex(*exprType, node.sourceLocation);
 		const StructDescription* structDesc = Nz::Retrieve(m_states->structs, structIndex);
 
+		const StructDescription::StructMember* structMember = nullptr;
+
 		std::uint32_t remainingIndices = node.fieldIndex;
 		for (const auto& member : structDesc->members)
 		{
@@ -420,13 +472,21 @@ namespace nzsl::Ast
 				continue;
 
 			if (remainingIndices == 0)
+			{
+				structMember = &member;
+				remainingIndices--;
 				break;
-
-			remainingIndices--;
+			}
 		}
 
-		if (remainingIndices > 0)
+		if (!structMember)
 			throw AstIndexOutOfBoundsError{ node.sourceLocation, "struct field", static_cast<std::int32_t>(node.fieldIndex) };
+
+		if (structMember->builtin.HasValue() && structMember->builtin.IsResultingValue())
+		{
+			BuiltinEntry builtin = structMember->builtin.GetResultingValue();
+			m_states->currentFunction->usedBuiltins.emplace(builtin, structMember->sourceLocation);
+		}
 
 		return DontVisitChildren{};
 	}
@@ -449,7 +509,8 @@ namespace nzsl::Ast
 	{
 		HandleChildren(node);
 
-		CheckAliasIndex(node.aliasId, node.sourceLocation);
+		if (m_options->checkIndices)
+			CheckAliasIndex(node.aliasId, node.sourceLocation);
 
 		return DontVisitChildren{};
 	}
@@ -508,7 +569,8 @@ namespace nzsl::Ast
 		HandleChildren(node);
 
 		std::size_t functionIndex = std::get<Ast::FunctionType>(*GetExpressionType(*node.targetFunction)).funcIndex;
-		CheckFuncIndex({ functionIndex }, node.sourceLocation);
+		if (m_options->checkIndices)
+			CheckFuncIndex({ functionIndex }, node.sourceLocation);
 
 		if (m_states->currentFunction)
 			m_states->currentFunction->calledFunctions.UnboundedSet(functionIndex);
@@ -842,7 +904,8 @@ namespace nzsl::Ast
 	{
 		HandleChildren(node);
 
-		CheckConstIndex(node.constantId, node.sourceLocation);
+		if (m_options->checkIndices)
+			CheckConstIndex(node.constantId, node.sourceLocation);
 
 		return DontVisitChildren{};
 	}
@@ -865,7 +928,8 @@ namespace nzsl::Ast
 	{
 		HandleChildren(node);
 
-		CheckFuncIndex(node.funcId, node.sourceLocation);
+		if (m_options->checkIndices)
+			CheckFuncIndex(node.funcId, node.sourceLocation);
 
 		return DontVisitChildren{};
 	}
@@ -881,6 +945,9 @@ namespace nzsl::Ast
 	{
 		HandleChildren(node);
 
+		// Parameter validation
+		ValidateIntrinsicParameters(node);
+
 		return DontVisitChildren{};
 	}
 
@@ -895,9 +962,12 @@ namespace nzsl::Ast
 	{
 		HandleChildren(node);
 
-		if (node.moduleId >= m_states->rootModule->importedModules.size())
-			throw AstIndexOutOfBoundsError{ node.sourceLocation, "module", static_cast<std::int32_t>(node.moduleId) };
-
+		if (m_options->checkIndices)
+		{
+			if (node.moduleId >= m_states->rootModule->importedModules.size())
+				throw AstIndexOutOfBoundsError{ node.sourceLocation, "module", static_cast<std::int32_t>(node.moduleId) };
+		}
+		
 		return DontVisitChildren{};
 	}
 
@@ -905,7 +975,8 @@ namespace nzsl::Ast
 	{
 		HandleChildren(node);
 
-		CheckExternalIndex(node.externalBlockId, node.sourceLocation);
+		if (m_options->checkIndices)
+			CheckExternalIndex(node.externalBlockId, node.sourceLocation);
 
 		return DontVisitChildren{};
 	}
@@ -914,7 +985,8 @@ namespace nzsl::Ast
 	{
 		HandleChildren(node);
 
-		CheckStructIndex(node.structTypeId, node.sourceLocation);
+		if (m_options->checkIndices)
+			CheckStructIndex(node.structTypeId, node.sourceLocation);
 
 		return DontVisitChildren{};
 	}
@@ -944,7 +1016,8 @@ namespace nzsl::Ast
 	{
 		HandleChildren(node);
 
-		CheckVariableIndex(node.variableId, node.sourceLocation);
+		if (m_options->checkIndices)
+			CheckVariableIndex(node.variableId, node.sourceLocation);
 
 		return DontVisitChildren{};
 	}
@@ -999,27 +1072,36 @@ namespace nzsl::Ast
 		if (IsStructType(resolvedType))
 		{
 			std::size_t structIndex = ResolveStructIndex(resolvedType, node.expression->sourceLocation);
-			CheckStructIndex(structIndex, node.expression->sourceLocation);
+			if (m_options->checkIndices)
+				CheckStructIndex(structIndex, node.expression->sourceLocation);
 		}
 		else if (IsFunctionType(resolvedType))
 		{
 			std::size_t funcIndex = std::get<FunctionType>(resolvedType).funcIndex;
-			CheckFuncIndex(funcIndex, node.expression->sourceLocation);
+			if (m_options->checkIndices)
+				CheckFuncIndex(funcIndex, node.expression->sourceLocation);
 		}
 		else if (IsAliasType(resolvedType))
 		{
 			const AliasType& alias = std::get<AliasType>(resolvedType);
-			CheckAliasIndex(alias.aliasIndex, node.expression->sourceLocation);
+			if (m_options->checkIndices)
+				CheckAliasIndex(alias.aliasIndex, node.expression->sourceLocation);
 		}
 		else if (IsModuleType(resolvedType))
 		{
 			const ModuleType& module = std::get<ModuleType>(resolvedType);
 
-			if (module.moduleIndex >= m_states->rootModule->importedModules.size())
-				throw AstIndexOutOfBoundsError{ node.sourceLocation, "module", static_cast<std::int32_t>(module.moduleIndex) };
+			if (m_options->checkIndices)
+			{
+				if (module.moduleIndex >= m_states->rootModule->importedModules.size())
+					throw AstIndexOutOfBoundsError{ node.sourceLocation, "module", static_cast<std::int32_t>(module.moduleIndex) };
+			}
 		}
 		else
 			throw CompilerAliasUnexpectedTypeError{ node.sourceLocation, Ast::ToString(*exprType) };
+
+		if (node.aliasIndex && m_options->checkIndices)
+			RegisterAlias(*node.aliasIndex, node.sourceLocation);
 
 		return DontVisitChildren{};
 	}
@@ -1028,7 +1110,7 @@ namespace nzsl::Ast
 	{
 		HandleChildren(node);
 
-		if (node.constIndex)
+		if (node.constIndex && m_options->checkIndices)
 			RegisterConst(*node.constIndex, node.sourceLocation);
 		
 		return DontVisitChildren{};
@@ -1038,7 +1120,7 @@ namespace nzsl::Ast
 	{
 		HandleChildren(node);
 
-		if (node.externalIndex)
+		if (node.externalIndex && m_options->checkIndices)
 			RegisterExternal(*node.externalIndex, node.sourceLocation);
 
 		if (!node.name.empty())
@@ -1046,8 +1128,34 @@ namespace nzsl::Ast
 
 		for (auto& extVar : node.externalVars)
 		{
-			if (extVar.varIndex)
+			if (extVar.varIndex && m_options->checkIndices)
 				RegisterVariable(*extVar.varIndex, extVar.sourceLocation);
+
+			if (!extVar.type.IsResultingValue())
+			{
+				if (!m_context->partialCompilation)
+					throw AstMissingTypeError{ extVar.sourceLocation };
+
+				continue;
+			}
+
+			const ExpressionType& targetType = ResolveAlias(extVar.type.GetResultingValue());
+
+			if (IsNoType(targetType))
+				throw CompilerExtTypeNotAllowedError{ extVar.sourceLocation, extVar.name, ToString(extVar.type.GetResultingValue(), extVar.sourceLocation) };
+
+			if (IsPushConstantType(targetType))
+			{
+				if (m_states->pushConstantLocation.IsValid())
+					throw CompilerMultiplePushConstantError{ extVar.sourceLocation };
+
+				m_states->pushConstantLocation = extVar.sourceLocation;
+
+				if (extVar.bindingSet.HasValue())
+					throw CompilerUnexpectedAttributeOnPushConstantError{ extVar.sourceLocation, Ast::AttributeType::Set };
+				else if (extVar.bindingIndex.HasValue())
+					throw CompilerUnexpectedAttributeOnPushConstantError{ extVar.sourceLocation, Ast::AttributeType::Binding };
+			}
 		}
 
 		if (!node.name.empty())
@@ -1063,6 +1171,9 @@ namespace nzsl::Ast
 		if (!node.funcIndex)
 			throw AstExpectedIndexError{ node.sourceLocation, "function" };
 
+		if (m_options->checkIndices)
+			RegisterFunc(*node.funcIndex, node.sourceLocation);
+
 		States::FunctionData& functionData = m_states->functions[*node.funcIndex];
 		functionData.node = &node;
 
@@ -1076,10 +1187,45 @@ namespace nzsl::Ast
 
 	auto ValidationTransformer::Transform(DeclareOptionStatement&& node) -> StatementTransformation
 	{
+		if (m_states->currentFunction)
+			throw CompilerOptionDeclarationInsideFunctionError{ node.sourceLocation };
+
 		HandleChildren(node);
 
-		if (node.optIndex)
+		if (node.optIndex && m_options->checkIndices)
 			RegisterConst(*node.optIndex, node.sourceLocation);
+
+		if (!node.optType.HasValue())
+			throw AstMissingExpressionTypeError{ node.sourceLocation };
+		else if (node.optType.IsResultingValue())
+		{
+			const ExpressionType& optionType = node.optType.GetResultingValue();
+
+			if (node.defaultValue)
+			{
+				const ExpressionType* defaultValueType = GetExpressionType(*node.defaultValue);
+				if (defaultValueType)
+				{
+					if (ResolveAlias(optionType) != ResolveAlias(*defaultValueType))
+						throw CompilerVarDeclarationTypeUnmatchingError{ node.sourceLocation, ToString(optionType, node.sourceLocation), ToString(*defaultValueType, node.defaultValue->sourceLocation) };
+				}
+				else if (!m_context->partialCompilation)
+					throw AstMissingExpressionTypeError{ node.defaultValue->sourceLocation };
+			}
+		}
+		else if (!m_context->partialCompilation)
+			throw AstMissingExpressionTypeError{ node.sourceLocation };
+
+		// Detect hash collisions
+		OptionHash optionHash = HashOption(node.optName);
+
+		if (auto it = m_states->declaredOptions.find(optionHash); it != m_states->declaredOptions.end())
+		{
+			if (it->second != node.optName)
+				throw CompilerOptionHashCollisionError{ node.sourceLocation, node.optName, it->second };
+		}
+		else
+			m_states->declaredOptions.emplace(optionHash, node.optName);
 
 		return DontVisitChildren{};
 	}
@@ -1088,7 +1234,7 @@ namespace nzsl::Ast
 	{
 		HandleChildren(node);
 
-		if (node.structIndex)
+		if (node.structIndex && m_options->checkIndices)
 		{
 			RegisterStruct(*node.structIndex, node.sourceLocation);
 			m_states->structs[*node.structIndex] = &node.description;
@@ -1098,7 +1244,9 @@ namespace nzsl::Ast
 		{
 			if (member.type.HasValue() && member.type.IsExpression())
 			{
-				assert(m_context->partialCompilation);
+				if (!m_context->partialCompilation)
+					throw AstMissingExpressionTypeError{ member.sourceLocation };
+
 				continue;
 			}
 
@@ -1128,7 +1276,7 @@ namespace nzsl::Ast
 	{
 		HandleChildren(node);
 
-		if (node.varIndex)
+		if (node.varIndex && m_options->checkIndices)
 			RegisterVariable(*node.varIndex, node.sourceLocation);
 
 		return DontVisitChildren{};
@@ -1157,7 +1305,7 @@ namespace nzsl::Ast
 	{
 		HandleChildren(node);
 
-		if (node.varIndex)
+		if (node.varIndex && m_options->checkIndices)
 			RegisterVariable(*node.varIndex, node.sourceLocation);
 
 		m_states->loopCounter++;
@@ -1171,7 +1319,7 @@ namespace nzsl::Ast
 	{
 		HandleChildren(node);
 
-		if (node.varIndex)
+		if (node.varIndex && m_options->checkIndices)
 			RegisterVariable(*node.varIndex, node.sourceLocation);
 
 		m_states->loopCounter++;
@@ -1278,6 +1426,20 @@ namespace nzsl::Ast
 			throw CompilerUnmatchingTypesError{ sourceLocation, ToString(left, sourceLocation), ToString(right, sourceLocation) };
 	}
 
+	bool ValidationTransformer::TransformModule(Module& module, Context& context, std::string* error, Nz::FunctionRef<void()> postCallback)
+	{
+		m_states->pendingFunctions.clear();
+
+		PushScope();
+		NAZARA_DEFER({ PopScope(); });
+
+		if (!Transformer::TransformModule(module, context, error, postCallback))
+			return false;
+
+		ResolveFunctions();
+		return true;
+	}
+
 	void ValidationTransformer::TypeMustMatch(const ExpressionPtr& left, const ExpressionPtr& right, const SourceLocation& sourceLocation) const
 	{
 		const ExpressionType* leftType = GetExpressionType(*left);
@@ -1286,5 +1448,858 @@ namespace nzsl::Ast
 			return;
 
 		return TypeMustMatch(*leftType, *rightType, sourceLocation);
+	}
+
+	void ValidationTransformer::ValidateConcreteType(const ExpressionType& exprType, const SourceLocation& sourceLocation)
+	{
+		if (IsArrayType(exprType))
+		{
+			const ArrayType& arrayType = std::get<ArrayType>(exprType);
+			if (arrayType.length == 0)
+				throw CompilerArrayLengthRequiredError{ sourceLocation };
+		}
+	}
+
+	void ValidationTransformer::ValidateIntrinsicParameters(IntrinsicExpression& node)
+	{
+		auto intrinsicIt = LangData::s_intrinsicData.find(node.intrinsic);
+		if (intrinsicIt == LangData::s_intrinsicData.end())
+			throw AstInternalError{ node.sourceLocation, fmt::format("missing intrinsic data for intrinsic {}", Nz::UnderlyingCast(node.intrinsic)) };
+
+		const auto& intrinsicData = intrinsicIt->second;
+
+		std::optional<std::size_t> unresolvedParameter;
+
+		std::size_t paramIndex = 0;
+		std::size_t lastSameComponentCountBarrierIndex = 0;
+		std::size_t lastSameParamBarrierIndex = 0;
+		for (std::size_t i = 0; i < intrinsicData.parameterCount; ++i)
+		{
+			using namespace LangData::IntrinsicHelper;
+
+			switch (intrinsicData.parameterTypes[i])
+			{
+				case ParameterType::ArrayDyn:
+				{
+					auto Check = [](const ExpressionType& type)
+					{
+						return IsArrayType(type) || IsDynArrayType(type);
+					};
+
+					if (ValidateIntrinsicParameterType(node, Check, "array/dyn-array", paramIndex) == ValidationResult::Unresolved)
+					{
+						unresolvedParameter = paramIndex;
+						continue;
+					}
+
+					paramIndex++;
+					break;
+				}
+
+				case ParameterType::BValVec:
+				{
+					auto Check = [](const ExpressionType& type)
+					{
+						PrimitiveType primitiveType;
+						if (IsPrimitiveType(type))
+							primitiveType = std::get<PrimitiveType>(type);
+						else if (IsVectorType(type))
+							primitiveType = std::get<VectorType>(type).type;
+						else
+							return false;
+
+						if (primitiveType != PrimitiveType::Boolean)
+							return false;
+
+						return true;
+					};
+
+					if (ValidateIntrinsicParameterType(node, Check, "boolean value or vector", paramIndex) == ValidationResult::Unresolved)
+					{
+						unresolvedParameter = paramIndex;
+						continue;
+					}
+
+					paramIndex++;
+					break;
+				}
+
+				case ParameterType::F32:
+				{
+					auto Check = [](const ExpressionType& type)
+					{
+						return type == ExpressionType{ PrimitiveType::Float32 };
+					};
+
+					if (ValidateIntrinsicParameterType(node, Check, "f32", paramIndex) == ValidationResult::Unresolved)
+					{
+						unresolvedParameter = paramIndex;
+						paramIndex++;
+						continue;
+					}
+
+					paramIndex++;
+					break;
+				}
+
+				case ParameterType::FVal:
+				{
+					auto Check = [](const ExpressionType& type)
+					{
+						PrimitiveType primitiveType;
+						if (IsPrimitiveType(type))
+							primitiveType = std::get<PrimitiveType>(type);
+						else
+							return false;
+
+						if (primitiveType != PrimitiveType::Float32 && primitiveType != PrimitiveType::Float64)
+							return false;
+
+						return true;
+					};
+
+					if (ValidateIntrinsicParameterType(node, Check, "floating-point value", paramIndex) == ValidationResult::Unresolved)
+					{
+						unresolvedParameter = paramIndex;
+						paramIndex++;
+						continue;
+					}
+
+					paramIndex++;
+					break;
+				}
+
+				case ParameterType::FValVec:
+				{
+					auto Check = [](const ExpressionType& type)
+					{
+						PrimitiveType primitiveType;
+						if (IsPrimitiveType(type))
+							primitiveType = std::get<PrimitiveType>(type);
+						else if (IsVectorType(type))
+							primitiveType = std::get<VectorType>(type).type;
+						else
+							return false;
+
+						// no float16 for now
+						if (primitiveType != PrimitiveType::Float32 && primitiveType != PrimitiveType::Float64)
+							return false;
+
+						return true;
+					};
+
+					if (ValidateIntrinsicParameterType(node, Check, "floating-point value or vector", paramIndex) == ValidationResult::Unresolved)
+					{
+						unresolvedParameter = paramIndex;
+						paramIndex++;
+						continue;
+					}
+
+					paramIndex++;
+					break;
+				}
+
+				case ParameterType::FValVec1632:
+				{
+					auto Check = [](const ExpressionType& type)
+					{
+						PrimitiveType primitiveType;
+						if (IsPrimitiveType(type))
+							primitiveType = std::get<PrimitiveType>(type);
+						else if (IsVectorType(type))
+							primitiveType = std::get<VectorType>(type).type;
+						else
+							return false;
+
+						// no float16 for now
+						if (primitiveType != PrimitiveType::Float32)
+							return false;
+
+						return true;
+					};
+
+					if (ValidateIntrinsicParameterType(node, Check, "16/32bits floating-point value or vector", paramIndex) == ValidationResult::Unresolved)
+					{
+						unresolvedParameter = paramIndex;
+						paramIndex++;
+						continue;
+					}
+
+					paramIndex++;
+					break;
+				}
+
+				case ParameterType::FVec:
+				{
+					auto Check = [](const ExpressionType& type)
+					{
+						PrimitiveType primitiveType;
+						if (IsVectorType(type))
+							primitiveType = std::get<VectorType>(type).type;
+						else
+							return false;
+
+						if (primitiveType != PrimitiveType::Float32 && primitiveType != PrimitiveType::Float64)
+							return false;
+
+						return true;
+					};
+
+					if (ValidateIntrinsicParameterType(node, Check, "floating-point vector", paramIndex) == ValidationResult::Unresolved)
+					{
+						unresolvedParameter = paramIndex;
+						paramIndex++;
+						continue;
+					}
+
+					paramIndex++;
+					break;
+				}
+
+				case ParameterType::FVec3:
+				{
+					auto Check = [](const ExpressionType& type)
+					{
+						if (!IsVectorType(type))
+							return false;
+
+						const VectorType& vectorType = std::get<VectorType>(type);
+						if (vectorType.componentCount != 3)
+							return false;
+
+						return vectorType.type == PrimitiveType::Float32 || vectorType.type == PrimitiveType::Float64;
+					};
+
+					if (ValidateIntrinsicParameterType(node, Check, "floating-point vec3", paramIndex) == ValidationResult::Unresolved)
+					{
+						unresolvedParameter = paramIndex;
+						paramIndex++;
+						continue;
+					}
+
+					paramIndex++;
+					break;
+				}
+
+				case ParameterType::Matrix:
+				{
+					if (ValidateIntrinsicParameterType(node, IsMatrixType, "matrix", paramIndex) == ValidationResult::Unresolved)
+					{
+						unresolvedParameter = paramIndex;
+						paramIndex++;
+						continue;
+					}
+
+					paramIndex++;
+					break;
+				}
+
+				case ParameterType::MatrixSquare:
+				{
+					auto Check = [](const ExpressionType& type)
+					{
+						if (!IsMatrixType(type))
+							return false;
+
+						const MatrixType& matrixType = std::get<MatrixType>(type);
+						return matrixType.columnCount == matrixType.rowCount;
+					};
+
+					if (ValidateIntrinsicParameterType(node, Check, "square matrix", paramIndex) == ValidationResult::Unresolved)
+					{
+						unresolvedParameter = paramIndex;
+						paramIndex++;
+						continue;
+					}
+
+					paramIndex++;
+					break;
+				}
+
+				case ParameterType::Numerical:
+				{
+					auto Check = [](const ExpressionType& type)
+					{
+						PrimitiveType primitiveType;
+						if (IsPrimitiveType(type))
+							primitiveType = std::get<PrimitiveType>(type);
+						else
+							return false;
+
+						switch (primitiveType)
+						{
+							case PrimitiveType::Boolean:
+							case PrimitiveType::String:
+								break;
+
+							case PrimitiveType::Float32:
+							case PrimitiveType::Float64:
+							case PrimitiveType::Int32:
+							case PrimitiveType::UInt32:
+								return true;
+						}
+
+						return false;
+					};
+
+					if (ValidateIntrinsicParameterType(node, Check, "scalar value or vector", paramIndex) == ValidationResult::Unresolved)
+					{
+						unresolvedParameter = paramIndex;
+						paramIndex++;
+						continue;
+					}
+
+					paramIndex++;
+					break;
+				}
+
+				case ParameterType::NumericalVec:
+				{
+					auto Check = [](const ExpressionType& type)
+					{
+						PrimitiveType primitiveType;
+						if (IsPrimitiveType(type))
+							primitiveType = std::get<PrimitiveType>(type);
+						else if (IsVectorType(type))
+							primitiveType = std::get<VectorType>(type).type;
+						else
+							return false;
+
+						switch (primitiveType)
+						{
+							case PrimitiveType::Boolean:
+							case PrimitiveType::String:
+								break;
+
+							case PrimitiveType::Float32:
+							case PrimitiveType::Float64:
+							case PrimitiveType::Int32:
+							case PrimitiveType::UInt32:
+								return true;
+						}
+
+						return false;
+					};
+
+					if (ValidateIntrinsicParameterType(node, Check, "scalar value or vector", paramIndex) == ValidationResult::Unresolved)
+					{
+						unresolvedParameter = paramIndex;
+						paramIndex++;
+						continue;
+					}
+
+					paramIndex++;
+					break;
+				}
+
+				case ParameterType::SampleCoordinates:
+				{
+					// Special check: vector dimensions must match sample type
+					const ExpressionType* firstParameter = GetExpressionType(*node.parameters[0]);
+					if (!firstParameter)
+					{
+						unresolvedParameter = paramIndex;
+						paramIndex++;
+						continue;
+					}
+
+					const SamplerType& samplerType = std::get<SamplerType>(ResolveAlias(*firstParameter));
+
+					std::size_t requiredComponentCount = 0;
+					switch (samplerType.dim)
+					{
+						case ImageType::E1D:
+							requiredComponentCount = 1;
+							break;
+
+						case ImageType::E1D_Array:
+						case ImageType::E2D:
+							requiredComponentCount = 2;
+							break;
+
+						case ImageType::E2D_Array:
+						case ImageType::E3D:
+						case ImageType::Cubemap:
+							requiredComponentCount = 3;
+							break;
+					}
+
+					if (requiredComponentCount == 0)
+						throw AstInternalError{ node.parameters[0]->sourceLocation, "unhandled sampler dimensions" };
+
+					if (requiredComponentCount > 1)
+					{
+						// Vector coordinates
+						auto Check = [=](const ExpressionType& type)
+						{
+							if (!IsVectorType(type))
+								return false;
+
+							const VectorType& vectorType = std::get<VectorType>(type);
+							if (vectorType.componentCount != requiredComponentCount)
+								return false;
+
+							return vectorType.type == PrimitiveType::Float32 || vectorType.type == PrimitiveType::Float64;
+						};
+
+						char errMessage[] = "floating-point vector of X components";
+						assert(requiredComponentCount < 9);
+						errMessage[25] = Nz::SafeCast<char>('0' + requiredComponentCount);
+
+						if (ValidateIntrinsicParameterType(node, Check, errMessage, paramIndex) == ValidationResult::Unresolved)
+						{
+							unresolvedParameter = paramIndex;
+							paramIndex++;
+							continue;
+						}
+					}
+					else
+					{
+						// Scalar coordinates
+						auto Check = [=](const ExpressionType& type)
+						{
+							if (!IsPrimitiveType(type))
+								return false;
+
+							PrimitiveType primitiveType = std::get<PrimitiveType>(type);
+							return primitiveType == PrimitiveType::Float32 || primitiveType == PrimitiveType::Float64;
+						};
+
+						if (ValidateIntrinsicParameterType(node, Check, "floating-point value", paramIndex) == ValidationResult::Unresolved)
+						{
+							unresolvedParameter = paramIndex;
+							paramIndex++;
+							continue;
+						}
+					}
+
+					paramIndex++;
+					break;
+				}
+				
+				case ParameterType::Scalar:
+				{
+					auto Check = [](const ExpressionType& type)
+					{
+						PrimitiveType primitiveType;
+						if (IsPrimitiveType(type))
+							primitiveType = std::get<PrimitiveType>(type);
+						else
+							return false;
+
+						switch (primitiveType)
+						{
+							case PrimitiveType::String:
+								break;
+
+							case PrimitiveType::Boolean:
+							case PrimitiveType::Float32:
+							case PrimitiveType::Float64:
+							case PrimitiveType::Int32:
+							case PrimitiveType::UInt32:
+								return true;
+						}
+
+						return false;
+					};
+
+					if (ValidateIntrinsicParameterType(node, Check, "scalar value or vector", paramIndex) == ValidationResult::Unresolved)
+					{
+						unresolvedParameter = paramIndex;
+						paramIndex++;
+						continue;
+					}
+
+					paramIndex++;
+					break;
+				}
+
+				case ParameterType::ScalarVec:
+				{
+					auto Check = [](const ExpressionType& type)
+					{
+						PrimitiveType primitiveType;
+						if (IsPrimitiveType(type))
+							primitiveType = std::get<PrimitiveType>(type);
+						else if (IsVectorType(type))
+							primitiveType = std::get<VectorType>(type).type;
+						else
+							return false;
+
+						switch (primitiveType)
+						{
+							case PrimitiveType::String:
+								break;
+
+							case PrimitiveType::Boolean:
+							case PrimitiveType::Float32:
+							case PrimitiveType::Float64:
+							case PrimitiveType::Int32:
+							case PrimitiveType::UInt32:
+								return true;
+						}
+
+						return false;
+					};
+
+					if (ValidateIntrinsicParameterType(node, Check, "scalar value or vector", paramIndex) == ValidationResult::Unresolved)
+					{
+						unresolvedParameter = paramIndex;
+						paramIndex++;
+						continue;
+					}
+
+					paramIndex++;
+					break;
+				}
+
+				case ParameterType::SignedNumerical:
+				{
+					auto Check = [](const ExpressionType& type)
+					{
+						PrimitiveType primitiveType;
+						if (IsPrimitiveType(type))
+							primitiveType = std::get<PrimitiveType>(type);
+						else
+							return false;
+
+						switch (primitiveType)
+						{
+							case PrimitiveType::Boolean:
+							case PrimitiveType::String:
+							case PrimitiveType::UInt32:
+								break;
+
+							case PrimitiveType::Float32:
+							case PrimitiveType::Float64:
+							case PrimitiveType::Int32:
+								return true;
+						}
+
+						return false;
+					};
+
+					if (ValidateIntrinsicParameterType(node, Check, "scalar value or vector", paramIndex) == ValidationResult::Unresolved)
+					{
+						unresolvedParameter = paramIndex;
+						paramIndex++;
+						continue;
+					}
+
+					paramIndex++;
+					break;
+				}
+
+				case ParameterType::SignedNumericalVec:
+				{
+					auto Check = [](const ExpressionType& type)
+					{
+						PrimitiveType primitiveType;
+						if (IsPrimitiveType(type))
+							primitiveType = std::get<PrimitiveType>(type);
+						else if (IsVectorType(type))
+							primitiveType = std::get<VectorType>(type).type;
+						else
+							return false;
+
+						switch (primitiveType)
+						{
+							case PrimitiveType::Boolean:
+							case PrimitiveType::String:
+							case PrimitiveType::UInt32:
+								break;
+
+							case PrimitiveType::Float32:
+							case PrimitiveType::Float64:
+							case PrimitiveType::Int32:
+								return true;
+						}
+
+						return false;
+					};
+
+					if (ValidateIntrinsicParameterType(node, Check, "scalar value or vector", paramIndex) == ValidationResult::Unresolved)
+					{
+						unresolvedParameter = paramIndex;
+						paramIndex++;
+						continue;
+					}
+
+					paramIndex++;
+					break;
+				}
+
+				case ParameterType::Sampler:
+				{
+					if (ValidateIntrinsicParameterType(node, IsSamplerType, "sampler type", paramIndex) == ValidationResult::Unresolved)
+					{
+						unresolvedParameter = paramIndex;
+						paramIndex++;
+						continue;
+					}
+
+					paramIndex++;
+					break;
+				}
+
+				case ParameterType::SameType:
+				{
+					if (ValidateIntrinsicParamMatchingType(node, lastSameParamBarrierIndex, paramIndex) == ValidationResult::Unresolved)
+					{
+						unresolvedParameter = paramIndex;
+						continue;
+					}
+
+					break;
+				}
+
+				case ParameterType::SameTypeBarrier:
+				{
+					lastSameParamBarrierIndex = paramIndex;
+					break; //< Handled by SameType
+				}
+
+				case ParameterType::SameVecComponentCount:
+				{
+					if (ValidateIntrinsicParamMatchingVecComponent(node, lastSameComponentCountBarrierIndex, paramIndex) == ValidationResult::Unresolved)
+					{
+						unresolvedParameter = paramIndex;
+						continue;
+					}
+
+					break;
+				}
+
+				case ParameterType::SameVecComponentCountBarrier:
+				{
+					lastSameComponentCountBarrierIndex = paramIndex;
+					break; //< Handled by SameType
+				}
+
+				case ParameterType::Texture:
+				{
+					if (ValidateIntrinsicParameterType(node, IsTextureType, "texture type", paramIndex) == ValidationResult::Unresolved)
+					{
+						unresolvedParameter = paramIndex;
+						paramIndex++;
+						continue;
+					}
+
+					paramIndex++;
+					break;
+				}
+				
+				case ParameterType::TextureCoordinates:
+				{
+					// Special check: vector dimensions must match sample type
+					const ExpressionType* firstParameter = GetExpressionType(*node.parameters[0]);
+					if (!firstParameter)
+					{
+						unresolvedParameter = paramIndex;
+						continue;
+					}
+
+					const TextureType& textureType = std::get<TextureType>(ResolveAlias(*firstParameter));
+					std::size_t requiredComponentCount = 0;
+					switch (textureType.dim)
+					{
+						case ImageType::E1D:
+							requiredComponentCount = 1;
+							break;
+
+						case ImageType::E1D_Array:
+						case ImageType::E2D:
+							requiredComponentCount = 2;
+							break;
+
+						case ImageType::E2D_Array:
+						case ImageType::E3D:
+						case ImageType::Cubemap:
+							requiredComponentCount = 3;
+							break;
+					}
+
+					if (requiredComponentCount == 0)
+						throw AstInternalError{ node.parameters[0]->sourceLocation, "unhandled texture dimensions" };
+
+					if (requiredComponentCount > 1)
+					{
+						// Vector coordinates
+						auto Check = [=](const ExpressionType& type)
+						{
+							if (!IsVectorType(type))
+								return false;
+
+							const VectorType& vectorType = std::get<VectorType>(type);
+							if (vectorType.componentCount != requiredComponentCount)
+								return false;
+
+							return vectorType.type == PrimitiveType::Int32;
+						};
+
+						char errMessage[] = "integer vector of X components";
+						assert(requiredComponentCount < 9);
+						errMessage[18] = Nz::SafeCast<char>('0' + requiredComponentCount);
+
+						if (ValidateIntrinsicParameterType(node, Check, errMessage, paramIndex) == ValidationResult::Unresolved)
+						{
+							unresolvedParameter = paramIndex;
+							continue;
+						}
+					}
+					else
+					{
+						// Scalar coordinates
+						auto Check = [=](const ExpressionType& type)
+						{
+							if (!IsPrimitiveType(type))
+								return false;
+
+							PrimitiveType primitiveType = std::get<PrimitiveType>(type);
+							return primitiveType == PrimitiveType::Int32;
+						};
+
+						if (ValidateIntrinsicParameterType(node, Check, "integer value", paramIndex) == ValidationResult::Unresolved)
+						{
+							unresolvedParameter = paramIndex;
+							continue;
+						}
+					}
+
+					paramIndex++;
+					break;
+				}
+
+				case ParameterType::TextureData:
+				{
+					// Special check: vector data
+					const ExpressionType* firstParameter = GetExpressionType(*node.parameters[0]);
+					if (!firstParameter)
+					{
+						unresolvedParameter = paramIndex;
+						continue;
+					}
+
+					const TextureType& textureType = std::get<TextureType>(ResolveAlias(*firstParameter));
+
+					// Vector data
+					auto Check = [=](const ExpressionType& type)
+					{
+						if (!IsVectorType(type))
+							return false;
+
+						const VectorType& vectorType = std::get<VectorType>(type);
+						if (vectorType.componentCount != 4)
+							return false;
+
+						return vectorType.type == textureType.baseType;
+					};
+
+					if (ValidateIntrinsicParameterType(node, Check, "texture-type vector of 4 components", paramIndex) == ValidationResult::Unresolved)
+					{
+						unresolvedParameter = paramIndex;
+						continue;
+					}
+
+					paramIndex++;
+					break;
+				}
+			}
+		}
+
+		if (node.parameters.size() != paramIndex)
+			throw CompilerIntrinsicExpectedParameterCountError{ node.sourceLocation, Nz::SafeCast<std::uint32_t>(paramIndex) };
+
+		if (unresolvedParameter)
+			throw CompilerIntrinsicUnresolvedParameterError{ node.parameters[*unresolvedParameter]->sourceLocation, *unresolvedParameter };
+	}
+
+	auto ValidationTransformer::ValidateIntrinsicParamMatchingType(IntrinsicExpression& node, std::size_t from, std::size_t to) -> ValidationResult
+	{
+		// Check if all types prior to this one matches their type
+		const ExpressionType* firstParameterType = GetExpressionType(*node.parameters[from]);
+		if (!firstParameterType)
+			return ValidationResult::Unresolved;
+
+		const ExpressionType& matchingType = ResolveAlias(*firstParameterType);
+
+		for (std::size_t i = from + 1; i < to; ++i)
+		{
+			const ExpressionType* parameterType = GetExpressionType(*node.parameters[i]);
+			if (!parameterType)
+				return ValidationResult::Unresolved;
+
+			if (matchingType != ResolveAlias(*parameterType))
+				throw CompilerIntrinsicUnmatchingParameterTypeError{ node.parameters[i]->sourceLocation, Nz::SafeCast<std::uint32_t>(from), Nz::SafeCast<std::uint32_t>(to) };
+		}
+
+		return ValidationResult::Validated;
+	}
+
+	auto ValidationTransformer::ValidateIntrinsicParamMatchingVecComponent(IntrinsicExpression& node, std::size_t from, std::size_t to) -> ValidationResult
+	{
+		// Check if all types prior to this one matches their type
+		std::size_t componentCount = 0;
+		for (; from < to; ++from)
+		{
+			const ExpressionType* firstParameterType = GetExpressionType(*node.parameters[from]);
+			if (!firstParameterType)
+				return ValidationResult::Unresolved;
+
+			const ExpressionType& exprType = ResolveAlias(*firstParameterType);
+			if (!IsVectorType(exprType))
+				continue;
+
+			componentCount = std::get<VectorType>(exprType).componentCount;
+			break;
+		}
+
+		for (std::size_t i = from + 1; i < to; ++i)
+		{
+			const ExpressionType* parameterType = GetExpressionType(*node.parameters[i]);
+			if (!parameterType)
+				return ValidationResult::Unresolved;
+
+			const ExpressionType& exprType = ResolveAlias(*parameterType);
+			if (!IsVectorType(exprType))
+				continue;
+
+			if (componentCount != std::get<VectorType>(exprType).componentCount)
+				throw CompilerIntrinsicUnmatchingVecComponentError{ node.parameters[i]->sourceLocation, Nz::SafeCast<std::uint32_t>(from), Nz::SafeCast<std::uint32_t>(to) };
+		}
+
+		return ValidationResult::Validated;
+	}
+
+	template<typename F>
+	auto ValidationTransformer::ValidateIntrinsicParameter(IntrinsicExpression& node, F&& func, std::size_t index) -> ValidationResult
+	{
+		assert(index < node.parameters.size());
+		auto& parameter = MandatoryExpr(node.parameters[index], node.sourceLocation);
+		const ExpressionType* type = GetExpressionType(parameter);
+		if (!type)
+			return ValidationResult::Unresolved;
+
+		const ExpressionType& resolvedType = ResolveAlias(*type);
+		func(parameter, resolvedType);
+
+		return ValidationResult::Validated;
+	}
+
+	template<typename F>
+	auto ValidationTransformer::ValidateIntrinsicParameterType(IntrinsicExpression& node, F&& func, const char* typeStr, std::size_t index) -> ValidationResult
+	{
+		assert(index < node.parameters.size());
+		auto& parameter = MandatoryExpr(node.parameters[index], node.sourceLocation);
+
+		const ExpressionType* type = GetExpressionType(parameter);
+		if (!type)
+			return ValidationResult::Unresolved;
+
+		const ExpressionType& resolvedType = ResolveAlias(*type);
+		if (!func(resolvedType))
+			throw CompilerIntrinsicExpectedTypeError{ parameter.sourceLocation, Nz::SafeCast<std::uint32_t>(index), typeStr, ToString(*type, parameter.sourceLocation)};
+
+		return ValidationResult::Validated;
 	}
 }

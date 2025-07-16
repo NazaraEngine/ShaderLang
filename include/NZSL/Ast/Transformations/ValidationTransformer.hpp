@@ -20,13 +20,18 @@ namespace nzsl::Ast
 
 			inline bool Transform(Module& module, Context& context, std::string* error = nullptr);
 			bool Transform(Module& module, Context& context, const Options& options, std::string* error = nullptr);
-			bool TransformModule(Module& module, Context& context, std::string* error, Nz::FunctionRef<void()> postCallback = nullptr) override;
+			bool TransformExpression(Module& module, ExpressionPtr& expression, Context& context, const Options& options, std::string* error = nullptr);
+			bool TransformStatement(Module& module, StatementPtr& statement, Context& context, const Options& options, std::string* error = nullptr);
 
 			struct Options
 			{
+				const Stringifier* stringifier = nullptr;
+				bool checkIndices = true;
 			};
 
 		private:
+			enum class ValidationResult;
+
 			using Transformer::Transform;
 
 			Stringifier BuildStringifier(const SourceLocation& sourceLocation) const;
@@ -102,8 +107,23 @@ namespace nzsl::Ast
 			StatementTransformation Transform(ScopedStatement&& node) override;
 			StatementTransformation Transform(WhileStatement&& node) override;
 
+			bool TransformModule(Module& module, Context& context, std::string* error, Nz::FunctionRef<void()> postCallback = nullptr) override;
+
 			void TypeMustMatch(const ExpressionPtr& left, const ExpressionPtr& right, const SourceLocation& sourceLocation) const;
 			void TypeMustMatch(const ExpressionType& left, const ExpressionType& right, const SourceLocation& sourceLocation) const;
+
+			void ValidateConcreteType(const ExpressionType& exprType, const SourceLocation& sourceLocation);
+			void ValidateIntrinsicParameters(IntrinsicExpression& node);
+			ValidationResult ValidateIntrinsicParamMatchingType(IntrinsicExpression& node, std::size_t from, std::size_t to);
+			ValidationResult ValidateIntrinsicParamMatchingVecComponent(IntrinsicExpression& node, std::size_t from, std::size_t to);
+			template<typename F> ValidationResult ValidateIntrinsicParameter(IntrinsicExpression& node, F&& func, std::size_t index);
+			template<typename F> ValidationResult ValidateIntrinsicParameterType(IntrinsicExpression& node, F&& func, const char* typeStr, std::size_t index);
+
+			enum class ValidationResult
+			{
+				Validated,
+				Unresolved
+			};
 
 			struct States;
 
