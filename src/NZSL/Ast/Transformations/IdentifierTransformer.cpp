@@ -110,13 +110,16 @@ namespace nzsl::Ast
 	auto IdentifierTransformer::Transform(DeclareFunctionStatement&& statement) -> StatementTransformation
 	{
 		HandleIdentifier(statement.name, IdentifierType::Function);
+
 		PushScope();
 		NAZARA_DEFER({ PopScope(); });
 
 		for (auto& param : statement.parameters)
 			HandleIdentifier(param.name, IdentifierType::Parameter);
 
-		return VisitChildren{};
+		HandleChildren(statement);
+
+		return DontVisitChildren{};
 	}
 
 	auto IdentifierTransformer::Transform(DeclareOptionStatement&& statement) -> StatementTransformation
