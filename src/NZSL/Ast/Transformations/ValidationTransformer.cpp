@@ -63,6 +63,9 @@ namespace nzsl::Ast
 		states.rootModule = &module;
 		m_states = &states;
 
+		PushScope();
+		NAZARA_DEFER({ PopScope(); });
+
 		if (!TransformImportedModules(module, context, error))
 			return false;
 
@@ -474,9 +477,10 @@ namespace nzsl::Ast
 			if (remainingIndices == 0)
 			{
 				structMember = &member;
-				remainingIndices--;
 				break;
 			}
+
+			remainingIndices--;
 		}
 
 		if (!structMember)
@@ -1123,9 +1127,6 @@ namespace nzsl::Ast
 		if (node.externalIndex && m_options->checkIndices)
 			RegisterExternal(*node.externalIndex, node.sourceLocation);
 
-		if (!node.name.empty())
-			PushScope();
-
 		for (auto& extVar : node.externalVars)
 		{
 			if (extVar.varIndex && m_options->checkIndices)
@@ -1157,9 +1158,6 @@ namespace nzsl::Ast
 					throw CompilerUnexpectedAttributeOnPushConstantError{ extVar.sourceLocation, Ast::AttributeType::Binding };
 			}
 		}
-
-		if (!node.name.empty())
-			PopScope();
 
 		return DontVisitChildren{};
 	}
@@ -1429,9 +1427,6 @@ namespace nzsl::Ast
 	bool ValidationTransformer::TransformModule(Module& module, Context& context, std::string* error, Nz::FunctionRef<void()> postCallback)
 	{
 		m_states->pendingFunctions.clear();
-
-		PushScope();
-		NAZARA_DEFER({ PopScope(); });
 
 		if (!Transformer::TransformModule(module, context, error, postCallback))
 			return false;
