@@ -144,6 +144,7 @@ NZSL_SHADERLANG_COMPILER_ERROR(OptionDeclarationInsideFunction, "options must be
 NZSL_SHADERLANG_COMPILER_ERROR(PartialTypeExpect, "expected a {} type at #{}", std::string, std::uint32_t)
 NZSL_SHADERLANG_COMPILER_ERROR(PartialTypeTooFewParameters, "parameter count mismatch (expected at least {}, got {})", std::uint32_t, std::uint32_t)
 NZSL_SHADERLANG_COMPILER_ERROR(PartialTypeTooManyParameters, "parameter count mismatch (expected at most {}, got {})", std::uint32_t, std::uint32_t)
+NZSL_SHADERLANG_COMPILER_ERROR(ReturnOutsideOfFunction, "return can only be used inside a function")
 NZSL_SHADERLANG_COMPILER_ERROR(SamplerUnexpectedType, "for now only f32 samplers are supported (got {})", std::string)
 NZSL_SHADERLANG_COMPILER_ERROR(StorageUnexpectedAccess, "storage type access qualifiers must be readonly, readwrite or writeonly (got {})", std::string)
 NZSL_SHADERLANG_COMPILER_ERROR(StructDeclarationInsideFunction, "structs must be declared outside of functions")
@@ -171,8 +172,8 @@ NZSL_SHADERLANG_COMPILER_ERROR(UnexpectedAttributeOnPushConstant, "unexpected at
 
 // AST errors
 NZSL_SHADERLANG_AST_ERROR(AlreadyUsedIndex, "index {} is already used", std::size_t)
-NZSL_SHADERLANG_AST_ERROR(AttributeRequiresValue, "attribute is missing a value or expression", std::size_t)
 NZSL_SHADERLANG_AST_ERROR(AlreadyUsedIndexPreregister, "cannot preregister used index {} as its already used", std::size_t)
+NZSL_SHADERLANG_AST_ERROR(AttributeRequiresValue, "attribute is missing a value or expression", std::size_t)
 NZSL_SHADERLANG_AST_ERROR(ConditionExpectedBool, "expected boolean for condition, got {}", std::string)
 NZSL_SHADERLANG_AST_ERROR(EmptyIdentifier, "identifier cannot be empty")
 NZSL_SHADERLANG_AST_ERROR(EmptyImport, "no identifiers found in import statement")
@@ -181,8 +182,9 @@ NZSL_SHADERLANG_AST_ERROR(IndexOutOfBounds, "{} index {} is out of bounds", std:
 NZSL_SHADERLANG_AST_ERROR(Internal, "internal error: {}", std::string)
 NZSL_SHADERLANG_AST_ERROR(InvalidConstantIndex, "invalid constant index #{}", std::size_t)
 NZSL_SHADERLANG_AST_ERROR(InvalidMethodIndex, "invalid method index #{} for type {}", std::size_t, std::string)
-NZSL_SHADERLANG_AST_ERROR(InvalidIndex, "invalid index {}", std::size_t)
+NZSL_SHADERLANG_AST_ERROR(InvalidIndex, "invalid {} index {}", std::string_view, std::size_t)
 NZSL_SHADERLANG_AST_ERROR(MissingExpression, "a mandatory expression is missing")
+NZSL_SHADERLANG_AST_ERROR(MissingExpressionType, "expression has no type")
 NZSL_SHADERLANG_AST_ERROR(MissingStatement, "a mandatory statement is missing")
 NZSL_SHADERLANG_AST_ERROR(MissingType, "a mandatory type is missing")
 NZSL_SHADERLANG_AST_ERROR(NoIdentifier, "at least one identifier is required")

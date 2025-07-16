@@ -4,6 +4,11 @@
 
 namespace nzsl::Ast
 {
+	inline ValidationTransformer::ValidationTransformer() :
+	Transformer(TransformerFlag::IgnoreFunctionContent | TransformerFlag::IgnoreLoopContent) //< function and loop content is handled in a second pass
+	{
+	}
+
 	inline bool ValidationTransformer::Transform(Module& module, Context& context, std::string* error)
 	{
 		return Transform(module, context, {}, error);
