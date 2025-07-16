@@ -28,6 +28,7 @@
 #include <NZSL/Ast/Transformations/MatrixTransformer.hpp>
 #include <NZSL/Ast/Transformations/StructAssignmentTransformer.hpp>
 #include <NZSL/Ast/Transformations/SwizzleTransformer.hpp>
+#include <NZSL/Ast/Transformations/ValidationTransformer.hpp>
 #include <fmt/format.h>
 #include <frozen/unordered_map.h>
 #include <tsl/ordered_map.h>
@@ -655,38 +656,19 @@ namespace nzsl
 
 	std::vector<std::uint32_t> SpirvWriter::Generate(Ast::Module& module, const States& states)
 	{
-		Ast::ModulePtr sanitizedModule;
-		Ast::Module* targetModule = &module;
-		/*if (!states.sanitized)
-		{
-			Ast::SanitizeVisitor::Options options = GetSanitizeOptions();
-			options.optionValues = states.optionValues;
-			options.moduleResolver = states.shaderModuleResolver;
-
-			sanitizedModule = Ast::Sanitize(module, options);
-			targetModule = sanitizedModule.get();
-		}
-		else
-		{
-			sanitizedModule = Ast::Clone(module);
-			targetModule = sanitizedModule.get();
-		}*/
-
-		Ast::TransformerExecutor executor = GetPasses();
-		executor.Transform(*targetModule);
+		Ast::TransformerExecutor executor = GetPasses(states.resolve, states.validate);
+		executor.Transform(module);
 
 		if (states.optimize)
 		{
 			Ast::Transformer::Context context;
 			Ast::ConstantPropagationTransformer constantPropagation;
-			constantPropagation.Transform(*targetModule, context);
+			constantPropagation.Transform(module, context);
 
 			Ast::DependencyCheckerVisitor::Config dependencyConfig;
 			dependencyConfig.usedShaderStages = ShaderStageType_All;
 
-			Ast::EliminateUnusedPass(*sanitizedModule, dependencyConfig);
-
-			targetModule = sanitizedModule.get();
+			Ast::EliminateUnusedPass(module, dependencyConfig);
 		}
 
 		// Previsitor
@@ -700,7 +682,7 @@ namespace nzsl
 		// Register all extended instruction sets
 		PreVisitor previsitor(*this, state.constantTypeCache);
 		
-		for (Ast::ModuleFeature feature : targetModule->metadata->enabledFeatures)
+		for (Ast::ModuleFeature feature : module.metadata->enabledFeatures)
 		{
 			switch (feature)
 			{
@@ -717,10 +699,10 @@ namespace nzsl
 			}
 		}
 
-		for (const auto& importedModule : targetModule->importedModules)
+		for (const auto& importedModule : module.importedModules)
 			importedModule.module->rootNode->Visit(previsitor);
 
-		targetModule->rootNode->Visit(previsitor);
+		module.rootNode->Visit(previsitor);
 
 		m_currentState->previsitor = &previsitor;
 
@@ -795,7 +777,7 @@ namespace nzsl
 
 			RegisterSourceFile(module);
 
-			for (const auto& importedModule : targetModule->importedModules)
+			for (const auto& importedModule : module.importedModules)
 				RegisterSourceFile(*importedModule.module);
 		}
 		else if (states.debugLevel >= DebugLevel::Minimal)
@@ -811,10 +793,10 @@ namespace nzsl
 		};
 
 		SpirvAstVisitor visitor(*this, state.instructions, funcDataRetriever);
-		for (const auto& importedModule : targetModule->importedModules)
+		for (const auto& importedModule : module.importedModules)
 			importedModule.module->rootNode->Visit(visitor);
 
-		targetModule->rootNode->Visit(visitor);
+		module.rootNode->Visit(visitor);
 
 		AppendHeader();
 
@@ -895,10 +877,15 @@ namespace nzsl
 			return { 1, 0 };
 	}
 
-	Ast::TransformerExecutor SpirvWriter::GetPasses()
+	Ast::TransformerExecutor SpirvWriter::GetPasses(bool resolve, bool validate)
 	{
 		Ast::TransformerExecutor executor;
-		executor.AddPass<Ast::IdentifierTypeResolverTransformer>({ nullptr, true });
+		if (resolve)
+			executor.AddPass<Ast::IdentifierTypeResolverTransformer>({ nullptr, true });
+
+		if (validate)
+			executor.AddPass<Ast::ValidationTransformer>();
+
 		executor.AddPass<Ast::BranchSplitterTransformer>();
 		executor.AddPass<Ast::ForToWhileTransformer>();
 		executor.AddPass<Ast::StructAssignmentTransformer>({ true, true });

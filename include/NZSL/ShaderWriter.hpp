@@ -33,7 +33,8 @@ namespace nzsl
 				std::unordered_map<std::uint32_t, Ast::ConstantValue> optionValues;
 				DebugLevel debugLevel = DebugLevel::Minimal;
 				bool optimize = false;
-				bool sanitized = false;
+				bool resolve = true;
+				bool validate = true;
 			};
 	};
 }

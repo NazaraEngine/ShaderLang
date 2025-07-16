@@ -23,6 +23,7 @@
 #include <NZSL/Ast/Transformations/IdentifierTypeResolverTransformer.hpp>
 #include <NZSL/Ast/Transformations/StructAssignmentTransformer.hpp>
 #include <NZSL/Ast/Transformations/SwizzleTransformer.hpp>
+#include <NZSL/Ast/Transformations/ValidationTransformer.hpp>
 #include <fmt/format.h>
 #include <frozen/unordered_map.h>
 #include <frozen/unordered_set.h>
@@ -399,42 +400,23 @@ namespace nzsl
 		m_currentState = &state;
 		NAZARA_DEFER({ m_currentState = nullptr; });
 
-		Ast::ModulePtr sanitizedModule;
-		Ast::Module* targetModule = &module;
-		/*if (!states.sanitized)
-		{
-			Ast::SanitizeVisitor::Options options = GetSanitizeOptions();
-			options.optionValues = states.optionValues;
-			options.moduleResolver = states.shaderModuleResolver;
-
-			sanitizedModule = Ast::Sanitize(module, options);
-			targetModule = sanitizedModule.get();
-		}
-		else
-		{
-			sanitizedModule = Ast::Clone(module);
-			targetModule = sanitizedModule.get();
-		}*/
-
-		Ast::TransformerExecutor executor = GetPasses();
-		executor.Transform(*targetModule);
+		Ast::TransformerExecutor executor = GetPasses(states.resolve, states.validate);
+		executor.Transform(module);
 
 		if (states.optimize)
 		{
 			Ast::Transformer::Context context;
 			Ast::ConstantPropagationTransformer constantPropagation;
-			constantPropagation.Transform(*targetModule, context);
+			constantPropagation.Transform(module, context);
 
 			Ast::DependencyCheckerVisitor::Config dependencyConfig;
 			dependencyConfig.usedShaderStages = (shaderStage) ? *shaderStage : ShaderStageType_All; //< only one should exist anyway
 
-			Ast::EliminateUnusedPass(*sanitizedModule, dependencyConfig);
-
-			targetModule = sanitizedModule.get();
+			Ast::EliminateUnusedPass(module, dependencyConfig);
 		}
 
 		// Previsitor
-		for (Ast::ModuleFeature feature : targetModule->metadata->enabledFeatures)
+		for (Ast::ModuleFeature feature : module.metadata->enabledFeatures)
 		{
 			switch (feature)
 			{
@@ -454,14 +436,14 @@ namespace nzsl
 
 		state.previsitor.selectedStage = shaderStage;
 
-		for (const auto& importedModule : targetModule->importedModules)
+		for (const auto& importedModule : module.importedModules)
 		{
 			state.previsitor.moduleSuffix = importedModule.identifier;
 			importedModule.module->rootNode->Visit(state.previsitor);
 		}
 
 		state.previsitor.moduleSuffix = {};
-		targetModule->rootNode->Visit(state.previsitor);
+		module.rootNode->Visit(state.previsitor);
 
 		state.previsitor.Resolve();
 
@@ -474,7 +456,7 @@ namespace nzsl
 		// Code generation
 		AppendHeader();
 
-		for (const auto& importedModule : targetModule->importedModules)
+		for (const auto& importedModule : module.importedModules)
 		{
 			if (m_currentState->states->debugLevel >= DebugLevel::Minimal)
 			{
@@ -491,7 +473,7 @@ namespace nzsl
 
 		if (m_currentState->states->debugLevel >= DebugLevel::Minimal)
 		{
-			if (!targetModule->importedModules.empty())
+			if (!module.importedModules.empty())
 				AppendComment("Main module");
 
 			AppendModuleComments(module);
@@ -499,7 +481,7 @@ namespace nzsl
 		}
 
 		m_currentState->moduleSuffix = {};
-		targetModule->rootNode->Visit(*this);
+		module.rootNode->Visit(*this);
 
 		Output output;
 		output.code = std::move(state.stream).str();
@@ -537,7 +519,7 @@ namespace nzsl
 		return s_glslWriterFlipYUniformName;
 	}
 
-	Ast::TransformerExecutor GlslWriter::GetPasses()
+	Ast::TransformerExecutor GlslWriter::GetPasses(bool resolve, bool validate)
 	{
 		static constexpr auto s_reservedKeywords = frozen::make_unordered_set<frozen::string>({
 			// All reserved GLSL keywords as of GLSL ES 3.2
@@ -599,7 +581,12 @@ namespace nzsl
 		};
 
 		Ast::TransformerExecutor executor;
-		executor.AddPass<Ast::IdentifierTypeResolverTransformer>({ nullptr, true });
+		if (resolve)
+			executor.AddPass<Ast::IdentifierTypeResolverTransformer>({ nullptr, true });
+		
+		if (validate)
+			executor.AddPass<Ast::ValidationTransformer>();
+
 		executor.AddPass<Ast::IdentifierTransformer>(firstIdentifierPassOptions);
 		executor.AddPass<Ast::ForToWhileTransformer>();
 		executor.AddPass<Ast::StructAssignmentTransformer>({ false, true }); //< TODO: Only split for base uniforms/storage
