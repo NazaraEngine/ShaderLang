@@ -52,6 +52,8 @@ namespace nzsl::Ast
 
 			using Transformer::Transform;
 
+			Stringifier BuildStringifier(const SourceLocation& sourceLocation) const;
+
 			std::optional<ConstantValue> ComputeConstantValue(ExpressionPtr& expr) const;
 			template<typename T> bool ComputeExprValue(ExpressionValue<T>& attribute, const SourceLocation& sourceLocation);
 			ExpressionType ComputeSwizzleType(const ExpressionType& type, std::size_t componentCount, const SourceLocation& sourceLocation) const;
@@ -131,7 +133,6 @@ namespace nzsl::Ast
 			void Transform(ExpressionType& expressionType) override;
 			void Transform(ExpressionValue<ExpressionType>& expressionType) override;
 
-			ExpressionType ValidateBinaryOp(BinaryType op, const ExpressionType& leftExprType, const ExpressionType& rightExprType, const SourceLocation& sourceLocation);
 			void ValidateConcreteType(const ExpressionType& exprType, const SourceLocation& sourceLocation);
 
 			static std::uint32_t ToSwizzleIndex(char c, const SourceLocation& sourceLocation);

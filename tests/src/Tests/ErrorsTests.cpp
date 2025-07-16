@@ -1,6 +1,7 @@
 #include <Tests/ShaderUtils.hpp>
 #include <NZSL/FilesystemModuleResolver.hpp>
 #include <NZSL/Parser.hpp>
+#include <NZSL/Ast/Transformations/ValidationTransformer.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers.hpp>
 
@@ -106,6 +107,7 @@ option enable: bool;
 		{
 			nzsl::Ast::TransformerExecutor executor;
 			executor.AddPass<nzsl::Ast::IdentifierTypeResolverTransformer>();
+			executor.AddPass<nzsl::Ast::ValidationTransformer>();
 
 			executor.Transform(*nzsl::Parse(sourceCode));
 		};

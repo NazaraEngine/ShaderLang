@@ -16,10 +16,11 @@ namespace nzsl::Ast
 		public:
 			struct Options;
 
-			ValidationTransformer() = default;
+			inline ValidationTransformer();
 
 			inline bool Transform(Module& module, Context& context, std::string* error = nullptr);
 			bool Transform(Module& module, Context& context, const Options& options, std::string* error = nullptr);
+			bool TransformModule(Module& module, Context& context, std::string* error, Nz::FunctionRef<void()> postCallback = nullptr) override;
 
 			struct Options
 			{
@@ -28,23 +29,31 @@ namespace nzsl::Ast
 		private:
 			using Transformer::Transform;
 
-			const ExpressionType* GetExpressionType(const Expression& expr);
+			Stringifier BuildStringifier(const SourceLocation& sourceLocation) const;
 			
-			void CheckAliasIndex(std::size_t aliasIndex) const;
-			void CheckConstIndex(std::size_t constIndex) const;
-			void CheckExternalIndex(std::size_t externalIndex) const;
-			void CheckFuncIndex(std::size_t funcIndex) const;
-			void CheckStructIndex(std::size_t structIndex) const;
-			void CheckVariableIndex(std::size_t variableIndex) const;
+			void CheckAliasIndex(std::optional<std::size_t> aliasIndex, const SourceLocation& sourceLocation) const;
+			void CheckConstIndex(std::optional<std::size_t> constIndex, const SourceLocation& sourceLocation) const;
+			void CheckExternalIndex(std::optional<std::size_t> externalIndex, const SourceLocation& sourceLocation) const;
+			void CheckFuncIndex(std::optional<std::size_t> funcIndex, const SourceLocation& sourceLocation) const;
+			void CheckStructIndex(std::optional<std::size_t> structIndex, const SourceLocation& sourceLocation) const;
+			void CheckVariableIndex(std::optional<std::size_t> variableIndex, const SourceLocation& sourceLocation) const;
 
-			void RegisterAlias(std::size_t aliasIndex);
-			void RegisterConst(std::size_t constIndex);
-			void RegisterExternal(std::size_t externalIndex);
-			void RegisterFunc(std::size_t funcIndex);
-			void RegisterStruct(std::size_t structIndex);
-			void RegisterVariable(std::size_t variableIndex);
+			const ExpressionType* GetExpressionType(const Expression& expr) const;
+
+			void PopScope() override;
+			void PushScope() override;
+
+			void RegisterAlias(std::size_t aliasIndex, const SourceLocation& sourceLocation);
+			void RegisterConst(std::size_t constIndex, const SourceLocation& sourceLocation);
+			void RegisterExternal(std::size_t externalIndex, const SourceLocation& sourceLocation);
+			void RegisterFunc(std::size_t funcIndex, const SourceLocation& sourceLocation);
+			void RegisterStruct(std::size_t structIndex, const SourceLocation& sourceLocation);
+			void RegisterVariable(std::size_t variableIndex, const SourceLocation& sourceLocation);
 			
+			void ResolveFunctions();
 			std::size_t ResolveStructIndex(const ExpressionType& exprType, const SourceLocation& sourceLocation);
+
+			std::string ToString(const ExpressionType& exprType, const SourceLocation& sourceLocation) const;
 
 			ExpressionTransformation Transform(AccessFieldExpression&& node) override;
 			ExpressionTransformation Transform(AccessIdentifierExpression&& node) override;
@@ -92,6 +101,9 @@ namespace nzsl::Ast
 			StatementTransformation Transform(ReturnStatement&& node) override;
 			StatementTransformation Transform(ScopedStatement&& node) override;
 			StatementTransformation Transform(WhileStatement&& node) override;
+
+			void TypeMustMatch(const ExpressionPtr& left, const ExpressionPtr& right, const SourceLocation& sourceLocation) const;
+			void TypeMustMatch(const ExpressionType& left, const ExpressionType& right, const SourceLocation& sourceLocation) const;
 
 			struct States;
 
