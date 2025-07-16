@@ -69,7 +69,7 @@ namespace nzsl
 			static std::string_view GetDrawParameterBaseVertexUniformName();
 			static std::string_view GetDrawParameterDrawIndexUniformName();
 			static std::string_view GetFlipYUniformName();
-			static Ast::TransformerExecutor GetPasses();
+			static Ast::TransformerExecutor GetPasses(bool resolve, bool validate);
 
 		private:
 			void Append(const Ast::AliasType& aliasType);

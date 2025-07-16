@@ -25,7 +25,7 @@ void ParseSerializeDeserialize(std::string_view sourceCode, bool resolve)
 	// Text serialisation
 	{
 		nzsl::LangWriter::States states;
-		states.sanitized = true;
+		states.resolve = false;
 
 		nzsl::LangWriter langWriter;
 		std::string output = langWriter.Generate(*shaderModule, states);
