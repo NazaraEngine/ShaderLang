@@ -106,8 +106,6 @@ target("nzsl", function ()
 	add_headerfiles("src/NZSL/**.hpp", { prefixdir = "private", install = false })
 	add_headerfiles("src/NZSL/**.inl", { prefixdir = "private", install = false })
 	add_files("src/NZSL/**.cpp")
-	remove_files("src/NZSL/Ast/SanitizeVisitor.cpp")
-	add_extrafiles("src/NZSL/Ast/SanitizeVisitor.cpp")
 	add_packages("nazarautils", { public = true })
 	add_packages("fast_float", "fmt", "frozen", "lz4", "ordered_map")
 
