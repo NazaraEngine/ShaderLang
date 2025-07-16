@@ -89,7 +89,6 @@ namespace nzsl::Ast
 
 #define NZSL_SHADERAST_STATEMENT(Node) case NodeType::Node##Statement: return Compare(static_cast<const Node##Statement&>(lhs), static_cast<const Node##Statement&>(lhs), params);
 #include <NZSL/Ast/NodeList.hpp>
-#include "Compare.hpp"
 
 			default: throw std::runtime_error("unexpected node type");
 		}
