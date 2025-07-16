@@ -419,11 +419,11 @@ namespace nzsl::Ast
 				// Check builtin usage
 				for (auto&& [builtin, sourceLocation] : funcData.usedBuiltins)
 				{
-					auto it = LangData::s_builtinData.find(builtin);
-					if (it == LangData::s_builtinData.end())
+					auto builtinIt = LangData::s_builtinData.find(builtin);
+					if (builtinIt == LangData::s_builtinData.end())
 						throw AstInternalError{ sourceLocation, "missing builtin data" };
 
-					const LangData::BuiltinData& builtinData = it->second;
+					const LangData::BuiltinData& builtinData = builtinIt->second;
 					if (!builtinData.compatibleStages.Test(stageType))
 						throw CompilerBuiltinUnsupportedStageError{ sourceLocation, builtin, stageType };
 				}
