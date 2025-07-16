@@ -1530,6 +1530,7 @@ namespace nzsl::Ast
 		{
 			auto identifierExpr = std::make_unique<AccessIdentifierExpression>();
 			identifierExpr->expr = std::move(indexedExpr);
+			identifierExpr->sourceLocation = accessIdentifier.sourceLocation;
 
 			for (std::size_t j = index; j < accessIdentifier.identifiers.size(); ++j)
 				identifierExpr->identifiers.emplace_back(accessIdentifier.identifiers[j]);
@@ -1572,6 +1573,8 @@ namespace nzsl::Ast
 				identifierExpr->expr = std::move(indexedExpr);
 				identifierExpr->identifiers.emplace_back().identifier = identifierEntry.identifier;
 				identifierExpr->cachedExpressionType = std::move(methodType);
+				identifierExpr->sourceLocation = accessIdentifier.sourceLocation;
+
 				indexedExpr = std::move(identifierExpr);
 			}
 			else if (IsTextureType(resolvedType))
@@ -1594,6 +1597,8 @@ namespace nzsl::Ast
 				identifierExpr->expr = std::move(indexedExpr);
 				identifierExpr->identifiers.emplace_back().identifier = identifierEntry.identifier;
 				identifierExpr->cachedExpressionType = std::move(methodType);
+				identifierExpr->sourceLocation = accessIdentifier.sourceLocation;
+
 				indexedExpr = std::move(identifierExpr);
 			}
 			else if (IsArrayType(resolvedType) || IsDynArrayType(resolvedType))
@@ -1604,6 +1609,7 @@ namespace nzsl::Ast
 					auto identifierExpr = std::make_unique<AccessIdentifierExpression>();
 					identifierExpr->expr = std::move(indexedExpr);
 					identifierExpr->identifiers.emplace_back().identifier = identifierEntry.identifier;
+					identifierExpr->sourceLocation = accessIdentifier.sourceLocation;
 
 					MethodType methodType;
 					methodType.methodIndex = 0; //< FIXME
@@ -1697,7 +1703,7 @@ namespace nzsl::Ast
 
 				// Transform to AccessFieldExpression
 				std::unique_ptr<AccessFieldExpression> accessField = std::make_unique<AccessFieldExpression>();
-				accessField->sourceLocation = indexedExpr->sourceLocation;
+				accessField->sourceLocation = accessIdentifier.sourceLocation;
 				accessField->expr = std::move(indexedExpr);
 				accessField->fieldIndex = static_cast<std::uint32_t>(fieldIndex);
 				accessField->cachedExpressionType = std::move(resolvedFieldTypeOpt);
@@ -1713,6 +1719,7 @@ namespace nzsl::Ast
 
 				auto swizzle = std::make_unique<SwizzleExpression>();
 				swizzle->expression = std::move(indexedExpr);
+				swizzle->sourceLocation = accessIdentifier.sourceLocation;
 
 				swizzle->componentCount = swizzleComponentCount;
 				for (std::size_t j = 0; j < swizzleComponentCount; ++j)
@@ -2326,7 +2333,7 @@ namespace nzsl::Ast
 	{
 		auto intrinsicIt = LangData::s_intrinsicData.find(intrinsicExpr.intrinsic);
 		if (intrinsicIt == LangData::s_intrinsicData.end())
-			throw AstInternalError{ intrinsicExpr.sourceLocation, "missing intrinsic data for intrinsic " + std::to_string(Nz::UnderlyingCast(intrinsicExpr.intrinsic)) };
+			throw AstInternalError{ intrinsicExpr.sourceLocation, fmt::format("missing intrinsic data for intrinsic {}", Nz::UnderlyingCast(intrinsicExpr.intrinsic)) };
 
 		const auto& intrinsicData = intrinsicIt->second;
 
@@ -2343,7 +2350,7 @@ namespace nzsl::Ast
 
 				const ExpressionType& paramType = ResolveAlias(*expressionType);
 				if (!IsSamplerType(paramType))
-					throw AstInternalError{ intrinsicExpr.sourceLocation, "intrinsic " + std::string(intrinsicData.functionName) + " first parameter is not a sampler" };
+					throw AstInternalError{ intrinsicExpr.sourceLocation, fmt::format("intrinsic {} first parameter is not a sampler", intrinsicData.functionName) };
 
 				const SamplerType& samplerType = std::get<SamplerType>(paramType);
 				if (samplerType.depth)
@@ -2361,7 +2368,7 @@ namespace nzsl::Ast
 
 				const ExpressionType& paramType = ResolveAlias(*expressionType);
 				if (!IsTextureType(paramType))
-					throw AstInternalError{ intrinsicExpr.sourceLocation, "intrinsic " + std::string(intrinsicData.functionName) + " first parameter is not a sampler" };
+					throw AstInternalError{ intrinsicExpr.sourceLocation, fmt::format("intrinsic {} first parameter is not a sampler", intrinsicData.functionName) };
 
 				const TextureType& textureType = std::get<TextureType>(paramType);
 				intrinsicExpr.cachedExpressionType = VectorType{ 4, textureType.baseType };
@@ -2376,7 +2383,7 @@ namespace nzsl::Ast
 
 				const ExpressionType& paramType = ResolveAlias(*expressionType);
 				if (!IsMatrixType(paramType))
-					throw AstInternalError{ intrinsicExpr.sourceLocation, "intrinsic " + std::string(intrinsicData.functionName) + " first parameter is not a matrix" };
+					throw AstInternalError{ intrinsicExpr.sourceLocation, fmt::format("intrinsic {} first parameter is not a matrix", intrinsicData.functionName) };
 
 				MatrixType matrixType = std::get<MatrixType>(paramType);
 				std::swap(matrixType.columnCount, matrixType.rowCount);

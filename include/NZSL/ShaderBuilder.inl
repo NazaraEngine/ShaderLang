@@ -15,6 +15,17 @@ namespace nzsl::ShaderBuilder
 		return accessFieldNode;
 	}
 
+	inline Ast::AccessIdentifierExpressionPtr Impl::AccessMember::operator()(Ast::ExpressionPtr expr, std::string memberIdentifier, const SourceLocation& sourceLocation) const
+	{
+		auto accessMemberNode = std::make_unique<Ast::AccessIdentifierExpression>();
+		accessMemberNode->expr = std::move(expr);
+		auto& identifierEntry = accessMemberNode->identifiers.emplace_back();
+		identifierEntry.identifier = std::move(memberIdentifier);
+		identifierEntry.sourceLocation = sourceLocation;
+
+		return accessMemberNode;
+	}
+
 	inline Ast::AccessIdentifierExpressionPtr Impl::AccessMember::operator()(Ast::ExpressionPtr expr, std::vector<std::string> memberIdentifiers) const
 	{
 		auto accessMemberNode = std::make_unique<Ast::AccessIdentifierExpression>();

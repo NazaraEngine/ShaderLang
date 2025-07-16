@@ -85,8 +85,8 @@ namespace nzsl::Ast
 					}
 					else
 					{
-						dstAccess = ShaderBuilder::AccessMember(Clone(*dstVar), { member.name });
-						srcAccess = ShaderBuilder::AccessMember(Clone(*srcVar), { member.name });
+						dstAccess = ShaderBuilder::AccessMember(Clone(*dstVar), member.name, member.sourceLocation);
+						srcAccess = ShaderBuilder::AccessMember(Clone(*srcVar), member.name, member.sourceLocation);
 					}
 
 					dstAccess->cachedExpressionType = member.type.GetResultingValue();
