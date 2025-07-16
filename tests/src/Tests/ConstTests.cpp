@@ -345,7 +345,7 @@ fn main()
 		resolver->RegisterModule(importedSource);
 
 		// First pass
-		nzsl::Ast::IdentifierTypeResolverTransformer resolverTransformer;
+		nzsl::Ast::ResolveTransformer resolverTransformer;
 		{
 			nzsl::Ast::Transformer::Context context;
 			context.partialCompilation = true;
@@ -355,7 +355,7 @@ fn main()
 
 		// Second pass
 		{
-			nzsl::Ast::IdentifierTypeResolverTransformer::Options resolverOptions;
+			nzsl::Ast::ResolveTransformer::Options resolverOptions;
 			resolverOptions.moduleResolver = resolver;
 
 			nzsl::Ast::Transformer::Context context;

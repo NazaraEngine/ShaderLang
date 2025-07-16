@@ -106,7 +106,7 @@ option enable: bool;
 		auto Compile = [](std::string_view sourceCode)
 		{
 			nzsl::Ast::TransformerExecutor executor;
-			executor.AddPass<nzsl::Ast::IdentifierTypeResolverTransformer>();
+			executor.AddPass<nzsl::Ast::ResolveTransformer>();
 			executor.AddPass<nzsl::Ast::ValidationTransformer>();
 			executor.AddPass<nzsl::Ast::BindingResolverTransformer>();
 
@@ -1008,12 +1008,12 @@ import * from Module;
 			auto directoryModuleResolver = std::make_shared<nzsl::FilesystemModuleResolver>();
 			directoryModuleResolver->RegisterModule(importedSource);
 
-			nzsl::Ast::IdentifierTypeResolverTransformer::Options resolveOptions;
+			nzsl::Ast::ResolveTransformer::Options resolveOptions;
 			resolveOptions.moduleResolver = directoryModuleResolver;
 
 			shaderModule = nzsl::Parse(wildcardImportSource);
 			
-			nzsl::Ast::IdentifierTypeResolverTransformer resolver;
+			nzsl::Ast::ResolveTransformer resolver;
 			nzsl::Ast::Transformer::Context context;
 
 			CHECK_THROWS_WITH(resolver.Transform(*shaderModule, context, resolveOptions), "(5,1 -> 21): CModuleFeatureMismatch error: module Module requires feature primitive_externals");
