@@ -2,7 +2,7 @@
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
-#include <NZSL/Ast/Transformations/IdentifierTypeResolverTransformer.hpp>
+#include <NZSL/Ast/Transformations/ResolveTransformer.hpp>
 #include <NazaraUtils/Bitset.hpp>
 #include <NazaraUtils/CallOnExit.hpp>
 #include <NazaraUtils/StackVector.hpp>
@@ -30,7 +30,7 @@
 namespace nzsl::Ast
 {
 	template<typename T>
-	struct IdentifierTypeResolverTransformer::IdentifierList
+	struct ResolveTransformer::IdentifierList
 	{
 		Nz::Bitset<std::uint64_t> availableIndices;
 		Nz::Bitset<std::uint64_t> preregisteredIndices;
@@ -118,18 +118,18 @@ namespace nzsl::Ast
 		}
 	};
 
-	struct IdentifierTypeResolverTransformer::Scope
+	struct ResolveTransformer::Scope
 	{
 		std::size_t previousSize;
 	};
 
-	struct IdentifierTypeResolverTransformer::ConstantData
+	struct ResolveTransformer::ConstantData
 	{
 		std::size_t moduleIndex;
 		std::optional<ConstantValue> value;
 	};
 
-	struct IdentifierTypeResolverTransformer::Environment
+	struct ResolveTransformer::Environment
 	{
 		std::shared_ptr<Environment> parentEnv;
 		std::string moduleId;
@@ -138,37 +138,37 @@ namespace nzsl::Ast
 		std::vector<Scope> scopes;
 	};
 
-	struct IdentifierTypeResolverTransformer::FunctionData
+	struct ResolveTransformer::FunctionData
 	{
 		std::size_t moduleIndex;
 		DeclareFunctionStatement* node;
 		std::optional<ShaderStageType> entryStage;
 	};
 
-	struct IdentifierTypeResolverTransformer::NamedExternalBlock
+	struct ResolveTransformer::NamedExternalBlock
 	{
 		std::shared_ptr<Environment> environment;
 		std::string name;
 	};
 
-	struct IdentifierTypeResolverTransformer::NamedPartialType
+	struct ResolveTransformer::NamedPartialType
 	{
 		std::string name;
 		PartialType type;
 	};
 
-	struct IdentifierTypeResolverTransformer::PendingFunction
+	struct ResolveTransformer::PendingFunction
 	{
 		DeclareFunctionStatement* node;
 	};
 
-	struct IdentifierTypeResolverTransformer::StructData
+	struct ResolveTransformer::StructData
 	{
 		std::size_t moduleIndex;
 		StructDescription* description;
 	};
 
-	struct IdentifierTypeResolverTransformer::States
+	struct ResolveTransformer::States
 	{
 		struct ModuleData
 		{
@@ -208,7 +208,7 @@ namespace nzsl::Ast
 	};
 
 
-	bool IdentifierTypeResolverTransformer::Transform(Module& module, Context& context, const Options& options, std::string* error)
+	bool ResolveTransformer::Transform(Module& module, Context& context, const Options& options, std::string* error)
 	{
 		States states;
 		states.currentModule = &module;
@@ -285,7 +285,7 @@ namespace nzsl::Ast
 		});
 	}
 
-	Stringifier IdentifierTypeResolverTransformer::BuildStringifier(const SourceLocation& sourceLocation) const
+	Stringifier ResolveTransformer::BuildStringifier(const SourceLocation& sourceLocation) const
 	{
 		Stringifier stringifier;
 		stringifier.aliasStringifier = [&](std::size_t aliasIndex)
@@ -317,7 +317,7 @@ namespace nzsl::Ast
 		return stringifier;
 	}
 
-	std::optional<ConstantValue> IdentifierTypeResolverTransformer::ComputeConstantValue(ExpressionPtr& expr) const
+	std::optional<ConstantValue> ResolveTransformer::ComputeConstantValue(ExpressionPtr& expr) const
 	{
 		// Run optimizer on constant value to hopefully retrieve a single constant value
 		PropagateConstants(expr);
@@ -359,7 +359,7 @@ namespace nzsl::Ast
 		}
 	}
 	
-	ExpressionType IdentifierTypeResolverTransformer::ComputeSwizzleType(const ExpressionType& type, std::size_t componentCount, const SourceLocation& sourceLocation) const
+	ExpressionType ResolveTransformer::ComputeSwizzleType(const ExpressionType& type, std::size_t componentCount, const SourceLocation& sourceLocation) const
 	{
 		assert(IsPrimitiveType(type) || IsVectorType(type));
 
@@ -387,7 +387,7 @@ namespace nzsl::Ast
 	}
 
 	template<typename T>
-	bool IdentifierTypeResolverTransformer::ComputeExprValue(ExpressionValue<T>& attribute, const SourceLocation& sourceLocation)
+	bool ResolveTransformer::ComputeExprValue(ExpressionValue<T>& attribute, const SourceLocation& sourceLocation)
 	{
 		if (!attribute.HasValue())
 			throw AstAttributeRequiresValueError{ sourceLocation };
@@ -432,24 +432,24 @@ namespace nzsl::Ast
 		return true;
 	}
 
-	auto IdentifierTypeResolverTransformer::FindIdentifier(std::string_view identifierName) const -> const IdentifierData*
+	auto ResolveTransformer::FindIdentifier(std::string_view identifierName) const -> const IdentifierData*
 	{
 		return FindIdentifier(*m_states->currentEnv, identifierName);
 	}
 
 	template<typename F>
-	auto IdentifierTypeResolverTransformer::FindIdentifier(std::string_view identifierName, F&& functor) const -> const IdentifierData*
+	auto ResolveTransformer::FindIdentifier(std::string_view identifierName, F&& functor) const -> const IdentifierData*
 	{
 		return FindIdentifier(*m_states->currentEnv, identifierName, std::forward<F>(functor));
 	}
 
-	auto IdentifierTypeResolverTransformer::FindIdentifier(const Environment& environment, std::string_view identifierName) const -> const IdentifierData*
+	auto ResolveTransformer::FindIdentifier(const Environment& environment, std::string_view identifierName) const -> const IdentifierData*
 	{
 		return FindIdentifier(environment, identifierName, [](const IdentifierData& identifierData) { return identifierData.category != IdentifierCategory::ReservedName; });
 	}
 
 	template<typename F>
-	auto IdentifierTypeResolverTransformer::FindIdentifier(const Environment& environment, std::string_view identifierName, F&& functor) const -> const IdentifierData*
+	auto ResolveTransformer::FindIdentifier(const Environment& environment, std::string_view identifierName, F&& functor) const -> const IdentifierData*
 	{
 		auto it = std::find_if(environment.identifiersInScope.rbegin(), environment.identifiersInScope.rend(), [&](const Identifier& identifier)
 			{
@@ -472,7 +472,7 @@ namespace nzsl::Ast
 		return &it->target;
 	}
 
-	const ExpressionType& IdentifierTypeResolverTransformer::GetExpressionTypeSecure(Expression& expr) const
+	const ExpressionType& ResolveTransformer::GetExpressionTypeSecure(Expression& expr) const
 	{
 		const ExpressionType* expressionType = GetExpressionType(expr);
 		if (!expressionType)
@@ -481,7 +481,7 @@ namespace nzsl::Ast
 		return *expressionType;
 	}
 
-	ExpressionPtr IdentifierTypeResolverTransformer::HandleIdentifier(const IdentifierData* identifierData, const SourceLocation& sourceLocation)
+	ExpressionPtr ResolveTransformer::HandleIdentifier(const IdentifierData* identifierData, const SourceLocation& sourceLocation)
 	{
 		switch (identifierData->category)
 		{
@@ -607,13 +607,13 @@ namespace nzsl::Ast
 		NAZARA_UNREACHABLE();
 	}
 
-	bool IdentifierTypeResolverTransformer::IsFeatureEnabled(ModuleFeature feature) const
+	bool ResolveTransformer::IsFeatureEnabled(ModuleFeature feature) const
 	{
 		const std::vector<ModuleFeature>& enabledFeatures = m_states->currentModule->metadata->enabledFeatures;
 		return std::find(enabledFeatures.begin(), enabledFeatures.end(), feature) != enabledFeatures.end();
 	}
 
-	bool IdentifierTypeResolverTransformer::IsIdentifierAvailable(std::string_view identifier, bool allowReserved) const
+	bool ResolveTransformer::IsIdentifierAvailable(std::string_view identifier, bool allowReserved) const
 	{
 		if (allowReserved)
 			return FindIdentifier(identifier) == nullptr;
@@ -621,7 +621,7 @@ namespace nzsl::Ast
 			return FindIdentifier(identifier, [](const IdentifierData&) { return true; }) == nullptr;
 	}
 
-	void IdentifierTypeResolverTransformer::PopScope()
+	void ResolveTransformer::PopScope()
 	{
 		assert(!m_states->currentEnv->scopes.empty());
 		auto& scope = m_states->currentEnv->scopes.back();
@@ -629,7 +629,7 @@ namespace nzsl::Ast
 		m_states->currentEnv->scopes.pop_back();
 	}
 	
-	void IdentifierTypeResolverTransformer::PropagateConstants(ExpressionPtr& expr) const
+	void ResolveTransformer::PropagateConstants(ExpressionPtr& expr) const
 	{
 		// Run optimizer on constant value to hopefully retrieve a single constant value
 
@@ -652,13 +652,13 @@ namespace nzsl::Ast
 		constantPropagation.Transform(expr, *m_context, optimizerOptions);
 	}
 
-	void IdentifierTypeResolverTransformer::PushScope()
+	void ResolveTransformer::PushScope()
 	{
 		auto& scope = m_states->currentEnv->scopes.emplace_back();
 		scope.previousSize = m_states->currentEnv->identifiersInScope.size();
 	}
 
-	std::size_t IdentifierTypeResolverTransformer::RegisterAlias(std::string name, std::optional<Identifier> aliasData, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
+	std::size_t ResolveTransformer::RegisterAlias(std::string name, std::optional<Identifier> aliasData, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
 	{
 		bool unresolved = false;
 		if (const IdentifierData* identifierData = FindIdentifier(name))
@@ -697,7 +697,7 @@ namespace nzsl::Ast
 		return aliasIndex;
 	}
 
-	void IdentifierTypeResolverTransformer::RegisterBuiltin()
+	void ResolveTransformer::RegisterBuiltin()
 	{
 		// Primitive types
 		RegisterType("bool", PrimitiveType::Boolean, std::nullopt, {});
@@ -1109,7 +1109,7 @@ namespace nzsl::Ast
 		RegisterConstant("rgba8", ConstantData{ States::MainModule, Nz::SafeCast<std::uint32_t>(ImageFormat::RGBA8) }, std::nullopt, {});
 	}
 
-	std::size_t IdentifierTypeResolverTransformer::RegisterConstant(std::string name, std::optional<ConstantData>&& value, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
+	std::size_t ResolveTransformer::RegisterConstant(std::string name, std::optional<ConstantData>&& value, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
 	{
 		if (!IsIdentifierAvailable(name))
 			throw CompilerIdentifierAlreadyUsedError{ sourceLocation, name };
@@ -1137,7 +1137,7 @@ namespace nzsl::Ast
 		return constantIndex;
 	}
 
-	std::size_t IdentifierTypeResolverTransformer::RegisterExternalBlock(std::string name, NamedExternalBlock&& namedExternalBlock, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
+	std::size_t ResolveTransformer::RegisterExternalBlock(std::string name, NamedExternalBlock&& namedExternalBlock, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
 	{
 		if (!IsIdentifierAvailable(name))
 			throw CompilerIdentifierAlreadyUsedError{ sourceLocation, name };
@@ -1156,7 +1156,7 @@ namespace nzsl::Ast
 		return externalBlockIndex;
 	}
 	
-	std::size_t IdentifierTypeResolverTransformer::RegisterFunction(std::string name, std::optional<FunctionData>&& funcData, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
+	std::size_t ResolveTransformer::RegisterFunction(std::string name, std::optional<FunctionData>&& funcData, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
 	{
 		if (auto* identifier = FindIdentifier(name))
 		{
@@ -1199,7 +1199,7 @@ namespace nzsl::Ast
 		return functionIndex;
 	}
 
-	std::size_t IdentifierTypeResolverTransformer::RegisterIntrinsic(std::string name, IntrinsicType type)
+	std::size_t ResolveTransformer::RegisterIntrinsic(std::string name, IntrinsicType type)
 	{
 		if (!IsIdentifierAvailable(name))
 			throw CompilerIdentifierAlreadyUsedError{ {}, name };
@@ -1218,7 +1218,7 @@ namespace nzsl::Ast
 		return intrinsicIndex;
 	}
 
-	std::size_t IdentifierTypeResolverTransformer::RegisterModule(std::string moduleIdentifier, std::size_t index)
+	std::size_t ResolveTransformer::RegisterModule(std::string moduleIdentifier, std::size_t index)
 	{
 		if (!IsIdentifierAvailable(moduleIdentifier))
 			throw CompilerIdentifierAlreadyUsedError{ {}, moduleIdentifier };
@@ -1237,7 +1237,7 @@ namespace nzsl::Ast
 		return moduleIndex;
 	}
 
-	void IdentifierTypeResolverTransformer::RegisterReservedName(std::string name)
+	void ResolveTransformer::RegisterReservedName(std::string name)
 	{
 		m_states->currentEnv->identifiersInScope.push_back({
 			std::move(name),
@@ -1249,7 +1249,7 @@ namespace nzsl::Ast
 		});
 	}
 
-	std::size_t IdentifierTypeResolverTransformer::RegisterStruct(std::string name, std::optional<StructData>&& description, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
+	std::size_t ResolveTransformer::RegisterStruct(std::string name, std::optional<StructData>&& description, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
 	{
 		bool unresolved = false;
 		if (const IdentifierData* identifierData = FindIdentifier(name))
@@ -1288,7 +1288,7 @@ namespace nzsl::Ast
 		return structIndex;
 	}
 
-	std::size_t IdentifierTypeResolverTransformer::RegisterType(std::string name, std::optional<ExpressionType>&& expressionType, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
+	std::size_t ResolveTransformer::RegisterType(std::string name, std::optional<ExpressionType>&& expressionType, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
 	{
 		if (!IsIdentifierAvailable(name))
 			throw CompilerIdentifierAlreadyUsedError{ sourceLocation, name };
@@ -1316,7 +1316,7 @@ namespace nzsl::Ast
 		return typeIndex;
 	}
 
-	std::size_t IdentifierTypeResolverTransformer::RegisterType(std::string name, std::optional<PartialType>&& partialType, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
+	std::size_t ResolveTransformer::RegisterType(std::string name, std::optional<PartialType>&& partialType, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
 	{
 		if (!IsIdentifierAvailable(name))
 			throw CompilerIdentifierAlreadyUsedError{ sourceLocation, name };
@@ -1350,7 +1350,7 @@ namespace nzsl::Ast
 		return typeIndex;
 	}
 
-	void IdentifierTypeResolverTransformer::RegisterUnresolved(std::string name)
+	void ResolveTransformer::RegisterUnresolved(std::string name)
 	{
 		m_states->currentEnv->identifiersInScope.push_back({
 			std::move(name),
@@ -1362,7 +1362,7 @@ namespace nzsl::Ast
 		});
 	}
 
-	std::size_t IdentifierTypeResolverTransformer::RegisterVariable(std::string name, std::optional<ExpressionType>&& type, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
+	std::size_t ResolveTransformer::RegisterVariable(std::string name, std::optional<ExpressionType>&& type, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
 	{
 		bool unresolved = false;
 		if (auto* identifier = FindIdentifier(name))
@@ -1403,7 +1403,7 @@ namespace nzsl::Ast
 		return varIndex;
 	}
 
-	void IdentifierTypeResolverTransformer::PreregisterIndices(const Module& module)
+	void ResolveTransformer::PreregisterIndices(const Module& module)
 	{
 		// If AST has been sanitized before and is sanitized again but with different options that may introduce new variables (for example reduceLoopsToWhile)
 		// we have to make sure we won't override variable indices. This is done by visiting the AST a first time and preregistering all indices.
@@ -1424,7 +1424,7 @@ namespace nzsl::Ast
 		reflectVisitor.Reflect(*module.rootNode, registerCallbacks);
 	}
 
-	auto IdentifierTypeResolverTransformer::ResolveAliasIdentifier(const Identifier* identifier, const SourceLocation& sourceLocation) const -> const Identifier*
+	auto ResolveTransformer::ResolveAliasIdentifier(const Identifier* identifier, const SourceLocation& sourceLocation) const -> const Identifier*
 	{
 		while (identifier->target.category == IdentifierCategory::Alias)
 			identifier = &m_states->aliases.Retrieve(identifier->target.index, sourceLocation);
@@ -1432,7 +1432,7 @@ namespace nzsl::Ast
 		return identifier;
 	}
 	
-	void IdentifierTypeResolverTransformer::ResolveFunctions()
+	void ResolveTransformer::ResolveFunctions()
 	{
 		// Once every function is known, we can evaluate function content
 		for (auto& pendingFunc : m_states->currentEnv->pendingFunctions)
@@ -1458,7 +1458,7 @@ namespace nzsl::Ast
 		}
 	}
 
-	std::size_t IdentifierTypeResolverTransformer::ResolveStructIndex(const ExpressionType& exprType, const SourceLocation& sourceLocation)
+	std::size_t ResolveTransformer::ResolveStructIndex(const ExpressionType& exprType, const SourceLocation& sourceLocation)
 	{
 		std::size_t structIndex = Ast::ResolveStructIndex(exprType);
 		if (structIndex == std::numeric_limits<std::size_t>::max())
@@ -1467,7 +1467,7 @@ namespace nzsl::Ast
 		return structIndex;
 	}
 
-	ExpressionType IdentifierTypeResolverTransformer::ResolveType(const ExpressionType& exprType, bool resolveAlias, const SourceLocation& sourceLocation)
+	ExpressionType ResolveTransformer::ResolveType(const ExpressionType& exprType, bool resolveAlias, const SourceLocation& sourceLocation)
 	{
 		if (!IsTypeExpression(exprType))
 		{
@@ -1486,7 +1486,7 @@ namespace nzsl::Ast
 		return std::get<ExpressionType>(type);
 	}
 
-	std::optional<ExpressionType> IdentifierTypeResolverTransformer::ResolveTypeExpr(ExpressionValue<ExpressionType>& exprTypeValue, bool resolveAlias, const SourceLocation& sourceLocation)
+	std::optional<ExpressionType> ResolveTransformer::ResolveTypeExpr(ExpressionValue<ExpressionType>& exprTypeValue, bool resolveAlias, const SourceLocation& sourceLocation)
 	{
 		if (!exprTypeValue.HasValue())
 			return NoType{};
@@ -1513,18 +1513,18 @@ namespace nzsl::Ast
 		return ResolveType(*exprType, resolveAlias, sourceLocation);
 	}
 	
-	std::string IdentifierTypeResolverTransformer::ToString(const ExpressionType& exprType, const SourceLocation& sourceLocation) const
+	std::string ResolveTransformer::ToString(const ExpressionType& exprType, const SourceLocation& sourceLocation) const
 	{
 		return Ast::ToString(exprType, BuildStringifier(sourceLocation));
 	}
 
-	std::string IdentifierTypeResolverTransformer::ToString(const NamedPartialType& partialType, const SourceLocation& /*sourceLocation*/) const
+	std::string ResolveTransformer::ToString(const NamedPartialType& partialType, const SourceLocation& /*sourceLocation*/) const
 	{
 		return partialType.name + " (partial)";
 	}
 
 	template<typename... Args>
-	std::string IdentifierTypeResolverTransformer::ToString(const std::variant<Args...>& value, const SourceLocation& sourceLocation) const
+	std::string ResolveTransformer::ToString(const std::variant<Args...>& value, const SourceLocation& sourceLocation) const
 	{
 		return std::visit([&](auto&& arg)
 		{
@@ -1532,7 +1532,7 @@ namespace nzsl::Ast
 		}, value);
 	}
 
-	auto IdentifierTypeResolverTransformer::Transform(AccessIdentifierExpression&& accessIdentifier) -> ExpressionTransformation
+	auto ResolveTransformer::Transform(AccessIdentifierExpression&& accessIdentifier) -> ExpressionTransformation
 	{
 		if (accessIdentifier.identifiers.empty())
 			throw AstNoIdentifierError{ accessIdentifier.sourceLocation };
@@ -1817,7 +1817,7 @@ namespace nzsl::Ast
 		return ReplaceExpression{ std::move(indexedExpr) };
 	}
 
-	auto IdentifierTypeResolverTransformer::Transform(AccessFieldExpression&& accessFieldExpr) -> ExpressionTransformation
+	auto ResolveTransformer::Transform(AccessFieldExpression&& accessFieldExpr) -> ExpressionTransformation
 	{
 		if (accessFieldExpr.cachedExpressionType)
 			return VisitChildren{};
@@ -1879,7 +1879,7 @@ namespace nzsl::Ast
 		return DontVisitChildren{};
 	}
 
-	auto IdentifierTypeResolverTransformer::Transform(AccessIndexExpression&& accessIndexExpr) -> ExpressionTransformation
+	auto ResolveTransformer::Transform(AccessIndexExpression&& accessIndexExpr) -> ExpressionTransformation
 	{
 		MandatoryExpr(accessIndexExpr.expr, accessIndexExpr.sourceLocation);
 		for (auto& index : accessIndexExpr.indices)
@@ -2088,7 +2088,7 @@ namespace nzsl::Ast
 		return DontVisitChildren{};
 	}
 
-	auto IdentifierTypeResolverTransformer::Transform(AssignExpression&& assignExpr) -> ExpressionTransformation
+	auto ResolveTransformer::Transform(AssignExpression&& assignExpr) -> ExpressionTransformation
 	{
 		HandleChildren(assignExpr);
 
@@ -2101,7 +2101,7 @@ namespace nzsl::Ast
 		return DontVisitChildren{};
 	}
 
-	auto IdentifierTypeResolverTransformer::Transform(AliasValueExpression&& accessIndexExpr) -> ExpressionTransformation
+	auto ResolveTransformer::Transform(AliasValueExpression&& accessIndexExpr) -> ExpressionTransformation
 	{
 		if (accessIndexExpr.cachedExpressionType && !m_options->removeAliases)
 			return DontVisitChildren{};
@@ -2121,7 +2121,7 @@ namespace nzsl::Ast
 		return DontVisitChildren{};
 	}
 
-	auto IdentifierTypeResolverTransformer::Transform(BinaryExpression&& binaryExpression) -> ExpressionTransformation
+	auto ResolveTransformer::Transform(BinaryExpression&& binaryExpression) -> ExpressionTransformation
 	{
 		HandleChildren(binaryExpression);
 
@@ -2137,7 +2137,7 @@ namespace nzsl::Ast
 		return DontVisitChildren{};
 	}
 
-	auto IdentifierTypeResolverTransformer::Transform(CallFunctionExpression&& callFuncExpr) -> ExpressionTransformation
+	auto ResolveTransformer::Transform(CallFunctionExpression&& callFuncExpr) -> ExpressionTransformation
 	{
 		HandleChildren(callFuncExpr);
 
@@ -2273,7 +2273,7 @@ namespace nzsl::Ast
 		return VisitChildren{};
 	}
 
-	auto IdentifierTypeResolverTransformer::Transform(CastExpression&& castExpr) -> ExpressionTransformation
+	auto ResolveTransformer::Transform(CastExpression&& castExpr) -> ExpressionTransformation
 	{
 		HandleChildren(castExpr);
 
@@ -2295,7 +2295,7 @@ namespace nzsl::Ast
 		return DontVisitChildren{};
 	}
 
-	auto IdentifierTypeResolverTransformer::Transform(ConstantExpression&& constantExpression) -> ExpressionTransformation
+	auto ResolveTransformer::Transform(ConstantExpression&& constantExpression) -> ExpressionTransformation
 	{
 		const ConstantData* constantData = m_states->constants.TryRetrieve(constantExpression.constantId, constantExpression.sourceLocation);
 		if (!constantData || !constantData->value)
@@ -2316,7 +2316,7 @@ namespace nzsl::Ast
 		return VisitChildren{};
 	}
 
-	auto IdentifierTypeResolverTransformer::Transform(IdentifierExpression&& identifierExpr) -> ExpressionTransformation
+	auto ResolveTransformer::Transform(IdentifierExpression&& identifierExpr) -> ExpressionTransformation
 	{
 		assert(m_context);
 
@@ -2338,7 +2338,7 @@ namespace nzsl::Ast
 		return ReplaceExpression{ HandleIdentifier(identifierData, identifierExpr.sourceLocation) };
 	}
 	
-	auto IdentifierTypeResolverTransformer::Transform(IntrinsicExpression&& intrinsicExpr) -> ExpressionTransformation
+	auto ResolveTransformer::Transform(IntrinsicExpression&& intrinsicExpr) -> ExpressionTransformation
 	{
 		auto intrinsicIt = LangData::s_intrinsicData.find(intrinsicExpr.intrinsic);
 		if (intrinsicIt == LangData::s_intrinsicData.end())
@@ -2448,7 +2448,7 @@ namespace nzsl::Ast
 		return VisitChildren{};
 	}
 
-	auto IdentifierTypeResolverTransformer::Transform(SwizzleExpression&& swizzleExpr) -> ExpressionTransformation
+	auto ResolveTransformer::Transform(SwizzleExpression&& swizzleExpr) -> ExpressionTransformation
 	{
 		MandatoryExpr(swizzleExpr.expression, swizzleExpr.sourceLocation);
 
@@ -2467,7 +2467,7 @@ namespace nzsl::Ast
 		return DontVisitChildren{};
 	}
 
-	auto IdentifierTypeResolverTransformer::Transform(UnaryExpression&& node) -> ExpressionTransformation
+	auto ResolveTransformer::Transform(UnaryExpression&& node) -> ExpressionTransformation
 	{
 		HandleChildren(node);
 
@@ -2517,13 +2517,13 @@ namespace nzsl::Ast
 		return DontVisitChildren{};
 	}
 
-	auto IdentifierTypeResolverTransformer::Transform(VariableValueExpression&& node) -> ExpressionTransformation
+	auto ResolveTransformer::Transform(VariableValueExpression&& node) -> ExpressionTransformation
 	{
 		node.cachedExpressionType = m_states->variableTypes.Retrieve(node.variableId, node.sourceLocation);
 		return VisitChildren{};
 	}
 
-	auto IdentifierTypeResolverTransformer::Transform(BranchStatement&& branchStatement) -> StatementTransformation
+	auto ResolveTransformer::Transform(BranchStatement&& branchStatement) -> StatementTransformation
 	{
 		if (!branchStatement.isConst)
 			return VisitChildren{};
@@ -2575,7 +2575,7 @@ namespace nzsl::Ast
 			return ReplaceStatement{ ShaderBuilder::NoOp() };
 	}
 
-	auto IdentifierTypeResolverTransformer::Transform(ConditionalStatement&& condStatement) -> StatementTransformation
+	auto ResolveTransformer::Transform(ConditionalStatement&& condStatement) -> StatementTransformation
 	{
 		MandatoryExpr(condStatement.condition, condStatement.sourceLocation);
 		MandatoryStatement(condStatement.statement, condStatement.sourceLocation);
@@ -2605,7 +2605,7 @@ namespace nzsl::Ast
 			return ReplaceStatement{ ShaderBuilder::NoOp() };
 	}
 
-	auto IdentifierTypeResolverTransformer::Transform(DeclareAliasStatement&& declAlias) -> StatementTransformation
+	auto ResolveTransformer::Transform(DeclareAliasStatement&& declAlias) -> StatementTransformation
 	{
 		if (declAlias.name.empty())
 			throw AstEmptyIdentifierError{ declAlias.sourceLocation };
@@ -2668,7 +2668,7 @@ namespace nzsl::Ast
 		return DontVisitChildren{};
 	}
 
-	auto IdentifierTypeResolverTransformer::Transform(DeclareConstStatement&& declConst) -> StatementTransformation
+	auto ResolveTransformer::Transform(DeclareConstStatement&& declConst) -> StatementTransformation
 	{
 		if (!declConst.expression)
 			throw CompilerConstMissingExpressionError{ declConst.sourceLocation };
@@ -2725,7 +2725,7 @@ namespace nzsl::Ast
 		return DontVisitChildren{};
 	}
 
-	auto IdentifierTypeResolverTransformer::Transform(DeclareExternalStatement&& declExternal) -> StatementTransformation
+	auto ResolveTransformer::Transform(DeclareExternalStatement&& declExternal) -> StatementTransformation
 	{
 		assert(m_context);
 
@@ -2826,7 +2826,7 @@ namespace nzsl::Ast
 		return VisitChildren{};
 	}
 
-	auto IdentifierTypeResolverTransformer::Transform(DeclareFunctionStatement&& declFunction) -> StatementTransformation
+	auto ResolveTransformer::Transform(DeclareFunctionStatement&& declFunction) -> StatementTransformation
 	{
 		for (auto& parameter : declFunction.parameters)
 		{
@@ -2876,7 +2876,7 @@ namespace nzsl::Ast
 		return DontVisitChildren{};
 	}
 
-	auto IdentifierTypeResolverTransformer::Transform(DeclareOptionStatement&& declOption) -> StatementTransformation
+	auto ResolveTransformer::Transform(DeclareOptionStatement&& declOption) -> StatementTransformation
 	{
 		std::optional<ExpressionType> resolvedOptionType = ResolveTypeExpr(declOption.optType, false, declOption.sourceLocation);
 		if (!resolvedOptionType)
@@ -2933,7 +2933,7 @@ namespace nzsl::Ast
 		return DontVisitChildren{};
 	}
 
-	auto IdentifierTypeResolverTransformer::Transform(DeclareStructStatement&& declStruct) -> StatementTransformation
+	auto ResolveTransformer::Transform(DeclareStructStatement&& declStruct) -> StatementTransformation
 	{
 		if (declStruct.isExported.HasValue())
 			ComputeExprValue(declStruct.isExported, declStruct.sourceLocation);
@@ -3029,7 +3029,7 @@ namespace nzsl::Ast
 		return DontVisitChildren{};
 	}
 
-	auto IdentifierTypeResolverTransformer::Transform(DeclareVariableStatement&& declVariable) -> StatementTransformation
+	auto ResolveTransformer::Transform(DeclareVariableStatement&& declVariable) -> StatementTransformation
 	{
 		ExpressionType initialExprType;
 		if (declVariable.initialExpression)
@@ -3078,7 +3078,7 @@ namespace nzsl::Ast
 		return DontVisitChildren{};
 	}
 
-	auto IdentifierTypeResolverTransformer::Transform(ForEachStatement&& forEachStatement) -> StatementTransformation
+	auto ResolveTransformer::Transform(ForEachStatement&& forEachStatement) -> StatementTransformation
 	{
 		if (forEachStatement.varName.empty())
 			throw AstEmptyIdentifierError{ forEachStatement.sourceLocation };
@@ -3186,7 +3186,7 @@ namespace nzsl::Ast
 		return ProcessFor();
 	}
 
-	auto IdentifierTypeResolverTransformer::Transform(ForStatement&& forStatement) -> StatementTransformation
+	auto ResolveTransformer::Transform(ForStatement&& forStatement) -> StatementTransformation
 	{
 		MandatoryExpr(forStatement.fromExpr, forStatement.sourceLocation);
 		MandatoryExpr(forStatement.toExpr, forStatement.sourceLocation);
@@ -3317,7 +3317,7 @@ namespace nzsl::Ast
 		return ProcessFor();
 	}
 
-	auto IdentifierTypeResolverTransformer::Transform(ImportStatement&& importStatement) -> StatementTransformation
+	auto ResolveTransformer::Transform(ImportStatement&& importStatement) -> StatementTransformation
 	{
 		tsl::ordered_map<std::string, std::vector<std::string>> importedSymbols;
 		bool importEverythingElse = false;
@@ -3638,7 +3638,7 @@ namespace nzsl::Ast
 		return ReplaceStatement{ std::move(aliasBlock) };
 	}
 
-	void IdentifierTypeResolverTransformer::Transform(ExpressionType& expressionType)
+	void ResolveTransformer::Transform(ExpressionType& expressionType)
 	{
 		ExpressionType resolvedType;
 		if (IsAliasType(expressionType))
@@ -3673,7 +3673,7 @@ namespace nzsl::Ast
 		}
 	}
 
-	void IdentifierTypeResolverTransformer::Transform(ExpressionValue<ExpressionType>& expressionType)
+	void ResolveTransformer::Transform(ExpressionValue<ExpressionType>& expressionType)
 	{
 		if (!expressionType.HasValue())
 			return;
@@ -3685,7 +3685,7 @@ namespace nzsl::Ast
 		expressionType = std::move(resolvedType).value();
 	}
 
-	void IdentifierTypeResolverTransformer::ValidateConcreteType(const ExpressionType& exprType, const SourceLocation& sourceLocation)
+	void ResolveTransformer::ValidateConcreteType(const ExpressionType& exprType, const SourceLocation& sourceLocation)
 	{
 		if (IsArrayType(exprType))
 		{
@@ -3695,7 +3695,7 @@ namespace nzsl::Ast
 		}
 	}
 
-	std::uint32_t IdentifierTypeResolverTransformer::ToSwizzleIndex(char c, const SourceLocation& sourceLocation)
+	std::uint32_t ResolveTransformer::ToSwizzleIndex(char c, const SourceLocation& sourceLocation)
 	{
 		switch (c)
 		{

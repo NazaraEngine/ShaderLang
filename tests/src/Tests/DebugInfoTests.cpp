@@ -14,7 +14,7 @@ TEST_CASE("debug info", "[Shader]")
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::ParseFromFile("../resources/Shader.nzsl");
 
-		nzsl::Ast::IdentifierTypeResolverTransformer::Options resolverOptions;
+		nzsl::Ast::ResolveTransformer::Options resolverOptions;
 		resolverOptions.moduleResolver = directoryModuleResolver;
 
 		ResolveOptions resolveOptions;

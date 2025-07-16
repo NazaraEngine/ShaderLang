@@ -18,7 +18,7 @@
 #include <NZSL/Ast/AstSerializer.hpp>
 #include <NZSL/Ast/Cloner.hpp>
 #include <NZSL/Ast/ReflectVisitor.hpp>
-#include <NZSL/Ast/Transformations/IdentifierTypeResolverTransformer.hpp>
+#include <NZSL/Ast/Transformations/ResolveTransformer.hpp>
 #include <fmt/color.h>
 #include <fmt/format.h>
 #include <frozen/string.h>
@@ -657,7 +657,7 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 		nzsl::Ast::Transformer::Context context;
 		context.partialCompilation = m_options.count("partial") > 0;
 
-		nzsl::Ast::IdentifierTypeResolverTransformer::Options resolverOpt;
+		nzsl::Ast::ResolveTransformer::Options resolverOpt;
 
 		nzsl::Ast::TransformerExecutor executor;
 
@@ -685,7 +685,7 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 			resolverOpt.moduleResolver = std::move(resolver);
 		}
 
-		executor.AddPass<nzsl::Ast::IdentifierTypeResolverTransformer>(std::move(resolverOpt));
+		executor.AddPass<nzsl::Ast::ResolveTransformer>(std::move(resolverOpt));
 
 		Step("AST processing"sv, [&] { executor.Transform(*m_shaderModule, context); });
 	}

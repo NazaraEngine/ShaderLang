@@ -4,8 +4,8 @@
 
 #pragma once
 
-#ifndef NZSL_AST_TRANSFORMATIONS_IDENTIFIERTYPERESOLVERTRANSFORMER_HPP
-#define NZSL_AST_TRANSFORMATIONS_IDENTIFIERTYPERESOLVERTRANSFORMER_HPP
+#ifndef NZSL_AST_TRANSFORMATIONS_RESOLVETRANSFORMER_HPP
+#define NZSL_AST_TRANSFORMATIONS_RESOLVETRANSFORMER_HPP
 
 #include <NZSL/Ast/Transformations/Transformer.hpp>
 
@@ -18,12 +18,12 @@ namespace nzsl::Ast
 {
 	struct PartialType;
 
-	class NZSL_API IdentifierTypeResolverTransformer final : public Transformer
+	class NZSL_API ResolveTransformer final : public Transformer
 	{
 		public:
 			struct Options;
 
-			IdentifierTypeResolverTransformer() = default;
+			ResolveTransformer() = default;
 
 			inline bool Transform(Module& module, Context& context, std::string* error = nullptr);
 			bool Transform(Module& module, Context& context, const Options& options, std::string* error = nullptr);
@@ -172,6 +172,6 @@ namespace nzsl::Ast
 	};
 }
 
-#include <NZSL/Ast/Transformations/IdentifierTypeResolverTransformer.inl>
+#include <NZSL/Ast/Transformations/ResolveTransformer.inl>
 
-#endif // NZSL_AST_TRANSFORMATIONS_IDENTIFIERTYPERESOLVERTRANSFORMER_HPP
+#endif // NZSL_AST_TRANSFORMATIONS_RESOLVETRANSFORMER_HPP

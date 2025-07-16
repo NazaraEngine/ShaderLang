@@ -6,7 +6,7 @@
 #include <NZSL/Ast/AstSerializer.hpp>
 #include <NZSL/Ast/Compare.hpp>
 #include <NZSL/Ast/TransformerExecutor.hpp>
-#include <NZSL/Ast/Transformations/IdentifierTypeResolverTransformer.hpp>
+#include <NZSL/Ast/Transformations/ResolveTransformer.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <cctype>
 
@@ -18,7 +18,7 @@ void ParseSerializeDeserialize(std::string_view sourceCode, bool resolve)
 	if (resolve)
 	{
 		nzsl::Ast::TransformerExecutor executor;
-		executor.AddPass<nzsl::Ast::IdentifierTypeResolverTransformer>();
+		executor.AddPass<nzsl::Ast::ResolveTransformer>();
 		REQUIRE_NOTHROW(executor.Transform(*shaderModule));
 	}
 

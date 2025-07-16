@@ -239,7 +239,7 @@ void ExpectGLSL(nzsl::ShaderStageType stageType, nzsl::Ast::Module& shaderModule
 		WHEN("Resolving a second time")
 		{
 			nzsl::Ast::Transformer::Context context;
-			nzsl::Ast::IdentifierTypeResolverTransformer resolver;
+			nzsl::Ast::ResolveTransformer resolver;
 			REQUIRE_NOTHROW(resolver.Transform(*moduleClone, context));
 		}
 
@@ -340,7 +340,7 @@ void ExpectNZSL(nzsl::Ast::Module& shaderModule, std::string_view expectedOutput
 		WHEN("Resolving a second time")
 		{
 			nzsl::Ast::Transformer::Context context;
-			nzsl::Ast::IdentifierTypeResolverTransformer resolver;
+			nzsl::Ast::ResolveTransformer resolver;
 			REQUIRE_NOTHROW(resolver.Transform(*moduleClone, context));
 		}
 		nzsl::Ast::Module& targetModule = (sanitizedModule) ? *sanitizedModule : *moduleClone;
@@ -377,7 +377,7 @@ void ExpectSPIRV(nzsl::Ast::Module& shaderModule, std::string_view expectedOutpu
 		WHEN("Sanitizing a second time")
 		{
 			nzsl::Ast::Transformer::Context context;
-			nzsl::Ast::IdentifierTypeResolverTransformer resolver;
+			nzsl::Ast::ResolveTransformer resolver;
 			REQUIRE_NOTHROW(resolver.Transform(*moduleClone, context));
 		}
 		nzsl::Ast::Module& targetModule = (sanitizedModule) ? *sanitizedModule : *moduleClone;
@@ -468,7 +468,7 @@ void ResolveModule(nzsl::Ast::Module& module, const ResolveOptions& resolveOptio
 
 		nzsl::Ast::TransformerExecutor executor;
 		if (resolveOptions.identifierResolverOptions)
-			executor.AddPass<nzsl::Ast::IdentifierTypeResolverTransformer>(*resolveOptions.identifierResolverOptions);
+			executor.AddPass<nzsl::Ast::ResolveTransformer>(*resolveOptions.identifierResolverOptions);
 
 		if (resolveOptions.constantRemovalOptions)
 			executor.AddPass<nzsl::Ast::ConstantRemovalTransformer>(*resolveOptions.constantRemovalOptions);
@@ -544,4 +544,4 @@ void ResolveModule(nzsl::Ast::Module& module, const ResolveOptions& resolveOptio
 }
 
 const nzsl::Ast::BindingResolverTransformer::Options ResolveOptions::defaultBindingResolverOptions;
-const nzsl::Ast::IdentifierTypeResolverTransformer::Options ResolveOptions::defaultIdentifierResolveOptions;
+const nzsl::Ast::ResolveTransformer::Options ResolveOptions::defaultIdentifierResolveOptions;
