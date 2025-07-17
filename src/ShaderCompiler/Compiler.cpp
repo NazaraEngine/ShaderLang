@@ -19,6 +19,7 @@
 #include <NZSL/Ast/Cloner.hpp>
 #include <NZSL/Ast/ReflectVisitor.hpp>
 #include <NZSL/Ast/Transformations/ResolveTransformer.hpp>
+#include <NZSL/Ast/Transformations/ValidationTransformer.hpp>
 #include <fmt/color.h>
 #include <fmt/format.h>
 #include <frozen/string.h>
@@ -190,7 +191,7 @@ namespace nzslc
 		Step("Full processing"sv, [&]
 		{
 			Step("Read input file"sv, &Compiler::ReadInput);
-			Step("Processing"sv, &Compiler::Sanitize);
+			Step("Processing"sv, &Compiler::Resolve);
 
 			if (m_options.count("compile") > 0)
 				Step("Compiling"sv, &Compiler::Compile);
@@ -650,7 +651,7 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 			throw std::runtime_error(fmt::format("{} has unknown extension \"{}\"", Nz::PathToString(m_inputFilePath.filename()), Nz::PathToString(extension)));
 	}
 
-	void Compiler::Sanitize()
+	void Compiler::Resolve()
 	{
 		using namespace std::literals;
 
@@ -658,8 +659,6 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 		context.partialCompilation = m_options.count("partial") > 0;
 
 		nzsl::Ast::ResolveTransformer::Options resolverOpt;
-
-		nzsl::Ast::TransformerExecutor executor;
 
 		if (m_options.count("module") > 0)
 		{
@@ -685,9 +684,11 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 			resolverOpt.moduleResolver = std::move(resolver);
 		}
 
-		executor.AddPass<nzsl::Ast::ResolveTransformer>(std::move(resolverOpt));
+		nzsl::Ast::ResolveTransformer resolver;
+		nzsl::Ast::ValidationTransformer validation;
 
-		Step("AST processing"sv, [&] { executor.Transform(*m_shaderModule, context); });
+		Step("AST processing"sv, [&] { resolver.Transform(*m_shaderModule, context, resolverOpt); });
+		Step("AST validation"sv, [&] { validation.Transform(*m_shaderModule, context); });
 	}
 
 	template<typename F, typename... Args>
