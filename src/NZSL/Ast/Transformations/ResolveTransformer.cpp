@@ -3118,7 +3118,7 @@ namespace nzsl::Ast
 			return DontVisitChildren{};
 		};
 
-		if (forEachStatement.unroll.HasValue())
+		if (forEachStatement.unroll.HasValue() && m_options->unrollForEachLoops)
 		{
 			ComputeExprValue(forEachStatement.unroll, forEachStatement.sourceLocation);
 			if (forEachStatement.unroll.GetResultingValue() == LoopUnroll::Always)
@@ -3216,7 +3216,7 @@ namespace nzsl::Ast
 			return DontVisitChildren{};
 		};
 
-		if (forStatement.unroll.HasValue())
+		if (forStatement.unroll.HasValue() && m_options->unrollForLoops)
 		{
 			assert(forStatement.unroll.IsResultingValue());
 			if (forStatement.unroll.GetResultingValue() == LoopUnroll::Always)
