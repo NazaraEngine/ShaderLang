@@ -2270,7 +2270,7 @@ namespace nzsl::Ast
 			return ReplaceExpression{ std::move(expr) };
 		}
 
-		return VisitChildren{};
+		return DontVisitChildren{};
 	}
 
 	auto ResolveTransformer::Transform(CastExpression&& castExpr) -> ExpressionTransformation
