@@ -1497,7 +1497,9 @@ namespace nzsl::Ast
 
 					if (ValidateIntrinsicParameterType(node, Check, "array/dyn-array", paramIndex) == ValidationResult::Unresolved)
 					{
-						unresolvedParameter = paramIndex;
+						if (!unresolvedParameter)
+							unresolvedParameter = paramIndex;
+
 						continue;
 					}
 
@@ -1525,7 +1527,9 @@ namespace nzsl::Ast
 
 					if (ValidateIntrinsicParameterType(node, Check, "boolean value or vector", paramIndex) == ValidationResult::Unresolved)
 					{
-						unresolvedParameter = paramIndex;
+						if (!unresolvedParameter)
+							unresolvedParameter = paramIndex;
+
 						continue;
 					}
 
@@ -1542,7 +1546,9 @@ namespace nzsl::Ast
 
 					if (ValidateIntrinsicParameterType(node, Check, "f32", paramIndex) == ValidationResult::Unresolved)
 					{
-						unresolvedParameter = paramIndex;
+						if (!unresolvedParameter)
+							unresolvedParameter = paramIndex;
+
 						paramIndex++;
 						continue;
 					}
@@ -1569,7 +1575,9 @@ namespace nzsl::Ast
 
 					if (ValidateIntrinsicParameterType(node, Check, "floating-point value", paramIndex) == ValidationResult::Unresolved)
 					{
-						unresolvedParameter = paramIndex;
+						if (!unresolvedParameter)
+							unresolvedParameter = paramIndex;
+
 						paramIndex++;
 						continue;
 					}
@@ -1599,7 +1607,9 @@ namespace nzsl::Ast
 
 					if (ValidateIntrinsicParameterType(node, Check, "floating-point value or vector", paramIndex) == ValidationResult::Unresolved)
 					{
-						unresolvedParameter = paramIndex;
+						if (!unresolvedParameter)
+							unresolvedParameter = paramIndex;
+
 						paramIndex++;
 						continue;
 					}
@@ -1629,7 +1639,9 @@ namespace nzsl::Ast
 
 					if (ValidateIntrinsicParameterType(node, Check, "16/32bits floating-point value or vector", paramIndex) == ValidationResult::Unresolved)
 					{
-						unresolvedParameter = paramIndex;
+						if (!unresolvedParameter)
+							unresolvedParameter = paramIndex;
+
 						paramIndex++;
 						continue;
 					}
@@ -1656,7 +1668,9 @@ namespace nzsl::Ast
 
 					if (ValidateIntrinsicParameterType(node, Check, "floating-point vector", paramIndex) == ValidationResult::Unresolved)
 					{
-						unresolvedParameter = paramIndex;
+						if (!unresolvedParameter)
+							unresolvedParameter = paramIndex;
+
 						paramIndex++;
 						continue;
 					}
@@ -1681,7 +1695,9 @@ namespace nzsl::Ast
 
 					if (ValidateIntrinsicParameterType(node, Check, "floating-point vec3", paramIndex) == ValidationResult::Unresolved)
 					{
-						unresolvedParameter = paramIndex;
+						if (!unresolvedParameter)
+							unresolvedParameter = paramIndex;
+
 						paramIndex++;
 						continue;
 					}
@@ -1694,7 +1710,9 @@ namespace nzsl::Ast
 				{
 					if (ValidateIntrinsicParameterType(node, IsMatrixType, "matrix", paramIndex) == ValidationResult::Unresolved)
 					{
-						unresolvedParameter = paramIndex;
+						if (!unresolvedParameter)
+							unresolvedParameter = paramIndex;
+
 						paramIndex++;
 						continue;
 					}
@@ -1716,7 +1734,9 @@ namespace nzsl::Ast
 
 					if (ValidateIntrinsicParameterType(node, Check, "square matrix", paramIndex) == ValidationResult::Unresolved)
 					{
-						unresolvedParameter = paramIndex;
+						if (!unresolvedParameter)
+							unresolvedParameter = paramIndex;
+
 						paramIndex++;
 						continue;
 					}
@@ -1753,7 +1773,9 @@ namespace nzsl::Ast
 
 					if (ValidateIntrinsicParameterType(node, Check, "scalar value or vector", paramIndex) == ValidationResult::Unresolved)
 					{
-						unresolvedParameter = paramIndex;
+						if (!unresolvedParameter)
+							unresolvedParameter = paramIndex;
+
 						paramIndex++;
 						continue;
 					}
@@ -1792,7 +1814,9 @@ namespace nzsl::Ast
 
 					if (ValidateIntrinsicParameterType(node, Check, "scalar value or vector", paramIndex) == ValidationResult::Unresolved)
 					{
-						unresolvedParameter = paramIndex;
+						if (!unresolvedParameter)
+							unresolvedParameter = paramIndex;
+
 						paramIndex++;
 						continue;
 					}
@@ -1807,7 +1831,9 @@ namespace nzsl::Ast
 					const ExpressionType* firstParameter = GetExpressionType(*node.parameters[0]);
 					if (!firstParameter)
 					{
-						unresolvedParameter = paramIndex;
+						if (!unresolvedParameter)
+							unresolvedParameter = paramIndex;
+
 						paramIndex++;
 						continue;
 					}
@@ -1857,7 +1883,9 @@ namespace nzsl::Ast
 
 						if (ValidateIntrinsicParameterType(node, Check, errMessage, paramIndex) == ValidationResult::Unresolved)
 						{
-							unresolvedParameter = paramIndex;
+							if (!unresolvedParameter)
+								unresolvedParameter = paramIndex;
+
 							paramIndex++;
 							continue;
 						}
@@ -1876,7 +1904,9 @@ namespace nzsl::Ast
 
 						if (ValidateIntrinsicParameterType(node, Check, "floating-point value", paramIndex) == ValidationResult::Unresolved)
 						{
-							unresolvedParameter = paramIndex;
+							if (!unresolvedParameter)
+								unresolvedParameter = paramIndex;
+
 							paramIndex++;
 							continue;
 						}
@@ -1914,7 +1944,9 @@ namespace nzsl::Ast
 
 					if (ValidateIntrinsicParameterType(node, Check, "scalar value or vector", paramIndex) == ValidationResult::Unresolved)
 					{
-						unresolvedParameter = paramIndex;
+						if (!unresolvedParameter)
+							unresolvedParameter = paramIndex;
+
 						paramIndex++;
 						continue;
 					}
@@ -1953,7 +1985,9 @@ namespace nzsl::Ast
 
 					if (ValidateIntrinsicParameterType(node, Check, "scalar value or vector", paramIndex) == ValidationResult::Unresolved)
 					{
-						unresolvedParameter = paramIndex;
+						if (!unresolvedParameter)
+							unresolvedParameter = paramIndex;
+
 						paramIndex++;
 						continue;
 					}
@@ -1990,7 +2024,9 @@ namespace nzsl::Ast
 
 					if (ValidateIntrinsicParameterType(node, Check, "scalar value or vector", paramIndex) == ValidationResult::Unresolved)
 					{
-						unresolvedParameter = paramIndex;
+						if (!unresolvedParameter)
+							unresolvedParameter = paramIndex;
+
 						paramIndex++;
 						continue;
 					}
@@ -2029,7 +2065,9 @@ namespace nzsl::Ast
 
 					if (ValidateIntrinsicParameterType(node, Check, "scalar value or vector", paramIndex) == ValidationResult::Unresolved)
 					{
-						unresolvedParameter = paramIndex;
+						if (!unresolvedParameter)
+							unresolvedParameter = paramIndex;
+
 						paramIndex++;
 						continue;
 					}
@@ -2042,7 +2080,9 @@ namespace nzsl::Ast
 				{
 					if (ValidateIntrinsicParameterType(node, IsSamplerType, "sampler type", paramIndex) == ValidationResult::Unresolved)
 					{
-						unresolvedParameter = paramIndex;
+						if (!unresolvedParameter)
+							unresolvedParameter = paramIndex;
+
 						paramIndex++;
 						continue;
 					}
@@ -2055,7 +2095,9 @@ namespace nzsl::Ast
 				{
 					if (ValidateIntrinsicParamMatchingType(node, lastSameParamBarrierIndex, paramIndex) == ValidationResult::Unresolved)
 					{
-						unresolvedParameter = paramIndex;
+						if (!unresolvedParameter)
+							unresolvedParameter = paramIndex - 1;
+
 						continue;
 					}
 
@@ -2072,7 +2114,9 @@ namespace nzsl::Ast
 				{
 					if (ValidateIntrinsicParamMatchingVecComponent(node, lastSameComponentCountBarrierIndex, paramIndex) == ValidationResult::Unresolved)
 					{
-						unresolvedParameter = paramIndex;
+						if (!unresolvedParameter)
+							unresolvedParameter = paramIndex - 1;
+
 						continue;
 					}
 
@@ -2089,7 +2133,9 @@ namespace nzsl::Ast
 				{
 					if (ValidateIntrinsicParameterType(node, IsTextureType, "texture type", paramIndex) == ValidationResult::Unresolved)
 					{
-						unresolvedParameter = paramIndex;
+						if (!unresolvedParameter)
+							unresolvedParameter = paramIndex;
+
 						paramIndex++;
 						continue;
 					}
@@ -2104,7 +2150,9 @@ namespace nzsl::Ast
 					const ExpressionType* firstParameter = GetExpressionType(*node.parameters[0]);
 					if (!firstParameter)
 					{
-						unresolvedParameter = paramIndex;
+						if (!unresolvedParameter)
+							unresolvedParameter = paramIndex;
+
 						continue;
 					}
 
@@ -2152,7 +2200,9 @@ namespace nzsl::Ast
 
 						if (ValidateIntrinsicParameterType(node, Check, errMessage, paramIndex) == ValidationResult::Unresolved)
 						{
-							unresolvedParameter = paramIndex;
+							if (!unresolvedParameter)
+								unresolvedParameter = paramIndex;
+
 							continue;
 						}
 					}
@@ -2170,7 +2220,9 @@ namespace nzsl::Ast
 
 						if (ValidateIntrinsicParameterType(node, Check, "integer value", paramIndex) == ValidationResult::Unresolved)
 						{
-							unresolvedParameter = paramIndex;
+							if (!unresolvedParameter)
+								unresolvedParameter = paramIndex;
+
 							continue;
 						}
 					}
@@ -2185,7 +2237,9 @@ namespace nzsl::Ast
 					const ExpressionType* firstParameter = GetExpressionType(*node.parameters[0]);
 					if (!firstParameter)
 					{
-						unresolvedParameter = paramIndex;
+						if (!unresolvedParameter)
+							unresolvedParameter = paramIndex;
+
 						continue;
 					}
 
@@ -2206,7 +2260,9 @@ namespace nzsl::Ast
 
 					if (ValidateIntrinsicParameterType(node, Check, "texture-type vector of 4 components", paramIndex) == ValidationResult::Unresolved)
 					{
-						unresolvedParameter = paramIndex;
+						if (!unresolvedParameter)
+							unresolvedParameter = paramIndex;
+
 						continue;
 					}
 
@@ -2219,7 +2275,7 @@ namespace nzsl::Ast
 		if (node.parameters.size() != paramIndex)
 			throw CompilerIntrinsicExpectedParameterCountError{ node.sourceLocation, Nz::SafeCast<std::uint32_t>(paramIndex) };
 
-		if (unresolvedParameter)
+		if (unresolvedParameter && !m_context->partialCompilation)
 			throw CompilerIntrinsicUnresolvedParameterError{ node.parameters[*unresolvedParameter]->sourceLocation, *unresolvedParameter };
 	}
 
