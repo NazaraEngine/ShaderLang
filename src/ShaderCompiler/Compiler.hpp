@@ -86,6 +86,7 @@ namespace nzslc
 			bool m_profiling;
 			bool m_outputHeader;
 			bool m_outputToStdout;
+			bool m_skipOutput;
 			bool m_verbose;
 			unsigned int m_iterationCount;
 	};
