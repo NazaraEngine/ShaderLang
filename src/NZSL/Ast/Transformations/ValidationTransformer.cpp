@@ -572,7 +572,21 @@ namespace nzsl::Ast
 	{
 		HandleChildren(node);
 
-		std::size_t functionIndex = std::get<Ast::FunctionType>(*GetExpressionType(*node.targetFunction)).funcIndex;
+		const ExpressionType* targetFuncType = GetExpressionType(MandatoryExpr(node.targetFunction, node.sourceLocation));
+		if (!targetFuncType)
+			return DontVisitChildren{};
+
+		const ExpressionType& resolvedTargetType = ResolveAlias(*targetFuncType);
+
+		if (!std::holds_alternative<Ast::FunctionType>(resolvedTargetType))
+		{
+			if (!m_context->partialCompilation)
+				throw AstInternalError{ node.sourceLocation, "CallFunction target function is not a function, is the shader resolved?" };
+		
+			return DontVisitChildren{};
+		}
+
+		std::size_t functionIndex = std::get<Ast::FunctionType>(resolvedTargetType).funcIndex;
 		if (m_options->checkIndices)
 			CheckFuncIndex({ functionIndex }, node.sourceLocation);
 
