@@ -53,6 +53,7 @@ namespace nzslc
 	m_options(options),
 	m_profiling(false),
 	m_outputToStdout(false),
+	m_skipOutput(false),
 	m_verbose(false),
 	m_iterationCount(1)
 	{
@@ -82,6 +83,8 @@ namespace nzslc
 
 			if (outputPath == "@stdout")
 				m_outputToStdout = true;
+			else if (outputPath == "@null")
+				m_skipOutput = true;
 			else
 			{
 				m_outputPath = Nz::Utf8Path(outputPath);
@@ -277,7 +280,7 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 		for (std::string_view outputType : options)
 		{
 			// TODO: Don't compile multiple times unnecessary (ex: glsl and glsl-header)
-			if (m_outputToStdout && options.size() > 1)
+			if (!m_skipOutput && m_outputToStdout && options.size() > 1)
 				fmt::print("-- {}\n", outputType);
 
 			m_outputHeader = EndsWith(outputType, "-header");
@@ -417,6 +420,8 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 		for (nzsl::ShaderStageType entryType : entryTypes)
 		{
 			nzsl::GlslWriter::Output output = writer.Generate(entryType, module, parameters, states);
+			if (m_skipOutput)
+				continue;
 
 			if (m_outputToStdout)
 			{
@@ -442,6 +447,8 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 
 		nzsl::LangWriter nzslWriter;
 		std::string nzsl = nzslWriter.Generate(module, states);
+		if (m_skipOutput)
+			return;
 
 		if (m_outputToStdout)
 		{
@@ -457,6 +464,8 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 	{
 		nzsl::Serializer serializer;
 		nzsl::Ast::SerializeShader(serializer, module);
+		if (m_skipOutput)
+			return;
 
 		const std::vector<std::uint8_t>& data = serializer.GetData();
 
@@ -501,6 +510,8 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 		{
 			nzsl::SpirvPrinter printer;
 			std::string spirvTxt = printer.Print(spirv);
+			if (m_skipOutput)
+				return;
 
 			if (m_outputToStdout)
 			{
@@ -513,6 +524,9 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 		}
 		else
 		{
+			if (m_skipOutput)
+				return;
+
 			if (m_outputToStdout)
 			{
 				if (m_outputHeader)
