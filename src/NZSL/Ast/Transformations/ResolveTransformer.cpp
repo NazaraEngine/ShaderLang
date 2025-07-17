@@ -1101,12 +1101,8 @@ namespace nzsl::Ast
 		}
 
 		// Constants
-		RegisterConstant("readonly", ConstantData{ States::MainModule, Nz::SafeCast<std::uint32_t>(AccessPolicy::ReadOnly) }, std::nullopt, {});
-		RegisterConstant("readwrite", ConstantData{ States::MainModule, Nz::SafeCast<std::uint32_t>(AccessPolicy::ReadWrite) }, std::nullopt, {});
-		RegisterConstant("writeonly", ConstantData{ States::MainModule, Nz::SafeCast<std::uint32_t>(AccessPolicy::WriteOnly) }, std::nullopt, {});
-
-		// TODO: Register more image formats
-		RegisterConstant("rgba8", ConstantData{ States::MainModule, Nz::SafeCast<std::uint32_t>(ImageFormat::RGBA8) }, std::nullopt, {});
+		for (const auto& [constantName, data] : LangData::s_constants)
+			RegisterConstant(std::string(constantName.data()), ConstantData{ States::MainModule, data.value }, data.constantIndex, {});
 	}
 
 	std::size_t ResolveTransformer::RegisterConstant(std::string name, std::optional<ConstantData>&& value, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
