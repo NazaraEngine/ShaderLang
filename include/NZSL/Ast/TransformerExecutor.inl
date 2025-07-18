@@ -7,10 +7,16 @@ namespace nzsl::Ast
 	template<typename T>
 	void TransformerExecutor::AddPass(const typename T::Options& options)
 	{
+		return AddPass<T>(m_passes.size(), options);
+	}
+
+	template<typename T>
+	void TransformerExecutor::AddPass(std::size_t index, const typename T::Options& options)
+	{
 		auto passPtr = std::make_unique<Pass<T>>();
 		passPtr->options = options;
 
-		m_passes.emplace_back(std::move(passPtr));
+		m_passes.emplace(m_passes.begin() + index, std::move(passPtr));
 	}
 
 	inline bool TransformerExecutor::Transform(Module& module, std::string* error) const
