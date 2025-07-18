@@ -6,6 +6,11 @@
 
 namespace nzsl::Ast
 {
+	void RecursiveVisitor::Visit(AccessFieldExpression& node)
+	{
+		node.expr->Visit(*this);
+	}
+
 	void RecursiveVisitor::Visit(AccessIdentifierExpression& node)
 	{
 		node.expr->Visit(*this);

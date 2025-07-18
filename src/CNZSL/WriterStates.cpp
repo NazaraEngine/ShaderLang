@@ -31,9 +31,14 @@ extern "C"
 		statesPtr->optimize = (enable != 0);
 	}
 
-	CNZSL_API void nzslWriterStatesEnableSanitization(nzslWriterStates* statesPtr, nzslBool enable)
+	CNZSL_API void nzslWriterStatesEnableResolving(nzslWriterStates* statesPtr, nzslBool enable)
 	{
-		statesPtr->sanitized = (enable == 0);
+		statesPtr->resolve = (enable == 0);
+	}
+
+	CNZSL_API void nzslWriterStatesEnableValidation(nzslWriterStates* statesPtr, nzslBool enable)
+	{
+		statesPtr->validate = (enable == 0);
 	}
 
 	CNZSL_API void nzslWriterStatesSetDebugLevel(nzslWriterStates* statesPtr, nzslDebugLevel debugLevel)

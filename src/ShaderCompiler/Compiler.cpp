@@ -16,8 +16,10 @@
 #include <NZSL/SpirvWriter.hpp>
 #include <NZSL/Serializer.hpp>
 #include <NZSL/Ast/AstSerializer.hpp>
+#include <NZSL/Ast/Cloner.hpp>
 #include <NZSL/Ast/ReflectVisitor.hpp>
-#include <NZSL/Ast/SanitizeVisitor.hpp>
+#include <NZSL/Ast/Transformations/ResolveTransformer.hpp>
+#include <NZSL/Ast/Transformations/ValidationTransformer.hpp>
 #include <fmt/color.h>
 #include <fmt/format.h>
 #include <frozen/string.h>
@@ -189,7 +191,7 @@ namespace nzslc
 		Step("Full processing"sv, [&]
 		{
 			Step("Read input file"sv, &Compiler::ReadInput);
-			Step("Processing"sv, &Compiler::Sanitize);
+			Step("Processing"sv, &Compiler::Resolve);
 
 			if (m_options.count("compile") > 0)
 				Step("Compiling"sv, &Compiler::Compile);
@@ -276,27 +278,40 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 
 		outputFilePath /= m_inputFilePath.filename();
 
-		const std::vector<std::string>& options = m_options["compile"].as<std::vector<std::string>>();
-		for (std::string_view outputType : options)
+		const std::vector<std::string>& compileOptions = m_options["compile"].as<std::vector<std::string>>();
+		for (std::size_t i = 0; i < compileOptions.size(); ++i)
 		{
+			std::string_view outputType = compileOptions[i];
+
 			// TODO: Don't compile multiple times unnecessary (ex: glsl and glsl-header)
-			if (!m_skipOutput && m_outputToStdout && options.size() > 1)
+			if (!m_skipOutput && m_outputToStdout && compileOptions.size() > 1)
 				fmt::print("-- {}\n", outputType);
 
 			m_outputHeader = EndsWith(outputType, "-header");
 			if (m_outputHeader)
 				outputType.remove_suffix(7);
 
+			// Clone the AST if multiple outputs are required (to avoid the transformations from the first compilation to go to the second)
+			nzsl::Ast::Module* targetModule;
+			nzsl::Ast::ModulePtr cloneModule;
+			if (i != compileOptions.size() - 1)
+			{
+				cloneModule = nzsl::Ast::Clone(*m_shaderModule);
+				targetModule = cloneModule.get();
+			}
+			else
+				targetModule = m_shaderModule.get();
+
 			if (outputType == "nzsl")
-				Step("Compile to NZSL", &Compiler::CompileToNZSL, outputFilePath, *m_shaderModule);
+				Step("Compile to NZSL", &Compiler::CompileToNZSL, outputFilePath, *targetModule);
 			else if (outputType == "nzslb")
-				Step("Compile to NZSLB", &Compiler::CompileToNZSLB, outputFilePath, *m_shaderModule);
+				Step("Compile to NZSLB", &Compiler::CompileToNZSLB, outputFilePath, *targetModule);
 			else if (outputType == "spv")
-				Step("Compile to SPIR-V", &Compiler::CompileToSPV, outputFilePath, *m_shaderModule, false);
+				Step("Compile to SPIR-V", &Compiler::CompileToSPV, outputFilePath, *targetModule, false);
 			else if (outputType == "spv-dis")
-				Step("Compile to textual SPIR-V", &Compiler::CompileToSPV, outputFilePath, *m_shaderModule, true);
+				Step("Compile to textual SPIR-V", &Compiler::CompileToSPV, outputFilePath, *targetModule, true);
 			else if (outputType == "glsl")
-				Step("Compile to GLSL", &Compiler::CompileToGLSL, outputFilePath, *m_shaderModule);
+				Step("Compile to GLSL", &Compiler::CompileToGLSL, outputFilePath, *targetModule);
 			else
 			{
 				fmt::print("Unknown format {}, ignoring\n", outputType);
@@ -305,7 +320,7 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 		}
 	}
 
-	void Compiler::CompileToGLSL(std::filesystem::path outputPath, const nzsl::Ast::Module& module)
+	void Compiler::CompileToGLSL(std::filesystem::path outputPath, nzsl::Ast::Module& module)
 	{
 		nzsl::GlslWriter::Environment env;
 		if (m_options.count("gl-es") > 0)
@@ -441,7 +456,7 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 		}
 	}
 
-	void Compiler::CompileToNZSL(std::filesystem::path outputPath, const nzsl::Ast::Module& module)
+	void Compiler::CompileToNZSL(std::filesystem::path outputPath, nzsl::Ast::Module& module)
 	{
 		nzsl::ShaderWriter::States states = BuildWriterOptions();
 
@@ -460,7 +475,7 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 		OutputFile(std::move(outputPath), nzsl.data(), nzsl.size());
 	}
 
-	void Compiler::CompileToNZSLB(std::filesystem::path outputPath, const nzsl::Ast::Module& module)
+	void Compiler::CompileToNZSLB(std::filesystem::path outputPath, nzsl::Ast::Module& module)
 	{
 		nzsl::Serializer serializer;
 		nzsl::Ast::SerializeShader(serializer, module);
@@ -483,7 +498,7 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 		OutputFile(std::move(outputPath), data.data(), data.size());
 	}
 
-	void Compiler::CompileToSPV(std::filesystem::path outputPath, const nzsl::Ast::Module& module, bool textual)
+	void Compiler::CompileToSPV(std::filesystem::path outputPath, nzsl::Ast::Module& module, bool textual)
 	{
 		nzsl::SpirvWriter::Environment env;
 		if (m_options.count("spv-version"))
@@ -636,12 +651,14 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 			throw std::runtime_error(fmt::format("{} has unknown extension \"{}\"", Nz::PathToString(m_inputFilePath.filename()), Nz::PathToString(extension)));
 	}
 
-	void Compiler::Sanitize()
+	void Compiler::Resolve()
 	{
 		using namespace std::literals;
 
-		nzsl::Ast::SanitizeVisitor::Options sanitizeOptions;
-		sanitizeOptions.partialSanitization = m_options.count("partial") > 0;
+		nzsl::Ast::Transformer::Context context;
+		context.partialCompilation = m_options.count("partial") > 0;
+
+		nzsl::Ast::ResolveTransformer::Options resolverOpt;
 
 		if (m_options.count("module") > 0)
 		{
@@ -664,10 +681,14 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 					throw std::runtime_error(modulePath + " is not a path nor a directory");
 			}
 
-			sanitizeOptions.moduleResolver = std::move(resolver);
+			resolverOpt.moduleResolver = std::move(resolver);
 		}
 
-		m_shaderModule = Step("AST processing"sv, [&] { return nzsl::Ast::Sanitize(*m_shaderModule, sanitizeOptions); });
+		nzsl::Ast::ResolveTransformer resolver;
+		nzsl::Ast::ValidationTransformer validation;
+
+		Step("AST processing"sv, [&] { resolver.Transform(*m_shaderModule, context, resolverOpt); });
+		Step("AST validation"sv, [&] { validation.Transform(*m_shaderModule, context); });
 	}
 
 	template<typename F, typename... Args>

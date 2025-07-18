@@ -30,6 +30,7 @@ namespace nzsl
 			void Store(Ast::ExpressionPtr& node, std::uint32_t resultId);
 
 			using ExpressionVisitorExcept::Visit;
+			void Visit(Ast::AccessFieldExpression& node) override;
 			void Visit(Ast::AccessIndexExpression& node) override;
 			void Visit(Ast::SwizzleExpression& node) override;
 			void Visit(Ast::VariableValueExpression& node) override;

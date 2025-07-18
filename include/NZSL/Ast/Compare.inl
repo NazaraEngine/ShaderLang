@@ -321,9 +321,6 @@ namespace nzsl::Ast
 		if (!Compare(lhs.name, rhs.name, params))
 			return false;
 
-		if (!Compare(lhs.originalName, rhs.originalName, params))
-			return false;
-
 		if (!Compare(lhs.type, rhs.type, params))
 			return false;
 
@@ -331,6 +328,17 @@ namespace nzsl::Ast
 			return false;
 
 		if (!Compare(lhs.tag, rhs.tag, params))
+			return false;
+
+		return true;
+	}
+
+	bool Compare(const AccessFieldExpression& lhs, const AccessFieldExpression& rhs, const ComparisonParams& params)
+	{
+		if (!Compare(*lhs.expr, *rhs.expr, params))
+			return false;
+
+		if (!Compare(lhs.fieldIndex, rhs.fieldIndex, params))
 			return false;
 
 		return true;

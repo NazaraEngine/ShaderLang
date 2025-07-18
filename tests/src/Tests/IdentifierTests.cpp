@@ -47,7 +47,7 @@ fn main() -> output
 )";
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
-		shaderModule = SanitizeModule(*shaderModule);
+		ResolveModule(*shaderModule);
 
 		ExpectGLSL(*shaderModule, R"(
 uniform sampler2D texture_;
@@ -77,8 +77,8 @@ void main()
 	int input2_2 = 0;
 	float fl2_oa8_t = 42.0;
 	output_ outValue;
-	float cachedResult = (float(input_)) + fl2_oa8_t;
-	outValue.active_ = vec3(cachedResult, cachedResult, cachedResult);
+	float _nzsl_cachedResult = (float(input_)) + fl2_oa8_t;
+	outValue.active_ = vec3(_nzsl_cachedResult, _nzsl_cachedResult, _nzsl_cachedResult);
 
 	_nzslOutactive_ = outValue.active_;
 	_nzslOutactive2_2 = outValue.active2_2;

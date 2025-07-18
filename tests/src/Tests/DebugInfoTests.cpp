@@ -12,11 +12,15 @@ TEST_CASE("debug info", "[Shader]")
 		auto directoryModuleResolver = std::make_shared<nzsl::FilesystemModuleResolver>();
 		directoryModuleResolver->RegisterDirectory("../resources/modules");
 
-		nzsl::Ast::SanitizeVisitor::Options sanitizeOptions;
-		sanitizeOptions.moduleResolver = std::move(directoryModuleResolver);
-
 		nzsl::Ast::ModulePtr shaderModule = nzsl::ParseFromFile("../resources/Shader.nzsl");
-		shaderModule = SanitizeModule(*shaderModule, sanitizeOptions);
+
+		nzsl::Ast::ResolveTransformer::Options resolverOptions;
+		resolverOptions.moduleResolver = directoryModuleResolver;
+
+		ResolveOptions resolveOptions;
+		resolveOptions.identifierResolverOptions = &resolverOptions;
+
+		ResolveModule(*shaderModule, resolveOptions);
 
 		WHEN("Generating with no debug info")
 		{
@@ -39,8 +43,8 @@ uniform sampler2D tex1_Color;
 
 vec4 GenerateColor_Color()
 {
-	float cachedResult = 0.0;
-	return texture(tex1_Color, vec2(cachedResult, cachedResult));
+	float _nzsl_cachedResult = 0.0;
+	return texture(tex1_Color, vec2(_nzsl_cachedResult, _nzsl_cachedResult));
 }
 
 vec4 GetColor_Color()
@@ -199,8 +203,8 @@ uniform sampler2D tex1_Color;
 
 vec4 GenerateColor_Color()
 {
-	float cachedResult = 0.0;
-	return texture(tex1_Color, vec2(cachedResult, cachedResult));
+	float _nzsl_cachedResult = 0.0;
+	return texture(tex1_Color, vec2(_nzsl_cachedResult, _nzsl_cachedResult));
 }
 
 vec4 GetColor_Color()
@@ -386,8 +390,8 @@ uniform sampler2D tex1_Color;
 // @../resources/modules/Color.nzsl:13:1
 vec4 GenerateColor_Color()
 {
-	float cachedResult = 0.0;
-	return texture(tex1_Color, vec2(cachedResult, cachedResult));
+	float _nzsl_cachedResult = 0.0;
+	return texture(tex1_Color, vec2(_nzsl_cachedResult, _nzsl_cachedResult));
 }
 
 // @../resources/modules/Color.nzsl:32:1
@@ -532,7 +536,9 @@ void main()
       OpLine %32 15 5
       OpLine %32 15 12
 %35 = OpLoad %3 %5
+      OpLine %32 15 24
 %36 = OpCompositeConstruct %11 %8 %8
+      OpLine %32 15 12
 %37 = OpImageSampleImplicitLod %6 %35 %36
       OpReturnValue %37
       OpFunctionEnd
@@ -578,8 +584,10 @@ void main()
       OpStore %49 %52
       OpLine %31 29 20
 %53 = OpFunctionCall %6 %29 %49
+      OpLine %31 29 45
 %55 = OpAccessChain %54 %20 %10
 %56 = OpLoad %6 %55
+      OpLine %31 29 20
 %57 = OpFMul %6 %53 %56
       OpLine %31 29 5
 %58 = OpAccessChain %42 %48 %10
@@ -673,8 +681,8 @@ uniform sampler2D tex1_Color;
 // @../resources/modules/Color.nzsl:13:1
 vec4 GenerateColor_Color()
 {
-	float cachedResult = 0.0;
-	return texture(tex1_Color, vec2(cachedResult, cachedResult));
+	float _nzsl_cachedResult = 0.0;
+	return texture(tex1_Color, vec2(_nzsl_cachedResult, _nzsl_cachedResult));
 }
 
 // @../resources/modules/Color.nzsl:32:1
@@ -969,7 +977,9 @@ struct Output
       OpLine %32 15 5
       OpLine %32 15 12
 %35 = OpLoad %3 %5
+      OpLine %32 15 24
 %36 = OpCompositeConstruct %11 %8 %8
+      OpLine %32 15 12
 %37 = OpImageSampleImplicitLod %6 %35 %36
       OpReturnValue %37
       OpFunctionEnd
@@ -1015,8 +1025,10 @@ struct Output
       OpStore %49 %52
       OpLine %31 29 20
 %53 = OpFunctionCall %6 %29 %49
+      OpLine %31 29 45
 %55 = OpAccessChain %54 %20 %10
 %56 = OpLoad %6 %55
+      OpLine %31 29 20
 %57 = OpFMul %6 %53 %56
       OpLine %31 29 5
 %58 = OpAccessChain %42 %48 %10

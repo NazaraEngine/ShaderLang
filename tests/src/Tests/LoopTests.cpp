@@ -36,7 +36,7 @@ fn main()
 )";
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
-		shaderModule = SanitizeModule(*shaderModule);
+		ResolveModule(*shaderModule);
 
 		ExpectGLSL(*shaderModule, R"(
 void main()
@@ -132,7 +132,7 @@ fn main()
 )";
 
 			nzsl::Ast::ModulePtr shaderModule2 = nzsl::Parse(nzslSource2);
-			shaderModule2 = SanitizeModule(*shaderModule2);
+			ResolveModule(*shaderModule2);
 
 			ExpectGLSL(*shaderModule2, R"(
 void main()
@@ -267,7 +267,7 @@ fn main()
 )";
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
-		shaderModule = SanitizeModule(*shaderModule);
+		ResolveModule(*shaderModule);
 
 		ExpectGLSL(*shaderModule, R"(
 void main()
@@ -275,14 +275,14 @@ void main()
 	int x = 0;
 	{
 		int v = 0;
-		int to = 10;
-		while (v < to)
+		int _nzsl_to = 10;
+		while (v < _nzsl_to)
 		{
 			x += v;
 			{
 				int v_2 = 5;
-				int to_2 = 7;
-				while (v_2 < to_2)
+				int _nzsl_to_2 = 7;
+				while (v_2 < _nzsl_to_2)
 				{
 					x += v_2;
 					v_2 += 1;
@@ -297,8 +297,8 @@ void main()
 
 	{
 		int v = 0;
-		int to = 20;
-		while (v < to)
+		int _nzsl_to = 20;
+		while (v < _nzsl_to)
 		{
 			x += v;
 			v += 1;
@@ -433,7 +433,7 @@ fn main()
 )";
 
 			nzsl::Ast::ModulePtr shaderModule2 = nzsl::Parse(nzslSource2);
-			shaderModule2 = SanitizeModule(*shaderModule2);
+			ResolveModule(*shaderModule2);
 
 			ExpectGLSL(*shaderModule2, R"(
 void main()
@@ -441,8 +441,8 @@ void main()
 	int x = 0;
 	{
 		int v = 0;
-		int to = 10;
-		while (v < to)
+		int _nzsl_to = 10;
+		while (v < _nzsl_to)
 		{
 			if (v == (4))
 			{
@@ -555,7 +555,7 @@ fn main()
 )";
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
-		shaderModule = SanitizeModule(*shaderModule);
+		ResolveModule(*shaderModule);
 
 		ExpectGLSL(*shaderModule, R"(
 void main()
@@ -563,12 +563,12 @@ void main()
 	int x = 0;
 	{
 		int v = 0;
-		int to = 10;
-		int step = 2;
-		while (v < to)
+		int _nzsl_to = 10;
+		int _nzsl_step = 2;
+		while (v < _nzsl_to)
 		{
 			x += v;
-			v += step;
+			v += _nzsl_step;
 		}
 
 	}
@@ -652,19 +652,19 @@ fn main()
 )";
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
-		shaderModule = SanitizeModule(*shaderModule);
+		ResolveModule(*shaderModule);
 
 		ExpectGLSL(*shaderModule, R"(
 void main()
 {
 	float x = 0.0;
 	{
-		uint i = 0u;
-		while (i < (10u))
+		uint _nzsl_counter = 0u;
+		while (_nzsl_counter < (10u))
 		{
-			float v = data.value[i];
+			float v = data.value[_nzsl_counter];
 			x += v;
-			i += 1u;
+			_nzsl_counter += 1u;
 		}
 
 	}
@@ -753,17 +753,17 @@ fn main()
 )";
 
 			nzsl::Ast::ModulePtr shaderModule2 = nzsl::Parse(nzslSource2);
-			shaderModule2 = SanitizeModule(*shaderModule2);
+			ResolveModule(*shaderModule2);
 
 			ExpectGLSL(*shaderModule2, R"(
 void main()
 {
 	float x = 0.0;
 	{
-		uint i = 0u;
-		while (i < (10u))
+		uint _nzsl_counter = 0u;
+		while (_nzsl_counter < (10u))
 		{
-			float v = data.value[i];
+			float v = data.value[_nzsl_counter];
 			if (v < (0.0))
 			{
 				continue;
@@ -775,7 +775,7 @@ void main()
 				break;
 			}
 
-			i += 1u;
+			_nzsl_counter += 1u;
 		}
 
 	}

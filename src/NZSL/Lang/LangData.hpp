@@ -69,6 +69,21 @@ namespace nzsl::LangData
 		{ Ast::BuiltinEntry::WorkgroupIndices,          { "workgroup_indices",         ShaderStageType::Compute,  Ast::VectorType { 3, Ast::PrimitiveType::UInt32 } } }
 	});
 
+	struct ConstantData
+	{
+		std::size_t constantIndex;
+		std::uint32_t value;
+	};
+
+	constexpr auto s_constants = frozen::make_unordered_map<frozen::string, ConstantData>({
+		{ "readonly", { 0, Nz::SafeCast<std::uint32_t>(AccessPolicy::ReadOnly) } },
+		{ "readwrite", { 1, Nz::SafeCast<std::uint32_t>(AccessPolicy::ReadWrite) } },
+		{ "writeonly", { 2, Nz::SafeCast<std::uint32_t>(AccessPolicy::WriteOnly) } },
+
+		// TODO: Register more image formats
+		{ "rgba8", { 3, Nz::SafeCast<std::uint32_t>(ImageFormat::RGBA8) }}
+	});
+
 	struct DepthWriteModeData
 	{
 		std::string_view identifier;

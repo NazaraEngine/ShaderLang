@@ -1,0 +1,137 @@
+// Copyright (C) 2025 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
+// This file is part of the "Nazara Shading Language" project
+// For conditions of distribution and use, see copyright notice in Config.hpp
+
+#pragma once
+
+#ifndef NZSL_AST_TRANSFORMATIONS_VALIDATIONTRANSFORMER_HPP
+#define NZSL_AST_TRANSFORMATIONS_VALIDATIONTRANSFORMER_HPP
+
+#include <NZSL/Ast/Transformations/Transformer.hpp>
+
+namespace nzsl::Ast
+{
+	class NZSL_API ValidationTransformer final : public Transformer
+	{
+		public:
+			struct Options;
+
+			inline ValidationTransformer();
+
+			inline bool Transform(Module& module, Context& context, std::string* error = nullptr);
+			bool Transform(Module& module, Context& context, const Options& options, std::string* error = nullptr);
+			bool TransformExpression(Module& module, ExpressionPtr& expression, Context& context, const Options& options, std::string* error = nullptr);
+			bool TransformStatement(Module& module, StatementPtr& statement, Context& context, const Options& options, std::string* error = nullptr);
+
+			struct Options
+			{
+				const Stringifier* stringifier = nullptr;
+				bool checkIndices = true;
+			};
+
+		private:
+			enum class ValidationResult;
+
+			using Transformer::Transform;
+
+			Stringifier BuildStringifier(const SourceLocation& sourceLocation) const;
+			
+			void CheckAliasIndex(std::optional<std::size_t> aliasIndex, const SourceLocation& sourceLocation) const;
+			void CheckConstIndex(std::optional<std::size_t> constIndex, const SourceLocation& sourceLocation) const;
+			void CheckExternalIndex(std::optional<std::size_t> externalIndex, const SourceLocation& sourceLocation) const;
+			void CheckFuncIndex(std::optional<std::size_t> funcIndex, const SourceLocation& sourceLocation) const;
+			void CheckStructIndex(std::optional<std::size_t> structIndex, const SourceLocation& sourceLocation) const;
+			void CheckVariableIndex(std::optional<std::size_t> variableIndex, const SourceLocation& sourceLocation) const;
+
+			const ExpressionType* GetExpressionType(const Expression& expr) const;
+
+			void PopScope() override;
+			void PushScope() override;
+
+			void RegisterAlias(std::size_t aliasIndex, const SourceLocation& sourceLocation);
+			void RegisterConst(std::size_t constIndex, const SourceLocation& sourceLocation);
+			void RegisterExternal(std::size_t externalIndex, const SourceLocation& sourceLocation);
+			void RegisterFunc(std::size_t funcIndex, const SourceLocation& sourceLocation);
+			void RegisterStruct(std::size_t structIndex, const SourceLocation& sourceLocation);
+			void RegisterVariable(std::size_t variableIndex, const SourceLocation& sourceLocation);
+			
+			void ResolveFunctions();
+			std::size_t ResolveStructIndex(const ExpressionType& exprType, const SourceLocation& sourceLocation);
+
+			std::string ToString(const ExpressionType& exprType, const SourceLocation& sourceLocation) const;
+
+			ExpressionTransformation Transform(AccessFieldExpression&& node) override;
+			ExpressionTransformation Transform(AccessIdentifierExpression&& node) override;
+			ExpressionTransformation Transform(AccessIndexExpression&& node) override;
+			ExpressionTransformation Transform(AliasValueExpression&& node) override;
+			ExpressionTransformation Transform(AssignExpression&& node) override;
+			ExpressionTransformation Transform(BinaryExpression&& node) override;
+			ExpressionTransformation Transform(CallFunctionExpression&& node) override;
+			ExpressionTransformation Transform(CallMethodExpression&& node) override;
+			ExpressionTransformation Transform(CastExpression&& node) override;
+			ExpressionTransformation Transform(ConditionalExpression&& node) override;
+			ExpressionTransformation Transform(ConstantExpression&& node) override;
+			ExpressionTransformation Transform(ConstantArrayValueExpression&& node) override;
+			ExpressionTransformation Transform(ConstantValueExpression&& node) override;
+			ExpressionTransformation Transform(FunctionExpression&& node) override;
+			ExpressionTransformation Transform(IdentifierExpression&& node) override;
+			ExpressionTransformation Transform(IntrinsicExpression&& node) override;
+			ExpressionTransformation Transform(IntrinsicFunctionExpression&& node) override;
+			ExpressionTransformation Transform(ModuleExpression&& node) override;
+			ExpressionTransformation Transform(NamedExternalBlockExpression&& node) override;
+			ExpressionTransformation Transform(StructTypeExpression&& node) override;
+			ExpressionTransformation Transform(SwizzleExpression&& node) override;
+			ExpressionTransformation Transform(TypeExpression&& node) override;
+			ExpressionTransformation Transform(UnaryExpression&& node) override;
+			ExpressionTransformation Transform(VariableValueExpression&& node) override;
+
+			StatementTransformation Transform(BranchStatement&& node) override;
+			StatementTransformation Transform(BreakStatement&& node) override;
+			StatementTransformation Transform(ConditionalStatement&& node) override;
+			StatementTransformation Transform(ContinueStatement&& node) override;
+			StatementTransformation Transform(DeclareAliasStatement&& node) override;
+			StatementTransformation Transform(DeclareConstStatement&& node) override;
+			StatementTransformation Transform(DeclareExternalStatement&& node) override;
+			StatementTransformation Transform(DeclareFunctionStatement&& node) override;
+			StatementTransformation Transform(DeclareOptionStatement&& node) override;
+			StatementTransformation Transform(DeclareStructStatement&& node) override;
+			StatementTransformation Transform(DeclareVariableStatement&& node) override;
+			StatementTransformation Transform(DiscardStatement&& node) override;
+			StatementTransformation Transform(ExpressionStatement&& node) override;
+			StatementTransformation Transform(ForStatement&& node) override;
+			StatementTransformation Transform(ForEachStatement&& node) override;
+			StatementTransformation Transform(ImportStatement&& node) override;
+			StatementTransformation Transform(MultiStatement&& node) override;
+			StatementTransformation Transform(NoOpStatement&& node) override;
+			StatementTransformation Transform(ReturnStatement&& node) override;
+			StatementTransformation Transform(ScopedStatement&& node) override;
+			StatementTransformation Transform(WhileStatement&& node) override;
+
+			bool TransformModule(Module& module, Context& context, std::string* error, Nz::FunctionRef<void()> postCallback = nullptr) override;
+
+			void TypeMustMatch(const ExpressionPtr& left, const ExpressionPtr& right, const SourceLocation& sourceLocation) const;
+			void TypeMustMatch(const ExpressionType& left, const ExpressionType& right, const SourceLocation& sourceLocation) const;
+
+			void ValidateConcreteType(const ExpressionType& exprType, const SourceLocation& sourceLocation);
+			void ValidateIntrinsicParameters(IntrinsicExpression& node);
+			ValidationResult ValidateIntrinsicParamMatchingType(IntrinsicExpression& node, std::size_t from, std::size_t to);
+			ValidationResult ValidateIntrinsicParamMatchingVecComponent(IntrinsicExpression& node, std::size_t from, std::size_t to);
+			template<typename F> ValidationResult ValidateIntrinsicParameter(IntrinsicExpression& node, F&& func, std::size_t index);
+			template<typename F> ValidationResult ValidateIntrinsicParameterType(IntrinsicExpression& node, F&& func, const char* typeStr, std::size_t index);
+
+			enum class ValidationResult
+			{
+				Validated,
+				Unresolved
+			};
+
+			struct States;
+
+			const Options* m_options;
+			States* m_states;
+	};
+}
+
+#include <NZSL/Ast/Transformations/ValidationTransformer.inl>
+
+#endif // NZSL_AST_TRANSFORMATIONS_VALIDATIONTRANSFORMER_HPP

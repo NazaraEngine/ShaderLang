@@ -1,11 +1,9 @@
 #include <Tests/ShaderUtils.hpp>
 #include <NZSL/FilesystemModuleResolver.hpp>
-#include <NZSL/LangWriter.hpp>
-#include <NZSL/ShaderBuilder.hpp>
 #include <NZSL/Parser.hpp>
-#include <NZSL/Ast/SanitizeVisitor.hpp>
+#include <NZSL/Ast/TransformerExecutor.hpp>
+#include <NZSL/Ast/Transformations/ResolveTransformer.hpp>
 #include <catch2/catch_test_macros.hpp>
-#include <cctype>
 
 void RegisterModule(const std::shared_ptr<nzsl::FilesystemModuleResolver>& moduleResolver, std::string_view source)
 {
@@ -13,11 +11,13 @@ void RegisterModule(const std::shared_ptr<nzsl::FilesystemModuleResolver>& modul
 
 	WHEN("Compiling module")
 	{
-		nzsl::Ast::SanitizeVisitor::Options sanitizeOpt;
-		sanitizeOpt.partialSanitization = true;
+		nzsl::Ast::Transformer::Context context;
+		context.partialCompilation = true;
+
+		nzsl::Ast::ResolveTransformer transformer;
 
 		compiledModule = nzsl::Parse(source);
-		compiledModule = nzsl::Ast::Sanitize(*compiledModule, sanitizeOpt);
+		transformer.Transform(*compiledModule, context);
 	}
 
 	if (compiledModule)
@@ -104,10 +104,13 @@ fn main(input: InputData) -> OutputData
 		auto directoryModuleResolver = std::make_shared<nzsl::FilesystemModuleResolver>();
 		RegisterModule(directoryModuleResolver, importedSource);
 
-		nzsl::Ast::SanitizeVisitor::Options sanitizeOpt;
-		sanitizeOpt.moduleResolver = directoryModuleResolver;
+		nzsl::Ast::ResolveTransformer::Options resolverOptions;
+		resolverOptions.moduleResolver = directoryModuleResolver;
 
-		shaderModule = SanitizeModule(*shaderModule, sanitizeOpt);
+		ResolveOptions resolveOptions;
+		resolveOptions.identifierResolverOptions = &resolverOptions;
+
+		ResolveModule(*shaderModule, resolveOptions);
 
 		ExpectGLSL(*shaderModule, R"(
 // Module SimpleModule
@@ -350,10 +353,13 @@ fn main(input: Input) -> OutputData
 		RegisterModule(directoryModuleResolver, blockModule);
 		RegisterModule(directoryModuleResolver, inputOutputModule);
 
-		nzsl::Ast::SanitizeVisitor::Options sanitizeOpt;
-		sanitizeOpt.moduleResolver = directoryModuleResolver;
+		nzsl::Ast::ResolveTransformer::Options resolverOptions;
+		resolverOptions.moduleResolver = directoryModuleResolver;
 
-		shaderModule = SanitizeModule(*shaderModule, sanitizeOpt);
+		ResolveOptions resolveOptions;
+		resolveOptions.identifierResolverOptions = &resolverOptions;
+
+		ResolveModule(*shaderModule, resolveOptions);
 
 		ExpectGLSL(*shaderModule, R"(
 // Module Modules.Data
@@ -560,10 +566,13 @@ fn main()
 		RegisterModule(directoryModuleResolver, dataModule);
 		RegisterModule(directoryModuleResolver, funcModule);
 
-		nzsl::Ast::SanitizeVisitor::Options sanitizeOpt;
-		sanitizeOpt.moduleResolver = directoryModuleResolver;
+		nzsl::Ast::ResolveTransformer::Options resolverOptions;
+		resolverOptions.moduleResolver = directoryModuleResolver;
 
-		shaderModule = SanitizeModule(*shaderModule, sanitizeOpt);
+		ResolveOptions resolveOptions;
+		resolveOptions.identifierResolverOptions = &resolverOptions;
+
+		ResolveModule(*shaderModule, resolveOptions);
 
 		ExpectGLSL(*shaderModule, R"(
 // Module Modules.Data
@@ -586,8 +595,8 @@ vec4 SumLightColor_Modules_Func(Lights_Modules_Data lightData)
 	vec4 color = vec4(0.0, 0.0, 0.0, 0.0);
 	{
 		uint index = uint(0);
-		uint to = uint(lightData.lights.length());
-		while (index < to)
+		uint _nzsl_to = uint(lightData.lights.length());
+		while (index < _nzsl_to)
 		{
 			color += lightData.lights[index].color;
 			index += 1u;
@@ -602,12 +611,12 @@ ivec2 SumLightIntensities_Modules_Func(Lights_Modules_Data lightData)
 {
 	ivec2 intensities = ivec2(0, 0);
 	{
-		uint i = 0u;
-		while (i < (3u))
+		uint _nzsl_counter = 0u;
+		while (_nzsl_counter < (3u))
 		{
-			Light_Modules_Data light = lightData.lights[i];
+			Light_Modules_Data light = lightData.lights[_nzsl_counter];
 			intensities += light.intensities;
-			i += 1u;
+			_nzsl_counter += 1u;
 		}
 
 	}
@@ -886,23 +895,26 @@ fn FragMain() -> FragOut
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
 
+		nzsl::Ast::Transformer::Context context;
+		context.partialCompilation = true;
+
+		nzsl::Ast::ResolveTransformer resolverTransformer;
+
+		REQUIRE_NOTHROW(resolverTransformer.Transform(*shaderModule, context));
+
+		context.partialCompilation = false;
+
 		auto directoryModuleResolver = std::make_shared<nzsl::FilesystemModuleResolver>();
 		RegisterModule(directoryModuleResolver, gbufferOutput);
 
-		nzsl::Ast::SanitizeVisitor::Options options;
-		options.partialSanitization = true;
-
-		REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(*shaderModule, options));
-
-		options.moduleResolver = directoryModuleResolver;
-		options.partialSanitization = false;
-		options.removeOptionDeclaration = true;
+		nzsl::Ast::ResolveTransformer::Options resolverOptions;
+		resolverOptions.moduleResolver = directoryModuleResolver;
 
 		WHEN("Trying ForwardPass=true")
 		{
-			options.optionValues[nzsl::Ast::HashOption("ForwardPass")] = true;
+			context.optionValues[nzsl::Ast::HashOption("ForwardPass")] = true;
 
-			REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(*shaderModule, options));
+			REQUIRE_NOTHROW(resolverTransformer.Transform(*shaderModule, context, resolverOptions));
 
 			ExpectNZSL(*shaderModule, R"(
 struct FragOut
@@ -924,12 +936,11 @@ fn FragMain() -> FragOut
 )");
 		}
 
-
 		WHEN("Trying ForwardPass=false")
 		{
-			options.optionValues[nzsl::Ast::HashOption("ForwardPass")] = false;
+			context.optionValues[nzsl::Ast::HashOption("ForwardPass")] = false;
 
-			REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(*shaderModule, options));
+			REQUIRE_NOTHROW(resolverTransformer.Transform(*shaderModule, context, resolverOptions));
 
 			ExpectNZSL(*shaderModule, R"(
 [nzsl_version("1.0")]
@@ -944,6 +955,7 @@ module _DeferredShading_GBuffer
 }
 alias GBufferOutput = _DeferredShading_GBuffer.GBufferOutput;
 
+option ForwardPass: bool = true;
 alias FragOut = GBufferOutput;
 
 [entry(frag)]
@@ -989,7 +1001,7 @@ import LightData from Lighting.LightData;
 [export]
 fn ComputeLighting(light: LightData, worldPos: vec3[f32]) -> vec3[f32]
 {
-	let color = light.color;
+	let color: vec3[f32] = light.color;
 	return color * max(distance(light.pos, worldPos) / light.radius, 1.0);
 }
 )";
@@ -1039,11 +1051,14 @@ fn FragMain() -> FragOut
 		RegisterModule(directoryModuleResolver, lightingPhongData);
 		RegisterModule(directoryModuleResolver, lightingShadowData);
 
-		nzsl::Ast::SanitizeVisitor::Options options;
-		options.moduleResolver = directoryModuleResolver;
+		nzsl::Ast::ResolveTransformer::Options resolverOptions;
+		resolverOptions.moduleResolver = directoryModuleResolver;
+
+		nzsl::Ast::ResolveTransformer identifierResolver;
+		nzsl::Ast::Transformer::Context context;
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(mainSource);
-		REQUIRE_NOTHROW(shaderModule = nzsl::Ast::Sanitize(*shaderModule, options));
+		REQUIRE_NOTHROW(identifierResolver.Transform(*shaderModule, context, resolverOptions));
 
 		ExpectNZSL(*shaderModule, R"(
 [nzsl_version("1.0")]
@@ -1182,10 +1197,13 @@ fn main(input: Module.InputData) -> Module.OutputData
 		auto directoryModuleResolver = std::make_shared<nzsl::FilesystemModuleResolver>();
 		RegisterModule(directoryModuleResolver, importedSource);
 
-		nzsl::Ast::SanitizeVisitor::Options sanitizeOpt;
-		sanitizeOpt.moduleResolver = directoryModuleResolver;
+		nzsl::Ast::ResolveTransformer::Options resolverOptions;
+		resolverOptions.moduleResolver = directoryModuleResolver;
 
-		shaderModule = SanitizeModule(*shaderModule, sanitizeOpt);
+		ResolveOptions resolveOptions;
+		resolveOptions.identifierResolverOptions = &resolverOptions;
+
+		ResolveModule(*shaderModule, resolveOptions);
 
 		ExpectGLSL(*shaderModule, R"(
 // Module Simple.Module
@@ -1412,10 +1430,13 @@ fn main(input: SimpleModule.InputData) -> SimpleModule.OutputData
 		auto directoryModuleResolver = std::make_shared<nzsl::FilesystemModuleResolver>();
 		RegisterModule(directoryModuleResolver, importedSource);
 
-		nzsl::Ast::SanitizeVisitor::Options sanitizeOpt;
-		sanitizeOpt.moduleResolver = directoryModuleResolver;
+		nzsl::Ast::ResolveTransformer::Options resolverOptions;
+		resolverOptions.moduleResolver = directoryModuleResolver;
 
-		shaderModule = SanitizeModule(*shaderModule, sanitizeOpt);
+		ResolveOptions resolveOptions;
+		resolveOptions.identifierResolverOptions = &resolverOptions;
+
+		ResolveModule(*shaderModule, resolveOptions);
 
 		ExpectGLSL(*shaderModule, R"(
 // Module Simple.Module

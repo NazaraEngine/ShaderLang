@@ -489,7 +489,9 @@ namespace nzsl
 		{
 			SourceLocation location = SourceLocation::BuildFromTo(lhs->sourceLocation, rhs->sourceLocation);
 
-			auto accessMemberExpr = ShaderBuilder::AccessMember(std::move(lhs), { std::move(Nz::SafeCast<Ast::IdentifierExpression&>(*rhs).identifier) });
+			Ast::IdentifierExpression& identifierExpr = Nz::SafeCast<Ast::IdentifierExpression&>(*rhs);
+
+			auto accessMemberExpr = ShaderBuilder::AccessMember(std::move(lhs), std::move(identifierExpr.identifier), identifierExpr.sourceLocation);
 			accessMemberExpr->sourceLocation = std::move(location);
 
 			return accessMemberExpr;
@@ -1943,7 +1945,7 @@ namespace nzsl
 		if (targetAttribute.HasValue())
 			throw ParserAttributeMultipleUniqueError{ attribute.sourceLocation, attribute.type };
 
-		//FIXME: This should be handled with global values at sanitization stage
+		//FIXME: This should be handled with global values at resolving stage
 		if (!attribute.args.empty())
 		{
 			if (attribute.args.size() != 1)

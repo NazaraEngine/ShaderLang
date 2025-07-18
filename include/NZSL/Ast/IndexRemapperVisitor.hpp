@@ -8,12 +8,12 @@
 #define NZSL_AST_INDEXREMAPPERVISITOR_HPP
 
 #include <NZSL/Config.hpp>
-#include <NZSL/Ast/Cloner.hpp>
+#include <NZSL/Ast/RecursiveVisitor.hpp>
 #include <functional>
 
 namespace nzsl::Ast
 {
-	class NZSL_API IndexRemapperVisitor : public Cloner
+	class NZSL_API IndexRemapperVisitor : public RecursiveVisitor
 	{
 		public:
 			struct Options;
@@ -23,7 +23,7 @@ namespace nzsl::Ast
 			IndexRemapperVisitor(IndexRemapperVisitor&&) = delete;
 			~IndexRemapperVisitor() = default;
 
-			StatementPtr Clone(Statement& statement, const Options& options);
+			void Remap(Statement& statement, const Options& options);
 
 			IndexRemapperVisitor& operator=(const IndexRemapperVisitor&) = delete;
 			IndexRemapperVisitor& operator=(IndexRemapperVisitor&&) = delete;
@@ -40,34 +40,53 @@ namespace nzsl::Ast
 			};
 
 		private:
-			using Cloner::Clone;
-
-			ExpressionPtr CloneExpression(Expression& expr) override;
-
-			StatementPtr Clone(DeclareAliasStatement& node) override;
-			StatementPtr Clone(DeclareConstStatement& node) override;
-			StatementPtr Clone(DeclareExternalStatement& node) override;
-			StatementPtr Clone(DeclareFunctionStatement& node) override;
-			StatementPtr Clone(DeclareOptionStatement& node) override;
-			StatementPtr Clone(DeclareStructStatement& node) override;
-			StatementPtr Clone(DeclareVariableStatement& node) override;
-			StatementPtr Clone(ForStatement& node) override;
-			StatementPtr Clone(ForEachStatement& node) override;
-
-			ExpressionPtr Clone(AliasValueExpression& node) override;
-			ExpressionPtr Clone(ConstantExpression& node) override;
-			ExpressionPtr Clone(FunctionExpression& node) override;
-			ExpressionPtr Clone(StructTypeExpression& node) override;
-			ExpressionPtr Clone(VariableValueExpression& node) override;
+			using RecursiveVisitor::Visit;
 
 			void HandleType(ExpressionValue<ExpressionType>& exprType);
+
+			void RemapExpression(Expression& expr);
 			ExpressionType RemapType(const ExpressionType& exprType);
+
+			void Visit(AccessFieldExpression& node) override;
+			void Visit(AccessIdentifierExpression& node) override;
+			void Visit(AccessIndexExpression& node) override;
+			void Visit(AliasValueExpression& node) override;
+			void Visit(AssignExpression& node) override;
+			void Visit(BinaryExpression& node) override;
+			void Visit(CallFunctionExpression& node) override;
+			void Visit(CallMethodExpression& node) override;
+			void Visit(CastExpression& node) override;
+			void Visit(ConditionalExpression& node) override;
+			void Visit(ConstantExpression& node) override;
+			void Visit(ConstantArrayValueExpression& node) override;
+			void Visit(ConstantValueExpression& node) override;
+			void Visit(FunctionExpression& node) override;
+			void Visit(IdentifierExpression& node) override;
+			void Visit(IntrinsicExpression& node) override;
+			void Visit(IntrinsicFunctionExpression& node) override;
+			void Visit(ModuleExpression& node) override;
+			void Visit(NamedExternalBlockExpression& node) override;
+			void Visit(StructTypeExpression& node) override;
+			void Visit(SwizzleExpression& node) override;
+			void Visit(TypeExpression& node) override;
+			void Visit(VariableValueExpression& node) override;
+			void Visit(UnaryExpression& node) override;
+
+			void Visit(DeclareAliasStatement& node) override;
+			void Visit(DeclareConstStatement& node) override;
+			void Visit(DeclareExternalStatement& node) override;
+			void Visit(DeclareFunctionStatement& node) override;
+			void Visit(DeclareOptionStatement& node) override;
+			void Visit(DeclareStructStatement& node) override;
+			void Visit(DeclareVariableStatement& node) override;
+			void Visit(ForStatement& node) override;
+			void Visit(ForEachStatement& node) override;
 
 			struct Context;
 			Context* m_context;
 	};
 
-	inline StatementPtr RemapIndices(Statement& statement, const IndexRemapperVisitor::Options& options);
+	inline void RemapIndices(Statement& statement, const IndexRemapperVisitor::Options& options);
 }
 
 #include <NZSL/Ast/IndexRemapperVisitor.inl>
