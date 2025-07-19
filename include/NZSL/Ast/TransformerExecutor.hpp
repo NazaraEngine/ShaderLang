@@ -7,6 +7,7 @@
 #ifndef NZSL_AST_TRANSFORMEREXECUTOR_HPP
 #define NZSL_AST_TRANSFORMEREXECUTOR_HPP
 
+#include <NazaraUtils/FunctionRef.hpp>
 #include <NZSL/Config.hpp>
 #include <NZSL/Ast/Transformations/Transformer.hpp>
 #include <memory>
@@ -26,7 +27,7 @@ namespace nzsl::Ast
 			~TransformerExecutor() = default;
 
 			template<typename T> void AddPass(const typename T::Options& options = {});
-			template<typename T> void AddPass(std::size_t index, const typename T::Options& options = {});
+			template<typename T> void AddPassAt(std::size_t index, const typename T::Options& options = {});
 
 			inline bool Transform(Module& module, std::string* error = nullptr) const;
 			inline bool Transform(Module& module, Transformer::Context& context, std::string* error = nullptr) const;
