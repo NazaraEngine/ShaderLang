@@ -36,6 +36,7 @@ namespace nzsl::Ast
 		auto varExpr = std::make_unique<VariableValueExpression>();
 		varExpr->sourceLocation = variableDeclaration->sourceLocation;
 		varExpr->variableId = *variableDeclaration->varIndex;
+		varExpr->cachedExpressionType = variableDeclaration->varType.GetResultingValue();
 
 		return varExpr;
 	}
