@@ -217,7 +217,7 @@ namespace NAZARA_ANONYMOUS_NAMESPACE
 	}
 }
 
-void ExpectGLSL(nzsl::ShaderStageType stageType, nzsl::Ast::Module& shaderModule, std::string_view expectedOutput, const nzsl::ShaderWriter::States& options, const nzsl::GlslWriter::Environment& env, bool testShaderCompilation)
+void ExpectGLSL(nzsl::ShaderStageType stageType, nzsl::Ast::Module& shaderModule, std::string_view expectedOutput, const nzsl::BackendParameters& options, const nzsl::GlslWriter::Environment& env, bool testShaderCompilation)
 {
 	NAZARA_USE_ANONYMOUS_NAMESPACE
 
@@ -246,9 +246,7 @@ void ExpectGLSL(nzsl::ShaderStageType stageType, nzsl::Ast::Module& shaderModule
 		nzsl::GlslWriter writer;
 		writer.SetEnv(env);
 
-		nzsl::GlslWriter::Parameters parameters;
-
-		nzsl::GlslWriter::Output output = writer.Generate(stageType, *moduleClone, parameters, options);
+		nzsl::GlslWriter::Output output = writer.Generate(stageType, *moduleClone, options);
 
 		SECTION("Validating expected code")
 		{
@@ -300,7 +298,7 @@ void ExpectGLSL(nzsl::ShaderStageType stageType, nzsl::Ast::Module& shaderModule
 	}
 }
 
-void ExpectGLSL(nzsl::Ast::Module& shaderModule, std::string_view expectedOutput, const nzsl::ShaderWriter::States& options, const nzsl::GlslWriter::Environment& env, bool testShaderCompilation)
+void ExpectGLSL(nzsl::Ast::Module& shaderModule, std::string_view expectedOutput, const nzsl::BackendParameters& options, const nzsl::GlslWriter::Environment& env, bool testShaderCompilation)
 {
 	// Retrieve entry-point to get shader type
 	std::optional<nzsl::ShaderStageType> entryShaderStage;
@@ -325,7 +323,7 @@ void ExpectGLSL(nzsl::Ast::Module& shaderModule, std::string_view expectedOutput
 	ExpectGLSL(entryShaderStage.value(), shaderModule, expectedOutput, options, env, testShaderCompilation);
 }
 
-void ExpectNZSL(nzsl::Ast::Module& shaderModule, std::string_view expectedOutput, const nzsl::ShaderWriter::States& options)
+void ExpectNZSL(const nzsl::Ast::Module& shaderModule, std::string_view expectedOutput)
 {
 	NAZARA_USE_ANONYMOUS_NAMESPACE
 
@@ -346,7 +344,7 @@ void ExpectNZSL(nzsl::Ast::Module& shaderModule, std::string_view expectedOutput
 		nzsl::Ast::Module& targetModule = (sanitizedModule) ? *sanitizedModule : *moduleClone;
 
 		nzsl::LangWriter writer;
-		std::string output = SanitizeSource(writer.Generate(targetModule, options));
+		std::string output = SanitizeSource(writer.Generate(targetModule));
 
 		SECTION("Validating expected code")
 		{
@@ -362,7 +360,7 @@ void ExpectNZSL(nzsl::Ast::Module& shaderModule, std::string_view expectedOutput
 	}
 }
 
-void ExpectSPIRV(nzsl::Ast::Module& shaderModule, std::string_view expectedOutput, const nzsl::ShaderWriter::States& options, const nzsl::SpirvWriter::Environment& env, bool outputParameter, const spvtools::ValidatorOptions& validatorOptions)
+void ExpectSPIRV(nzsl::Ast::Module& shaderModule, std::string_view expectedOutput, const nzsl::BackendParameters& options, const nzsl::SpirvWriter::Environment& env, bool outputParameter, const spvtools::ValidatorOptions& validatorOptions)
 {
 	NAZARA_USE_ANONYMOUS_NAMESPACE
 	
@@ -399,7 +397,7 @@ void ExpectSPIRV(nzsl::Ast::Module& shaderModule, std::string_view expectedOutpu
 			if (output.find(source) == std::string::npos)
 			{
 				nzsl::LangWriter langWriter;
-				INFO("AST to NZSL (for debugging):\n" << langWriter.Generate(targetModule, options));
+				INFO("AST to NZSL (for debugging):\n" << langWriter.Generate(targetModule));
 
 				HandleSourceError("SPIR-V", source, output);
 			}
@@ -426,7 +424,7 @@ void ExpectSPIRV(nzsl::Ast::Module& shaderModule, std::string_view expectedOutpu
 			spirvTools.SetMessageConsumer([&](spv_message_level_t /*level*/, const char* /*source*/, const spv_position_t& /*position*/, const char* message)
 			{
 				nzsl::LangWriter langWriter;
-				UNSCOPED_INFO("AST to NZSL (for debugging):\n" << langWriter.Generate(targetModule, options));
+				UNSCOPED_INFO("AST to NZSL (for debugging):\n" << langWriter.Generate(targetModule));
 
 				std::string fullSpirv;
 				if (!spirvTools.Disassemble(spirv, &fullSpirv))

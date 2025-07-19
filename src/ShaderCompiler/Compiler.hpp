@@ -8,13 +8,17 @@
 #define NZSLC_COMPILER_HPP
 
 #include <NZSL/Config.hpp>
-#include <NZSL/ShaderWriter.hpp>
 #include <NZSL/Lang/Errors.hpp>
 #include <NZSL/Ast/Module.hpp>
 #include <cxxopts.hpp>
 #include <filesystem>
 #include <type_traits>
 #include <vector>
+
+namespace nzsl
+{
+	struct BackendParameters;
+}
 
 namespace nzslc
 {
@@ -48,11 +52,11 @@ namespace nzslc
 			};
 
 		private:
-			nzsl::ShaderWriter::States BuildWriterOptions();
+			nzsl::BackendParameters BuildWriterOptions();
 			void Compile();
 			void CompileToGLSL(std::filesystem::path outputPath, nzsl::Ast::Module& module);
-			void CompileToNZSL(std::filesystem::path outputPath, nzsl::Ast::Module& module);
-			void CompileToNZSLB(std::filesystem::path outputPath, nzsl::Ast::Module& module);
+			void CompileToNZSL(std::filesystem::path outputPath, const nzsl::Ast::Module& module);
+			void CompileToNZSLB(std::filesystem::path outputPath, const nzsl::Ast::Module& module);
 			void CompileToSPV(std::filesystem::path outputPath, nzsl::Ast::Module& module, bool textual);
 			void PrintTime();
 			void OutputFile(std::filesystem::path filePath, const void* data, std::size_t size, bool disallowHeader = false);

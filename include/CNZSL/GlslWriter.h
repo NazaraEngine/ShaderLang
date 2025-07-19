@@ -12,7 +12,7 @@
 #include <CNZSL/Config.h>
 #include <CNZSL/Module.h>
 #include <CNZSL/ShaderStageType.h>
-#include <CNZSL/WriterStates.h>
+#include <CNZSL/BackendParameters.h>
 #include <stddef.h>
 
 #ifdef __cplusplus
@@ -43,8 +43,8 @@ CNZSL_API void nzslGlslWriterParametersSetPushConstantBinding(nzslGlslWriterPara
 CNZSL_API nzslGlslWriter* nzslGlslWriterCreate(void);
 CNZSL_API void nzslGlslWriterDestroy(nzslGlslWriter* writerPtr);
 
-CNZSL_API nzslGlslOutput* nzslGlslWriterGenerate(nzslGlslWriter* writerPtr, const nzslModule* modulePtr, const nzslGlslWriterParameters* parameterPtr, const nzslWriterStates* statesPtr);
-CNZSL_API nzslGlslOutput* nzslGlslWriterGenerateStage(nzslGlslWriter* writerPtr, nzslShaderStageType stage, const nzslModule* modulePtr, const nzslGlslWriterParameters* parameterPtr, const nzslWriterStates* statesPtr);
+CNZSL_API nzslGlslOutput* nzslGlslWriterGenerate(nzslGlslWriter* writerPtr, nzslModule* modulePtr, const nzslBackendParameters* backendParametersPtr, const nzslGlslWriterParameters* parameterPtr);
+CNZSL_API nzslGlslOutput* nzslGlslWriterGenerateStage(nzslGlslWriter* writerPtr, nzslShaderStageType stage, nzslModule* modulePtr, const nzslBackendParameters* backendParametersPtr, const nzslGlslWriterParameters* parameterPtr);
 
 /** 
 **  Gets the last error message set by the last operation to this writer

@@ -24,7 +24,7 @@ TEST_CASE("debug info", "[Shader]")
 
 		WHEN("Generating with no debug info")
 		{
-			nzsl::ShaderWriter::States options;
+			nzsl::BackendParameters options;
 			options.debugLevel = nzsl::DebugLevel::None;
 
 			ExpectGLSL(*shaderModule, R"(
@@ -175,7 +175,7 @@ void main()
 
 		WHEN("Generating with minimal info")
 		{
-			nzsl::ShaderWriter::States options;
+			nzsl::BackendParameters options;
 			options.debugLevel = nzsl::DebugLevel::Minimal;
 
 			ExpectGLSL(*shaderModule, R"(
@@ -358,7 +358,7 @@ void main()
 
 		WHEN("Generating with regular debug info")
 		{
-			nzsl::ShaderWriter::States options;
+			nzsl::BackendParameters options;
 			options.debugLevel = nzsl::DebugLevel::Regular;
 
 			ExpectGLSL(*shaderModule, R"(
@@ -603,7 +603,7 @@ void main()
 		
 		WHEN("Generating with full debug info")
 		{
-			nzsl::ShaderWriter::States options;
+			nzsl::BackendParameters options;
 			options.debugLevel = nzsl::DebugLevel::Full;
 
 			ExpectGLSL(*shaderModule, R"(

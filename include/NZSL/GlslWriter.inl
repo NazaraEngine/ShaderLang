@@ -9,8 +9,8 @@ namespace nzsl
 	{
 	}
 
-	inline auto GlslWriter::Generate(Ast::Module& shader, const Parameters& parameters, const States& states) -> Output
+	inline auto GlslWriter::Generate(Ast::Module& shader, const BackendParameters& parameters, const Parameters& glslParameters) -> Output
 	{
-		return Generate(std::nullopt, shader, parameters, states);
+		return Generate(std::nullopt, shader, parameters, glslParameters);
 	}
 }

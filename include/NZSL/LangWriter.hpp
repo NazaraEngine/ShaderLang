@@ -7,8 +7,8 @@
 #ifndef NZSL_LANGWRITER_HPP
 #define NZSL_LANGWRITER_HPP
 
+#include <NZSL/BackendParameters.hpp>
 #include <NZSL/Config.hpp>
-#include <NZSL/ShaderWriter.hpp>
 #include <NZSL/Ast/ExpressionVisitorExcept.hpp>
 #include <NZSL/Ast/Module.hpp>
 #include <NZSL/Ast/StatementVisitorExcept.hpp>
@@ -16,7 +16,7 @@
 
 namespace nzsl
 {
-	class NZSL_API LangWriter : public ShaderWriter, public Ast::ExpressionVisitorExcept, public Ast::StatementVisitorExcept
+	class NZSL_API LangWriter : Ast::ExpressionVisitorExcept, Ast::StatementVisitorExcept
 	{
 		public:
 			struct Environment;
@@ -26,7 +26,7 @@ namespace nzsl
 			LangWriter(LangWriter&&) = delete;
 			~LangWriter() = default;
 
-			std::string Generate(Ast::Module& module, const States& states = {});
+			std::string Generate(const Ast::Module& module);
 
 			void SetEnv(Environment environment);
 
