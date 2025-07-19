@@ -11,7 +11,7 @@
 
 #include <CNZSL/Config.h>
 #include <CNZSL/Module.h>
-#include <CNZSL/WriterStates.h>
+#include <CNZSL/BackendParameters.h>
 #include <stddef.h>
 
 #ifdef __cplusplus
@@ -25,7 +25,7 @@ typedef struct nzslLangOutput nzslLangOutput;
 CNZSL_API nzslLangWriter* nzslLangWriterCreate(void);
 CNZSL_API void nzslLangWriterDestroy(nzslLangWriter* writerPtr);
 
-CNZSL_API nzslLangOutput* nzslLangWriterGenerate(nzslLangWriter* writerPtr, const nzslModule* modulePtr, const nzslWriterStates* statesPtr);
+CNZSL_API nzslLangOutput* nzslLangWriterGenerate(nzslLangWriter* writerPtr, const nzslModule* modulePtr);
 
 /** 
 **  Gets the last error message set by the last operation to this writer

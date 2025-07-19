@@ -349,8 +349,9 @@ namespace nzsl
 
 	struct GlslWriter::State
 	{
-		State(const GlslWriter::Parameters& parameters) :
-		writerParameters(parameters)
+		State(const BackendParameters& backendParameters, const GlslWriter::Parameters& glslParameters) :
+		backendParameters(backendParameters),
+		glslParameters(glslParameters)
 		{
 		}
 
@@ -377,10 +378,10 @@ namespace nzsl
 		std::unordered_map<std::string, unsigned int> explicitUniformBlockBinding;
 		std::unordered_set<std::string> reservedNames;
 		Nz::Bitset<> declaredFunctions;
-		const GlslWriter::Parameters& writerParameters;
+		const BackendParameters& backendParameters;
+		const GlslWriter::Parameters& glslParameters;
 		GlslWriterPreVisitor previsitor;
 		ShaderStageType stage;
-		const States* states = nullptr;
 		bool requiresExplicitUniformBinding = false;
 		bool supportsVaryingLocations = true;
 		bool isInEntryPoint = false;
@@ -392,23 +393,36 @@ namespace nzsl
 		unsigned int indentLevel = 0;
 	};
 
-	auto GlslWriter::Generate(std::optional<ShaderStageType> shaderStage, Ast::Module& module, const Parameters& parameters, const States& states) -> GlslWriter::Output
+	auto GlslWriter::Generate(std::optional<ShaderStageType> shaderStage, Ast::Module& module, const BackendParameters& parameters, const Parameters& glslParameters) -> GlslWriter::Output
 	{
-		State state(parameters);
-		state.states = &states;
+		State state(parameters, glslParameters);
 
 		m_currentState = &state;
 		NAZARA_DEFER({ m_currentState = nullptr; });
 
-		Ast::TransformerExecutor executor = GetPasses(states.resolve, states.validate);
-		executor.Transform(module);
-
-		if (states.optimize)
+		if (parameters.backendPasses)
 		{
-			Ast::Transformer::Context context;
-			Ast::ConstantPropagationTransformer constantPropagation;
-			constantPropagation.Transform(module, context);
+			Ast::TransformerExecutor executor;
+			if (parameters.backendPasses.Test(BackendPass::Resolve))
+				executor.AddPass<Ast::ResolveTransformer>({ parameters.shaderModuleResolver, true });
 
+			if (parameters.backendPasses.Test(BackendPass::TargetRequired))
+				RegisterPasses(executor);
+
+			if (parameters.backendPasses.Test(BackendPass::Optimize))
+				executor.AddPass<Ast::ConstantPropagationTransformer>();
+
+			if (parameters.backendPasses.Test(BackendPass::Validate))
+				executor.AddPass<Ast::ValidationTransformer>();
+
+			Ast::Transformer::Context context;
+			context.optionValues = parameters.optionValues;
+
+			executor.Transform(module, context);
+		}
+
+		if (parameters.backendPasses.Test(BackendPass::RemoveDeadCode))
+		{
 			Ast::DependencyCheckerVisitor::Config dependencyConfig;
 			dependencyConfig.usedShaderStages = (shaderStage) ? *shaderStage : ShaderStageType_All; //< only one should exist anyway
 
@@ -458,7 +472,7 @@ namespace nzsl
 
 		for (const auto& importedModule : module.importedModules)
 		{
-			if (m_currentState->states->debugLevel >= DebugLevel::Minimal)
+			if (m_currentState->backendParameters.debugLevel >= DebugLevel::Minimal)
 			{
 				AppendComment("Module " + importedModule.module->metadata->moduleName);
 				AppendModuleComments(*importedModule.module);
@@ -471,7 +485,7 @@ namespace nzsl
 			AppendLine();
 		}
 
-		if (m_currentState->states->debugLevel >= DebugLevel::Minimal)
+		if (m_currentState->backendParameters.debugLevel >= DebugLevel::Minimal)
 		{
 			if (!module.importedModules.empty())
 				AppendComment("Main module");
@@ -519,7 +533,7 @@ namespace nzsl
 		return s_glslWriterFlipYUniformName;
 	}
 
-	Ast::TransformerExecutor GlslWriter::GetPasses(bool resolve, bool validate)
+	void GlslWriter::RegisterPasses(Ast::TransformerExecutor& executor)
 	{
 		static constexpr auto s_reservedKeywords = frozen::make_unordered_set<frozen::string>({
 			// All reserved GLSL keywords as of GLSL ES 3.2
@@ -580,13 +594,6 @@ namespace nzsl
 			return nameChanged;
 		};
 
-		Ast::TransformerExecutor executor;
-		if (resolve)
-			executor.AddPass<Ast::ResolveTransformer>({ nullptr, true });
-		
-		if (validate)
-			executor.AddPass<Ast::ValidationTransformer>();
-
 		executor.AddPass<Ast::IdentifierTransformer>(firstIdentifierPassOptions);
 		executor.AddPass<Ast::ForToWhileTransformer>();
 		executor.AddPass<Ast::StructAssignmentTransformer>({ false, true }); //< TODO: Only split for base uniforms/storage
@@ -594,8 +601,6 @@ namespace nzsl
 		executor.AddPass<Ast::BindingResolverTransformer>();
 		executor.AddPass<Ast::ConstantRemovalTransformer>({ false, true, true });
 		executor.AddPass<Ast::IdentifierTransformer>(secondIdentifierPassOptions);
-
-		return executor;
 	}
 
 	void GlslWriter::Append(const Ast::AliasType& /*aliasType*/)
@@ -1036,7 +1041,7 @@ namespace nzsl
 		AppendLine();
 
 		// Comments
-		if (m_currentState->states->debugLevel >= DebugLevel::Minimal)
+		if (m_currentState->backendParameters.debugLevel >= DebugLevel::Minimal)
 		{
 			std::string fileTitle;
 
@@ -1318,7 +1323,7 @@ namespace nzsl
 			}
 		}
 		
-		if (m_currentState->states->debugLevel >= DebugLevel::Minimal)
+		if (m_currentState->backendParameters.debugLevel >= DebugLevel::Minimal)
 		{
 			AppendLine("// header end");
 			AppendLine();
@@ -1384,7 +1389,7 @@ namespace nzsl
 	{
 		const auto& metadata = *module.metadata;
 
-		if (m_currentState->states->debugLevel >= DebugLevel::Regular)
+		if (m_currentState->backendParameters.debugLevel >= DebugLevel::Regular)
 		{
 			const SourceLocation& rootLocation = module.rootNode->sourceLocation;
 
@@ -1392,7 +1397,7 @@ namespace nzsl
 			if (rootLocation.file)
 			{
 				AppendComment("from " + *rootLocation.file);
-				if (m_currentState->states->debugLevel >= DebugLevel::Full)
+				if (m_currentState->backendParameters.debugLevel >= DebugLevel::Full)
 				{
 					// Try to embed source code
 					std::ifstream file(Nz::Utf8Path(*rootLocation.file));
@@ -1544,7 +1549,7 @@ namespace nzsl
 				}
 				else
 				{
-					if (empty && m_currentState->states->debugLevel >= DebugLevel::Minimal)
+					if (empty && m_currentState->backendParameters.debugLevel >= DebugLevel::Minimal)
 						AppendCommentSection((in) ? "Inputs" : "Outputs");
 
 					std::string varName = std::string(targetPrefix) + member.name;
@@ -1627,7 +1632,7 @@ namespace nzsl
 
 	void GlslWriter::HandleSourceLocation(const SourceLocation& sourceLocation, DebugLevel requiredLevel)
 	{
-		if (m_currentState->states->debugLevel < requiredLevel)
+		if (m_currentState->backendParameters.debugLevel < requiredLevel)
 			return;
 
 		if (!sourceLocation.IsValid())
@@ -2318,12 +2323,12 @@ namespace nzsl
 	{
 		HandleSourceLocation(node.sourceLocation, DebugLevel::Regular);
 
-		if (!node.tag.empty() && m_currentState->states->debugLevel >= DebugLevel::Minimal)
+		if (!node.tag.empty() && m_currentState->backendParameters.debugLevel >= DebugLevel::Minimal)
 			AppendComment("external block tag: " + node.tag);
 
 		for (const auto& externalVar : node.externalVars)
 		{
-			if (!externalVar.tag.empty() && m_currentState->states->debugLevel >= DebugLevel::Minimal)
+			if (!externalVar.tag.empty() && m_currentState->backendParameters.debugLevel >= DebugLevel::Minimal)
 				AppendComment("external var tag: " + externalVar.tag);
 
 			const Ast::ExpressionType& exprType = externalVar.type.GetResultingValue();
@@ -2354,7 +2359,7 @@ namespace nzsl
 					}
 				}
 
-				if (!structInfo.desc->tag.empty() && m_currentState->states->debugLevel >= DebugLevel::Minimal)
+				if (!structInfo.desc->tag.empty() && m_currentState->backendParameters.debugLevel >= DebugLevel::Minimal)
 					AppendComment("struct tag: " + structInfo.desc->tag);
 			}
 
@@ -2398,7 +2403,7 @@ namespace nzsl
 
 			if (!IsPushConstantType(exprType))
 			{
-				if (!m_currentState->writerParameters.bindingMapping.empty())
+				if (!m_currentState->glslParameters.bindingMapping.empty())
 				{
 					assert(externalVar.bindingIndex.HasValue());
 
@@ -2409,8 +2414,8 @@ namespace nzsl
 					else
 						bindingSet = 0;
 
-					auto bindingIt = m_currentState->writerParameters.bindingMapping.find(bindingSet << 32 | bindingIndex);
-					if (bindingIt == m_currentState->writerParameters.bindingMapping.end())
+					auto bindingIt = m_currentState->glslParameters.bindingMapping.find(bindingSet << 32 | bindingIndex);
+					if (bindingIt == m_currentState->glslParameters.bindingMapping.end())
 						throw std::runtime_error("no binding found for (set=" + std::to_string(bindingSet) + ", binding=" + std::to_string(bindingIndex) + ")");
 
 					unsigned int glslBindingIndex = bindingIt->second;
@@ -2432,15 +2437,15 @@ namespace nzsl
 					}
 				}
 			}
-			else if (m_currentState->writerParameters.pushConstantBinding.has_value())
+			else if (m_currentState->glslParameters.pushConstantBinding.has_value())
 			{
 				if (!m_currentState->requiresExplicitUniformBinding)
 				{
 					BeginLayout();
-					Append("binding = ", *m_currentState->writerParameters.pushConstantBinding);
+					Append("binding = ", *m_currentState->glslParameters.pushConstantBinding);
 				}
 				else
-					m_currentState->explicitUniformBlockBinding.emplace(s_glslWriterPushConstantPrefix, *m_currentState->writerParameters.pushConstantBinding);
+					m_currentState->explicitUniformBlockBinding.emplace(s_glslWriterPushConstantPrefix, *m_currentState->glslParameters.pushConstantBinding);
 			}
 
 			if (IsTextureType(exprType))
@@ -2511,7 +2516,7 @@ namespace nzsl
 
 						first = false;
 
-						if (!member.tag.empty() && m_currentState->states->debugLevel >= DebugLevel::Minimal)
+						if (!member.tag.empty() && m_currentState->backendParameters.debugLevel >= DebugLevel::Minimal)
 							AppendComment("member tag: " + member.tag);
 
 						AppendVariableDeclaration(member.type.GetResultingValue(), member.name);
@@ -2601,7 +2606,7 @@ namespace nzsl
 		// Don't output structs used for UBO/SSBO description
 		if (m_currentState->previsitor.bufferStructs.UnboundedTest(*node.structIndex))
 		{
-			if (m_currentState->states->debugLevel >= DebugLevel::Minimal)
+			if (m_currentState->backendParameters.debugLevel >= DebugLevel::Minimal)
 				AppendComment("struct " + structName + " omitted (used as UBO/SSBO)");
 
 			return;
@@ -2609,7 +2614,7 @@ namespace nzsl
 
 		HandleSourceLocation(node.sourceLocation, DebugLevel::Regular);
 
-		if (!node.description.tag.empty() && m_currentState->states->debugLevel >= DebugLevel::Minimal)
+		if (!node.description.tag.empty() && m_currentState->backendParameters.debugLevel >= DebugLevel::Minimal)
 			AppendComment("struct tag: " + node.description.tag);
 
 		Append("struct ");
@@ -2627,7 +2632,7 @@ namespace nzsl
 
 				first = false;
 
-				if (!member.tag.empty() && m_currentState->states->debugLevel >= DebugLevel::Minimal)
+				if (!member.tag.empty() && m_currentState->backendParameters.debugLevel >= DebugLevel::Minimal)
 					AppendComment("member tag: " + member.tag);
 
 				AppendVariableDeclaration(member.type.GetResultingValue(), member.name);

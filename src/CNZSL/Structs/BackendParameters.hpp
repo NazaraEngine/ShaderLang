@@ -7,9 +7,9 @@
 #ifndef CNZSL_STRUCTS_WRITERSTATES_HPP
 #define CNZSL_STRUCTS_WRITERSTATES_HPP
 
-#include <NZSL/ShaderWriter.hpp>
+#include <NZSL/BackendParameters.hpp>
 
-struct nzslWriterStates : nzsl::ShaderWriter::States
+struct nzslBackendParameters : nzsl::BackendParameters
 {
 };
 

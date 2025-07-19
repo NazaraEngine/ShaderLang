@@ -24,11 +24,8 @@ void ParseSerializeDeserialize(std::string_view sourceCode, bool resolve)
 
 	// Text serialisation
 	{
-		nzsl::LangWriter::States states;
-		states.resolve = false;
-
 		nzsl::LangWriter langWriter;
-		std::string output = langWriter.Generate(*shaderModule, states);
+		std::string output = langWriter.Generate(*shaderModule);
 
 		nzsl::Ast::ModulePtr reparsedShader;
 		REQUIRE_NOTHROW(reparsedShader = nzsl::Parse(output));

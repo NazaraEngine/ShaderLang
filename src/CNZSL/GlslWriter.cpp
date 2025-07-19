@@ -7,7 +7,7 @@
 #include <CNZSL/Structs/GlslOutput.hpp>
 #include <CNZSL/Structs/GlslWriter.hpp>
 #include <CNZSL/Structs/Module.hpp>
-#include <CNZSL/Structs/WriterStates.hpp>
+#include <CNZSL/Structs/BackendParameters.hpp>
 #include <NZSL/GlslWriter.hpp>
 #include <fmt/format.h>
 #include <string>
@@ -48,16 +48,16 @@ extern "C"
 		delete writerPtr;
 	}
 
-	CNZSL_API nzslGlslOutput* nzslGlslWriterGenerate(nzslGlslWriter* writerPtr, const nzslModule* modulePtr, const nzslGlslWriterParameters* parameters, const nzslWriterStates* statesPtr)
+	CNZSL_API nzslGlslOutput* nzslGlslWriterGenerate(nzslGlslWriter* writerPtr, nzslModule* modulePtr, const nzslBackendParameters* backendParametersPtr, const nzslGlslWriterParameters* parameterPtr)
 	{
 		try
 		{
-			nzsl::GlslWriter::States states;
-			if (statesPtr)
-				states = static_cast<const nzsl::GlslWriter::States&>(*statesPtr);
+			nzsl::BackendParameters parameters;
+			if (backendParametersPtr)
+				parameters = static_cast<const nzsl::BackendParameters&>(*backendParametersPtr);
 
 			std::unique_ptr<nzslGlslOutput> output = std::make_unique<nzslGlslOutput>();
-			static_cast<nzsl::GlslWriter::Output&>(*output) = writerPtr->writer.Generate(*modulePtr->module, parameters->parameters, states);
+			static_cast<nzsl::GlslWriter::Output&>(*output) = writerPtr->writer.Generate(*modulePtr->module, parameters, parameterPtr->parameters);
 
 			return output.release();
 		}
@@ -73,7 +73,7 @@ extern "C"
 		}
 	}
 
-	CNZSL_API nzslGlslOutput* nzslGlslWriterGenerateStage(nzslGlslWriter* writerPtr, nzslShaderStageType stage, const nzslModule* modulePtr, const nzslGlslWriterParameters* parameters, const nzslWriterStates* statesPtr)
+	CNZSL_API nzslGlslOutput* nzslGlslWriterGenerateStage(nzslGlslWriter* writerPtr, nzslShaderStageType stage, nzslModule* modulePtr, const nzslBackendParameters* backendParametersPtr, const nzslGlslWriterParameters* parameterPtr)
 	{
 		try
 		{
@@ -83,12 +83,12 @@ extern "C"
 				nzsl::ShaderStageType::Vertex    // NZSL_STAGE_VERTEX
 			};
 
-			nzsl::GlslWriter::States states;
-			if (statesPtr)
-				states = static_cast<const nzsl::GlslWriter::States&>(*statesPtr);
+			nzsl::BackendParameters parameters;
+			if (backendParametersPtr)
+				parameters = static_cast<const nzsl::BackendParameters&>(*backendParametersPtr);
 
 			std::unique_ptr<nzslGlslOutput> output = std::make_unique<nzslGlslOutput>();
-			static_cast<nzsl::GlslWriter::Output&>(*output) = writerPtr->writer.Generate(s_shaderStages[stage], *modulePtr->module, parameters->parameters, states);
+			static_cast<nzsl::GlslWriter::Output&>(*output) = writerPtr->writer.Generate(s_shaderStages[stage], *modulePtr->module, parameters, parameterPtr->parameters);
 
 			return output.release();
 		}

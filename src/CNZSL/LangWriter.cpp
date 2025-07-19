@@ -6,7 +6,7 @@
 #include <CNZSL/Structs/LangOutput.hpp>
 #include <CNZSL/Structs/LangWriter.hpp>
 #include <CNZSL/Structs/Module.hpp>
-#include <CNZSL/Structs/WriterStates.hpp>
+#include <CNZSL/Structs/BackendParameters.hpp>
 #include <NZSL/LangWriter.hpp>
 #include <fmt/format.h>
 #include <string>
@@ -23,16 +23,12 @@ extern "C"
 		delete writerPtr;
 	}
 
-	CNZSL_API nzslLangOutput* nzslLangWriterGenerate(nzslLangWriter* writerPtr, const nzslModule* modulePtr, const nzslWriterStates* statesPtr)
+	CNZSL_API nzslLangOutput* nzslLangWriterGenerate(nzslLangWriter* writerPtr, const nzslModule* modulePtr)
 	{
 		try
 		{
-			nzsl::LangWriter::States states;
-			if (statesPtr)
-				states = static_cast<const nzsl::LangWriter::States&>(*statesPtr);
-
 			std::unique_ptr<nzslLangOutput> output = std::make_unique<nzslLangOutput>();
-			output->code = writerPtr->writer.Generate(*modulePtr->module, states);
+			output->code = writerPtr->writer.Generate(*modulePtr->module);
 
 			return output.release();
 		}

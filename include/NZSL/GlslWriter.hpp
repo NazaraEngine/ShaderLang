@@ -7,8 +7,8 @@
 #ifndef NZSL_GLSLWRITER_HPP
 #define NZSL_GLSLWRITER_HPP
 
+#include <NZSL/BackendParameters.hpp>
 #include <NZSL/Config.hpp>
-#include <NZSL/ShaderWriter.hpp>
 #include <NZSL/Ast/ExpressionVisitorExcept.hpp>
 #include <NZSL/Ast/Module.hpp>
 #include <NZSL/Ast/StatementVisitorExcept.hpp>
@@ -20,7 +20,7 @@
 
 namespace nzsl
 {
-	class NZSL_API GlslWriter : public ShaderWriter, public Ast::ExpressionVisitorExcept, public Ast::StatementVisitorExcept
+	class NZSL_API GlslWriter : Ast::ExpressionVisitorExcept, Ast::StatementVisitorExcept
 	{
 		public:
 			using ExtSupportCallback = std::function<bool(std::string_view name)>;
@@ -33,8 +33,8 @@ namespace nzsl
 			GlslWriter(GlslWriter&&) = delete;
 			~GlslWriter() = default;
 
-			inline Output Generate(Ast::Module& module, const Parameters& parameters = {}, const States& states = {});
-			Output Generate(std::optional<ShaderStageType> shaderStage, Ast::Module& module, const Parameters& parameters = {}, const States& states = {});
+			inline Output Generate(Ast::Module& module, const BackendParameters& parameters = {}, const Parameters& glslParameters = {});
+			Output Generate(std::optional<ShaderStageType> shaderStage, Ast::Module& module, const BackendParameters& parameters = {}, const Parameters& glslParameters = {});
 
 			void SetEnv(Environment environment);
 
@@ -69,7 +69,7 @@ namespace nzsl
 			static std::string_view GetDrawParameterBaseVertexUniformName();
 			static std::string_view GetDrawParameterDrawIndexUniformName();
 			static std::string_view GetFlipYUniformName();
-			static Ast::TransformerExecutor GetPasses(bool resolve, bool validate);
+			static void RegisterPasses(Ast::TransformerExecutor& executor);
 
 		private:
 			void Append(const Ast::AliasType& aliasType);

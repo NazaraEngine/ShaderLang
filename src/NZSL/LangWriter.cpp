@@ -8,8 +8,6 @@
 #include <NZSL/Enums.hpp>
 #include <NZSL/Lexer.hpp>
 #include <NZSL/Parser.hpp>
-#include <NZSL/ShaderBuilder.hpp>
-#include <NZSL/Ast/Cloner.hpp>
 #include <NZSL/Ast/RecursiveVisitor.hpp>
 #include <NZSL/Ast/Utils.hpp>
 #include <NZSL/Lang/LangData.hpp>
@@ -197,14 +195,13 @@ namespace nzsl
 		std::unordered_map<std::size_t, Identifier> variables;
 		std::vector<std::string> externalBlockNames;
 		std::vector<std::string> moduleNames;
-		const States* states = nullptr;
 		const Ast::Module* module;
 		bool isInEntryPoint = false;
 		int streamEmptyLine = 1;
 		unsigned int indentLevel = 0;
 	};
 
-	std::string LangWriter::Generate(Ast::Module& module, const States& /*states*/)
+	std::string LangWriter::Generate(const Ast::Module& module)
 	{
 		State state;
 		m_currentState = &state;

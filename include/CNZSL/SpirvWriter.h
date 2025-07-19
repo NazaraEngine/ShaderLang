@@ -11,7 +11,7 @@
 
 #include <CNZSL/Config.h>
 #include <CNZSL/Module.h>
-#include <CNZSL/WriterStates.h>
+#include <CNZSL/BackendParameters.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -32,7 +32,7 @@ typedef struct
 CNZSL_API nzslSpirvWriter* nzslSpirvWriterCreate(void);
 CNZSL_API void nzslSpirvWriterDestroy(nzslSpirvWriter* writerPtr);
 
-CNZSL_API nzslSpirvOutput* nzslSpirvWriterGenerate(nzslSpirvWriter* writerPtr, const nzslModule* modulePtr, const nzslWriterStates* statesPtr);
+CNZSL_API nzslSpirvOutput* nzslSpirvWriterGenerate(nzslSpirvWriter* writerPtr, const nzslModule* modulePtr, const nzslBackendParameters* backendParameters);
 
 /** 
 **  Gets the last error message set by the last operation to this writer

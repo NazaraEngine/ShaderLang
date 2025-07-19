@@ -654,17 +654,31 @@ namespace nzsl
 	{
 	}
 
-	std::vector<std::uint32_t> SpirvWriter::Generate(Ast::Module& module, const States& states)
+	std::vector<std::uint32_t> SpirvWriter::Generate(Ast::Module& module, const BackendParameters& parameters)
 	{
-		Ast::TransformerExecutor executor = GetPasses(states.resolve, states.validate);
-		executor.Transform(module);
-
-		if (states.optimize)
+		if (parameters.backendPasses.size() > 0)
 		{
-			Ast::Transformer::Context context;
-			Ast::ConstantPropagationTransformer constantPropagation;
-			constantPropagation.Transform(module, context);
+			Ast::TransformerExecutor executor;
+			if (parameters.backendPasses.Test(BackendPass::Resolve))
+				executor.AddPass<Ast::ResolveTransformer>({ parameters.shaderModuleResolver, true });
 
+			if (parameters.backendPasses.Test(BackendPass::TargetRequired))
+				RegisterPasses(executor);
+
+			if (parameters.backendPasses.Test(BackendPass::Optimize))
+				executor.AddPass<Ast::ConstantPropagationTransformer>();
+
+			if (parameters.backendPasses.Test(BackendPass::Validate))
+				executor.AddPass<Ast::ValidationTransformer>();
+
+			Ast::Transformer::Context context;
+			context.optionValues = parameters.optionValues;
+
+			executor.Transform(module, context);
+		}
+
+		if (parameters.backendPasses.Test(BackendPass::RemoveDeadCode))
+		{
 			Ast::DependencyCheckerVisitor::Config dependencyConfig;
 			dependencyConfig.usedShaderStages = ShaderStageType_All;
 
@@ -673,7 +687,7 @@ namespace nzsl
 
 		// Previsitor
 
-		m_context.states = &states;
+		m_context.parameters = &parameters;
 
 		State state(*this);
 		m_currentState = &state;
@@ -718,9 +732,9 @@ namespace nzsl
 		}
 		previsitor.funcs.clear(); //< since we moved every value, prevent further usage
 
-		if (states.debugLevel >= DebugLevel::Regular)
+		if (parameters.debugLevel >= DebugLevel::Regular)
 		{
-			auto RegisterSourceFile = [this, &states](const Ast::Module& module)
+			auto RegisterSourceFile = [this, &parameters](const Ast::Module& module)
 			{
 				const SourceLocation& rootLocation = module.rootNode->sourceLocation;
 
@@ -731,7 +745,7 @@ namespace nzsl
 					fileId = m_currentState->constantTypeCache.Register(*rootLocation.file);
 					m_currentState->sourceFiles.emplace(rootLocation.file, fileId);
 
-					if (states.debugLevel >= DebugLevel::Full)
+					if (parameters.debugLevel >= DebugLevel::Full)
 					{
 						std::ifstream file(Nz::Utf8Path(*rootLocation.file));
 						if (file)
@@ -780,7 +794,7 @@ namespace nzsl
 			for (const auto& importedModule : module.importedModules)
 				RegisterSourceFile(*importedModule.module);
 		}
-		else if (states.debugLevel >= DebugLevel::Minimal)
+		else if (parameters.debugLevel >= DebugLevel::Minimal)
 			m_currentState->constantTypeCache.RegisterSource(SpirvSourceLanguage::NZSL, module.metadata->shaderLangVersion);
 
 		auto funcDataRetriever = [&](std::size_t funcIndex) -> SpirvAstVisitor::FuncData&
@@ -824,9 +838,9 @@ namespace nzsl
 		for (auto&& [varId, interp] : previsitor.interpolationDecorations)
 			state.annotations.Append(SpirvOp::OpDecorate, varId, interp);
 
-		m_currentState->constantTypeCache.Write(m_currentState->annotations, m_currentState->constants, m_currentState->debugInfo, states.debugLevel);
+		m_currentState->constantTypeCache.Write(m_currentState->annotations, m_currentState->constants, m_currentState->debugInfo, parameters.debugLevel);
 
-		if (m_context.states->debugLevel >= DebugLevel::Minimal)
+		if (m_context.parameters->debugLevel >= DebugLevel::Minimal)
 		{
 			for (auto&& [funcIndex, func] : m_currentState->funcs)
 				m_currentState->debugInfo.Append(SpirvOp::OpName, func.funcId, func.name);
@@ -877,15 +891,8 @@ namespace nzsl
 			return { 1, 0 };
 	}
 
-	Ast::TransformerExecutor SpirvWriter::GetPasses(bool resolve, bool validate)
+	void SpirvWriter::RegisterPasses(Ast::TransformerExecutor& executor)
 	{
-		Ast::TransformerExecutor executor;
-		if (resolve)
-			executor.AddPass<Ast::ResolveTransformer>({ nullptr, true });
-
-		if (validate)
-			executor.AddPass<Ast::ValidationTransformer>();
-
 		executor.AddPass<Ast::BranchSplitterTransformer>();
 		executor.AddPass<Ast::ForToWhileTransformer>();
 		executor.AddPass<Ast::StructAssignmentTransformer>({ true, true });
@@ -893,8 +900,6 @@ namespace nzsl
 		executor.AddPass<Ast::MatrixTransformer>({ true, true });
 		executor.AddPass<Ast::BindingResolverTransformer>();
 		executor.AddPass<Ast::ConstantRemovalTransformer>();
-
-		return executor;
 	}
 
 	std::uint32_t SpirvWriter::AllocateResultId()
@@ -1071,7 +1076,7 @@ namespace nzsl
 
 	bool SpirvWriter::HasDebugInfo(DebugLevel debugInfo) const
 	{
-		return m_context.states->debugLevel >= debugInfo;
+		return m_context.parameters->debugLevel >= debugInfo;
 	}
 
 	std::uint32_t SpirvWriter::RegisterArrayConstant(const Ast::ConstantArrayValue& value)
