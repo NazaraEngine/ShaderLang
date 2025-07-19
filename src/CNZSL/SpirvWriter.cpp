@@ -6,7 +6,7 @@
 #include <CNZSL/Structs/Module.hpp>
 #include <CNZSL/Structs/SpirvOutput.hpp>
 #include <CNZSL/Structs/SpirvWriter.hpp>
-#include <CNZSL/Structs/WriterStates.hpp>
+#include <CNZSL/Structs/BackendParameters.hpp>
 #include <NZSL/SpirvWriter.hpp>
 #include <fmt/format.h>
 #include <string>
@@ -23,16 +23,16 @@ extern "C"
 		delete writerPtr;
 	}
 
-	CNZSL_API nzslSpirvOutput* nzslSpirvWriterGenerate(nzslSpirvWriter* writerPtr, const nzslModule* modulePtr, const nzslWriterStates* statesPtr)
+	CNZSL_API nzslSpirvOutput* nzslSpirvWriterGenerate(nzslSpirvWriter* writerPtr, const nzslModule* modulePtr, const nzslBackendParameters* backendParameters)
 	{
 		try
 		{
-			nzsl::SpirvWriter::States states;
-			if (statesPtr)
-				states = static_cast<const nzsl::SpirvWriter::States&>(*statesPtr);
+			nzsl::BackendParameters parameters;
+			if (backendParameters)
+				parameters = static_cast<const nzsl::BackendParameters&>(*backendParameters);
 
 			std::unique_ptr<nzslSpirvOutput> output = std::make_unique<nzslSpirvOutput>();
-			output->spirv = writerPtr->writer.Generate(*modulePtr->module, states);
+			output->spirv = writerPtr->writer.Generate(*modulePtr->module, parameters);
 
 			return output.release();
 		}

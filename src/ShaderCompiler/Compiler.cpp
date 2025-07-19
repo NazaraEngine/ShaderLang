@@ -6,6 +6,7 @@
 #include <NazaraUtils/Algorithm.hpp>
 #include <NazaraUtils/CallOnExit.hpp>
 #include <NazaraUtils/PathUtils.hpp>
+#include <NZSL/BackendParameters.hpp>
 #include <NZSL/FilesystemModuleResolver.hpp>
 #include <NZSL/GlslWriter.hpp>
 #include <NZSL/LangWriter.hpp>
@@ -248,10 +249,12 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 		return options;
 	}
 
-	nzsl::ShaderWriter::States Compiler::BuildWriterOptions()
+	nzsl::BackendParameters Compiler::BuildWriterOptions()
 	{
-		nzsl::ShaderWriter::States states;
-		states.optimize = (m_options.count("optimize") > 0);
+		nzsl::BackendParameters parameters;
+
+		if (m_options.count("optimize"))
+			parameters.backendPasses |= nzsl::BackendPass::Optimize;
 
 		if (m_options.count("debug-level"))
 		{
@@ -261,10 +264,10 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 			if (it == s_debugLevels.end())
 				throw cxxopts::exceptions::specification("invalid debug-level " + debugLevelStr);
 
-			states.debugLevel = it->second;
+			parameters.debugLevel = it->second;
 		}
 
-		return states;
+		return parameters;
 	}
 
 	void Compiler::Compile()
@@ -430,11 +433,11 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 		if (entryTypes == 0)
 			throw std::runtime_error("shader has no entry function!");
 
-		nzsl::ShaderWriter::States states = BuildWriterOptions();
+		nzsl::BackendParameters backendParameters = BuildWriterOptions();
 
 		for (nzsl::ShaderStageType entryType : entryTypes)
 		{
-			nzsl::GlslWriter::Output output = writer.Generate(entryType, module, parameters, states);
+			nzsl::GlslWriter::Output output = writer.Generate(entryType, module, backendParameters, parameters);
 			if (m_skipOutput)
 				continue;
 
@@ -456,12 +459,10 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 		}
 	}
 
-	void Compiler::CompileToNZSL(std::filesystem::path outputPath, nzsl::Ast::Module& module)
+	void Compiler::CompileToNZSL(std::filesystem::path outputPath, const nzsl::Ast::Module& module)
 	{
-		nzsl::ShaderWriter::States states = BuildWriterOptions();
-
 		nzsl::LangWriter nzslWriter;
-		std::string nzsl = nzslWriter.Generate(module, states);
+		std::string nzsl = nzslWriter.Generate(module);
 		if (m_skipOutput)
 			return;
 
@@ -475,7 +476,7 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 		OutputFile(std::move(outputPath), nzsl.data(), nzsl.size());
 	}
 
-	void Compiler::CompileToNZSLB(std::filesystem::path outputPath, nzsl::Ast::Module& module)
+	void Compiler::CompileToNZSLB(std::filesystem::path outputPath, const nzsl::Ast::Module& module)
 	{
 		nzsl::Serializer serializer;
 		nzsl::Ast::SerializeShader(serializer, module);
@@ -516,7 +517,7 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 		nzsl::SpirvWriter writer;
 		writer.SetEnv(env);
 
-		nzsl::ShaderWriter::States states = BuildWriterOptions();
+		nzsl::BackendParameters states = BuildWriterOptions();
 
 		std::vector<std::uint32_t> spirv = writer.Generate(module, states);
 		std::size_t size = spirv.size() * sizeof(std::uint32_t);

@@ -7,22 +7,21 @@
 #ifndef NZSL_SPIRVWRITER_HPP
 #define NZSL_SPIRVWRITER_HPP
 
+#include <NZSL/BackendParameters.hpp>
 #include <NZSL/Config.hpp>
-#include <NZSL/ShaderWriter.hpp>
 #include <NZSL/Ast/ConstantValue.hpp>
 #include <NZSL/Ast/Module.hpp>
 #include <NZSL/Ast/TransformerExecutor.hpp>
 #include <NZSL/SpirV/SpirvConstantCache.hpp>
 #include <NZSL/SpirV/SpirvVariable.hpp>
 #include <string>
-#include <string_view>
 #include <unordered_map>
 
 namespace nzsl
 {
 	class SpirvSection;
 
-	class NZSL_API SpirvWriter : public ShaderWriter
+	class NZSL_API SpirvWriter
 	{
 		friend class SpirvAstVisitor;
 		friend class SpirvBlock;
@@ -39,7 +38,7 @@ namespace nzsl
 			SpirvWriter(SpirvWriter&&) = delete;
 			~SpirvWriter() = default;
 
-			std::vector<std::uint32_t> Generate(Ast::Module& module, const States& states = {});
+			std::vector<std::uint32_t> Generate(Ast::Module& module, const BackendParameters& parameters = {});
 
 			const SpirvVariable& GetConstantVariable(std::size_t constIndex) const;
 
@@ -54,7 +53,7 @@ namespace nzsl
 			};
 			
 			static std::pair<std::uint32_t, std::uint32_t> GetMaximumSupportedVersion(std::uint32_t vkMajorVersion, std::uint32_t vkMinorVersion);
-			static Ast::TransformerExecutor GetPasses(bool resolve, bool validate);
+			static void RegisterPasses(Ast::TransformerExecutor& executor);
 
 		private:
 			struct FunctionParameter;
@@ -91,7 +90,7 @@ namespace nzsl
 
 			struct Context
 			{
-				const States* states = nullptr;
+				const BackendParameters* parameters = nullptr;
 			};
 
 			struct State;
