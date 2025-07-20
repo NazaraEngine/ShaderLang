@@ -452,15 +452,16 @@ namespace nzsl::Ast
 	auto ResolveTransformer::FindIdentifier(const Environment& environment, std::string_view identifierName, F&& functor) const -> const IdentifierData*
 	{
 		auto it = std::find_if(environment.identifiersInScope.rbegin(), environment.identifiersInScope.rend(), [&](const Identifier& identifier)
+		{
+			if (identifier.name == identifierName)
 			{
-				if (identifier.name == identifierName)
-				{
-					if (functor(identifier.target))
-						return true;
-				}
+				if (functor(identifier.target))
+					return true;
+			}
 
-				return false;
-			});
+			return false;
+		});
+
 		if (it == environment.identifiersInScope.rend())
 		{
 			if (environment.parentEnv)
@@ -2669,6 +2670,8 @@ namespace nzsl::Ast
 		if (!declConst.expression)
 			throw CompilerConstMissingExpressionError{ declConst.sourceLocation };
 
+		HandleChildren(declConst);
+
 		std::optional<ExpressionType> constType;
 		if (declConst.type.HasValue())
 			constType = ResolveTypeExpr(declConst.type, false, declConst.sourceLocation);
@@ -2678,8 +2681,6 @@ namespace nzsl::Ast
 			if (!IsConstantType(ResolveAlias(*constType)))
 				throw CompilerExpectedConstantTypeError{ declConst.sourceLocation, ToString(*constType, declConst.sourceLocation) };
 		}
-
-		HandleChildren(declConst);
 
 		// Handle const alias
 		ExpressionType expressionType;
