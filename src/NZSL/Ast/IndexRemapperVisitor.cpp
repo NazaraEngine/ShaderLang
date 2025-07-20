@@ -409,11 +409,13 @@ namespace nzsl::Ast
 
 	void IndexRemapperVisitor::HandleType(ExpressionValue<ExpressionType>& exprType)
 	{
-		if (!exprType.IsResultingValue())
-			return;
-
-		const auto& resultingType = exprType.GetResultingValue();
-		exprType = RemapType(resultingType);
+		if (exprType.IsResultingValue())
+		{
+			const auto& resultingType = exprType.GetResultingValue();
+			exprType = RemapType(resultingType);
+		}
+		else if (exprType.IsExpression())
+			exprType.GetExpression()->Visit(*this);
 	}
 
 	ExpressionType IndexRemapperVisitor::RemapType(const ExpressionType& exprType)
