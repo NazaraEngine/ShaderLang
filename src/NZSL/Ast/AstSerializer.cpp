@@ -3,10 +3,10 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <NZSL/Ast/AstSerializer.hpp>
+#include <NazaraUtils/TypeTag.hpp>
 #include <NZSL/ShaderBuilder.hpp>
 #include <NZSL/Ast/ExpressionVisitor.hpp>
 #include <NZSL/Ast/StatementVisitor.hpp>
-#include <NazaraUtils/TypeTag.hpp>
 #include <fmt/format.h>
 
 namespace nzsl::Ast
@@ -371,7 +371,7 @@ namespace nzsl::Ast
 		if (IsVersionGreaterOrEqual(3))
 			Value(node.tag);
 
-		if (IsVersionGreaterOrEqual(12))
+		if (IsVersionGreaterOrEqual(13))
 			OptSizeT(node.externalIndex);
 
 		Container(node.externalVars);
@@ -409,7 +409,7 @@ namespace nzsl::Ast
 			OptSizeT(parameter.varIndex);
 			SourceLoc(parameter.sourceLocation);
 
-			if (IsVersionGreaterOrEqual(12))
+			if (IsVersionGreaterOrEqual(13))
 				Enum(parameter.semantic);
 		}
 
