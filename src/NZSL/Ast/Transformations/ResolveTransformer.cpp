@@ -1542,7 +1542,7 @@ namespace nzsl::Ast
 		HandleExpression(accessIdentifier.expr);
 		auto indexedExpr = std::move(accessIdentifier.expr);
 
-		auto Finish = [&](std::size_t index, const ExpressionType* exprType)
+		auto Finish = [&](std::size_t index)
 		{
 			auto identifierExpr = std::make_unique<AccessIdentifierExpression>();
 			identifierExpr->expr = std::move(indexedExpr);
@@ -1550,9 +1550,6 @@ namespace nzsl::Ast
 
 			for (std::size_t j = index; j < accessIdentifier.identifiers.size(); ++j)
 				identifierExpr->identifiers.emplace_back(accessIdentifier.identifiers[j]);
-
-			if (exprType)
-				identifierExpr->cachedExpressionType = *exprType;
 
 			return ReplaceExpression{ std::move(identifierExpr) };
 		};
@@ -1565,7 +1562,7 @@ namespace nzsl::Ast
 
 			const ExpressionType* exprType = GetExpressionType(*indexedExpr);
 			if (!exprType)
-				return Finish(i, exprType); //< unresolved type
+				return Finish(i); //< unresolved type
 
 			const ExpressionType& resolvedType = ResolveAlias(*exprType);
 			// TODO: Add proper support for methods
@@ -1676,7 +1673,7 @@ namespace nzsl::Ast
 				if (!fieldPtr)
 				{
 					if (s->conditionIndex != m_states->currentConditionalIndex)
-						return Finish(i, exprType); //< unresolved condition
+						return Finish(i); //< unresolved condition
 
 					throw CompilerUnknownFieldError{ indexedExpr->sourceLocation, identifierEntry.identifier };
 				}
@@ -1686,7 +1683,7 @@ namespace nzsl::Ast
 					if (!fieldPtr->cond.IsResultingValue())
 					{
 						if (m_context->partialCompilation)
-							return Finish(i, exprType); //< unresolved condition
+							return Finish(i); //< unresolved condition
 
 						throw CompilerConstantExpressionRequiredError{ fieldPtr->cond.GetExpression()->sourceLocation };
 					}
@@ -1707,7 +1704,7 @@ namespace nzsl::Ast
 				}
 
 				if (fieldIndex < 0)
-					return Finish(i, exprType); //< unresolved field
+					return Finish(i); //< unresolved field
 
 				// Transform to AccessFieldExpression
 				std::unique_ptr<AccessFieldExpression> accessField = std::make_unique<AccessFieldExpression>();
@@ -1748,16 +1745,16 @@ namespace nzsl::Ast
 				if (!identifierData)
 				{
 					if (m_context->allowUnknownIdentifiers)
-						return Finish(i, exprType); //< unresolved type
+						return Finish(i); //< unresolved identifier
 
 					throw CompilerUnknownIdentifierError{ accessIdentifier.sourceLocation, identifierEntry.identifier };
 				}
 
 				if (identifierData->category == IdentifierCategory::Unresolved)
-					return Finish(i, exprType); //< unresolved type
+					return Finish(i); //< unresolved identifier
 
 				if (m_context->partialCompilation && identifierData->conditionalIndex != m_states->currentConditionalIndex)
-					return Finish(i, exprType); //< unresolved type
+					return Finish(i); //< unresolved identifier
 
 				indexedExpr = HandleIdentifier(identifierData, identifierEntry.sourceLocation);
 			}
@@ -1772,16 +1769,16 @@ namespace nzsl::Ast
 				if (!identifierData)
 				{
 					if (m_context->allowUnknownIdentifiers)
-						return Finish(i, exprType); //< unresolved type
+						return Finish(i); //< unresolved identifier
 
 					throw CompilerUnknownIdentifierError{ accessIdentifier.sourceLocation, identifierEntry.identifier };
 				}
 
 				if (identifierData->category == IdentifierCategory::Unresolved)
-					return Finish(i, exprType); //< unresolved type
+					return Finish(i); //< unresolved identifier
 
 				if (m_context->partialCompilation && identifierData->conditionalIndex != m_states->currentConditionalIndex)
-					return Finish(i, exprType); //< unresolved type
+					return Finish(i); //< unresolved identifier
 
 				auto& dependencyCheckerPtr = m_states->modules[moduleId].dependenciesVisitor;
 				if (dependencyCheckerPtr) //< dependency checker can be null when performing partial compilation
