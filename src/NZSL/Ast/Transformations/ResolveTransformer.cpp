@@ -2700,6 +2700,8 @@ namespace nzsl::Ast
 
 			if (constantData.value)
 				expressionType = GetConstantType(*constantData.value);
+			else
+				return DontVisitChildren{}; //< referenced alias has not been resolved
 		}
 		else
 		{
