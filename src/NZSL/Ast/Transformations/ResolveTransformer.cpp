@@ -2563,7 +2563,7 @@ namespace nzsl::Ast
 			return ReplaceStatement{ std::move(branchStatement.elseStatement) };
 		}
 		else
-			return ReplaceStatement{ ShaderBuilder::NoOp() };
+			return RemoveStatement{};
 	}
 
 	auto ResolveTransformer::Transform(ConditionalStatement&& condStatement) -> StatementTransformation
@@ -2593,7 +2593,7 @@ namespace nzsl::Ast
 			return ReplaceStatement{ std::move(condStatement.statement) };
 		}
 		else
-			return ReplaceStatement{ ShaderBuilder::NoOp() };
+			return RemoveStatement{};
 	}
 
 	auto ResolveTransformer::Transform(DeclareAliasStatement&& declAlias) -> StatementTransformation
@@ -2654,7 +2654,7 @@ namespace nzsl::Ast
 
 		declAlias.aliasIndex = RegisterAlias(declAlias.name, std::move(aliasIdentifier), declAlias.aliasIndex, declAlias.sourceLocation);
 		if (m_options->removeAliases)
-			return ReplaceStatement{ ShaderBuilder::NoOp() };
+			return RemoveStatement{};
 
 		return DontVisitChildren{};
 	}
@@ -3603,7 +3603,7 @@ namespace nzsl::Ast
 			}
 
 			if (aliasStatements.empty() && constStatements.empty())
-				return ReplaceStatement{ ShaderBuilder::NoOp() };
+				return RemoveStatement{};
 		}
 		else
 			aliasStatements.emplace_back(ShaderBuilder::DeclareAlias(importStatement.moduleIdentifier, ShaderBuilder::ModuleExpr(moduleIndex)));
@@ -3616,7 +3616,7 @@ namespace nzsl::Ast
 			HandleStatement(constPtr);
 
 		if (m_options->removeAliases)
-			return ReplaceStatement{ ShaderBuilder::NoOp() };
+			return RemoveStatement{};
 
 		// Generate alias statements
 		MultiStatementPtr aliasBlock = std::make_unique<MultiStatement>();

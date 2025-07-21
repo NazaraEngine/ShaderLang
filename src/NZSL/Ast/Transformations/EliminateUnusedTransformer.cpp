@@ -47,7 +47,7 @@ namespace nzsl::Ast
 			throw AstExpectedIndexError{ node.sourceLocation, "alias" };
 
 		if (!IsAliasUsed(*node.aliasIndex))
-			return ReplaceStatement{ ShaderBuilder::NoOp() };
+			return RemoveStatement{};
 
 		return DontVisitChildren{};
 	}
@@ -58,7 +58,7 @@ namespace nzsl::Ast
 			throw AstExpectedIndexError{ node.sourceLocation, "const" };
 
 		if (!IsConstantUsed(*node.constIndex))
-			return ReplaceStatement{ ShaderBuilder::NoOp() };
+			return RemoveStatement{};
 
 		return DontVisitChildren{};
 	}
@@ -80,7 +80,7 @@ namespace nzsl::Ast
 		}
 
 		if (node.externalVars.empty())
-			return ReplaceStatement{ ShaderBuilder::NoOp() };
+			return RemoveStatement{};
 
 		return DontVisitChildren{};
 	}
@@ -91,7 +91,7 @@ namespace nzsl::Ast
 			throw AstExpectedIndexError{ node.sourceLocation, "function" };
 
 		if (!IsFunctionUsed(*node.funcIndex))
-			return ReplaceStatement{ ShaderBuilder::NoOp() };
+			return RemoveStatement{};
 
 		return VisitChildren{};
 	}
@@ -102,7 +102,7 @@ namespace nzsl::Ast
 			throw AstExpectedIndexError{ node.sourceLocation, "struct" };
 
 		if (!IsStructUsed(*node.structIndex))
-			return ReplaceStatement{ ShaderBuilder::NoOp() };
+			return RemoveStatement{};
 
 		return DontVisitChildren{};
 	}
@@ -113,7 +113,7 @@ namespace nzsl::Ast
 			throw AstExpectedIndexError{ node.sourceLocation, "variable" };
 
 		if (!IsVariableUsed(*node.varIndex))
-			return ReplaceStatement{ ShaderBuilder::NoOp() };
+			return RemoveStatement{};
 
 		return DontVisitChildren{};
 	}
