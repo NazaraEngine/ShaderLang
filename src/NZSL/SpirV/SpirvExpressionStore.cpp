@@ -16,7 +16,7 @@ namespace nzsl
 	void SpirvExpressionStore::Store(Ast::ExpressionPtr& node, std::uint32_t resultId)
 	{
 		node->Visit(*this);
-		
+
 		std::visit(Nz::Overloaded
 		{
 			[&](const Pointer& pointer)

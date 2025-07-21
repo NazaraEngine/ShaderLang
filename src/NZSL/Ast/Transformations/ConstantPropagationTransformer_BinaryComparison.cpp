@@ -158,7 +158,7 @@ namespace nzsl::Ast
 
 #undef EnableOptimisation
 	}
-	
+
 	ExpressionPtr ConstantPropagationTransformer::PropagateBinaryComparisonConstant(BinaryType type, const ConstantValueExpression& lhs, const ConstantValueExpression& rhs, const SourceLocation& sourceLocation)
 	{
 		switch (type)

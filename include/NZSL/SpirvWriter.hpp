@@ -51,7 +51,7 @@ namespace nzsl
 				std::uint32_t spvMajorVersion = 1;
 				std::uint32_t spvMinorVersion = 0;
 			};
-			
+
 			static std::pair<std::uint32_t, std::uint32_t> GetMaximumSupportedVersion(std::uint32_t vkMajorVersion, std::uint32_t vkMinorVersion);
 			static void RegisterPasses(Ast::TransformerExecutor& executor);
 

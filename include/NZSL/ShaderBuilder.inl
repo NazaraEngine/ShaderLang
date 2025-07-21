@@ -225,7 +225,7 @@ namespace nzsl::ShaderBuilder
 
 		throw std::runtime_error("unexpected primitive type");
 	}
-	
+
 	template<typename T>
 	Ast::ConstantValueExpressionPtr Impl::ConstantValue::operator()(Ast::ExpressionType type, T value, const SourceLocation& sourceLocation) const
 	{

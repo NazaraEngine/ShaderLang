@@ -200,7 +200,7 @@ namespace nzsl::Ast
 				{
 					T value;
 					Value(value);
-					
+
 					values[i] = std::move(value);
 				}
 			}
@@ -457,7 +457,7 @@ namespace nzsl::Ast
 				ExprValue(member.interp);
 		}
 	}
-	
+
 	void SerializerBase::Serialize(DeclareVariableStatement& node)
 	{
 		OptSizeT(node.varIndex);
@@ -562,7 +562,7 @@ namespace nzsl::Ast
 
 		SerializeModule(const_cast<Module&>(module)); //< won't be used for writing
 	}
-	
+
 	bool ShaderAstSerializer::IsVersionGreaterOrEqual(std::uint32_t /*version*/) const
 	{
 		return true; //< we're writing the last binary version
@@ -596,7 +596,7 @@ namespace nzsl::Ast
 			node->Visit(visitor);
 		}
 	}
-	
+
 	void ShaderAstSerializer::SerializeModule(Module& module)
 	{
 		Metadata(const_cast<Module::Metadata&>(*module.metadata)); //< won't be used for writing
@@ -1108,7 +1108,7 @@ NAZARA_WARNING_GCC_DISABLE("-Wmaybe-uninitialized")
 				type = std::move(aliasType);
 				break;
 			}
-			
+
 			case 14: //< StorageType
 			{
 				AccessPolicy accessPolicy = AccessPolicy::ReadWrite;

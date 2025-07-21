@@ -249,7 +249,7 @@ namespace nzsl::Ast
 
 		return true;
 	}
-	
+
 	inline bool Compare(const ImportStatement::Identifier& lhs, const ImportStatement::Identifier& rhs, const ComparisonParams& params)
 	{
 		if (!Compare(lhs.identifier, rhs.identifier, params))
@@ -459,7 +459,7 @@ namespace nzsl::Ast
 
 		return true;
 	}
-	
+
 	bool Compare(const ConstantArrayValueExpression& lhs, const ConstantArrayValueExpression& rhs, const ComparisonParams& params)
 	{
 		if (!Compare(lhs.values, rhs.values, params))
@@ -813,7 +813,7 @@ namespace nzsl::Ast
 
 				break;
 			}
-			
+
 			if (it2 == rhs.statements.end())
 				return false;
 

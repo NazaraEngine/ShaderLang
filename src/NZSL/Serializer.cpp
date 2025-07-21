@@ -141,7 +141,7 @@ namespace nzsl
 
 		value = Nz::BitCast<std::int8_t>(v);
 	}
-	
+
 	void AbstractDeserializer::Deserialize(std::int16_t& value)
 	{
 		std::uint16_t v;
@@ -149,7 +149,7 @@ namespace nzsl
 
 		value = Nz::BitCast<std::int16_t>(v);
 	}
-	
+
 	void AbstractDeserializer::Deserialize(std::int32_t& value)
 	{
 		std::uint32_t v;
@@ -234,7 +234,7 @@ namespace nzsl
 	std::size_t Serializer::Serialize(const void* data, std::size_t size)
 	{
 		const std::uint8_t* ptr = reinterpret_cast<const std::uint8_t*>(data);
-		
+
 		std::size_t offset = m_data.size();
 		if (data)
 			m_data.insert(m_data.end(), ptr, ptr + size);

@@ -617,7 +617,7 @@ namespace nzsl::Ast
 			*error = e.what();
 			return false;
 		}
-		
+
 		return true;
 	}
 
@@ -653,7 +653,7 @@ namespace nzsl::Ast
 			*error = e.what();
 			return false;
 		}
-		
+
 		return true;
 	}
 
@@ -673,7 +673,7 @@ namespace nzsl::Ast
 			*error = e.what();
 			return false;
 		}
-		
+
 		return true;
 	}
 

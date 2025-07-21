@@ -85,7 +85,7 @@ namespace nzsl
 		public:
 			inline LexingError(SourceLocation sourceLocation, ErrorType errorType) noexcept;
 	};
-	
+
 	class ParsingError : public Error
 	{
 		public:

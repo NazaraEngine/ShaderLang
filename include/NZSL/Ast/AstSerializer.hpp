@@ -176,7 +176,7 @@ namespace nzsl::Ast
 			AbstractDeserializer& m_deserializer;
 			std::uint32_t m_version;
 	};
-	
+
 	NZSL_API void SerializeShader(AbstractSerializer& serializer, const Module& shader);
 	NZSL_API ModulePtr DeserializeShader(AbstractDeserializer& deserializer);
 }

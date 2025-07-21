@@ -42,7 +42,7 @@ namespace nzsl::Ast
 			return std::move(arg);
 		}, std::move(value));
 	}
-	
+
 	inline ConstantValue ToConstantValue(ConstantArrayValue value)
 	{
 		return std::visit([&](auto&& arg) -> ConstantValue

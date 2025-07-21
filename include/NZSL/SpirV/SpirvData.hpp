@@ -2354,5 +2354,5 @@ namespace Nz
 
 
 }
-	
+
 #endif // NZSL_SPIRV_SPIRVDATA_HPP

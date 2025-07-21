@@ -491,7 +491,7 @@ namespace nzsl
 
 					break;
 				}
-				
+
 				case '%':
 				{
 					char next = Peek();

@@ -209,7 +209,7 @@ namespace nzsl
 			std::uint32_t Register(Constant c);
 			std::uint32_t Register(Type t);
 			std::uint32_t Register(Variable v);
-			
+
 			void RegisterSource(SpirvSourceLanguage sourceLang, std::uint32_t version, std::uint32_t fileNameId = 0, std::string source = "");
 			void RegisterSourceExtension(std::string sourceExtension);
 

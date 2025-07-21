@@ -35,7 +35,7 @@ namespace nzsl::Ast
 			using Transformer::Transform;
 
 			Stringifier BuildStringifier(const SourceLocation& sourceLocation) const;
-			
+
 			void CheckAliasIndex(std::optional<std::size_t> aliasIndex, const SourceLocation& sourceLocation) const;
 			void CheckConstIndex(std::optional<std::size_t> constIndex, const SourceLocation& sourceLocation) const;
 			void CheckExternalIndex(std::optional<std::size_t> externalIndex, const SourceLocation& sourceLocation) const;
@@ -54,7 +54,7 @@ namespace nzsl::Ast
 			void RegisterFunc(std::size_t funcIndex, const SourceLocation& sourceLocation);
 			void RegisterStruct(std::size_t structIndex, const SourceLocation& sourceLocation);
 			void RegisterVariable(std::size_t variableIndex, const SourceLocation& sourceLocation);
-			
+
 			void ResolveFunctions();
 			std::size_t ResolveStructIndex(const ExpressionType& exprType, const SourceLocation& sourceLocation);
 

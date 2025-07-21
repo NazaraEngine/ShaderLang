@@ -141,7 +141,7 @@ namespace nzsl
 
 		bool HasValue() const { return locationIndex.HasValue(); }
 	};
-	
+
 	struct LangWriter::SetAttribute
 	{
 		const Ast::ExpressionValue<std::uint32_t>& setIndex;
@@ -569,7 +569,7 @@ namespace nzsl
 
 		Append(")");
 	}
-	
+
 	void LangWriter::AppendAttribute(DepthWriteAttribute attribute)
 	{
 		if (!attribute.HasValue())
@@ -704,7 +704,7 @@ namespace nzsl
 
 		Append(")");
 	}
-	
+
 	void LangWriter::AppendAttribute(SetAttribute attribute)
 	{
 		if (!attribute.HasValue())
@@ -1090,7 +1090,7 @@ namespace nzsl
 
 			case Ast::BinaryType::LogicalAnd: Append(" && "); break;
 			case Ast::BinaryType::LogicalOr:  Append(" || "); break;
-			
+
 			case Ast::BinaryType::BitwiseAnd:  Append(" & ");  break;
 			case Ast::BinaryType::BitwiseOr:   Append(" | ");  break;
 			case Ast::BinaryType::BitwiseXor:  Append(" ^ ");  break;
@@ -1154,7 +1154,7 @@ namespace nzsl
 		node.falsePath->Visit(*this);
 		Append(")");
 	}
-	
+
 	void LangWriter::Visit(Ast::ConstantArrayValueExpression& node)
 	{
 		Append(*node.cachedExpressionType);
@@ -1163,7 +1163,7 @@ namespace nzsl
 		std::visit([&](auto&& vec)
 		{
 			using T = std::decay_t<decltype(vec)>;
-			
+
 			if constexpr (std::is_same_v<T, Ast::NoValue>)
 				throw std::runtime_error("unexpected array of NoValue");
 			else
@@ -1205,7 +1205,7 @@ namespace nzsl
 	{
 		Append(node.identifier);
 	}
-	
+
 	void LangWriter::Visit(Ast::IntrinsicExpression& node)
 	{
 		bool method = false;
@@ -1461,7 +1461,7 @@ namespace nzsl
 		if (!node.name.empty())
 		{
 			Append(" ", node.name);
-		
+
 			m_currentState->currentExternalBlockIndex = m_currentState->externalBlockNames.size();
 			m_currentState->externalBlockNames.push_back(node.name);
 		}
@@ -1497,7 +1497,7 @@ namespace nzsl
 	{
 		assert(m_currentState && "This function should only be called while processing an AST");
 
-		AppendAttributes(true, 
+		AppendAttributes(true,
 			EntryAttribute{ node.entryStage },
 			WorkgroupAttribute{ node.workgroupSize },
 			EarlyFragmentTestsAttribute{ node.earlyFragmentTests },
@@ -1653,7 +1653,7 @@ namespace nzsl
 	void LangWriter::Visit(Ast::ImportStatement& node)
 	{
 		Append("import ");
-		
+
 		if (node.identifiers.empty())
 		{
 			// Whole module import

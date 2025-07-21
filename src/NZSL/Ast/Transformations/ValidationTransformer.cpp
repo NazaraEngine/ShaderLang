@@ -107,7 +107,7 @@ namespace nzsl::Ast
 			const std::string& moduleName = m_states->rootModule->importedModules[moduleIndex].identifier;
 			return (!moduleName.empty()) ? moduleName : fmt::format("<anonymous module #{}>", moduleIndex);
 		};
-		
+
 		/*stringifier.namedExternalBlockStringifier = [&](std::size_t namedExternalBlockIndex)
 		{
 			return m_states->namedExternalBlocks.Retrieve(namedExternalBlockIndex, sourceLocation).name;
@@ -348,7 +348,7 @@ namespace nzsl::Ast
 						RegisterVariable(*parameter.varIndex, parameter.sourceLocation);
 				}
 			}
-			
+
 			assert(pendingFunc->funcIndex);
 			std::size_t funcIndex = *pendingFunc->funcIndex;
 
@@ -404,7 +404,7 @@ namespace nzsl::Ast
 				funcData.calledByStages |= callingFunctionData.calledByStages;
 
 				calledByFunctions |= callingFunctionData.calledByFunctions;
-				
+
 				// Prevent infinite recursion
 				// calledByFunctions &= ~seen;
 				temp.PerformsNOT(seen);
@@ -582,7 +582,7 @@ namespace nzsl::Ast
 		{
 			if (!m_context->partialCompilation)
 				throw AstInternalError{ node.sourceLocation, "CallFunction target function is not a function, is the shader resolved?" };
-		
+
 			return DontVisitChildren{};
 		}
 
@@ -641,7 +641,7 @@ namespace nzsl::Ast
 		ExpressionType targetType = ResolveAlias(node.targetType.GetResultingValue());
 
 		std::size_t expressionCount = node.expressions.size();
-		
+
 		auto areTypeCompatibles = [&](PrimitiveType from, PrimitiveType to)
 		{
 			switch (to)
@@ -667,7 +667,7 @@ namespace nzsl::Ast
 
 					break;
 				}
-					
+
 				case PrimitiveType::Float64:
 				{
 					switch (from)
@@ -780,7 +780,7 @@ namespace nzsl::Ast
 				std::size_t requiredComponentCount = targetMatrixType.columnCount * targetMatrixType.rowCount;
 				if (expressionCount != requiredComponentCount && expressionCount != 1) //< special case where matrices can be built using one value
 					throw CompilerCastComponentMismatchError{ node.sourceLocation, Nz::SafeCast<std::uint32_t>(expressionCount), Nz::SafeCast<std::uint32_t>(requiredComponentCount) };
-				
+
 				for (std::size_t i = 0; i < requiredComponentCount; ++i)
 				{
 					std::size_t exprIndex = (expressionCount > 1) ? i : 0;
@@ -985,7 +985,7 @@ namespace nzsl::Ast
 			if (node.moduleId >= m_states->rootModule->importedModules.size())
 				throw AstIndexOutOfBoundsError{ node.sourceLocation, "module", static_cast<std::int32_t>(node.moduleId) };
 		}
-		
+
 		return DontVisitChildren{};
 	}
 
@@ -1130,7 +1130,7 @@ namespace nzsl::Ast
 
 		if (node.constIndex && m_options->checkIndices)
 			RegisterConst(*node.constIndex, node.sourceLocation);
-		
+
 		return DontVisitChildren{};
 	}
 
@@ -1251,7 +1251,7 @@ namespace nzsl::Ast
 			RegisterStruct(*node.structIndex, node.sourceLocation);
 			m_states->structs[*node.structIndex] = &node.description;
 		}
-		
+
 		for (auto& member : node.description.members)
 		{
 			if (member.type.HasValue() && member.type.IsExpression())
@@ -1915,7 +1915,7 @@ namespace nzsl::Ast
 					paramIndex++;
 					break;
 				}
-				
+
 				case ParameterType::Scalar:
 				{
 					auto Check = [](const ExpressionType& type)
@@ -2143,7 +2143,7 @@ namespace nzsl::Ast
 					paramIndex++;
 					break;
 				}
-				
+
 				case ParameterType::TextureCoordinates:
 				{
 					// Special check: vector dimensions must match sample type

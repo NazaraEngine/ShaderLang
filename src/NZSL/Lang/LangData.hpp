@@ -163,7 +163,7 @@ namespace nzsl::LangData
 			U32,
 			Void
 		};
-		
+
 		struct IntrinsicData
 		{
 			std::string_view functionName; // empty if not a function
@@ -245,7 +245,7 @@ namespace nzsl::LangData
 	{
 		std::string_view identifier;
 	};
-	
+
 	struct MemoryLayoutData
 	{
 		std::string_view identifier;

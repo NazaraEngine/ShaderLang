@@ -47,7 +47,7 @@ namespace nzsl::Ast
 	{
 		using type = std::vector<T>;
 	};
-	
+
 	using ConstantArrayTypes = Nz::TypeListTransform<ConstantSingleTypes, WrapInVector>;
 
 	using ConstantTypes = Nz::TypeListConcat<ConstantSingleTypes, ConstantArrayTypes>;

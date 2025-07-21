@@ -39,7 +39,7 @@ namespace nzsl::Ast
 		if (!isWriting)
 			enumVal = static_cast<T>(value);
 	}
-	
+
 	template<typename T>
 	void SerializerBase::ExprValue(ExpressionValue<T>& attribute)
 	{

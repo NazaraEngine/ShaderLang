@@ -215,7 +215,7 @@ namespace nzsl::Ast
 
 		m_states = &states;
 		m_options = &options;
-		
+
 		PreregisterIndices(module);
 
 		// Register global env
@@ -298,7 +298,7 @@ namespace nzsl::Ast
 			const std::string& moduleName = m_states->modules[moduleIndex].moduleName;
 			return (!moduleName.empty()) ? moduleName : fmt::format("<anonymous module #{}>", moduleIndex);
 		};
-		
+
 		stringifier.namedExternalBlockStringifier = [&](std::size_t namedExternalBlockIndex)
 		{
 			return m_states->namedExternalBlocks.Retrieve(namedExternalBlockIndex, sourceLocation).name;
@@ -358,7 +358,7 @@ namespace nzsl::Ast
 			return std::nullopt;
 		}
 	}
-	
+
 	ExpressionType ResolveTransformer::ComputeSwizzleType(const ExpressionType& type, std::size_t componentCount, const SourceLocation& sourceLocation) const
 	{
 		assert(IsPrimitiveType(type) || IsVectorType(type));
@@ -629,7 +629,7 @@ namespace nzsl::Ast
 		m_states->currentEnv->identifiersInScope.resize(scope.previousSize);
 		m_states->currentEnv->scopes.pop_back();
 	}
-	
+
 	void ResolveTransformer::PropagateConstants(ExpressionPtr& expr) const
 	{
 		// Run optimizer on constant value to hopefully retrieve a single constant value
@@ -717,7 +717,7 @@ namespace nzsl::Ast
 			[=](const TypeParameter* parameters, std::size_t parameterCount, const SourceLocation& sourceLocation) -> ExpressionType
 			{
 				assert(parameterCount >= 1 && parameterCount <= 2);
-				
+
 				assert(std::holds_alternative<ExpressionType>(parameters[0]));
 				const ExpressionType& exprType = std::get<ExpressionType>(parameters[0]);
 
@@ -746,7 +746,7 @@ namespace nzsl::Ast
 				}
 				else
 					lengthValue = 0;
-				
+
 				ArrayType arrayType;
 				arrayType.containedType = std::make_unique<ContainedType>();
 				arrayType.containedType->type = exprType;
@@ -1057,7 +1057,7 @@ namespace nzsl::Ast
 				};
 			}
 		}, std::nullopt, {});
-		
+
 		// uniform
 		RegisterType("uniform", PartialType {
 			{ TypeParameterCategory::StructType }, {},
@@ -1152,7 +1152,7 @@ namespace nzsl::Ast
 
 		return externalBlockIndex;
 	}
-	
+
 	std::size_t ResolveTransformer::RegisterFunction(std::string name, std::optional<FunctionData>&& funcData, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
 	{
 		if (auto* identifier = FindIdentifier(name))
@@ -1428,7 +1428,7 @@ namespace nzsl::Ast
 
 		return identifier;
 	}
-	
+
 	void ResolveTransformer::ResolveFunctions()
 	{
 		// Once every function is known, we can evaluate function content
@@ -1505,11 +1505,11 @@ namespace nzsl::Ast
 		Transform(*expression->cachedExpressionType);
 
 		//if (!IsTypeType(exprType))
-		//	throw AstError{ "type expected" };
+		//  throw AstError{ "type expected" };
 
 		return ResolveType(*exprType, resolveAlias, sourceLocation);
 	}
-	
+
 	std::string ResolveTransformer::ToString(const ExpressionType& exprType, const SourceLocation& sourceLocation) const
 	{
 		return Ast::ToString(exprType, BuildStringifier(sourceLocation));
@@ -1880,7 +1880,7 @@ namespace nzsl::Ast
 			MandatoryExpr(index, accessIndexExpr.sourceLocation);
 
 		HandleChildren(accessIndexExpr);
-		
+
 		const ExpressionType* exprType = GetExpressionType(*accessIndexExpr.expr);
 		if (!exprType)
 			return DontVisitChildren{};
@@ -2027,7 +2027,7 @@ namespace nzsl::Ast
 						{
 							if (!field.cond.IsResultingValue())
 								return DontVisitChildren{}; //< unresolved
-							
+
 							if (!field.cond.GetResultingValue())
 								continue;
 						}
@@ -2331,7 +2331,7 @@ namespace nzsl::Ast
 
 		return ReplaceExpression{ HandleIdentifier(identifierData, identifierExpr.sourceLocation) };
 	}
-	
+
 	auto ResolveTransformer::Transform(IntrinsicExpression&& intrinsicExpr) -> ExpressionTransformation
 	{
 		HandleChildren(intrinsicExpr);
@@ -2551,7 +2551,7 @@ namespace nzsl::Ast
 			if (std::get<bool>(*conditionValue))
 			{
 				HandleStatement(cond.statement);
-		
+
 				return ReplaceStatement{ std::move(cond.statement) };
 			}
 		}

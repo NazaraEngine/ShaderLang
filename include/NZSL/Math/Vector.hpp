@@ -42,7 +42,7 @@ namespace nzsl
 
 		constexpr T& x();
 		constexpr T x() const;
-		
+
 		constexpr T& y();
 		constexpr T y() const;
 
