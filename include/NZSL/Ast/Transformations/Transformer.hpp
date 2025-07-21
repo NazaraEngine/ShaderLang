@@ -46,12 +46,13 @@ namespace nzsl::Ast
 
 		protected:
 			struct DontVisitChildren {};
+			struct RemoveStatement {};
 			struct ReplaceExpression { ExpressionPtr expression; };
 			struct ReplaceStatement { StatementPtr statement; };
 			struct VisitChildren {};
 
 			using ExpressionTransformation = std::variant<DontVisitChildren, VisitChildren, ReplaceExpression>;
-			using StatementTransformation = std::variant<DontVisitChildren, VisitChildren, ReplaceStatement>;
+			using StatementTransformation = std::variant<DontVisitChildren, VisitChildren, RemoveStatement, ReplaceStatement>;
 
 			inline Transformer(TransformerFlags flags = {});
 

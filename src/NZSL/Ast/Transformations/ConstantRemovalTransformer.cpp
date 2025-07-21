@@ -114,7 +114,7 @@ namespace nzsl::Ast
 		m_constantSingleValues.emplace(*declConst.constIndex, constant.value);
 
 		if (m_options->removeConstantDeclaration)
-			return ReplaceStatement{ ShaderBuilder::NoOp() };
+			return RemoveStatement{};
 		else
 			return DontVisitChildren{};
 	}
@@ -147,7 +147,7 @@ namespace nzsl::Ast
 		}
 
 		if (m_options->removeOptionDeclaration)
-			return ReplaceStatement{ ShaderBuilder::NoOp() };
+			return RemoveStatement{};
 		else
 			return DontVisitChildren{};
 	}

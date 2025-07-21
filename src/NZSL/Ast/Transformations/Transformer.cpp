@@ -699,6 +699,11 @@ namespace nzsl::Ast
 		return std::visit(Nz::Overloaded{
 			[](DontVisitChildren) { return false; },
 			[](VisitChildren) { return true; },
+			[this](RemoveStatement& /*stmt*/)
+			{
+				GetCurrentStatementPtr() = ShaderBuilder::NoOp();
+				return false;
+			},
 			[this](ReplaceStatement& stmt)
 			{
 				GetCurrentStatementPtr() = std::move(stmt.statement);
