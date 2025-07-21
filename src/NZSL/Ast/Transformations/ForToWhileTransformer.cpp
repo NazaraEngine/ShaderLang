@@ -22,14 +22,14 @@ namespace nzsl::Ast
 		if (!m_options->reduceForEachLoopsToWhile)
 			return VisitChildren{};
 
-		HandleStatement(forEachStatement.statement);
-
 		const ExpressionType* exprType = GetResolvedExpressionType(*forEachStatement.expression);
 		if (!exprType)
 			return VisitChildren{};
 
 		if (!IsArrayType(*exprType))
 			throw CompilerForEachUnsupportedTypeError{ forEachStatement.sourceLocation, ToString(*exprType) };
+
+		HandleStatement(forEachStatement.statement);
 
 		const ArrayType& arrayType = std::get<ArrayType>(*exprType);
 		const ExpressionType& innerType = ResolveAlias(arrayType.containedType->type);
@@ -91,8 +91,6 @@ namespace nzsl::Ast
 		if (!m_options->reduceForLoopsToWhile)
 			return VisitChildren{};
 
-		HandleStatement(forStatement.statement);
-
 		Expression& fromExpr = *forStatement.fromExpr;
 		const ExpressionType* fromExprType = GetResolvedExpressionType(fromExpr);
 		if (!fromExprType)
@@ -104,6 +102,8 @@ namespace nzsl::Ast
 		PrimitiveType counterType = std::get<PrimitiveType>(*fromExprType);
 		if (counterType != PrimitiveType::Int32 && counterType != PrimitiveType::UInt32)
 			throw CompilerForFromTypeExpectIntegerTypeError{ fromExpr.sourceLocation, ToString(*fromExprType) };
+
+		HandleStatement(forStatement.statement);
 
 		auto multi = std::make_unique<MultiStatement>();
 		multi->sourceLocation = forStatement.sourceLocation;

@@ -29,6 +29,8 @@ namespace nzsl::Ast
 			EliminateUnusedTransformer& operator=(EliminateUnusedTransformer&&) = delete;
 
 		private:
+			using Transformer::Transform;
+
 			StatementTransformation Transform(DeclareAliasStatement&& node) override;
 			StatementTransformation Transform(DeclareConstStatement&& node) override;
 			StatementTransformation Transform(DeclareExternalStatement&& node) override;
