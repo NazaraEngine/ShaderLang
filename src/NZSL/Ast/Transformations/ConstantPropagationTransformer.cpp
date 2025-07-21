@@ -679,7 +679,7 @@ namespace nzsl::Ast
 				return ReplaceStatement{ Unscope(std::move(node.elseStatement)) };
 			}
 			else
-				return ReplaceStatement{ ShaderBuilder::NoOp() };
+				return RemoveStatement{};
 		}
 
 		return DontVisitChildren{};
@@ -950,7 +950,7 @@ namespace nzsl::Ast
 			return ReplaceStatement{ std::move(node.statement) };
 		}
 		else
-			return ReplaceStatement{ ShaderBuilder::NoOp() };
+			return RemoveStatement{};
 	}
 
 	template<typename TargetType>
