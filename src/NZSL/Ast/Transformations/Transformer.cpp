@@ -320,17 +320,11 @@ namespace nzsl::Ast
 			if (!m_flags.Test(TransformerFlag::IgnoreExpressions))
 				HandleExpression(cond.condition);
 
-			PushScope();
 			HandleStatement(cond.statement);
-			PopScope();
 		}
 
 		if (node.elseStatement)
-		{
-			PushScope();
 			HandleStatement(node.elseStatement);
-			PopScope();
-		}
 	}
 
 	void Transformer::HandleChildren(BreakStatement& /*node*/)

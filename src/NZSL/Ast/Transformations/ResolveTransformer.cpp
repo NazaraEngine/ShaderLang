@@ -2539,10 +2539,7 @@ namespace nzsl::Ast
 				{
 					auto& otherCond = branchStatement.condStatements[i];
 					HandleExpression(otherCond.condition);
-
-					PushScope();
 					HandleStatement(otherCond.statement);
-					PopScope();
 				}
 
 				return DontVisitChildren{}; //< Unresolvable condition
@@ -2553,9 +2550,7 @@ namespace nzsl::Ast
 
 			if (std::get<bool>(*conditionValue))
 			{
-				PushScope();
 				HandleStatement(cond.statement);
-				PopScope();
 		
 				return ReplaceStatement{ std::move(cond.statement) };
 			}
