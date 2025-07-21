@@ -93,7 +93,7 @@ namespace nzsl
 			SSBO,                              // GLSL 4.3 or GLSL ES 3.1 or GL_ARB_shader_storage_buffer_object
 			Texture1D                          // GLSL non-ES
 		};
-		
+
 		struct GlslBuiltin
 		{
 			std::string_view identifier;
@@ -1061,7 +1061,7 @@ namespace nzsl
 		// Extensions
 
 		tsl::ordered_set<std::string_view> requiredExtensions = m_currentState->previsitor.requiredExtensions;
-		
+
 		bool hasConservativeDepth = false;
 		bool hasEarlyFragmentTests = false;
 		for (GlslCapability capability : m_currentState->previsitor.capabilities)
@@ -1199,7 +1199,7 @@ namespace nzsl
 						else
 							throw std::runtime_error("this version of OpenGL does not support SSBO");
 					}
-					
+
 					break;
 				}
 
@@ -1322,7 +1322,7 @@ namespace nzsl
 				}
 			}
 		}
-		
+
 		if (m_currentState->backendParameters.debugLevel >= DebugLevel::Minimal)
 		{
 			AppendLine("// header end");
@@ -1587,7 +1587,7 @@ namespace nzsl
 					}
 					else
 						WriteVariable();
-					
+
 					fields.push_back({
 						member.name,
 						varName
@@ -1609,7 +1609,7 @@ namespace nzsl
 			auto& parameter = node.parameters.front();
 			assert(std::holds_alternative<Ast::StructType>(parameter.type.GetResultingValue()));
 			std::size_t inputStructIndex = std::get<Ast::StructType>(parameter.type.GetResultingValue()).structIndex;
-			
+
 			const auto& inputStruct = Nz::Retrieve(m_currentState->structs, inputStructIndex);
 			AppendInOut(true, inputStruct, m_currentState->inputFields, s_glslWriterInputPrefix);
 		}
@@ -1625,7 +1625,7 @@ namespace nzsl
 			assert(std::holds_alternative<Ast::StructType>(node.returnType.GetResultingValue()));
 			std::size_t outputStructIndex = std::get<Ast::StructType>(node.returnType.GetResultingValue()).structIndex;
 			const auto& outputStruct = Nz::Retrieve(m_currentState->structs, outputStructIndex);
-			
+
 			AppendInOut(false, outputStruct, m_currentState->outputFields, s_glslWriterOutputPrefix);
 		}
 	}
@@ -1915,7 +1915,7 @@ namespace nzsl
 
 			case Ast::BinaryType::LogicalAnd: Append(" && "); break;
 			case Ast::BinaryType::LogicalOr:  Append(" || "); break;
-			
+
 			case Ast::BinaryType::BitwiseAnd:  Append(" & ");  break;
 			case Ast::BinaryType::BitwiseOr:   Append(" | ");  break;
 			case Ast::BinaryType::BitwiseXor:  Append(" ^ ");  break;
@@ -1974,7 +1974,7 @@ namespace nzsl
 		std::visit([&](auto&& vec)
 		{
 			using T = std::decay_t<decltype(vec)>;
-			
+
 			if constexpr (std::is_same_v<T, Ast::NoValue>)
 				throw std::runtime_error("unexpected array of NoValue");
 			else
@@ -2006,7 +2006,7 @@ namespace nzsl
 		const auto& funcData = Nz::Retrieve(m_currentState->previsitor.functions, node.funcId);
 		Append(funcData.name);
 	}
-	
+
 	void GlslWriter::Visit(Ast::IntrinsicExpression& node)
 	{
 		bool firstParam = true;
@@ -2288,7 +2288,7 @@ namespace nzsl
 			ScopeVisit(*node.elseStatement);
 		}
 	}
-	
+
 	void GlslWriter::Visit(Ast::BreakStatement& /*node*/)
 	{
 		Append("break;");
@@ -2313,7 +2313,7 @@ namespace nzsl
 		RegisterConstant(*node.constIndex, node.name);
 
 		AppendVariableDeclaration(node.type.GetResultingValue(), node.name);
-		
+
 		Append(" = ");
 		node.expression->Visit(*this);
 		Append(";");
@@ -2332,7 +2332,7 @@ namespace nzsl
 				AppendComment("external var tag: " + externalVar.tag);
 
 			const Ast::ExpressionType& exprType = externalVar.type.GetResultingValue();
-			
+
 			bool isUniformOrStorageBuffer = IsPushConstantType(exprType) || IsStorageType(exprType) || IsUniformType(exprType);
 
 			const char* memoryLayout = nullptr;
@@ -2347,7 +2347,7 @@ namespace nzsl
 					structIndex = std::get<Ast::PushConstantType>(exprType).containedType.structIndex;
 				else
 					throw std::runtime_error("unexpected type");
-				
+
 				const auto& structInfo = Nz::Retrieve(m_currentState->structs, structIndex);
 				if (structInfo.desc->layout.HasValue())
 				{
@@ -2666,7 +2666,7 @@ namespace nzsl
 
 		AppendVariableDeclaration(node.varType.GetResultingValue(), varName);
 		RegisterVariable(*node.varIndex, std::move(varName));
-		
+
 		if (node.initialExpression)
 		{
 			Append(" = ");

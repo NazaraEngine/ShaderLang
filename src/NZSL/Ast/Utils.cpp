@@ -172,7 +172,7 @@ namespace nzsl::Ast
 		m_expressionCategory = ExpressionCategory::RValue;
 	}
 
-	
+
 	ExpressionType ValidateBinaryOp(BinaryType op, const ExpressionType& leftExprType, const ExpressionType& rightExprType, const SourceLocation& sourceLocation, const Stringifier& typeStringifier)
 	{
 		if (!IsPrimitiveType(leftExprType) && !IsMatrixType(leftExprType) && !IsVectorType(leftExprType))

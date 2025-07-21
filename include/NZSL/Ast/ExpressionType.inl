@@ -125,7 +125,7 @@ namespace nzsl::Ast
 	{
 		return !operator==(rhs);
 	}
-	
+
 
 	inline bool StructType::operator==(const StructType& rhs) const
 	{
@@ -202,7 +202,7 @@ namespace nzsl::Ast
 		return !operator==(rhs);
 	}
 
-	
+
 	inline bool IsAliasType(const ExpressionType& type)
 	{
 		return std::holds_alternative<AliasType>(type);
@@ -361,7 +361,7 @@ namespace nzsl::Ast
 				return unwrappedArrayType;
 			}
 		}
-		
+
 		return exprType;
 	}
 
@@ -517,7 +517,7 @@ namespace std
 			return Nz::HashCombine(moduleType.moduleIndex);
 		}
 	};
-	
+
 	template<>
 	struct hash<nzsl::Ast::NamedExternalBlockType>
 	{

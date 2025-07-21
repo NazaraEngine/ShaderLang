@@ -61,7 +61,7 @@ namespace nzsl::Ast
 		bool operator==(const AliasType& rhs) const;
 		inline bool operator!=(const AliasType& rhs) const;
 	};
-	
+
 	struct ArrayType : BaseArrayType
 	{
 		ArrayType() = default;

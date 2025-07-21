@@ -198,7 +198,7 @@ namespace nzsl
 
 				std::uint32_t pointerTypeId = m_constantCache.Register(*constantVariable.type);
 				std::uint32_t variableId = m_constantCache.Register(std::move(constantVariable));
-				
+
 				constantVariables.emplace(*node.constIndex, SpirvVariable{ variableId, pointerTypeId, std::move(typePtr), storageClass});
 			}
 
@@ -556,7 +556,7 @@ namespace nzsl
 					const SpirvGenData::SpirvBuiltin& spirvBuiltin = spvIt->second;
 					if (!m_writer.IsVersionGreaterOrEqual(spirvBuiltin.requiredVersion.majorVersion, spirvBuiltin.requiredVersion.minorVersion))
 						throw std::runtime_error(fmt::format("using builtin {} requires SPIR-V {}.{}", builtinData.identifier, spirvBuiltin.requiredVersion.majorVersion, spirvBuiltin.requiredVersion.minorVersion));
-					
+
 					spirvCapabilities.insert(spirvBuiltin.capability);
 
 					SpirvBuiltIn builtinDecoration = spirvBuiltin.decoration;
@@ -695,7 +695,7 @@ namespace nzsl
 
 		// Register all extended instruction sets
 		PreVisitor previsitor(*this, state.constantTypeCache);
-		
+
 		for (Ast::ModuleFeature feature : module.metadata->enabledFeatures)
 		{
 			switch (feature)
@@ -781,7 +781,7 @@ namespace nzsl
 					{
 						if (!features.empty())
 							features += ",";
-					
+
 						features += Parser::ToString(feature);
 					}
 
@@ -870,7 +870,7 @@ namespace nzsl
 		else
 			return false;
 	}
-	
+
 	void SpirvWriter::SetEnv(Environment environment)
 	{
 		m_environment = std::move(environment);
@@ -1013,7 +1013,7 @@ namespace nzsl
 		else
 			return m_currentState->constantTypeCache.BuildFunctionType(Ast::NoType{}, parameterTypes);
 	}
-	
+
 	std::uint32_t SpirvWriter::GetArrayConstantId(const Ast::ConstantArrayValue& values) const
 	{
 		return m_currentState->constantTypeCache.GetId(*m_currentState->constantTypeCache.BuildArrayConstant(values));

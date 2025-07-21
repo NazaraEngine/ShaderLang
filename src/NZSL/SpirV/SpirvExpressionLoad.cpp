@@ -87,7 +87,7 @@ namespace nzsl
 				std::uint32_t pointerType = m_writer.RegisterPointerType(pointerChainAccess.pointedTypePtr, pointerChainAccess.storage); //< FIXME: We shouldn't register this so late
 
 				std::uint32_t pointerId = m_visitor.AllocateResultId();
-				
+
 				m_block.AppendVariadic(SpirvOp::OpAccessChain, [&](const auto& appender)
 				{
 					appender(pointerType);
@@ -117,7 +117,7 @@ namespace nzsl
 	void SpirvExpressionLoad::Visit(Ast::AccessFieldExpression& node)
 	{
 		node.expr->Visit(*this);
-		
+
 		const Ast::ExpressionType* exprType = GetExpressionType(node);
 		assert(exprType);
 

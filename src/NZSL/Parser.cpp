@@ -311,7 +311,7 @@ namespace nzsl
 		std::string license;
 		std::optional<std::uint32_t> moduleVersion;
 		std::vector<Ast::ModuleFeature> moduleFeatures;
-		
+
 		for (auto&& attribute : attributes)
 		{
 			switch (attribute.type)
@@ -376,7 +376,7 @@ namespace nzsl
 					moduleVersion = version;
 					break;
 				}
-				
+
 				case Ast::AttributeType::License:
 				{
 					if (!license.empty())
@@ -439,11 +439,11 @@ namespace nzsl
 			{
 				moduleName.resize(33);
 				moduleName[0] = '_';
-			
+
 				constexpr char characterSet[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 				std::default_random_engine randomEngine(std::random_device{}());
 				std::uniform_int_distribution<std::size_t> dis(0, std::size(characterSet) - 2); //< -2 because of null character and because uniform_int_dis is inclusive
-				
+
 				for (std::size_t i = 1; i < moduleName.size(); ++i)
 					moduleName[i] = characterSet[dis(randomEngine)];
 			}
@@ -606,7 +606,7 @@ namespace nzsl
 
 		return branch;
 	}
-	
+
 	Ast::StatementPtr Parser::ParseBreakStatement()
 	{
 		const Token& token = Expect(Advance(), TokenType::Break);
@@ -683,7 +683,7 @@ namespace nzsl
 				throw ParserUnexpectedTokenError{ token.location, token.type };
 		}
 	}
-	
+
 	Ast::StatementPtr Parser::ParseContinueStatement()
 	{
 		const Token& token = Expect(Advance(), TokenType::Continue);
@@ -711,7 +711,7 @@ namespace nzsl
 		NAZARA_USE_ANONYMOUS_NAMESPACE
 
 		const Token& externalToken = Expect(Advance(), TokenType::External);
-		
+
 		std::unique_ptr<Ast::DeclareExternalStatement> externalStatement = std::make_unique<Ast::DeclareExternalStatement>();
 		externalStatement->sourceLocation = externalToken.location;
 
@@ -1217,7 +1217,7 @@ namespace nzsl
 	{
 		std::vector<Attribute> attributes;
 		Ast::StatementPtr statement;
-		do 
+		do
 		{
 			const Token& token = Peek();
 			switch (token.type)
@@ -1235,7 +1235,7 @@ namespace nzsl
 
 					statement = ParseConstStatement();
 					break;
-					
+
 				case TokenType::Continue:
 					if (!attributes.empty())
 						throw ParserUnexpectedTokenError{ token.location, token.type };
@@ -1335,7 +1335,7 @@ namespace nzsl
 
 		return statements;
 	}
-	
+
 	Ast::StatementPtr Parser::ParseStructDeclaration(std::vector<Attribute> attributes)
 	{
 		NAZARA_USE_ANONYMOUS_NAMESPACE
@@ -1344,7 +1344,7 @@ namespace nzsl
 
 		Ast::StructDescription description;
 		description.name = ParseIdentifierAsName(nullptr);
-		
+
 		Ast::ExpressionValue<bool> condition;
 		Ast::ExpressionValue<bool> exported;
 
@@ -1685,7 +1685,7 @@ namespace nzsl
 
 		return parameters;
 	}
-	
+
 	Ast::ExpressionPtr Parser::ParseExpressionStatement()
 	{
 		// Variable expression
@@ -1932,7 +1932,7 @@ namespace nzsl
 		{
 			if (attribute.args.size() != 1)
 				throw ParserAttributeUnexpectedParameterCountError{ attribute.sourceLocation, attribute.type, 1, attribute.args.size() };
-		
+
 			targetAttribute = std::move(attribute.args.front());
 		}
 		else

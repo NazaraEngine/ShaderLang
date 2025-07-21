@@ -276,7 +276,7 @@ namespace nzsl
 
 					break;
 				}
-				
+
 				case Ast::BinaryType::CompGe:
 				{
 					switch (leftTypeBase)
@@ -298,7 +298,7 @@ namespace nzsl
 
 					break;
 				}
-				
+
 				case Ast::BinaryType::CompGt:
 				{
 					switch (leftTypeBase)
@@ -320,7 +320,7 @@ namespace nzsl
 
 					break;
 				}
-				
+
 				case Ast::BinaryType::CompLe:
 				{
 					switch (leftTypeBase)
@@ -342,7 +342,7 @@ namespace nzsl
 
 					break;
 				}
-				
+
 				case Ast::BinaryType::CompLt:
 				{
 					switch (leftTypeBase)
@@ -364,7 +364,7 @@ namespace nzsl
 
 					break;
 				}
-				
+
 				case Ast::BinaryType::CompNe:
 				{
 					switch (leftTypeBase)
@@ -433,7 +433,7 @@ namespace nzsl
 
 				leftOperand = leftAsVec;
 			}
-			
+
 			if (compositeVecRight)
 			{
 				std::uint32_t rightAsVec = m_writer.AllocateResultId();
@@ -634,7 +634,7 @@ namespace nzsl
 					}
 					break;
 				}
-				
+
 				case Ast::PrimitiveType::Float64:
 				{
 					switch (fromBaseType)

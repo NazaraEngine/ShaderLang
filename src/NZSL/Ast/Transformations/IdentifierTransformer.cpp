@@ -131,7 +131,7 @@ namespace nzsl::Ast
 	auto IdentifierTransformer::Transform(DeclareStructStatement&& statement) -> StatementTransformation
 	{
 		HandleIdentifier(statement.description.name, IdentifierType::Struct);
-		
+
 		PushScope();
 
 		for (auto& member : statement.description.members)

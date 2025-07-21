@@ -79,7 +79,7 @@ namespace nzsl
 						break;
 				}
 			};
-		
+
 			efsw_addwatch(m_fileWatcher, Nz::PathToString(realPath).c_str(), FileSystemCallback, 1, this);
 #else
 			throw std::runtime_error("nzsl was built without filesystem watch feature");
@@ -263,7 +263,7 @@ namespace nzsl
 			fmt::print(stderr, "failed to update module from {}: {}", Nz::PathToString(filepath), e.what());
 		}
 	}
-	
+
 	bool FilesystemModuleResolver::CheckExtension(std::string_view filename)
 	{
 		auto EndsWith = [](std::string_view lhs, std::string_view rhs)

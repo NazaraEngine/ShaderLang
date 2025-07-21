@@ -84,7 +84,7 @@ namespace nzsl
 			inline std::vector<std::uint8_t> GetData() &&;
 
 			using AbstractSerializer::Serialize;
-			
+
 			void Serialize(std::size_t offset, std::uint8_t value) override;
 			void Serialize(std::size_t offset, std::uint16_t value) override;
 			void Serialize(std::size_t offset, std::uint32_t value) override;

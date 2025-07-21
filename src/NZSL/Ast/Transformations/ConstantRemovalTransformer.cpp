@@ -123,7 +123,7 @@ namespace nzsl::Ast
 	{
 		if (!declOption.optIndex)
 			return VisitChildren{}; //< option has not been resolved yet
-		
+
 		HandleChildren(declOption);
 
 		OptionHash optionHash = HashOption(declOption.optName.data());
@@ -137,7 +137,7 @@ namespace nzsl::Ast
 
 			if (!declOption.defaultValue)
 				throw CompilerMissingOptionValueError{ declOption.sourceLocation, declOption.optName };
-			
+
 			//throw CompilerConflictingOptionDefaultValuesError{ declOption.sourceLocation, declOption.optName, Ast::ConstantToString(*declOption.defaultValue) };
 			if (declOption.defaultValue->GetType() == NodeType::ConstantValueExpression)
 			{

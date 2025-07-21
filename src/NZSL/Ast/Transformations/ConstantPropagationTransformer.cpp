@@ -452,11 +452,11 @@ namespace nzsl::Ast
 			{
 				optimized->cachedExpressionType = node.cachedExpressionType;
 				optimized->sourceLocation = node.sourceLocation;
-				
+
 				return ReplaceExpression { std::move(optimized) };
 			}
 		}
-		
+
 		return DontVisitChildren{};
 	}
 
@@ -467,7 +467,7 @@ namespace nzsl::Ast
 		HandleChildren(node);
 
 		const ExpressionType& targetType = node.targetType.GetResultingValue();
-		
+
 		ExpressionPtr optimized;
 		if (IsPrimitiveType(targetType))
 		{
@@ -619,7 +619,7 @@ namespace nzsl::Ast
 
 			return ReplaceExpression{ std::move(optimized) };
 		}
-		
+
 		return DontVisitChildren{};
 	}
 
@@ -874,7 +874,7 @@ namespace nzsl::Ast
 			std::array<std::uint32_t, 4> newComponents = {};
 			for (std::size_t i = 0; i < node.componentCount; ++i)
 				newComponents[i] = swizzleExpr.components[node.components[i]];
-			
+
 			swizzleExpr.componentCount = node.componentCount;
 			swizzleExpr.components = newComponents;
 			swizzleExpr.cachedExpressionType = node.cachedExpressionType;

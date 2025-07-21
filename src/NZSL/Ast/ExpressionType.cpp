@@ -97,7 +97,7 @@ namespace nzsl::Ast
 		assert(rhs.objectType);
 		return objectType->type == rhs.objectType->type && methodIndex == rhs.methodIndex;
 	}
-	
+
 	using StructTypes = Nz::TypeList<ArrayType, DynArrayType, MatrixType, PrimitiveType, StructType, VectorType>;
 
 	std::size_t RegisterStructField(FieldOffsets& fieldOffsets, const ExpressionType& type, const StructFinder& structFinder)
@@ -212,7 +212,7 @@ namespace nzsl::Ast
 
 		throw std::runtime_error("unexpected type");
 	}
-	
+
 	std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const StructType& structType, const StructFinder& structFinder)
 	{
 		if (!structFinder)
@@ -247,7 +247,7 @@ namespace nzsl::Ast
 
 		throw std::runtime_error("unexpected type");
 	}
-	
+
 	std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const VectorType& vectorType, std::size_t arraySize, const StructFinder& /*structFinder*/)
 	{
 		assert(vectorType.componentCount >= 1 && vectorType.componentCount <= 4);
@@ -264,7 +264,7 @@ namespace nzsl::Ast
 
 		throw std::runtime_error("unexpected type");
 	}
-	
+
 	std::size_t ResolveStructIndex(const AliasType& aliasType)
 	{
 		return ResolveStructIndex(aliasType.targetType->type);

@@ -35,7 +35,7 @@ namespace nzsl::Ast
 		return std::visit([&](auto&& arg) -> Ast::ExpressionType
 		{
 			using T = std::decay_t<decltype(arg)>;
-			
+
 			using VectorInner = GetVectorInnerType<T>;
 			using Type = typename VectorInner::type;
 

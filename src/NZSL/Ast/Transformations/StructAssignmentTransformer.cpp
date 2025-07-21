@@ -54,7 +54,7 @@ namespace nzsl::Ast
 							{
 								if (memberIndex != Nz::MaxValue<std::uint32_t>())
 									memberIndex++;
-								
+
 								continue;
 							}
 						}
@@ -106,7 +106,7 @@ namespace nzsl::Ast
 
 						if (member.cond.IsExpression())
 							assignStatement = ShaderBuilder::ConstBranch(Clone(*member.cond.GetExpression()), std::move(assignStatement));
-						
+
 						AppendStatement(std::move(assignStatement));
 					}
 

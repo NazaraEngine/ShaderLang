@@ -258,7 +258,7 @@ namespace nzsl
 		{
 			assert(array.elementType);
 			cache.Register(*array.elementType);
-			
+
 			if (array.length)
 				cache.Register(*array.length);
 		}
@@ -456,7 +456,7 @@ namespace nzsl
 	}
 
 	SpirvConstantCache::~SpirvConstantCache() = default;
-	
+
 	auto SpirvConstantCache::BuildArrayConstant(const Ast::ConstantArrayValue& value) const -> ConstantPtr
 	{
 		return std::make_shared<Constant>(std::visit([&](auto&& arg) -> ConstantComposite

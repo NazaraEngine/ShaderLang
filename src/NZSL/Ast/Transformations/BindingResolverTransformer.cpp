@@ -62,7 +62,7 @@ namespace nzsl::Ast
 				hasAutoBinding.reset(); //< Unresolved value
 			}
 		}
-		
+
 		auto BuildBindingKey = [](std::uint32_t bindingSet, std::uint32_t bindingIndex)
 		{
 			return std::uint64_t(bindingSet) << 32 | bindingIndex;

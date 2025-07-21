@@ -754,6 +754,116 @@ on_run(function ()
 		end
 	})
 
+	-- No space should lies before a linefeed
+	table.insert(checks, {
+		Name = "end of line spaces",
+		Check = function ()
+			local files = table.join(
+				os.files("include/NZSL/**.hpp"),
+				os.files("include/NZSL/**.inl"),
+				os.files("src/NZSL/**.hpp"),
+				os.files("src/NZSL/**.inl"),
+				os.files("src/NZSL/**.cpp")
+			)
+
+			local fixes = {}
+
+			for _, filePath in pairs(files) do
+				local lines = GetFile(filePath)
+
+				local fileFixes = {}
+				for i = 1, #lines do
+					local content = lines[i]:match("^(%s*[^%s]*)%s+$")
+					if content then
+						table.insert(fileFixes, { line = i, newContent = content })
+					end
+				end
+
+				if #fileFixes > 0 then
+					print(filePath .. " has line ending with spaces")
+					table.insert(fixes, {
+						File = filePath,
+						Func = function (lines)
+							for _, fix in ipairs(fileFixes) do
+								lines[fix.line] = fix.newContent
+							end
+
+							UpdateFile(filePath, lines)
+						end
+					})
+				end
+			end
+
+			return fixes
+		end
+	})
+
+	-- No tab character should exist after indentation
+	table.insert(checks, {
+		Name = "tab outside of indent",
+		Check = function ()
+			local files = table.join(
+				os.files("include/NZSL/**.hpp"),
+				os.files("include/NZSL/**.inl"),
+				os.files("src/NZSL/**.hpp"),
+				os.files("src/NZSL/**.inl"),
+				os.files("src/NZSL/**.cpp")
+			)
+
+			local fixes = {}
+
+			for _, filePath in pairs(files) do
+				local lines = GetFile(filePath)
+
+				local fileFixes = {}
+				for i = 1, #lines do
+					local start = lines[i]:match("\t*[^\t+]()\t")
+					if start then
+						table.insert(fileFixes, { line = i, start = start })
+					end
+				end
+
+				if #fileFixes > 0 then
+					print(filePath .. " has tab character outside of indentation")
+					table.insert(fixes, {
+						File = filePath,
+						Func = function (lines)
+							for _, fix in ipairs(fileFixes) do
+								-- compute indent taking tabs into account
+								local function ComputeIndent(str, i)
+									local indent = 0
+									for i = 1, i do
+										if str:sub(i, i) == "\t" then
+											-- round up to tabSize (4)
+											indent = ((indent + 4) // 4) * 4
+										else
+											indent = indent + 1
+										end
+									end
+
+									return indent
+								end
+
+								lines[fix.line] = lines[fix.line]:gsub("()\t", function (pos)
+									if pos < fix.start then
+										return
+									end
+									local indent = ComputeIndent(lines[fix.line], pos - 1)
+									local indent2 = ComputeIndent(lines[fix.line], pos)
+									return string.rep(" ", indent2 - indent)
+								end)
+							end
+
+							UpdateFile(filePath, lines)
+						end
+					})
+				end
+			end
+
+			return fixes
+		end
+	})
+
 	local shouldFix = option.get("fix") or false
 
 	for _, check in pairs(checks) do

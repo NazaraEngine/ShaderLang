@@ -167,7 +167,7 @@ namespace nzsl::Ast
 						}
 						else
 							expressions[j] = std::move(castExpr.expressions[i * targetMatrixType.rowCount + j]);
-					
+
 						if (j == 0)
 							location = expressions[j]->sourceLocation;
 						else

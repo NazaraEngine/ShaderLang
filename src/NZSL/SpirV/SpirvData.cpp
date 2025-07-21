@@ -11594,37 +11594,37 @@ namespace nzsl
 		}
 	};
 
-	
+
 	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvAccessQualifier kind)
 	{
 		return { nullptr, 0 };
 	}
-	
+
 	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvAddressingModel kind)
 	{
 		return { nullptr, 0 };
 	}
-	
+
 	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvBuiltIn kind)
 	{
 		return { nullptr, 0 };
 	}
-	
+
 	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvCapability kind)
 	{
 		return { nullptr, 0 };
 	}
-	
+
 	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvCooperativeMatrixLayout kind)
 	{
 		return { nullptr, 0 };
 	}
-	
+
 	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvCooperativeMatrixUse kind)
 	{
 		return { nullptr, 0 };
 	}
-	
+
 	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvDecoration kind)
 	{
 		switch(kind)
@@ -11779,12 +11779,12 @@ namespace nzsl
 				return { nullptr, 0 };
 		}
 	}
-	
+
 	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvDim kind)
 	{
 		return { nullptr, 0 };
 	}
-	
+
 	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvExecutionMode kind)
 	{
 		switch(kind)
@@ -11869,152 +11869,152 @@ namespace nzsl
 				return { nullptr, 0 };
 		}
 	}
-	
+
 	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvExecutionModel kind)
 	{
 		return { nullptr, 0 };
 	}
-	
+
 	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvFPDenormMode kind)
 	{
 		return { nullptr, 0 };
 	}
-	
+
 	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvFPEncoding kind)
 	{
 		return { nullptr, 0 };
 	}
-	
+
 	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvFPOperationMode kind)
 	{
 		return { nullptr, 0 };
 	}
-	
+
 	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvFPRoundingMode kind)
 	{
 		return { nullptr, 0 };
 	}
-	
+
 	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvFunctionParameterAttribute kind)
 	{
 		return { nullptr, 0 };
 	}
-	
+
 	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvGroupOperation kind)
 	{
 		return { nullptr, 0 };
 	}
-	
+
 	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvHostAccessQualifier kind)
 	{
 		return { nullptr, 0 };
 	}
-	
+
 	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvImageChannelDataType kind)
 	{
 		return { nullptr, 0 };
 	}
-	
+
 	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvImageChannelOrder kind)
 	{
 		return { nullptr, 0 };
 	}
-	
+
 	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvImageFormat kind)
 	{
 		return { nullptr, 0 };
 	}
-	
+
 	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvInitializationModeQualifier kind)
 	{
 		return { nullptr, 0 };
 	}
-	
+
 	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvKernelEnqueueFlags kind)
 	{
 		return { nullptr, 0 };
 	}
-	
+
 	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvLinkageType kind)
 	{
 		return { nullptr, 0 };
 	}
-	
+
 	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvLoadCacheControl kind)
 	{
 		return { nullptr, 0 };
 	}
-	
+
 	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvMemoryModel kind)
 	{
 		return { nullptr, 0 };
 	}
-	
+
 	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvNamedMaximumNumberOfRegisters kind)
 	{
 		return { nullptr, 0 };
 	}
-	
+
 	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvOverflowModes kind)
 	{
 		return { nullptr, 0 };
 	}
-	
+
 	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvPackedVectorFormat kind)
 	{
 		return { nullptr, 0 };
 	}
-	
+
 	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvQuantizationModes kind)
 	{
 		return { nullptr, 0 };
 	}
-	
+
 	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvRayQueryCandidateIntersectionType kind)
 	{
 		return { nullptr, 0 };
 	}
-	
+
 	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvRayQueryCommittedIntersectionType kind)
 	{
 		return { nullptr, 0 };
 	}
-	
+
 	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvRayQueryIntersection kind)
 	{
 		return { nullptr, 0 };
 	}
-	
+
 	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvSamplerAddressingMode kind)
 	{
 		return { nullptr, 0 };
 	}
-	
+
 	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvSamplerFilterMode kind)
 	{
 		return { nullptr, 0 };
 	}
-	
+
 	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvScope kind)
 	{
 		return { nullptr, 0 };
 	}
-	
+
 	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvSourceLanguage kind)
 	{
 		return { nullptr, 0 };
 	}
-	
+
 	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvStorageClass kind)
 	{
 		return { nullptr, 0 };
 	}
-	
+
 	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvStoreCacheControl kind)
 	{
 		return { nullptr, 0 };
 	}
-	
+
 	std::pair<const SpirvOperand*, std::size_t> GetSpirvExtraOperands([[maybe_unused]] SpirvTensorClampMode kind)
 	{
 		return { nullptr, 0 };

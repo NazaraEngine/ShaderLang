@@ -71,7 +71,7 @@ namespace nzsl::Ast
 			bool IsIdentifierAvailable(std::string_view identifier, bool allowReserved = true) const;
 
 			void PopScope() override;
-			
+
 			void PropagateConstants(ExpressionPtr& expr) const;
 
 			void PushScope() override;

@@ -133,7 +133,7 @@ namespace nzsl
 
 		return values[0];
 	}
-	
+
 	template<typename T, std::size_t N>
 	constexpr T& Vector<T, N>::y()
 	{
@@ -149,7 +149,7 @@ namespace nzsl
 
 		return values[1];
 	}
-	
+
 	template<typename T, std::size_t N>
 	constexpr T& Vector<T, N>::z()
 	{
@@ -273,7 +273,7 @@ namespace nzsl
 
 		return result;
 	}
-	
+
 	template<typename T, std::size_t N>
 	constexpr Vector<T, N> Vector<T, N>::operator%(const Vector& vec) const
 	{
