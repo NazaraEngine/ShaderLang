@@ -42,6 +42,6 @@ namespace nzsl::Ast
 		assign.right = ShaderBuilder::Binary(binaryType, Clone(*assign.left), std::move(assign.right));
 		assign.right->cachedExpressionType = assign.left->cachedExpressionType;
 
-		return VisitChildren{};
+		return DontVisitChildren{};
 	}
 }

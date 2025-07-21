@@ -94,7 +94,7 @@ namespace nzsl::Ast
 		return Transformer::TransformStatement(statement, context, error);
 	}
 
-	Stringifier ValidationTransformer::BuildStringifier(const SourceLocation& sourceLocation) const
+	Stringifier ValidationTransformer::BuildStringifier(const SourceLocation& /*sourceLocation*/) const
 	{
 		Stringifier stringifier;
 		/*stringifier.aliasStringifier = [&](std::size_t aliasIndex)
