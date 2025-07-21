@@ -716,21 +716,11 @@ namespace nzsl::Ast
 		NAZARA_USE_ANONYMOUS_NAMESPACE
 
 		if (!m_options->constantQueryCallback)
-		{
-			if (!m_context->partialCompilation)
-				throw std::runtime_error("constant expression encountered with no constant query callback");
-
 			return VisitChildren{};
-		}
 
 		const ConstantValue* constantValue = m_options->constantQueryCallback(node.constantId);
 		if (!constantValue)
-		{
-			if (!m_context->partialCompilation)
-				throw AstInvalidConstantIndexError{ node.sourceLocation, node.constantId };
-
 			return VisitChildren{};
-		}
 
 		// Replace by constant value
 		return std::visit([&](auto&& arg) -> ExpressionTransformation
