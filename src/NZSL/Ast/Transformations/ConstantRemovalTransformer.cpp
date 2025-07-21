@@ -65,7 +65,7 @@ namespace nzsl::Ast
 			}, optIt->second);
 		}
 
-		return VisitChildren{};
+		return DontVisitChildren{};
 	}
 
 	auto ConstantRemovalTransformer::Transform(IntrinsicExpression&& intrinsicExpr) -> ExpressionTransformation
@@ -74,6 +74,7 @@ namespace nzsl::Ast
 			return VisitChildren{};
 
 		HandleChildren(intrinsicExpr);
+
 		if (intrinsicExpr.intrinsic == IntrinsicType::ArraySize)
 		{
 			assert(!intrinsicExpr.parameters.empty());

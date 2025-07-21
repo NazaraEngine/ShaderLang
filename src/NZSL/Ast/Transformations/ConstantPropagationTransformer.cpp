@@ -688,11 +688,15 @@ namespace nzsl::Ast
 	auto ConstantPropagationTransformer::Transform(ConditionalExpression&& node) -> ExpressionTransformation
 	{
 		HandleExpression(node.condition);
+
 		if (node.condition->GetType() != NodeType::ConstantValueExpression)
 		{
 			if (!m_context->partialCompilation)
 				throw std::runtime_error("conditional expression condition must be a constant expression");
-			
+
+			HandleExpression(node.truePath);
+			HandleExpression(node.falsePath);
+
 			return VisitChildren{};
 		}
 
@@ -706,9 +710,15 @@ namespace nzsl::Ast
 
 		bool cValue = std::get<bool>(constant.value);
 		if (cValue)
+		{
+			HandleExpression(node.truePath);
 			return ReplaceExpression{ std::move(node.truePath) };
+		}
 		else
+		{
+			HandleExpression(node.falsePath);
 			return ReplaceExpression{ std::move(node.falsePath) };
+		}
 	}
 
 	auto ConstantPropagationTransformer::Transform(ConstantExpression&& node) -> ExpressionTransformation

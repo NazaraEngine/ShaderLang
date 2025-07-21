@@ -89,9 +89,11 @@ namespace nzsl::Ast
 
 		const ExpressionType& targetType = castExpr.targetType.GetResultingValue();
 
-		if (IsMatrixType(targetType))
+		const ExpressionType& resolvedTargetType = ResolveAlias(targetType);
+
+		if (IsMatrixType(resolvedTargetType))
 		{
-			const MatrixType& targetMatrixType = std::get<MatrixType>(targetType);
+			const MatrixType& targetMatrixType = std::get<MatrixType>(resolvedTargetType);
 
 			// Check if all types are known
 			for (std::size_t i = 0; i < castExpr.expressions.size(); ++i)
@@ -118,7 +120,7 @@ namespace nzsl::Ast
 			for (std::uint32_t i = 0; i < targetMatrixType.columnCount; ++i)
 			{
 				// temp[i]
-				auto columnExpr = ShaderBuilder::AccessIndex(ShaderBuilder::Variable(variableIndex, targetType, castExpr.sourceLocation), ShaderBuilder::ConstantValue(i, castExpr.sourceLocation));
+				auto columnExpr = ShaderBuilder::AccessIndex(ShaderBuilder::Variable(variableIndex, resolvedTargetType, castExpr.sourceLocation), ShaderBuilder::ConstantValue(i, castExpr.sourceLocation));
 				columnExpr->cachedExpressionType = VectorType{ targetMatrixType.rowCount, targetMatrixType.type };
 
 				// vector expression
@@ -221,7 +223,7 @@ namespace nzsl::Ast
 				AppendStatement(ShaderBuilder::ExpressionStatement(std::move(assignExpr)));
 			}
 
-			return ReplaceExpression{ ShaderBuilder::Variable(variableIndex, targetType, castExpr.sourceLocation) };
+			return ReplaceExpression{ ShaderBuilder::Variable(variableIndex, resolvedTargetType, castExpr.sourceLocation) };
 		}
 
 		return VisitChildren{};
