@@ -2334,6 +2334,8 @@ namespace nzsl::Ast
 	
 	auto ResolveTransformer::Transform(IntrinsicExpression&& intrinsicExpr) -> ExpressionTransformation
 	{
+		HandleChildren(intrinsicExpr);
+
 		auto intrinsicIt = LangData::s_intrinsicData.find(intrinsicExpr.intrinsic);
 		if (intrinsicIt == LangData::s_intrinsicData.end())
 			throw AstInternalError{ intrinsicExpr.sourceLocation, fmt::format("missing intrinsic data for intrinsic {}", Nz::UnderlyingCast(intrinsicExpr.intrinsic)) };
@@ -2349,7 +2351,7 @@ namespace nzsl::Ast
 			{
 				const ExpressionType* expressionType = GetExpressionType(*intrinsicExpr.parameters[0]);
 				if (!expressionType)
-					return VisitChildren{}; //< unresolved type
+					return DontVisitChildren{}; //< unresolved type
 
 				const ExpressionType& paramType = ResolveAlias(*expressionType);
 				if (!IsSamplerType(paramType))
@@ -2367,7 +2369,7 @@ namespace nzsl::Ast
 			{
 				const ExpressionType* expressionType = GetExpressionType(*intrinsicExpr.parameters[0]);
 				if (!expressionType)
-					return VisitChildren{}; //< unresolved type
+					return DontVisitChildren{}; //< unresolved type
 
 				const ExpressionType& paramType = ResolveAlias(*expressionType);
 				if (!IsTextureType(paramType))
@@ -2382,7 +2384,7 @@ namespace nzsl::Ast
 			{
 				const ExpressionType* expressionType = GetExpressionType(*intrinsicExpr.parameters[0]);
 				if (!expressionType)
-					return VisitChildren{}; //< unresolved type
+					return DontVisitChildren{}; //< unresolved type
 
 				const ExpressionType& paramType = ResolveAlias(*expressionType);
 				if (!IsMatrixType(paramType))
@@ -2399,7 +2401,7 @@ namespace nzsl::Ast
 			{
 				const ExpressionType* expressionType = GetExpressionType(*intrinsicExpr.parameters[0]);
 				if (!expressionType)
-					return VisitChildren{}; //< unresolved type
+					return DontVisitChildren{}; //< unresolved type
 
 				intrinsicExpr.cachedExpressionType = *expressionType;
 				break;
@@ -2409,7 +2411,7 @@ namespace nzsl::Ast
 			{
 				const ExpressionType* expressionType = GetExpressionType(*intrinsicExpr.parameters[1]);
 				if (!expressionType)
-					return VisitChildren{}; //< unresolved type
+					return DontVisitChildren{}; //< unresolved type
 
 				intrinsicExpr.cachedExpressionType = *expressionType;
 				break;
@@ -2419,7 +2421,7 @@ namespace nzsl::Ast
 			{
 				const ExpressionType* expressionType = GetExpressionType(*intrinsicExpr.parameters[0]);
 				if (!expressionType)
-					return VisitChildren{}; //< unresolved type
+					return DontVisitChildren{}; //< unresolved type
 
 				const ExpressionType& paramType = ResolveAlias(*expressionType);
 				if (!IsVectorType(paramType))
@@ -2439,7 +2441,7 @@ namespace nzsl::Ast
 				break;
 		}
 
-		return VisitChildren{};
+		return DontVisitChildren{};
 	}
 
 	auto ResolveTransformer::Transform(SwizzleExpression&& swizzleExpr) -> ExpressionTransformation
