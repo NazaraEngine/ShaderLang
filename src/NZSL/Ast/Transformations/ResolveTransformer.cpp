@@ -3194,14 +3194,14 @@ namespace nzsl::Ast
 		if (forStatement.stepExpr)
 			HandleExpression(forStatement.stepExpr);
 
-		const ExpressionType* fromExprType = GetExpressionType(*forStatement.fromExpr);
-
 		if (forStatement.unroll.HasValue())
 			ComputeExprValue(forStatement.unroll, forStatement.sourceLocation);
 
 		auto ProcessFor = [&]
 		{
 			bool wontUnroll = !forStatement.unroll.HasValue() || (forStatement.unroll.IsResultingValue() && forStatement.unroll.GetResultingValue() != LoopUnroll::Always);
+
+			const ExpressionType* fromExprType = GetExpressionType(*forStatement.fromExpr);
 
 			PushScope();
 			{
@@ -3283,6 +3283,7 @@ namespace nzsl::Ast
 					}
 				};
 
+				const ExpressionType* fromExprType = GetExpressionType(*forStatement.fromExpr);
 				if (fromExprType)
 				{
 					const ExpressionType& resolvedFromExprType = ResolveAlias(*fromExprType);
