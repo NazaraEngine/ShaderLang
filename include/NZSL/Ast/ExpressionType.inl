@@ -331,6 +331,37 @@ namespace nzsl::Ast
 		return ResolveStructIndex(exprType) != std::numeric_limits<std::size_t>::max();
 	}
 
+	inline bool IsUntypedType(const ExpressionType& exprType)
+	{
+		if (IsArrayType(exprType))
+			return IsUntypedType(std::get<ArrayType>(exprType).containedType->type);
+
+		PrimitiveType primType;
+		if (IsPrimitiveType(exprType))
+			primType = std::get<PrimitiveType>(exprType);
+		else if (IsVectorType(exprType))
+			primType = std::get<VectorType>(exprType).type;
+		else
+			return false;
+
+		switch (primType)
+		{
+			case PrimitiveType::Boolean:
+			case PrimitiveType::Float32:
+			case PrimitiveType::Float64:
+			case PrimitiveType::Int32:
+			case PrimitiveType::UInt32:
+			case PrimitiveType::String:
+				return false;
+
+			case PrimitiveType::UntypedFloat:
+			case PrimitiveType::UntypedInteger:
+				return true;
+		}
+
+		NAZARA_UNREACHABLE();
+	}
+
 	inline const ExpressionType& ResolveAlias(const ExpressionType& exprType)
 	{
 		if (IsAliasType(exprType))

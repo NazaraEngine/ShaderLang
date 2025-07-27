@@ -23,6 +23,7 @@
 #include <NZSL/Ast/Transformations/ResolveTransformer.hpp>
 #include <NZSL/Ast/Transformations/StructAssignmentTransformer.hpp>
 #include <NZSL/Ast/Transformations/SwizzleTransformer.hpp>
+#include <NZSL/Ast/Transformations/UntypedTransformer.hpp>
 #include <NZSL/Ast/Transformations/ValidationTransformer.hpp>
 #include <fmt/format.h>
 #include <frozen/unordered_map.h>
@@ -596,6 +597,7 @@ namespace nzsl
 			return nameChanged;
 		};
 
+		executor.AddPass<Ast::UntypedTransformer>();
 		executor.AddPass<Ast::IdentifierTransformer>(firstIdentifierPassOptions);
 		executor.AddPass<Ast::ForToWhileTransformer>();
 		executor.AddPass<Ast::StructAssignmentTransformer>({ false, true }); //< TODO: Only split for base uniforms/storage
@@ -709,6 +711,9 @@ namespace nzsl
 
 	void GlslWriter::Append(const Ast::MatrixType& matrixType)
 	{
+		if (matrixType.type == Ast::PrimitiveType::Float64)
+			Append("d");
+
 		if (matrixType.columnCount == matrixType.rowCount)
 		{
 			Append("mat");
@@ -865,8 +870,8 @@ namespace nzsl
 			case Ast::PrimitiveType::Int32:   Append("i"); break;
 			case Ast::PrimitiveType::UInt32:  Append("u"); break;
 
-			case Ast::PrimitiveType::UntypedFloat: throw std::runtime_error("unexpected literal type");
-			case Ast::PrimitiveType::UntypedInteger:       throw std::runtime_error("unexpected literal type");
+			case Ast::PrimitiveType::UntypedFloat:         throw std::runtime_error("unexpected UntypedFloat type");
+			case Ast::PrimitiveType::UntypedInteger:       throw std::runtime_error("unexpected UntypedInteger type");
 			case Ast::PrimitiveType::String:               throw std::runtime_error("unexpected string type");
 		}
 
@@ -1392,13 +1397,22 @@ namespace nzsl
 			Append(Ast::ToString(value));
 			if constexpr (std::is_same_v<T, std::uint32_t>)
 				Append("u");
+			else if constexpr (std::is_same_v<T, double>)
+				Append("lf");
 		}
-		else if constexpr (IsVector_v<T> && T::Dimensions == 2)
-			Append("vec2(" + Ast::ToString(value.x()) + ", " + Ast::ToString(value.y()) + ")");
-		else if constexpr (IsVector_v<T> && T::Dimensions == 3)
-			Append("vec3(" + Ast::ToString(value.x()) + ", " + Ast::ToString(value.y()) + ", " + Ast::ToString(value.z()) + ")");
-		else if constexpr (IsVector_v<T> && T::Dimensions == 4)
-			Append("vec4(" + Ast::ToString(value.x()) + ", " + Ast::ToString(value.y()) + ", " + Ast::ToString(value.z()) + ", " + Ast::ToString(value.w()) + ")");
+		else if constexpr (IsVector_v<T>)
+		{
+			Append("vec", T::Dimensions, "(");
+			for (std::size_t i = 0; i < T::Dimensions; ++i)
+			{
+				if (i != 0)
+					Append(", ");
+	
+				AppendValue(value[i]);
+			}
+
+			Append(")");
+		}
 		else
 			static_assert(Nz::AlwaysFalse<T>(), "non-exhaustive visitor");
 	}

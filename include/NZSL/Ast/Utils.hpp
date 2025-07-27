@@ -62,6 +62,9 @@ namespace nzsl::Ast
 	StatementPtr Unscope(StatementPtr&& statement);
 
 	ExpressionType ValidateBinaryOp(BinaryType op, const ExpressionType& leftExprType, const ExpressionType& rightExprType, const SourceLocation& sourceLocation, const Stringifier& typeStringifier = {});
+
+	bool ValidateMatchingTypes(const ExpressionPtr& left, const ExpressionPtr& right);
+	bool ValidateMatchingTypes(const ExpressionType& left, const ExpressionType& right);
 }
 
 #include <NZSL/Ast/Utils.inl>

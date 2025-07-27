@@ -7,11 +7,12 @@
 #include <NZSL/ShaderBuilder.hpp>
 #include <NZSL/Ast/ExpressionVisitor.hpp>
 #include <NZSL/Ast/StatementVisitor.hpp>
+#include <NZSL/Lang/Version.hpp>
 #include <fmt/format.h>
 
 namespace nzsl::Ast
 {
-	static_assert(std::variant_size_v<ConstantSingleValue> == 24);
+	static_assert(std::variant_size_v<ConstantSingleValue> == 30);
 
 #define NZSL_TYPE_INDEX(callback) \
 		/* callback(NoType, 0) */ \
@@ -36,13 +37,19 @@ namespace nzsl::Ast
 		callback(Vector2<bool>, 19) \
 		callback(Vector3<bool>, 20) \
 		callback(Vector4<bool>, 21) \
-		callback(UntypedFloat(), 22) \
-		callback(UntypedInteger(), 23) \
+		callback(UntypedFloat, 22) \
+		callback(Vector2<UntypedFloat>, 23) \
+		callback(Vector3<UntypedFloat>, 24) \
+		callback(Vector4<UntypedFloat>, 25) \
+		callback(UntypedInteger, 26) \
+		callback(Vector2<UntypedInteger>, 27) \
+		callback(Vector3<UntypedInteger>, 28) \
+		callback(Vector4<UntypedInteger>, 29)
 
 	namespace
 	{
 		constexpr std::uint32_t s_shaderAstMagicNumber = 0x4E534852;
-		constexpr std::uint32_t s_shaderAstCurrentVersion = 13;
+		constexpr std::uint32_t s_shaderAstCurrentVersion = 14;
 
 		class ShaderSerializerVisitor : public ExpressionVisitor, public StatementVisitor
 		{
@@ -555,6 +562,31 @@ namespace nzsl::Ast
 
 	void SerializerBase::SerializeStatementCommon(Statement& /*stmt*/)
 	{
+	}
+
+	void SerializerBase::Metadata(Module::Metadata& metadata)
+	{
+		Value(metadata.moduleName);
+		Value(metadata.shaderLangVersion);
+		if (!IsVersionGreaterOrEqual(14) && !IsWriting())
+		{
+			// Version binary representation changed in binary version 14
+			std::uint32_t majorVersion = metadata.shaderLangVersion / 100;
+			std::uint32_t minorVersion = (metadata.shaderLangVersion - majorVersion * 100) / 10;
+			std::uint32_t patchVersion = metadata.shaderLangVersion % 10;
+			metadata.shaderLangVersion = Version::Build(majorVersion, minorVersion, patchVersion);
+		}
+
+		if (IsVersionGreaterOrEqual(2))
+		{
+			Value(metadata.author);
+			Value(metadata.description);
+			Value(metadata.license);
+
+			Container(metadata.enabledFeatures);
+			for (ModuleFeature& feature : metadata.enabledFeatures)
+				Enum(feature);
+		}
 	}
 
 	void ShaderAstSerializer::Serialize(const Module& module)

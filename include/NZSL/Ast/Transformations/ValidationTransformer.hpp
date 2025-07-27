@@ -26,6 +26,7 @@ namespace nzsl::Ast
 			struct Options
 			{
 				const Stringifier* stringifier = nullptr;
+				bool allowUntyped = true;
 				bool checkIndices = true;
 			};
 
@@ -108,9 +109,6 @@ namespace nzsl::Ast
 			StatementTransformation Transform(WhileStatement&& node) override;
 
 			bool TransformModule(Module& module, TransformerContext& context, std::string* error, Nz::FunctionRef<void()> postCallback = nullptr) override;
-
-			void TypeMustMatch(const ExpressionPtr& left, const ExpressionPtr& right, const SourceLocation& sourceLocation) const;
-			void TypeMustMatch(const ExpressionType& left, const ExpressionType& right, const SourceLocation& sourceLocation) const;
 
 			void ValidateConcreteType(const ExpressionType& exprType, const SourceLocation& sourceLocation);
 			void ValidateIntrinsicParameters(IntrinsicExpression& node);
