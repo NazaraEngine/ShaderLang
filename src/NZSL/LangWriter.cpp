@@ -339,14 +339,14 @@ namespace nzsl
 	{
 		switch (type)
 		{
-			case Ast::PrimitiveType::Boolean:        return Append("bool");
-			case Ast::PrimitiveType::Float32:        return Append("f32");
-			case Ast::PrimitiveType::Float64:        return Append("f64");
-			case Ast::PrimitiveType::Int32:          return Append("i32");
-			case Ast::PrimitiveType::UInt32:         return Append("u32");
-			case Ast::PrimitiveType::String:         return Append("string");
-			case Ast::PrimitiveType::UntypedFloat:   return Append("UntypedFloat");
-			case Ast::PrimitiveType::UntypedInteger: return Append("UntypedInteger");
+			case Ast::PrimitiveType::Boolean:      return Append("bool");
+			case Ast::PrimitiveType::Float32:      return Append("f32");
+			case Ast::PrimitiveType::Float64:      return Append("f64");
+			case Ast::PrimitiveType::Int32:        return Append("i32");
+			case Ast::PrimitiveType::UInt32:       return Append("u32");
+			case Ast::PrimitiveType::String:       return Append("string");
+			case Ast::PrimitiveType::FloatLiteral: return Append("FloatLiteral");
+			case Ast::PrimitiveType::IntLiteral:   return Append("IntLiteral");
 		}
 	}
 
@@ -1430,7 +1430,7 @@ namespace nzsl
 			RegisterConstant(*node.constIndex, node.name);
 
 		Append("const ", node.name);
-		if (node.type.HasValue() && (!node.type.IsResultingValue() || !IsUntypedType(node.type.GetResultingValue())))
+		if (node.type.HasValue() && (!node.type.IsResultingValue() || !IsLiteralType(node.type.GetResultingValue())))
 			Append(": ", node.type);
 
 		if (node.expression)
@@ -1581,7 +1581,7 @@ namespace nzsl
 			RegisterVariable(*node.varIndex, node.varName);
 
 		Append("let ", node.varName);
-		if (node.varType.HasValue() && (!node.varType.IsResultingValue() || !IsUntypedType(node.varType.GetResultingValue())))
+		if (node.varType.HasValue() && (!node.varType.IsResultingValue() || !IsLiteralType(node.varType.GetResultingValue())))
 			Append(": ", node.varType);
 
 		if (node.initialExpression)

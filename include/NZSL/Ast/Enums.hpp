@@ -264,8 +264,8 @@ namespace nzsl::Ast
 		Int32          = 2, //< i32
 		String         = 4, //< str
 		UInt32         = 3, //< u32
-		UntypedFloat   = 6, //< UntypedFloat
-		UntypedInteger = 7, //< UntypedInteger
+		FloatLiteral   = 6, //< FloatLiteral
+		IntLiteral     = 7, //< IntLiteral
 	};
 
 	enum class UnaryType

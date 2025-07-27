@@ -21,10 +21,10 @@ namespace nzsl::Ast
 			return PrimitiveType::UInt32;
 		else if constexpr (std::is_same_v<T, std::string>)
 			return PrimitiveType::String;
-		else if constexpr (std::is_same_v<T, UntypedFloat>)
-			return PrimitiveType::UntypedFloat;
-		else if constexpr (std::is_same_v<T, UntypedInteger>)
-			return PrimitiveType::UntypedInteger;
+		else if constexpr (std::is_same_v<T, FloatLiteral>)
+			return PrimitiveType::FloatLiteral;
+		else if constexpr (std::is_same_v<T, IntLiteral>)
+			return PrimitiveType::IntLiteral;
 		else if constexpr (IsVector_v<T>)
 			return VectorType{ T::Dimensions, std::get<PrimitiveType>(GetConstantExpressionType<typename T::Base>()) };
 		else

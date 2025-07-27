@@ -414,25 +414,25 @@ namespace nzsl::Ast
 				// not exact type, maybe constant is untyped
 				if constexpr (std::is_same_v<T, float>)
 				{
-					if (std::holds_alternative<UntypedFloat>(*value))
+					if (std::holds_alternative<FloatLiteral>(*value))
 					{
-						attribute = static_cast<float>(std::get<UntypedFloat>(*value));
+						attribute = static_cast<float>(std::get<FloatLiteral>(*value));
 						return true;
 					}
 				}
 				else if constexpr (std::is_same_v<T, double>)
 				{
-					if (std::holds_alternative<UntypedFloat>(*value))
+					if (std::holds_alternative<FloatLiteral>(*value))
 					{
-						attribute = static_cast<double>(std::get<UntypedFloat>(*value));
+						attribute = static_cast<double>(std::get<FloatLiteral>(*value));
 						return true;
 					}
 				}
 				else if constexpr (std::is_same_v<T, std::int32_t>)
 				{
-					if (std::holds_alternative<UntypedInteger>(*value))
+					if (std::holds_alternative<IntLiteral>(*value))
 					{
-						std::int64_t iValue = std::get<UntypedInteger>(*value);
+						std::int64_t iValue = std::get<IntLiteral>(*value);
 						if (iValue > std::numeric_limits<std::int32_t>::max())
 							throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::Int32), std::to_string(iValue) };
 
@@ -445,9 +445,9 @@ namespace nzsl::Ast
 				}
 				else if constexpr (std::is_same_v<T, std::uint32_t>)
 				{
-					if (std::holds_alternative<UntypedInteger>(*value))
+					if (std::holds_alternative<IntLiteral>(*value))
 					{
-						std::int64_t iValue = std::get<UntypedInteger>(*value);
+						std::int64_t iValue = std::get<IntLiteral>(*value);
 						if (iValue < 0)
 							throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::UInt32), std::to_string(iValue) };
 
@@ -768,9 +768,9 @@ namespace nzsl::Ast
 					assert(std::holds_alternative<ConstantValue>(parameters[1]));
 					const ConstantValue& length = std::get<ConstantValue>(parameters[1]);
 
-					if (std::holds_alternative<UntypedInteger>(length))
+					if (std::holds_alternative<IntLiteral>(length))
 					{
-						UntypedInteger untypedValue = std::get<UntypedInteger>(length);
+						IntLiteral untypedValue = std::get<IntLiteral>(length);
 
 						std::int64_t value = untypedValue;
 						if (value <= 0)
@@ -1165,7 +1165,7 @@ namespace nzsl::Ast
 		if (!IsIdentifierAvailable(name))
 			throw CompilerIdentifierAlreadyUsedError{ sourceLocation, name };
 
-		//if (value && IsUntypedType(GetConstantType(*value->value)))
+		//if (value && IsLiteralType(GetConstantType(*value->value)))
 		//	NazaraDebugBreak();
 
 		std::size_t constantIndex;
@@ -1429,7 +1429,7 @@ namespace nzsl::Ast
 				unresolved = true; //< right variable isn't know from this point
 		}
 
-		if (type && IsUntypedType(*type))
+		if (type && IsLiteralType(*type))
 			NazaraDebugBreak();
 
 		std::size_t varIndex;
@@ -1576,14 +1576,14 @@ namespace nzsl::Ast
 		{
 			using T = std::decay_t<decltype(value)>;
 
-			if constexpr (std::is_same_v<T, UntypedFloat>)
+			if constexpr (std::is_same_v<T, FloatLiteral>)
 			{
 				if (expressionType == ExpressionType{ PrimitiveType::Float32 })
 					constantValue = static_cast<float>(value);
 				else if (expressionType == ExpressionType{ PrimitiveType::Float64 })
 					constantValue = static_cast<double>(value);
 			}
-			else if constexpr (std::is_same_v<T, UntypedInteger>)
+			else if constexpr (std::is_same_v<T, IntLiteral>)
 			{
 				if (expressionType == ExpressionType{ PrimitiveType::Int32 })
 				{
@@ -1611,7 +1611,7 @@ namespace nzsl::Ast
 				using VecBase = typename T::Base;
 
 				ExpressionType baseType;
-				if constexpr (std::is_same_v<VecBase, UntypedFloat>)
+				if constexpr (std::is_same_v<VecBase, FloatLiteral>)
 				{
 					if (expressionType == ExpressionType{ VectorType{ T::Dimensions, PrimitiveType::Float32 } })
 					{
@@ -1630,7 +1630,7 @@ namespace nzsl::Ast
 						constantValue = vec;
 					}
 				}
-				else if constexpr (std::is_same_v<VecBase, UntypedInteger>)
+				else if constexpr (std::is_same_v<VecBase, IntLiteral>)
 				{
 					if (expressionType == ExpressionType{ VectorType{ T::Dimensions, PrimitiveType::Int32 } })
 					{
@@ -1667,25 +1667,25 @@ namespace nzsl::Ast
 
 	void ResolveTransformer::ResolveUntyped(ExpressionType& expressionType, const SourceLocation& sourceLocation)
 	{
-		if (!IsUntypedType(expressionType))
+		if (!IsLiteralType(expressionType))
 			return;
 
 		if (IsPrimitiveType(expressionType))
 		{
 			PrimitiveType& primitiveType = std::get<PrimitiveType>(expressionType);
 
-			if (primitiveType == PrimitiveType::UntypedFloat)
+			if (primitiveType == PrimitiveType::FloatLiteral)
 				primitiveType = PrimitiveType::Float32;
-			else if (primitiveType == PrimitiveType::UntypedInteger)
+			else if (primitiveType == PrimitiveType::IntLiteral)
 				primitiveType = PrimitiveType::Int32;
 		}
 		else if (IsVectorType(expressionType))
 		{
 			VectorType& vecType = std::get<VectorType>(expressionType);
 
-			if (vecType.type == PrimitiveType::UntypedFloat)
+			if (vecType.type == PrimitiveType::FloatLiteral)
 				vecType.type = PrimitiveType::Float32;
-			else if (vecType.type == PrimitiveType::UntypedInteger)
+			else if (vecType.type == PrimitiveType::IntLiteral)
 				vecType.type = PrimitiveType::Int32;
 		}
 		else if (IsArrayType(expressionType))
@@ -2171,7 +2171,7 @@ namespace nzsl::Ast
 					throw CompilerIndexRequiresIntegerIndicesError{ accessIndexExpr.sourceLocation, ToString(*indexType, indexExpr->sourceLocation) };
 
 				PrimitiveType primitiveIndexType = std::get<PrimitiveType>(*indexType);
-				if (primitiveIndexType != PrimitiveType::Int32 && primitiveIndexType != PrimitiveType::UInt32 && primitiveIndexType != PrimitiveType::UntypedInteger)
+				if (primitiveIndexType != PrimitiveType::Int32 && primitiveIndexType != PrimitiveType::UInt32 && primitiveIndexType != PrimitiveType::IntLiteral)
 					throw CompilerIndexRequiresIntegerIndicesError{ accessIndexExpr.sourceLocation, ToString(*indexType, indexExpr->sourceLocation) };
 
 				if (IsArrayType(resolvedExprType))
@@ -2729,8 +2729,8 @@ namespace nzsl::Ast
 					case PrimitiveType::Float64:
 					case PrimitiveType::Int32:
 					case PrimitiveType::UInt32:
-					case PrimitiveType::UntypedFloat:
-					case PrimitiveType::UntypedInteger:
+					case PrimitiveType::FloatLiteral:
+					case PrimitiveType::IntLiteral:
 						break;
 
 					default:
@@ -2964,7 +2964,7 @@ namespace nzsl::Ast
 		else
 			ResolveUntyped(expressionType, declConst.sourceLocation);
 
-		if (!IsUntypedType(expressionType))
+		if (!IsLiteralType(expressionType))
 			declConst.type = expressionType;
 
 		return DontVisitChildren{};
@@ -3322,7 +3322,7 @@ namespace nzsl::Ast
 		ValidateConcreteType(resolvedType, declVariable.sourceLocation);
 
 		declVariable.varIndex = RegisterVariable(declVariable.varName, resolvedType, declVariable.varIndex, declVariable.sourceLocation);
-		if (!IsUntypedType(resolvedType))
+		if (!IsLiteralType(resolvedType))
 			declVariable.varType = std::move(resolvedType);
 		
 		return DontVisitChildren{};
@@ -3548,7 +3548,7 @@ namespace nzsl::Ast
 						throw CompilerForFromTypeExpectIntegerTypeError{ forStatement.fromExpr->sourceLocation, ToString(*fromExprType, forStatement.fromExpr->sourceLocation) };
 
 					PrimitiveType counterType = std::get<PrimitiveType>(resolvedFromExprType);
-					if (counterType != PrimitiveType::Int32 && counterType != PrimitiveType::UInt32 && counterType != PrimitiveType::UntypedInteger)
+					if (counterType != PrimitiveType::Int32 && counterType != PrimitiveType::UInt32 && counterType != PrimitiveType::IntLiteral)
 						throw CompilerForFromTypeExpectIntegerTypeError{ forStatement.fromExpr->sourceLocation, ToString(*fromExprType, forStatement.fromExpr->sourceLocation) };
 
 					switch (counterType)
@@ -3561,8 +3561,8 @@ namespace nzsl::Ast
 							Unroll(std::uint32_t{});
 							break;
 
-						case PrimitiveType::UntypedInteger:
-							Unroll(UntypedInteger{});
+						case PrimitiveType::IntLiteral:
+							Unroll(IntLiteral{});
 							break;
 
 						default:
@@ -3953,7 +3953,7 @@ namespace nzsl::Ast
 			if (arrayType.length == 0)
 				throw CompilerArrayLengthRequiredError{ sourceLocation };
 		}
-		else if (IsUntypedType(exprType))
+		else if (IsLiteralType(exprType))
 			throw AstUnexpectedUntypedError{ sourceLocation };
 	}
 

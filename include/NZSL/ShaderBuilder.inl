@@ -221,8 +221,8 @@ namespace nzsl::ShaderBuilder
 			case Ast::PrimitiveType::Int32:          return ShaderBuilder::ConstantValue(Nz::SafeCast<std::int32_t>(value));
 			case Ast::PrimitiveType::UInt32:         return ShaderBuilder::ConstantValue(Nz::SafeCast<std::uint32_t>(value));
 			case Ast::PrimitiveType::String:         return ShaderBuilder::ConstantValue(value);
-			case Ast::PrimitiveType::UntypedFloat:   return ShaderBuilder::ConstantValue(Ast::UntypedFloat{ Nz::SafeCast<double>(value) });
-			case Ast::PrimitiveType::UntypedInteger: return ShaderBuilder::ConstantValue(Ast::UntypedInteger{ Nz::SafeCast<std::int64_t>(value) });
+			case Ast::PrimitiveType::FloatLiteral:   return ShaderBuilder::ConstantValue(Ast::FloatLiteral{ Nz::SafeCast<double>(value) });
+			case Ast::PrimitiveType::IntLiteral:     return ShaderBuilder::ConstantValue(Ast::IntLiteral{ Nz::SafeCast<std::int64_t>(value) });
 		}
 
 		throw std::runtime_error("unexpected primitive type");
@@ -241,8 +241,8 @@ namespace nzsl::ShaderBuilder
 			case Ast::PrimitiveType::Int32:          return ShaderBuilder::ConstantValue(Nz::SafeCast<std::int32_t>(value), sourceLocation);
 			case Ast::PrimitiveType::UInt32:         return ShaderBuilder::ConstantValue(Nz::SafeCast<std::uint32_t>(value), sourceLocation);
 			case Ast::PrimitiveType::String:         return ShaderBuilder::ConstantValue(value);
-			case Ast::PrimitiveType::UntypedFloat:   return ShaderBuilder::ConstantValue(Ast::UntypedFloat{ Nz::SafeCast<double>(value) });
-			case Ast::PrimitiveType::UntypedInteger: return ShaderBuilder::ConstantValue(Ast::UntypedInteger{ Nz::SafeCast<std::int64_t>(value) });
+			case Ast::PrimitiveType::FloatLiteral:   return ShaderBuilder::ConstantValue(Ast::FloatLiteral{ Nz::SafeCast<double>(value) });
+			case Ast::PrimitiveType::IntLiteral:     return ShaderBuilder::ConstantValue(Ast::IntLiteral{ Nz::SafeCast<std::int64_t>(value) });
 		}
 
 		throw std::runtime_error("unexpected primitive type");

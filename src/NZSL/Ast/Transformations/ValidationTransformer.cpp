@@ -655,8 +655,8 @@ namespace nzsl::Ast
 			{
 				case PrimitiveType::Boolean:
 				case PrimitiveType::String:
-				case PrimitiveType::UntypedFloat:
-				case PrimitiveType::UntypedInteger:
+				case PrimitiveType::FloatLiteral:
+				case PrimitiveType::IntLiteral:
 					return false;
 
 				case PrimitiveType::Float32:
@@ -671,8 +671,8 @@ namespace nzsl::Ast
 						case PrimitiveType::Float64:
 						case PrimitiveType::Int32:
 						case PrimitiveType::UInt32:
-						case PrimitiveType::UntypedFloat:
-						case PrimitiveType::UntypedInteger:
+						case PrimitiveType::FloatLiteral:
+						case PrimitiveType::IntLiteral:
 							return true;
 					}
 
@@ -691,8 +691,8 @@ namespace nzsl::Ast
 						case PrimitiveType::Float64:
 						case PrimitiveType::Int32:
 						case PrimitiveType::UInt32:
-						case PrimitiveType::UntypedFloat:
-						case PrimitiveType::UntypedInteger:
+						case PrimitiveType::FloatLiteral:
+						case PrimitiveType::IntLiteral:
 							return true;
 					}
 
@@ -711,8 +711,8 @@ namespace nzsl::Ast
 						case PrimitiveType::Float64:
 						case PrimitiveType::Int32:
 						case PrimitiveType::UInt32:
-						case PrimitiveType::UntypedFloat:
-						case PrimitiveType::UntypedInteger:
+						case PrimitiveType::FloatLiteral:
+						case PrimitiveType::IntLiteral:
 							return true;
 					}
 
@@ -731,8 +731,8 @@ namespace nzsl::Ast
 						case PrimitiveType::Float64:
 						case PrimitiveType::Int32:
 						case PrimitiveType::UInt32:
-						case PrimitiveType::UntypedFloat:
-						case PrimitiveType::UntypedInteger:
+						case PrimitiveType::FloatLiteral:
+						case PrimitiveType::IntLiteral:
 							return true;
 					}
 
@@ -1465,7 +1465,7 @@ namespace nzsl::Ast
 			if (arrayType.length == 0)
 				throw CompilerArrayLengthRequiredError{ sourceLocation };
 		}
-		else if (IsUntypedType(exprType))
+		else if (IsLiteralType(exprType))
 			throw AstUnexpectedUntypedError{ sourceLocation };
 	}
 
@@ -1541,7 +1541,7 @@ namespace nzsl::Ast
 				{
 					auto Check = [](const ExpressionType& type)
 					{
-						return type == ExpressionType{ PrimitiveType::Float32 } || type == ExpressionType{ PrimitiveType::UntypedFloat };
+						return type == ExpressionType{ PrimitiveType::Float32 } || type == ExpressionType{ PrimitiveType::FloatLiteral };
 					};
 
 					if (ValidateIntrinsicParameterType(node, Check, "f32", paramIndex) == ValidationResult::Unresolved)
@@ -1567,7 +1567,7 @@ namespace nzsl::Ast
 						else
 							return false;
 
-						if (primitiveType != PrimitiveType::Float32 && primitiveType != PrimitiveType::Float64 && primitiveType != PrimitiveType::UntypedFloat)
+						if (primitiveType != PrimitiveType::Float32 && primitiveType != PrimitiveType::Float64 && primitiveType != PrimitiveType::FloatLiteral)
 							return false;
 
 						return true;
@@ -1599,7 +1599,7 @@ namespace nzsl::Ast
 							return false;
 
 						// no float16 for now
-						if (primitiveType != PrimitiveType::Float32 && primitiveType != PrimitiveType::Float64 && primitiveType != PrimitiveType::UntypedFloat)
+						if (primitiveType != PrimitiveType::Float32 && primitiveType != PrimitiveType::Float64 && primitiveType != PrimitiveType::FloatLiteral)
 							return false;
 
 						return true;
@@ -1660,7 +1660,7 @@ namespace nzsl::Ast
 						else
 							return false;
 
-						if (primitiveType != PrimitiveType::Float32 && primitiveType != PrimitiveType::Float64 && primitiveType != PrimitiveType::UntypedFloat)
+						if (primitiveType != PrimitiveType::Float32 && primitiveType != PrimitiveType::Float64 && primitiveType != PrimitiveType::FloatLiteral)
 							return false;
 
 						return true;
@@ -1765,8 +1765,8 @@ namespace nzsl::Ast
 							case PrimitiveType::Float64:
 							case PrimitiveType::Int32:
 							case PrimitiveType::UInt32:
-							case PrimitiveType::UntypedFloat:
-							case PrimitiveType::UntypedInteger:
+							case PrimitiveType::FloatLiteral:
+							case PrimitiveType::IntLiteral:
 								return true;
 						}
 
@@ -1808,8 +1808,8 @@ namespace nzsl::Ast
 							case PrimitiveType::Float64:
 							case PrimitiveType::Int32:
 							case PrimitiveType::UInt32:
-							case PrimitiveType::UntypedFloat:
-							case PrimitiveType::UntypedInteger:
+							case PrimitiveType::FloatLiteral:
+							case PrimitiveType::IntLiteral:
 								return true;
 						}
 
@@ -1878,7 +1878,7 @@ namespace nzsl::Ast
 							if (vectorType.componentCount != requiredComponentCount)
 								return false;
 
-							return vectorType.type == PrimitiveType::Float32 || vectorType.type == PrimitiveType::Float64 || vectorType.type == PrimitiveType::UntypedFloat;
+							return vectorType.type == PrimitiveType::Float32 || vectorType.type == PrimitiveType::Float64 || vectorType.type == PrimitiveType::FloatLiteral;
 						};
 
 						char errMessage[] = "floating-point vector of X components";
@@ -1940,8 +1940,8 @@ namespace nzsl::Ast
 							case PrimitiveType::Float64:
 							case PrimitiveType::Int32:
 							case PrimitiveType::UInt32:
-							case PrimitiveType::UntypedFloat:
-							case PrimitiveType::UntypedInteger:
+							case PrimitiveType::FloatLiteral:
+							case PrimitiveType::IntLiteral:
 								return true;
 						}
 
@@ -1983,8 +1983,8 @@ namespace nzsl::Ast
 							case PrimitiveType::Float64:
 							case PrimitiveType::Int32:
 							case PrimitiveType::UInt32:
-							case PrimitiveType::UntypedFloat:
-							case PrimitiveType::UntypedInteger:
+							case PrimitiveType::FloatLiteral:
+							case PrimitiveType::IntLiteral:
 								return true;
 						}
 
@@ -2024,8 +2024,8 @@ namespace nzsl::Ast
 							case PrimitiveType::Float32:
 							case PrimitiveType::Float64:
 							case PrimitiveType::Int32:
-							case PrimitiveType::UntypedFloat:
-							case PrimitiveType::UntypedInteger:
+							case PrimitiveType::FloatLiteral:
+							case PrimitiveType::IntLiteral:
 								return true;
 						}
 
@@ -2067,8 +2067,8 @@ namespace nzsl::Ast
 							case PrimitiveType::Float32:
 							case PrimitiveType::Float64:
 							case PrimitiveType::Int32:
-							case PrimitiveType::UntypedFloat:
-							case PrimitiveType::UntypedInteger:
+							case PrimitiveType::FloatLiteral:
+							case PrimitiveType::IntLiteral:
 								return true;
 						}
 
@@ -2203,7 +2203,7 @@ namespace nzsl::Ast
 							if (vectorType.componentCount != requiredComponentCount)
 								return false;
 
-							return vectorType.type == PrimitiveType::Int32 || vectorType.type == PrimitiveType::UntypedInteger;
+							return vectorType.type == PrimitiveType::Int32 || vectorType.type == PrimitiveType::IntLiteral;
 						};
 
 						char errMessage[] = "integer vector of X components";
@@ -2227,7 +2227,7 @@ namespace nzsl::Ast
 								return false;
 
 							PrimitiveType primitiveType = std::get<PrimitiveType>(type);
-							return primitiveType == PrimitiveType::Int32 || primitiveType == PrimitiveType::UntypedInteger;
+							return primitiveType == PrimitiveType::Int32 || primitiveType == PrimitiveType::IntLiteral;
 						};
 
 						if (ValidateIntrinsicParameterType(node, Check, "integer value", paramIndex) == ValidationResult::Unresolved)

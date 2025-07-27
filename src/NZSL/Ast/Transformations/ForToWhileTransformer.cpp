@@ -100,12 +100,12 @@ namespace nzsl::Ast
 			throw CompilerForFromTypeExpectIntegerTypeError{ fromExpr.sourceLocation, ToString(*fromExprType) };
 
 		PrimitiveType counterType = std::get<PrimitiveType>(*fromExprType);
-		if (counterType != PrimitiveType::Int32 && counterType != PrimitiveType::UInt32 && counterType != PrimitiveType::UntypedInteger)
+		if (counterType != PrimitiveType::Int32 && counterType != PrimitiveType::UInt32 && counterType != PrimitiveType::IntLiteral)
 			throw CompilerForFromTypeExpectIntegerTypeError{ fromExpr.sourceLocation, ToString(*fromExprType) };
 
 		auto BuildCounterExprType = [&]() -> Ast::ExpressionValue<Ast::ExpressionType>
 		{
-			if (counterType == PrimitiveType::UntypedInteger)
+			if (counterType == PrimitiveType::IntLiteral)
 				return {};
 			
 			return ExpressionType{ counterType };

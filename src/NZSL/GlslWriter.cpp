@@ -23,7 +23,7 @@
 #include <NZSL/Ast/Transformations/ResolveTransformer.hpp>
 #include <NZSL/Ast/Transformations/StructAssignmentTransformer.hpp>
 #include <NZSL/Ast/Transformations/SwizzleTransformer.hpp>
-#include <NZSL/Ast/Transformations/UntypedTransformer.hpp>
+#include <NZSL/Ast/Transformations/LiteralTransformer.hpp>
 #include <NZSL/Ast/Transformations/ValidationTransformer.hpp>
 #include <fmt/format.h>
 #include <frozen/unordered_map.h>
@@ -69,8 +69,8 @@ namespace nzsl
 				case Ast::PrimitiveType::Float32:
 				case Ast::PrimitiveType::Float64:
 				case Ast::PrimitiveType::String:
-				case Ast::PrimitiveType::UntypedFloat:
-				case Ast::PrimitiveType::UntypedInteger:
+				case Ast::PrimitiveType::FloatLiteral:
+				case Ast::PrimitiveType::IntLiteral:
 					break;
 
 				case Ast::PrimitiveType::Boolean:
@@ -597,7 +597,7 @@ namespace nzsl
 			return nameChanged;
 		};
 
-		executor.AddPass<Ast::UntypedTransformer>();
+		executor.AddPass<Ast::LiteralTransformer>();
 		executor.AddPass<Ast::IdentifierTransformer>(firstIdentifierPassOptions);
 		executor.AddPass<Ast::ForToWhileTransformer>();
 		executor.AddPass<Ast::StructAssignmentTransformer>({ false, true }); //< TODO: Only split for base uniforms/storage
@@ -753,9 +753,9 @@ namespace nzsl
 			case Ast::PrimitiveType::Int32:   return Append("int");
 			case Ast::PrimitiveType::UInt32:  return Append("uint");
 
-			case Ast::PrimitiveType::UntypedFloat:   throw std::runtime_error("unexpected untyped float");
-			case Ast::PrimitiveType::UntypedInteger: throw std::runtime_error("unexpected untyped integer");
-			case Ast::PrimitiveType::String:         throw std::runtime_error("unexpected string type");
+			case Ast::PrimitiveType::FloatLiteral: throw std::runtime_error("unexpected untyped float");
+			case Ast::PrimitiveType::IntLiteral:   throw std::runtime_error("unexpected untyped integer");
+			case Ast::PrimitiveType::String:       throw std::runtime_error("unexpected string type");
 		}
 	}
 
@@ -782,8 +782,8 @@ namespace nzsl
 			case Ast::PrimitiveType::String:
 				throw std::runtime_error("unexpected string type for sampler");
 
-			case Ast::PrimitiveType::UntypedFloat:
-			case Ast::PrimitiveType::UntypedInteger:
+			case Ast::PrimitiveType::FloatLiteral:
+			case Ast::PrimitiveType::IntLiteral:
 				throw std::runtime_error("unexpected untyped for sampler");
 		}
 
@@ -832,8 +832,8 @@ namespace nzsl
 			case Ast::PrimitiveType::String:
 				throw std::runtime_error("unexpected string type for texture");
 
-			case Ast::PrimitiveType::UntypedFloat:
-			case Ast::PrimitiveType::UntypedInteger:
+			case Ast::PrimitiveType::FloatLiteral:
+			case Ast::PrimitiveType::IntLiteral:
 				throw std::runtime_error("unexpected untyped for texture");
 		}
 
@@ -870,9 +870,9 @@ namespace nzsl
 			case Ast::PrimitiveType::Int32:   Append("i"); break;
 			case Ast::PrimitiveType::UInt32:  Append("u"); break;
 
-			case Ast::PrimitiveType::UntypedFloat:         throw std::runtime_error("unexpected UntypedFloat type");
-			case Ast::PrimitiveType::UntypedInteger:       throw std::runtime_error("unexpected UntypedInteger type");
-			case Ast::PrimitiveType::String:               throw std::runtime_error("unexpected string type");
+			case Ast::PrimitiveType::FloatLiteral: throw std::runtime_error("unexpected FloatLiteral type");
+			case Ast::PrimitiveType::IntLiteral:   throw std::runtime_error("unexpected IntLiteral type");
+			case Ast::PrimitiveType::String:       throw std::runtime_error("unexpected string type");
 		}
 
 		Append("vec");
@@ -1386,7 +1386,7 @@ namespace nzsl
 
 		if constexpr (std::is_same_v<T, Ast::NoValue>)
 			throw std::runtime_error("invalid type (value expected)");
-		else if constexpr (Ast::IsUntyped_v<T>)
+		else if constexpr (Ast::IsLiteral_v<T>)
 			throw std::runtime_error("unexpected untyped");
 		else if constexpr (std::is_same_v<T, std::string>)
 			throw std::runtime_error("unexpected string literal");

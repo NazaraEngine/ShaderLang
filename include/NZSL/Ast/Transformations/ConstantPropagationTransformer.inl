@@ -44,14 +44,14 @@ namespace nzsl::Ast
 	template<typename T, typename Other>
 	auto ConstantPropagationTransformer::ResolveUntypedIfNecessary(T value)
 	{
-		if constexpr (IsUntyped_v<T> && IsUntyped_v<Other>)
+		if constexpr (IsLiteral_v<T> && IsLiteral_v<Other>)
 			return value; // Untyped + Untyped = Untyped
-		else if constexpr (IsUntyped_v<T> && std::is_convertible_v<T, Other>)
+		else if constexpr (IsLiteral_v<T> && std::is_convertible_v<T, Other>)
 		{
 			if constexpr (std::is_floating_point_v<typename T::Inner> == std::is_floating_point_v<Other>)
 				return static_cast<Other>(value); // Take other operand type
 			else
-				return value; // float + UntypedInteger is not valid
+				return value; // float + IntLiteral is not valid
 		}
 		else
 			return value; // Other is Untyped but not us, keep our type

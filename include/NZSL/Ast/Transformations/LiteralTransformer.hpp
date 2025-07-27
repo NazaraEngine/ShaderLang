@@ -11,19 +11,19 @@
 
 namespace nzsl::Ast
 {
-	class NZSL_API UntypedTransformer final : public Transformer
+	class NZSL_API LiteralTransformer final : public Transformer
 	{
 		public:
 			struct Options;
 
-			UntypedTransformer() = default;
+			LiteralTransformer() = default;
 
 			inline bool Transform(Module& module, Context& context, std::string* error = nullptr);
 			bool Transform(Module& module, Context& context, const Options& options, std::string* error = nullptr);
 
 			struct Options
 			{
-				bool resolveUntyped = true;
+				bool resolveUntypedLiterals = true;
 			};
 
 		private:
@@ -46,6 +46,6 @@ namespace nzsl::Ast
 	};
 }
 
-#include <NZSL/Ast/Transformations/UntypedTransformer.inl>
+#include <NZSL/Ast/Transformations/LiteralTransformer.inl>
 
 #endif // NZSL_AST_TRANSFORMATIONS_UNTYPEDTRANSFORMER_HPP

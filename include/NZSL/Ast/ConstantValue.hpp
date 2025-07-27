@@ -19,7 +19,7 @@ namespace nzsl::Ast
 	using NoValue = std::monostate;
 
 	template<typename T>
-	struct Untyped
+	struct Literal
 	{
 		using Inner = T;
 
@@ -33,7 +33,7 @@ namespace nzsl::Ast
 			return value;
 		}
 
-		Untyped& operator=(T v)
+		Literal& operator=(T v)
 		{
 			value = v;
 			return *this;
@@ -42,25 +42,25 @@ namespace nzsl::Ast
 		T value;
 	};
 
-	using UntypedFloat = Untyped<double>;
-	using UntypedInteger = Untyped<std::int64_t>;
+	using FloatLiteral = Literal<double>;
+	using IntLiteral = Literal<std::int64_t>;
 
 	template<typename T>
-	struct UntypedTraits
+	struct LiteralTraits
 	{
 		static constexpr bool IsLiteral = false;
 		using Inner = T; //< for easier use
 	};
 
 	template<typename T>
-	struct UntypedTraits<Untyped<T>>
+	struct LiteralTraits<Literal<T>>
 	{
 		static constexpr bool IsLiteral = true;
 		using Inner = T;
 	};
 
-	template<typename T> constexpr bool IsUntyped_v = UntypedTraits<T>::IsLiteral;
-	template<typename T> using UntypedInnerType_t = typename UntypedTraits<T>::Inner;
+	template<typename T> constexpr bool IsLiteral_v = LiteralTraits<T>::IsLiteral;
+	template<typename T> using LiteralInnerType_t = typename LiteralTraits<T>::Inner;
 
 	using ConstantPrimitiveTypes = Nz::TypeList<
 		bool,
@@ -69,8 +69,8 @@ namespace nzsl::Ast
 		std::int32_t,
 		std::uint32_t,
 		std::string,
-		UntypedFloat,
-		UntypedInteger
+		FloatLiteral,
+		IntLiteral
 	>;
 
 	using ConstantVectorTypes = Nz::TypeList<
@@ -89,12 +89,12 @@ namespace nzsl::Ast
 		Vector2<bool>,
 		Vector3<bool>,
 		Vector4<bool>,
-		Vector2<UntypedFloat>,
-		Vector3<UntypedFloat>,
-		Vector4<UntypedFloat>,
-		Vector2<UntypedInteger>,
-		Vector3<UntypedInteger>,
-		Vector4<UntypedInteger>
+		Vector2<FloatLiteral>,
+		Vector3<FloatLiteral>,
+		Vector4<FloatLiteral>,
+		Vector2<IntLiteral>,
+		Vector3<IntLiteral>,
+		Vector4<IntLiteral>
 	>;
 
 	using ConstantSingleTypes = Nz::TypeListConcat<ConstantPrimitiveTypes, ConstantVectorTypes>;
@@ -128,8 +128,8 @@ namespace nzsl::Ast
 	NZSL_API std::string ToString(float value, bool enforceType = false);
 	NZSL_API std::string ToString(std::int32_t value, bool enforceType = false);
 	NZSL_API std::string ToString(std::uint32_t value, bool enforceType = false);
-	NZSL_API std::string ToString(UntypedFloat value, bool dummy = false);
-	NZSL_API std::string ToString(UntypedInteger value, bool dummy = false);
+	NZSL_API std::string ToString(FloatLiteral value, bool dummy = false);
+	NZSL_API std::string ToString(IntLiteral value, bool dummy = false);
 
 	inline ConstantValue ToConstantValue(ConstantSingleValue value);
 	inline ConstantValue ToConstantValue(ConstantArrayValue value);

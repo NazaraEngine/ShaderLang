@@ -26,7 +26,7 @@
 #include <NZSL/Ast/Transformations/MatrixTransformer.hpp>
 #include <NZSL/Ast/Transformations/ResolveTransformer.hpp>
 #include <NZSL/Ast/Transformations/StructAssignmentTransformer.hpp>
-#include <NZSL/Ast/Transformations/UntypedTransformer.hpp>
+#include <NZSL/Ast/Transformations/LiteralTransformer.hpp>
 #include <NZSL/Ast/Transformations/ValidationTransformer.hpp>
 #include <fmt/format.h>
 #include <frozen/unordered_map.h>
@@ -893,7 +893,7 @@ namespace nzsl
 	void SpirvWriter::RegisterPasses(Ast::TransformerExecutor& executor)
 	{
 		executor.AddPass<Ast::ConstantRemovalTransformer>();
-		executor.AddPass<Ast::UntypedTransformer>();
+		executor.AddPass<Ast::LiteralTransformer>();
 		executor.AddPass<Ast::BranchSplitterTransformer>();
 		executor.AddPass<Ast::ForToWhileTransformer>();
 		executor.AddPass<Ast::StructAssignmentTransformer>({ true, true });
