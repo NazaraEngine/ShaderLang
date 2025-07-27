@@ -126,47 +126,47 @@ namespace nzsl::Ast
 		EnableOptimisation(BinaryCompEq, float);
 		EnableOptimisation(BinaryCompEq, std::int32_t);
 		EnableOptimisation(BinaryCompEq, std::uint32_t);
-		EnableOptimisation(BinaryCompEq, UntypedFloat);
-		EnableOptimisation(BinaryCompEq, UntypedInteger);
+		EnableOptimisation(BinaryCompEq, FloatLiteral);
+		EnableOptimisation(BinaryCompEq, IntLiteral);
 
 		EnableOptimisation(BinaryCompGe, double);
 		EnableOptimisation(BinaryCompGe, float);
 		EnableOptimisation(BinaryCompGe, std::int32_t);
 		EnableOptimisation(BinaryCompGe, std::int64_t);
 		EnableOptimisation(BinaryCompGe, std::uint32_t);
-		EnableOptimisation(BinaryCompGe, UntypedFloat);
-		EnableOptimisation(BinaryCompGe, UntypedInteger);
+		EnableOptimisation(BinaryCompGe, FloatLiteral);
+		EnableOptimisation(BinaryCompGe, IntLiteral);
 
 		EnableOptimisation(BinaryCompGt, double);
 		EnableOptimisation(BinaryCompGt, float);
 		EnableOptimisation(BinaryCompGt, std::int32_t);
 		EnableOptimisation(BinaryCompGt, std::int64_t);
 		EnableOptimisation(BinaryCompGt, std::uint32_t);
-		EnableOptimisation(BinaryCompGt, UntypedFloat);
-		EnableOptimisation(BinaryCompGt, UntypedInteger);
+		EnableOptimisation(BinaryCompGt, FloatLiteral);
+		EnableOptimisation(BinaryCompGt, IntLiteral);
 
 		EnableOptimisation(BinaryCompLe, double);
 		EnableOptimisation(BinaryCompLe, float);
 		EnableOptimisation(BinaryCompLe, std::int32_t);
 		EnableOptimisation(BinaryCompLe, std::int64_t);
 		EnableOptimisation(BinaryCompLe, std::uint32_t);
-		EnableOptimisation(BinaryCompLe, UntypedFloat);
-		EnableOptimisation(BinaryCompLe, UntypedInteger);
+		EnableOptimisation(BinaryCompLe, FloatLiteral);
+		EnableOptimisation(BinaryCompLe, IntLiteral);
 
 		EnableOptimisation(BinaryCompLt, double);
 		EnableOptimisation(BinaryCompLt, float);
 		EnableOptimisation(BinaryCompLt, std::int32_t);
 		EnableOptimisation(BinaryCompLt, std::uint32_t);
-		EnableOptimisation(BinaryCompLt, UntypedFloat);
-		EnableOptimisation(BinaryCompLt, UntypedInteger);
+		EnableOptimisation(BinaryCompLt, FloatLiteral);
+		EnableOptimisation(BinaryCompLt, IntLiteral);
 
 		EnableOptimisation(BinaryCompNe, bool);
 		EnableOptimisation(BinaryCompNe, double);
 		EnableOptimisation(BinaryCompNe, float);
 		EnableOptimisation(BinaryCompNe, std::int32_t);
 		EnableOptimisation(BinaryCompNe, std::uint32_t);
-		EnableOptimisation(BinaryCompNe, UntypedFloat);
-		EnableOptimisation(BinaryCompNe, UntypedInteger);
+		EnableOptimisation(BinaryCompNe, FloatLiteral);
+		EnableOptimisation(BinaryCompNe, IntLiteral);
 
 		EnableOptimisation(BinaryLogicalAnd, bool);
 		EnableOptimisation(BinaryLogicalOr,  bool);

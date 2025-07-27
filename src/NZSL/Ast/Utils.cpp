@@ -190,31 +190,31 @@ namespace nzsl::Ast
 		if (resolvedLeftType == resolvedRightType)
 			return true;
 
-		if (IsUntypedType(resolvedLeftType) != IsUntypedType(resolvedRightType))
+		if (IsLiteralType(resolvedLeftType) != IsLiteralType(resolvedRightType))
 		{
 			auto CheckUntypedType = [](PrimitiveType leftType, PrimitiveType rightType)
 			{
 				PrimitiveType unresolvedType = leftType;
 				PrimitiveType resolvedType = rightType;
-				if (resolvedType == PrimitiveType::UntypedFloat || resolvedType == PrimitiveType::UntypedInteger)
+				if (resolvedType == PrimitiveType::FloatLiteral || resolvedType == PrimitiveType::IntLiteral)
 					std::swap(unresolvedType, resolvedType);
 
-				assert(resolvedType != PrimitiveType::UntypedFloat && resolvedType != PrimitiveType::UntypedInteger);
+				assert(resolvedType != PrimitiveType::FloatLiteral && resolvedType != PrimitiveType::IntLiteral);
 				switch (resolvedType)
 				{
 					case PrimitiveType::Boolean:
 					case PrimitiveType::String:
-					case PrimitiveType::UntypedFloat:
-					case PrimitiveType::UntypedInteger:
+					case PrimitiveType::FloatLiteral:
+					case PrimitiveType::IntLiteral:
 						break;
 
 					case PrimitiveType::Float32:
 					case PrimitiveType::Float64:
-						return (unresolvedType == PrimitiveType::UntypedFloat);
+						return (unresolvedType == PrimitiveType::FloatLiteral);
 
 					case PrimitiveType::Int32:
 					case PrimitiveType::UInt32:
-						return (unresolvedType == PrimitiveType::UntypedInteger);
+						return (unresolvedType == PrimitiveType::IntLiteral);
 				}
 
 				return false;
@@ -287,8 +287,8 @@ namespace nzsl::Ast
 						case PrimitiveType::Float64:
 						case PrimitiveType::Int32:
 						case PrimitiveType::UInt32:
-						case PrimitiveType::UntypedFloat:
-						case PrimitiveType::UntypedInteger:
+						case PrimitiveType::FloatLiteral:
+						case PrimitiveType::IntLiteral:
 						{
 							if (IsMatrixType(rightExprType))
 							{
@@ -331,7 +331,7 @@ namespace nzsl::Ast
 				case BinaryType::ShiftLeft:
 				case BinaryType::ShiftRight:
 				{
-					if (leftType != PrimitiveType::Int32 && leftType != PrimitiveType::UInt32 && leftType != PrimitiveType::UntypedInteger)
+					if (leftType != PrimitiveType::Int32 && leftType != PrimitiveType::UInt32 && leftType != PrimitiveType::IntLiteral)
 						throw CompilerBinaryUnsupportedError{ sourceLocation, "left", ToString(leftExprType, typeStringifier) };
 
 					return leftExprType;

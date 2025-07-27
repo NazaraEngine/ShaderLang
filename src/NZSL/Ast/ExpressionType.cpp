@@ -157,14 +157,14 @@ namespace nzsl::Ast
 	{
 		switch (matrixType.type)
 		{
-			case PrimitiveType::Boolean: return fieldOffsets.AddMatrix(StructFieldType::Bool1,   Nz::SafeCast<unsigned int>(matrixType.columnCount), Nz::SafeCast<unsigned int>(matrixType.rowCount), true);
-			case PrimitiveType::Float32: return fieldOffsets.AddMatrix(StructFieldType::Float1,  Nz::SafeCast<unsigned int>(matrixType.columnCount), Nz::SafeCast<unsigned int>(matrixType.rowCount), true);
-			case PrimitiveType::Float64: return fieldOffsets.AddMatrix(StructFieldType::Double1, Nz::SafeCast<unsigned int>(matrixType.columnCount), Nz::SafeCast<unsigned int>(matrixType.rowCount), true);
-			case PrimitiveType::Int32:   return fieldOffsets.AddMatrix(StructFieldType::Int1,    Nz::SafeCast<unsigned int>(matrixType.columnCount), Nz::SafeCast<unsigned int>(matrixType.rowCount), true);
-			case PrimitiveType::UInt32:  return fieldOffsets.AddMatrix(StructFieldType::UInt1,   Nz::SafeCast<unsigned int>(matrixType.columnCount), Nz::SafeCast<unsigned int>(matrixType.rowCount), true);
-			case PrimitiveType::UntypedFloat: break;
-			case PrimitiveType::UntypedInteger: break;
-			case PrimitiveType::String: break;
+			case PrimitiveType::Boolean:      return fieldOffsets.AddMatrix(StructFieldType::Bool1,   Nz::SafeCast<unsigned int>(matrixType.columnCount), Nz::SafeCast<unsigned int>(matrixType.rowCount), true);
+			case PrimitiveType::Float32:      return fieldOffsets.AddMatrix(StructFieldType::Float1,  Nz::SafeCast<unsigned int>(matrixType.columnCount), Nz::SafeCast<unsigned int>(matrixType.rowCount), true);
+			case PrimitiveType::Float64:      return fieldOffsets.AddMatrix(StructFieldType::Double1, Nz::SafeCast<unsigned int>(matrixType.columnCount), Nz::SafeCast<unsigned int>(matrixType.rowCount), true);
+			case PrimitiveType::Int32:        return fieldOffsets.AddMatrix(StructFieldType::Int1,    Nz::SafeCast<unsigned int>(matrixType.columnCount), Nz::SafeCast<unsigned int>(matrixType.rowCount), true);
+			case PrimitiveType::UInt32:       return fieldOffsets.AddMatrix(StructFieldType::UInt1,   Nz::SafeCast<unsigned int>(matrixType.columnCount), Nz::SafeCast<unsigned int>(matrixType.rowCount), true);
+			case PrimitiveType::FloatLiteral: break;
+			case PrimitiveType::IntLiteral:   break;
+			case PrimitiveType::String:       break;
 		}
 
 		throw std::runtime_error("unexpected type");
@@ -179,8 +179,8 @@ namespace nzsl::Ast
 			case PrimitiveType::Float64:              return fieldOffsets.AddMatrixArray(StructFieldType::Double1, Nz::SafeCast<unsigned int>(matrixType.columnCount), Nz::SafeCast<unsigned int>(matrixType.rowCount), true, arraySize);
 			case PrimitiveType::Int32:                return fieldOffsets.AddMatrixArray(StructFieldType::Int1,    Nz::SafeCast<unsigned int>(matrixType.columnCount), Nz::SafeCast<unsigned int>(matrixType.rowCount), true, arraySize);
 			case PrimitiveType::UInt32:               return fieldOffsets.AddMatrixArray(StructFieldType::UInt1, Nz::SafeCast<unsigned int>(matrixType.columnCount), Nz::SafeCast<unsigned int>(matrixType.rowCount), true, arraySize);
-			case PrimitiveType::UntypedFloat: break;
-			case PrimitiveType::UntypedInteger:       break;
+			case PrimitiveType::FloatLiteral:         break;
+			case PrimitiveType::IntLiteral:           break;
 			case PrimitiveType::String:               break;
 		}
 
@@ -196,8 +196,8 @@ namespace nzsl::Ast
 			case PrimitiveType::Float64:              return fieldOffsets.AddField(StructFieldType::Double1);
 			case PrimitiveType::Int32:                return fieldOffsets.AddField(StructFieldType::Int1);
 			case PrimitiveType::UInt32:               return fieldOffsets.AddField(StructFieldType::UInt1);
-			case PrimitiveType::UntypedFloat: break;
-			case PrimitiveType::UntypedInteger:       break;
+			case PrimitiveType::FloatLiteral:         break;
+			case PrimitiveType::IntLiteral:           break;
 			case PrimitiveType::String:               break;
 		}
 
@@ -213,8 +213,8 @@ namespace nzsl::Ast
 			case PrimitiveType::Float64:              return fieldOffsets.AddFieldArray(StructFieldType::Double1, arraySize);
 			case PrimitiveType::Int32:                return fieldOffsets.AddFieldArray(StructFieldType::Int1, arraySize);
 			case PrimitiveType::UInt32:               return fieldOffsets.AddFieldArray(StructFieldType::UInt1, arraySize);
-			case PrimitiveType::UntypedFloat: break;
-			case PrimitiveType::UntypedInteger:       break;
+			case PrimitiveType::FloatLiteral:         break;
+			case PrimitiveType::IntLiteral:           break;
 			case PrimitiveType::String:               break;
 		}
 
@@ -250,8 +250,8 @@ namespace nzsl::Ast
 			case PrimitiveType::Float64:              return fieldOffsets.AddField(static_cast<StructFieldType>(Nz::UnderlyingCast(StructFieldType::Double1) + vectorType.componentCount - 1));
 			case PrimitiveType::Int32:                return fieldOffsets.AddField(static_cast<StructFieldType>(Nz::UnderlyingCast(StructFieldType::Int1) + vectorType.componentCount - 1));
 			case PrimitiveType::UInt32:               return fieldOffsets.AddField(static_cast<StructFieldType>(Nz::UnderlyingCast(StructFieldType::UInt1) + vectorType.componentCount - 1));
-			case PrimitiveType::UntypedFloat: break;
-			case PrimitiveType::UntypedInteger:       break;
+			case PrimitiveType::FloatLiteral:         break;
+			case PrimitiveType::IntLiteral:           break;
 			case PrimitiveType::String:               break;
 		}
 
@@ -269,8 +269,8 @@ namespace nzsl::Ast
 			case PrimitiveType::Float64:              return fieldOffsets.AddFieldArray(static_cast<StructFieldType>(Nz::UnderlyingCast(StructFieldType::Double1) + vectorType.componentCount - 1), arraySize);
 			case PrimitiveType::Int32:                return fieldOffsets.AddFieldArray(static_cast<StructFieldType>(Nz::UnderlyingCast(StructFieldType::Int1) + vectorType.componentCount - 1), arraySize);
 			case PrimitiveType::UInt32:               return fieldOffsets.AddFieldArray(static_cast<StructFieldType>(Nz::UnderlyingCast(StructFieldType::UInt1) + vectorType.componentCount - 1), arraySize);
-			case PrimitiveType::UntypedFloat: break;
-			case PrimitiveType::UntypedInteger:       break;
+			case PrimitiveType::FloatLiteral:         break;
+			case PrimitiveType::IntLiteral:           break;
 			case PrimitiveType::String:               break;
 		}
 
@@ -415,8 +415,8 @@ namespace nzsl::Ast
 			case Ast::PrimitiveType::Int32:          return "i32";
 			case Ast::PrimitiveType::UInt32:         return "u32";
 			case Ast::PrimitiveType::String:         return "string";
-			case Ast::PrimitiveType::UntypedFloat:   return "UntypedFloat";
-			case Ast::PrimitiveType::UntypedInteger: return "UntypedInteger";
+			case Ast::PrimitiveType::FloatLiteral:   return "FloatLiteral";
+			case Ast::PrimitiveType::IntLiteral:     return "IntLiteral";
 		}
 
 		return "<unhandled primitive type>";

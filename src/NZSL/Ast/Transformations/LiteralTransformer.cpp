@@ -2,7 +2,7 @@
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
-#include <NZSL/Ast/Transformations/UntypedTransformer.hpp>
+#include <NZSL/Ast/Transformations/LiteralTransformer.hpp>
 #include <NZSL/Ast/Utils.hpp>
 #include <NZSL/Lang/Errors.hpp>
 #include <NZSL/Lang/LangData.hpp>
@@ -11,7 +11,7 @@
 
 namespace nzsl::Ast
 {
-	bool UntypedTransformer::Transform(Module& module, Context& context, const Options& options, std::string* error)
+	bool LiteralTransformer::Transform(Module& module, Context& context, const Options& options, std::string* error)
 	{
 		m_options = &options;
 
@@ -21,9 +21,9 @@ namespace nzsl::Ast
 		return TransformModule(module, context, error);
 	}
 
-	auto UntypedTransformer::Transform(AssignExpression&& assignExpr) -> ExpressionTransformation
+	auto LiteralTransformer::Transform(AssignExpression&& assignExpr) -> ExpressionTransformation
 	{
-		if (!m_options->resolveUntyped)
+		if (!m_options->resolveUntypedLiterals)
 			return VisitChildren{};
 
 		const ExpressionType* leftExprType = GetResolvedExpressionType(MandatoryExpr(assignExpr.left, assignExpr.sourceLocation));
@@ -37,9 +37,9 @@ namespace nzsl::Ast
 		return DontVisitChildren{};
 	}
 
-	auto UntypedTransformer::Transform(BinaryExpression&& binaryExpr) -> ExpressionTransformation
+	auto LiteralTransformer::Transform(BinaryExpression&& binaryExpr) -> ExpressionTransformation
 	{
-		if (!m_options->resolveUntyped)
+		if (!m_options->resolveUntypedLiterals)
 			return VisitChildren{};
 
 		const ExpressionType* leftExprType = GetExpressionType(MandatoryExpr(binaryExpr.left, binaryExpr.sourceLocation));
@@ -55,9 +55,9 @@ namespace nzsl::Ast
 		const ExpressionType& resolvedLeftExprType = ResolveAlias(*leftExprType);
 		const ExpressionType& resolvedRightExprType = ResolveAlias(*rightExprType);
 
-		if (IsUntypedType(resolvedLeftExprType) != IsUntypedType(resolvedRightExprType))
+		if (IsLiteralType(resolvedLeftExprType) != IsLiteralType(resolvedRightExprType))
 		{
-			if (IsUntypedType(resolvedLeftExprType))
+			if (IsLiteralType(resolvedLeftExprType))
 			{
 				if (ResolveUntyped(*binaryExpr.left, *rightExprType, binaryExpr.left->sourceLocation))
 					leftExprType = GetExpressionType(*binaryExpr.left);
@@ -74,17 +74,17 @@ namespace nzsl::Ast
 		return DontVisitChildren{};
 	}
 
-	auto UntypedTransformer::Transform(CallFunctionExpression&& callFuncExpr) -> ExpressionTransformation
+	auto LiteralTransformer::Transform(CallFunctionExpression&& callFuncExpr) -> ExpressionTransformation
 	{
-		if (!m_options->resolveUntyped)
+		if (!m_options->resolveUntypedLiterals)
 			return VisitChildren{};
 
 		return VisitChildren();
 	}
 
-	auto UntypedTransformer::Transform(CastExpression&& castExpr) -> ExpressionTransformation
+	auto LiteralTransformer::Transform(CastExpression&& castExpr) -> ExpressionTransformation
 	{
-		if (!m_options->resolveUntyped)
+		if (!m_options->resolveUntypedLiterals)
 			return VisitChildren{};
 
 		HandleChildren(castExpr);
@@ -93,7 +93,7 @@ namespace nzsl::Ast
 		if (IsPrimitiveType(targetType))
 		{
 			ExpressionPtr& expr = castExpr.expressions.front();
-			if (IsUntypedType(EnsureExpressionType(*castExpr.expressions.front())))
+			if (IsLiteralType(EnsureExpressionType(*castExpr.expressions.front())))
 			{
 				if (!ResolveUntyped(*expr, targetType, expr->sourceLocation))
 					throw AstUntypedExpectedConstantError{ expr->sourceLocation, Ast::ToString(expr->GetType()) };
@@ -129,9 +129,9 @@ namespace nzsl::Ast
 		return DontVisitChildren{};
 	}
 
-	auto UntypedTransformer::Transform(IntrinsicExpression&& intrinsicExpr) -> ExpressionTransformation
+	auto LiteralTransformer::Transform(IntrinsicExpression&& intrinsicExpr) -> ExpressionTransformation
 	{
-		if (!m_options->resolveUntyped)
+		if (!m_options->resolveUntypedLiterals)
 			return VisitChildren{};
 
 		HandleChildren(intrinsicExpr);
@@ -303,19 +303,19 @@ namespace nzsl::Ast
 		return DontVisitChildren();
 	}
 
-	auto UntypedTransformer::Transform(UnaryExpression&& unaryExpr) -> ExpressionTransformation
+	auto LiteralTransformer::Transform(UnaryExpression&& unaryExpr) -> ExpressionTransformation
 	{
-		if (!m_options->resolveUntyped)
+		if (!m_options->resolveUntypedLiterals)
 			return VisitChildren{};
 
 		HandleChildren(unaryExpr);
 
-		// Unary doesn't need to resolve untyped but its operation may be applied to the untyped value (-UntypedInteger(42) => UntypedInteger(-42)) 
+		// Unary doesn't need to resolve untyped but its operation may be applied to the untyped value (-IntLiteral(42) => IntLiteral(-42)) 
 		const ExpressionType* exprType = GetResolvedExpressionType(unaryExpr);
 		if (!exprType)
 			return DontVisitChildren{};
 
-		if (IsUntypedType(*exprType))
+		if (IsLiteralType(*exprType))
 		{
 			ConstantPropagationTransformer constantPropagation;
 			constantPropagation.Transform(GetCurrentExpressionPtr(), *m_context);
@@ -324,9 +324,9 @@ namespace nzsl::Ast
 		return DontVisitChildren{};
 	}
 
-	auto UntypedTransformer::Transform(DeclareConstStatement&& declConst) -> StatementTransformation
+	auto LiteralTransformer::Transform(DeclareConstStatement&& declConst) -> StatementTransformation
 	{
-		if (!m_options->resolveUntyped)
+		if (!m_options->resolveUntypedLiterals)
 			return VisitChildren{};
 
 		HandleChildren(declConst);
@@ -342,9 +342,9 @@ namespace nzsl::Ast
 		return DontVisitChildren{};
 	}
 
-	auto UntypedTransformer::Transform(DeclareVariableStatement&& declVariable) -> StatementTransformation
+	auto LiteralTransformer::Transform(DeclareVariableStatement&& declVariable) -> StatementTransformation
 	{
-		if (!m_options->resolveUntyped)
+		if (!m_options->resolveUntypedLiterals)
 			return VisitChildren{};
 
 		HandleChildren(declVariable);
@@ -360,9 +360,9 @@ namespace nzsl::Ast
 		return DontVisitChildren{};
 	}
 
-	auto UntypedTransformer::Transform(ForStatement&& forStatement) -> StatementTransformation
+	auto LiteralTransformer::Transform(ForStatement&& forStatement) -> StatementTransformation
 	{
-		if (!m_options->resolveUntyped)
+		if (!m_options->resolveUntypedLiterals)
 			return VisitChildren{};
 
 		const ExpressionType* fromExprType = GetExpressionType(*forStatement.fromExpr);
@@ -375,9 +375,9 @@ namespace nzsl::Ast
 
 		// Handle unresolved
 		std::optional<ExpressionType> referenceType;
-		if (!IsUntypedType(*fromExprType))
+		if (!IsLiteralType(*fromExprType))
 			referenceType = *fromExprType;
-		else if (!IsUntypedType(*toExprType))
+		else if (!IsLiteralType(*toExprType))
 			referenceType = *toExprType;
 		else if (forStatement.stepExpr)
 		{
@@ -400,7 +400,7 @@ namespace nzsl::Ast
 		return VisitChildren{};
 	}
 
-	bool UntypedTransformer::ResolveUntyped(Expression& expression, std::optional<ExpressionType> enforcedType, const SourceLocation& sourceLocation) const
+	bool LiteralTransformer::ResolveUntyped(Expression& expression, std::optional<ExpressionType> enforcedType, const SourceLocation& sourceLocation) const
 	{
 		const ExpressionType* exprType = GetExpressionType(expression);
 		if (!exprType || !IsPrimitiveType(*exprType))
@@ -417,7 +417,7 @@ namespace nzsl::Ast
 			case PrimitiveType::UInt32:
 				return false; //< not untyped
 
-			case PrimitiveType::UntypedFloat:
+			case PrimitiveType::FloatLiteral:
 			{
 				if (expression.GetType() != NodeType::ConstantValueExpression)
 					throw AstUntypedExpectedConstantError{ expression.sourceLocation, Ast::ToString(expression.GetType()) };
@@ -431,10 +431,10 @@ namespace nzsl::Ast
 						throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(primType), Ast::ToString(*enforcedType) };
 
 					PrimitiveType targetType = std::get<PrimitiveType>(resolvedType);
-					if (targetType == PrimitiveType::Float32 || targetType == PrimitiveType::UntypedFloat)
-						constantExpr.value = static_cast<float>(std::get<UntypedFloat>(constantExpr.value));
+					if (targetType == PrimitiveType::Float32 || targetType == PrimitiveType::FloatLiteral)
+						constantExpr.value = static_cast<float>(std::get<FloatLiteral>(constantExpr.value));
 					else if (targetType == PrimitiveType::Float64)
-						constantExpr.value = static_cast<double>(std::get<UntypedFloat>(constantExpr.value));
+						constantExpr.value = static_cast<double>(std::get<FloatLiteral>(constantExpr.value));
 					else
 						throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(primType), Ast::ToString(targetType) };
 
@@ -443,21 +443,21 @@ namespace nzsl::Ast
 				else
 				{
 					// Default to f32
-					constantExpr.value = static_cast<float>(std::get<UntypedFloat>(constantExpr.value));
+					constantExpr.value = static_cast<float>(std::get<FloatLiteral>(constantExpr.value));
 					constantExpr.cachedExpressionType = ExpressionType{ PrimitiveType::Float32 };
 				}
 
 				return true;
 			}
 
-			case PrimitiveType::UntypedInteger:
+			case PrimitiveType::IntLiteral:
 			{
 				if (expression.GetType() != NodeType::ConstantValueExpression)
 					throw AstUntypedExpectedConstantError{ expression.sourceLocation, Ast::ToString(expression.GetType()) };
 
 				ConstantValueExpression& constantExpr = static_cast<ConstantValueExpression&>(expression);
 
-				std::int64_t value = std::get<UntypedInteger>(constantExpr.value);
+				std::int64_t value = std::get<IntLiteral>(constantExpr.value);
 
 				auto ConvertToInt32 = [&]
 				{
@@ -467,7 +467,7 @@ namespace nzsl::Ast
 					if (value < std::numeric_limits<std::int32_t>::min())
 						throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::Int32), std::to_string(value) };
 
-					constantExpr.value = static_cast<std::int32_t>(std::get<UntypedInteger>(constantExpr.value));
+					constantExpr.value = static_cast<std::int32_t>(std::get<IntLiteral>(constantExpr.value));
 					constantExpr.cachedExpressionType = ExpressionType{ PrimitiveType::Int32 };
 				};
 
@@ -478,7 +478,7 @@ namespace nzsl::Ast
 						throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(primType), Ast::ToString(*enforcedType) };
 
 					PrimitiveType targetType = std::get<PrimitiveType>(resolvedType);
-					if (targetType == PrimitiveType::Int32 || targetType == PrimitiveType::UntypedInteger)
+					if (targetType == PrimitiveType::Int32 || targetType == PrimitiveType::IntLiteral)
 						ConvertToInt32();
 					else if (targetType == PrimitiveType::UInt32)
 					{
@@ -488,7 +488,7 @@ namespace nzsl::Ast
 						if (static_cast<std::uint64_t>(value) > std::numeric_limits<std::uint32_t>::max())
 							throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(targetType), std::to_string(value) };
 
-						constantExpr.value = static_cast<std::uint32_t>(std::get<UntypedInteger>(constantExpr.value));
+						constantExpr.value = static_cast<std::uint32_t>(std::get<IntLiteral>(constantExpr.value));
 					}
 					else
 						throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(primType), Ast::ToString(targetType) };

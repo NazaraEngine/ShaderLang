@@ -28,7 +28,7 @@ namespace nzsl::Ast
 			static constexpr BinaryType Type = BinaryType::Add;
 			static constexpr bool AllowSingleOperand = false;
 
-			using AriT = UntypedInnerType_t<T>;
+			using AriT = LiteralInnerType_t<T>;
 
 			NAZARA_FORCEINLINE auto operator()(T lhs, T rhs, const SourceLocation& /*sourceLocation*/)
 			{
@@ -43,7 +43,7 @@ namespace nzsl::Ast
 			static constexpr BinaryType Type = BinaryType::BitwiseAnd;
 			static constexpr bool AllowSingleOperand = false;
 
-			using AriT = UntypedInnerType_t<T>;
+			using AriT = LiteralInnerType_t<T>;
 
 			NAZARA_FORCEINLINE auto operator()(T lhs, T rhs, const SourceLocation& /*sourceLocation*/)
 			{
@@ -58,7 +58,7 @@ namespace nzsl::Ast
 			static constexpr BinaryType Type = BinaryType::BitwiseOr;
 			static constexpr bool AllowSingleOperand = false;
 
-			using AriT = UntypedInnerType_t<T>;
+			using AriT = LiteralInnerType_t<T>;
 
 			NAZARA_FORCEINLINE auto operator()(T lhs, T rhs, const SourceLocation& /*sourceLocation*/)
 			{
@@ -73,7 +73,7 @@ namespace nzsl::Ast
 			static constexpr BinaryType Type = BinaryType::BitwiseXor;
 			static constexpr bool AllowSingleOperand = false;
 
-			using AriT = UntypedInnerType_t<T>;
+			using AriT = LiteralInnerType_t<T>;
 
 			NAZARA_FORCEINLINE auto operator()(T lhs, T rhs, const SourceLocation& /*sourceLocation*/)
 			{
@@ -88,7 +88,7 @@ namespace nzsl::Ast
 			static constexpr BinaryType Type = BinaryType::Divide;
 			static constexpr bool AllowSingleOperand = true;
 
-			using AriT = UntypedInnerType_t<T>;
+			using AriT = LiteralInnerType_t<T>;
 
 			NAZARA_FORCEINLINE auto operator()(T lhs, T rhs, const SourceLocation& sourceLocation)
 			{
@@ -109,7 +109,7 @@ namespace nzsl::Ast
 			static constexpr BinaryType Type = BinaryType::LogicalAnd;
 			static constexpr bool AllowSingleOperand = false;
 
-			using AriT = UntypedInnerType_t<T>;
+			using AriT = LiteralInnerType_t<T>;
 
 			NAZARA_FORCEINLINE auto operator()(T lhs, T rhs, const SourceLocation& /*sourceLocation*/)
 			{
@@ -124,7 +124,7 @@ namespace nzsl::Ast
 			static constexpr BinaryType Type = BinaryType::LogicalOr;
 			static constexpr bool AllowSingleOperand = false;
 
-			using AriT = UntypedInnerType_t<T>;
+			using AriT = LiteralInnerType_t<T>;
 
 			NAZARA_FORCEINLINE auto operator()(T lhs, T rhs, const SourceLocation& /*sourceLocation*/)
 			{
@@ -139,7 +139,7 @@ namespace nzsl::Ast
 			static constexpr BinaryType Type = BinaryType::Modulo;
 			static constexpr bool AllowSingleOperand = true;
 
-			using AriT = UntypedInnerType_t<T>;
+			using AriT = LiteralInnerType_t<T>;
 
 			NAZARA_FORCEINLINE auto operator()(T lhs, T rhs, const SourceLocation& sourceLocation)
 			{
@@ -163,7 +163,7 @@ namespace nzsl::Ast
 			static constexpr BinaryType Type = BinaryType::Multiply;
 			static constexpr bool AllowSingleOperand = true;
 
-			using AriT = UntypedInnerType_t<T>;
+			using AriT = LiteralInnerType_t<T>;
 
 			NAZARA_FORCEINLINE auto operator()(T lhs, T rhs, const SourceLocation& /*sourceLocation*/)
 			{
@@ -178,7 +178,7 @@ namespace nzsl::Ast
 			static constexpr BinaryType Type = BinaryType::ShiftLeft;
 			static constexpr bool AllowSingleOperand = false;
 
-			using AriT = UntypedInnerType_t<T>;
+			using AriT = LiteralInnerType_t<T>;
 
 			NAZARA_FORCEINLINE auto operator()(T lhs, T rhs, const SourceLocation& sourceLocation)
 			{
@@ -205,7 +205,7 @@ namespace nzsl::Ast
 			static constexpr BinaryType Type = BinaryType::ShiftRight;
 			static constexpr bool AllowSingleOperand = false;
 
-			using AriT = UntypedInnerType_t<T>;
+			using AriT = LiteralInnerType_t<T>;
 
 			NAZARA_FORCEINLINE auto operator()(T lhs, T rhs, const SourceLocation& sourceLocation)
 			{
@@ -232,7 +232,7 @@ namespace nzsl::Ast
 			static constexpr BinaryType Type = BinaryType::Subtract;
 			static constexpr bool AllowSingleOperand = false;
 
-			using AriT = UntypedInnerType_t<T>;
+			using AriT = LiteralInnerType_t<T>;
 
 			NAZARA_FORCEINLINE auto operator()(T lhs, T rhs, const SourceLocation& /*sourceLocation*/)
 			{
@@ -248,27 +248,27 @@ namespace nzsl::Ast
 		EnableOptimisation(BinaryAddition, float);
 		EnableOptimisation(BinaryAddition, std::int32_t);
 		EnableOptimisation(BinaryAddition, std::uint32_t);
-		EnableOptimisation(BinaryAddition, UntypedFloat);
-		EnableOptimisation(BinaryAddition, UntypedInteger);
+		EnableOptimisation(BinaryAddition, FloatLiteral);
+		EnableOptimisation(BinaryAddition, IntLiteral);
 
 		EnableOptimisation(BinaryBitwiseAnd, std::int32_t);
 		EnableOptimisation(BinaryBitwiseAnd, std::uint32_t);
-		EnableOptimisation(BinaryBitwiseAnd, UntypedInteger);
+		EnableOptimisation(BinaryBitwiseAnd, IntLiteral);
 
 		EnableOptimisation(BinaryBitwiseOr, std::int32_t);
 		EnableOptimisation(BinaryBitwiseOr, std::uint32_t);
-		EnableOptimisation(BinaryBitwiseOr, UntypedInteger);
+		EnableOptimisation(BinaryBitwiseOr, IntLiteral);
 
 		EnableOptimisation(BinaryBitwiseXor, std::int32_t);
 		EnableOptimisation(BinaryBitwiseXor, std::uint32_t);
-		EnableOptimisation(BinaryBitwiseXor, UntypedInteger);
+		EnableOptimisation(BinaryBitwiseXor, IntLiteral);
 
 		EnableOptimisation(BinaryDivision, double);
 		EnableOptimisation(BinaryDivision, float);
 		EnableOptimisation(BinaryDivision, std::int32_t);
 		EnableOptimisation(BinaryDivision, std::uint32_t);
-		EnableOptimisation(BinaryDivision, UntypedFloat);
-		EnableOptimisation(BinaryDivision, UntypedInteger);
+		EnableOptimisation(BinaryDivision, FloatLiteral);
+		EnableOptimisation(BinaryDivision, IntLiteral);
 
 		EnableOptimisation(BinaryLogicalAnd, bool);
 		EnableOptimisation(BinaryLogicalOr, bool);
@@ -277,30 +277,30 @@ namespace nzsl::Ast
 		EnableOptimisation(BinaryModulo, float);
 		EnableOptimisation(BinaryModulo, std::int32_t);
 		EnableOptimisation(BinaryModulo, std::uint32_t);
-		EnableOptimisation(BinaryModulo, UntypedFloat);
-		EnableOptimisation(BinaryModulo, UntypedInteger);
+		EnableOptimisation(BinaryModulo, FloatLiteral);
+		EnableOptimisation(BinaryModulo, IntLiteral);
 
 		EnableOptimisation(BinaryMultiplication, double);
 		EnableOptimisation(BinaryMultiplication, float);
 		EnableOptimisation(BinaryMultiplication, std::int32_t);
 		EnableOptimisation(BinaryMultiplication, std::uint32_t);
-		EnableOptimisation(BinaryMultiplication, UntypedFloat);
-		EnableOptimisation(BinaryMultiplication, UntypedInteger);
+		EnableOptimisation(BinaryMultiplication, FloatLiteral);
+		EnableOptimisation(BinaryMultiplication, IntLiteral);
 
 		EnableOptimisation(BinaryShiftLeft, std::int32_t);
 		EnableOptimisation(BinaryShiftLeft, std::uint32_t);
-		EnableOptimisation(BinaryShiftLeft, UntypedInteger);
+		EnableOptimisation(BinaryShiftLeft, IntLiteral);
 
 		EnableOptimisation(BinaryShiftRight, std::int32_t);
 		EnableOptimisation(BinaryShiftRight, std::uint32_t);
-		EnableOptimisation(BinaryShiftRight, UntypedInteger);
+		EnableOptimisation(BinaryShiftRight, IntLiteral);
 
 		EnableOptimisation(BinarySubtraction, double);
 		EnableOptimisation(BinarySubtraction, float);
 		EnableOptimisation(BinarySubtraction, std::int32_t);
 		EnableOptimisation(BinarySubtraction, std::uint32_t);
-		EnableOptimisation(BinarySubtraction, UntypedFloat);
-		EnableOptimisation(BinarySubtraction, UntypedInteger);
+		EnableOptimisation(BinarySubtraction, FloatLiteral);
+		EnableOptimisation(BinarySubtraction, IntLiteral);
 
 #undef EnableOptimisation
 	}

@@ -326,15 +326,10 @@ namespace nzsl::Ast
 			return IsSamplerType(exprType) || IsTextureType(exprType);
 	}
 
-	inline bool IsStructAddressible(const ExpressionType& exprType)
-	{
-		return ResolveStructIndex(exprType) != std::numeric_limits<std::size_t>::max();
-	}
-
-	inline bool IsUntypedType(const ExpressionType& exprType)
+	inline bool IsLiteralType(const ExpressionType& exprType)
 	{
 		if (IsArrayType(exprType))
-			return IsUntypedType(std::get<ArrayType>(exprType).containedType->type);
+			return IsLiteralType(std::get<ArrayType>(exprType).containedType->type);
 
 		PrimitiveType primType;
 		if (IsPrimitiveType(exprType))
@@ -354,12 +349,17 @@ namespace nzsl::Ast
 			case PrimitiveType::String:
 				return false;
 
-			case PrimitiveType::UntypedFloat:
-			case PrimitiveType::UntypedInteger:
+			case PrimitiveType::FloatLiteral:
+			case PrimitiveType::IntLiteral:
 				return true;
 		}
 
 		NAZARA_UNREACHABLE();
+	}
+
+	inline bool IsStructAddressible(const ExpressionType& exprType)
+	{
+		return ResolveStructIndex(exprType) != std::numeric_limits<std::size_t>::max();
 	}
 
 	inline const ExpressionType& ResolveAlias(const ExpressionType& exprType)

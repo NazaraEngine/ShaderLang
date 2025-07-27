@@ -37,14 +37,14 @@ namespace nzsl::Ast
 		callback(Vector2<bool>, 19) \
 		callback(Vector3<bool>, 20) \
 		callback(Vector4<bool>, 21) \
-		callback(UntypedFloat, 22) \
-		callback(Vector2<UntypedFloat>, 23) \
-		callback(Vector3<UntypedFloat>, 24) \
-		callback(Vector4<UntypedFloat>, 25) \
-		callback(UntypedInteger, 26) \
-		callback(Vector2<UntypedInteger>, 27) \
-		callback(Vector3<UntypedInteger>, 28) \
-		callback(Vector4<UntypedInteger>, 29)
+		callback(FloatLiteral, 22) \
+		callback(Vector2<FloatLiteral>, 23) \
+		callback(Vector3<FloatLiteral>, 24) \
+		callback(Vector4<FloatLiteral>, 25) \
+		callback(IntLiteral, 26) \
+		callback(Vector2<IntLiteral>, 27) \
+		callback(Vector3<IntLiteral>, 28) \
+		callback(Vector4<IntLiteral>, 29)
 
 	namespace
 	{

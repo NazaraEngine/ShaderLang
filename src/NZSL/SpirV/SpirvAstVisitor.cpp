@@ -135,8 +135,8 @@ namespace nzsl
 
 						case Ast::PrimitiveType::Boolean:
 						case Ast::PrimitiveType::String:
-						case Ast::PrimitiveType::UntypedFloat:
-						case Ast::PrimitiveType::UntypedInteger:
+						case Ast::PrimitiveType::FloatLiteral:
+						case Ast::PrimitiveType::IntLiteral:
 							break;
 					}
 
@@ -157,8 +157,8 @@ namespace nzsl
 
 						case Ast::PrimitiveType::Boolean:
 						case Ast::PrimitiveType::String:
-						case Ast::PrimitiveType::UntypedFloat:
-						case Ast::PrimitiveType::UntypedInteger:
+						case Ast::PrimitiveType::FloatLiteral:
+						case Ast::PrimitiveType::IntLiteral:
 							break;
 					}
 
@@ -187,8 +187,8 @@ namespace nzsl
 
 						case Ast::PrimitiveType::Boolean:
 						case Ast::PrimitiveType::String:
-						case Ast::PrimitiveType::UntypedFloat:
-						case Ast::PrimitiveType::UntypedInteger:
+						case Ast::PrimitiveType::FloatLiteral:
+						case Ast::PrimitiveType::IntLiteral:
 							break;
 					}
 
@@ -255,8 +255,8 @@ namespace nzsl
 
 						case Ast::PrimitiveType::Boolean:
 						case Ast::PrimitiveType::String:
-						case Ast::PrimitiveType::UntypedFloat:
-						case Ast::PrimitiveType::UntypedInteger:
+						case Ast::PrimitiveType::FloatLiteral:
+						case Ast::PrimitiveType::IntLiteral:
 							break;
 					}
 
@@ -279,8 +279,8 @@ namespace nzsl
 							return SpirvOp::OpIEqual;
 
 						case Ast::PrimitiveType::String:
-						case Ast::PrimitiveType::UntypedFloat:
-						case Ast::PrimitiveType::UntypedInteger:
+						case Ast::PrimitiveType::FloatLiteral:
+						case Ast::PrimitiveType::IntLiteral:
 							break;
 					}
 
@@ -303,8 +303,8 @@ namespace nzsl
 
 						case Ast::PrimitiveType::Boolean:
 						case Ast::PrimitiveType::String:
-						case Ast::PrimitiveType::UntypedFloat:
-						case Ast::PrimitiveType::UntypedInteger:
+						case Ast::PrimitiveType::FloatLiteral:
+						case Ast::PrimitiveType::IntLiteral:
 							break;
 					}
 
@@ -327,8 +327,8 @@ namespace nzsl
 
 						case Ast::PrimitiveType::Boolean:
 						case Ast::PrimitiveType::String:
-						case Ast::PrimitiveType::UntypedFloat:
-						case Ast::PrimitiveType::UntypedInteger:
+						case Ast::PrimitiveType::FloatLiteral:
+						case Ast::PrimitiveType::IntLiteral:
 							break;
 					}
 
@@ -351,8 +351,8 @@ namespace nzsl
 
 						case Ast::PrimitiveType::Boolean:
 						case Ast::PrimitiveType::String:
-						case Ast::PrimitiveType::UntypedFloat:
-						case Ast::PrimitiveType::UntypedInteger:
+						case Ast::PrimitiveType::FloatLiteral:
+						case Ast::PrimitiveType::IntLiteral:
 							break;
 					}
 
@@ -375,8 +375,8 @@ namespace nzsl
 
 						case Ast::PrimitiveType::Boolean:
 						case Ast::PrimitiveType::String:
-						case Ast::PrimitiveType::UntypedFloat:
-						case Ast::PrimitiveType::UntypedInteger:
+						case Ast::PrimitiveType::FloatLiteral:
+						case Ast::PrimitiveType::IntLiteral:
 							break;
 					}
 
@@ -399,8 +399,8 @@ namespace nzsl
 							return SpirvOp::OpINotEqual;
 
 						case Ast::PrimitiveType::String:
-						case Ast::PrimitiveType::UntypedFloat:
-						case Ast::PrimitiveType::UntypedInteger:
+						case Ast::PrimitiveType::FloatLiteral:
+						case Ast::PrimitiveType::IntLiteral:
 							break;
 					}
 
@@ -652,8 +652,8 @@ namespace nzsl
 						case Ast::PrimitiveType::String:
 							throw std::runtime_error("unexpected string type");
 
-						case Ast::PrimitiveType::UntypedFloat:
-						case Ast::PrimitiveType::UntypedInteger:
+						case Ast::PrimitiveType::FloatLiteral:
+						case Ast::PrimitiveType::IntLiteral:
 							throw std::runtime_error("unexpected untyped");
 					}
 					break;
@@ -684,8 +684,8 @@ namespace nzsl
 						case Ast::PrimitiveType::String:
 							throw std::runtime_error("unexpected string type");
 
-						case Ast::PrimitiveType::UntypedFloat:
-						case Ast::PrimitiveType::UntypedInteger:
+						case Ast::PrimitiveType::FloatLiteral:
+						case Ast::PrimitiveType::IntLiteral:
 							throw std::runtime_error("unexpected untyped");
 					}
 					break;
@@ -713,8 +713,8 @@ namespace nzsl
 						case Ast::PrimitiveType::String:
 							throw std::runtime_error("unexpected string type");
 
-						case Ast::PrimitiveType::UntypedFloat:
-						case Ast::PrimitiveType::UntypedInteger:
+						case Ast::PrimitiveType::FloatLiteral:
+						case Ast::PrimitiveType::IntLiteral:
 							throw std::runtime_error("unexpected untyped");
 					}
 					break;
@@ -742,8 +742,8 @@ namespace nzsl
 						case Ast::PrimitiveType::String:
 							throw std::runtime_error("unexpected string type");
 
-						case Ast::PrimitiveType::UntypedFloat:
-						case Ast::PrimitiveType::UntypedInteger:
+						case Ast::PrimitiveType::FloatLiteral:
+						case Ast::PrimitiveType::IntLiteral:
 							throw std::runtime_error("unexpected untyped");
 					}
 					break;
@@ -752,8 +752,8 @@ namespace nzsl
 				case Ast::PrimitiveType::String:
 					throw std::runtime_error("unexpected string type");
 
-				case Ast::PrimitiveType::UntypedFloat:
-				case Ast::PrimitiveType::UntypedInteger:
+				case Ast::PrimitiveType::FloatLiteral:
+				case Ast::PrimitiveType::IntLiteral:
 					throw std::runtime_error("unexpected untyped");
 			}
 
@@ -1423,8 +1423,8 @@ namespace nzsl
 			case Ast::PrimitiveType::Boolean:
 			case Ast::PrimitiveType::String:
 			case Ast::PrimitiveType::UInt32:
-			case Ast::PrimitiveType::UntypedFloat:
-			case Ast::PrimitiveType::UntypedInteger:
+			case Ast::PrimitiveType::FloatLiteral:
+			case Ast::PrimitiveType::IntLiteral:
 				break;
 		}
 
@@ -1460,8 +1460,8 @@ namespace nzsl
 
 			case Ast::PrimitiveType::Boolean:
 			case Ast::PrimitiveType::String:
-			case Ast::PrimitiveType::UntypedFloat:
-			case Ast::PrimitiveType::UntypedInteger:
+			case Ast::PrimitiveType::FloatLiteral:
+			case Ast::PrimitiveType::IntLiteral:
 				break;
 		}
 
@@ -1495,8 +1495,8 @@ namespace nzsl
 			case Ast::PrimitiveType::Boolean:
 			case Ast::PrimitiveType::String:
 			case Ast::PrimitiveType::UInt32:
-			case Ast::PrimitiveType::UntypedFloat:
-			case Ast::PrimitiveType::UntypedInteger:
+			case Ast::PrimitiveType::FloatLiteral:
+			case Ast::PrimitiveType::IntLiteral:
 				break;
 		}
 
@@ -1535,8 +1535,8 @@ namespace nzsl
 
 			case Ast::PrimitiveType::Boolean:
 			case Ast::PrimitiveType::String:
-			case Ast::PrimitiveType::UntypedFloat:
-			case Ast::PrimitiveType::UntypedInteger:
+			case Ast::PrimitiveType::FloatLiteral:
+			case Ast::PrimitiveType::IntLiteral:
 				break;
 		}
 
@@ -1570,8 +1570,8 @@ namespace nzsl
 			case Ast::PrimitiveType::Boolean:
 			case Ast::PrimitiveType::String:
 			case Ast::PrimitiveType::UInt32:
-			case Ast::PrimitiveType::UntypedFloat:
-			case Ast::PrimitiveType::UntypedInteger:
+			case Ast::PrimitiveType::FloatLiteral:
+			case Ast::PrimitiveType::IntLiteral:
 				break;
 		}
 

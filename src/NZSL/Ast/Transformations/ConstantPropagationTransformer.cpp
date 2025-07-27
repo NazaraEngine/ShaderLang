@@ -92,8 +92,8 @@ namespace nzsl::Ast
 		{
 			ConstantValueExpressionPtr operator()(From value, const SourceLocation& /*sourceLocation*/)
 			{
-				using AriT = UntypedInnerType_t<T>;
-				using AriFrom = UntypedInnerType_t<From>;
+				using AriT = LiteralInnerType_t<T>;
+				using AriFrom = LiteralInnerType_t<From>;
 				return ShaderBuilder::ConstantValue(T{ AriT{ static_cast<T>(AriFrom{ value }) } });
 			}
 		};
@@ -112,7 +112,7 @@ namespace nzsl::Ast
 		{
 			ConstantValueExpressionPtr operator()(T arg, const SourceLocation& /*sourceLocation*/)
 			{
-				using AriT = UntypedInnerType_t<T>;
+				using AriT = LiteralInnerType_t<T>;
 				return ShaderBuilder::ConstantValue(T{ ~AriT{ arg } });
 			}
 		};
@@ -132,7 +132,7 @@ namespace nzsl::Ast
 		{
 			ConstantValueExpressionPtr operator()(T arg, const SourceLocation& /*sourceLocation*/)
 			{
-				using AriT = UntypedInnerType_t<T>;
+				using AriT = LiteralInnerType_t<T>;
 				return ShaderBuilder::ConstantValue(T{ !AriT{ arg } });
 			}
 		};
@@ -152,7 +152,7 @@ namespace nzsl::Ast
 		{
 			ConstantValueExpressionPtr operator()(T arg, const SourceLocation& /*sourceLocation*/)
 			{
-				using AriT = UntypedInnerType_t<T>;
+				using AriT = LiteralInnerType_t<T>;
 				return ShaderBuilder::ConstantValue(T{ -AriT{ arg } });
 			}
 		};
@@ -190,8 +190,8 @@ namespace nzsl::Ast
 		EnableOptimisation(ArrayBuilder, float);
 		EnableOptimisation(ArrayBuilder, std::int32_t);
 		EnableOptimisation(ArrayBuilder, std::uint32_t);
-		EnableOptimisation(ArrayBuilder, UntypedFloat);
-		EnableOptimisation(ArrayBuilder, UntypedInteger);
+		EnableOptimisation(ArrayBuilder, FloatLiteral);
+		EnableOptimisation(ArrayBuilder, IntLiteral);
 		EnableOptimisation(ArrayBuilder, Vector2f32);
 		EnableOptimisation(ArrayBuilder, Vector3f32);
 		EnableOptimisation(ArrayBuilder, Vector4f32);
@@ -204,60 +204,60 @@ namespace nzsl::Ast
 		EnableOptimisation(ArrayBuilder, Vector2u32);
 		EnableOptimisation(ArrayBuilder, Vector3u32);
 		EnableOptimisation(ArrayBuilder, Vector4u32);
-		EnableOptimisation(ArrayBuilder, Vector2<UntypedFloat>);
-		EnableOptimisation(ArrayBuilder, Vector3<UntypedFloat>);
-		EnableOptimisation(ArrayBuilder, Vector4<UntypedFloat>);
-		EnableOptimisation(ArrayBuilder, Vector2<UntypedInteger>);
-		EnableOptimisation(ArrayBuilder, Vector3<UntypedInteger>);
-		EnableOptimisation(ArrayBuilder, Vector4<UntypedInteger>);
+		EnableOptimisation(ArrayBuilder, Vector2<FloatLiteral>);
+		EnableOptimisation(ArrayBuilder, Vector3<FloatLiteral>);
+		EnableOptimisation(ArrayBuilder, Vector4<FloatLiteral>);
+		EnableOptimisation(ArrayBuilder, Vector2<IntLiteral>);
+		EnableOptimisation(ArrayBuilder, Vector3<IntLiteral>);
+		EnableOptimisation(ArrayBuilder, Vector4<IntLiteral>);
 
 		// Cast
 
 		EnableOptimisation(CastConstant, bool, bool);
 		EnableOptimisation(CastConstant, bool, std::int32_t);
 		EnableOptimisation(CastConstant, bool, std::uint32_t);
-		EnableOptimisation(CastConstant, bool, UntypedFloat);
-		EnableOptimisation(CastConstant, bool, UntypedInteger);
+		EnableOptimisation(CastConstant, bool, FloatLiteral);
+		EnableOptimisation(CastConstant, bool, IntLiteral);
 
 		EnableOptimisation(CastConstant, double, double);
 		EnableOptimisation(CastConstant, double, float);
 		EnableOptimisation(CastConstant, double, std::int32_t);
 		EnableOptimisation(CastConstant, double, std::uint32_t);
-		EnableOptimisation(CastConstant, double, UntypedFloat);
-		EnableOptimisation(CastConstant, double, UntypedInteger);
+		EnableOptimisation(CastConstant, double, FloatLiteral);
+		EnableOptimisation(CastConstant, double, IntLiteral);
 
 		EnableOptimisation(CastConstant, float, double);
 		EnableOptimisation(CastConstant, float, float);
 		EnableOptimisation(CastConstant, float, std::int32_t);
 		EnableOptimisation(CastConstant, float, std::uint32_t);
-		EnableOptimisation(CastConstant, float, UntypedFloat);
-		EnableOptimisation(CastConstant, float, UntypedInteger);
+		EnableOptimisation(CastConstant, float, FloatLiteral);
+		EnableOptimisation(CastConstant, float, IntLiteral);
 
 		EnableOptimisation(CastConstant, std::int32_t, double);
 		EnableOptimisation(CastConstant, std::int32_t, float);
 		EnableOptimisation(CastConstant, std::int32_t, std::uint32_t);
-		EnableOptimisation(CastConstant, std::int32_t, UntypedFloat);
-		EnableOptimisation(CastConstant, std::int32_t, UntypedInteger);
+		EnableOptimisation(CastConstant, std::int32_t, FloatLiteral);
+		EnableOptimisation(CastConstant, std::int32_t, IntLiteral);
 
 		EnableOptimisation(CastConstant, std::uint32_t, double);
 		EnableOptimisation(CastConstant, std::uint32_t, float);
 		EnableOptimisation(CastConstant, std::uint32_t, std::int32_t);
-		EnableOptimisation(CastConstant, std::uint32_t, UntypedFloat);
-		EnableOptimisation(CastConstant, std::uint32_t, UntypedInteger);
+		EnableOptimisation(CastConstant, std::uint32_t, FloatLiteral);
+		EnableOptimisation(CastConstant, std::uint32_t, IntLiteral);
 
 		// Unary
 
 		EnableOptimisation(UnaryBinaryNot, std::uint32_t);
 		EnableOptimisation(UnaryBinaryNot, std::int32_t);
-		EnableOptimisation(UnaryBinaryNot, UntypedInteger);
+		EnableOptimisation(UnaryBinaryNot, IntLiteral);
 
 		EnableOptimisation(UnaryLogicalNot, bool);
 
 		EnableOptimisation(UnaryMinus, double);
 		EnableOptimisation(UnaryMinus, float);
 		EnableOptimisation(UnaryMinus, std::int32_t);
-		EnableOptimisation(UnaryMinus, UntypedFloat);
-		EnableOptimisation(UnaryMinus, UntypedInteger);
+		EnableOptimisation(UnaryMinus, FloatLiteral);
+		EnableOptimisation(UnaryMinus, IntLiteral);
 
 #undef EnableOptimisation
 	}
@@ -337,8 +337,8 @@ namespace nzsl::Ast
 					case PrimitiveType::Int32:          optimized = PropagateSingleValueCast<std::int32_t>(constantExpr, node.sourceLocation); break;
 					case PrimitiveType::UInt32:         optimized = PropagateSingleValueCast<std::uint32_t>(constantExpr, node.sourceLocation); break;
 					case PrimitiveType::String:         break;
-					case PrimitiveType::UntypedFloat:   optimized = PropagateSingleValueCast<UntypedFloat>(constantExpr, node.sourceLocation); break;
-					case PrimitiveType::UntypedInteger: optimized = PropagateSingleValueCast<UntypedInteger>(constantExpr, node.sourceLocation); break;
+					case PrimitiveType::FloatLiteral:   optimized = PropagateSingleValueCast<FloatLiteral>(constantExpr, node.sourceLocation); break;
+					case PrimitiveType::IntLiteral:     optimized = PropagateSingleValueCast<IntLiteral>(constantExpr, node.sourceLocation); break;
 				}
 			}
 		}
@@ -373,17 +373,17 @@ namespace nzsl::Ast
 						throw std::runtime_error("invalid type (value expected)");
 					else if constexpr (std::is_same_v<T, bool> || std::is_same_v<T, double> || std::is_same_v<T, float> || std::is_same_v<T, std::int32_t> || std::is_same_v<T, std::uint32_t> || std::is_same_v<T, std::string>)
 						constantValues.push_back(value);
-					else if constexpr (IsUntyped_v<T>)
+					else if constexpr (IsLiteral_v<T>)
 					{
 						// Convert untyped
-						if constexpr (std::is_same_v<T, UntypedFloat>)
+						if constexpr (std::is_same_v<T, FloatLiteral>)
 						{
 							if (vecType.type == PrimitiveType::Float32)
 								constantValues.push_back(static_cast<float>(value));
 							else if (vecType.type == PrimitiveType::Float64)
 								constantValues.push_back(static_cast<double>(value));
 						}
-						else if constexpr (std::is_same_v<T, UntypedInteger>)
+						else if constexpr (std::is_same_v<T, IntLiteral>)
 						{
 							if (vecType.type == PrimitiveType::Int32)
 							{

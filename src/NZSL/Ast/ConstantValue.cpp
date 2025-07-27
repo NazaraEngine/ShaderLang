@@ -125,7 +125,7 @@ namespace nzsl::Ast
 				return (arg) ? "true" : "false";
 			else if constexpr (std::is_same_v<T, double> || std::is_same_v<T, float> || std::is_same_v<T, std::int32_t> || std::is_same_v<T, std::uint32_t>)
 				return ToString(arg);
-			else if constexpr (IsUntyped_v<T>)
+			else if constexpr (IsLiteral_v<T>)
 				return ToString(arg);
 			else if constexpr (std::is_same_v<T, std::string>)
 				return EscapeString(arg, true);
@@ -143,7 +143,7 @@ namespace nzsl::Ast
 					vecTypeStr = "[i32]";
 				else if constexpr (std::is_same_v<typename T::Base, std::uint32_t>)
 					vecTypeStr = "[u32]";
-				else if constexpr (IsUntyped_v<typename T::Base>)
+				else if constexpr (IsLiteral_v<typename T::Base>)
 					vecTypeStr = "";
 				else
 					static_assert(Nz::AlwaysFalse<T>(), "unhandled vector base type");
@@ -211,12 +211,12 @@ namespace nzsl::Ast
 		return enforceType ? fmt::format("u32({})", value) : fmt::format("{}", value);
 	}
 
-	std::string ToString(UntypedFloat value, bool /*dummy*/)
+	std::string ToString(FloatLiteral value, bool /*dummy*/)
 	{
 		return ToString(value.value);
 	}
 
-	std::string ToString(UntypedInteger value, bool /*dummy*/)
+	std::string ToString(IntLiteral value, bool /*dummy*/)
 	{
 		return fmt::format("{}", value.value);
 	}

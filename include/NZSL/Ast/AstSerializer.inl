@@ -205,7 +205,7 @@ namespace nzsl::Ast
 	}
 
 	template<typename T> 
-	void SerializerBase::Value(Untyped<T>& val)
+	void SerializerBase::Value(Literal<T>& val)
 	{
 		Value(static_cast<T&>(val));
 	}

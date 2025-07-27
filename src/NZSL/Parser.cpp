@@ -1753,7 +1753,7 @@ namespace nzsl
 
 		Ast::ConstantValueExpressionPtr constantExpr;
 		if (m_context->module->metadata->shaderLangVersion >= Version::UntypedLiterals)
-			constantExpr = ShaderBuilder::ConstantValue(Ast::UntypedFloat{ std::get<double>(floatingPointToken.data) });
+			constantExpr = ShaderBuilder::ConstantValue(Ast::FloatLiteral{ std::get<double>(floatingPointToken.data) });
 		else
 			constantExpr = ShaderBuilder::ConstantValue(float(std::get<double>(floatingPointToken.data)));
 
@@ -1778,7 +1778,7 @@ namespace nzsl
 
 		Ast::ConstantValueExpressionPtr constantExpr;
 		if (m_context->module->metadata->shaderLangVersion >= Version::UntypedLiterals)
-			constantExpr = ShaderBuilder::ConstantValue(Ast::UntypedInteger{ std::get<std::int64_t>(integerToken.data) });
+			constantExpr = ShaderBuilder::ConstantValue(Ast::IntLiteral{ std::get<std::int64_t>(integerToken.data) });
 		else
 			constantExpr = ShaderBuilder::ConstantValue(Nz::SafeCast<std::int32_t>(std::get<long long>(integerToken.data)));
 
