@@ -11,6 +11,7 @@
 #include <glslang/Public/ShaderLang.h>
 #include <spirv-tools/libspirv.hpp>
 #include <NZSL/Ast/Transformations/BindingResolverTransformer.hpp>
+#include <NZSL/Ast/Transformations/UntypedTransformer.hpp>
 #include <NZSL/Ast/Cloner.hpp>
 
 namespace NAZARA_ANONYMOUS_NAMESPACE
@@ -474,6 +475,9 @@ void ResolveModule(nzsl::Ast::Module& module, const ResolveOptions& resolveOptio
 		if (resolveOptions.bindingResolverOptions)
 			executor.AddPass<nzsl::Ast::BindingResolverTransformer>(*resolveOptions.bindingResolverOptions);
 
+		//if (resolveOptions.untypedOptions)
+		//	executor.AddPass<nzsl::Ast::UntypedTransformer>(*resolveOptions.untypedOptions);
+
 		REQUIRE_NOTHROW(executor.Transform(module, context));
 		hasBeenResolved = true;
 	};
@@ -543,3 +547,4 @@ void ResolveModule(nzsl::Ast::Module& module, const ResolveOptions& resolveOptio
 
 const nzsl::Ast::BindingResolverTransformer::Options ResolveOptions::defaultBindingResolverOptions;
 const nzsl::Ast::ResolveTransformer::Options ResolveOptions::defaultIdentifierResolveOptions;
+const nzsl::Ast::UntypedTransformer::Options ResolveOptions::defaultUntypedOptions;

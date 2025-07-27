@@ -236,7 +236,7 @@ fn main()
 })");
 
 		ExpectSPIRV(*shaderModule, R"(
-      OpSource SourceLanguage(NZSL) 100
+      OpSource SourceLanguage(NZSL) 4194304
       OpName %9 "Data"
       OpMemberName %9 0 "values"
       OpMemberName %9 1 "matrices"
@@ -375,7 +375,7 @@ fn main()
 			{
 				nzsl::SpirvWriter::Environment spirvEnv;
 				ExpectSPIRV(*shaderModule, R"(
-      OpSource SourceLanguage(NZSL) 100
+      OpSource SourceLanguage(NZSL) 4194304
       OpName %5 "Data"
       OpMemberName %5 0 "values"
       OpName %7 "inData"
@@ -448,7 +448,7 @@ fn main()
 				spirvEnv.spvMinorVersion = 3;
 
 				ExpectSPIRV(*shaderModule, R"(
-      OpSource SourceLanguage(NZSL) 100
+      OpSource SourceLanguage(NZSL) 4194304
       OpName %5 "Data"
       OpMemberName %5 0 "values"
       OpName %7 "inData"
@@ -587,7 +587,7 @@ fn main()
 				nzsl::SpirvWriter::Environment spirvEnv;
 
 				ExpectSPIRV(*shaderModule, R"(
-      OpSource SourceLanguage(NZSL) 100
+      OpSource SourceLanguage(NZSL) 4194304
       OpName %4 "Data"
       OpMemberName %4 0 "data"
       OpMemberName %4 1 "values"
@@ -634,7 +634,7 @@ fn main()
 				spirvEnv.spvMinorVersion = 3;
 
 				ExpectSPIRV(*shaderModule, R"(
-      OpSource SourceLanguage(NZSL) 100
+      OpSource SourceLanguage(NZSL) 4194304
       OpName %4 "Data"
       OpMemberName %4 0 "data"
       OpMemberName %4 1 "values"
@@ -1011,7 +1011,7 @@ fn main()
 })");
 
 	ExpectSPIRV(*shaderModule, R"(
-     OpSource SourceLanguage(NZSL) 100
+     OpSource SourceLanguage(NZSL) 4194304
      OpName %2 "Data"
      OpMemberName %2 0 "index"
      OpName %4 "data"
@@ -1107,7 +1107,7 @@ layout(std140) uniform _nzslBindinglightData
 void main()
 {
 	{
-		uint lightIndex = uint(0);
+		uint lightIndex = 0u;
 		uint _nzsl_to = lightData.directionalLightCount;
 		while (lightIndex < _nzsl_to)
 		{
@@ -1442,7 +1442,7 @@ fn main()
       OpMemoryModel AddressingModel(Logical) MemoryModel(GLSL450)
       OpEntryPoint ExecutionModel(Fragment) %10 "main"
       OpExecutionMode %10 ExecutionMode(OriginUpperLeft)
-      OpSource SourceLanguage(NZSL) 100
+      OpSource SourceLanguage(NZSL) 4194304
       OpName %5 "Viewer_tex"
       OpName %10 "main"
       OpDecorate %5 Decoration(Binding) 0

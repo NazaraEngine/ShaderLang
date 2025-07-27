@@ -123,7 +123,9 @@ namespace nzsl::Ast
 				throw std::runtime_error("invalid type (value expected)");
 			else if constexpr (std::is_same_v<T, bool>)
 				return (arg) ? "true" : "false";
-			else if constexpr (std::is_same_v<T, double> || std::is_same_v<T, float> || std::is_same_v<T, std::int32_t> || std::is_same_v<T, std::uint32_t> || IsUntyped_v<T>)
+			else if constexpr (std::is_same_v<T, double> || std::is_same_v<T, float> || std::is_same_v<T, std::int32_t> || std::is_same_v<T, std::uint32_t>)
+				return ToString(arg);
+			else if constexpr (IsUntyped_v<T>)
 				return ToString(arg);
 			else if constexpr (std::is_same_v<T, std::string>)
 				return EscapeString(arg, true);
@@ -165,7 +167,7 @@ namespace nzsl::Ast
 		return (value) ? "true" : "false";
 	}
 
-	std::string ToString(double value, bool suffixType)
+	std::string ToString(double value, bool enforceType)
 	{
 		std::string str = fmt::format("{:.15f}", value);
 
@@ -179,10 +181,10 @@ namespace nzsl::Ast
 			str.pop_back();
 		}
 
-		return suffixType ? str + "_f64" : str;
+		return enforceType ? fmt::format("f64({})", str) : str;
 	}
 
-	std::string ToString(float value, bool suffixType)
+	std::string ToString(float value, bool enforceType)
 	{
 		std::string str = fmt::format("{:.6f}", value);
 
@@ -196,25 +198,25 @@ namespace nzsl::Ast
 			str.pop_back();
 		}
 
-		return suffixType ? str + "_f32" : str;
+		return enforceType ? fmt::format("f32({})", str) : str;
 	}
 
-	std::string ToString(std::int32_t value, bool suffixType)
+	std::string ToString(std::int32_t value, bool enforceType)
 	{
-		return fmt::format("{}{}", value, suffixType ? "_i32" : "");
+		return enforceType ? fmt::format("i32({})", value) : fmt::format("{}", value);
 	}
 
-	std::string ToString(std::uint32_t value, bool suffixType)
+	std::string ToString(std::uint32_t value, bool enforceType)
 	{
-		return fmt::format("{}{}", value, suffixType ? "_u32" : "");
+		return enforceType ? fmt::format("u32({})", value) : fmt::format("{}", value);
 	}
 
-	std::string ToString(UntypedFloat value)
+	std::string ToString(UntypedFloat value, bool /*dummy*/)
 	{
-		return ToString(value.value, false);
+		return ToString(value.value);
 	}
 
-	std::string ToString(UntypedInteger value)
+	std::string ToString(UntypedInteger value, bool /*dummy*/)
 	{
 		return fmt::format("{}", value.value);
 	}
