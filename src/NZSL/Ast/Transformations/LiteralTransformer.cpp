@@ -221,12 +221,6 @@ namespace nzsl::Ast
 					break;
 				}
 
-				case ParameterType::SampleCoordinates:
-				{
-					paramIndex++;
-					break;
-				}
-
 				case ParameterType::Scalar:
 				{
 					//ResolveUntyped(*intrinsicExpr.parameters[paramIndex], PrimitiveType::Float32, intrinsicExpr.sourceLocation);
@@ -254,6 +248,13 @@ namespace nzsl::Ast
 
 				case ParameterType::Sampler:
 				{
+					paramIndex++;
+					break;
+				}
+
+				case ParameterType::SampleCoordinates:
+				{
+					ResolveUntyped(*intrinsicExpr.parameters[paramIndex], PrimitiveType::Float32, intrinsicExpr.sourceLocation);
 					paramIndex++;
 					break;
 				}
@@ -403,106 +404,405 @@ namespace nzsl::Ast
 	bool LiteralTransformer::ResolveUntyped(Expression& expression, std::optional<ExpressionType> enforcedType, const SourceLocation& sourceLocation) const
 	{
 		const ExpressionType* exprType = GetExpressionType(expression);
-		if (!exprType || !IsPrimitiveType(*exprType))
+		if (!exprType)
 			return false;
 
-		PrimitiveType primType = std::get<PrimitiveType>(*exprType);
-		switch (primType)
+		if (const PrimitiveType* primType = std::get_if<PrimitiveType>(exprType))
 		{
-			case PrimitiveType::Boolean:
-			case PrimitiveType::Float32:
-			case PrimitiveType::Float64:
-			case PrimitiveType::Int32:
-			case PrimitiveType::String:
-			case PrimitiveType::UInt32:
-				return false; //< not untyped
-
-			case PrimitiveType::FloatLiteral:
+			switch (*primType)
 			{
-				if (expression.GetType() != NodeType::ConstantValueExpression)
-					throw AstUntypedExpectedConstantError{ expression.sourceLocation, Ast::ToString(expression.GetType()) };
+				case PrimitiveType::Boolean:
+				case PrimitiveType::Float32:
+				case PrimitiveType::Float64:
+				case PrimitiveType::Int32:
+				case PrimitiveType::String:
+				case PrimitiveType::UInt32:
+					return false; //< not untyped
 
-				ConstantValueExpression& constantExpr = static_cast<ConstantValueExpression&>(expression);
-
-				if (enforcedType)
+				case PrimitiveType::FloatLiteral:
 				{
-					const ExpressionType& resolvedType = ResolveAlias(*enforcedType);
-					if (!IsPrimitiveType(resolvedType))
-						throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(primType), Ast::ToString(*enforcedType) };
+					if (expression.GetType() != NodeType::ConstantValueExpression)
+						throw AstUntypedExpectedConstantError{ expression.sourceLocation, Ast::ToString(expression.GetType()) };
 
-					PrimitiveType targetType = std::get<PrimitiveType>(resolvedType);
-					if (targetType == PrimitiveType::Float32 || targetType == PrimitiveType::FloatLiteral)
-						constantExpr.value = static_cast<float>(std::get<FloatLiteral>(constantExpr.value));
-					else if (targetType == PrimitiveType::Float64)
-						constantExpr.value = static_cast<double>(std::get<FloatLiteral>(constantExpr.value));
-					else
-						throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(primType), Ast::ToString(targetType) };
+					ConstantValueExpression& constantExpr = static_cast<ConstantValueExpression&>(expression);
 
-					constantExpr.cachedExpressionType = *enforcedType;
-				}
-				else
-				{
-					// Default to f32
-					constantExpr.value = static_cast<float>(std::get<FloatLiteral>(constantExpr.value));
-					constantExpr.cachedExpressionType = ExpressionType{ PrimitiveType::Float32 };
-				}
-
-				return true;
-			}
-
-			case PrimitiveType::IntLiteral:
-			{
-				if (expression.GetType() != NodeType::ConstantValueExpression)
-					throw AstUntypedExpectedConstantError{ expression.sourceLocation, Ast::ToString(expression.GetType()) };
-
-				ConstantValueExpression& constantExpr = static_cast<ConstantValueExpression&>(expression);
-
-				std::int64_t value = std::get<IntLiteral>(constantExpr.value);
-
-				auto ConvertToInt32 = [&]
-				{
-					if (value > std::numeric_limits<std::int32_t>::max())
-						throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::Int32), std::to_string(value) };
-
-					if (value < std::numeric_limits<std::int32_t>::min())
-						throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::Int32), std::to_string(value) };
-
-					constantExpr.value = static_cast<std::int32_t>(std::get<IntLiteral>(constantExpr.value));
-					constantExpr.cachedExpressionType = ExpressionType{ PrimitiveType::Int32 };
-				};
-
-				if (enforcedType)
-				{
-					const ExpressionType& resolvedType = ResolveAlias(*enforcedType);
-					if (!IsPrimitiveType(resolvedType))
-						throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(primType), Ast::ToString(*enforcedType) };
-
-					PrimitiveType targetType = std::get<PrimitiveType>(resolvedType);
-					if (targetType == PrimitiveType::Int32 || targetType == PrimitiveType::IntLiteral)
-						ConvertToInt32();
-					else if (targetType == PrimitiveType::UInt32)
+					if (enforcedType)
 					{
-						if (value < 0)
-							throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(targetType), std::to_string(value) };
+						const ExpressionType& resolvedType = ResolveAlias(*enforcedType);
+						if (!IsPrimitiveType(resolvedType))
+							throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(*primType), Ast::ToString(*enforcedType) };
 
-						if (static_cast<std::uint64_t>(value) > std::numeric_limits<std::uint32_t>::max())
-							throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(targetType), std::to_string(value) };
+						PrimitiveType targetType = std::get<PrimitiveType>(resolvedType);
+						if (targetType == PrimitiveType::Float32 || targetType == PrimitiveType::FloatLiteral)
+							constantExpr.value = static_cast<float>(std::get<FloatLiteral>(constantExpr.value));
+						else if (targetType == PrimitiveType::Float64)
+							constantExpr.value = static_cast<double>(std::get<FloatLiteral>(constantExpr.value));
+						else
+							throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(*primType), Ast::ToString(targetType) };
 
-						constantExpr.value = static_cast<std::uint32_t>(std::get<IntLiteral>(constantExpr.value));
+						constantExpr.cachedExpressionType = *enforcedType;
 					}
 					else
-						throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(primType), Ast::ToString(targetType) };
+					{
+						// Default to f32
+						constantExpr.value = static_cast<float>(std::get<FloatLiteral>(constantExpr.value));
+						constantExpr.cachedExpressionType = ExpressionType{ PrimitiveType::Float32 };
+					}
 
-					constantExpr.cachedExpressionType = *enforcedType;
+					return true;
 				}
-				else
-					// Default to i32
-					ConvertToInt32();
 
-				return true;
+				case PrimitiveType::IntLiteral:
+				{
+					if (expression.GetType() != NodeType::ConstantValueExpression)
+						throw AstUntypedExpectedConstantError{ expression.sourceLocation, Ast::ToString(expression.GetType()) };
+
+					ConstantValueExpression& constantExpr = static_cast<ConstantValueExpression&>(expression);
+
+					std::int64_t value = std::get<IntLiteral>(constantExpr.value);
+
+					auto ConvertToInt32 = [&]
+					{
+						if (value > std::numeric_limits<std::int32_t>::max())
+							throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::Int32), std::to_string(value) };
+
+						if (value < std::numeric_limits<std::int32_t>::min())
+							throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::Int32), std::to_string(value) };
+
+						constantExpr.value = static_cast<std::int32_t>(std::get<IntLiteral>(constantExpr.value));
+						constantExpr.cachedExpressionType = ExpressionType{ PrimitiveType::Int32 };
+					};
+
+					if (enforcedType)
+					{
+						const ExpressionType& resolvedType = ResolveAlias(*enforcedType);
+						if (!IsPrimitiveType(resolvedType))
+							throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(*primType), Ast::ToString(*enforcedType) };
+
+						PrimitiveType targetType = std::get<PrimitiveType>(resolvedType);
+						if (targetType == PrimitiveType::Int32 || targetType == PrimitiveType::IntLiteral)
+							ConvertToInt32();
+						else if (targetType == PrimitiveType::UInt32)
+						{
+							if (value < 0)
+								throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(targetType), std::to_string(value) };
+
+							if (static_cast<std::uint64_t>(value) > std::numeric_limits<std::uint32_t>::max())
+								throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(targetType), std::to_string(value) };
+
+							constantExpr.value = static_cast<std::uint32_t>(std::get<IntLiteral>(constantExpr.value));
+						}
+						else
+							throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(*primType), Ast::ToString(targetType) };
+
+						constantExpr.cachedExpressionType = *enforcedType;
+					}
+					else
+						// Default to i32
+						ConvertToInt32();
+
+					return true;
+				}
 			}
-		}
 
-		NAZARA_UNREACHABLE();
+			NAZARA_UNREACHABLE();
+		}
+		else if (const VectorType* vecType = std::get_if<VectorType>(exprType))
+		{
+			switch (vecType->type)
+			{
+				case PrimitiveType::Boolean:
+				case PrimitiveType::Float32:
+				case PrimitiveType::Float64:
+				case PrimitiveType::Int32:
+				case PrimitiveType::String:
+				case PrimitiveType::UInt32:
+					return false; //< not untyped
+
+				case PrimitiveType::FloatLiteral:
+				{
+					if (expression.GetType() != NodeType::ConstantValueExpression)
+						throw AstUntypedExpectedConstantError{ expression.sourceLocation, Ast::ToString(expression.GetType()) };
+
+					ConstantValueExpression& constantExpr = static_cast<ConstantValueExpression&>(expression);
+
+					VectorType targetType;
+					if (enforcedType)
+					{
+						const ExpressionType& resolvedType = ResolveAlias(*enforcedType);
+						if (!IsVectorType(resolvedType))
+							throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(*vecType), Ast::ToString(*enforcedType) };
+
+						targetType = std::get<VectorType>(resolvedType);
+						if (targetType.componentCount != vecType->componentCount)
+							throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(*vecType), Ast::ToString(*enforcedType) };
+
+						constantExpr.cachedExpressionType = *enforcedType;
+					}
+					else
+					{
+						targetType = VectorType{ vecType->componentCount, PrimitiveType::Float32 };
+
+						constantExpr.cachedExpressionType = targetType;
+					}
+
+					switch (targetType.componentCount)
+					{
+						case 2:
+						{
+							Vector2<FloatLiteral> vecUntyped = std::get<Vector2<FloatLiteral>>(constantExpr.value);
+
+							if (targetType.type == PrimitiveType::Float32 || targetType.type == PrimitiveType::FloatLiteral)
+							{
+								Vector2f32 vec;
+								for (std::size_t i = 0; i < targetType.componentCount; ++i)
+									vec[i] = static_cast<float>(vecUntyped[i]);
+										
+								constantExpr.value = vec;
+							}
+							else if (targetType.type == PrimitiveType::Float64)
+							{
+								Vector2f64 vec;
+								for (std::size_t i = 0; i < targetType.componentCount; ++i)
+									vec[i] = static_cast<double>(vecUntyped[i]);
+
+								constantExpr.value = vec;
+							}
+							else
+								throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(*vecType), Ast::ToString(targetType) };
+
+							break;
+						}
+
+						case 3:
+						{
+							Vector3<FloatLiteral> vecUntyped = std::get<Vector3<FloatLiteral>>(constantExpr.value);
+
+							if (targetType.type == PrimitiveType::Float32 || targetType.type == PrimitiveType::FloatLiteral)
+							{
+								Vector3f32 vec;
+								for (std::size_t i = 0; i < targetType.componentCount; ++i)
+									vec[i] = static_cast<float>(vecUntyped[i]);
+
+								constantExpr.value = vec;
+							}
+							else if (targetType.type == PrimitiveType::Float64)
+							{
+								Vector3f64 vec;
+								for (std::size_t i = 0; i < targetType.componentCount; ++i)
+									vec[i] = static_cast<double>(vecUntyped[i]);
+
+								constantExpr.value = vec;
+							}
+							else
+								throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(*vecType), Ast::ToString(targetType) };
+
+							break;
+						}
+
+						case 4:
+						{
+							Vector4<FloatLiteral> vecUntyped = std::get<Vector4<FloatLiteral>>(constantExpr.value);
+									
+							if (targetType.type == PrimitiveType::Float32 || targetType.type == PrimitiveType::FloatLiteral)
+							{
+								Vector4f32 vec;
+								for (std::size_t i = 0; i < targetType.componentCount; ++i)
+									vec[i] = static_cast<float>(vecUntyped[i]);
+										
+								constantExpr.value = vec;
+							}
+							else if (targetType.type == PrimitiveType::Float64)
+							{
+								Vector4f64 vec;
+								for (std::size_t i = 0; i < targetType.componentCount; ++i)
+									vec[i] = static_cast<double>(vecUntyped[i]);
+
+								constantExpr.value = vec;
+							}
+							else
+								throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(*vecType), Ast::ToString(targetType) };
+
+							break;
+						}
+
+						default:
+							NAZARA_UNREACHABLE();
+					}
+
+					return true;
+				}
+
+				case PrimitiveType::IntLiteral:
+				{
+					if (expression.GetType() != NodeType::ConstantValueExpression)
+						throw AstUntypedExpectedConstantError{ expression.sourceLocation, Ast::ToString(expression.GetType()) };
+
+					ConstantValueExpression& constantExpr = static_cast<ConstantValueExpression&>(expression);
+
+					VectorType targetType;
+					if (enforcedType)
+					{
+						const ExpressionType& resolvedType = ResolveAlias(*enforcedType);
+						if (!IsVectorType(resolvedType))
+							throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(*vecType), Ast::ToString(*enforcedType) };
+
+						targetType = std::get<VectorType>(resolvedType);
+						if (targetType.componentCount != vecType->componentCount)
+							throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(*vecType), Ast::ToString(*enforcedType) };
+
+						constantExpr.cachedExpressionType = *enforcedType;
+					}
+					else
+					{
+						targetType = VectorType{ vecType->componentCount, PrimitiveType::Int32 };
+
+						constantExpr.cachedExpressionType = targetType;
+					}
+
+					switch (targetType.componentCount)
+					{
+						case 2:
+						{
+							Vector2<IntLiteral> vecUntyped = std::get<Vector2<IntLiteral>>(constantExpr.value);
+
+							if (targetType.type == PrimitiveType::Int32 || targetType.type == PrimitiveType::IntLiteral)
+							{
+								Vector2i32 vec;
+								for (std::size_t i = 0; i < targetType.componentCount; ++i)
+								{
+									std::int64_t component = vecUntyped[i];
+									if (component > std::numeric_limits<std::int32_t>::max())
+										throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::Int32), std::to_string(component) };
+
+									if (component < std::numeric_limits<std::int32_t>::min())
+										throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::Int32), std::to_string(component) };
+
+									vec[i] = static_cast<std::int32_t>(component);
+								}
+
+								constantExpr.value = vec;
+							}
+							else if (targetType.type == PrimitiveType::UInt32)
+							{
+								Vector2u32 vec;
+								for (std::size_t i = 0; i < targetType.componentCount; ++i)
+								{
+									std::int64_t component = vecUntyped[i];
+									if (component < 0)
+										throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::UInt32), std::to_string(component) };
+
+									if (static_cast<std::uint64_t>(component) > std::numeric_limits<std::uint32_t>::max())
+										throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::UInt32), std::to_string(component) };
+
+									vec[i] = static_cast<std::uint32_t>(component);
+								}
+
+								constantExpr.value = vec;
+							}
+							else
+								throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(*vecType), Ast::ToString(targetType) };
+
+							break;
+						}
+
+						case 3:
+						{
+							Vector3<IntLiteral> vecUntyped = std::get<Vector3<IntLiteral>>(constantExpr.value);
+							
+							if (targetType.type == PrimitiveType::Int32 || targetType.type == PrimitiveType::IntLiteral)
+							{
+								Vector3i32 vec;
+								for (std::size_t i = 0; i < targetType.componentCount; ++i)
+								{
+									std::int64_t component = vecUntyped[i];
+									if (component > std::numeric_limits<std::int32_t>::max())
+										throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::Int32), std::to_string(component) };
+
+									if (component < std::numeric_limits<std::int32_t>::min())
+										throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::Int32), std::to_string(component) };
+
+									vec[i] = static_cast<std::int32_t>(component);
+								}
+
+								constantExpr.value = vec;
+							}
+							else if (targetType.type == PrimitiveType::UInt32)
+							{
+								Vector3u32 vec;
+								for (std::size_t i = 0; i < targetType.componentCount; ++i)
+								{
+									std::int64_t component = vecUntyped[i];
+									if (component < 0)
+										throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::UInt32), std::to_string(component) };
+
+									if (static_cast<std::uint64_t>(component) > std::numeric_limits<std::uint32_t>::max())
+										throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::UInt32), std::to_string(component) };
+
+									vec[i] = static_cast<std::uint32_t>(component);
+								}
+
+								constantExpr.value = vec;
+							}
+							else
+								throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(*vecType), Ast::ToString(targetType) };
+
+							break;
+						}
+
+						case 4:
+						{
+							Vector4<IntLiteral> vecUntyped = std::get<Vector4<IntLiteral>>(constantExpr.value);
+
+							if (targetType.type == PrimitiveType::Int32 || targetType.type == PrimitiveType::IntLiteral)
+							{
+								Vector4i32 vec;
+								for (std::size_t i = 0; i < targetType.componentCount; ++i)
+								{
+									std::int64_t component = vecUntyped[i];
+									if (component > std::numeric_limits<std::int32_t>::max())
+										throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::Int32), std::to_string(component) };
+
+									if (component < std::numeric_limits<std::int32_t>::min())
+										throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::Int32), std::to_string(component) };
+
+									vec[i] = static_cast<std::int32_t>(component);
+								}
+
+								constantExpr.value = vec;
+							}
+							else if (targetType.type == PrimitiveType::UInt32)
+							{
+								Vector4u32 vec;
+								for (std::size_t i = 0; i < targetType.componentCount; ++i)
+								{
+									std::int64_t component = vecUntyped[i];
+									if (component < 0)
+										throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::UInt32), std::to_string(component) };
+
+									if (static_cast<std::uint64_t>(component) > std::numeric_limits<std::uint32_t>::max())
+										throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::UInt32), std::to_string(component) };
+
+									vec[i] = static_cast<std::uint32_t>(component);
+								}
+
+								constantExpr.value = vec;
+							}
+							else
+								throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(*vecType), Ast::ToString(targetType) };
+
+							break;
+						}
+
+						default:
+							NAZARA_UNREACHABLE();
+					}
+
+					return true;
+				}
+			}
+
+			NAZARA_UNREACHABLE();
+		}
 	}
 }
