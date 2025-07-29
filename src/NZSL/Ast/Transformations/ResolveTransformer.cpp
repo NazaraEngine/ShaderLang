@@ -2739,10 +2739,7 @@ namespace nzsl::Ast
 			expressionType = GetConstantType(*value);
 
 			if (constType.has_value())
-			{
-				ValidateConcreteType(*constType, declConst.sourceLocation);
-				expressionType = *constType;
-			}
+				ResolveUntyped(*constType, *value, declConst.sourceLocation);
 			else
 				ResolveUntyped(expressionType, declConst.sourceLocation);
 
@@ -2756,7 +2753,7 @@ namespace nzsl::Ast
 			ValidateConcreteType(*constType, declConst.sourceLocation);
 
 			if (!ValidateMatchingTypes(expressionType, *constType))
-				throw CompilerVarDeclarationTypeUnmatchingError{ declConst.expression->sourceLocation, ToString(expressionType, declConst.sourceLocation), ToString(*constType, declConst.sourceLocation) };
+				throw CompilerVarDeclarationTypeUnmatchingError{ declConst.sourceLocation, ToString(expressionType, declConst.sourceLocation), ToString(*constType, declConst.sourceLocation) };
 		}
 		else
 			ResolveUntyped(expressionType, declConst.sourceLocation);
@@ -3299,9 +3296,39 @@ namespace nzsl::Ast
 				{
 					using T = std::decay_t<decltype(dummy)>;
 
-					T counter = std::get<T>(*fromValue);
-					T to = std::get<T>(*toValue);
-					T step = (forStatement.stepExpr) ? std::get<T>(*stepValue) : T{ 1 };
+					auto GetValue = [](const ConstantValue& constantValue, const SourceLocation& sourceLocation) -> T
+					{
+						if (const IntLiteral* literal = std::get_if<IntLiteral>(&constantValue))
+						{
+							std::int64_t iValue = *literal;
+							if constexpr (std::is_same_v<T, std::int32_t>)
+							{
+								if (iValue > std::numeric_limits<std::int32_t>::max())
+									throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::Int32), std::to_string(iValue) };
+
+								if (iValue < std::numeric_limits<std::int32_t>::min())
+									throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::Int32), std::to_string(iValue) };
+
+								return static_cast<T>(iValue);
+							}
+							else if constexpr (std::is_same_v<T, std::uint32_t>)
+							{
+								if (iValue < 0)
+									throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::UInt32), std::to_string(iValue) };
+
+								if (static_cast<std::uint64_t>(iValue) > std::numeric_limits<std::uint32_t>::max())
+									throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::UInt32), std::to_string(iValue) };
+
+								return static_cast<T>(iValue);
+							}
+						}
+						
+						return std::get<T>(constantValue);
+					};
+
+					T counter = GetValue(*fromValue, forStatement.fromExpr->sourceLocation);
+					T to = GetValue(*toValue, forStatement.toExpr->sourceLocation);
+					T step = (forStatement.stepExpr) ? GetValue(*stepValue, forStatement.stepExpr->sourceLocation) : T{ 1 };
 
 					for (; counter < to; counter += step)
 					{
@@ -3344,8 +3371,25 @@ namespace nzsl::Ast
 					throw CompilerForFromTypeExpectIntegerTypeError{ forStatement.fromExpr->sourceLocation, ToString(fromExprType, forStatement.fromExpr->sourceLocation) };
 
 				PrimitiveType counterType = std::get<PrimitiveType>(fromExprType);
-				if (counterType != PrimitiveType::Int32 && counterType != PrimitiveType::UInt32)
+				if (counterType != PrimitiveType::Int32 && counterType != PrimitiveType::UInt32 && counterType != PrimitiveType::IntLiteral)
 					throw CompilerForFromTypeExpectIntegerTypeError{ forStatement.fromExpr->sourceLocation, ToString(fromExprType, forStatement.fromExpr->sourceLocation) };
+
+				if (counterType == PrimitiveType::IntLiteral)
+				{
+					// Fallback to "to" type
+					ExpressionType toExprType = GetConstantType(*toValue);
+					if (!IsPrimitiveType(toExprType))
+						throw CompilerForToUnmatchingTypeError{ forStatement.toExpr->sourceLocation, ToString(fromExprType, forStatement.fromExpr->sourceLocation), ToString(toExprType, forStatement.toExpr->sourceLocation) };
+
+					PrimitiveType toCounterType = std::get<PrimitiveType>(toExprType);
+					if (toCounterType != PrimitiveType::Int32 && toCounterType != PrimitiveType::UInt32 && toCounterType != PrimitiveType::IntLiteral)
+						throw CompilerForToUnmatchingTypeError{ forStatement.toExpr->sourceLocation, ToString(fromExprType, forStatement.fromExpr->sourceLocation), ToString(toExprType, forStatement.toExpr->sourceLocation) };
+
+					counterType = toCounterType;
+				}
+
+				if (counterType == PrimitiveType::IntLiteral)
+					counterType = PrimitiveType::Int32;
 
 				switch (counterType)
 				{
@@ -3353,29 +3397,12 @@ namespace nzsl::Ast
 						Unroll(std::int32_t{});
 						break;
 
-					PrimitiveType counterType = std::get<PrimitiveType>(resolvedFromExprType);
-					if (counterType != PrimitiveType::Int32 && counterType != PrimitiveType::UInt32 && counterType != PrimitiveType::IntLiteral)
-						throw CompilerForFromTypeExpectIntegerTypeError{ forStatement.fromExpr->sourceLocation, ToString(*fromExprType, forStatement.fromExpr->sourceLocation) };
+					case PrimitiveType::UInt32:
+						Unroll(std::uint32_t{});
+						break;
 
-					switch (counterType)
-					{
-						case PrimitiveType::Int32:
-							Unroll(std::int32_t{});
-							break;
-
-						case PrimitiveType::UInt32:
-							Unroll(std::uint32_t{});
-							break;
-
-						case PrimitiveType::IntLiteral:
-							Unroll(IntLiteral{});
-							break;
-
-						default:
-							throw AstInternalError{ forStatement.sourceLocation, "unexpected counter type " + ToString(counterType, forStatement.fromExpr->sourceLocation) };
-					}
-
-					return ReplaceStatement{ std::move(multi) };
+					default:
+						throw AstInternalError{ forStatement.sourceLocation, "unexpected counter type " + ToString(counterType, forStatement.fromExpr->sourceLocation) };
 				}
 
 				return ReplaceStatement{ std::move(multi) };

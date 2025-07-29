@@ -917,7 +917,7 @@ namespace nzsl::Ast
 					return DontVisitChildren{};
 
 				if (!ValidateMatchingTypes(innerType, *exprType))
-					throw CompilerCastIncompatibleBaseTypesError{ exprPtr->sourceLocation, ToString(innerType, node.sourceLocation), ToString(*exprType, node.sourceLocation) };
+					throw CompilerCastIncompatibleTypesError{ exprPtr->sourceLocation, ToString(innerType, node.sourceLocation), ToString(*exprType, node.sourceLocation) };
 			}
 		}
 		else
@@ -1331,6 +1331,35 @@ namespace nzsl::Ast
 	auto ValidationTransformer::Transform(ForStatement&& node) -> StatementTransformation
 	{
 		HandleChildren(node);
+
+		const ExpressionType* fromExprType = GetExpressionType(*node.fromExpr);
+		if (fromExprType)
+		{
+			const ExpressionType& resolvedFromExprType = ResolveAlias(*fromExprType);
+			if (!IsPrimitiveType(resolvedFromExprType))
+				throw CompilerForFromTypeExpectIntegerTypeError{ node.fromExpr->sourceLocation, ToString(*fromExprType, node.fromExpr->sourceLocation) };
+
+			PrimitiveType counterType = std::get<PrimitiveType>(resolvedFromExprType);
+			if (counterType != PrimitiveType::Int32 && counterType != PrimitiveType::UInt32 && counterType != PrimitiveType::IntLiteral)
+				throw CompilerForFromTypeExpectIntegerTypeError{ node.fromExpr->sourceLocation, ToString(*fromExprType, node.fromExpr->sourceLocation) };
+
+			const ExpressionType* toExprType = GetExpressionType(*node.toExpr);
+			if (toExprType)
+			{
+				if (!ValidateMatchingTypes(*fromExprType, *toExprType))
+					throw CompilerForToUnmatchingTypeError{ node.toExpr->sourceLocation, ToString(*toExprType, node.toExpr->sourceLocation), ToString(*fromExprType, node.fromExpr->sourceLocation) };
+			}
+
+			if (node.stepExpr)
+			{
+				const ExpressionType* stepExprType = GetExpressionType(*node.stepExpr);
+				if (stepExprType)
+				{
+					if (!ValidateMatchingTypes(*fromExprType, *stepExprType))
+						throw CompilerForStepUnmatchingTypeError{ node.stepExpr->sourceLocation, ToString(*stepExprType, node.stepExpr->sourceLocation), ToString(*fromExprType, node.fromExpr->sourceLocation) };
+				}
+			}
+		}
 
 		if (node.varIndex && m_options->checkIndices)
 			RegisterVariable(*node.varIndex, node.sourceLocation);
