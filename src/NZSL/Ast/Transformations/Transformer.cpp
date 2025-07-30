@@ -36,14 +36,17 @@ namespace nzsl::Ast
 		auto varExpr = std::make_unique<VariableValueExpression>();
 		varExpr->sourceLocation = variableDeclaration->sourceLocation;
 		varExpr->variableId = *variableDeclaration->varIndex;
-		varExpr->cachedExpressionType = variableDeclaration->varType.GetResultingValue();
+		//if (variableDeclaration->varType.IsResultingValue())
+			varExpr->cachedExpressionType = variableDeclaration->varType.GetResultingValue();
 
 		return varExpr;
 	}
 
 	DeclareVariableStatement* Transformer::DeclareVariable(std::string_view name, ExpressionPtr initialExpr)
 	{
-		DeclareVariableStatement* var = DeclareVariable(name, *GetExpressionType(*initialExpr, false), initialExpr->sourceLocation);
+		ExpressionType expressionType = *GetExpressionType(*initialExpr, false);
+
+		DeclareVariableStatement* var = DeclareVariable(name, std::move(expressionType), initialExpr->sourceLocation);
 		var->initialExpression = std::move(initialExpr);
 
 		return var;
@@ -56,7 +59,8 @@ namespace nzsl::Ast
 		auto variableDeclaration = ShaderBuilder::DeclareVariable(fmt::format("_nzsl_{}", name), nullptr);
 		variableDeclaration->sourceLocation = std::move(sourceLocation);
 		variableDeclaration->varIndex = m_context->nextVariableIndex++;
-		variableDeclaration->varType = std::move(type);
+		//if (!IsLiteralType(type))
+			variableDeclaration->varType = std::move(type);
 
 		DeclareVariableStatement* varPtr = variableDeclaration.get();
 		AppendStatement(std::move(variableDeclaration));

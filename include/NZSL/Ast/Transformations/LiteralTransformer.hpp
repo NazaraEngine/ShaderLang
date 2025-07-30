@@ -1,0 +1,51 @@
+// Copyright (C) 2025 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
+// This file is part of the "Nazara Shading Language" project
+// For conditions of distribution and use, see copyright notice in Config.hpp
+
+#pragma once
+
+#ifndef NZSL_AST_TRANSFORMATIONS_UNTYPEDTRANSFORMER_HPP
+#define NZSL_AST_TRANSFORMATIONS_UNTYPEDTRANSFORMER_HPP
+
+#include <NZSL/Ast/Transformations/Transformer.hpp>
+
+namespace nzsl::Ast
+{
+	class NZSL_API LiteralTransformer final : public Transformer
+	{
+		public:
+			struct Options;
+
+			LiteralTransformer() = default;
+
+			inline bool Transform(Module& module, Context& context, std::string* error = nullptr);
+			bool Transform(Module& module, Context& context, const Options& options, std::string* error = nullptr);
+
+			struct Options
+			{
+				bool resolveUntypedLiterals = true;
+			};
+
+		private:
+			using Transformer::Transform;
+
+			bool ResolveUntyped(Expression& expression, std::optional<ExpressionType> enforcedType, const SourceLocation& sourceLocation) const;
+
+			ExpressionTransformation Transform(AssignExpression&& assignExpr) override;
+			ExpressionTransformation Transform(BinaryExpression&& binaryExpr) override;
+			ExpressionTransformation Transform(CallFunctionExpression&& callFuncExpr) override;
+			ExpressionTransformation Transform(CastExpression&& castExpr) override;
+			ExpressionTransformation Transform(IntrinsicExpression&& intrinsicExpr) override;
+			ExpressionTransformation Transform(UnaryExpression&& unaryExpr) override;
+
+			StatementTransformation Transform(DeclareConstStatement&& declConst) override;
+			StatementTransformation Transform(DeclareVariableStatement&& declVariable) override;
+			StatementTransformation Transform(ForStatement&& forStatement) override;
+
+			const Options* m_options;
+	};
+}
+
+#include <NZSL/Ast/Transformations/LiteralTransformer.inl>
+
+#endif // NZSL_AST_TRANSFORMATIONS_UNTYPEDTRANSFORMER_HPP

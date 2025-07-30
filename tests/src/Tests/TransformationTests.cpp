@@ -130,8 +130,8 @@ fn main()
 {
 	let x: f32 = 0.0;
 	{
-		let i: i32 = 0;
-		let _nzsl_to: i32 = 10;
+		let i = 0;
+		let _nzsl_to = 10;
 		while (i < _nzsl_to)
 		{
 			x += data.value[i];
@@ -186,12 +186,12 @@ fn main()
 {
 	let x: f32 = 0.0;
 	{
-		let _nzsl_counter: u32 = u32(0);
-		while (_nzsl_counter < (u32(10)))
+		let _nzsl_counter: u32 = 0;
+		while (_nzsl_counter < (10))
 		{
 			let v: f32 = data.value[_nzsl_counter];
 			x += v;
-			_nzsl_counter += u32(1);
+			_nzsl_counter += 1;
 		}
 
 	}
@@ -310,8 +310,8 @@ fn testMat4ToMat4(input: mat4[f32]) -> mat4[f32]
 fn buildMat2x3(a: f32, b: f32, c: f32, d: f32, e: f32, f: f32) -> mat2x3[f32]
 {
 	let _nzsl_matrix: mat2x3[f32];
-	_nzsl_matrix[u32(0)] = vec3[f32](a, b, c);
-	_nzsl_matrix[u32(1)] = vec3[f32](d, e, f);
+	_nzsl_matrix[0] = vec3[f32](a, b, c);
+	_nzsl_matrix[1] = vec3[f32](d, e, f);
 	return _nzsl_matrix;
 }
 
@@ -323,27 +323,27 @@ fn testMat2ToMat2(input: mat2[f32]) -> mat2[f32]
 fn testMat2ToMat3(input: mat2[f32]) -> mat3[f32]
 {
 	let _nzsl_matrix: mat3[f32];
-	_nzsl_matrix[u32(0)] = vec3[f32](input[u32(0)], 0.0);
-	_nzsl_matrix[u32(1)] = vec3[f32](input[u32(1)], 0.0);
-	_nzsl_matrix[u32(2)] = vec3[f32](input[u32(2)], 1.0);
+	_nzsl_matrix[0] = vec3[f32](input[0], 0.0);
+	_nzsl_matrix[1] = vec3[f32](input[1], 0.0);
+	_nzsl_matrix[2] = vec3[f32](input[2], 1.0);
 	return _nzsl_matrix;
 }
 
 fn testMat2ToMat4(input: mat2[f32]) -> mat4[f32]
 {
 	let _nzsl_matrix: mat4[f32];
-	_nzsl_matrix[u32(0)] = vec4[f32](input[u32(0)], 0.0, 0.0);
-	_nzsl_matrix[u32(1)] = vec4[f32](input[u32(1)], 0.0, 0.0);
-	_nzsl_matrix[u32(2)] = vec4[f32](input[u32(2)], 1.0, 0.0);
-	_nzsl_matrix[u32(3)] = vec4[f32](input[u32(3)], 0.0, 1.0);
+	_nzsl_matrix[0] = vec4[f32](input[0], 0.0, 0.0);
+	_nzsl_matrix[1] = vec4[f32](input[1], 0.0, 0.0);
+	_nzsl_matrix[2] = vec4[f32](input[2], 1.0, 0.0);
+	_nzsl_matrix[3] = vec4[f32](input[3], 0.0, 1.0);
 	return _nzsl_matrix;
 }
 
 fn testMat3ToMat2(input: mat3[f32]) -> mat2[f32]
 {
 	let _nzsl_matrix: mat2[f32];
-	_nzsl_matrix[u32(0)] = input[u32(0)].xy;
-	_nzsl_matrix[u32(1)] = input[u32(1)].xy;
+	_nzsl_matrix[0] = input[0].xy;
+	_nzsl_matrix[1] = input[1].xy;
 	return _nzsl_matrix;
 }
 
@@ -355,27 +355,27 @@ fn testMat3ToMat3(input: mat3[f32]) -> mat3[f32]
 fn testMat3ToMat4(input: mat3[f32]) -> mat4[f32]
 {
 	let _nzsl_matrix: mat4[f32];
-	_nzsl_matrix[u32(0)] = vec4[f32](input[u32(0)], 0.0);
-	_nzsl_matrix[u32(1)] = vec4[f32](input[u32(1)], 0.0);
-	_nzsl_matrix[u32(2)] = vec4[f32](input[u32(2)], 0.0);
-	_nzsl_matrix[u32(3)] = vec4[f32](input[u32(3)], 1.0);
+	_nzsl_matrix[0] = vec4[f32](input[0], 0.0);
+	_nzsl_matrix[1] = vec4[f32](input[1], 0.0);
+	_nzsl_matrix[2] = vec4[f32](input[2], 0.0);
+	_nzsl_matrix[3] = vec4[f32](input[3], 1.0);
 	return _nzsl_matrix;
 }
 
 fn testMat4ToMat2(input: mat4[f32]) -> mat2[f32]
 {
 	let _nzsl_matrix: mat2[f32];
-	_nzsl_matrix[u32(0)] = input[u32(0)].xy;
-	_nzsl_matrix[u32(1)] = input[u32(1)].xy;
+	_nzsl_matrix[0] = input[0].xy;
+	_nzsl_matrix[1] = input[1].xy;
 	return _nzsl_matrix;
 }
 
 fn testMat4ToMat3(input: mat4[f32]) -> mat3[f32]
 {
 	let _nzsl_matrix: mat3[f32];
-	_nzsl_matrix[u32(0)] = input[u32(0)].xyz;
-	_nzsl_matrix[u32(1)] = input[u32(1)].xyz;
-	_nzsl_matrix[u32(2)] = input[u32(2)].xyz;
+	_nzsl_matrix[0] = input[0].xyz;
+	_nzsl_matrix[1] = input[1].xyz;
+	_nzsl_matrix[2] = input[2].xyz;
 	return _nzsl_matrix;
 }
 
@@ -435,29 +435,29 @@ fn testMat4CompoundMinusMat4(x: mat4[f32], y: mat4[f32]) -> mat4[f32]
 		ExpectNZSL(*shaderModule, R"(
 fn testMat4PlusMat4(x: mat4[f32], y: mat4[f32]) -> mat4[f32]
 {
-	return mat4[f32](x[u32(0)] + y[u32(0)], x[u32(1)] + y[u32(1)], x[u32(2)] + y[u32(2)], x[u32(3)] + y[u32(3)]);
+	return mat4[f32](x[0] + y[0], x[1] + y[1], x[2] + y[2], x[3] + y[3]);
 }
 
 fn testMat4SubMat4(x: mat4[f32], y: mat4[f32]) -> mat4[f32]
 {
-	return mat4[f32](x[u32(0)] - y[u32(0)], x[u32(1)] - y[u32(1)], x[u32(2)] - y[u32(2)], x[u32(3)] - y[u32(3)]);
+	return mat4[f32](x[0] - y[0], x[1] - y[1], x[2] - y[2], x[3] - y[3]);
 }
 
 fn testMat4SubMat4TimesMat4(x: mat4[f32], y: mat4[f32], z: mat4[f32]) -> mat4[f32]
 {
 	let _nzsl_cachedResult: mat4[f32] = y * y;
-	return mat4[f32](x[u32(0)] - _nzsl_cachedResult[u32(0)], x[u32(1)] - _nzsl_cachedResult[u32(1)], x[u32(2)] - _nzsl_cachedResult[u32(2)], x[u32(3)] - _nzsl_cachedResult[u32(3)]);
+	return mat4[f32](x[0] - _nzsl_cachedResult[0], x[1] - _nzsl_cachedResult[1], x[2] - _nzsl_cachedResult[2], x[3] - _nzsl_cachedResult[3]);
 }
 
 fn testMat4CompoundPlusMat4(x: mat4[f32], y: mat4[f32]) -> mat4[f32]
 {
-	x = mat4[f32](x[u32(0)] + y[u32(0)], x[u32(1)] + y[u32(1)], x[u32(2)] + y[u32(2)], x[u32(3)] + y[u32(3)]);
+	x = mat4[f32](x[0] + y[0], x[1] + y[1], x[2] + y[2], x[3] + y[3]);
 	return x;
 }
 
 fn testMat4CompoundMinusMat4(x: mat4[f32], y: mat4[f32]) -> mat4[f32]
 {
-	x = mat4[f32](x[u32(0)] - y[u32(0)], x[u32(1)] - y[u32(1)], x[u32(2)] - y[u32(2)], x[u32(3)] - y[u32(3)]);
+	x = mat4[f32](x[0] - y[0], x[1] - y[1], x[2] - y[2], x[3] - y[3]);
 	return x;
 }
 )");
@@ -473,20 +473,20 @@ fn testMat4CompoundMinusMat4(x: mat4[f32], y: mat4[f32]) -> mat4[f32]
 fn testMat4PlusMat4(x: mat4[f32], y: mat4[f32]) -> mat4[f32]
 {
 	let _nzsl_matrix: mat4[f32];
-	_nzsl_matrix[u32(0)] = x[u32(0)] + y[u32(0)];
-	_nzsl_matrix[u32(1)] = x[u32(1)] + y[u32(1)];
-	_nzsl_matrix[u32(2)] = x[u32(2)] + y[u32(2)];
-	_nzsl_matrix[u32(3)] = x[u32(3)] + y[u32(3)];
+	_nzsl_matrix[0] = x[0] + y[0];
+	_nzsl_matrix[1] = x[1] + y[1];
+	_nzsl_matrix[2] = x[2] + y[2];
+	_nzsl_matrix[3] = x[3] + y[3];
 	return _nzsl_matrix;
 }
 
 fn testMat4SubMat4(x: mat4[f32], y: mat4[f32]) -> mat4[f32]
 {
 	let _nzsl_matrix: mat4[f32];
-	_nzsl_matrix[u32(0)] = x[u32(0)] - y[u32(0)];
-	_nzsl_matrix[u32(1)] = x[u32(1)] - y[u32(1)];
-	_nzsl_matrix[u32(2)] = x[u32(2)] - y[u32(2)];
-	_nzsl_matrix[u32(3)] = x[u32(3)] - y[u32(3)];
+	_nzsl_matrix[0] = x[0] - y[0];
+	_nzsl_matrix[1] = x[1] - y[1];
+	_nzsl_matrix[2] = x[2] - y[2];
+	_nzsl_matrix[3] = x[3] - y[3];
 	return _nzsl_matrix;
 }
 
@@ -494,10 +494,10 @@ fn testMat4SubMat4TimesMat4(x: mat4[f32], y: mat4[f32], z: mat4[f32]) -> mat4[f3
 {
 	let _nzsl_cachedResult: mat4[f32] = y * y;
 	let _nzsl_matrix: mat4[f32];
-	_nzsl_matrix[u32(0)] = x[u32(0)] - _nzsl_cachedResult[u32(0)];
-	_nzsl_matrix[u32(1)] = x[u32(1)] - _nzsl_cachedResult[u32(1)];
-	_nzsl_matrix[u32(2)] = x[u32(2)] - _nzsl_cachedResult[u32(2)];
-	_nzsl_matrix[u32(3)] = x[u32(3)] - _nzsl_cachedResult[u32(3)];
+	_nzsl_matrix[0] = x[0] - _nzsl_cachedResult[0];
+	_nzsl_matrix[1] = x[1] - _nzsl_cachedResult[1];
+	_nzsl_matrix[2] = x[2] - _nzsl_cachedResult[2];
+	_nzsl_matrix[3] = x[3] - _nzsl_cachedResult[3];
 	return _nzsl_matrix;
 }
 )");

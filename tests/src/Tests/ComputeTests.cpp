@@ -135,7 +135,7 @@ fn main(input: Input)
       OpMemoryModel AddressingModel(Logical) MemoryModel(GLSL450)
       OpEntryPoint ExecutionModel(GLCompute) %26 "main" %15
       OpExecutionMode %26 ExecutionMode(LocalSize) 32 32 1
-      OpSource SourceLanguage(NZSL) 100
+      OpSource SourceLanguage(NZSL) 4194304
       OpName %8 "Data"
       OpMemberName %8 0 "tex_size"
       OpName %19 "Input"
