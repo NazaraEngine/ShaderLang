@@ -25,7 +25,7 @@ namespace nzsl::Ast
 			}
 		}
 		else
-			dataIndex = RegisterNewIndex(false);
+			dataIndex = RegisterNewIndex();
 
 		availableIndices.Set(dataIndex, false);
 		return dataIndex;

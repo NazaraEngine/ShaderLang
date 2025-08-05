@@ -146,9 +146,6 @@ namespace nzsl::Ast
 		{
 			ResolveFunctions();
 
-			// TODO: Implement FindLastBit
-			context.nextVariableIndex = m_context->variables.availableIndices.GetSize(); 
-
 			// Remove unused statements of imported modules
 			for (std::size_t moduleId = 0; moduleId < module.importedModules.size(); ++moduleId)
 			{

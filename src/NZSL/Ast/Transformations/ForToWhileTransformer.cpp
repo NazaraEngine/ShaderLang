@@ -44,7 +44,7 @@ namespace nzsl::Ast
 		// Counter variable
 		auto counterVariable = ShaderBuilder::DeclareVariable("_nzsl_counter", ExpressionType{ PrimitiveType::UInt32 }, ShaderBuilder::ConstantValue(0u));
 		counterVariable->sourceLocation = forEachStatement.sourceLocation;
-		counterVariable->varIndex = m_context->nextVariableIndex++;
+		counterVariable->varIndex = m_context->variables.RegisterNewIndex();
 
 		std::size_t counterVarIndex = counterVariable->varIndex.value();
 
@@ -129,7 +129,7 @@ namespace nzsl::Ast
 		// Target variable
 		auto targetVariable = ShaderBuilder::DeclareVariable("_nzsl_to", BuildCounterExprType(), std::move(forStatement.toExpr));
 		targetVariable->sourceLocation = forStatement.sourceLocation;
-		targetVariable->varIndex = m_context->nextVariableIndex++;
+		targetVariable->varIndex = m_context->variables.RegisterNewIndex();
 
 		std::size_t targetVarIndex = targetVariable->varIndex.value();
 		multi->statements.emplace_back(std::move(targetVariable));
@@ -141,7 +141,7 @@ namespace nzsl::Ast
 		{
 			auto stepVariable = ShaderBuilder::DeclareVariable("_nzsl_step", BuildCounterExprType(), std::move(forStatement.stepExpr));
 			stepVariable->sourceLocation = forStatement.sourceLocation;
-			stepVariable->varIndex = m_context->nextVariableIndex++;
+			stepVariable->varIndex = m_context->variables.RegisterNewIndex();
 
 			stepVarIndex = stepVariable->varIndex;
 			multi->statements.emplace_back(std::move(stepVariable));

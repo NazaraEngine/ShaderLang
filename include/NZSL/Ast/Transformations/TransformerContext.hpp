@@ -34,7 +34,6 @@ namespace nzsl::Ast
 
 		TransformerContext();
 
-		std::size_t nextVariableIndex = 0;
 		std::unordered_map<OptionHash, ConstantValue> optionValues;
 		IdentifierListWithValues<AliasData> aliases;
 		IdentifierListWithValues<ConstantData> constants;

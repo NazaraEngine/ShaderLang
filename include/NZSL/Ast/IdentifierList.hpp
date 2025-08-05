@@ -21,7 +21,7 @@ namespace nzsl::Ast
 
 		void PreregisterIndex(std::size_t index, const SourceLocation& sourceLocation);
 		std::size_t Register(std::optional<std::size_t> index, const SourceLocation& sourceLocation);
-		std::size_t RegisterNewIndex(bool preregister);
+		std::size_t RegisterNewIndex(bool preregister = false);
 
 		std::string_view identifierName;
 		Nz::Bitset<std::uint64_t> availableIndices;

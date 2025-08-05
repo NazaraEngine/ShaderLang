@@ -88,7 +88,7 @@ namespace nzsl::Ast
 
 		auto variableDeclaration = ShaderBuilder::DeclareVariable(fmt::format("_nzsl_{}", name), nullptr);
 		variableDeclaration->sourceLocation = std::move(sourceLocation);
-		variableDeclaration->varIndex = m_context->nextVariableIndex++;
+		variableDeclaration->varIndex = m_context->variables.RegisterNewIndex();
 		//if (!IsLiteralType(type))
 			variableDeclaration->varType = std::move(type);
 
