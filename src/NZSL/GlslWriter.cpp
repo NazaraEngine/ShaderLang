@@ -14,6 +14,7 @@
 #include <NZSL/Ast/RecursiveVisitor.hpp>
 #include <NZSL/Ast/Utils.hpp>
 #include <NZSL/Lang/LangData.hpp>
+#include <NZSL/Lang/Version.hpp>
 #include <NZSL/Ast/Transformations/BindingResolverTransformer.hpp>
 #include <NZSL/Ast/Transformations/ConstantPropagationTransformer.hpp>
 #include <NZSL/Ast/Transformations/ConstantRemovalTransformer.hpp>
@@ -1425,7 +1426,7 @@ namespace nzsl
 		{
 			const SourceLocation& rootLocation = module.rootNode->sourceLocation;
 
-			AppendComment("NZSL version: " + std::to_string(metadata.shaderLangVersion / 100) + "." + std::to_string((metadata.shaderLangVersion % 100) / 10));
+			AppendComment("NZSL version: " + Version::ToString(metadata.shaderLangVersion));
 			if (rootLocation.file)
 			{
 				AppendComment("from " + *rootLocation.file);

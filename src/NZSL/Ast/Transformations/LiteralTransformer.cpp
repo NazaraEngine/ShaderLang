@@ -254,7 +254,13 @@ namespace nzsl::Ast
 
 				case ParameterType::SampleCoordinates:
 				{
-					ResolveUntyped(intrinsicExpr.parameters[paramIndex], PrimitiveType::Float32, intrinsicExpr.sourceLocation);
+					const ExpressionType* exprType = GetExpressionType(*intrinsicExpr.parameters[paramIndex]);
+					if (exprType && IsLiteralType(*exprType) && IsVectorType(*exprType))
+					{
+						const VectorType& vecType = std::get<VectorType>(*exprType);
+						ResolveUntyped(intrinsicExpr.parameters[paramIndex], VectorType{ vecType.componentCount, PrimitiveType::Float32 }, intrinsicExpr.sourceLocation);
+					}
+
 					paramIndex++;
 					break;
 				}
