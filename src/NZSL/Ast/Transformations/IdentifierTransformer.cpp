@@ -5,11 +5,12 @@
 #include <NZSL/Ast/Transformations/IdentifierTransformer.hpp>
 #include <NazaraUtils/CallOnExit.hpp>
 #include <NZSL/Lang/Errors.hpp>
+#include <NZSL/Ast/Transformations/TransformerContext.hpp>
 #include <fmt/format.h>
 
 namespace nzsl::Ast
 {
-	bool IdentifierTransformer::Transform(Module& module, Context& context, const Options& options, std::string* error)
+	bool IdentifierTransformer::Transform(Module& module, TransformerContext& context, const Options& options, std::string* error)
 	{
 		// Don't rename identifiers when performing partial compilation (as it could break future compilation)
 		if (context.partialCompilation)
@@ -86,7 +87,7 @@ namespace nzsl::Ast
 
 	auto IdentifierTransformer::Transform(DeclareConstStatement&& statement) -> StatementTransformation
 	{
-		HandleIdentifier(statement.name, IdentifierType::Const);
+		HandleIdentifier(statement.name, IdentifierType::Constant);
 		return VisitChildren{};
 	}
 

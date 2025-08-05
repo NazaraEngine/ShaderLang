@@ -22,8 +22,8 @@ namespace nzsl::Ast
 			EliminateUnusedTransformer(EliminateUnusedTransformer&&) = delete;
 			~EliminateUnusedTransformer() = default;
 
-			bool Transform(Module& shaderModule, Context& context, const DependencyCheckerVisitor::UsageSet& usageSet, std::string* error = nullptr);
-			bool Transform(StatementPtr& statement, Context& context, const DependencyCheckerVisitor::UsageSet& usageSet, std::string* error = nullptr);
+			bool Transform(Module& shaderModule, TransformerContext& context, const DependencyCheckerVisitor::UsageSet& usageSet, std::string* error = nullptr);
+			bool Transform(StatementPtr& statement, TransformerContext& context, const DependencyCheckerVisitor::UsageSet& usageSet, std::string* error = nullptr);
 
 			EliminateUnusedTransformer& operator=(const EliminateUnusedTransformer&) = delete;
 			EliminateUnusedTransformer& operator=(EliminateUnusedTransformer&&) = delete;
@@ -50,11 +50,11 @@ namespace nzsl::Ast
 
 	inline bool EliminateUnusedPass(Module& shaderModule, std::string* error = nullptr);
 	inline bool EliminateUnusedPass(Module& shaderModule, const DependencyCheckerVisitor::Config& config, std::string* error = nullptr);
-	inline bool EliminateUnusedPass(Module& shaderModule, const DependencyCheckerVisitor::UsageSet& usageSet, std::string* error = nullptr);
+	NZSL_API bool EliminateUnusedPass(Module& shaderModule, const DependencyCheckerVisitor::UsageSet& usageSet, std::string* error = nullptr);
 
 	inline bool EliminateUnusedPass(StatementPtr& ast, std::string* error = nullptr);
 	inline bool EliminateUnusedPass(StatementPtr& ast, const DependencyCheckerVisitor::Config& config, std::string* error = nullptr);
-	inline bool EliminateUnusedPass(StatementPtr& ast, const DependencyCheckerVisitor::UsageSet& usageSet, std::string* error = nullptr);
+	NZSL_API bool EliminateUnusedPass(StatementPtr& ast, const DependencyCheckerVisitor::UsageSet& usageSet, std::string* error = nullptr);
 }
 
 #include <NZSL/Ast/Transformations/EliminateUnusedTransformer.inl>

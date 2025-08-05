@@ -347,7 +347,7 @@ fn main()
 		// First pass
 		nzsl::Ast::ResolveTransformer resolverTransformer;
 		{
-			nzsl::Ast::Transformer::Context context;
+			nzsl::Ast::TransformerContext context;
 			context.partialCompilation = true;
 
 			REQUIRE_NOTHROW(resolverTransformer.Transform(*shaderModule, context, {}));
@@ -358,7 +358,7 @@ fn main()
 			nzsl::Ast::ResolveTransformer::Options resolverOptions;
 			resolverOptions.moduleResolver = resolver;
 
-			nzsl::Ast::Transformer::Context context;
+			nzsl::Ast::TransformerContext context;
 
 			REQUIRE_NOTHROW(resolverTransformer.Transform(*shaderModule, context, resolverOptions));
 		}

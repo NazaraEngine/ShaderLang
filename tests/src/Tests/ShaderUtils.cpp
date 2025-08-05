@@ -239,7 +239,7 @@ void ExpectGLSL(nzsl::ShaderStageType stageType, nzsl::Ast::Module& shaderModule
 	{
 		WHEN("Resolving a second time")
 		{
-			nzsl::Ast::Transformer::Context context;
+			nzsl::Ast::TransformerContext context;
 			nzsl::Ast::ResolveTransformer resolver;
 			REQUIRE_NOTHROW(resolver.Transform(*moduleClone, context));
 		}
@@ -338,7 +338,7 @@ void ExpectNZSL(const nzsl::Ast::Module& shaderModule, std::string_view expected
 		nzsl::Ast::ModulePtr sanitizedModule;
 		WHEN("Resolving a second time")
 		{
-			nzsl::Ast::Transformer::Context context;
+			nzsl::Ast::TransformerContext context;
 			nzsl::Ast::ResolveTransformer resolver;
 			REQUIRE_NOTHROW(resolver.Transform(*moduleClone, context));
 		}
@@ -375,7 +375,7 @@ void ExpectSPIRV(nzsl::Ast::Module& shaderModule, std::string_view expectedOutpu
 		nzsl::Ast::ModulePtr sanitizedModule;
 		WHEN("Sanitizing a second time")
 		{
-			nzsl::Ast::Transformer::Context context;
+			nzsl::Ast::TransformerContext context;
 			nzsl::Ast::ResolveTransformer resolver;
 			REQUIRE_NOTHROW(resolver.Transform(*moduleClone, context));
 		}
@@ -461,7 +461,7 @@ void ResolveModule(nzsl::Ast::Module& module, const ResolveOptions& resolveOptio
 	bool hasBeenResolved = false;
 	auto Resolve = [&]
 	{
-		nzsl::Ast::Transformer::Context context;
+		nzsl::Ast::TransformerContext context;
 		context.optionValues = resolveOptions.optionValues;
 		context.partialCompilation = resolveOptions.partialCompilation;
 

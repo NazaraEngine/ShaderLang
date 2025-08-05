@@ -136,7 +136,7 @@ fn main() -> FragOut
 
 		WHEN("We perform a partial compilation")
 		{
-			nzsl::Ast::Transformer::Context context;
+			nzsl::Ast::TransformerContext context;
 			context.partialCompilation = true;
 
 			nzsl::Ast::ConstantRemovalTransformer::Options constantRemovalOpt;

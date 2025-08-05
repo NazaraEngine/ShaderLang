@@ -1014,7 +1014,7 @@ import * from Module;
 			shaderModule = nzsl::Parse(wildcardImportSource);
 			
 			nzsl::Ast::ResolveTransformer resolver;
-			nzsl::Ast::Transformer::Context context;
+			nzsl::Ast::TransformerContext context;
 
 			CHECK_THROWS_WITH(resolver.Transform(*shaderModule, context, resolveOptions), "(5,1 -> 21): CModuleFeatureMismatch error: module Module requires feature primitive_externals");
 

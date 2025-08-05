@@ -2,35 +2,24 @@
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
-#include <NZSL/Ast/IdentifierList.hpp>
 #include <NZSL/Lang/Errors.hpp>
 
 namespace nzsl::Ast
 {
-	template<typename U>
-	std::size_t IdentifierList::Register(U&& data, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
+	inline IdentifierList::IdentifierList(std::string_view identifierName) :
+	identifierName(identifierName)
 	{
-		std::size_t dataIndex;
-		if (index.has_value())
-		{
-			dataIndex = *index;
+	}
 
-			if (dataIndex >= availableIndices.GetSize())
-				availableIndices.Resize(dataIndex + 1, true);
-			else if (!availableIndices.Test(dataIndex))
-			{
-				if (preregisteredIndices.UnboundedTest(dataIndex))
-					preregisteredIndices.Reset(dataIndex);
-				else
-					throw AstInvalidIndexError{ sourceLocation, "", dataIndex };
-			}
-		}
-		else
-			dataIndex = RegisterNewIndex(false);
+	template<typename T>
+	template<typename U>
+	std::size_t IdentifierListWithValues<T>::Register(U&& data, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
+	{
+		std::size_t dataIndex = IdentifierList::Register(index, sourceLocation);
 
-		availableIndices.Set(dataIndex, false);
 		assert(values.find(dataIndex) == values.end());
 		values.emplace(dataIndex, std::forward<U>(data));
+
 		return dataIndex;
 	}
 
@@ -39,7 +28,7 @@ namespace nzsl::Ast
 	{
 		auto it = values.find(index);
 		if (it == values.end())
-			throw AstInvalidIndexError{ sourceLocation, "", index };
+			throw AstInvalidIndexError{ sourceLocation, identifierName, index };
 
 		return it->second;
 	}
@@ -51,7 +40,7 @@ namespace nzsl::Ast
 		if (it == values.end())
 		{
 			if (!preregisteredIndices.UnboundedTest(index))
-				throw AstInvalidIndexError{ sourceLocation, "", index };
+				throw AstInvalidIndexError{ sourceLocation, identifierName, index };
 
 			return nullptr;
 		}

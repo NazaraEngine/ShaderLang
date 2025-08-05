@@ -18,8 +18,8 @@ namespace nzsl::Ast
 
 			CompoundAssignmentTransformer() = default;
 
-			inline bool Transform(Module& module, Context& context, std::string* error = nullptr);
-			bool Transform(Module& module, Context& context, const Options& options, std::string* error = nullptr);
+			inline bool Transform(Module& module, TransformerContext& context, std::string* error = nullptr);
+			bool Transform(Module& module, TransformerContext& context, const Options& options, std::string* error = nullptr);
 
 			struct Options
 			{

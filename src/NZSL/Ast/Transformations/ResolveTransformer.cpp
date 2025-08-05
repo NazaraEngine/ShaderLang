@@ -22,6 +22,7 @@
 #include <NZSL/Lang/LangData.hpp>
 #include <NZSL/Ast/Transformations/ConstantPropagationTransformer.hpp>
 #include <NZSL/Ast/Transformations/EliminateUnusedTransformer.hpp>
+#include <NZSL/Ast/Transformations/TransformerContext.hpp>
 #include <NZSL/Ast/Transformations/ValidationTransformer.hpp>
 #include <fmt/format.h>
 #include <tsl/ordered_map.h>
@@ -30,143 +31,28 @@
 
 namespace nzsl::Ast
 {
-	template<typename T>
-	struct ResolveTransformer::IdentifierList
-	{
-		Nz::Bitset<std::uint64_t> availableIndices;
-		Nz::Bitset<std::uint64_t> preregisteredIndices;
-		std::unordered_map<std::size_t, T> values;
-
-		void PreregisterIndex(std::size_t index, const SourceLocation& sourceLocation)
-		{
-			if (index < availableIndices.GetSize())
-			{
-				if (!availableIndices.Test(index) && !preregisteredIndices.UnboundedTest(index))
-					throw AstAlreadyUsedIndexPreregisterError{ sourceLocation, index };
-			}
-			else if (index >= availableIndices.GetSize())
-				availableIndices.Resize(index + 1, true);
-
-			availableIndices.Set(index, false);
-			preregisteredIndices.UnboundedSet(index);
-		}
-
-		template<typename U>
-		std::size_t Register(U&& data, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
-		{
-			std::size_t dataIndex;
-			if (index.has_value())
-			{
-				dataIndex = *index;
-
-				if (dataIndex >= availableIndices.GetSize())
-					availableIndices.Resize(dataIndex + 1, true);
-				else if (!availableIndices.Test(dataIndex))
-				{
-					if (preregisteredIndices.UnboundedTest(dataIndex))
-						preregisteredIndices.Reset(dataIndex);
-					else
-						throw AstInvalidIndexError{ sourceLocation, "", dataIndex};
-				}
-			}
-			else
-				dataIndex = RegisterNewIndex(false);
-
-			availableIndices.Set(dataIndex, false);
-			assert(values.find(dataIndex) == values.end());
-			values.emplace(dataIndex, std::forward<U>(data));
-			return dataIndex;
-		}
-
-		std::size_t RegisterNewIndex(bool preregister)
-		{
-			std::size_t index = availableIndices.FindFirst();
-			if (index == availableIndices.npos)
-			{
-				index = availableIndices.GetSize();
-				availableIndices.Resize(index + 1, true);
-			}
-
-			availableIndices.Set(index, false);
-
-			if (preregister)
-				preregisteredIndices.UnboundedSet(index);
-
-			return index;
-		}
-
-		T& Retrieve(std::size_t index, const SourceLocation& sourceLocation)
-		{
-			auto it = values.find(index);
-			if (it == values.end())
-				throw AstInvalidIndexError{ sourceLocation, "", index };
-
-			return it->second;
-		}
-
-		T* TryRetrieve(std::size_t index, const SourceLocation& sourceLocation)
-		{
-			auto it = values.find(index);
-			if (it == values.end())
-			{
-				if (!preregisteredIndices.UnboundedTest(index))
-					throw AstInvalidIndexError{ sourceLocation, "", index };
-
-				return nullptr;
-			}
-
-			return &it->second;
-		}
-	};
-
 	struct ResolveTransformer::Scope
 	{
 		std::size_t previousSize;
-	};
-
-	struct ResolveTransformer::ConstantData
-	{
-		std::size_t moduleIndex;
-		std::optional<ConstantValue> value;
 	};
 
 	struct ResolveTransformer::Environment
 	{
 		std::shared_ptr<Environment> parentEnv;
 		std::string moduleId;
-		std::vector<Identifier> identifiersInScope;
+		std::vector<TransformerContext::TransformerContext::Identifier> identifiersInScope;
 		std::vector<PendingFunction> pendingFunctions;
 		std::vector<Scope> scopes;
-	};
-
-	struct ResolveTransformer::FunctionData
-	{
-		std::size_t moduleIndex;
-		DeclareFunctionStatement* node;
-		std::optional<ShaderStageType> entryStage;
 	};
 
 	struct ResolveTransformer::NamedExternalBlock
 	{
 		std::shared_ptr<Environment> environment;
-		std::string name;
-	};
-
-	struct ResolveTransformer::NamedPartialType
-	{
-		std::string name;
-		PartialType type;
 	};
 
 	struct ResolveTransformer::PendingFunction
 	{
 		DeclareFunctionStatement* node;
-	};
-
-	struct ResolveTransformer::StructData
-	{
-		std::size_t moduleIndex;
-		StructDescription* description;
 	};
 
 	struct ResolveTransformer::States
@@ -194,28 +80,21 @@ namespace nzsl::Ast
 		std::unordered_map<std::string, std::size_t> moduleByName;
 		std::unordered_map<std::string, UsedExternalData> declaredExternalVar;
 		std::vector<ModuleData> modules;
-		IdentifierList<ConstantData> constants;
-		IdentifierList<FunctionData> functions;
-		IdentifierList<Identifier> aliases;
-		IdentifierList<IntrinsicType> intrinsics;
-		IdentifierList<std::size_t> moduleIndices;
-		IdentifierList<NamedExternalBlock> namedExternalBlocks;
-		IdentifierList<StructData> structs;
-		IdentifierList<std::variant<ExpressionType, NamedPartialType>> types;
-		IdentifierList<ExpressionType> variableTypes;
+		std::vector<NamedExternalBlock> namedExternalBlocks;
 		Module* currentModule;
 		unsigned int currentConditionalIndex = 0;
 		unsigned int nextConditionalIndex = 1;
 	};
 
 
-	bool ResolveTransformer::Transform(Module& module, Context& context, const Options& options, std::string* error)
+	bool ResolveTransformer::Transform(Module& module, TransformerContext& context, const Options& options, std::string* error)
 	{
 		States states;
 		states.currentModule = &module;
 
 		m_states = &states;
 		m_options = &options;
+		m_context = &context;
 
 		PreregisterIndices(module);
 
@@ -257,7 +136,7 @@ namespace nzsl::Ast
 			}
 
 			m_states->currentEnv = m_states->globalEnv;
-			RegisterModule(importedModule.identifier, moduleId);
+			RegisterModule(importedModule.identifier, TransformerContext::ModuleData{ moduleId }, std::nullopt, {});
 		}
 
 		m_states->currentEnv = m_states->moduleEnv;
@@ -268,7 +147,7 @@ namespace nzsl::Ast
 			ResolveFunctions();
 
 			// TODO: Implement FindLastBit
-			context.nextVariableIndex = m_states->variableTypes.availableIndices.GetSize(); 
+			context.nextVariableIndex = m_context->variables.availableIndices.GetSize(); 
 
 			// Remove unused statements of imported modules
 			for (std::size_t moduleId = 0; moduleId < module.importedModules.size(); ++moduleId)
@@ -284,38 +163,6 @@ namespace nzsl::Ast
 				}
 			}
 		});
-	}
-
-	Stringifier ResolveTransformer::BuildStringifier(const SourceLocation& sourceLocation) const
-	{
-		Stringifier stringifier;
-		stringifier.aliasStringifier = [&](std::size_t aliasIndex)
-		{
-			return m_states->aliases.Retrieve(aliasIndex, sourceLocation).name;
-		};
-
-		stringifier.moduleStringifier = [&](std::size_t moduleIndex)
-		{
-			const std::string& moduleName = m_states->modules[moduleIndex].moduleName;
-			return (!moduleName.empty()) ? moduleName : fmt::format("<anonymous module #{}>", moduleIndex);
-		};
-
-		stringifier.namedExternalBlockStringifier = [&](std::size_t namedExternalBlockIndex)
-		{
-			return m_states->namedExternalBlocks.Retrieve(namedExternalBlockIndex, sourceLocation).name;
-		};
-
-		stringifier.structStringifier = [&](std::size_t structIndex)
-		{
-			return m_states->structs.Retrieve(structIndex, sourceLocation).description->name;
-		};
-
-		stringifier.typeStringifier = [&](std::size_t typeIndex)
-		{
-			return ToString(m_states->types.Retrieve(typeIndex, sourceLocation), sourceLocation);
-		};
-
-		return stringifier;
 	}
 
 	std::optional<ConstantValue> ResolveTransformer::ComputeConstantValue(ExpressionPtr& expr) const
@@ -482,26 +329,26 @@ namespace nzsl::Ast
 		return true;
 	}
 
-	auto ResolveTransformer::FindIdentifier(std::string_view identifierName) const -> const IdentifierData*
+	auto ResolveTransformer::FindIdentifier(std::string_view identifierName) const -> const TransformerContext::IdentifierData*
 	{
 		return FindIdentifier(*m_states->currentEnv, identifierName);
 	}
 
 	template<typename F>
-	auto ResolveTransformer::FindIdentifier(std::string_view identifierName, F&& functor) const -> const IdentifierData*
+	auto ResolveTransformer::FindIdentifier(std::string_view identifierName, F&& functor) const -> const TransformerContext::IdentifierData*
 	{
 		return FindIdentifier(*m_states->currentEnv, identifierName, std::forward<F>(functor));
 	}
 
-	auto ResolveTransformer::FindIdentifier(const Environment& environment, std::string_view identifierName) const -> const IdentifierData*
+	auto ResolveTransformer::FindIdentifier(const Environment& environment, std::string_view identifierName) const -> const TransformerContext::IdentifierData*
 	{
-		return FindIdentifier(environment, identifierName, [](const IdentifierData& identifierData) { return identifierData.category != IdentifierCategory::ReservedName; });
+		return FindIdentifier(environment, identifierName, [](const TransformerContext::IdentifierData& identifierData) { return identifierData.type != IdentifierType::ReservedName; });
 	}
 
 	template<typename F>
-	auto ResolveTransformer::FindIdentifier(const Environment& environment, std::string_view identifierName, F&& functor) const -> const IdentifierData*
+	auto ResolveTransformer::FindIdentifier(const Environment& environment, std::string_view identifierName, F&& functor) const -> const TransformerContext::IdentifierData*
 	{
-		auto it = std::find_if(environment.identifiersInScope.rbegin(), environment.identifiersInScope.rend(), [&](const Identifier& identifier)
+		auto it = std::find_if(environment.identifiersInScope.rbegin(), environment.identifiersInScope.rend(), [&](const TransformerContext::Identifier& identifier)
 		{
 			if (identifier.name == identifierName)
 			{
@@ -523,13 +370,13 @@ namespace nzsl::Ast
 		return &it->target;
 	}
 
-	ExpressionPtr ResolveTransformer::HandleIdentifier(const IdentifierData* identifierData, const SourceLocation& sourceLocation)
+	ExpressionPtr ResolveTransformer::HandleIdentifier(const TransformerContext::TransformerContext::IdentifierData* identifierData, const SourceLocation& sourceLocation)
 	{
-		switch (identifierData->category)
+		switch (identifierData->type)
 		{
-			case IdentifierCategory::Alias:
+			case IdentifierType::Alias:
 			{
-				const Identifier* targetIdentifier = ResolveAliasIdentifier(&m_states->aliases.Retrieve(identifierData->index, sourceLocation), sourceLocation);
+				const TransformerContext::Identifier* targetIdentifier = ResolveAliasIdentifier(&m_context->aliases.Retrieve(identifierData->index, sourceLocation).identifier, sourceLocation);
 				ExpressionPtr targetExpr = HandleIdentifier(&targetIdentifier->target, sourceLocation);
 
 				if (m_options->removeAliases)
@@ -548,7 +395,8 @@ namespace nzsl::Ast
 				return aliasValue;
 			}
 
-			case IdentifierCategory::Constant:
+			case IdentifierType::Constant:
+			case IdentifierType::Option:
 			{
 				// Replace IdentifierExpression by Constant(Value)Expression
 				auto constantExpr = std::make_unique<ConstantExpression>();
@@ -561,7 +409,7 @@ namespace nzsl::Ast
 				return expr;
 			}
 
-			case IdentifierCategory::ExternalBlock:
+			case IdentifierType::ExternalBlock:
 			{
 				// Replace IdentifierExpression by NamedExternalBlockExpression
 				auto moduleExpr = std::make_unique<NamedExternalBlockExpression>();
@@ -572,7 +420,7 @@ namespace nzsl::Ast
 				return moduleExpr;
 			}
 
-			case IdentifierCategory::Function:
+			case IdentifierType::Function:
 			{
 				// Replace IdentifierExpression by FunctionExpression
 				auto funcExpr = std::make_unique<FunctionExpression>();
@@ -583,9 +431,12 @@ namespace nzsl::Ast
 				return funcExpr;
 			}
 
-			case IdentifierCategory::Intrinsic:
+			case IdentifierType::Field:
+				throw AstUnexpectedIdentifierError{ sourceLocation, "field" };
+
+			case IdentifierType::Intrinsic:
 			{
-				IntrinsicType intrinsicType = m_states->intrinsics.Retrieve(identifierData->index, sourceLocation);
+				IntrinsicType intrinsicType = m_context->intrinsics.Retrieve(identifierData->index, sourceLocation).type;
 
 				// Replace IdentifierExpression by IntrinsicFunctionExpression
 				auto intrinsicExpr = std::make_unique<IntrinsicFunctionExpression>();
@@ -596,7 +447,7 @@ namespace nzsl::Ast
 				return intrinsicExpr;
 			}
 
-			case IdentifierCategory::Module:
+			case IdentifierType::Module:
 			{
 				// Replace IdentifierExpression by ModuleExpression
 				auto moduleExpr = std::make_unique<ModuleExpression>();
@@ -607,7 +458,20 @@ namespace nzsl::Ast
 				return moduleExpr;
 			}
 
-			case IdentifierCategory::Struct:
+			case IdentifierType::ExternalVariable:
+			case IdentifierType::Parameter:
+			case IdentifierType::Variable:
+			{
+				// Replace IdentifierExpression by VariableExpression
+				auto varExpr = std::make_unique<VariableValueExpression>();
+				varExpr->cachedExpressionType = m_context->variables.Retrieve(identifierData->index, sourceLocation).type;
+				varExpr->sourceLocation = sourceLocation;
+				varExpr->variableId = identifierData->index;
+
+				return varExpr;
+			}
+
+			case IdentifierType::Struct:
 			{
 				// Replace IdentifierExpression by StructTypeExpression
 				auto structExpr = std::make_unique<StructTypeExpression>();
@@ -618,7 +482,7 @@ namespace nzsl::Ast
 				return structExpr;
 			}
 
-			case IdentifierCategory::Type:
+			case IdentifierType::Type:
 			{
 				auto typeExpr = std::make_unique<TypeExpression>();
 				typeExpr->cachedExpressionType = Type{ identifierData->index };
@@ -628,22 +492,11 @@ namespace nzsl::Ast
 				return typeExpr;
 			}
 
-			case IdentifierCategory::ReservedName:
+			case IdentifierType::ReservedName:
 				throw AstUnexpectedIdentifierError{ sourceLocation, "reserved" };
 
-			case IdentifierCategory::Unresolved:
+			case IdentifierType::Unresolved:
 				throw AstUnexpectedIdentifierError{ sourceLocation, "unresolved" };
-
-			case IdentifierCategory::Variable:
-			{
-				// Replace IdentifierExpression by VariableExpression
-				auto varExpr = std::make_unique<VariableValueExpression>();
-				varExpr->cachedExpressionType = m_states->variableTypes.Retrieve(identifierData->index, sourceLocation);
-				varExpr->sourceLocation = sourceLocation;
-				varExpr->variableId = identifierData->index;
-
-				return varExpr;
-			}
 		}
 
 		NAZARA_UNREACHABLE();
@@ -660,7 +513,7 @@ namespace nzsl::Ast
 		if (allowReserved)
 			return FindIdentifier(identifier) == nullptr;
 		else
-			return FindIdentifier(identifier, [](const IdentifierData&) { return true; }) == nullptr;
+			return FindIdentifier(identifier, [](const TransformerContext::IdentifierData&) { return true; }) == nullptr;
 	}
 
 	void ResolveTransformer::PopScope()
@@ -671,39 +524,16 @@ namespace nzsl::Ast
 		m_states->currentEnv->scopes.pop_back();
 	}
 
-	void ResolveTransformer::PropagateConstants(ExpressionPtr& expr) const
-	{
-		// Run optimizer on constant value to hopefully retrieve a single constant value
-
-		ConstantPropagationTransformer::Options optimizerOptions;
-		optimizerOptions.constantQueryCallback = [&](std::size_t constantId) -> const ConstantValue*
-		{
-			const ConstantData* constantData = m_states->constants.TryRetrieve(constantId, expr->sourceLocation);
-			if (!constantData || !constantData->value)
-			{
-				if (!m_context->partialCompilation)
-					throw AstInvalidConstantIndexError{ expr->sourceLocation, constantId };
-
-				return nullptr;
-			}
-
-			return &constantData->value.value();
-		};
-
-		ConstantPropagationTransformer constantPropagation;
-		constantPropagation.Transform(expr, *m_context, optimizerOptions);
-	}
-
 	void ResolveTransformer::PushScope()
 	{
 		auto& scope = m_states->currentEnv->scopes.emplace_back();
 		scope.previousSize = m_states->currentEnv->identifiersInScope.size();
 	}
 
-	std::size_t ResolveTransformer::RegisterAlias(std::string name, std::optional<Identifier> aliasData, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
+	std::size_t ResolveTransformer::RegisterAlias(std::string name, std::optional<TransformerContext::AliasData> aliasData, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
 	{
 		bool unresolved = false;
-		if (const IdentifierData* identifierData = FindIdentifier(name))
+		if (const TransformerContext::IdentifierData* identifierData = FindIdentifier(name))
 		{
 			if (identifierData->conditionalIndex == 0 || identifierData->conditionalIndex == m_states->currentConditionalIndex)
 				throw CompilerIdentifierAlreadyUsedError{ sourceLocation, name };
@@ -713,14 +543,14 @@ namespace nzsl::Ast
 
 		std::size_t aliasIndex;
 		if (aliasData)
-			aliasIndex = m_states->aliases.Register(std::move(*aliasData), index, sourceLocation);
+			aliasIndex = m_context->aliases.Register(std::move(*aliasData), index, sourceLocation);
 		else if (index)
 		{
-			m_states->aliases.PreregisterIndex(*index, sourceLocation);
+			m_context->aliases.PreregisterIndex(*index, sourceLocation);
 			aliasIndex = *index;
 		}
 		else
-			aliasIndex = m_states->aliases.RegisterNewIndex(true);
+			aliasIndex = m_context->aliases.RegisterNewIndex(true);
 
 		if (!unresolved)
 		{
@@ -728,7 +558,7 @@ namespace nzsl::Ast
 				std::move(name),
 				{
 					aliasIndex,
-					IdentifierCategory::Alias,
+					IdentifierType::Alias,
 					m_states->currentConditionalIndex
 				}
 			});
@@ -741,19 +571,37 @@ namespace nzsl::Ast
 
 	void ResolveTransformer::RegisterBuiltin()
 	{
+		auto RegisterFullType = [this](std::string name, ExpressionType&& expressionType)
+		{
+			TransformerContext::TypeData typeData;
+			typeData.content = std::move(expressionType);
+			typeData.name = name;
+
+			RegisterType(std::move(name), std::move(typeData), std::nullopt, {});
+		};
+
+		auto RegisterPartialType = [this](std::string name, PartialType&& partialType)
+		{
+			TransformerContext::TypeData typeData;
+			typeData.content = std::move(partialType);
+			typeData.name = name;
+
+			RegisterType(std::move(name), std::move(typeData), std::nullopt, {});
+		};
+
 		// Primitive types
-		RegisterType("bool", PrimitiveType::Boolean, std::nullopt, {});
-		RegisterType("f32",  PrimitiveType::Float32, std::nullopt, {});
-		RegisterType("i32",  PrimitiveType::Int32,   std::nullopt, {});
-		RegisterType("u32",  PrimitiveType::UInt32,  std::nullopt, {});
+		RegisterFullType("bool", PrimitiveType::Boolean);
+		RegisterFullType("f32",  PrimitiveType::Float32);
+		RegisterFullType("i32",  PrimitiveType::Int32);
+		RegisterFullType("u32",  PrimitiveType::UInt32);
 
 		if (IsFeatureEnabled(ModuleFeature::Float64))
-			RegisterType("f64", PrimitiveType::Float64, std::nullopt, {});
+			RegisterFullType("f64", PrimitiveType::Float64);
 
 		// Partial types
 
 		// Array
-		RegisterType("array", PartialType {
+		RegisterPartialType("array", PartialType {
 			{ TypeParameterCategory::FullType }, { TypeParameterCategory::ConstantValue },
 			[=](const TypeParameter* parameters, std::size_t parameterCount, const SourceLocation& sourceLocation) -> ExpressionType
 			{
@@ -808,10 +656,10 @@ namespace nzsl::Ast
 
 				return arrayType;
 			}
-		}, std::nullopt, {});
+		});
 
 		// Dynamic array
-		RegisterType("dyn_array", PartialType {
+		RegisterPartialType("dyn_array", PartialType {
 			{ TypeParameterCategory::FullType }, {},
 			[=](const TypeParameter* parameters, [[maybe_unused]] std::size_t parameterCount, const SourceLocation& /*sourceLocation*/) -> ExpressionType
 			{
@@ -826,7 +674,7 @@ namespace nzsl::Ast
 
 				return arrayType;
 			}
-		}, std::nullopt, {});
+		});
 
 		// matX | matAxB
 		for (std::size_t columnCount = 2; columnCount <= 4; ++columnCount)
@@ -839,7 +687,7 @@ namespace nzsl::Ast
 				else
 					name = fmt::format("mat{}x{}", columnCount, rowCount);
 
-				RegisterType(std::move(name), PartialType{
+				RegisterPartialType(std::move(name), PartialType{
 					{ TypeParameterCategory::PrimitiveType }, {},
 					[=](const TypeParameter* parameters, [[maybe_unused]] std::size_t parameterCount, const SourceLocation& sourceLocation) -> ExpressionType
 					{
@@ -857,14 +705,14 @@ namespace nzsl::Ast
 							columnCount, rowCount, primitiveType
 						};
 					}
-				}, std::nullopt, {});
+				});
 			}
 		}
 
 		// vecX
 		for (std::size_t componentCount = 2; componentCount <= 4; ++componentCount)
 		{
-			RegisterType(fmt::format("vec{}", componentCount), PartialType {
+			RegisterPartialType(fmt::format("vec{}", componentCount), PartialType {
 				{ TypeParameterCategory::PrimitiveType }, {},
 				[=](const TypeParameter* parameters, [[maybe_unused]] std::size_t parameterCount, const SourceLocation& /*sourceLocation*/) -> ExpressionType
 				{
@@ -878,7 +726,7 @@ namespace nzsl::Ast
 						componentCount, std::get<PrimitiveType>(exprType)
 					};
 				}
-			}, std::nullopt, {});
+			});
 		}
 
 		// samplers
@@ -968,7 +816,7 @@ namespace nzsl::Ast
 			if (sampler.requiredFeature.has_value() && !IsFeatureEnabled(*sampler.requiredFeature))
 				continue;
 
-			RegisterType(std::string(sampler.typeName), PartialType {
+			RegisterPartialType(std::string(sampler.typeName), PartialType {
 				{ TypeParameterCategory::PrimitiveType }, {},
 				[=](const TypeParameter* parameters, [[maybe_unused]] std::size_t parameterCount, const SourceLocation& sourceLocation) -> ExpressionType
 				{
@@ -988,7 +836,7 @@ namespace nzsl::Ast
 						sampler.imageType, primitiveType, sampler.depthSampler
 					};
 				}
-			}, std::nullopt, {});
+			});
 		}
 
 		// texture
@@ -1039,7 +887,7 @@ namespace nzsl::Ast
 			if (texture.requiredFeature.has_value() && !IsFeatureEnabled(*texture.requiredFeature))
 				continue;
 
-			RegisterType(std::string(texture.typeName), PartialType {
+			RegisterPartialType(std::string(texture.typeName), PartialType {
 				{ TypeParameterCategory::PrimitiveType, TypeParameterCategory::ConstantValue }, { TypeParameterCategory::ConstantValue },
 				[=](const TypeParameter* parameters, std::size_t parameterCount, const SourceLocation& sourceLocation) -> ExpressionType
 				{
@@ -1079,11 +927,11 @@ namespace nzsl::Ast
 						access, formatOpt.value_or(ImageFormat::Unknown), texture.imageType, primitiveType
 					};
 				}
-			}, std::nullopt, {});
+			});
 		}
 
 		// storage
-		RegisterType("storage", PartialType {
+		RegisterPartialType("storage", PartialType {
 			{ TypeParameterCategory::StructType }, { TypeParameterCategory::ConstantValue },
 			[=](const TypeParameter* parameters, std::size_t parameterCount, const SourceLocation& sourceLocation) -> ExpressionType
 			{
@@ -1110,10 +958,10 @@ namespace nzsl::Ast
 					structType
 				};
 			}
-		}, std::nullopt, {});
+		});
 
 		// uniform
-		RegisterType("uniform", PartialType {
+		RegisterPartialType("uniform", PartialType {
 			{ TypeParameterCategory::StructType }, {},
 			[=](const TypeParameter* parameters, [[maybe_unused]] std::size_t parameterCount, const SourceLocation& /*sourceLocation*/) -> ExpressionType
 			{
@@ -1128,10 +976,10 @@ namespace nzsl::Ast
 					structType
 				};
 			}
-		}, std::nullopt, {});
+		});
 
 		// push constant
-		RegisterType("push_constant", PartialType {
+		RegisterPartialType("push_constant", PartialType {
 			{ TypeParameterCategory::StructType }, {},
 			[=](const TypeParameter* parameters, [[maybe_unused]] std::size_t parameterCount, const SourceLocation& /*sourceLocation*/) -> ExpressionType
 			{
@@ -1146,44 +994,49 @@ namespace nzsl::Ast
 					structType
 				};
 			}
-		}, std::nullopt, {});
+		});
 
 		// Intrinsics
+		auto RegisterBuiltinIntrinsic = [this](std::string name, IntrinsicType intrinsicType)
+		{
+			RegisterIntrinsic(std::move(name), TransformerContext::IntrinsicData{ intrinsicType }, std::nullopt, {});
+		};
+
 		for (const auto& [intrinsic, data] : LangData::s_intrinsicData)
 		{
 			if (!data.functionName.empty())
-				RegisterIntrinsic(std::string(data.functionName), intrinsic);
+				RegisterBuiltinIntrinsic(std::string(data.functionName), intrinsic);
 		}
 
 		// Constants
 		for (const auto& [constantName, data] : LangData::s_constants)
-			RegisterConstant(std::string(constantName.data()), ConstantData{ States::MainModule, data.value }, data.constantIndex, {});
+			RegisterConstant(std::string(constantName.data()), TransformerContext::ConstantData{ States::MainModule, data.value }, data.constantIndex, {});
 	}
 
-	std::size_t ResolveTransformer::RegisterConstant(std::string name, std::optional<ConstantData>&& value, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
+	std::size_t ResolveTransformer::RegisterConstant(std::string name, std::optional<TransformerContext::ConstantData>&& value, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
 	{
 		if (!IsIdentifierAvailable(name))
 			throw CompilerIdentifierAlreadyUsedError{ sourceLocation, name };
 
 		//if (value && IsLiteralType(GetConstantType(*value->value)))
-		//	NazaraDebugBreak();
+		//  NazaraDebugBreak();
 
 		std::size_t constantIndex;
 		if (value)
-			constantIndex = m_states->constants.Register(std::move(*value), index, sourceLocation);
+			constantIndex = m_context->constants.Register(std::move(*value), index, sourceLocation);
 		else if (index)
 		{
-			m_states->constants.PreregisterIndex(*index, sourceLocation);
+			m_context->constants.PreregisterIndex(*index, sourceLocation);
 			constantIndex = *index;
 		}
 		else
-			constantIndex = m_states->constants.RegisterNewIndex(true);
+			constantIndex = m_context->constants.RegisterNewIndex(true);
 
 		m_states->currentEnv->identifiersInScope.push_back({
 			std::move(name),
 			{
 				constantIndex,
-				IdentifierCategory::Constant,
+				IdentifierType::Constant,
 				m_states->currentConditionalIndex
 			}
 		});
@@ -1191,18 +1044,18 @@ namespace nzsl::Ast
 		return constantIndex;
 	}
 
-	std::size_t ResolveTransformer::RegisterExternalBlock(std::string name, NamedExternalBlock&& namedExternalBlock, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
+	std::size_t ResolveTransformer::RegisterExternalBlock(std::string name, TransformerContext::ExternalBlockData&& namedExternalBlock, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
 	{
 		if (!IsIdentifierAvailable(name))
 			throw CompilerIdentifierAlreadyUsedError{ sourceLocation, name };
 
-		std::size_t externalBlockIndex = m_states->namedExternalBlocks.Register(std::move(namedExternalBlock), index, {});
+		std::size_t externalBlockIndex = m_context->namedExternalBlocks.Register(std::move(namedExternalBlock), index, {});
 
 		m_states->currentEnv->identifiersInScope.push_back({
 			std::move(name),
 			{
 				externalBlockIndex,
-				IdentifierCategory::ExternalBlock,
+				IdentifierType::ExternalBlock,
 				m_states->currentConditionalIndex
 			}
 		});
@@ -1210,7 +1063,7 @@ namespace nzsl::Ast
 		return externalBlockIndex;
 	}
 
-	std::size_t ResolveTransformer::RegisterFunction(std::string name, std::optional<FunctionData>&& funcData, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
+	std::size_t ResolveTransformer::RegisterFunction(std::string name, std::optional<TransformerContext::FunctionData>&& funcData, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
 	{
 		if (auto* identifier = FindIdentifier(name))
 		{
@@ -1220,9 +1073,9 @@ namespace nzsl::Ast
 			// Functions cannot be declared twice, except for entry ones if their stages are different
 			if (funcData)
 			{
-				if (funcData->entryStage.has_value() && identifier->category == IdentifierCategory::Function)
+				if (funcData->entryStage.has_value() && identifier->type == IdentifierType::Function)
 				{
-					auto& otherFunction = m_states->functions.Retrieve(identifier->index, sourceLocation);
+					auto& otherFunction = m_context->functions.Retrieve(identifier->index, sourceLocation);
 					if (otherFunction.entryStage && funcData->entryStage != otherFunction.node->entryStage.GetResultingValue())
 						duplicate = false;
 				}
@@ -1239,13 +1092,13 @@ namespace nzsl::Ast
 				throw CompilerIdentifierAlreadyUsedError{ sourceLocation, name };
 		}
 
-		std::size_t functionIndex = m_states->functions.Register(*funcData, index, sourceLocation);
+		std::size_t functionIndex = m_context->functions.Register(*funcData, index, sourceLocation);
 
 		m_states->currentEnv->identifiersInScope.push_back({
 			std::move(name),
 			{
 				functionIndex,
-				IdentifierCategory::Function,
+				IdentifierType::Function,
 				m_states->currentConditionalIndex
 			}
 		});
@@ -1253,18 +1106,18 @@ namespace nzsl::Ast
 		return functionIndex;
 	}
 
-	std::size_t ResolveTransformer::RegisterIntrinsic(std::string name, IntrinsicType type)
+	std::size_t ResolveTransformer::RegisterIntrinsic(std::string name, TransformerContext::IntrinsicData&& intrinsicData, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
 	{
 		if (!IsIdentifierAvailable(name))
-			throw CompilerIdentifierAlreadyUsedError{ {}, name };
+			throw CompilerIdentifierAlreadyUsedError{ sourceLocation, name };
 
-		std::size_t intrinsicIndex = m_states->intrinsics.Register(type, std::nullopt, {});
+		std::size_t intrinsicIndex = m_context->intrinsics.Register(std::move(intrinsicData), index, sourceLocation);
 
 		m_states->currentEnv->identifiersInScope.push_back({
 			std::move(name),
 			{
 				intrinsicIndex,
-				IdentifierCategory::Intrinsic,
+				IdentifierType::Intrinsic,
 				m_states->currentConditionalIndex
 			}
 		});
@@ -1272,18 +1125,18 @@ namespace nzsl::Ast
 		return intrinsicIndex;
 	}
 
-	std::size_t ResolveTransformer::RegisterModule(std::string moduleIdentifier, std::size_t index)
+	std::size_t ResolveTransformer::RegisterModule(std::string moduleIdentifier, TransformerContext::ModuleData&& moduleData, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
 	{
 		if (!IsIdentifierAvailable(moduleIdentifier))
-			throw CompilerIdentifierAlreadyUsedError{ {}, moduleIdentifier };
+			throw CompilerIdentifierAlreadyUsedError{ sourceLocation, moduleIdentifier };
 
-		std::size_t moduleIndex = m_states->moduleIndices.Register(index, std::nullopt, {});
+		std::size_t moduleIndex = m_context->modules.Register(std::move(moduleData), index, sourceLocation);
 
 		m_states->currentEnv->identifiersInScope.push_back({
 			std::move(moduleIdentifier),
 			{
 				moduleIndex,
-				IdentifierCategory::Module,
+				IdentifierType::Module,
 				m_states->currentConditionalIndex
 			}
 		});
@@ -1297,16 +1150,16 @@ namespace nzsl::Ast
 			std::move(name),
 			{
 				std::numeric_limits<std::size_t>::max(),
-				IdentifierCategory::ReservedName,
+				IdentifierType::ReservedName,
 				m_states->currentConditionalIndex
 			}
 		});
 	}
 
-	std::size_t ResolveTransformer::RegisterStruct(std::string name, std::optional<StructData>&& description, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
+	std::size_t ResolveTransformer::RegisterStruct(std::string name, std::optional<TransformerContext::StructData>&& description, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
 	{
 		bool unresolved = false;
-		if (const IdentifierData* identifierData = FindIdentifier(name))
+		if (const TransformerContext::IdentifierData* identifierData = FindIdentifier(name))
 		{
 			if (identifierData->conditionalIndex == 0 || identifierData->conditionalIndex == m_states->currentConditionalIndex)
 				throw CompilerIdentifierAlreadyUsedError{ sourceLocation, name };
@@ -1316,14 +1169,14 @@ namespace nzsl::Ast
 
 		std::size_t structIndex;
 		if (description)
-			structIndex = m_states->structs.Register(*description, index, sourceLocation);
+			structIndex = m_context->structs.Register(*description, index, sourceLocation);
 		else if (index)
 		{
-			m_states->structs.PreregisterIndex(*index, sourceLocation);
+			m_context->structs.PreregisterIndex(*index, sourceLocation);
 			structIndex = *index;
 		}
 		else
-			structIndex = m_states->structs.RegisterNewIndex(true);
+			structIndex = m_context->structs.RegisterNewIndex(true);
 
 		if (!unresolved)
 		{
@@ -1331,7 +1184,7 @@ namespace nzsl::Ast
 				std::move(name),
 				{
 					structIndex,
-					IdentifierCategory::Struct,
+					IdentifierType::Struct,
 					m_states->currentConditionalIndex
 				}
 			});
@@ -1342,61 +1195,27 @@ namespace nzsl::Ast
 		return structIndex;
 	}
 
-	std::size_t ResolveTransformer::RegisterType(std::string name, std::optional<ExpressionType>&& expressionType, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
+	std::size_t ResolveTransformer::RegisterType(std::string name, std::optional<TransformerContext::TypeData>&& typeData, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
 	{
 		if (!IsIdentifierAvailable(name))
 			throw CompilerIdentifierAlreadyUsedError{ sourceLocation, name };
 
 		std::size_t typeIndex;
-		if (expressionType)
-			typeIndex = m_states->types.Register(std::move(*expressionType), index, sourceLocation);
+		if (typeData)
+			typeIndex = m_context->types.Register(std::move(*typeData), index, sourceLocation);
 		else if (index)
 		{
-			m_states->types.PreregisterIndex(*index, sourceLocation);
+			m_context->types.PreregisterIndex(*index, sourceLocation);
 			typeIndex = *index;
 		}
 		else
-			typeIndex = m_states->types.RegisterNewIndex(true);
+			typeIndex = m_context->types.RegisterNewIndex(true);
 
 		m_states->currentEnv->identifiersInScope.push_back({
 			std::move(name),
 			{
 				typeIndex,
-				IdentifierCategory::Type,
-				m_states->currentConditionalIndex
-			}
-		});
-
-		return typeIndex;
-	}
-
-	std::size_t ResolveTransformer::RegisterType(std::string name, std::optional<PartialType>&& partialType, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
-	{
-		if (!IsIdentifierAvailable(name))
-			throw CompilerIdentifierAlreadyUsedError{ sourceLocation, name };
-
-		std::size_t typeIndex;
-		if (partialType)
-		{
-			NamedPartialType namedPartial;
-			namedPartial.name = name;
-			namedPartial.type = std::move(*partialType);
-
-			typeIndex = m_states->types.Register(std::move(namedPartial), index, sourceLocation);
-		}
-		else if (index)
-		{
-			m_states->types.PreregisterIndex(*index, sourceLocation);
-			typeIndex = *index;
-		}
-		else
-			typeIndex = m_states->types.RegisterNewIndex(true);
-
-		m_states->currentEnv->identifiersInScope.push_back({
-			std::move(name),
-			{
-				typeIndex,
-				IdentifierCategory::Type,
+				IdentifierType::Type,
 				m_states->currentConditionalIndex
 			}
 		});
@@ -1410,38 +1229,38 @@ namespace nzsl::Ast
 			std::move(name),
 			{
 				std::numeric_limits<std::size_t>::max(),
-				IdentifierCategory::Unresolved,
+				IdentifierType::Unresolved,
 				m_states->currentConditionalIndex
 			}
 		});
 	}
 
-	std::size_t ResolveTransformer::RegisterVariable(std::string name, std::optional<ExpressionType>&& type, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
+	std::size_t ResolveTransformer::RegisterVariable(std::string name, std::optional<TransformerContext::VariableData>&& typeData, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
 	{
 		bool unresolved = false;
 		if (auto* identifier = FindIdentifier(name))
 		{
 			// Allow variable shadowing
-			if (identifier->category != IdentifierCategory::Variable)
+			if (identifier->type != IdentifierType::Variable)
 				throw CompilerIdentifierAlreadyUsedError{ sourceLocation, name };
 
 			if (identifier->conditionalIndex != m_states->currentConditionalIndex)
 				unresolved = true; //< right variable isn't know from this point
 		}
 
-		if (type && IsLiteralType(*type))
+		if (typeData && IsLiteralType(typeData->type))
 			NazaraDebugBreak();
 
 		std::size_t varIndex;
-		if (type)
-			varIndex = m_states->variableTypes.Register(std::move(*type), index, sourceLocation);
+		if (typeData)
+			varIndex = m_context->variables.Register(std::move(*typeData), index, sourceLocation);
 		else if (index)
 		{
-			m_states->variableTypes.PreregisterIndex(*index, sourceLocation);
+			m_context->variables.PreregisterIndex(*index, sourceLocation);
 			varIndex = *index;
 		}
 		else
-			varIndex = m_states->variableTypes.RegisterNewIndex(true);
+			varIndex = m_context->variables.RegisterNewIndex(true);
 
 		if (!unresolved)
 		{
@@ -1449,7 +1268,7 @@ namespace nzsl::Ast
 				std::move(name),
 				{
 					varIndex,
-					IdentifierCategory::Variable,
+					IdentifierType::Variable,
 					m_states->currentConditionalIndex
 				}
 			});
@@ -1467,12 +1286,12 @@ namespace nzsl::Ast
 		// TODO: Only do this is the AST has been already sanitized, maybe using a flag stored in the module?
 
 		ReflectVisitor::Callbacks registerCallbacks;
-		registerCallbacks.onAliasIndex = [this](const std::string& /*name*/, std::size_t index, const SourceLocation& sourceLocation) { m_states->aliases.PreregisterIndex(index, sourceLocation); };
-		registerCallbacks.onConstIndex = [this](const std::string& /*name*/, std::size_t index, const SourceLocation& sourceLocation) { m_states->constants.PreregisterIndex(index, sourceLocation); };
-		registerCallbacks.onFunctionIndex = [this](const std::string& /*name*/, std::size_t index, const SourceLocation& sourceLocation) { m_states->functions.PreregisterIndex(index, sourceLocation); };
-		registerCallbacks.onOptionIndex = [this](const std::string& /*name*/, std::size_t index, const SourceLocation& sourceLocation) { m_states->constants.PreregisterIndex(index, sourceLocation); };
-		registerCallbacks.onStructIndex = [this](const std::string& /*name*/, std::size_t index, const SourceLocation& sourceLocation) { m_states->structs.PreregisterIndex(index, sourceLocation); };
-		registerCallbacks.onVariableIndex = [this](const std::string& /*name*/, std::size_t index, const SourceLocation& sourceLocation) { m_states->variableTypes.PreregisterIndex(index, sourceLocation); };
+		registerCallbacks.onAliasIndex = [this](const std::string& /*name*/, std::size_t index, const SourceLocation& sourceLocation) { m_context->aliases.PreregisterIndex(index, sourceLocation); };
+		registerCallbacks.onConstIndex = [this](const std::string& /*name*/, std::size_t index, const SourceLocation& sourceLocation) { m_context->constants.PreregisterIndex(index, sourceLocation); };
+		registerCallbacks.onFunctionIndex = [this](const std::string& /*name*/, std::size_t index, const SourceLocation& sourceLocation) { m_context->functions.PreregisterIndex(index, sourceLocation); };
+		registerCallbacks.onOptionIndex = [this](const std::string& /*name*/, std::size_t index, const SourceLocation& sourceLocation) { m_context->constants.PreregisterIndex(index, sourceLocation); };
+		registerCallbacks.onStructIndex = [this](const std::string& /*name*/, std::size_t index, const SourceLocation& sourceLocation) { m_context->structs.PreregisterIndex(index, sourceLocation); };
+		registerCallbacks.onVariableIndex = [this](const std::string& /*name*/, std::size_t index, const SourceLocation& sourceLocation) { m_context->variables.PreregisterIndex(index, sourceLocation); };
 
 		ReflectVisitor reflectVisitor;
 		for (const auto& importedModule : module.importedModules)
@@ -1481,10 +1300,10 @@ namespace nzsl::Ast
 		reflectVisitor.Reflect(*module.rootNode, registerCallbacks);
 	}
 
-	auto ResolveTransformer::ResolveAliasIdentifier(const Identifier* identifier, const SourceLocation& sourceLocation) const -> const Identifier*
+	auto ResolveTransformer::ResolveAliasIdentifier(const TransformerContext::Identifier* identifier, const SourceLocation& sourceLocation) const -> const TransformerContext::Identifier*
 	{
-		while (identifier->target.category == IdentifierCategory::Alias)
-			identifier = &m_states->aliases.Retrieve(identifier->target.index, sourceLocation);
+		while (identifier->target.type == IdentifierType::Alias)
+			identifier = &m_context->aliases.Retrieve(identifier->target.index, sourceLocation).identifier;
 
 		return identifier;
 	}
@@ -1499,14 +1318,14 @@ namespace nzsl::Ast
 			for (auto& parameter : pendingFunc.node->parameters)
 			{
 				if (!m_context->partialCompilation || parameter.type.IsResultingValue())
-					parameter.varIndex = RegisterVariable(parameter.name, parameter.type.GetResultingValue(), parameter.varIndex, parameter.sourceLocation);
+					parameter.varIndex = RegisterVariable(parameter.name, TransformerContext::VariableData{ parameter.type.GetResultingValue() }, parameter.varIndex, parameter.sourceLocation);
 				else
 					RegisterUnresolved(parameter.name);
 			}
 
 			std::size_t funcIndex = *pendingFunc.node->funcIndex;
 
-			FunctionData& funcData = m_states->functions.Retrieve(funcIndex, pendingFunc.node->sourceLocation);
+			TransformerContext::FunctionData& funcData = m_context->functions.Retrieve(funcIndex, pendingFunc.node->sourceLocation);
 			HandleStatementList<false>(funcData.node->statements, [&](StatementPtr& statement)
 			{
 				HandleStatement(statement);
@@ -1536,11 +1355,11 @@ namespace nzsl::Ast
 
 		std::size_t typeIndex = std::get<Type>(exprType).typeIndex;
 
-		const auto& type = m_states->types.Retrieve(typeIndex, sourceLocation);
-		if (!std::holds_alternative<ExpressionType>(type))
-			throw CompilerFullTypeExpectedError{ sourceLocation, ToString(type, sourceLocation) };
+		const auto& typeData = m_context->types.Retrieve(typeIndex, sourceLocation);
+		if (!std::holds_alternative<ExpressionType>(typeData.content))
+			throw CompilerFullTypeExpectedError{ sourceLocation, ToString(typeData, sourceLocation) };
 
-		return std::get<ExpressionType>(type);
+		return std::get<ExpressionType>(typeData.content);
 	}
 
 	std::optional<ExpressionType> ResolveTransformer::ResolveTypeExpr(ExpressionValue<ExpressionType>& exprTypeValue, bool resolveAlias, const SourceLocation& sourceLocation)
@@ -1642,7 +1461,7 @@ namespace nzsl::Ast
 
 							if (value[i] < std::numeric_limits<std::int32_t>::min())
 								throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::Int32), std::to_string(value[i]) };
-						
+
 							vec[i] = static_cast<std::int32_t>(value[i]);
 						}
 					}
@@ -1695,25 +1514,6 @@ namespace nzsl::Ast
 		}
 		else
 			throw AstInternalError{ sourceLocation, "unexpected untyped type " + ToString(expressionType, sourceLocation) };
-	}
-
-	std::string ResolveTransformer::ToString(const ExpressionType& exprType, const SourceLocation& sourceLocation) const
-	{
-		return Ast::ToString(exprType, BuildStringifier(sourceLocation));
-	}
-
-	std::string ResolveTransformer::ToString(const NamedPartialType& partialType, const SourceLocation& /*sourceLocation*/) const
-	{
-		return partialType.name + " (partial)";
-	}
-
-	template<typename... Args>
-	std::string ResolveTransformer::ToString(const std::variant<Args...>& value, const SourceLocation& sourceLocation) const
-	{
-		return std::visit([&](auto&& arg)
-		{
-			return ToString(arg, sourceLocation);
-		}, value);
 	}
 
 	auto ResolveTransformer::Transform(AccessIdentifierExpression&& accessIdentifier) -> ExpressionTransformation
@@ -1825,7 +1625,7 @@ namespace nzsl::Ast
 			else if (IsStructAddressible(resolvedType))
 			{
 				std::size_t structIndex = ResolveStructIndex(resolvedType, indexedExpr->sourceLocation);
-				StructData& structData = m_states->structs.Retrieve(structIndex, indexedExpr->sourceLocation);
+				TransformerContext::StructData& structData = m_context->structs.Retrieve(structIndex, indexedExpr->sourceLocation);
 				StructDescription* s = structData.description;
 
 				// Retrieve member index (not counting disabled fields)
@@ -1926,9 +1726,9 @@ namespace nzsl::Ast
 				const NamedExternalBlockType& externalBlockType = std::get<NamedExternalBlockType>(resolvedType);
 				std::size_t namedExternalBlockIndex = externalBlockType.namedExternalBlockIndex;
 
-				NamedExternalBlock& externalBlock = m_states->namedExternalBlocks.Retrieve(namedExternalBlockIndex, identifierEntry.sourceLocation);
+				auto& externalBlock = m_context->namedExternalBlocks.Retrieve(namedExternalBlockIndex, identifierEntry.sourceLocation);
 
-				const IdentifierData* identifierData = FindIdentifier(*externalBlock.environment, identifierEntry.identifier);
+				const TransformerContext::IdentifierData* identifierData = FindIdentifier(*m_states->namedExternalBlocks[externalBlock.environmentIndex].environment, identifierEntry.identifier);
 				if (!identifierData)
 				{
 					if (m_context->allowUnknownIdentifiers)
@@ -1937,7 +1737,7 @@ namespace nzsl::Ast
 					throw CompilerUnknownIdentifierError{ accessIdentifier.sourceLocation, identifierEntry.identifier };
 				}
 
-				if (identifierData->category == IdentifierCategory::Unresolved)
+				if (identifierData->type == IdentifierType::Unresolved)
 					return Finish(i); //< unresolved identifier
 
 				if (m_context->partialCompilation && identifierData->conditionalIndex != m_states->currentConditionalIndex)
@@ -1952,7 +1752,7 @@ namespace nzsl::Ast
 
 				m_states->currentEnv = m_states->modules[moduleId].environment;
 
-				const IdentifierData* identifierData = FindIdentifier(*m_states->currentEnv, identifierEntry.identifier);
+				const TransformerContext::IdentifierData* identifierData = FindIdentifier(*m_states->currentEnv, identifierEntry.identifier);
 				if (!identifierData)
 				{
 					if (m_context->allowUnknownIdentifiers)
@@ -1961,7 +1761,7 @@ namespace nzsl::Ast
 					throw CompilerUnknownIdentifierError{ accessIdentifier.sourceLocation, identifierEntry.identifier };
 				}
 
-				if (identifierData->category == IdentifierCategory::Unresolved)
+				if (identifierData->type == IdentifierType::Unresolved)
 					return Finish(i); //< unresolved identifier
 
 				if (m_context->partialCompilation && identifierData->conditionalIndex != m_states->currentConditionalIndex)
@@ -1970,17 +1770,17 @@ namespace nzsl::Ast
 				auto& dependencyCheckerPtr = m_states->modules[moduleId].dependenciesVisitor;
 				if (dependencyCheckerPtr) //< dependency checker can be null when performing partial compilation
 				{
-					switch (identifierData->category)
+					switch (identifierData->type)
 					{
-						case IdentifierCategory::Constant:
+						case IdentifierType::Constant:
 							dependencyCheckerPtr->MarkConstantAsUsed(identifierData->index);
 							break;
 
-						case IdentifierCategory::Function:
+						case IdentifierType::Function:
 							dependencyCheckerPtr->MarkFunctionAsUsed(identifierData->index);
 							break;
 
-						case IdentifierCategory::Struct:
+						case IdentifierType::Struct:
 							dependencyCheckerPtr->MarkStructAsUsed(identifierData->index);
 							break;
 
@@ -2016,7 +1816,7 @@ namespace nzsl::Ast
 			throw CompilerFieldUnexpectedTypeError{ accessFieldExpr.sourceLocation, ToString(resolvedExprType, accessFieldExpr.sourceLocation) };
 
 		std::size_t structIndex = ResolveStructIndex(resolvedExprType, accessFieldExpr.sourceLocation);
-		const StructData& s = m_states->structs.Retrieve(structIndex, accessFieldExpr.sourceLocation);
+		const TransformerContext::StructData& s = m_context->structs.Retrieve(structIndex, accessFieldExpr.sourceLocation);
 
 		// We can't manually index field using fieldIndex because some fields may be disabled
 		std::uint32_t remainingIndex = accessFieldExpr.fieldIndex;
@@ -2077,14 +1877,14 @@ namespace nzsl::Ast
 		if (IsTypeExpression(resolvedExprType))
 		{
 			std::size_t typeIndex = std::get<Type>(resolvedExprType).typeIndex;
-			const auto& type = m_states->types.Retrieve(typeIndex, accessIndexExpr.sourceLocation);
+			const auto& typeData = m_context->types.Retrieve(typeIndex, accessIndexExpr.sourceLocation);
 
-			if (!std::holds_alternative<NamedPartialType>(type))
-				throw CompilerExpectedPartialTypeError{ accessIndexExpr.sourceLocation, ToString(std::get<ExpressionType>(type), accessIndexExpr.sourceLocation) };
+			if (!std::holds_alternative<PartialType>(typeData.content))
+				throw CompilerExpectedPartialTypeError{ accessIndexExpr.sourceLocation, ToString(typeData, accessIndexExpr.sourceLocation) };
 
-			const auto& partialType = std::get<NamedPartialType>(type);
-			std::size_t requiredParameterCount = partialType.type.parameters.size();
-			std::size_t optionalParameterCount = partialType.type.optParameters.size();
+			const auto& partialType = std::get<PartialType>(typeData.content);
+			std::size_t requiredParameterCount = partialType.parameters.size();
+			std::size_t optionalParameterCount = partialType.optParameters.size();
 			std::size_t totalParameterCount = requiredParameterCount + optionalParameterCount;
 
 			if (accessIndexExpr.indices.size() < requiredParameterCount)
@@ -2098,7 +1898,7 @@ namespace nzsl::Ast
 			{
 				ExpressionPtr& indexExpr = accessIndexExpr.indices[i];
 
-				TypeParameterCategory typeCategory = (i < requiredParameterCount) ? partialType.type.parameters[i] : partialType.type.optParameters[i - requiredParameterCount];
+				TypeParameterCategory typeCategory = (i < requiredParameterCount) ? partialType.parameters[i] : partialType.optParameters[i - requiredParameterCount];
 				switch (typeCategory)
 				{
 					case TypeParameterCategory::ConstantValue:
@@ -2121,7 +1921,7 @@ namespace nzsl::Ast
 
 						ExpressionType resolvedType = ResolveType(*indexExprType, typeCategory != TypeParameterCategory::FullType, accessIndexExpr.sourceLocation);
 
-						switch (partialType.type.parameters[i])
+						switch (partialType.parameters[i])
 						{
 							case TypeParameterCategory::PrimitiveType:
 							{
@@ -2154,7 +1954,7 @@ namespace nzsl::Ast
 			}
 
 			assert(parameters.size() >= requiredParameterCount && parameters.size() <= totalParameterCount);
-			accessIndexExpr.cachedExpressionType = partialType.type.buildFunc(parameters.data(), parameters.size(), accessIndexExpr.sourceLocation);
+			accessIndexExpr.cachedExpressionType = partialType.buildFunc(parameters.data(), parameters.size(), accessIndexExpr.sourceLocation);
 		}
 		else
 		{
@@ -2203,7 +2003,7 @@ namespace nzsl::Ast
 						throw AstIndexOutOfBoundsError{ accessIndexExpr.sourceLocation, "struct", fieldIndex };
 
 					std::size_t structIndex = ResolveStructIndex(resolvedExprType, indexExpr->sourceLocation);
-					const StructData& s = m_states->structs.Retrieve(structIndex, indexExpr->sourceLocation);
+					const TransformerContext::StructData& s = m_context->structs.Retrieve(structIndex, indexExpr->sourceLocation);
 
 					// We can't manually index field using fieldIndex because some fields may be disabled
 					std::int32_t remainingIndex = fieldIndex;
@@ -2274,7 +2074,7 @@ namespace nzsl::Ast
 		if (accessIndexExpr.cachedExpressionType && !m_options->removeAliases)
 			return DontVisitChildren{};
 
-		const Identifier* targetIdentifier = ResolveAliasIdentifier(&m_states->aliases.Retrieve(accessIndexExpr.aliasId, accessIndexExpr.sourceLocation), accessIndexExpr.sourceLocation);
+		const TransformerContext::Identifier* targetIdentifier = ResolveAliasIdentifier(&m_context->aliases.Retrieve(accessIndexExpr.aliasId, accessIndexExpr.sourceLocation).identifier, accessIndexExpr.sourceLocation);
 		ExpressionPtr targetExpr = HandleIdentifier(&targetIdentifier->target, accessIndexExpr.sourceLocation);
 
 		if (m_options->removeAliases)
@@ -2337,8 +2137,8 @@ namespace nzsl::Ast
 			{
 				const auto& alias = static_cast<AliasValueExpression&>(*callFuncExpr.targetFunction);
 
-				const Identifier* aliasIdentifier = ResolveAliasIdentifier(&m_states->aliases.Retrieve(alias.aliasId, callFuncExpr.sourceLocation), callFuncExpr.sourceLocation);
-				if (aliasIdentifier->target.category != IdentifierCategory::Function)
+				const TransformerContext::Identifier* aliasIdentifier = ResolveAliasIdentifier(&m_context->aliases.Retrieve(alias.aliasId, callFuncExpr.sourceLocation).identifier, callFuncExpr.sourceLocation);
+				if (aliasIdentifier->target.type != IdentifierType::Function)
 					throw CompilerFunctionCallExpectedFunctionError{ callFuncExpr.sourceLocation };
 
 				targetFuncIndex = aliasIdentifier->target.index;
@@ -2346,7 +2146,7 @@ namespace nzsl::Ast
 			else
 				throw CompilerFunctionCallExpectedFunctionError{ callFuncExpr.sourceLocation };
 
-			auto& funcData = m_states->functions.Retrieve(targetFuncIndex, callFuncExpr.sourceLocation);
+			auto& funcData = m_context->functions.Retrieve(targetFuncIndex, callFuncExpr.sourceLocation);
 
 			const DeclareFunctionStatement* referenceDeclaration = funcData.node;
 
@@ -2365,7 +2165,7 @@ namespace nzsl::Ast
 			for (auto& parameter : callFuncExpr.parameters)
 				parameters.push_back(std::move(parameter.expr));
 
-			ExpressionPtr intrinsic = ShaderBuilder::Intrinsic(m_states->intrinsics.Retrieve(targetIntrinsicId, callFuncExpr.sourceLocation), std::move(parameters));
+			ExpressionPtr intrinsic = ShaderBuilder::Intrinsic(m_context->intrinsics.Retrieve(targetIntrinsicId, callFuncExpr.sourceLocation).type, std::move(parameters));
 			intrinsic->sourceLocation = callFuncExpr.sourceLocation;
 			HandleExpression(intrinsic);
 
@@ -2437,7 +2237,7 @@ namespace nzsl::Ast
 		else if (IsTypeExpression(resolvedType))
 		{
 			std::size_t typeIndex = std::get<Type>(resolvedType).typeIndex;
-			const auto& type = m_states->types.Retrieve(typeIndex, callFuncExpr.sourceLocation);
+			const auto& type = m_context->types.Retrieve(typeIndex, callFuncExpr.sourceLocation);
 
 			return std::visit(Nz::Overloaded{
 				[&](const ExpressionType& expressionType) -> ExpressionTransformation
@@ -2456,17 +2256,17 @@ namespace nzsl::Ast
 
 					return ReplaceExpression{ std::move(expr) };
 				},
-				[&](const NamedPartialType& partialType) -> ExpressionTransformation
+				[&](const PartialType& partialType) -> ExpressionTransformation
 				{
 					// Calling a partial type - vec3(0.0, 1.0, 2.0) - it's a type build without parameter
-					std::size_t requiredParameterCount = partialType.type.parameters.size();
+					std::size_t requiredParameterCount = partialType.parameters.size();
 					if (requiredParameterCount > 0)
 						throw CompilerPartialTypeTooFewParametersError{ callFuncExpr.sourceLocation, Nz::SafeCast<std::uint32_t>(requiredParameterCount), 0 };
 
-					callFuncExpr.cachedExpressionType = partialType.type.buildFunc(nullptr, 0, callFuncExpr.sourceLocation);
+					callFuncExpr.cachedExpressionType = partialType.buildFunc(nullptr, 0, callFuncExpr.sourceLocation);
 					return DontVisitChildren{};
 				}
-			}, type);
+			}, type.content);
 		}
 		else
 		{
@@ -2512,7 +2312,7 @@ namespace nzsl::Ast
 
 	auto ResolveTransformer::Transform(ConstantExpression&& constantExpression) -> ExpressionTransformation
 	{
-		const ConstantData* constantData = m_states->constants.TryRetrieve(constantExpression.constantId, constantExpression.sourceLocation);
+		const TransformerContext::ConstantData* constantData = m_context->constants.TryRetrieve(constantExpression.constantId, constantExpression.sourceLocation);
 		if (!constantData || !constantData->value)
 		{
 			if (!m_context->partialCompilation)
@@ -2535,7 +2335,7 @@ namespace nzsl::Ast
 	{
 		assert(m_context);
 
-		const IdentifierData* identifierData = FindIdentifier(identifierExpr.identifier);
+		const TransformerContext::IdentifierData* identifierData = FindIdentifier(identifierExpr.identifier);
 		if (!identifierData)
 		{
 			if (m_context->allowUnknownIdentifiers)
@@ -2544,7 +2344,7 @@ namespace nzsl::Ast
 			throw CompilerUnknownIdentifierError{ identifierExpr.sourceLocation, identifierExpr.identifier };
 		}
 
-		if (identifierData->category == IdentifierCategory::Unresolved)
+		if (identifierData->type == IdentifierType::Unresolved)
 			return DontVisitChildren{};
 
 		if (m_context->partialCompilation && identifierData->conditionalIndex > 0 && identifierData->conditionalIndex != m_states->currentConditionalIndex)
@@ -2747,7 +2547,7 @@ namespace nzsl::Ast
 
 	auto ResolveTransformer::Transform(VariableValueExpression&& node) -> ExpressionTransformation
 	{
-		node.cachedExpressionType = m_states->variableTypes.Retrieve(node.variableId, node.sourceLocation);
+		node.cachedExpressionType = m_context->variables.Retrieve(node.variableId, node.sourceLocation).type;
 		return VisitChildren{};
 	}
 
@@ -2844,15 +2644,15 @@ namespace nzsl::Ast
 
 		const ExpressionType& resolvedType = ResolveAlias(*exprType);
 
-		Identifier aliasIdentifier;
-		aliasIdentifier.name = declAlias.name;
+		TransformerContext::AliasData aliasIdentifier;
+		aliasIdentifier.identifier.name = declAlias.name;
 
 		if (IsStructType(resolvedType))
 		{
 			std::size_t structIndex = ResolveStructIndex(resolvedType, declAlias.expression->sourceLocation);
-			aliasIdentifier.target = { structIndex, IdentifierCategory::Struct };
+			aliasIdentifier.identifier.target = { structIndex, IdentifierType::Struct };
 
-			auto& structData = m_states->structs.Retrieve(structIndex, declAlias.sourceLocation);
+			auto& structData = m_context->structs.Retrieve(structIndex, declAlias.sourceLocation);
 			if (structData.moduleIndex != m_states->currentModuleId)
 			{
 				assert(structData.moduleIndex < m_states->modules.size());
@@ -2862,9 +2662,9 @@ namespace nzsl::Ast
 		else if (IsFunctionType(resolvedType))
 		{
 			std::size_t funcIndex = std::get<FunctionType>(resolvedType).funcIndex;
-			aliasIdentifier.target = { funcIndex, IdentifierCategory::Function };
+			aliasIdentifier.identifier.target = { funcIndex, IdentifierType::Function };
 
-			auto& funcData = m_states->functions.Retrieve(funcIndex, declAlias.sourceLocation);
+			auto& funcData = m_context->functions.Retrieve(funcIndex, declAlias.sourceLocation);
 			if (funcData.moduleIndex != m_states->currentModuleId)
 			{
 				assert(funcData.moduleIndex < m_states->modules.size());
@@ -2874,12 +2674,12 @@ namespace nzsl::Ast
 		else if (IsAliasType(resolvedType))
 		{
 			const AliasType& alias = std::get<AliasType>(resolvedType);
-			aliasIdentifier.target = { alias.aliasIndex, IdentifierCategory::Alias };
+			aliasIdentifier.identifier.target = { alias.aliasIndex, IdentifierType::Alias };
 		}
 		else if (IsModuleType(resolvedType))
 		{
 			const ModuleType& module = std::get<ModuleType>(resolvedType);
-			aliasIdentifier.target = { module.moduleIndex, IdentifierCategory::Module };
+			aliasIdentifier.identifier.target = { module.moduleIndex, IdentifierType::Module };
 		}
 		else
 			throw CompilerAliasUnexpectedTypeError{ declAlias.sourceLocation, ToString(*exprType, declAlias.expression->sourceLocation) };
@@ -2915,14 +2715,14 @@ namespace nzsl::Ast
 			const auto& constantExpr = static_cast<ConstantExpression&>(*declConst.expression);
 
 			std::size_t constantId = constantExpr.constantId;
-			auto& constantData = m_states->constants.Retrieve(constantId, declConst.sourceLocation);
+			auto& constantData = m_context->constants.Retrieve(constantId, declConst.sourceLocation);
 			if (constantData.moduleIndex != m_states->currentModuleId)
 			{
 				assert(constantData.moduleIndex < m_states->modules.size());
 				m_states->modules[constantData.moduleIndex].dependenciesVisitor->MarkConstantAsUsed(constantId);
 			}
 
-			declConst.constIndex = RegisterConstant(declConst.name, ConstantData{ m_states->currentModuleId, constantData.value }, declConst.constIndex, declConst.sourceLocation);
+			declConst.constIndex = RegisterConstant(declConst.name, TransformerContext::ConstantData{ m_states->currentModuleId, constantData.value }, declConst.constIndex, declConst.sourceLocation);
 
 			if (constantData.value)
 				expressionType = GetConstantType(*constantData.value);
@@ -2935,7 +2735,7 @@ namespace nzsl::Ast
 			if (!value)
 			{
 				// Constant propagation failed (and we're in partial compilation)
-				declConst.constIndex = RegisterConstant(declConst.name, ConstantData{ m_states->currentModuleId, std::nullopt }, declConst.constIndex, declConst.sourceLocation);
+				declConst.constIndex = RegisterConstant(declConst.name, TransformerContext::ConstantData{ m_states->currentModuleId, std::nullopt }, declConst.constIndex, declConst.sourceLocation);
 				return DontVisitChildren{};
 			}
 
@@ -2948,7 +2748,7 @@ namespace nzsl::Ast
 
 			ResolveUntyped(expressionType, *value, declConst.sourceLocation);
 
-			declConst.constIndex = RegisterConstant(declConst.name, ConstantData{ m_states->currentModuleId, *value }, declConst.constIndex, declConst.sourceLocation);
+			declConst.constIndex = RegisterConstant(declConst.name, TransformerContext::ConstantData{ m_states->currentModuleId, *value }, declConst.constIndex, declConst.sourceLocation);
 		}
 
 		if (constType.has_value())
@@ -2971,21 +2771,23 @@ namespace nzsl::Ast
 	{
 		assert(m_context);
 
-		std::optional<std::size_t> namedExternalBlockIndex;
 		std::shared_ptr<Environment> previousEnv;
 		if (!declExternal.name.empty())
 		{
-			auto environment = std::make_shared<Environment>();
+			std::size_t namedExternalBlockIndex = m_states->namedExternalBlocks.size();
 
-			NamedExternalBlock namedExternal;
-			namedExternal.environment = environment;
-			namedExternal.environment->parentEnv = m_states->currentEnv;
+			auto& namedExternalData = m_states->namedExternalBlocks.emplace_back();
+			namedExternalData.environment = std::make_shared<Environment>();
+			namedExternalData.environment->parentEnv = m_states->currentEnv;
+
+			TransformerContext::ExternalBlockData namedExternal;
+			namedExternal.environmentIndex = namedExternalBlockIndex;
 			namedExternal.name = declExternal.name;
 
 			declExternal.externalIndex = RegisterExternalBlock(declExternal.name, std::move(namedExternal), declExternal.externalIndex, declExternal.sourceLocation);
 
 			previousEnv = std::move(m_states->currentEnv);
-			m_states->currentEnv = environment;
+			m_states->currentEnv = namedExternalData.environment;
 		}
 
 		if (declExternal.bindingSet.HasValue())
@@ -3059,7 +2861,7 @@ namespace nzsl::Ast
 			ValidateConcreteType(varType, extVar.sourceLocation);
 
 			extVar.type = std::move(resolvedType).value();
-			extVar.varIndex = RegisterVariable(extVar.name, std::move(varType), extVar.varIndex, extVar.sourceLocation);
+			extVar.varIndex = RegisterVariable(extVar.name, TransformerContext::VariableData{ std::move(varType) }, extVar.varIndex, extVar.sourceLocation);
 		}
 
 		if (previousEnv)
@@ -3107,7 +2909,7 @@ namespace nzsl::Ast
 		auto& pendingFunc = m_states->currentEnv->pendingFunctions.emplace_back();
 		pendingFunc.node = &declFunction;
 
-		FunctionData funcData;
+		TransformerContext::FunctionData funcData;
 		funcData.moduleIndex = m_states->currentModuleId;
 		funcData.node = &declFunction;
 
@@ -3153,13 +2955,13 @@ namespace nzsl::Ast
 		OptionHash optionHash = HashOption(declOption.optName.data());
 
 		if (auto optionValueIt = m_context->optionValues.find(optionHash); optionValueIt != m_context->optionValues.end())
-			declOption.optIndex = RegisterConstant(declOption.optName, ConstantData{ m_states->currentModuleId, optionValueIt->second }, declOption.optIndex, declOption.sourceLocation);
+			declOption.optIndex = RegisterConstant(declOption.optName, TransformerContext::ConstantData{ m_states->currentModuleId, optionValueIt->second }, declOption.optIndex, declOption.sourceLocation);
 		else
 		{
 			if (m_context->partialCompilation)
 			{
 				// we cannot give a value to this option even if it has a default value as it may change later
-				declOption.optIndex = RegisterConstant(declOption.optName, ConstantData{ m_states->currentModuleId, std::nullopt }, declOption.optIndex, declOption.sourceLocation);
+				declOption.optIndex = RegisterConstant(declOption.optName, TransformerContext::ConstantData{ m_states->currentModuleId, std::nullopt }, declOption.optIndex, declOption.sourceLocation);
 			}
 			else
 			{
@@ -3170,7 +2972,7 @@ namespace nzsl::Ast
 				if (value)
 					ResolveUntyped(optType, *value, declOption.sourceLocation);
 
-				declOption.optIndex = RegisterConstant(declOption.optName, ConstantData{ m_states->currentModuleId, std::move(value) }, declOption.optIndex, declOption.sourceLocation);
+				declOption.optIndex = RegisterConstant(declOption.optName, TransformerContext::ConstantData{ m_states->currentModuleId, std::move(value) }, declOption.optIndex, declOption.sourceLocation);
 			}
 		}
 
@@ -3252,7 +3054,7 @@ namespace nzsl::Ast
 				{
 					std::size_t structIndex = std::get<StructType>(targetType).structIndex;
 
-					StructData& structData = m_states->structs.Retrieve(structIndex, member.sourceLocation);
+					TransformerContext::StructData& structData = m_context->structs.Retrieve(structIndex, member.sourceLocation);
 					StructDescription* desc = structData.description;
 
 					if (!desc->layout.HasValue())
@@ -3267,7 +3069,7 @@ namespace nzsl::Ast
 
 		declStruct.description.conditionIndex = m_states->currentConditionalIndex;
 
-		StructData structData;
+		TransformerContext::StructData structData;
 		structData.description = &declStruct.description;
 		structData.moduleIndex = m_states->currentModuleId;
 
@@ -3318,10 +3120,10 @@ namespace nzsl::Ast
 
 		ValidateConcreteType(resolvedType, declVariable.sourceLocation);
 
-		declVariable.varIndex = RegisterVariable(declVariable.varName, resolvedType, declVariable.varIndex, declVariable.sourceLocation);
+		declVariable.varIndex = RegisterVariable(declVariable.varName, TransformerContext::VariableData{ resolvedType }, declVariable.varIndex, declVariable.sourceLocation);
 		if (!IsLiteralType(resolvedType))
 			declVariable.varType = std::move(resolvedType);
-		
+
 		return DontVisitChildren{};
 	}
 
@@ -3360,7 +3162,7 @@ namespace nzsl::Ast
 		{
 			PushScope();
 			{
-				forEachStatement.varIndex = RegisterVariable(forEachStatement.varName, innerType, forEachStatement.varIndex, forEachStatement.sourceLocation);
+				forEachStatement.varIndex = RegisterVariable(forEachStatement.varName, TransformerContext::VariableData{ innerType }, forEachStatement.varIndex, forEachStatement.sourceLocation);
 
 				HandleStatement(forEachStatement.statement);
 			}
@@ -3405,11 +3207,11 @@ namespace nzsl::Ast
 
 						// Remap indices (as unrolling the loop will reuse them) 
 						IndexRemapperVisitor::Options indexCallbacks;
-						indexCallbacks.aliasIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_states->aliases.RegisterNewIndex(true); };
-						indexCallbacks.constIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_states->constants.RegisterNewIndex(true); };
-						indexCallbacks.funcIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_states->functions.RegisterNewIndex(true); };
-						indexCallbacks.structIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_states->structs.RegisterNewIndex(true); };
-						indexCallbacks.varIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_states->variableTypes.RegisterNewIndex(true); };
+						indexCallbacks.aliasIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_context->aliases.RegisterNewIndex(true); };
+						indexCallbacks.constIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_context->constants.RegisterNewIndex(true); };
+						indexCallbacks.funcIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_context->functions.RegisterNewIndex(true); };
+						indexCallbacks.structIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_context->structs.RegisterNewIndex(true); };
+						indexCallbacks.varIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_context->variables.RegisterNewIndex(true); };
 
 						StatementPtr bodyStatement = Ast::Clone(*forEachStatement.statement);
 						RemapIndices(*bodyStatement, indexCallbacks);
@@ -3460,7 +3262,7 @@ namespace nzsl::Ast
 					ExpressionType varType = *fromExprType;
 					ResolveUntyped(varType, forStatement.sourceLocation);
 
-					forStatement.varIndex = RegisterVariable(forStatement.varName, std::move(varType), forStatement.varIndex, forStatement.sourceLocation);
+					forStatement.varIndex = RegisterVariable(forStatement.varName, TransformerContext::VariableData{ std::move(varType) }, forStatement.varIndex, forStatement.sourceLocation);
 				}
 				else
 					RegisterUnresolved(forStatement.varName);
@@ -3523,7 +3325,7 @@ namespace nzsl::Ast
 								return static_cast<T>(iValue);
 							}
 						}
-						
+
 						return std::get<T>(constantValue);
 					};
 
@@ -3549,11 +3351,11 @@ namespace nzsl::Ast
 
 						// Remap indices (as unrolling the loop will reuse them) 
 						IndexRemapperVisitor::Options indexCallbacks;
-						indexCallbacks.aliasIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_states->aliases.RegisterNewIndex(true); };
-						indexCallbacks.constIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_states->constants.RegisterNewIndex(true); };
-						indexCallbacks.funcIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_states->functions.RegisterNewIndex(true); };
-						indexCallbacks.structIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_states->structs.RegisterNewIndex(true); };
-						indexCallbacks.varIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_states->variableTypes.RegisterNewIndex(true); };
+						indexCallbacks.aliasIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_context->aliases.RegisterNewIndex(true); };
+						indexCallbacks.constIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_context->constants.RegisterNewIndex(true); };
+						indexCallbacks.funcIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_context->functions.RegisterNewIndex(true); };
+						indexCallbacks.structIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_context->structs.RegisterNewIndex(true); };
+						indexCallbacks.varIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_context->variables.RegisterNewIndex(true); };
 
 						StatementPtr bodyStatement = Ast::Clone(*forStatement.statement);
 						RemapIndices(*bodyStatement, indexCallbacks);
@@ -3701,7 +3503,7 @@ namespace nzsl::Ast
 			// Generate module identifier (based on module name)
 			std::string identifier;
 
-			// Identifier cannot start with a number
+			// TransformerContext::Identifier cannot start with a number
 			identifier += '_';
 
 			std::transform(moduleName.begin(), moduleName.end(), std::back_inserter(identifier), [](char c)
@@ -3722,11 +3524,11 @@ namespace nzsl::Ast
 
 			// Remap already used indices
 			IndexRemapperVisitor::Options indexCallbacks;
-			indexCallbacks.aliasIndexGenerator  = [this](std::size_t /*previousIndex*/) { return m_states->aliases.RegisterNewIndex(true); };
-			indexCallbacks.constIndexGenerator  = [this](std::size_t /*previousIndex*/) { return m_states->constants.RegisterNewIndex(true); };
-			indexCallbacks.funcIndexGenerator   = [this](std::size_t /*previousIndex*/) { return m_states->functions.RegisterNewIndex(true); };
-			indexCallbacks.structIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_states->structs.RegisterNewIndex(true); };
-			indexCallbacks.varIndexGenerator    = [this](std::size_t /*previousIndex*/) { return m_states->variableTypes.RegisterNewIndex(true); };
+			indexCallbacks.aliasIndexGenerator  = [this](std::size_t /*previousIndex*/) { return m_context->aliases.RegisterNewIndex(true); };
+			indexCallbacks.constIndexGenerator  = [this](std::size_t /*previousIndex*/) { return m_context->constants.RegisterNewIndex(true); };
+			indexCallbacks.funcIndexGenerator   = [this](std::size_t /*previousIndex*/) { return m_context->functions.RegisterNewIndex(true); };
+			indexCallbacks.structIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_context->structs.RegisterNewIndex(true); };
+			indexCallbacks.varIndexGenerator    = [this](std::size_t /*previousIndex*/) { return m_context->variables.RegisterNewIndex(true); };
 
 			RemapIndices(*moduleClone->rootNode, indexCallbacks);
 
@@ -3755,7 +3557,7 @@ namespace nzsl::Ast
 
 			m_states->currentEnv = std::move(previousEnv);
 
-			RegisterModule(identifier, moduleIndex);
+			RegisterModule(identifier, TransformerContext::ModuleData{ moduleIndex }, {}, importStatement.sourceLocation);
 
 			m_states->moduleByName[moduleName] = moduleIndex;
 		}
@@ -3810,7 +3612,7 @@ namespace nzsl::Ast
 
 				auto BuildConstant = [&]() -> ExpressionPtr
 				{
-					const ConstantData* constantData = m_states->constants.TryRetrieve(*node.constIndex, node.sourceLocation);
+					const TransformerContext::TransformerContext::ConstantData* constantData = m_context->constants.TryRetrieve(*node.constIndex, node.sourceLocation);
 					if (!constantData || !constantData->value)
 						throw AstInvalidConstantIndexError{ node.sourceLocation, *node.constIndex };
 
@@ -3949,7 +3751,7 @@ namespace nzsl::Ast
 		{
 			std::size_t structIndex = ResolveStructIndex(resolvedType, SourceLocation{});
 
-			auto& structData = m_states->structs.Retrieve(structIndex, SourceLocation{});
+			auto& structData = m_context->structs.Retrieve(structIndex, SourceLocation{});
 			if (structData.moduleIndex != m_states->currentModuleId)
 			{
 				assert(structData.moduleIndex < m_states->modules.size());
@@ -3960,7 +3762,7 @@ namespace nzsl::Ast
 		{
 			std::size_t funcIndex = std::get<FunctionType>(resolvedType).funcIndex;
 
-			auto& funcData = m_states->functions.Retrieve(funcIndex, SourceLocation{});
+			auto& funcData = m_context->functions.Retrieve(funcIndex, SourceLocation{});
 			if (funcData.moduleIndex != m_states->currentModuleId)
 			{
 				assert(funcData.moduleIndex < m_states->modules.size());
@@ -3979,6 +3781,14 @@ namespace nzsl::Ast
 			return;
 
 		expressionType = std::move(resolvedType).value();
+	}
+
+	std::string ResolveTransformer::ToString(const TransformerContext::TypeData& typeData, const SourceLocation& sourceLocation)
+	{
+		return std::visit(Nz::Overloaded{
+			[&](const ExpressionType& exprType) { return ToString(exprType, sourceLocation); },
+			[&](const PartialType& /*partialType*/) { return fmt::format("{} (partial)", typeData.name); },
+		}, typeData.content);
 	}
 
 	void ResolveTransformer::ValidateConcreteType(const ExpressionType& exprType, const SourceLocation& sourceLocation)

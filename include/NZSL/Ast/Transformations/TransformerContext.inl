@@ -4,41 +4,4 @@
 
 namespace nzsl::Ast
 {
-	inline Transformer::Transformer(TransformerFlags flags) :
-	m_flags(flags)
-	{
-	}
-
-	inline void Transformer::HandleExpressionValue(ExpressionValue<ExpressionType>& expressionValue)
-	{
-		Transform(expressionValue);
-	}
-
-	template<typename T>
-	void Transformer::HandleExpressionValue(ExpressionValue<T>& expressionValue)
-	{
-		if (expressionValue.IsExpression())
-			HandleExpression(expressionValue.GetExpression());
-	}
-
-	template<bool Single, typename F>
-	void Transformer::HandleStatementList(std::vector<StatementPtr>& statementList, F&& callback)
-	{
-		std::vector<StatementPtr>* previousStatementList = m_currentStatementList;
-		std::size_t previousListIndex = m_currentStatementListIndex;
-
-		m_currentStatementList = &statementList;
-		m_currentStatementListIndex = 0;
-
-		if constexpr (Single)
-			callback();
-		else
-		{
-			for (; m_currentStatementListIndex < statementList.size(); ++m_currentStatementListIndex)
-				callback(statementList[m_currentStatementListIndex]);
-		}
-
-		m_currentStatementList = previousStatementList;
-		m_currentStatementListIndex = previousListIndex;
-	}
 }

@@ -230,6 +230,14 @@ namespace nzsl::Ast
 		return false;
 	}
 
+	StatementPtr Unscope(StatementPtr&& statement)
+	{
+		if (statement->GetType() == NodeType::ScopedStatement)
+			return std::move(static_cast<ScopedStatement&>(*statement).statement);
+		else
+			return std::move(statement);
+	}
+
 	ExpressionType ValidateBinaryOp(BinaryType op, const ExpressionType& leftExprType, const ExpressionType& rightExprType, const SourceLocation& sourceLocation, const Stringifier& typeStringifier)
 	{
 		if (!IsPrimitiveType(leftExprType) && !IsMatrixType(leftExprType) && !IsVectorType(leftExprType))

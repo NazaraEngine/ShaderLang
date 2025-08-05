@@ -7,6 +7,30 @@
 
 namespace nzsl::Ast
 {
+	std::size_t IdentifierList::Register(std::optional<std::size_t> index, const SourceLocation& sourceLocation)
+	{
+		std::size_t dataIndex;
+		if (index.has_value())
+		{
+			dataIndex = *index;
+
+			if (dataIndex >= availableIndices.GetSize())
+				availableIndices.Resize(dataIndex + 1, true);
+			else if (!availableIndices.Test(dataIndex))
+			{
+				if (preregisteredIndices.UnboundedTest(dataIndex))
+					preregisteredIndices.Reset(dataIndex);
+				else
+					throw AstInvalidIndexError{ sourceLocation, identifierName, dataIndex };
+			}
+		}
+		else
+			dataIndex = RegisterNewIndex(false);
+
+		availableIndices.Set(dataIndex, false);
+		return dataIndex;
+	}
+
 	void IdentifierList::PreregisterIndex(std::size_t index, const SourceLocation& sourceLocation)
 	{
 		if (index < availableIndices.GetSize())

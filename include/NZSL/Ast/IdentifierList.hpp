@@ -4,22 +4,26 @@
 
 #pragma once
 
-#ifndef NZSL_AST_MODULE_HPP
-#define NZSL_AST_MODULE_HPP
+#ifndef NZSL_AST_IDENTIFIERLIST_HPP
+#define NZSL_AST_IDENTIFIERLIST_HPP
 
+#include <NazaraUtils/Bitset.hpp>
 #include <NZSL/Config.hpp>
 #include <NZSL/Lang/SourceLocation.hpp>
-#include <NazaraUtils/Bitset.hpp>
 #include <optional>
+#include <unordered_map>
 
 namespace nzsl::Ast
 {
 	struct IdentifierList
 	{
+		inline IdentifierList(std::string_view identifierName);
+
 		void PreregisterIndex(std::size_t index, const SourceLocation& sourceLocation);
-		template<typename U> std::size_t Register(U&& data, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
+		std::size_t Register(std::optional<std::size_t> index, const SourceLocation& sourceLocation);
 		std::size_t RegisterNewIndex(bool preregister);
 
+		std::string_view identifierName;
 		Nz::Bitset<std::uint64_t> availableIndices;
 		Nz::Bitset<std::uint64_t> preregisteredIndices;
 	};
@@ -27,6 +31,10 @@ namespace nzsl::Ast
 	template<typename T>
 	struct IdentifierListWithValues : IdentifierList
 	{
+		using IdentifierList::IdentifierList;
+
+		template<typename U> std::size_t Register(U&& data, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
+
 		T& Retrieve(std::size_t index, const SourceLocation& sourceLocation);
 		T* TryRetrieve(std::size_t index, const SourceLocation& sourceLocation);
 
@@ -36,4 +44,4 @@ namespace nzsl::Ast
 
 #include <NZSL/Ast/IdentifierList.inl>
 
-#endif // NZSL_AST_MODULE_HPP
+#endif // NZSL_AST_IDENTIFIERLIST_HPP

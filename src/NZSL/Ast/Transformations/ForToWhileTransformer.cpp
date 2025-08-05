@@ -3,11 +3,13 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <NZSL/Ast/Transformations/ForToWhileTransformer.hpp>
+#include <NZSL/Ast/Utils.hpp>
 #include <NZSL/Lang/Errors.hpp>
+#include <NZSL/Ast/Transformations/TransformerContext.hpp>
 
 namespace nzsl::Ast
 {
-	bool ForToWhileTransformer::Transform(Module& module, Context& context, const Options& options, std::string* error)
+	bool ForToWhileTransformer::Transform(Module& module, TransformerContext& context, const Options& options, std::string* error)
 	{
 		m_options = &options;
 
@@ -27,7 +29,7 @@ namespace nzsl::Ast
 			return VisitChildren{};
 
 		if (!IsArrayType(*exprType))
-			throw CompilerForEachUnsupportedTypeError{ forEachStatement.sourceLocation, ToString(*exprType) };
+			throw CompilerForEachUnsupportedTypeError{ forEachStatement.sourceLocation, ToString(*exprType, forEachStatement.sourceLocation) };
 
 		HandleStatement(forEachStatement.statement);
 
@@ -97,17 +99,17 @@ namespace nzsl::Ast
 			return VisitChildren{};
 
 		if (!IsPrimitiveType(*fromExprType))
-			throw CompilerForFromTypeExpectIntegerTypeError{ fromExpr.sourceLocation, ToString(*fromExprType) };
+			throw CompilerForFromTypeExpectIntegerTypeError{ fromExpr.sourceLocation, ToString(*fromExprType, fromExpr.sourceLocation) };
 
 		PrimitiveType counterType = std::get<PrimitiveType>(*fromExprType);
 		if (counterType != PrimitiveType::Int32 && counterType != PrimitiveType::UInt32 && counterType != PrimitiveType::IntLiteral)
-			throw CompilerForFromTypeExpectIntegerTypeError{ fromExpr.sourceLocation, ToString(*fromExprType) };
+			throw CompilerForFromTypeExpectIntegerTypeError{ fromExpr.sourceLocation, ToString(*fromExprType, fromExpr.sourceLocation) };
 
 		auto BuildCounterExprType = [&]() -> Ast::ExpressionValue<Ast::ExpressionType>
 		{
 			if (counterType == PrimitiveType::IntLiteral)
 				return {};
-			
+
 			return ExpressionType{ counterType };
 		};
 

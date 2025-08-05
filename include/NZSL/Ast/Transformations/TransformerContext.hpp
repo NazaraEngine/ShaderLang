@@ -7,7 +7,9 @@
 #ifndef NZSL_AST_TRANSFORMATIONS_TRANSFORMERCONTEXT_HPP
 #define NZSL_AST_TRANSFORMATIONS_TRANSFORMERCONTEXT_HPP
 
+#include <NZSL/Config.hpp>
 #include <NZSL/Ast/ConstantValue.hpp>
+#include <NZSL/Ast/Enums.hpp>
 #include <NZSL/Ast/IdentifierList.hpp>
 #include <NZSL/Ast/Option.hpp>
 #include <NZSL/Ast/Types.hpp>
@@ -15,62 +17,41 @@
 
 namespace nzsl::Ast
 {
-	class DeclareFunctionStatement;
+	struct DeclareFunctionStatement;
 
-	struct TransformerContext
+	struct NZSL_API TransformerContext
 	{
-		enum class IdentifierCategory
-		{
-			Alias,
-			Constant,
-			ExternalBlock,
-			Function,
-			Intrinsic,
-			Module,
-			ReservedName,
-			Struct,
-			Type,
-			Unresolved,
-			Variable
-		};
-
+		struct AliasData;
 		struct ConstantData;
 		struct FunctionData;
 		struct Identifier;
-		struct NamedPartialType;
+		struct IntrinsicData;
+		struct ModuleData;
+		struct ExternalBlockData;
 		struct StructData;
+		struct TypeData;
+		struct VariableData;
+
+		TransformerContext();
 
 		std::size_t nextVariableIndex = 0;
 		std::unordered_map<OptionHash, ConstantValue> optionValues;
+		IdentifierListWithValues<AliasData> aliases;
 		IdentifierListWithValues<ConstantData> constants;
+		IdentifierListWithValues<ExternalBlockData> namedExternalBlocks;
 		IdentifierListWithValues<FunctionData> functions;
-		IdentifierListWithValues<Identifier> aliases;
-		IdentifierListWithValues<IntrinsicType> intrinsics;
-		IdentifierListWithValues<std::size_t> moduleIndices;
-		IdentifierListWithValues<NamedExternalBlock> namedExternalBlocks;
+		IdentifierListWithValues<IntrinsicData> intrinsics;
+		IdentifierListWithValues<ModuleData> modules;
 		IdentifierListWithValues<StructData> structs;
-		IdentifierListWithValues<std::variant<ExpressionType, NamedPartialType>> types;
-		IdentifierListWithValues<ExpressionType> variableTypes;
+		IdentifierListWithValues<TypeData> types;
+		IdentifierListWithValues<VariableData> variables;
 		bool allowUnknownIdentifiers = false;
 		bool partialCompilation = false;
-
-		struct ConstantData
-		{
-			std::size_t moduleIndex;
-			std::optional<ConstantValue> value;
-		};
-
-		struct FunctionData
-		{
-			std::size_t moduleIndex;
-			std::optional<ShaderStageType> entryStage;
-			DeclareFunctionStatement* node;
-		};
 
 		struct IdentifierData
 		{
 			std::size_t index;
-			IdentifierCategory category;
+			IdentifierType type;
 			unsigned int conditionalIndex = 0;
 		};
 
@@ -80,16 +61,56 @@ namespace nzsl::Ast
 			IdentifierData target;
 		};
 
-		struct NamedPartialType
+		struct AliasData
 		{
+			Identifier identifier;
+		};
+
+		struct ConstantData
+		{
+			std::size_t moduleIndex;
+			std::optional<ConstantValue> value;
+		};
+
+		struct ExternalBlockData
+		{
+			std::size_t environmentIndex;
 			std::string name;
-			PartialType type;
+		};
+
+		struct FunctionData
+		{
+			std::size_t moduleIndex;
+			std::optional<ShaderStageType> entryStage;
+			DeclareFunctionStatement* node;
+		};
+
+		struct IntrinsicData
+		{
+			IntrinsicType type;
+		};
+
+		struct ModuleData
+		{
+			std::size_t moduleIndex;
+			std::string name;
 		};
 
 		struct StructData
 		{
 			std::size_t moduleIndex;
 			StructDescription* description;
+		};
+
+		struct TypeData
+		{
+			std::string name;
+			std::variant<ExpressionType, PartialType> content;
+		};
+
+		struct VariableData
+		{
+			ExpressionType type;
 		};
 	};
 }
