@@ -11,7 +11,7 @@
 
 namespace nzsl::Ast
 {
-	bool LiteralTransformer::Transform(Module& module, Context& context, const Options& options, std::string* error)
+	bool LiteralTransformer::Transform(Module& module, TransformerContext& context, const Options& options, std::string* error)
 	{
 		m_options = &options;
 
@@ -32,7 +32,7 @@ namespace nzsl::Ast
 
 		HandleChildren(assignExpr);
 
-		ResolveUntyped(*assignExpr.right, *leftExprType, assignExpr.sourceLocation);
+		ResolveUntyped(assignExpr.right, *leftExprType, assignExpr.sourceLocation);
 
 		return DontVisitChildren{};
 	}
@@ -59,12 +59,12 @@ namespace nzsl::Ast
 		{
 			if (IsLiteralType(resolvedLeftExprType))
 			{
-				if (ResolveUntyped(*binaryExpr.left, *rightExprType, binaryExpr.left->sourceLocation))
+				if (ResolveUntyped(binaryExpr.left, *rightExprType, binaryExpr.left->sourceLocation))
 					leftExprType = GetExpressionType(*binaryExpr.left);
 			}
 			else
 			{
-				if (ResolveUntyped(*binaryExpr.right, *leftExprType, binaryExpr.right->sourceLocation))
+				if (ResolveUntyped(binaryExpr.right, *leftExprType, binaryExpr.right->sourceLocation))
 					rightExprType = GetExpressionType(*binaryExpr.right);
 			}
 
@@ -95,7 +95,7 @@ namespace nzsl::Ast
 			ExpressionPtr& expr = castExpr.expressions.front();
 			if (IsLiteralType(EnsureExpressionType(*castExpr.expressions.front())))
 			{
-				if (!ResolveUntyped(*expr, targetType, expr->sourceLocation))
+				if (!ResolveUntyped(expr, targetType, expr->sourceLocation))
 					throw AstUntypedExpectedConstantError{ expr->sourceLocation, Ast::ToString(expr->GetType()) };
 
 				return ReplaceExpression{ std::move(castExpr.expressions.front()) };
@@ -107,7 +107,7 @@ namespace nzsl::Ast
 
 			ExpressionType baseType = vecType.type;
 			for (auto& exprPtr : castExpr.expressions)
-				ResolveUntyped(*exprPtr, baseType, exprPtr->sourceLocation);
+				ResolveUntyped(exprPtr, baseType, exprPtr->sourceLocation);
 		}
 		else if (IsMatrixType(targetType))
 		{
@@ -115,7 +115,7 @@ namespace nzsl::Ast
 
 			ExpressionType baseType = matType.type;
 			for (auto& exprPtr : castExpr.expressions)
-				ResolveUntyped(*exprPtr, baseType, exprPtr->sourceLocation);
+				ResolveUntyped(exprPtr, baseType, exprPtr->sourceLocation);
 		}
 		else if (IsArrayType(targetType))
 		{
@@ -123,7 +123,7 @@ namespace nzsl::Ast
 
 			const ExpressionType& baseType = arrType.containedType->type;
 			for (auto& exprPtr : castExpr.expressions)
-				ResolveUntyped(*exprPtr, baseType, exprPtr->sourceLocation);
+				ResolveUntyped(exprPtr, baseType, exprPtr->sourceLocation);
 		}
 
 		return DontVisitChildren{};
@@ -160,7 +160,7 @@ namespace nzsl::Ast
 
 				case ParameterType::F32:
 				case ParameterType::FVal:
-					ResolveUntyped(*intrinsicExpr.parameters[paramIndex], PrimitiveType::Float32, intrinsicExpr.sourceLocation);
+					ResolveUntyped(intrinsicExpr.parameters[paramIndex], PrimitiveType::Float32, intrinsicExpr.sourceLocation);
 					paramIndex++;
 					break;
 
@@ -223,7 +223,7 @@ namespace nzsl::Ast
 
 				case ParameterType::Scalar:
 				{
-					//ResolveUntyped(*intrinsicExpr.parameters[paramIndex], PrimitiveType::Float32, intrinsicExpr.sourceLocation);
+					//ResolveUntyped(intrinsicExpr.parameters[paramIndex], PrimitiveType::Float32, intrinsicExpr.sourceLocation);
 					paramIndex++;
 					break;
 				}
@@ -254,7 +254,7 @@ namespace nzsl::Ast
 
 				case ParameterType::SampleCoordinates:
 				{
-					ResolveUntyped(*intrinsicExpr.parameters[paramIndex], PrimitiveType::Float32, intrinsicExpr.sourceLocation);
+					ResolveUntyped(intrinsicExpr.parameters[paramIndex], PrimitiveType::Float32, intrinsicExpr.sourceLocation);
 					paramIndex++;
 					break;
 				}
@@ -337,7 +337,7 @@ namespace nzsl::Ast
 			if (!declConst.type.IsResultingValue())
 				return DontVisitChildren{};
 
-			ResolveUntyped(*declConst.expression, declConst.type.GetResultingValue(), declConst.sourceLocation);
+			ResolveUntyped(declConst.expression, declConst.type.GetResultingValue(), declConst.sourceLocation);
 		}
 
 		return DontVisitChildren{};
@@ -355,7 +355,7 @@ namespace nzsl::Ast
 			if (!declVariable.varType.IsResultingValue())
 				return DontVisitChildren{};
 
-			ResolveUntyped(*declVariable.initialExpression, declVariable.varType.GetResultingValue(), declVariable.sourceLocation);
+			ResolveUntyped(declVariable.initialExpression, declVariable.varType.GetResultingValue(), declVariable.sourceLocation);
 		}
 
 		return DontVisitChildren{};
@@ -389,23 +389,33 @@ namespace nzsl::Ast
 			referenceType = *stepExprType;
 		}
 
-		if (ResolveUntyped(*forStatement.fromExpr, referenceType, forStatement.fromExpr->sourceLocation))
+		if (ResolveUntyped(forStatement.fromExpr, referenceType, forStatement.fromExpr->sourceLocation))
 			fromExprType = GetExpressionType(*forStatement.fromExpr);
 
-		if (ResolveUntyped(*forStatement.toExpr, referenceType, forStatement.toExpr->sourceLocation))
+		if (ResolveUntyped(forStatement.toExpr, referenceType, forStatement.toExpr->sourceLocation))
 			toExprType = GetExpressionType(*forStatement.toExpr);
 
 		if (forStatement.stepExpr)
-			ResolveUntyped(*forStatement.stepExpr, referenceType, forStatement.stepExpr->sourceLocation);
+			ResolveUntyped(forStatement.stepExpr, referenceType, forStatement.stepExpr->sourceLocation);
 
 		return VisitChildren{};
 	}
 
-	bool LiteralTransformer::ResolveUntyped(Expression& expression, std::optional<ExpressionType> enforcedType, const SourceLocation& sourceLocation) const
+	bool LiteralTransformer::ResolveUntyped(ExpressionPtr& expressionPtr, std::optional<ExpressionType> enforcedType, const SourceLocation& sourceLocation) const
 	{
-		const ExpressionType* exprType = GetExpressionType(expression);
+		const ExpressionType* exprType = GetExpressionType(*expressionPtr);
 		if (!exprType)
 			return false;
+
+		if (IsLiteralType(*exprType))
+		{
+			PropagateConstants(expressionPtr);
+			exprType = GetExpressionType(*expressionPtr);
+			if (!exprType)
+				return false;
+		}
+
+		Expression& expression = *expressionPtr;
 
 		if (const PrimitiveType* primType = std::get_if<PrimitiveType>(exprType))
 		{
@@ -557,7 +567,7 @@ namespace nzsl::Ast
 								Vector2f32 vec;
 								for (std::size_t i = 0; i < targetType.componentCount; ++i)
 									vec[i] = static_cast<float>(vecUntyped[i]);
-										
+
 								constantExpr.value = vec;
 							}
 							else if (targetType.type == PrimitiveType::Float64)
@@ -603,13 +613,13 @@ namespace nzsl::Ast
 						case 4:
 						{
 							Vector4<FloatLiteral> vecUntyped = std::get<Vector4<FloatLiteral>>(constantExpr.value);
-									
+
 							if (targetType.type == PrimitiveType::Float32 || targetType.type == PrimitiveType::FloatLiteral)
 							{
 								Vector4f32 vec;
 								for (std::size_t i = 0; i < targetType.componentCount; ++i)
 									vec[i] = static_cast<float>(vecUntyped[i]);
-										
+
 								constantExpr.value = vec;
 							}
 							else if (targetType.type == PrimitiveType::Float64)
@@ -709,7 +719,7 @@ namespace nzsl::Ast
 						case 3:
 						{
 							Vector3<IntLiteral> vecUntyped = std::get<Vector3<IntLiteral>>(constantExpr.value);
-							
+
 							if (targetType.type == PrimitiveType::Int32 || targetType.type == PrimitiveType::IntLiteral)
 							{
 								Vector3i32 vec;
@@ -804,5 +814,7 @@ namespace nzsl::Ast
 
 			NAZARA_UNREACHABLE();
 		}
+
+		return false;
 	}
 }

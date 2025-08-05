@@ -4,8 +4,8 @@
 
 #pragma once
 
-#ifndef NZSL_AST_TRANSFORMATIONS_UNTYPEDTRANSFORMER_HPP
-#define NZSL_AST_TRANSFORMATIONS_UNTYPEDTRANSFORMER_HPP
+#ifndef NZSL_AST_TRANSFORMATIONS_LITERALTRANSFORMER_HPP
+#define NZSL_AST_TRANSFORMATIONS_LITERALTRANSFORMER_HPP
 
 #include <NZSL/Ast/Transformations/Transformer.hpp>
 
@@ -18,8 +18,8 @@ namespace nzsl::Ast
 
 			LiteralTransformer() = default;
 
-			inline bool Transform(Module& module, Context& context, std::string* error = nullptr);
-			bool Transform(Module& module, Context& context, const Options& options, std::string* error = nullptr);
+			inline bool Transform(Module& module, TransformerContext& context, std::string* error = nullptr);
+			bool Transform(Module& module, TransformerContext& context, const Options& options, std::string* error = nullptr);
 
 			struct Options
 			{
@@ -29,7 +29,7 @@ namespace nzsl::Ast
 		private:
 			using Transformer::Transform;
 
-			bool ResolveUntyped(Expression& expression, std::optional<ExpressionType> enforcedType, const SourceLocation& sourceLocation) const;
+			bool ResolveUntyped(ExpressionPtr& expression, std::optional<ExpressionType> enforcedType, const SourceLocation& sourceLocation) const;
 
 			ExpressionTransformation Transform(AssignExpression&& assignExpr) override;
 			ExpressionTransformation Transform(BinaryExpression&& binaryExpr) override;
@@ -48,4 +48,4 @@ namespace nzsl::Ast
 
 #include <NZSL/Ast/Transformations/LiteralTransformer.inl>
 
-#endif // NZSL_AST_TRANSFORMATIONS_UNTYPEDTRANSFORMER_HPP
+#endif // NZSL_AST_TRANSFORMATIONS_LITERALTRANSFORMER_HPP

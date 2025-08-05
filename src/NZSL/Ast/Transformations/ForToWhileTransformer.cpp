@@ -109,7 +109,7 @@ namespace nzsl::Ast
 		{
 			if (counterType == PrimitiveType::IntLiteral)
 				return {};
-			
+
 			return ExpressionType{ counterType };
 		};
 

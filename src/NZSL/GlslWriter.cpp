@@ -20,10 +20,10 @@
 #include <NZSL/Ast/Transformations/EliminateUnusedTransformer.hpp>
 #include <NZSL/Ast/Transformations/ForToWhileTransformer.hpp>
 #include <NZSL/Ast/Transformations/IdentifierTransformer.hpp>
+#include <NZSL/Ast/Transformations/LiteralTransformer.hpp>
 #include <NZSL/Ast/Transformations/ResolveTransformer.hpp>
 #include <NZSL/Ast/Transformations/StructAssignmentTransformer.hpp>
 #include <NZSL/Ast/Transformations/SwizzleTransformer.hpp>
-#include <NZSL/Ast/Transformations/LiteralTransformer.hpp>
 #include <NZSL/Ast/Transformations/ValidationTransformer.hpp>
 #include <fmt/format.h>
 #include <frozen/unordered_map.h>
@@ -1407,7 +1407,7 @@ namespace nzsl
 			{
 				if (i != 0)
 					Append(", ");
-	
+
 				AppendValue(value[i]);
 			}
 

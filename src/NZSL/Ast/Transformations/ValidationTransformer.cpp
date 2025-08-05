@@ -1476,7 +1476,7 @@ namespace nzsl::Ast
 		return DontVisitChildren{};
 	}
 
-	bool ValidationTransformer::TransformModule(Module& module, Context& context, std::string* error, Nz::FunctionRef<void()> postCallback)
+	bool ValidationTransformer::TransformModule(Module& module, TransformerContext& context, std::string* error, Nz::FunctionRef<void()> postCallback)
 	{
 		m_states->pendingFunctions.clear();
 

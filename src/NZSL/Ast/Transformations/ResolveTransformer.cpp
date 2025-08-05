@@ -369,7 +369,7 @@ namespace nzsl::Ast
 
 	ExpressionPtr ResolveTransformer::HandleIdentifier(const TransformerContext::TransformerContext::IdentifierData* identifierData, const SourceLocation& sourceLocation)
 	{
-		switch (identifierData->category)
+		switch (identifierData->type)
 		{
 			case IdentifierType::Alias:
 			{
@@ -1016,7 +1016,7 @@ namespace nzsl::Ast
 			throw CompilerIdentifierAlreadyUsedError{ sourceLocation, name };
 
 		//if (value && IsLiteralType(GetConstantType(*value->value)))
-		//	NazaraDebugBreak();
+		//  NazaraDebugBreak();
 
 		std::size_t constantIndex;
 		if (value)
@@ -1245,7 +1245,7 @@ namespace nzsl::Ast
 				unresolved = true; //< right variable isn't know from this point
 		}
 
-		if (type && IsLiteralType(*type))
+		if (typeData && IsLiteralType(typeData->type))
 			NazaraDebugBreak();
 
 		std::size_t varIndex;
@@ -1458,7 +1458,7 @@ namespace nzsl::Ast
 
 							if (value[i] < std::numeric_limits<std::int32_t>::min())
 								throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::Int32), std::to_string(value[i]) };
-						
+
 							vec[i] = static_cast<std::int32_t>(value[i]);
 						}
 					}
@@ -2256,11 +2256,11 @@ namespace nzsl::Ast
 				[&](const PartialType& partialType) -> ExpressionTransformation
 				{
 					// Calling a partial type - vec3(0.0, 1.0, 2.0) - it's a type build without parameter
-					std::size_t requiredParameterCount = partialType.type.parameters.size();
+					std::size_t requiredParameterCount = partialType.parameters.size();
 					if (requiredParameterCount > 0)
 						throw CompilerPartialTypeTooFewParametersError{ callFuncExpr.sourceLocation, Nz::SafeCast<std::uint32_t>(requiredParameterCount), 0 };
 
-					callFuncExpr.cachedExpressionType = partialType.type.buildFunc(nullptr, 0, callFuncExpr.sourceLocation);
+					callFuncExpr.cachedExpressionType = partialType.buildFunc(nullptr, 0, callFuncExpr.sourceLocation);
 					return DontVisitChildren{};
 				}
 			}, type.content);
@@ -3322,7 +3322,7 @@ namespace nzsl::Ast
 								return static_cast<T>(iValue);
 							}
 						}
-						
+
 						return std::get<T>(constantValue);
 					};
 
