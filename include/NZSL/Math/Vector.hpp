@@ -29,6 +29,8 @@ namespace nzsl
 		constexpr explicit Vector(T x, T y, T z);
 		constexpr explicit Vector(T x, T y, T z, T w);
 
+		template<typename U> constexpr Vector<U, N> Cast() const;
+
 		constexpr Vector<bool, N> ComponentEq(const Vector& vec) const;
 		constexpr Vector<bool, N> ComponentGe(const Vector& vec) const;
 		constexpr Vector<bool, N> ComponentGt(const Vector& vec) const;

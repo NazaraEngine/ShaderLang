@@ -129,8 +129,8 @@ fn main()
 {
 	let output: vec4[f32] = vec4[f32](48.0, 12.0, -42.0, 0.0);
 	let output2: vec4[i32] = vec4[i32](48, 12, -42, 0);
-	let output3: vec4[f64] = vec4[f64](f64(48.0), f64(12.0), f64(-42.0), f64(0.0));
-	let output4: vec4[u32] = vec4[u32](u32(48), u32(12), u32(42), u32(0));
+	let output3: vec4[f64] = vec4[f64](48.0, 12.0, -42.0, 0.0);
+	let output4: vec4[u32] = vec4[u32](48, 12, 42, 0);
 	let output5: vec4[bool] = vec4[bool](false, false, true, true);
 }
 )");
