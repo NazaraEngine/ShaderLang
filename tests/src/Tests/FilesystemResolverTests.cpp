@@ -35,8 +35,7 @@ uniform sampler2D tex1_Color;
 
 vec4 GenerateColor_Color()
 {
-	float _nzsl_cachedResult = 0.0;
-	return texture(tex1_Color, vec2(_nzsl_cachedResult, _nzsl_cachedResult));
+	return texture(tex1_Color, vec2(0.0, 0.0));
 }
 
 vec4 GetColor_Color()
@@ -180,45 +179,44 @@ fn main() -> Output
 )");
 
 	ExpectSPIRV(*shaderModule, R"(
-%27 = OpFunction %6 FunctionControl(0) %7
-%31 = OpLabel
-%32 = OpLoad %3 %5
-%33 = OpCompositeConstruct %11 %8 %8
-%34 = OpImageSampleImplicitLod %6 %32 %33
+%28 = OpFunction %6 FunctionControl(0) %7
+%32 = OpLabel
+%33 = OpLoad %3 %5
+%34 = OpImageSampleImplicitLod %6 %33 %10
       OpReturnValue %34
       OpFunctionEnd
-%28 = OpFunction %6 FunctionControl(0) %7
+%29 = OpFunction %6 FunctionControl(0) %7
 %35 = OpLabel
-%36 = OpFunctionCall %6 %27
+%36 = OpFunctionCall %6 %28
       OpReturnValue %36
       OpFunctionEnd
-%29 = OpFunction %6 FunctionControl(0) %14
-%37 = OpFunctionParameter %13
+%30 = OpFunction %6 FunctionControl(0) %13
+%37 = OpFunctionParameter %12
 %38 = OpLabel
-%40 = OpAccessChain %39 %37 %10
+%40 = OpAccessChain %39 %37 %15
 %41 = OpLoad %6 %40
-%42 = OpFMul %6 %41 %17
+%42 = OpFMul %6 %41 %18
       OpReturnValue %42
       OpFunctionEnd
-%30 = OpFunction %21 FunctionControl(0) %22
+%31 = OpFunction %22 FunctionControl(0) %23
 %43 = OpLabel
-%44 = OpVariable %13 StorageClass(Function)
-%45 = OpVariable %26 StorageClass(Function)
-%46 = OpVariable %13 StorageClass(Function)
-%47 = OpFunctionCall %6 %28
-%48 = OpAccessChain %39 %44 %10
+%44 = OpVariable %12 StorageClass(Function)
+%45 = OpVariable %27 StorageClass(Function)
+%46 = OpVariable %12 StorageClass(Function)
+%47 = OpFunctionCall %6 %29
+%48 = OpAccessChain %39 %44 %15
       OpStore %48 %47
-%49 = OpLoad %12 %44
+%49 = OpLoad %11 %44
       OpStore %46 %49
-%50 = OpFunctionCall %6 %29 %46
-%52 = OpAccessChain %51 %20 %10
+%50 = OpFunctionCall %6 %30 %46
+%52 = OpAccessChain %51 %21 %15
 %53 = OpLoad %6 %52
 %54 = OpFMul %6 %50 %53
-%55 = OpAccessChain %39 %45 %10
+%55 = OpAccessChain %39 %45 %15
       OpStore %55 %54
-%56 = OpLoad %25 %45
+%56 = OpLoad %26 %45
 %57 = OpCompositeExtract %6 %56 0
-      OpStore %24 %57
+      OpStore %25 %57
       OpReturn
       OpFunctionEnd)", {}, {}, true);
 }
