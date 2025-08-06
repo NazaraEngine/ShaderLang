@@ -53,6 +53,24 @@ namespace nzsl::Ast
 			else
 				return value; // float + IntLiteral is not valid
 		}
+		else if constexpr (IsVector_v<T> && IsVector_v<Other>)
+		{
+			// Two vectors, resolve their types
+			using ResolvedType = decltype(ResolveUntypedIfNecessary<typename T::Base, typename Other::Base>(std::declval<typename T::Base>()));
+			return value.template Cast<ResolvedType>();
+		}
+		else if constexpr (IsVector_v<T>)
+		{
+			// Vector<Literal> * float = Vector<float>
+			using ResolvedType = decltype(ResolveUntypedIfNecessary<typename T::Base, Other>(std::declval<typename T::Base>()));
+			return value.template Cast<ResolvedType>();
+		}
+		else if constexpr (IsVector_v<Other>)
+		{
+			// Literal * Vector<float> = float
+			using ResolvedType = decltype(ResolveUntypedIfNecessary<T, typename Other::Base>(std::declval<T>()));
+			return static_cast<ResolvedType>(value);
+		}
 		else
 			return value; // Other is Untyped but not us, keep our type
 	}
