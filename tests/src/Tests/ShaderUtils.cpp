@@ -13,6 +13,7 @@
 #include <NZSL/Ast/Transformations/BindingResolverTransformer.hpp>
 #include <NZSL/Ast/Transformations/LiteralTransformer.hpp>
 #include <NZSL/Ast/Cloner.hpp>
+#include <sstream>
 
 namespace NAZARA_ANONYMOUS_NAMESPACE
 {
@@ -175,11 +176,43 @@ namespace NAZARA_ANONYMOUS_NAMESPACE
 		return str;
 	}
 
+	std::string_view SurroundLines(std::string_view fullCode, std::size_t index, unsigned int prefixLines, unsigned int suffixLines)
+	{
+		std::size_t prefixIndex = index;
+		std::size_t suffixIndex = index;
+		
+		while (prefixLines > 0 && prefixIndex > 0)
+		{
+			prefixIndex = fullCode.rfind('\n', prefixIndex - 1);
+			if (prefixIndex == fullCode.npos)
+			{
+				prefixIndex = 0;
+				break;
+			}
+
+			prefixLines--;
+		}
+
+		while (suffixLines > 0 && suffixIndex < fullCode.size() - 1)
+		{
+			suffixIndex = fullCode.find('\n', suffixIndex + 1);
+			if (suffixIndex == fullCode.npos)
+			{
+				suffixIndex = fullCode.size() - 1;
+				break;
+			}
+
+			suffixLines--;
+		}
+
+		return std::string_view(&fullCode[prefixIndex], suffixIndex - prefixIndex);
+	}
+
 	void HandleSourceError(std::string_view lang, std::string_view expectedCode, std::string_view outputCode)
 	{
 		constexpr std::size_t PartialMatchLength = 30;
-		constexpr std::size_t PartialMatchPrefix = 20;
-		constexpr std::size_t PartialMatchSuffixLength = 100;
+		constexpr std::size_t PartialMatchLinePrefix = 3;
+		constexpr std::size_t PartialMatchLineSuffix = 20;
 
 		// Find difference byte (only works when expecting full output)
 		if (std::size_t offset = expectedCode.find(CappedView(outputCode, PartialMatchLength)); offset != expectedCode.npos)
@@ -192,11 +225,12 @@ namespace NAZARA_ANONYMOUS_NAMESPACE
 			}
 
 			std::size_t index = offset;
-			if (index >= PartialMatchPrefix)
-				index -= PartialMatchPrefix;
+
+			outputCode = SurroundLines(outputCode, index, PartialMatchLinePrefix, PartialMatchLineSuffix);
+			expectedCode = SurroundLines(expectedCode, index, PartialMatchLinePrefix, PartialMatchLineSuffix);
 
 			INFO("difference happens after " << offset << " bytes");
-			INFO(lang << " output[" << index << ":]:\n\n" << CappedStr(&outputCode[index], PartialMatchSuffixLength) << "\nexpected output[" << index << ":]:\n\n" << CappedStr(&expectedCode[index], PartialMatchSuffixLength));
+			INFO(lang << " output[" << index << ":]:\n\n" << outputCode << "\nexpected output[" << index << ":]:\n\n" << expectedCode);
 			REQUIRE(false);
 		}
 		else

@@ -26,7 +26,8 @@ TEST_CASE("Standalone compiler", "[NZSLC]")
 			std::filesystem::remove("../resources/Shader.nzslb");
 			std::filesystem::remove("../resources/modules/Color.nzslb");
 			std::filesystem::remove("../resources/modules/Data/OutputStruct.nzslb");
-			std::filesystem::remove_all("test_files");
+			if (std::filesystem::is_directory("test_files"))
+				std::filesystem::remove_all("test_files");
 		};
 
 		Cleanup();
