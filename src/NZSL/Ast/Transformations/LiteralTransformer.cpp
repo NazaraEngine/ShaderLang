@@ -6,6 +6,7 @@
 #include <NZSL/Ast/Utils.hpp>
 #include <NZSL/Lang/Errors.hpp>
 #include <NZSL/Lang/LangData.hpp>
+#include <NZSL/Ast/Transformations/TransformerContext.hpp>
 #include <NZSL/Ast/Transformations/ConstantPropagationTransformer.hpp>
 #include <fmt/format.h>
 
@@ -13,6 +14,7 @@ namespace nzsl::Ast
 {
 	bool LiteralTransformer::Transform(Module& module, TransformerContext& context, const Options& options, std::string* error)
 	{
+		m_currentFunction = nullptr;
 		m_options = &options;
 
 		if (!TransformImportedModules(module, context, error))
@@ -95,7 +97,33 @@ namespace nzsl::Ast
 		if (!m_options->resolveUntypedLiterals)
 			return VisitChildren{};
 
-		return VisitChildren();
+		HandleChildren(callFuncExpr);
+
+		const ExpressionType* targetFuncType = GetExpressionType(MandatoryExpr(callFuncExpr.targetFunction, callFuncExpr.sourceLocation));
+		if (!targetFuncType)
+			return DontVisitChildren{};
+
+		const ExpressionType& resolvedTargetType = ResolveAlias(*targetFuncType);
+
+		if (!std::holds_alternative<Ast::FunctionType>(resolvedTargetType))
+		{
+			if (!m_context->partialCompilation)
+				throw AstInternalError{ callFuncExpr.sourceLocation, "CallFunction target function is not a function, is the shader resolved?" };
+
+			return DontVisitChildren{};
+		}
+
+		std::size_t functionIndex = std::get<Ast::FunctionType>(resolvedTargetType).funcIndex;
+		auto& funcData = m_context->functions.Retrieve(functionIndex, callFuncExpr.sourceLocation);
+		const DeclareFunctionStatement* referenceDeclaration = funcData.node;
+
+		for (std::size_t i = 0; i < callFuncExpr.parameters.size(); ++i)
+		{
+			const ExpressionType& expectedType = referenceDeclaration->parameters[i].type.GetResultingValue();
+			ResolveUntyped(callFuncExpr.parameters[i].expr, expectedType, callFuncExpr.parameters[i].expr->sourceLocation);
+		}
+
+		return DontVisitChildren();
 	}
 
 	auto LiteralTransformer::Transform(CastExpression&& castExpr) -> ExpressionTransformation
@@ -365,6 +393,23 @@ namespace nzsl::Ast
 		return DontVisitChildren{};
 	}
 
+	auto LiteralTransformer::Transform(DeclareFunctionStatement&& declFunction) -> StatementTransformation
+	{
+		if (!m_options->resolveUntypedLiterals)
+			return VisitChildren{};
+
+		HandleChildren(declFunction);
+
+		m_currentFunction = &declFunction;
+		HandleStatementList<false>(declFunction.statements, [&](StatementPtr& statement)
+		{
+			HandleStatement(statement);
+		});
+		m_currentFunction = nullptr;
+
+		return DontVisitChildren{};
+	}
+
 	auto LiteralTransformer::Transform(DeclareVariableStatement&& declVariable) -> StatementTransformation
 	{
 		if (!m_options->resolveUntypedLiterals)
@@ -423,6 +468,27 @@ namespace nzsl::Ast
 		return VisitChildren{};
 	}
 
+	auto LiteralTransformer::Transform(ReturnStatement&& returnStatement) -> StatementTransformation
+	{
+		if (!m_options->resolveUntypedLiterals)
+			return VisitChildren{};
+
+		if (!returnStatement.returnExpr)
+			return VisitChildren{};
+
+		const ExpressionType* exprType = GetExpressionType(MandatoryExpr(returnStatement.returnExpr, returnStatement.sourceLocation));
+		if (!exprType)
+			return VisitChildren{};
+
+		HandleChildren(returnStatement);
+
+		NazaraAssert(m_currentFunction);
+		if (m_currentFunction->returnType.IsResultingValue())
+			ResolveUntyped(returnStatement.returnExpr, m_currentFunction->returnType.GetResultingValue(), returnStatement.sourceLocation);
+
+		return DontVisitChildren{};
+	}
+
 	bool LiteralTransformer::ResolveUntyped(ExpressionPtr& expressionPtr, std::optional<ExpressionType> enforcedType, const SourceLocation& sourceLocation) const
 	{
 		const ExpressionType* exprType = GetExpressionType(*expressionPtr);
@@ -461,10 +527,15 @@ namespace nzsl::Ast
 					if (enforcedType)
 					{
 						const ExpressionType& resolvedType = ResolveAlias(*enforcedType);
-						if (!IsPrimitiveType(resolvedType))
+
+						PrimitiveType targetType;
+						if (IsPrimitiveType(resolvedType))
+							targetType = std::get<PrimitiveType>(resolvedType);
+						else if (IsVectorType(resolvedType))
+							targetType = std::get<VectorType>(resolvedType).type;
+						else
 							throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(*primType), Ast::ToString(*enforcedType) };
 
-						PrimitiveType targetType = std::get<PrimitiveType>(resolvedType);
 						if (targetType == PrimitiveType::Float32 || targetType == PrimitiveType::FloatLiteral)
 							constantExpr.value = static_cast<float>(std::get<FloatLiteral>(constantExpr.value));
 						else if (targetType == PrimitiveType::Float64)
@@ -472,7 +543,7 @@ namespace nzsl::Ast
 						else
 							throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(*primType), Ast::ToString(targetType) };
 
-						constantExpr.cachedExpressionType = *enforcedType;
+						constantExpr.cachedExpressionType = targetType;
 					}
 					else
 					{
@@ -508,10 +579,15 @@ namespace nzsl::Ast
 					if (enforcedType)
 					{
 						const ExpressionType& resolvedType = ResolveAlias(*enforcedType);
-						if (!IsPrimitiveType(resolvedType))
+
+						PrimitiveType targetType;
+						if (IsPrimitiveType(resolvedType))
+							targetType = std::get<PrimitiveType>(resolvedType);
+						else if (IsVectorType(resolvedType))
+							targetType = std::get<VectorType>(resolvedType).type;
+						else
 							throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(*primType), Ast::ToString(*enforcedType) };
 
-						PrimitiveType targetType = std::get<PrimitiveType>(resolvedType);
 						if (targetType == PrimitiveType::Int32 || targetType == PrimitiveType::IntLiteral)
 							ConvertToInt32();
 						else if (targetType == PrimitiveType::UInt32)
@@ -527,7 +603,7 @@ namespace nzsl::Ast
 						else
 							throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(*primType), Ast::ToString(targetType) };
 
-						constantExpr.cachedExpressionType = *enforcedType;
+						constantExpr.cachedExpressionType = targetType;
 					}
 					else
 						// Default to i32
