@@ -31,6 +31,7 @@ namespace nzsl::Ast
 
 			bool ResolveUntyped(ExpressionPtr& expression, std::optional<ExpressionType> enforcedType, const SourceLocation& sourceLocation) const;
 
+			ExpressionTransformation Transform(AccessIndexExpression&& accessIndexExpr) override;
 			ExpressionTransformation Transform(AssignExpression&& assignExpr) override;
 			ExpressionTransformation Transform(BinaryExpression&& binaryExpr) override;
 			ExpressionTransformation Transform(CallFunctionExpression&& callFuncExpr) override;
