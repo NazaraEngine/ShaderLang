@@ -21,6 +21,22 @@ namespace nzsl::Ast
 		return TransformModule(module, context, error);
 	}
 
+	auto LiteralTransformer::Transform(AccessIndexExpression&& accessIndexExpr) -> ExpressionTransformation
+	{
+		HandleChildren(accessIndexExpr);
+
+		for (auto& indexExpr : accessIndexExpr.indices)
+		{
+			const ExpressionType* indexType = GetExpressionType(*indexExpr);
+			if (!indexType)
+				return DontVisitChildren{}; //< unresolved
+
+			ResolveUntyped(indexExpr, { PrimitiveType::Int32 }, indexExpr->sourceLocation);
+		}
+	
+		return DontVisitChildren{};
+	}
+	
 	auto LiteralTransformer::Transform(AssignExpression&& assignExpr) -> ExpressionTransformation
 	{
 		if (!m_options->resolveUntypedLiterals)
