@@ -16,7 +16,7 @@ namespace nzsl::Ast
 		public:
 			struct Options;
 
-			LiteralTransformer() = default;
+			inline LiteralTransformer();
 
 			inline bool Transform(Module& module, TransformerContext& context, std::string* error = nullptr);
 			bool Transform(Module& module, TransformerContext& context, const Options& options, std::string* error = nullptr);
@@ -40,9 +40,12 @@ namespace nzsl::Ast
 			ExpressionTransformation Transform(UnaryExpression&& unaryExpr) override;
 
 			StatementTransformation Transform(DeclareConstStatement&& declConst) override;
+			StatementTransformation Transform(DeclareFunctionStatement&& declFunction) override;
 			StatementTransformation Transform(DeclareVariableStatement&& declVariable) override;
 			StatementTransformation Transform(ForStatement&& forStatement) override;
+			StatementTransformation Transform(ReturnStatement&& returnStatement) override;
 
+			DeclareFunctionStatement* m_currentFunction;
 			const Options* m_options;
 	};
 }

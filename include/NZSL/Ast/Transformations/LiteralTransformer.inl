@@ -4,6 +4,11 @@
 
 namespace nzsl::Ast
 {
+	inline LiteralTransformer::LiteralTransformer() :
+	Transformer(TransformerFlag::IgnoreFunctionContent) // functions are handled manually
+	{
+	}
+
 	inline bool LiteralTransformer::Transform(Module& module, TransformerContext& context, std::string* error)
 	{
 		return Transform(module, context, {}, error);
