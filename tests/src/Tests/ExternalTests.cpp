@@ -236,7 +236,7 @@ fn main()
 })");
 
 		ExpectSPIRV(*shaderModule, R"(
-      OpSource SourceLanguage(NZSL) 100
+      OpSource SourceLanguage(NZSL) 4194304
       OpName %9 "Data"
       OpMemberName %9 0 "values"
       OpMemberName %9 1 "matrices"
@@ -375,7 +375,7 @@ fn main()
 			{
 				nzsl::SpirvWriter::Environment spirvEnv;
 				ExpectSPIRV(*shaderModule, R"(
-      OpSource SourceLanguage(NZSL) 100
+      OpSource SourceLanguage(NZSL) 4194304
       OpName %5 "Data"
       OpMemberName %5 0 "values"
       OpName %7 "inData"
@@ -448,7 +448,7 @@ fn main()
 				spirvEnv.spvMinorVersion = 3;
 
 				ExpectSPIRV(*shaderModule, R"(
-      OpSource SourceLanguage(NZSL) 100
+      OpSource SourceLanguage(NZSL) 4194304
       OpName %5 "Data"
       OpMemberName %5 0 "values"
       OpName %7 "inData"
@@ -587,7 +587,7 @@ fn main()
 				nzsl::SpirvWriter::Environment spirvEnv;
 
 				ExpectSPIRV(*shaderModule, R"(
-      OpSource SourceLanguage(NZSL) 100
+      OpSource SourceLanguage(NZSL) 4194304
       OpName %4 "Data"
       OpMemberName %4 0 "data"
       OpMemberName %4 1 "values"
@@ -634,7 +634,7 @@ fn main()
 				spirvEnv.spvMinorVersion = 3;
 
 				ExpectSPIRV(*shaderModule, R"(
-      OpSource SourceLanguage(NZSL) 100
+      OpSource SourceLanguage(NZSL) 4194304
       OpName %4 "Data"
       OpMemberName %4 0 "data"
       OpMemberName %4 1 "values"
@@ -1011,7 +1011,7 @@ fn main()
 })");
 
 	ExpectSPIRV(*shaderModule, R"(
-     OpSource SourceLanguage(NZSL) 100
+     OpSource SourceLanguage(NZSL) 4194304
      OpName %2 "Data"
      OpMemberName %2 0 "index"
      OpName %4 "data"
@@ -1107,7 +1107,7 @@ layout(std140) uniform _nzslBindinglightData
 void main()
 {
 	{
-		uint lightIndex = uint(0);
+		uint lightIndex = 0u;
 		uint _nzsl_to = lightData.directionalLightCount;
 		while (lightIndex < _nzsl_to)
 		{
@@ -1171,108 +1171,107 @@ fn main()
 })");
 
 		ExpectSPIRV(*shaderModule, R"(
- %36 = OpFunction %16 FunctionControl(0) %17
- %37 = OpLabel
- %38 = OpVariable %20 StorageClass(Function)
- %39 = OpVariable %20 StorageClass(Function)
- %40 = OpVariable %26 StorageClass(Function)
+ %37 = OpFunction %16 FunctionControl(0) %17
+ %38 = OpLabel
+ %39 = OpVariable %19 StorageClass(Function)
+ %40 = OpVariable %19 StorageClass(Function)
  %41 = OpVariable %26 StorageClass(Function)
- %42 = OpBitcast %4 %19
-       OpStore %38 %42
+ %42 = OpVariable %26 StorageClass(Function)
+       OpStore %39 %18
  %44 = OpAccessChain %43 %15 %21
  %45 = OpLoad %4 %44
-       OpStore %39 %45
+       OpStore %40 %45
        OpBranch %46
  %46 = OpLabel
- %50 = OpLoad %4 %38
- %51 = OpLoad %4 %39
+ %50 = OpLoad %4 %39
+ %51 = OpLoad %4 %40
  %52 = OpULessThan %22 %50 %51
        OpLoopMerge %48 %49 LoopControl(0)
        OpBranchConditional %52 %47 %48
  %47 = OpLabel
- %53 = OpLoad %4 %38
- %55 = OpAccessChain %54 %15 %19 %53 %19
+ %53 = OpLoad %4 %39
+ %55 = OpAccessChain %54 %15 %27 %53 %27
  %56 = OpLoad %2 %55
- %57 = OpAccessChain %58 %40 %19
+ %57 = OpAccessChain %58 %41 %27
        OpStore %57 %56
- %59 = OpLoad %4 %38
- %60 = OpAccessChain %54 %15 %19 %59 %21
+ %59 = OpLoad %4 %39
+ %60 = OpAccessChain %54 %15 %27 %59 %21
  %61 = OpLoad %2 %60
- %62 = OpAccessChain %58 %40 %21
+ %62 = OpAccessChain %58 %41 %21
        OpStore %62 %61
- %63 = OpLoad %4 %38
- %65 = OpAccessChain %64 %15 %19 %63 %29
+ %63 = OpLoad %4 %39
+ %65 = OpAccessChain %64 %15 %27 %63 %30
  %66 = OpLoad %3 %65
- %67 = OpAccessChain %68 %40 %29
+ %67 = OpAccessChain %68 %41 %30
        OpStore %67 %66
- %69 = OpLoad %4 %38
- %71 = OpAccessChain %70 %15 %19 %69 %30
+ %69 = OpLoad %4 %39
+ %71 = OpAccessChain %70 %15 %27 %69 %31
  %72 = OpLoad %1 %71
- %73 = OpAccessChain %74 %40 %30
+ %73 = OpAccessChain %74 %41 %31
        OpStore %73 %72
- %75 = OpLoad %4 %38
- %76 = OpAccessChain %70 %15 %19 %75 %31
+ %75 = OpLoad %4 %39
+ %76 = OpAccessChain %70 %15 %27 %75 %32
  %77 = OpLoad %1 %76
- %78 = OpAccessChain %74 %40 %31
+ %78 = OpAccessChain %74 %41 %32
        OpStore %78 %77
- %79 = OpLoad %4 %38
- %80 = OpAccessChain %43 %15 %19 %79 %32
+ %79 = OpLoad %4 %39
+ %80 = OpAccessChain %43 %15 %27 %79 %33
  %81 = OpLoad %4 %80
- %82 = OpAccessChain %20 %40 %32
+ %82 = OpAccessChain %19 %41 %33
        OpStore %82 %81
- %83 = OpLoad %4 %38
- %84 = OpAccessChain %70 %15 %19 %83 %33 %19
+ %83 = OpLoad %4 %39
+ %84 = OpAccessChain %70 %15 %27 %83 %34 %27
  %85 = OpLoad %1 %84
- %86 = OpAccessChain %87 %40 %33
- %88 = OpAccessChain %74 %86 %19
+ %86 = OpAccessChain %87 %41 %34
+ %88 = OpAccessChain %74 %86 %27
        OpStore %88 %85
- %89 = OpLoad %4 %38
- %90 = OpAccessChain %70 %15 %19 %89 %33 %21
+ %89 = OpLoad %4 %39
+ %90 = OpAccessChain %70 %15 %27 %89 %34 %21
  %91 = OpLoad %1 %90
- %92 = OpAccessChain %87 %40 %33
+ %92 = OpAccessChain %87 %41 %34
  %93 = OpAccessChain %74 %92 %21
        OpStore %93 %91
- %94 = OpLoad %4 %38
- %95 = OpAccessChain %70 %15 %19 %94 %33 %29
+ %94 = OpLoad %4 %39
+ %95 = OpAccessChain %70 %15 %27 %94 %34 %30
  %96 = OpLoad %1 %95
- %97 = OpAccessChain %87 %40 %33
- %98 = OpAccessChain %74 %97 %29
+ %97 = OpAccessChain %87 %41 %34
+ %98 = OpAccessChain %74 %97 %30
        OpStore %98 %96
- %99 = OpLoad %4 %38
-%100 = OpAccessChain %70 %15 %19 %99 %33 %30
+ %99 = OpLoad %4 %39
+%100 = OpAccessChain %70 %15 %27 %99 %34 %31
 %101 = OpLoad %1 %100
-%102 = OpAccessChain %87 %40 %33
-%103 = OpAccessChain %74 %102 %30
+%102 = OpAccessChain %87 %41 %34
+%103 = OpAccessChain %74 %102 %31
        OpStore %103 %101
-%104 = OpLoad %4 %38
-%106 = OpAccessChain %105 %15 %19 %104 %34 %19
+%104 = OpLoad %4 %39
+%106 = OpAccessChain %105 %15 %27 %104 %35 %27
 %107 = OpLoad %8 %106
-%108 = OpAccessChain %109 %40 %34
-%110 = OpAccessChain %111 %108 %19
+%108 = OpAccessChain %109 %41 %35
+%110 = OpAccessChain %111 %108 %27
        OpStore %110 %107
-%112 = OpLoad %4 %38
-%113 = OpAccessChain %105 %15 %19 %112 %34 %21
+%112 = OpLoad %4 %39
+%113 = OpAccessChain %105 %15 %27 %112 %35 %21
 %114 = OpLoad %8 %113
-%115 = OpAccessChain %109 %40 %34
+%115 = OpAccessChain %109 %41 %35
 %116 = OpAccessChain %111 %115 %21
        OpStore %116 %114
-%117 = OpLoad %4 %38
-%118 = OpAccessChain %105 %15 %19 %117 %34 %29
+%117 = OpLoad %4 %39
+%118 = OpAccessChain %105 %15 %27 %117 %35 %30
 %119 = OpLoad %8 %118
-%120 = OpAccessChain %109 %40 %34
-%121 = OpAccessChain %111 %120 %29
+%120 = OpAccessChain %109 %41 %35
+%121 = OpAccessChain %111 %120 %30
        OpStore %121 %119
-%122 = OpLoad %4 %38
-%123 = OpAccessChain %105 %15 %19 %122 %34 %30
+%122 = OpLoad %4 %39
+%123 = OpAccessChain %105 %15 %27 %122 %35 %31
 %124 = OpLoad %8 %123
-%125 = OpAccessChain %109 %40 %34
-%126 = OpAccessChain %111 %125 %30
+%125 = OpAccessChain %109 %41 %35
+%126 = OpAccessChain %111 %125 %31
        OpStore %126 %124
-%127 = OpLoad %25 %40
-       OpStore %41 %127
-%128 = OpLoad %4 %38
-%129 = OpIAdd %4 %128 %35
-       OpStore %38 %129
+%127 = OpLoad %25 %41
+       OpStore %42 %127
+%128 = OpLoad %4 %39
+%129 = OpIAdd %4 %128 %36
+       OpStore %39 %129
        OpBranch %49
  %49 = OpLabel
        OpBranch %46
@@ -1442,7 +1441,7 @@ fn main()
       OpMemoryModel AddressingModel(Logical) MemoryModel(GLSL450)
       OpEntryPoint ExecutionModel(Fragment) %10 "main"
       OpExecutionMode %10 ExecutionMode(OriginUpperLeft)
-      OpSource SourceLanguage(NZSL) 100
+      OpSource SourceLanguage(NZSL) 4194304
       OpName %5 "Viewer_tex"
       OpName %10 "main"
       OpDecorate %5 Decoration(Binding) 0

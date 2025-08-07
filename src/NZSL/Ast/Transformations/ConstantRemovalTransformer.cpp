@@ -5,6 +5,7 @@
 #include <NZSL/Ast/Transformations/ConstantRemovalTransformer.hpp>
 #include <NZSL/Ast/ConstantValue.hpp>
 #include <NZSL/Lang/Errors.hpp>
+#include <NZSL/Ast/Transformations/TransformerContext.hpp>
 
 namespace nzsl::Ast
 {
@@ -27,7 +28,7 @@ namespace nzsl::Ast
 		};
 	}
 
-	bool ConstantRemovalTransformer::Transform(Module& module, Context& context, const Options& options, std::string* error)
+	bool ConstantRemovalTransformer::Transform(Module& module, TransformerContext& context, const Options& options, std::string* error)
 	{
 		m_options = &options;
 		m_constantSingleValues.clear();

@@ -562,6 +562,8 @@ namespace nzsl::Ast
 	inline bool IsStatement(NodeType nodeType);
 
 	inline const ExpressionType& ResolveAlias(const ExpressionType& exprType);
+
+	inline std::string_view ToString(NodeType nodeType);
 }
 
 #include <NZSL/Ast/Nodes.inl>

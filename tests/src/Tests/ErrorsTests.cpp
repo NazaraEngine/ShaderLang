@@ -159,7 +159,7 @@ const data = array[f32, 2](1.0, 2.0, 3.0);
 module;
 
 const data = array[f32, 3](1, 2, 3);
-)"), "(5, 28): CCastIncompatibleTypes error: incompatibles types (f32 and i32)");
+)"), "(5, 28): CCastIncompatibleTypes error: incompatibles types (f32 and IntLiteral)");
 
 
 			// it's an error to declare an unsized array outside of this case
@@ -308,7 +308,7 @@ module;
 
 const Pi: f32 = 3;
 
-)"), "(5, 17): CVarDeclarationTypeUnmatching error: initial expression type (i32) doesn't match specified type (f32)");
+)"), "(5,1 -> 18): CVarDeclarationTypeUnmatching error: initial expression type (IntLiteral) doesn't match specified type (f32)");
 
 			CHECK_THROWS_WITH(Compile(R"(
 [nzsl_version("1.0")]
@@ -378,17 +378,17 @@ const V = 42 >> -1;
 [nzsl_version("1.0")]
 module;
 
-const V = u32(42) << u32(32);
+const V = u32(42) << 32;
 
-)"), "(5,11 -> 28): CBinaryTooLargeShift error: shift is too large in expression (u32(42) << u32(32)) for type u32");
+)"), "(5,11 -> 23): CBinaryTooLargeShift error: shift is too large in expression (42 << 32) for type u32");
 
 			CHECK_THROWS_WITH(Compile(R"(
 [nzsl_version("1.0")]
 module;
 
-const V = u32(42) >> u32(82);
+const V = u32(42) >> 82;
 
-)"), "(5,11 -> 28): CBinaryTooLargeShift error: shift is too large in expression (u32(42) >> u32(82)) for type u32");
+)"), "(5,11 -> 23): CBinaryTooLargeShift error: shift is too large in expression (42 >> 82) for type u32");
 		}
 
 		/************************************************************************/
@@ -491,7 +491,7 @@ external
 	[binding(-1)] foo: sampler2D[f32]
 }
 
-)"), "(7,11 -> 12): CAttributeUnexpectedNegative error: attribute value cannot be negative, got -1");
+)"), "(7,16 -> 34): CLiteralOutOfRange error: type u32 cannot represent the value -1");
 
 			CHECK_THROWS_WITH(Compile(R"(
 [nzsl_version("1.0")]
@@ -757,7 +757,7 @@ fn test() -> i32
 {
 	return 42.666;
 }
-)"), "(7,2 -> 15): CFunctionReturnUnmatchingTypes error: return expression type (f32) must match function return expression type (i32)");
+)"), "(7,2 -> 15): CFunctionReturnUnmatchingTypes error: return expression type (FloatLiteral) must match function return expression type (i32)");
 
 			CHECK_THROWS_WITH(Compile(R"(
 [nzsl_version("1.0")]
@@ -1012,11 +1012,13 @@ import * from Module;
 			resolveOptions.moduleResolver = directoryModuleResolver;
 
 			shaderModule = nzsl::Parse(wildcardImportSource);
-			
-			nzsl::Ast::ResolveTransformer resolver;
-			nzsl::Ast::Transformer::Context context;
 
-			CHECK_THROWS_WITH(resolver.Transform(*shaderModule, context, resolveOptions), "(5,1 -> 21): CModuleFeatureMismatch error: module Module requires feature primitive_externals");
+			nzsl::Ast::TransformerExecutor executor;
+			executor.AddPass<nzsl::Ast::ResolveTransformer>(resolveOptions);
+			executor.AddPass<nzsl::Ast::ValidationTransformer>();
+			executor.AddPass<nzsl::Ast::BindingResolverTransformer>();
+
+			CHECK_THROWS_WITH(executor.Transform(*shaderModule), "(5,1 -> 21): CModuleFeatureMismatch error: module Module requires feature primitive_externals");
 
 			std::string_view nonExistentImportShaderSource = R"(
 [nzsl_version("1.0")]
@@ -1027,7 +1029,7 @@ import Foo from Module;
 )";
 
 			shaderModule = nzsl::Parse(nonExistentImportShaderSource);
-			CHECK_THROWS_WITH(resolver.Transform(*shaderModule, context, resolveOptions), "(6,1 -> 23): CImportIdentifierNotFound error: identifier(s) Foo not found in module Module");
+			CHECK_THROWS_WITH(executor.Transform(*shaderModule), "(6,1 -> 23): CImportIdentifierNotFound error: identifier(s) Foo not found in module Module");
 
 			std::string_view multipleNonExistentImportShaderSource = R"(
 [nzsl_version("1.0")]
@@ -1038,7 +1040,7 @@ import Foo, Bar, Baz as Qix from Module;
 )";
 
 			shaderModule = nzsl::Parse(multipleNonExistentImportShaderSource);
-			CHECK_THROWS_WITH(resolver.Transform(*shaderModule, context, resolveOptions), "(6,1 -> 40): CImportIdentifierNotFound error: identifier(s) Foo, Baz not found in module Module");
+			CHECK_THROWS_WITH(executor.Transform(*shaderModule), "(6,1 -> 40): CImportIdentifierNotFound error: identifier(s) Foo, Baz not found in module Module");
 		}
 
 		/************************************************************************/
@@ -1051,7 +1053,7 @@ module;
 
 option test: bool = 42;
 
-)"), "(5,1 -> 23): CVarDeclarationTypeUnmatching error: initial expression type (bool) doesn't match specified type (i32)");
+)"), "(5,1 -> 23): CVarDeclarationTypeUnmatching error: initial expression type (bool) doesn't match specified type (IntLiteral)");
 
 			CHECK_THROWS_WITH(Compile(R"(
 [nzsl_version("1.0")]
@@ -1078,7 +1080,7 @@ fn main()
 {
 	let a: i32 = 42.66;
 }
-)"), "(7,2 -> 20): CVarDeclarationTypeUnmatching error: initial expression type (i32) doesn't match specified type (f32)");
+)"), "(7,2 -> 20): CVarDeclarationTypeUnmatching error: initial expression type (i32) doesn't match specified type (FloatLiteral)");
 
 			CHECK_THROWS_WITH(Compile(R"(
 [nzsl_version("1.0")]

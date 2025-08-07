@@ -172,6 +172,71 @@ namespace nzsl::Ast
 		m_expressionCategory = ExpressionCategory::RValue;
 	}
 
+	bool ValidateMatchingTypes(const ExpressionPtr& left, const ExpressionPtr& right)
+	{
+		const ExpressionType* leftType = GetExpressionType(*left);
+		const ExpressionType* rightType = GetExpressionType(*right);
+		if (!leftType || !rightType)
+			return true;
+
+		return ValidateMatchingTypes(*leftType, *rightType);
+	}
+
+	bool ValidateMatchingTypes(const ExpressionType& left, const ExpressionType& right)
+	{
+		const ExpressionType& resolvedLeftType = ResolveAlias(left);
+		const ExpressionType& resolvedRightType = ResolveAlias(right);
+
+		if (resolvedLeftType == resolvedRightType)
+			return true;
+
+		if (IsLiteralType(resolvedLeftType) != IsLiteralType(resolvedRightType))
+		{
+			auto CheckUntypedType = [](PrimitiveType leftType, PrimitiveType rightType)
+			{
+				PrimitiveType unresolvedType = leftType;
+				PrimitiveType resolvedType = rightType;
+				if (resolvedType == PrimitiveType::FloatLiteral || resolvedType == PrimitiveType::IntLiteral)
+					std::swap(unresolvedType, resolvedType);
+
+				assert(resolvedType != PrimitiveType::FloatLiteral && resolvedType != PrimitiveType::IntLiteral);
+				switch (resolvedType)
+				{
+					case PrimitiveType::Boolean:
+					case PrimitiveType::String:
+					case PrimitiveType::FloatLiteral:
+					case PrimitiveType::IntLiteral:
+						break;
+
+					case PrimitiveType::Float32:
+					case PrimitiveType::Float64:
+						return (unresolvedType == PrimitiveType::FloatLiteral);
+
+					case PrimitiveType::Int32:
+					case PrimitiveType::UInt32:
+						return (unresolvedType == PrimitiveType::IntLiteral);
+				}
+
+				return false;
+			};
+
+			// One of the two type is unresolved but not both
+			if (IsPrimitiveType(resolvedLeftType) && IsPrimitiveType(resolvedRightType))
+				return CheckUntypedType(std::get<PrimitiveType>(resolvedLeftType), std::get<PrimitiveType>(resolvedRightType));
+			else if (IsVectorType(resolvedLeftType) && IsVectorType(resolvedRightType))
+				return CheckUntypedType(std::get<VectorType>(resolvedLeftType).type, std::get<VectorType>(resolvedRightType).type);
+		}
+
+		return false;
+	}
+
+	StatementPtr Unscope(StatementPtr&& statement)
+	{
+		if (statement->GetType() == NodeType::ScopedStatement)
+			return std::move(static_cast<ScopedStatement&>(*statement).statement);
+		else
+			return std::move(statement);
+	}
 
 	ExpressionType ValidateBinaryOp(BinaryType op, const ExpressionType& leftExprType, const ExpressionType& rightExprType, const SourceLocation& sourceLocation, const Stringifier& typeStringifier)
 	{
@@ -180,12 +245,6 @@ namespace nzsl::Ast
 
 		if (!IsPrimitiveType(rightExprType) && !IsMatrixType(rightExprType) && !IsVectorType(rightExprType))
 			throw CompilerBinaryUnsupportedError{ sourceLocation, "right", ToString(rightExprType, typeStringifier) };
-
-		auto TypeMustMatch = [&](const ExpressionType& left, const ExpressionType& right, const SourceLocation& sourceLocation)
-		{
-			if (ResolveAlias(left) != ResolveAlias(right))
-				throw CompilerUnmatchingTypesError{ sourceLocation, ToString(left, typeStringifier), ToString(right, typeStringifier) };
-		};
 
 		if (IsPrimitiveType(leftExprType))
 		{
@@ -203,14 +262,20 @@ namespace nzsl::Ast
 				case BinaryType::CompEq:
 				case BinaryType::CompNe:
 				{
-					TypeMustMatch(leftExprType, rightExprType, sourceLocation);
+					if (!ValidateMatchingTypes(leftExprType, rightExprType))
+						throw CompilerUnmatchingTypesError{ sourceLocation, ToString(leftExprType, typeStringifier), ToString(rightExprType, typeStringifier) };
+
 					return PrimitiveType::Boolean;
 				}
 
 				case BinaryType::Add:
 				case BinaryType::Subtract:
-					TypeMustMatch(leftExprType, rightExprType, sourceLocation);
+				{
+					if (!ValidateMatchingTypes(leftExprType, rightExprType))
+						throw CompilerUnmatchingTypesError{ sourceLocation, ToString(leftExprType, typeStringifier), ToString(rightExprType, typeStringifier) };
+
 					return leftExprType;
+				}
 
 				case BinaryType::Modulo:
 				case BinaryType::Multiply:
@@ -222,20 +287,28 @@ namespace nzsl::Ast
 						case PrimitiveType::Float64:
 						case PrimitiveType::Int32:
 						case PrimitiveType::UInt32:
+						case PrimitiveType::FloatLiteral:
+						case PrimitiveType::IntLiteral:
 						{
 							if (IsMatrixType(rightExprType))
 							{
-								TypeMustMatch(leftType, std::get<MatrixType>(rightExprType).type, sourceLocation);
+								if (!ValidateMatchingTypes(leftExprType, std::get<MatrixType>(rightExprType).type))
+									throw CompilerUnmatchingTypesError{ sourceLocation, ToString(leftExprType, typeStringifier), ToString(std::get<MatrixType>(rightExprType).type, typeStringifier) };
+
 								return rightExprType;
 							}
 							else if (IsPrimitiveType(rightExprType))
 							{
-								TypeMustMatch(leftType, rightExprType, sourceLocation);
+								if (!ValidateMatchingTypes(leftExprType, rightExprType))
+									throw CompilerUnmatchingTypesError{ sourceLocation, ToString(leftExprType, typeStringifier), ToString(rightExprType, typeStringifier) };
+
 								return leftExprType;
 							}
 							else if (IsVectorType(rightExprType))
 							{
-								TypeMustMatch(leftType, std::get<VectorType>(rightExprType).type, sourceLocation);
+								if (!ValidateMatchingTypes(leftExprType, std::get<VectorType>(rightExprType).type))
+									throw CompilerUnmatchingTypesError{ sourceLocation, ToString(leftExprType, typeStringifier), ToString(std::get<VectorType>(rightExprType).type, typeStringifier) };
+
 								return rightExprType;
 							}
 							else
@@ -258,7 +331,7 @@ namespace nzsl::Ast
 				case BinaryType::ShiftLeft:
 				case BinaryType::ShiftRight:
 				{
-					if (leftType != PrimitiveType::Int32 && leftType != PrimitiveType::UInt32)
+					if (leftType != PrimitiveType::Int32 && leftType != PrimitiveType::UInt32 && leftType != PrimitiveType::IntLiteral)
 						throw CompilerBinaryUnsupportedError{ sourceLocation, "left", ToString(leftExprType, typeStringifier) };
 
 					return leftExprType;
@@ -270,7 +343,9 @@ namespace nzsl::Ast
 					if (leftType != PrimitiveType::Boolean)
 						throw CompilerBinaryUnsupportedError{ sourceLocation, "left", ToString(leftExprType, typeStringifier) };
 
-					TypeMustMatch(leftExprType, rightExprType, sourceLocation);
+					if (!ValidateMatchingTypes(leftExprType, rightExprType))
+						throw CompilerUnmatchingTypesError{ sourceLocation, ToString(leftExprType, typeStringifier), ToString(rightExprType, typeStringifier) };
+
 					return PrimitiveType::Boolean;
 				}
 			}
@@ -282,25 +357,34 @@ namespace nzsl::Ast
 			{
 				case BinaryType::Add:
 				case BinaryType::Subtract:
-					TypeMustMatch(leftExprType, rightExprType, sourceLocation);
+				{
+					if (!ValidateMatchingTypes(leftExprType, rightExprType))
+						throw CompilerUnmatchingTypesError{ sourceLocation, ToString(leftExprType, typeStringifier), ToString(rightExprType, typeStringifier) };
+
 					return leftExprType;
+				}
 
 				case BinaryType::Multiply:
 				{
 					if (IsMatrixType(rightExprType))
 					{
-						TypeMustMatch(leftExprType, rightExprType, sourceLocation);
+						if (!ValidateMatchingTypes(leftExprType, rightExprType))
+							throw CompilerUnmatchingTypesError{ sourceLocation, ToString(leftExprType, typeStringifier), ToString(rightExprType, typeStringifier) };
+
 						return leftExprType; //< FIXME
 					}
 					else if (IsPrimitiveType(rightExprType))
 					{
-						TypeMustMatch(leftType.type, rightExprType, sourceLocation);
+						if (!ValidateMatchingTypes(leftType.type, rightExprType))
+							throw CompilerUnmatchingTypesError{ sourceLocation, ToString(leftType.type, typeStringifier), ToString(rightExprType, typeStringifier) };
+
 						return leftExprType;
 					}
 					else if (IsVectorType(rightExprType))
 					{
 						const VectorType& rightType = std::get<VectorType>(rightExprType);
-						TypeMustMatch(leftType.type, rightType.type, sourceLocation);
+						if (!ValidateMatchingTypes(leftType.type, rightType.type))
+							throw CompilerUnmatchingTypesError{ sourceLocation, ToString(leftType.type, typeStringifier), ToString(rightType.type, typeStringifier) };
 
 						if (leftType.columnCount != rightType.componentCount)
 							throw CompilerBinaryIncompatibleTypesError{ sourceLocation, ToString(leftExprType, typeStringifier), ToString(rightExprType, typeStringifier) };
@@ -340,13 +424,21 @@ namespace nzsl::Ast
 				case BinaryType::CompGt:
 				case BinaryType::CompLe:
 				case BinaryType::CompLt:
-					TypeMustMatch(leftExprType, rightExprType, sourceLocation);
+				{
+					if (!ValidateMatchingTypes(leftExprType, rightExprType))
+						throw CompilerUnmatchingTypesError{ sourceLocation, ToString(leftExprType, typeStringifier), ToString(rightExprType, typeStringifier) };
+
 					return VectorType{ leftType.componentCount, PrimitiveType::Boolean };
+				}
 
 				case BinaryType::Add:
 				case BinaryType::Subtract:
-					TypeMustMatch(leftExprType, rightExprType, sourceLocation);
+				{
+					if (!ValidateMatchingTypes(leftExprType, rightExprType))
+						throw CompilerUnmatchingTypesError{ sourceLocation, ToString(leftExprType, typeStringifier), ToString(rightExprType, typeStringifier) };
+
 					return leftExprType;
+				}
 
 				case BinaryType::Modulo:
 				case BinaryType::Multiply:
@@ -354,12 +446,16 @@ namespace nzsl::Ast
 				{
 					if (IsPrimitiveType(rightExprType))
 					{
-						TypeMustMatch(leftType.type, rightExprType, sourceLocation);
+						if (!ValidateMatchingTypes(leftType.type, rightExprType))
+							throw CompilerUnmatchingTypesError{ sourceLocation, ToString(leftType.type, typeStringifier), ToString(rightExprType, typeStringifier) };
+
 						return leftExprType;
 					}
 					else if (IsVectorType(rightExprType))
 					{
-						TypeMustMatch(leftType, rightExprType, sourceLocation);
+						if (!ValidateMatchingTypes(leftType, rightExprType))
+							throw CompilerUnmatchingTypesError{ sourceLocation, ToString(leftType.type, typeStringifier), ToString(rightExprType, typeStringifier) };
+
 						return rightExprType;
 					}
 					else

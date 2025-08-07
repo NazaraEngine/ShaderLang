@@ -27,13 +27,6 @@ namespace nzsl::Ast
 		return EliminateUnusedPass(shaderModule, dependencyVisitor.GetUsage(), error);
 	}
 
-	inline bool EliminateUnusedPass(Module& shaderModule, const DependencyCheckerVisitor::UsageSet& usageSet, std::string* error)
-	{
-		EliminateUnusedTransformer visitor;
-		EliminateUnusedTransformer::Context context;
-		return visitor.Transform(shaderModule, context, usageSet, error);
-	}
-
 	inline bool EliminateUnusedPass(StatementPtr& ast, std::string* error)
 	{
 		DependencyCheckerVisitor::Config defaultConfig;
@@ -47,12 +40,5 @@ namespace nzsl::Ast
 		dependencyVisitor.Resolve();
 
 		return EliminateUnusedPass(ast, dependencyVisitor.GetUsage(), error);
-	}
-
-	inline bool EliminateUnusedPass(StatementPtr& ast, const DependencyCheckerVisitor::UsageSet& usageSet, std::string* error)
-	{
-		EliminateUnusedTransformer visitor;
-		EliminateUnusedTransformer::Context context;
-		return visitor.Transform(ast, context, usageSet, error);
 	}
 }

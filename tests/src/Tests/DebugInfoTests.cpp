@@ -43,8 +43,7 @@ uniform sampler2D tex1_Color;
 
 vec4 GenerateColor_Color()
 {
-	float _nzsl_cachedResult = 0.0;
-	return texture(tex1_Color, vec2(_nzsl_cachedResult, _nzsl_cachedResult));
+	return texture(tex1_Color, vec2(0.0, 0.0));
 }
 
 vec4 GetColor_Color()
@@ -93,82 +92,82 @@ void main()
 			ExpectSPIRV(*shaderModule, R"(
       OpCapability Capability(Shader)
       OpMemoryModel AddressingModel(Logical) MemoryModel(GLSL450)
-      OpEntryPoint ExecutionModel(Fragment) %30 "main" %24
-      OpExecutionMode %30 ExecutionMode(OriginUpperLeft)
+      OpEntryPoint ExecutionModel(Fragment) %31 "main" %25
+      OpExecutionMode %31 ExecutionMode(OriginUpperLeft)
       OpDecorate %5 Decoration(Binding) 0
       OpDecorate %5 Decoration(DescriptorSet) 0
-      OpDecorate %24 Decoration(Location) 0
-      OpMemberDecorate %12 0 Decoration(Offset) 0
-      OpDecorate %18 Decoration(Block)
-      OpMemberDecorate %18 0 Decoration(Offset) 0
-      OpMemberDecorate %25 0 Decoration(Offset) 0
+      OpDecorate %25 Decoration(Location) 0
+      OpMemberDecorate %11 0 Decoration(Offset) 0
+      OpDecorate %19 Decoration(Block)
+      OpMemberDecorate %19 0 Decoration(Offset) 0
+      OpMemberDecorate %26 0 Decoration(Offset) 0
  %1 = OpTypeFloat 32
  %2 = OpTypeImage %1 Dim(Dim2D) 0 0 0 1 ImageFormat(Unknown)
  %3 = OpTypeSampledImage %2
  %4 = OpTypePointer StorageClass(UniformConstant) %3
  %6 = OpTypeVector %1 4
  %7 = OpTypeFunction %6
- %8 = OpConstant %1 f32(0)
- %9 = OpTypeInt 32 1
-%10 = OpConstant %9 i32(0)
-%11 = OpTypeVector %1 2
-%12 = OpTypeStruct %6
-%13 = OpTypePointer StorageClass(Function) %12
-%14 = OpTypeFunction %6 %13
-%15 = OpConstant %1 f32(0.5)
-%16 = OpConstant %1 f32(1)
-%17 = OpConstantComposite %6 %15 %15 %15 %16
-%18 = OpTypeStruct %6
-%19 = OpTypePointer StorageClass(PushConstant) %18
-%21 = OpTypeVoid
-%22 = OpTypeFunction %21
-%23 = OpTypePointer StorageClass(Output) %6
-%25 = OpTypeStruct %6
-%26 = OpTypePointer StorageClass(Function) %25
+ %8 = OpTypeVector %1 2
+ %9 = OpConstant %1 f32(0)
+%10 = OpConstantComposite %8 %9 %9
+%11 = OpTypeStruct %6
+%12 = OpTypePointer StorageClass(Function) %11
+%13 = OpTypeFunction %6 %12
+%14 = OpTypeInt 32 1
+%15 = OpConstant %14 i32(0)
+%16 = OpConstant %1 f32(0.5)
+%17 = OpConstant %1 f32(1)
+%18 = OpConstantComposite %6 %16 %16 %16 %17
+%19 = OpTypeStruct %6
+%20 = OpTypePointer StorageClass(PushConstant) %19
+%22 = OpTypeVoid
+%23 = OpTypeFunction %22
+%24 = OpTypePointer StorageClass(Output) %6
+%26 = OpTypeStruct %6
+%27 = OpTypePointer StorageClass(Function) %26
 %39 = OpTypePointer StorageClass(Function) %6
 %51 = OpTypePointer StorageClass(PushConstant) %6
  %5 = OpVariable %4 StorageClass(UniformConstant)
-%20 = OpVariable %19 StorageClass(PushConstant)
-%24 = OpVariable %23 StorageClass(Output)
-%27 = OpFunction %6 FunctionControl(0) %7
-%31 = OpLabel
-%32 = OpLoad %3 %5
-%33 = OpCompositeConstruct %11 %8 %8
-%34 = OpImageSampleImplicitLod %6 %32 %33
+%21 = OpVariable %20 StorageClass(PushConstant)
+%25 = OpVariable %24 StorageClass(Output)
+%28 = OpFunction %6 FunctionControl(0) %7
+%32 = OpLabel
+%33 = OpLoad %3 %5
+%34 = OpImageSampleImplicitLod %6 %33 %10
       OpReturnValue %34
       OpFunctionEnd
-%28 = OpFunction %6 FunctionControl(0) %7
+%29 = OpFunction %6 FunctionControl(0) %7
 %35 = OpLabel
-%36 = OpFunctionCall %6 %27
+%36 = OpFunctionCall %6 %28
       OpReturnValue %36
       OpFunctionEnd
-%29 = OpFunction %6 FunctionControl(0) %14
-%37 = OpFunctionParameter %13
+%30 = OpFunction %6 FunctionControl(0) %13
+%37 = OpFunctionParameter %12
 %38 = OpLabel
-%40 = OpAccessChain %39 %37 %10
+%40 = OpAccessChain %39 %37 %15
 %41 = OpLoad %6 %40
-%42 = OpFMul %6 %41 %17
+%42 = OpFMul %6 %41 %18
       OpReturnValue %42
       OpFunctionEnd
-%30 = OpFunction %21 FunctionControl(0) %22
+%31 = OpFunction %22 FunctionControl(0) %23
 %43 = OpLabel
-%44 = OpVariable %13 StorageClass(Function)
-%45 = OpVariable %26 StorageClass(Function)
-%46 = OpVariable %13 StorageClass(Function)
-%47 = OpFunctionCall %6 %28
-%48 = OpAccessChain %39 %44 %10
+%44 = OpVariable %12 StorageClass(Function)
+%45 = OpVariable %27 StorageClass(Function)
+%46 = OpVariable %12 StorageClass(Function)
+%47 = OpFunctionCall %6 %29
+%48 = OpAccessChain %39 %44 %15
       OpStore %48 %47
-%49 = OpLoad %12 %44
+%49 = OpLoad %11 %44
       OpStore %46 %49
-%50 = OpFunctionCall %6 %29 %46
-%52 = OpAccessChain %51 %20 %10
+%50 = OpFunctionCall %6 %30 %46
+%52 = OpAccessChain %51 %21 %15
 %53 = OpLoad %6 %52
 %54 = OpFMul %6 %50 %53
-%55 = OpAccessChain %39 %45 %10
+%55 = OpAccessChain %39 %45 %15
       OpStore %55 %54
-%56 = OpLoad %25 %45
+%56 = OpLoad %26 %45
 %57 = OpCompositeExtract %6 %56 0
-      OpStore %24 %57
+      OpStore %25 %57
       OpReturn
       OpFunctionEnd)", options, {}, true);
 		}
@@ -203,8 +202,7 @@ uniform sampler2D tex1_Color;
 
 vec4 GenerateColor_Color()
 {
-	float _nzsl_cachedResult = 0.0;
-	return texture(tex1_Color, vec2(_nzsl_cachedResult, _nzsl_cachedResult));
+	return texture(tex1_Color, vec2(0.0, 0.0));
 }
 
 vec4 GetColor_Color()
@@ -261,97 +259,98 @@ void main()
 })", options);
 
 			ExpectSPIRV(*shaderModule, R"(
+      OpCapability Capability(Shader)
       OpMemoryModel AddressingModel(Logical) MemoryModel(GLSL450)
-      OpEntryPoint ExecutionModel(Fragment) %30 "main" %24
-      OpExecutionMode %30 ExecutionMode(OriginUpperLeft)
-      OpSource SourceLanguage(NZSL) 100
-      OpName %12 "Data"
-      OpMemberName %12 0 "color"
-      OpName %18 "PushConstants"
-      OpMemberName %18 0 "color"
-      OpName %25 "Output"
-      OpMemberName %25 0 "color"
+      OpEntryPoint ExecutionModel(Fragment) %31 "main" %25
+      OpExecutionMode %31 ExecutionMode(OriginUpperLeft)
+      OpSource SourceLanguage(NZSL) 4194304
+      OpName %11 "Data"
+      OpMemberName %11 0 "color"
+      OpName %19 "PushConstants"
+      OpMemberName %19 0 "color"
+      OpName %26 "Output"
+      OpMemberName %26 0 "color"
       OpName %5 "tex1"
-      OpName %20 "ExternalResources_constants"
-      OpName %24 "color"
-      OpName %27 "GenerateColor"
-      OpName %28 "GetColor"
-      OpName %29 "GetColorFromData"
-      OpName %30 "main"
+      OpName %21 "ExternalResources_constants"
+      OpName %25 "color"
+      OpName %28 "GenerateColor"
+      OpName %29 "GetColor"
+      OpName %30 "GetColorFromData"
+      OpName %31 "main"
       OpDecorate %5 Decoration(Binding) 0
       OpDecorate %5 Decoration(DescriptorSet) 0
-      OpDecorate %24 Decoration(Location) 0
-      OpMemberDecorate %12 0 Decoration(Offset) 0
-      OpDecorate %18 Decoration(Block)
-      OpMemberDecorate %18 0 Decoration(Offset) 0
-      OpMemberDecorate %25 0 Decoration(Offset) 0
+      OpDecorate %25 Decoration(Location) 0
+      OpMemberDecorate %11 0 Decoration(Offset) 0
+      OpDecorate %19 Decoration(Block)
+      OpMemberDecorate %19 0 Decoration(Offset) 0
+      OpMemberDecorate %26 0 Decoration(Offset) 0
  %1 = OpTypeFloat 32
  %2 = OpTypeImage %1 Dim(Dim2D) 0 0 0 1 ImageFormat(Unknown)
  %3 = OpTypeSampledImage %2
  %4 = OpTypePointer StorageClass(UniformConstant) %3
  %6 = OpTypeVector %1 4
  %7 = OpTypeFunction %6
- %8 = OpConstant %1 f32(0)
- %9 = OpTypeInt 32 1
-%10 = OpConstant %9 i32(0)
-%11 = OpTypeVector %1 2
-%12 = OpTypeStruct %6
-%13 = OpTypePointer StorageClass(Function) %12
-%14 = OpTypeFunction %6 %13
-%15 = OpConstant %1 f32(0.5)
-%16 = OpConstant %1 f32(1)
-%17 = OpConstantComposite %6 %15 %15 %15 %16
-%18 = OpTypeStruct %6
-%19 = OpTypePointer StorageClass(PushConstant) %18
-%21 = OpTypeVoid
-%22 = OpTypeFunction %21
-%23 = OpTypePointer StorageClass(Output) %6
-%25 = OpTypeStruct %6
-%26 = OpTypePointer StorageClass(Function) %25
+ %8 = OpTypeVector %1 2
+ %9 = OpConstant %1 f32(0)
+%10 = OpConstantComposite %8 %9 %9
+%11 = OpTypeStruct %6
+%12 = OpTypePointer StorageClass(Function) %11
+%13 = OpTypeFunction %6 %12
+%14 = OpTypeInt 32 1
+%15 = OpConstant %14 i32(0)
+%16 = OpConstant %1 f32(0.5)
+%17 = OpConstant %1 f32(1)
+%18 = OpConstantComposite %6 %16 %16 %16 %17
+%19 = OpTypeStruct %6
+%20 = OpTypePointer StorageClass(PushConstant) %19
+%22 = OpTypeVoid
+%23 = OpTypeFunction %22
+%24 = OpTypePointer StorageClass(Output) %6
+%26 = OpTypeStruct %6
+%27 = OpTypePointer StorageClass(Function) %26
 %39 = OpTypePointer StorageClass(Function) %6
 %51 = OpTypePointer StorageClass(PushConstant) %6
  %5 = OpVariable %4 StorageClass(UniformConstant)
-%20 = OpVariable %19 StorageClass(PushConstant)
-%24 = OpVariable %23 StorageClass(Output)
-%27 = OpFunction %6 FunctionControl(0) %7
-%31 = OpLabel
-%32 = OpLoad %3 %5
-%33 = OpCompositeConstruct %11 %8 %8
-%34 = OpImageSampleImplicitLod %6 %32 %33
+%21 = OpVariable %20 StorageClass(PushConstant)
+%25 = OpVariable %24 StorageClass(Output)
+%28 = OpFunction %6 FunctionControl(0) %7
+%32 = OpLabel
+%33 = OpLoad %3 %5
+%34 = OpImageSampleImplicitLod %6 %33 %10
       OpReturnValue %34
       OpFunctionEnd
-%28 = OpFunction %6 FunctionControl(0) %7
+%29 = OpFunction %6 FunctionControl(0) %7
 %35 = OpLabel
-%36 = OpFunctionCall %6 %27
+%36 = OpFunctionCall %6 %28
       OpReturnValue %36
       OpFunctionEnd
-%29 = OpFunction %6 FunctionControl(0) %14
-%37 = OpFunctionParameter %13
+%30 = OpFunction %6 FunctionControl(0) %13
+%37 = OpFunctionParameter %12
 %38 = OpLabel
-%40 = OpAccessChain %39 %37 %10
+%40 = OpAccessChain %39 %37 %15
 %41 = OpLoad %6 %40
-%42 = OpFMul %6 %41 %17
+%42 = OpFMul %6 %41 %18
       OpReturnValue %42
       OpFunctionEnd
-%30 = OpFunction %21 FunctionControl(0) %22
+%31 = OpFunction %22 FunctionControl(0) %23
 %43 = OpLabel
-%44 = OpVariable %13 StorageClass(Function)
-%45 = OpVariable %26 StorageClass(Function)
-%46 = OpVariable %13 StorageClass(Function)
-%47 = OpFunctionCall %6 %28
-%48 = OpAccessChain %39 %44 %10
+%44 = OpVariable %12 StorageClass(Function)
+%45 = OpVariable %27 StorageClass(Function)
+%46 = OpVariable %12 StorageClass(Function)
+%47 = OpFunctionCall %6 %29
+%48 = OpAccessChain %39 %44 %15
       OpStore %48 %47
-%49 = OpLoad %12 %44
+%49 = OpLoad %11 %44
       OpStore %46 %49
-%50 = OpFunctionCall %6 %29 %46
-%52 = OpAccessChain %51 %20 %10
+%50 = OpFunctionCall %6 %30 %46
+%52 = OpAccessChain %51 %21 %15
 %53 = OpLoad %6 %52
 %54 = OpFMul %6 %50 %53
-%55 = OpAccessChain %39 %45 %10
+%55 = OpAccessChain %39 %45 %15
       OpStore %55 %54
-%56 = OpLoad %25 %45
+%56 = OpLoad %26 %45
 %57 = OpCompositeExtract %6 %56 0
-      OpStore %24 %57
+      OpStore %25 %57
       OpReturn
       OpFunctionEnd)", options, {}, true);
 		}
@@ -390,8 +389,7 @@ uniform sampler2D tex1_Color;
 // @../resources/modules/Color.nzsl:13:1
 vec4 GenerateColor_Color()
 {
-	float _nzsl_cachedResult = 0.0;
-	return texture(tex1_Color, vec2(_nzsl_cachedResult, _nzsl_cachedResult));
+	return texture(tex1_Color, vec2(0.0, 0.0));
 }
 
 // @../resources/modules/Color.nzsl:32:1
@@ -462,141 +460,139 @@ void main()
 			ExpectSPIRV(*shaderModule, R"(
       OpCapability Capability(Shader)
       OpMemoryModel AddressingModel(Logical) MemoryModel(GLSL450)
-      OpEntryPoint ExecutionModel(Fragment) %30 "main" %24
-      OpExecutionMode %30 ExecutionMode(OriginUpperLeft)
-%31 = OpString "../resources/Shader.nzsl"
-%32 = OpString "../resources/modules/Color.nzsl"
-%33 = OpString "../resources/modules/Data/OutputStruct.nzsl"
-      OpSource SourceLanguage(NZSL) 100 %31
+      OpEntryPoint ExecutionModel(Fragment) %31 "main" %25
+      OpExecutionMode %31 ExecutionMode(OriginUpperLeft)
+%32 = OpString "../resources/Shader.nzsl"
+%33 = OpString "../resources/modules/Color.nzsl"
+%34 = OpString "../resources/modules/Data/OutputStruct.nzsl"
+      OpSource SourceLanguage(NZSL) 4194304 %32
       OpSourceExtension "ModuleName: Shader"
       OpSourceExtension "Author: SirLynix"
       OpSourceExtension "Description: Test module"
       OpSourceExtension "License: MIT"
-      OpSource SourceLanguage(NZSL) 100 %32
+      OpSource SourceLanguage(NZSL) 4194304 %33
       OpSourceExtension "ModuleName: Color"
       OpSourceExtension "Author: SirLynix"
       OpSourceExtension "Description: Test color module"
       OpSourceExtension "License: MIT"
-      OpSource SourceLanguage(NZSL) 100
+      OpSource SourceLanguage(NZSL) 4194304
       OpSourceExtension "ModuleName: DataStruct"
-      OpSource SourceLanguage(NZSL) 100 %33
+      OpSource SourceLanguage(NZSL) 4194304 %34
       OpSourceExtension "ModuleName: OutputStruct"
-      OpName %12 "Data"
-      OpMemberName %12 0 "color"
-      OpName %18 "PushConstants"
-      OpMemberName %18 0 "color"
-      OpName %25 "Output"
-      OpMemberName %25 0 "color"
+      OpName %11 "Data"
+      OpMemberName %11 0 "color"
+      OpName %19 "PushConstants"
+      OpMemberName %19 0 "color"
+      OpName %26 "Output"
+      OpMemberName %26 0 "color"
       OpName %5 "tex1"
-      OpName %20 "ExternalResources_constants"
-      OpName %24 "color"
-      OpName %27 "GenerateColor"
-      OpName %28 "GetColor"
-      OpName %29 "GetColorFromData"
-      OpName %30 "main"
+      OpName %21 "ExternalResources_constants"
+      OpName %25 "color"
+      OpName %28 "GenerateColor"
+      OpName %29 "GetColor"
+      OpName %30 "GetColorFromData"
+      OpName %31 "main"
       OpDecorate %5 Decoration(Binding) 0
       OpDecorate %5 Decoration(DescriptorSet) 0
-      OpDecorate %24 Decoration(Location) 0
-      OpMemberDecorate %12 0 Decoration(Offset) 0
-      OpDecorate %18 Decoration(Block)
-      OpMemberDecorate %18 0 Decoration(Offset) 0
-      OpMemberDecorate %25 0 Decoration(Offset) 0
+      OpDecorate %25 Decoration(Location) 0
+      OpMemberDecorate %11 0 Decoration(Offset) 0
+      OpDecorate %19 Decoration(Block)
+      OpMemberDecorate %19 0 Decoration(Offset) 0
+      OpMemberDecorate %26 0 Decoration(Offset) 0
  %1 = OpTypeFloat 32
  %2 = OpTypeImage %1 Dim(Dim2D) 0 0 0 1 ImageFormat(Unknown)
  %3 = OpTypeSampledImage %2
  %4 = OpTypePointer StorageClass(UniformConstant) %3
  %6 = OpTypeVector %1 4
  %7 = OpTypeFunction %6
- %8 = OpConstant %1 f32(0)
- %9 = OpTypeInt 32 1
-%10 = OpConstant %9 i32(0)
-%11 = OpTypeVector %1 2
-%12 = OpTypeStruct %6
-%13 = OpTypePointer StorageClass(Function) %12
-%14 = OpTypeFunction %6 %13
-%15 = OpConstant %1 f32(0.5)
-%16 = OpConstant %1 f32(1)
-%17 = OpConstantComposite %6 %15 %15 %15 %16
-%18 = OpTypeStruct %6
-%19 = OpTypePointer StorageClass(PushConstant) %18
-%21 = OpTypeVoid
-%22 = OpTypeFunction %21
-%23 = OpTypePointer StorageClass(Output) %6
-%25 = OpTypeStruct %6
-%26 = OpTypePointer StorageClass(Function) %25
+ %8 = OpTypeVector %1 2
+ %9 = OpConstant %1 f32(0)
+%10 = OpConstantComposite %8 %9 %9
+%11 = OpTypeStruct %6
+%12 = OpTypePointer StorageClass(Function) %11
+%13 = OpTypeFunction %6 %12
+%14 = OpTypeInt 32 1
+%15 = OpConstant %14 i32(0)
+%16 = OpConstant %1 f32(0.5)
+%17 = OpConstant %1 f32(1)
+%18 = OpConstantComposite %6 %16 %16 %16 %17
+%19 = OpTypeStruct %6
+%20 = OpTypePointer StorageClass(PushConstant) %19
+%22 = OpTypeVoid
+%23 = OpTypeFunction %22
+%24 = OpTypePointer StorageClass(Output) %6
+%26 = OpTypeStruct %6
+%27 = OpTypePointer StorageClass(Function) %26
 %42 = OpTypePointer StorageClass(Function) %6
 %54 = OpTypePointer StorageClass(PushConstant) %6
  %5 = OpVariable %4 StorageClass(UniformConstant)
-%20 = OpVariable %19 StorageClass(PushConstant)
-%24 = OpVariable %23 StorageClass(Output)
-      OpLine %32 13 1
-%27 = OpFunction %6 FunctionControl(0) %7
-%34 = OpLabel
+%21 = OpVariable %20 StorageClass(PushConstant)
+%25 = OpVariable %24 StorageClass(Output)
+      OpLine %33 13 1
+%28 = OpFunction %6 FunctionControl(0) %7
+%35 = OpLabel
       OpNoLine
-      OpLine %32 15 5
-      OpLine %32 15 12
-%35 = OpLoad %3 %5
-      OpLine %32 15 24
-%36 = OpCompositeConstruct %11 %8 %8
-      OpLine %32 15 12
-%37 = OpImageSampleImplicitLod %6 %35 %36
+      OpLine %33 15 5
+      OpLine %33 15 12
+%36 = OpLoad %3 %5
+%37 = OpImageSampleImplicitLod %6 %36 %10
       OpReturnValue %37
       OpFunctionEnd
-      OpLine %32 32 1
-%28 = OpFunction %6 FunctionControl(0) %7
+      OpLine %33 32 1
+%29 = OpFunction %6 FunctionControl(0) %7
 %38 = OpLabel
       OpNoLine
-      OpLine %32 34 5
-      OpLine %32 34 12
-%39 = OpFunctionCall %6 %27
+      OpLine %33 34 5
+      OpLine %33 34 12
+%39 = OpFunctionCall %6 %28
       OpReturnValue %39
       OpFunctionEnd
-      OpLine %33 9 1
-%29 = OpFunction %6 FunctionControl(0) %14
-      OpLine %33 9 21
-%40 = OpFunctionParameter %13
+      OpLine %34 9 1
+%30 = OpFunction %6 FunctionControl(0) %13
+      OpLine %34 9 21
+%40 = OpFunctionParameter %12
 %41 = OpLabel
       OpNoLine
-      OpLine %33 11 5
-      OpLine %33 11 12
-%43 = OpAccessChain %42 %40 %10
+      OpLine %34 11 5
+      OpLine %34 11 12
+%43 = OpAccessChain %42 %40 %15
 %44 = OpLoad %6 %43
-%45 = OpFMul %6 %44 %17
+%45 = OpFMul %6 %44 %18
       OpReturnValue %45
       OpFunctionEnd
-      OpLine %31 23 1
-%30 = OpFunction %21 FunctionControl(0) %22
+      OpLine %32 23 1
+%31 = OpFunction %22 FunctionControl(0) %23
 %46 = OpLabel
       OpNoLine
-      OpLine %31 25 5
-%47 = OpVariable %13 StorageClass(Function)
-      OpLine %31 28 5
-%48 = OpVariable %26 StorageClass(Function)
-      OpLine %31 29 37
-%49 = OpVariable %13 StorageClass(Function)
-      OpLine %31 26 18
-%50 = OpFunctionCall %6 %28
-      OpLine %31 26 5
-%51 = OpAccessChain %42 %47 %10
+      OpLine %32 25 5
+%47 = OpVariable %12 StorageClass(Function)
+      OpLine %32 28 5
+%48 = OpVariable %27 StorageClass(Function)
+      OpLine %32 29 37
+%49 = OpVariable %12 StorageClass(Function)
+      OpLine %32 26 18
+%50 = OpFunctionCall %6 %29
+      OpLine %32 26 5
+%51 = OpAccessChain %42 %47 %15
       OpStore %51 %50
-      OpLine %31 29 37
-%52 = OpLoad %12 %47
+      OpLine %32 29 37
+%52 = OpLoad %11 %47
       OpStore %49 %52
-      OpLine %31 29 20
-%53 = OpFunctionCall %6 %29 %49
-      OpLine %31 29 45
-%55 = OpAccessChain %54 %20 %10
+      OpLine %32 29 20
+%53 = OpFunctionCall %6 %30 %49
+      OpLine %32 29 45
+%55 = OpAccessChain %54 %21 %15
 %56 = OpLoad %6 %55
-      OpLine %31 29 20
+      OpLine %32 29 20
 %57 = OpFMul %6 %53 %56
-      OpLine %31 29 5
-%58 = OpAccessChain %42 %48 %10
+      OpLine %32 29 5
+%58 = OpAccessChain %42 %48 %15
       OpStore %58 %57
-      OpLine %31 31 12
-%59 = OpLoad %25 %48
+      OpLine %32 31 12
+%59 = OpLoad %26 %48
 %60 = OpCompositeExtract %6 %59 0
-      OpStore %24 %60
-      OpLine %31 31 5
+      OpStore %25 %60
+      OpLine %32 31 5
       OpReturn
       OpFunctionEnd)", options, {}, true);
 		}
@@ -681,8 +677,7 @@ uniform sampler2D tex1_Color;
 // @../resources/modules/Color.nzsl:13:1
 vec4 GenerateColor_Color()
 {
-	float _nzsl_cachedResult = 0.0;
-	return texture(tex1_Color, vec2(_nzsl_cachedResult, _nzsl_cachedResult));
+	return texture(tex1_Color, vec2(0.0, 0.0));
 }
 
 // @../resources/modules/Color.nzsl:32:1
@@ -812,12 +807,12 @@ void main()
 			ExpectSPIRV(*shaderModule, R"(
       OpCapability Capability(Shader)
       OpMemoryModel AddressingModel(Logical) MemoryModel(GLSL450)
-      OpEntryPoint ExecutionModel(Fragment) %30 "main" %24
-      OpExecutionMode %30 ExecutionMode(OriginUpperLeft)
-%31 = OpString "../resources/Shader.nzsl"
-%32 = OpString "../resources/modules/Color.nzsl"
-%33 = OpString "../resources/modules/Data/OutputStruct.nzsl"
-      OpSource SourceLanguage(NZSL) 100 %31 "[nzsl_version("1.0")]
+      OpEntryPoint ExecutionModel(Fragment) %31 "main" %25
+      OpExecutionMode %31 ExecutionMode(OriginUpperLeft)
+%32 = OpString "../resources/Shader.nzsl"
+%33 = OpString "../resources/modules/Color.nzsl"
+%34 = OpString "../resources/modules/Data/OutputStruct.nzsl"
+      OpSource SourceLanguage(NZSL) 4194304 %32 "[nzsl_version("1.0")]
 [author("SirLynix")]
 [desc("Test module")]
 [license("MIT")]
@@ -854,7 +849,7 @@ fn main() -> Output
       OpSourceExtension "Author: SirLynix"
       OpSourceExtension "Description: Test module"
       OpSourceExtension "License: MIT"
-      OpSource SourceLanguage(NZSL) 100 %32 "[nzsl_version("1.0")]
+      OpSource SourceLanguage(NZSL) 4194304 %33 "[nzsl_version("1.0")]
 [author("SirLynix")]
 [desc("Test color module")]
 [license("MIT")]
@@ -900,9 +895,9 @@ fn GetAnotherColor() -> vec4[f32]
       OpSourceExtension "Author: SirLynix"
       OpSourceExtension "Description: Test color module"
       OpSourceExtension "License: MIT"
-      OpSource SourceLanguage(NZSL) 100
+      OpSource SourceLanguage(NZSL) 4194304
       OpSourceExtension "ModuleName: DataStruct"
-      OpSource SourceLanguage(NZSL) 100 %33 "[nzsl_version("1.0")]
+      OpSource SourceLanguage(NZSL) 4194304 %34 "[nzsl_version("1.0")]
 module OutputStruct;
 
 import * from DataStruct;
@@ -922,122 +917,120 @@ struct Output
 }
 "
       OpSourceExtension "ModuleName: OutputStruct"
-      OpName %12 "Data"
-      OpMemberName %12 0 "color"
-      OpName %18 "PushConstants"
-      OpMemberName %18 0 "color"
-      OpName %25 "Output"
-      OpMemberName %25 0 "color"
+      OpName %11 "Data"
+      OpMemberName %11 0 "color"
+      OpName %19 "PushConstants"
+      OpMemberName %19 0 "color"
+      OpName %26 "Output"
+      OpMemberName %26 0 "color"
       OpName %5 "tex1"
-      OpName %20 "ExternalResources_constants"
-      OpName %24 "color"
-      OpName %27 "GenerateColor"
-      OpName %28 "GetColor"
-      OpName %29 "GetColorFromData"
-      OpName %30 "main"
+      OpName %21 "ExternalResources_constants"
+      OpName %25 "color"
+      OpName %28 "GenerateColor"
+      OpName %29 "GetColor"
+      OpName %30 "GetColorFromData"
+      OpName %31 "main"
       OpDecorate %5 Decoration(Binding) 0
       OpDecorate %5 Decoration(DescriptorSet) 0
-      OpDecorate %24 Decoration(Location) 0
-      OpMemberDecorate %12 0 Decoration(Offset) 0
-      OpDecorate %18 Decoration(Block)
-      OpMemberDecorate %18 0 Decoration(Offset) 0
-      OpMemberDecorate %25 0 Decoration(Offset) 0
+      OpDecorate %25 Decoration(Location) 0
+      OpMemberDecorate %11 0 Decoration(Offset) 0
+      OpDecorate %19 Decoration(Block)
+      OpMemberDecorate %19 0 Decoration(Offset) 0
+      OpMemberDecorate %26 0 Decoration(Offset) 0
  %1 = OpTypeFloat 32
  %2 = OpTypeImage %1 Dim(Dim2D) 0 0 0 1 ImageFormat(Unknown)
  %3 = OpTypeSampledImage %2
  %4 = OpTypePointer StorageClass(UniformConstant) %3
  %6 = OpTypeVector %1 4
  %7 = OpTypeFunction %6
- %8 = OpConstant %1 f32(0)
- %9 = OpTypeInt 32 1
-%10 = OpConstant %9 i32(0)
-%11 = OpTypeVector %1 2
-%12 = OpTypeStruct %6
-%13 = OpTypePointer StorageClass(Function) %12
-%14 = OpTypeFunction %6 %13
-%15 = OpConstant %1 f32(0.5)
-%16 = OpConstant %1 f32(1)
-%17 = OpConstantComposite %6 %15 %15 %15 %16
-%18 = OpTypeStruct %6
-%19 = OpTypePointer StorageClass(PushConstant) %18
-%21 = OpTypeVoid
-%22 = OpTypeFunction %21
-%23 = OpTypePointer StorageClass(Output) %6
-%25 = OpTypeStruct %6
-%26 = OpTypePointer StorageClass(Function) %25
+ %8 = OpTypeVector %1 2
+ %9 = OpConstant %1 f32(0)
+%10 = OpConstantComposite %8 %9 %9
+%11 = OpTypeStruct %6
+%12 = OpTypePointer StorageClass(Function) %11
+%13 = OpTypeFunction %6 %12
+%14 = OpTypeInt 32 1
+%15 = OpConstant %14 i32(0)
+%16 = OpConstant %1 f32(0.5)
+%17 = OpConstant %1 f32(1)
+%18 = OpConstantComposite %6 %16 %16 %16 %17
+%19 = OpTypeStruct %6
+%20 = OpTypePointer StorageClass(PushConstant) %19
+%22 = OpTypeVoid
+%23 = OpTypeFunction %22
+%24 = OpTypePointer StorageClass(Output) %6
+%26 = OpTypeStruct %6
+%27 = OpTypePointer StorageClass(Function) %26
 %42 = OpTypePointer StorageClass(Function) %6
 %54 = OpTypePointer StorageClass(PushConstant) %6
  %5 = OpVariable %4 StorageClass(UniformConstant)
-%20 = OpVariable %19 StorageClass(PushConstant)
-%24 = OpVariable %23 StorageClass(Output)
-      OpLine %32 13 1
-%27 = OpFunction %6 FunctionControl(0) %7
-%34 = OpLabel
+%21 = OpVariable %20 StorageClass(PushConstant)
+%25 = OpVariable %24 StorageClass(Output)
+      OpLine %33 13 1
+%28 = OpFunction %6 FunctionControl(0) %7
+%35 = OpLabel
       OpNoLine
-      OpLine %32 15 5
-      OpLine %32 15 12
-%35 = OpLoad %3 %5
-      OpLine %32 15 24
-%36 = OpCompositeConstruct %11 %8 %8
-      OpLine %32 15 12
-%37 = OpImageSampleImplicitLod %6 %35 %36
+      OpLine %33 15 5
+      OpLine %33 15 12
+%36 = OpLoad %3 %5
+%37 = OpImageSampleImplicitLod %6 %36 %10
       OpReturnValue %37
       OpFunctionEnd
-      OpLine %32 32 1
-%28 = OpFunction %6 FunctionControl(0) %7
+      OpLine %33 32 1
+%29 = OpFunction %6 FunctionControl(0) %7
 %38 = OpLabel
       OpNoLine
-      OpLine %32 34 5
-      OpLine %32 34 12
-%39 = OpFunctionCall %6 %27
+      OpLine %33 34 5
+      OpLine %33 34 12
+%39 = OpFunctionCall %6 %28
       OpReturnValue %39
       OpFunctionEnd
-      OpLine %33 9 1
-%29 = OpFunction %6 FunctionControl(0) %14
-      OpLine %33 9 21
-%40 = OpFunctionParameter %13
+      OpLine %34 9 1
+%30 = OpFunction %6 FunctionControl(0) %13
+      OpLine %34 9 21
+%40 = OpFunctionParameter %12
 %41 = OpLabel
       OpNoLine
-      OpLine %33 11 5
-      OpLine %33 11 12
-%43 = OpAccessChain %42 %40 %10
+      OpLine %34 11 5
+      OpLine %34 11 12
+%43 = OpAccessChain %42 %40 %15
 %44 = OpLoad %6 %43
-%45 = OpFMul %6 %44 %17
+%45 = OpFMul %6 %44 %18
       OpReturnValue %45
       OpFunctionEnd
-      OpLine %31 23 1
-%30 = OpFunction %21 FunctionControl(0) %22
+      OpLine %32 23 1
+%31 = OpFunction %22 FunctionControl(0) %23
 %46 = OpLabel
       OpNoLine
-      OpLine %31 25 5
-%47 = OpVariable %13 StorageClass(Function)
-      OpLine %31 28 5
-%48 = OpVariable %26 StorageClass(Function)
-      OpLine %31 29 37
-%49 = OpVariable %13 StorageClass(Function)
-      OpLine %31 26 18
-%50 = OpFunctionCall %6 %28
-      OpLine %31 26 5
-%51 = OpAccessChain %42 %47 %10
+      OpLine %32 25 5
+%47 = OpVariable %12 StorageClass(Function)
+      OpLine %32 28 5
+%48 = OpVariable %27 StorageClass(Function)
+      OpLine %32 29 37
+%49 = OpVariable %12 StorageClass(Function)
+      OpLine %32 26 18
+%50 = OpFunctionCall %6 %29
+      OpLine %32 26 5
+%51 = OpAccessChain %42 %47 %15
       OpStore %51 %50
-      OpLine %31 29 37
-%52 = OpLoad %12 %47
+      OpLine %32 29 37
+%52 = OpLoad %11 %47
       OpStore %49 %52
-      OpLine %31 29 20
-%53 = OpFunctionCall %6 %29 %49
-      OpLine %31 29 45
-%55 = OpAccessChain %54 %20 %10
+      OpLine %32 29 20
+%53 = OpFunctionCall %6 %30 %49
+      OpLine %32 29 45
+%55 = OpAccessChain %54 %21 %15
 %56 = OpLoad %6 %55
-      OpLine %31 29 20
+      OpLine %32 29 20
 %57 = OpFMul %6 %53 %56
-      OpLine %31 29 5
-%58 = OpAccessChain %42 %48 %10
+      OpLine %32 29 5
+%58 = OpAccessChain %42 %48 %15
       OpStore %58 %57
-      OpLine %31 31 12
-%59 = OpLoad %25 %48
+      OpLine %32 31 12
+%59 = OpLoad %26 %48
 %60 = OpCompositeExtract %6 %59 0
-      OpStore %24 %60
-      OpLine %31 31 5
+      OpStore %25 %60
+      OpLine %32 31 5
       OpReturn
       OpFunctionEnd)", options, {}, true);
 		}

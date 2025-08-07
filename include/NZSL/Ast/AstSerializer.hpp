@@ -86,7 +86,7 @@ namespace nzsl::Ast
 			virtual bool IsVersionGreaterOrEqual(std::uint32_t version) const = 0;
 			virtual bool IsWriting() const = 0;
 
-			inline void Metadata(Module::Metadata& metadata);
+			void Metadata(Module::Metadata& metadata);
 
 			virtual void Node(ExpressionPtr& node) = 0;
 			virtual void Node(StatementPtr& node) = 0;
@@ -105,10 +105,12 @@ namespace nzsl::Ast
 			virtual void Value(float& val) = 0;
 			virtual void Value(std::string& val) = 0;
 			virtual void Value(std::int32_t& val) = 0;
+			virtual void Value(std::int64_t& val) = 0;
 			virtual void Value(std::uint8_t& val) = 0;
 			virtual void Value(std::uint16_t& val) = 0;
 			virtual void Value(std::uint32_t& val) = 0;
 			virtual void Value(std::uint64_t& val) = 0;
+			template<typename T> void Value(Literal<T>& val);
 			template<typename T, std::size_t N> void Value(Vector<T, N>& val);
 	};
 
@@ -135,6 +137,7 @@ namespace nzsl::Ast
 			void Value(float& val) override;
 			void Value(std::string& val) override;
 			void Value(std::int32_t& val) override;
+			void Value(std::int64_t& val) override;
 			void Value(std::uint8_t& val) override;
 			void Value(std::uint16_t& val) override;
 			void Value(std::uint32_t& val) override;
@@ -167,6 +170,7 @@ namespace nzsl::Ast
 			void Value(float& val) override;
 			void Value(std::string& val) override;
 			void Value(std::int32_t& val) override;
+			void Value(std::int64_t& val) override;
 			void Value(std::uint8_t& val) override;
 			void Value(std::uint16_t& val) override;
 			void Value(std::uint32_t& val) override;

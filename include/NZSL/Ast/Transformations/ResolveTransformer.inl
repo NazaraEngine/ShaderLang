@@ -4,7 +4,7 @@
 
 namespace nzsl::Ast
 {
-	inline bool ResolveTransformer::Transform(Module& module, Context& context, std::string* error)
+	inline bool ResolveTransformer::Transform(Module& module, TransformerContext& context, std::string* error)
 	{
 		return Transform(module, context, {}, error);
 	}

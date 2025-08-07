@@ -286,17 +286,17 @@ fn main()
 {
 	let color: vec4[f32] = (0.0).xxxx;
 	{
-		let light: Light = data.lights[u32(0)];
+		let light: Light = data.lights[0];
 		color += light.color;
 	}
 
 	{
-		let light: Light = data.lights[u32(1)];
+		let light: Light = data.lights[1];
 		color += light.color;
 	}
 
 	{
-		let light: Light = data.lights[u32(2)];
+		let light: Light = data.lights[2];
 		color += light.color;
 	}
 
@@ -347,7 +347,7 @@ fn main()
 		// First pass
 		nzsl::Ast::ResolveTransformer resolverTransformer;
 		{
-			nzsl::Ast::Transformer::Context context;
+			nzsl::Ast::TransformerContext context;
 			context.partialCompilation = true;
 
 			REQUIRE_NOTHROW(resolverTransformer.Transform(*shaderModule, context, {}));
@@ -358,7 +358,7 @@ fn main()
 			nzsl::Ast::ResolveTransformer::Options resolverOptions;
 			resolverOptions.moduleResolver = resolver;
 
-			nzsl::Ast::Transformer::Context context;
+			nzsl::Ast::TransformerContext context;
 
 			REQUIRE_NOTHROW(resolverTransformer.Transform(*shaderModule, context, resolverOptions));
 		}

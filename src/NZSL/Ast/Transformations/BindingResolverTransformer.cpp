@@ -6,10 +6,11 @@
 #include <NazaraUtils/CallOnExit.hpp>
 #include <NazaraUtils/StackVector.hpp>
 #include <NZSL/Lang/Errors.hpp>
+#include <NZSL/Ast/Transformations/TransformerContext.hpp>
 
 namespace nzsl::Ast
 {
-	bool BindingResolverTransformer::Transform(Module& module, Context& context, const Options& options, std::string* error)
+	bool BindingResolverTransformer::Transform(Module& module, TransformerContext& context, const Options& options, std::string* error)
 	{
 		m_usedBindingIndexes.clear();
 		m_currentConditionalIndex = 0;

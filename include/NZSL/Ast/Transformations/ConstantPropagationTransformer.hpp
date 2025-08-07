@@ -23,12 +23,12 @@ namespace nzsl::Ast
 			ConstantPropagationTransformer(ConstantPropagationTransformer&&) = delete;
 			~ConstantPropagationTransformer() = default;
 
-			inline bool Transform(ExpressionPtr& expression, Context& context, std::string* error = nullptr);
-			inline bool Transform(ExpressionPtr& expression, Context& context, const Options& options, std::string* error = nullptr);
-			inline bool Transform(Module& shaderModule, Context& context, std::string* error = nullptr);
-			inline bool Transform(Module& shaderModule, Context& context, const Options& options, std::string* error = nullptr);
-			inline bool Transform(StatementPtr& statement, Context& context, std::string* error = nullptr);
-			inline bool Transform(StatementPtr& statement, Context& context, const Options& options, std::string* error = nullptr);
+			inline bool Transform(ExpressionPtr& expression, TransformerContext& context, std::string* error = nullptr);
+			inline bool Transform(ExpressionPtr& expression, TransformerContext& context, const Options& options, std::string* error = nullptr);
+			inline bool Transform(Module& shaderModule, TransformerContext& context, std::string* error = nullptr);
+			inline bool Transform(Module& shaderModule, TransformerContext& context, const Options& options, std::string* error = nullptr);
+			inline bool Transform(StatementPtr& statement, TransformerContext& context, std::string* error = nullptr);
+			inline bool Transform(StatementPtr& statement, TransformerContext& context, const Options& options, std::string* error = nullptr);
 
 			ConstantPropagationTransformer& operator=(const ConstantPropagationTransformer&) = delete;
 			ConstantPropagationTransformer& operator=(ConstantPropagationTransformer&&) = delete;
@@ -57,12 +57,11 @@ namespace nzsl::Ast
 
 			template<BinaryType Type> ExpressionPtr PropagateBinaryArithmeticsConstant(const ConstantValueExpression& lhs, const ConstantValueExpression& rhs, const SourceLocation& sourceLocation);
 			template<BinaryType Type> ExpressionPtr PropagateBinaryComparisonConstant(const ConstantValueExpression& lhs, const ConstantValueExpression& rhs, const SourceLocation& sourceLocation);
+			ExpressionPtr PropagateConstantSwizzle(std::size_t targetComponentCount, const std::array<std::uint32_t, 4>& components, const ConstantValueExpression& operand, const SourceLocation& sourceLocation);
 			template<typename TargetType> ExpressionPtr PropagateSingleValueCast(const ConstantValueExpression& operand, const SourceLocation& sourceLocation);
-			template<std::size_t TargetComponentCount> ExpressionPtr PropagateConstantSwizzle(const std::array<std::uint32_t, 4>& components, const ConstantValueExpression& operand, const SourceLocation& sourceLocation);
 			template<UnaryType Type> ExpressionPtr PropagateUnaryConstant(const ConstantValueExpression& operand, const SourceLocation& sourceLocation);
-			template<typename TargetType> ExpressionPtr PropagateVec2Cast(TargetType v1, TargetType v2, const SourceLocation& sourceLocation);
-			template<typename TargetType> ExpressionPtr PropagateVec3Cast(TargetType v1, TargetType v2, TargetType v3, const SourceLocation& sourceLocation);
-			template<typename TargetType> ExpressionPtr PropagateVec4Cast(TargetType v1, TargetType v2, TargetType v3, TargetType v4, const SourceLocation& sourceLocation);
+
+			template<typename T, typename Other> static auto ResolveUntypedIfNecessary(T value);
 
 		private:
 			const Options* m_options;

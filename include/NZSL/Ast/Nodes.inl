@@ -38,4 +38,17 @@ namespace nzsl::Ast
 			return false;
 		}
 	}
+
+	std::string_view ToString(NodeType nodeType)
+	{
+		switch (nodeType)
+		{
+			case NodeType::None: return "None";
+
+#define NZSL_SHADERAST_NODE(Node, Type) case NodeType::Node##Type: return #Node #Type;
+#include <NZSL/Ast/NodeList.hpp>
+		}
+
+		NAZARA_UNREACHABLE();
+	}
 }

@@ -5,22 +5,52 @@
 #include <NZSL/Ast/Transformations/Transformer.hpp>
 #include <NZSL/Ast/Utils.hpp>
 #include <NZSL/Lang/Errors.hpp>
+#include <NZSL/Ast/Transformations/ConstantPropagationTransformer.hpp>
+#include <NZSL/Ast/Transformations/TransformerContext.hpp>
 #include <fmt/format.h>
 
 namespace nzsl::Ast
 {
-	StatementPtr Transformer::Unscope(StatementPtr&& statement)
-	{
-		if (statement->GetType() == NodeType::ScopedStatement)
-			return std::move(static_cast<ScopedStatement&>(*statement).statement);
-		else
-			return std::move(statement);
-	}
-
 	void Transformer::AppendStatement(StatementPtr statement)
 	{
 		m_currentStatementList->insert(m_currentStatementList->begin() + m_currentStatementListIndex, std::move(statement));
 		m_currentStatementListIndex++;
+	}
+
+	Stringifier Transformer::BuildStringifier(const SourceLocation& sourceLocation) const
+	{
+		Stringifier stringifier;
+		stringifier.aliasStringifier = [&](std::size_t aliasIndex)
+		{
+			return m_context->aliases.Retrieve(aliasIndex, sourceLocation).identifier.name;
+		};
+
+		stringifier.moduleStringifier = [&](std::size_t moduleIndex)
+		{
+			const auto& moduleData = m_context->modules.Retrieve(moduleIndex, sourceLocation);
+			return (!moduleData.name.empty()) ? moduleData.name : fmt::format("<anonymous module #{}>", moduleIndex);
+		};
+
+		stringifier.namedExternalBlockStringifier = [&](std::size_t namedExternalBlockIndex)
+		{
+			return m_context->namedExternalBlocks.Retrieve(namedExternalBlockIndex, sourceLocation).name;
+		};
+
+		stringifier.structStringifier = [&](std::size_t structIndex)
+		{
+			return m_context->structs.Retrieve(structIndex, sourceLocation).description->name;
+		};
+
+		stringifier.typeStringifier = [&](std::size_t typeIndex)
+		{
+			const auto& typeData = m_context->types.Retrieve(typeIndex, sourceLocation);
+			return std::visit(Nz::Overloaded{
+				[&](const ExpressionType& exprType) { return ToString(exprType, sourceLocation); },
+				[&](const PartialType& /*partialType*/) { return fmt::format("{} (partial)", typeData.name); },
+			}, typeData.content);
+		};
+
+		return stringifier;
 	}
 
 	ExpressionPtr Transformer::CacheExpression(ExpressionPtr expression)
@@ -36,14 +66,17 @@ namespace nzsl::Ast
 		auto varExpr = std::make_unique<VariableValueExpression>();
 		varExpr->sourceLocation = variableDeclaration->sourceLocation;
 		varExpr->variableId = *variableDeclaration->varIndex;
-		varExpr->cachedExpressionType = variableDeclaration->varType.GetResultingValue();
+		//if (variableDeclaration->varType.IsResultingValue())
+			varExpr->cachedExpressionType = variableDeclaration->varType.GetResultingValue();
 
 		return varExpr;
 	}
 
 	DeclareVariableStatement* Transformer::DeclareVariable(std::string_view name, ExpressionPtr initialExpr)
 	{
-		DeclareVariableStatement* var = DeclareVariable(name, *GetExpressionType(*initialExpr, false), initialExpr->sourceLocation);
+		ExpressionType expressionType = *GetExpressionType(*initialExpr, false);
+
+		DeclareVariableStatement* var = DeclareVariable(name, std::move(expressionType), initialExpr->sourceLocation);
 		var->initialExpression = std::move(initialExpr);
 
 		return var;
@@ -55,8 +88,9 @@ namespace nzsl::Ast
 
 		auto variableDeclaration = ShaderBuilder::DeclareVariable(fmt::format("_nzsl_{}", name), nullptr);
 		variableDeclaration->sourceLocation = std::move(sourceLocation);
-		variableDeclaration->varIndex = m_context->nextVariableIndex++;
-		variableDeclaration->varType = std::move(type);
+		variableDeclaration->varIndex = m_context->variables.RegisterNewIndex();
+		//if (!IsLiteralType(type))
+			variableDeclaration->varType = std::move(type);
 
 		DeclareVariableStatement* varPtr = variableDeclaration.get();
 		AppendStatement(std::move(variableDeclaration));
@@ -581,6 +615,34 @@ namespace nzsl::Ast
 	{
 	}
 
+	void Transformer::PropagateConstants(ExpressionPtr& expr) const
+	{
+		// Run optimizer on constant value to hopefully retrieve a single constant value
+
+		ConstantPropagationTransformer::Options optimizerOptions;
+		optimizerOptions.constantQueryCallback = [&](std::size_t constantId) -> const ConstantValue*
+		{
+			const TransformerContext::ConstantData* constantData = m_context->constants.TryRetrieve(constantId, expr->sourceLocation);
+			if (!constantData || !constantData->value)
+			{
+				if (!m_context->partialCompilation)
+					throw AstInvalidConstantIndexError{ expr->sourceLocation, constantId };
+
+				return nullptr;
+			}
+
+			return &constantData->value.value();
+		};
+
+		ConstantPropagationTransformer constantPropagation;
+		constantPropagation.Transform(expr, *m_context, optimizerOptions);
+	}
+
+	std::string Transformer::ToString(const ExpressionType& exprType, const SourceLocation& sourceLocation) const
+	{
+		return Ast::ToString(exprType, BuildStringifier(sourceLocation));
+	}
+
 #define NZSL_SHADERAST_NODE(Node, Type) \
 	auto Transformer::Transform(Node##Type&& /*node*/) -> Type##Transformation \
 	{ \
@@ -601,7 +663,7 @@ namespace nzsl::Ast
 			Transform(expressionValue.GetResultingValue());
 	}
 
-	bool Transformer::TransformExpression(ExpressionPtr& expression, Context& context, std::string* error)
+	bool Transformer::TransformExpression(ExpressionPtr& expression, TransformerContext& context, std::string* error)
 	{
 		m_context = &context;
 
@@ -621,7 +683,7 @@ namespace nzsl::Ast
 		return true;
 	}
 
-	bool Transformer::TransformImportedModules(Module& module, Context& context, std::string* error)
+	bool Transformer::TransformImportedModules(Module& module, TransformerContext& context, std::string* error)
 	{
 		for (auto& importedModule : module.importedModules)
 		{
@@ -632,7 +694,7 @@ namespace nzsl::Ast
 		return true;
 	}
 
-	bool Transformer::TransformModule(Module& module, Context& context, std::string* error, Nz::FunctionRef<void()> postCallback)
+	bool Transformer::TransformModule(Module& module, TransformerContext& context, std::string* error, Nz::FunctionRef<void()> postCallback)
 	{
 		m_context = &context;
 
@@ -657,7 +719,7 @@ namespace nzsl::Ast
 		return true;
 	}
 
-	bool Transformer::TransformStatement(StatementPtr& statement, Context& context, std::string* error)
+	bool Transformer::TransformStatement(StatementPtr& statement, TransformerContext& context, std::string* error)
 	{
 		m_context = &context;
 

@@ -8,7 +8,7 @@
 
 namespace nzsl::Ast
 {
-	bool SwizzleTransformer::Transform(Module& module, Context& context, const Options& options, std::string* error)
+	bool SwizzleTransformer::Transform(Module& module, TransformerContext& context, const Options& options, std::string* error)
 	{
 		m_options = &options;
 

@@ -89,7 +89,7 @@ fn main()
       OpMemoryModel AddressingModel(Logical) MemoryModel(GLSL450)
       OpEntryPoint ExecutionModel(Fragment) %10 "main"
       OpExecutionMode %10 ExecutionMode(OriginUpperLeft)
-      OpSource SourceLanguage(NZSL) 100
+      OpSource SourceLanguage(NZSL) 4194304
       OpName %3 "Foo"
       OpMemberName %3 0 "v0"
       OpMemberName %3 1 "v1"
@@ -234,7 +234,7 @@ fn main()
       OpMemoryModel AddressingModel(Logical) MemoryModel(GLSL450)
       OpEntryPoint ExecutionModel(Fragment) %15 "main"
       OpExecutionMode %15 ExecutionMode(OriginUpperLeft)
-      OpSource SourceLanguage(NZSL) 100
+      OpSource SourceLanguage(NZSL) 4194304
       OpName %7 "Bar"
       OpMemberName %7 0 "v0"
       OpName %8 "Foo"
@@ -343,7 +343,7 @@ fn main()
       OpMemoryModel AddressingModel(Logical) MemoryModel(GLSL450)
       OpEntryPoint ExecutionModel(Fragment) %10 "main"
       OpExecutionMode %10 ExecutionMode(OriginUpperLeft)
-      OpSource SourceLanguage(NZSL) 100
+      OpSource SourceLanguage(NZSL) 4194304
       OpName %3 "Foo"
       OpMemberName %3 0 "v0"
       OpMemberName %3 1 "v1"
@@ -383,7 +383,7 @@ fn main()
       OpMemoryModel AddressingModel(Logical) MemoryModel(GLSL450)
       OpEntryPoint ExecutionModel(Fragment) %10 "main"
       OpExecutionMode %10 ExecutionMode(OriginUpperLeft)
-      OpSource SourceLanguage(NZSL) 100
+      OpSource SourceLanguage(NZSL) 4194304
       OpName %3 "Foo"
       OpMemberName %3 0 "v0"
       OpMemberName %3 1 "v1"

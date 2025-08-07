@@ -11,7 +11,9 @@
 #include <glslang/Public/ShaderLang.h>
 #include <spirv-tools/libspirv.hpp>
 #include <NZSL/Ast/Transformations/BindingResolverTransformer.hpp>
+#include <NZSL/Ast/Transformations/LiteralTransformer.hpp>
 #include <NZSL/Ast/Cloner.hpp>
+#include <sstream>
 
 namespace NAZARA_ANONYMOUS_NAMESPACE
 {
@@ -185,11 +187,43 @@ namespace NAZARA_ANONYMOUS_NAMESPACE
 		return str;
 	}
 
+	std::string_view SurroundLines(std::string_view fullCode, std::size_t index, unsigned int prefixLines, unsigned int suffixLines)
+	{
+		std::size_t prefixIndex = index;
+		std::size_t suffixIndex = index;
+		
+		while (prefixLines > 0 && prefixIndex > 0)
+		{
+			prefixIndex = fullCode.rfind('\n', prefixIndex - 1);
+			if (prefixIndex == fullCode.npos)
+			{
+				prefixIndex = 0;
+				break;
+			}
+
+			prefixLines--;
+		}
+
+		while (suffixLines > 0 && suffixIndex < fullCode.size() - 1)
+		{
+			suffixIndex = fullCode.find('\n', suffixIndex + 1);
+			if (suffixIndex == fullCode.npos)
+			{
+				suffixIndex = fullCode.size() - 1;
+				break;
+			}
+
+			suffixLines--;
+		}
+
+		return std::string_view(&fullCode[prefixIndex], suffixIndex - prefixIndex);
+	}
+
 	void HandleSourceError(std::string_view lang, std::string_view expectedCode, std::string_view outputCode)
 	{
 		constexpr std::size_t PartialMatchLength = 30;
-		constexpr std::size_t PartialMatchPrefix = 20;
-		constexpr std::size_t PartialMatchSuffixLength = 100;
+		constexpr std::size_t PartialMatchLinePrefix = 3;
+		constexpr std::size_t PartialMatchLineSuffix = 20;
 
 		// Find difference byte (only works when expecting full output)
 		if (std::size_t offset = expectedCode.find(CappedView(outputCode, PartialMatchLength)); offset != expectedCode.npos)
@@ -202,11 +236,12 @@ namespace NAZARA_ANONYMOUS_NAMESPACE
 			}
 
 			std::size_t index = offset;
-			if (index >= PartialMatchPrefix)
-				index -= PartialMatchPrefix;
+
+			outputCode = SurroundLines(outputCode, index, PartialMatchLinePrefix, PartialMatchLineSuffix);
+			expectedCode = SurroundLines(expectedCode, index, PartialMatchLinePrefix, PartialMatchLineSuffix);
 
 			INFO("difference happens after " << offset << " bytes");
-			INFO(lang << " output[" << index << ":]:\n\n" << CappedStr(&outputCode[index], PartialMatchSuffixLength) << "\nexpected output[" << index << ":]:\n\n" << CappedStr(&expectedCode[index], PartialMatchSuffixLength));
+			INFO(lang << " output[" << index << ":]:\n\n" << outputCode << "\nexpected output[" << index << ":]:\n\n" << expectedCode);
 			REQUIRE(false);
 		}
 		else
@@ -238,7 +273,7 @@ void ExpectGLSL(nzsl::ShaderStageType stageType, nzsl::Ast::Module& shaderModule
 	{
 		WHEN("Resolving a second time")
 		{
-			nzsl::Ast::Transformer::Context context;
+			nzsl::Ast::TransformerContext context;
 			nzsl::Ast::ResolveTransformer resolver;
 			REQUIRE_NOTHROW(resolver.Transform(*moduleClone, context));
 		}
@@ -337,7 +372,7 @@ void ExpectNZSL(const nzsl::Ast::Module& shaderModule, std::string_view expected
 		nzsl::Ast::ModulePtr sanitizedModule;
 		WHEN("Resolving a second time")
 		{
-			nzsl::Ast::Transformer::Context context;
+			nzsl::Ast::TransformerContext context;
 			nzsl::Ast::ResolveTransformer resolver;
 			REQUIRE_NOTHROW(resolver.Transform(*moduleClone, context));
 		}
@@ -374,7 +409,7 @@ void ExpectSPIRV(nzsl::Ast::Module& shaderModule, std::string_view expectedOutpu
 		nzsl::Ast::ModulePtr sanitizedModule;
 		WHEN("Sanitizing a second time")
 		{
-			nzsl::Ast::Transformer::Context context;
+			nzsl::Ast::TransformerContext context;
 			nzsl::Ast::ResolveTransformer resolver;
 			REQUIRE_NOTHROW(resolver.Transform(*moduleClone, context));
 		}
@@ -460,7 +495,7 @@ void ResolveModule(nzsl::Ast::Module& module, const ResolveOptions& resolveOptio
 	bool hasBeenResolved = false;
 	auto Resolve = [&]
 	{
-		nzsl::Ast::Transformer::Context context;
+		nzsl::Ast::TransformerContext context;
 		context.optionValues = resolveOptions.optionValues;
 		context.partialCompilation = resolveOptions.partialCompilation;
 
@@ -473,6 +508,9 @@ void ResolveModule(nzsl::Ast::Module& module, const ResolveOptions& resolveOptio
 
 		if (resolveOptions.bindingResolverOptions)
 			executor.AddPass<nzsl::Ast::BindingResolverTransformer>(*resolveOptions.bindingResolverOptions);
+
+		//if (resolveOptions.untypedOptions)
+		//	executor.AddPass<nzsl::Ast::LiteralTransformer>(*resolveOptions.untypedOptions);
 
 		REQUIRE_NOTHROW(executor.Transform(module, context));
 		hasBeenResolved = true;
@@ -543,3 +581,4 @@ void ResolveModule(nzsl::Ast::Module& module, const ResolveOptions& resolveOptio
 
 const nzsl::Ast::BindingResolverTransformer::Options ResolveOptions::defaultBindingResolverOptions;
 const nzsl::Ast::ResolveTransformer::Options ResolveOptions::defaultIdentifierResolveOptions;
+const nzsl::Ast::LiteralTransformer::Options ResolveOptions::defaultUntypedOptions;

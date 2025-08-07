@@ -47,6 +47,7 @@ NZSL_SHADERLANG_PARSER_ERROR(ModuleImportMultiple, "a module import can only be 
 NZSL_SHADERLANG_PARSER_ERROR(InvalidVersion, "\"{}\" is not a valid version", std::string)
 NZSL_SHADERLANG_PARSER_ERROR(MissingAttribute, "missing attribute {}", Ast::AttributeType)
 NZSL_SHADERLANG_PARSER_ERROR(ModuleFeatureMultipleUnique, "module feature {} has already been specified", Ast::ModuleFeature)
+NZSL_SHADERLANG_PARSER_ERROR(ModuleInnerImport, "an imported module cannot declare another module inside of it", Ast::ModuleFeature)
 NZSL_SHADERLANG_PARSER_ERROR(FunctionParameterNonLValue, "non-L-value cannot be passed for parameter #{}", std::size_t)
 NZSL_SHADERLANG_PARSER_ERROR(ReservedKeyword, "reserved keyword")
 NZSL_SHADERLANG_PARSER_ERROR(UnknownAttribute, "unknown attribute \"{}\"", std::string)
@@ -54,6 +55,7 @@ NZSL_SHADERLANG_PARSER_ERROR(UnknownType, "unknown type")
 NZSL_SHADERLANG_PARSER_ERROR(UnexpectedAttribute, "unexpected attribute {} on {}", Ast::AttributeType, std::string)
 NZSL_SHADERLANG_PARSER_ERROR(UnexpectedEndOfFile, "unexpected end of file")
 NZSL_SHADERLANG_PARSER_ERROR(UnexpectedToken, "unexpected token {}", TokenType)
+NZSL_SHADERLANG_PARSER_ERROR(UnhandledModuleVersion, "{} module declares version {} which is higher than maximum supported version {}", std::string_view, std::string, std::string)
 
 // Compiler errors
 NZSL_SHADERLANG_COMPILER_ERROR(AliasUnexpectedType, "for now, only aliases, functions and structs can be aliased (got {})", std::string)
@@ -131,6 +133,7 @@ NZSL_SHADERLANG_COMPILER_ERROR(InvalidScalarSwizzle, "invalid swizzle for scalar
 NZSL_SHADERLANG_COMPILER_ERROR(InvalidStageDependency, "this is only valid in the {} stage but this functions gets called in the {} stage", ShaderStageType, ShaderStageType)
 NZSL_SHADERLANG_COMPILER_ERROR(InvalidSwizzle, "invalid swizzle {}", std::string)
 NZSL_SHADERLANG_COMPILER_ERROR(InvalidWorkgroup, "invalid workgroup {} (all values must be strictly positive integers)", std::string)
+NZSL_SHADERLANG_COMPILER_ERROR(LiteralOutOfRange, "type {} cannot represent the value {}", std::string, std::string)
 NZSL_SHADERLANG_COMPILER_ERROR(LoopControlOutsideOfLoop, "loop control instruction {} found outside of loop", std::string_view)
 NZSL_SHADERLANG_COMPILER_ERROR(MatrixExpectedFloat, "expected floating-point primitive as matrix type, got {}", std::string)
 NZSL_SHADERLANG_COMPILER_ERROR(MissingOptionValue, "option {} requires a value (no default value set)", std::string)
@@ -160,6 +163,7 @@ NZSL_SHADERLANG_COMPILER_ERROR(TextureUnexpectedFormat, "for now only rgba8 text
 NZSL_SHADERLANG_COMPILER_ERROR(TextureUnexpectedType, "for now only f32 textures are supported (got {})", std::string)
 NZSL_SHADERLANG_COMPILER_ERROR(UnaryUnsupported, "type ({}) does not support this unary operation", std::string)
 NZSL_SHADERLANG_COMPILER_ERROR(UnexpectedAccessedType, "unexpected type (only struct and vectors can be indexed with identifiers)")
+NZSL_SHADERLANG_COMPILER_ERROR(UnexpectedUntyped, "unallowed usage of untyped as a type")
 NZSL_SHADERLANG_COMPILER_ERROR(UnknownField, "unknown field {}", std::string)
 NZSL_SHADERLANG_COMPILER_ERROR(UnknownIdentifier, "unknown identifier {}", std::string)
 NZSL_SHADERLANG_COMPILER_ERROR(UnknownMethod, "type {} has no method {}", std::string, std::string)
@@ -191,6 +195,8 @@ NZSL_SHADERLANG_AST_ERROR(MissingType, "a mandatory type is missing")
 NZSL_SHADERLANG_AST_ERROR(NoIdentifier, "at least one identifier is required")
 NZSL_SHADERLANG_AST_ERROR(NoIndex, "at least one index is required")
 NZSL_SHADERLANG_AST_ERROR(UnexpectedIdentifier, "unexpected identifier of type {}", std::string)
+NZSL_SHADERLANG_AST_ERROR(UnexpectedUntyped, "unexpected \"untyped\" type")
+NZSL_SHADERLANG_AST_ERROR(UntypedExpectedConstant, "got untyped from a non-constant expression of type {}", std::string_view)
 
 #undef NZSL_SHADERLANG_ERROR
 #undef NZSL_SHADERLANG_AST_ERROR

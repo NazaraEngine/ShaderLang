@@ -9,7 +9,7 @@
 
 #include <NazaraUtils/FunctionRef.hpp>
 #include <NZSL/Config.hpp>
-#include <NZSL/Ast/Transformations/Transformer.hpp>
+#include <NZSL/Ast/Transformations/TransformerContext.hpp>
 #include <memory>
 #include <string>
 #include <vector>
@@ -30,7 +30,7 @@ namespace nzsl::Ast
 			template<typename T> void AddPassAt(std::size_t index, const typename T::Options& options = {});
 
 			inline bool Transform(Module& module, std::string* error = nullptr) const;
-			inline bool Transform(Module& module, Transformer::Context& context, std::string* error = nullptr) const;
+			inline bool Transform(Module& module, TransformerContext& context, std::string* error = nullptr) const;
 
 			TransformerExecutor& operator=(const TransformerExecutor&) = delete;
 			TransformerExecutor& operator=(TransformerExecutor&&) noexcept = default;
@@ -40,13 +40,13 @@ namespace nzsl::Ast
 			{
 				virtual ~PassInterface() = default;
 
-				virtual bool Transform(Module& module, Transformer::Context& context, std::string* error = nullptr) = 0;
+				virtual bool Transform(Module& module, TransformerContext& context, std::string* error = nullptr) = 0;
 			};
 
 			template<typename T>
 			struct Pass : PassInterface
 			{
-				bool Transform(Module& module, Transformer::Context& context, std::string* error) override;
+				bool Transform(Module& module, TransformerContext& context, std::string* error) override;
 
 				T transformer;
 				typename T::Options options;
