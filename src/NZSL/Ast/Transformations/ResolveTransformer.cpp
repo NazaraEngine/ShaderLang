@@ -2865,7 +2865,7 @@ namespace nzsl::Ast
 				if (value)
 					ResolveUntyped(optType, *value, declOption.sourceLocation);
 
-				declOption.optIndex = RegisterConstant(declOption.optName, TransformerContext::ConstantData{ m_states->currentModuleId, ComputeConstantValue(declOption.defaultValue) }, declOption.optIndex, declOption.sourceLocation);
+				declOption.optIndex = RegisterConstant(declOption.optName, TransformerContext::ConstantData{ m_states->currentModuleId, std::move(value) }, declOption.optIndex, declOption.sourceLocation);
 			}
 		}
 

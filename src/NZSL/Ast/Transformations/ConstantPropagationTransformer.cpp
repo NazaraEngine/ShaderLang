@@ -7,7 +7,6 @@
 #include <NZSL/ShaderBuilder.hpp>
 #include <NZSL/Ast/Utils.hpp>
 #include <NZSL/Lang/Errors.hpp>
-#include <NZSL/Ast/Transformations/CompoundAssignmentTransformer.hpp>
 #include <NZSL/Ast/Transformations/TransformerContext.hpp>
 #include <cassert>
 #include <cmath>
