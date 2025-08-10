@@ -3,11 +3,13 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <NZSL/Ast/Transformations/ForToWhileTransformer.hpp>
+#include <NZSL/Ast/Utils.hpp>
 #include <NZSL/Lang/Errors.hpp>
+#include <NZSL/Ast/Transformations/TransformerContext.hpp>
 
 namespace nzsl::Ast
 {
-	bool ForToWhileTransformer::Transform(Module& module, Context& context, const Options& options, std::string* error)
+	bool ForToWhileTransformer::Transform(Module& module, TransformerContext& context, const Options& options, std::string* error)
 	{
 		m_options = &options;
 
@@ -27,7 +29,7 @@ namespace nzsl::Ast
 			return VisitChildren{};
 
 		if (!IsArrayType(*exprType))
-			throw CompilerForEachUnsupportedTypeError{ forEachStatement.sourceLocation, ToString(*exprType) };
+			throw CompilerForEachUnsupportedTypeError{ forEachStatement.sourceLocation, ToString(*exprType, forEachStatement.sourceLocation) };
 
 		HandleStatement(forEachStatement.statement);
 
@@ -42,7 +44,7 @@ namespace nzsl::Ast
 		// Counter variable
 		auto counterVariable = ShaderBuilder::DeclareVariable("_nzsl_counter", ExpressionType{ PrimitiveType::UInt32 }, ShaderBuilder::ConstantValue(0u));
 		counterVariable->sourceLocation = forEachStatement.sourceLocation;
-		counterVariable->varIndex = m_context->nextVariableIndex++;
+		counterVariable->varIndex = m_context->variables.RegisterNewIndex();
 
 		std::size_t counterVarIndex = counterVariable->varIndex.value();
 
@@ -97,11 +99,11 @@ namespace nzsl::Ast
 			return VisitChildren{};
 
 		if (!IsPrimitiveType(*fromExprType))
-			throw CompilerForFromTypeExpectIntegerTypeError{ fromExpr.sourceLocation, ToString(*fromExprType) };
+			throw CompilerForFromTypeExpectIntegerTypeError{ fromExpr.sourceLocation, ToString(*fromExprType, fromExpr.sourceLocation) };
 
 		PrimitiveType counterType = std::get<PrimitiveType>(*fromExprType);
 		if (counterType != PrimitiveType::Int32 && counterType != PrimitiveType::UInt32)
-			throw CompilerForFromTypeExpectIntegerTypeError{ fromExpr.sourceLocation, ToString(*fromExprType) };
+			throw CompilerForFromTypeExpectIntegerTypeError{ fromExpr.sourceLocation, ToString(*fromExprType, fromExpr.sourceLocation) };
 
 		HandleStatement(forStatement.statement);
 
@@ -119,7 +121,7 @@ namespace nzsl::Ast
 		// Target variable
 		auto targetVariable = ShaderBuilder::DeclareVariable("_nzsl_to", ExpressionType{ counterType }, std::move(forStatement.toExpr));
 		targetVariable->sourceLocation = forStatement.sourceLocation;
-		targetVariable->varIndex = m_context->nextVariableIndex++;
+		targetVariable->varIndex = m_context->variables.RegisterNewIndex();
 
 		std::size_t targetVarIndex = targetVariable->varIndex.value();
 		multi->statements.emplace_back(std::move(targetVariable));
@@ -131,7 +133,7 @@ namespace nzsl::Ast
 		{
 			auto stepVariable = ShaderBuilder::DeclareVariable("_nzsl_step", ExpressionType{ counterType }, std::move(forStatement.stepExpr));
 			stepVariable->sourceLocation = forStatement.sourceLocation;
-			stepVariable->varIndex = m_context->nextVariableIndex++;
+			stepVariable->varIndex = m_context->variables.RegisterNewIndex();
 
 			stepVarIndex = stepVariable->varIndex;
 			multi->statements.emplace_back(std::move(stepVariable));

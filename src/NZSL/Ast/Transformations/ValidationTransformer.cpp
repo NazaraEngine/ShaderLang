@@ -8,6 +8,7 @@
 #include <NZSL/Ast/Utils.hpp>
 #include <NZSL/Lang/Errors.hpp>
 #include <NZSL/Lang/LangData.hpp>
+#include <NZSL/Ast/Transformations/TransformerContext.hpp>
 #include <fmt/format.h>
 #include <tsl/ordered_map.h>
 #include <unordered_map>
@@ -55,7 +56,7 @@ namespace nzsl::Ast
 		unsigned int loopCounter = 0;
 	};
 
-	bool ValidationTransformer::Transform(Module& module, Context& context, const Options& options, std::string* error)
+	bool ValidationTransformer::Transform(Module& module, TransformerContext& context, const Options& options, std::string* error)
 	{
 		m_options = &options;
 
@@ -72,7 +73,7 @@ namespace nzsl::Ast
 		return TransformModule(module, context, error);
 	}
 
-	bool ValidationTransformer::TransformExpression(Module& module, ExpressionPtr& expression, Context& context, const Options& options, std::string* error)
+	bool ValidationTransformer::TransformExpression(Module& module, ExpressionPtr& expression, TransformerContext& context, const Options& options, std::string* error)
 	{
 		m_options = &options;
 
@@ -83,7 +84,7 @@ namespace nzsl::Ast
 		return Transformer::TransformExpression(expression, context, error);
 	}
 
-	bool ValidationTransformer::TransformStatement(Module& module, StatementPtr& statement, Context& context, const Options& options, std::string* error)
+	bool ValidationTransformer::TransformStatement(Module& module, StatementPtr& statement, TransformerContext& context, const Options& options, std::string* error)
 	{
 		m_options = &options;
 
@@ -1438,7 +1439,7 @@ namespace nzsl::Ast
 			throw CompilerUnmatchingTypesError{ sourceLocation, ToString(left, sourceLocation), ToString(right, sourceLocation) };
 	}
 
-	bool ValidationTransformer::TransformModule(Module& module, Context& context, std::string* error, Nz::FunctionRef<void()> postCallback)
+	bool ValidationTransformer::TransformModule(Module& module, TransformerContext& context, std::string* error, Nz::FunctionRef<void()> postCallback)
 	{
 		m_states->pendingFunctions.clear();
 

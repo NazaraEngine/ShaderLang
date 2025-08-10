@@ -6,6 +6,7 @@
 #include <NazaraUtils/CallOnExit.hpp>
 #include <NZSL/ShaderBuilder.hpp>
 #include <NZSL/Lang/Errors.hpp>
+#include <NZSL/Ast/Transformations/TransformerContext.hpp>
 
 namespace nzsl::Ast
 {
@@ -14,7 +15,7 @@ namespace nzsl::Ast
 		const DependencyCheckerVisitor::UsageSet& usageSet;
 	};
 
-	bool EliminateUnusedTransformer::Transform(Module& shaderModule, Context& context, const DependencyCheckerVisitor::UsageSet& usageSet, std::string* error)
+	bool EliminateUnusedTransformer::Transform(Module& shaderModule, TransformerContext& context, const DependencyCheckerVisitor::UsageSet& usageSet, std::string* error)
 	{
 		Options options{
 			usageSet
@@ -29,7 +30,7 @@ namespace nzsl::Ast
 		return TransformModule(shaderModule, context, error);
 	}
 
-	bool EliminateUnusedTransformer::Transform(StatementPtr& statement, Context& context, const DependencyCheckerVisitor::UsageSet& usageSet, std::string* error)
+	bool EliminateUnusedTransformer::Transform(StatementPtr& statement, TransformerContext& context, const DependencyCheckerVisitor::UsageSet& usageSet, std::string* error)
 	{
 		Options options{
 			usageSet
@@ -146,5 +147,21 @@ namespace nzsl::Ast
 	{
 		assert(m_options);
 		return m_options->usageSet.usedVariables.UnboundedTest(varIndex);
+	}
+
+	bool EliminateUnusedPass(Module& shaderModule, const DependencyCheckerVisitor::UsageSet& usageSet, std::string* error)
+	{
+		TransformerContext context;
+
+		EliminateUnusedTransformer visitor;
+		return visitor.Transform(shaderModule, context, usageSet, error);
+	}
+
+	bool EliminateUnusedPass(StatementPtr& ast, const DependencyCheckerVisitor::UsageSet& usageSet, std::string* error)
+	{
+		TransformerContext context;
+
+		EliminateUnusedTransformer visitor;
+		return visitor.Transform(ast, context, usageSet, error);
 	}
 }

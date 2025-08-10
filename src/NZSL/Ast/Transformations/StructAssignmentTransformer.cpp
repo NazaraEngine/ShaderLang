@@ -5,10 +5,11 @@
 #include <NZSL/Ast/Transformations/StructAssignmentTransformer.hpp>
 #include <NZSL/Ast/Cloner.hpp>
 #include <NZSL/Lang/Errors.hpp>
+#include <NZSL/Ast/Transformations/TransformerContext.hpp>
 
 namespace nzsl::Ast
 {
-	bool StructAssignmentTransformer::Transform(Module& module, Context& context, const Options& options, std::string* error)
+	bool StructAssignmentTransformer::Transform(Module& module, TransformerContext& context, const Options& options, std::string* error)
 	{
 		m_options = &options;
 		m_structDescs.clear();

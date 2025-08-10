@@ -18,6 +18,8 @@
 
 namespace nzsl::Ast
 {
+	struct TransformerContext;
+
 	enum class TransformerFlag
 	{
 		IgnoreExpressions,
@@ -33,17 +35,6 @@ namespace nzsl::Ast
 
 	class NZSL_API Transformer : public ExpressionVisitor, public StatementVisitor
 	{
-		public:
-			struct Context
-			{
-				std::size_t nextVariableIndex = 0;
-				std::unordered_map<OptionHash, ConstantValue> optionValues;
-				bool allowUnknownIdentifiers = false;
-				bool partialCompilation = false;
-			};
-
-			static StatementPtr Unscope(StatementPtr&& statement);
-
 		protected:
 			struct DontVisitChildren {};
 			struct RemoveStatement {};
@@ -57,6 +48,8 @@ namespace nzsl::Ast
 			inline Transformer(TransformerFlags flags = {});
 
 			void AppendStatement(StatementPtr statement);
+
+			Stringifier BuildStringifier(const SourceLocation& sourceLocation) const;
 
 			ExpressionPtr CacheExpression(ExpressionPtr expression);
 
@@ -131,18 +124,22 @@ namespace nzsl::Ast
 			virtual void PopScope();
 			virtual void PushScope();
 
+			void PropagateConstants(ExpressionPtr& expr) const;
+
+			std::string ToString(const ExpressionType& exprType, const SourceLocation& sourceLocation) const;
+
 #define NZSL_SHADERAST_NODE(Node, Type) virtual Type##Transformation Transform(Node##Type&& node);
 #include <NZSL/Ast/NodeList.hpp>
 
 			virtual void Transform(ExpressionType& expressionType);
 			virtual void Transform(ExpressionValue<ExpressionType>& expressionValue);
 
-			bool TransformExpression(ExpressionPtr& expression, Context& context, std::string* error);
-			bool TransformImportedModules(Module& module, Context& context, std::string* error);
-			virtual bool TransformModule(Module& module, Context& context, std::string* error, Nz::FunctionRef<void()> postCallback = nullptr);
-			bool TransformStatement(StatementPtr& statement, Context& context, std::string* error);
+			bool TransformExpression(ExpressionPtr& expression, TransformerContext& context, std::string* error);
+			bool TransformImportedModules(Module& module, TransformerContext& context, std::string* error);
+			virtual bool TransformModule(Module& module, TransformerContext& context, std::string* error, Nz::FunctionRef<void()> postCallback = nullptr);
+			bool TransformStatement(StatementPtr& statement, TransformerContext& context, std::string* error);
 
-			Context* m_context;
+			TransformerContext* m_context;
 
 		private:
 			template<typename T> bool TransformCurrentExpression();

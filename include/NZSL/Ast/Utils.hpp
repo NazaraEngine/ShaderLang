@@ -59,6 +59,8 @@ namespace nzsl::Ast
 	};
 
 	inline ExpressionCategory GetExpressionCategory(Expression& expression);
+	StatementPtr Unscope(StatementPtr&& statement);
+
 	ExpressionType ValidateBinaryOp(BinaryType op, const ExpressionType& leftExprType, const ExpressionType& rightExprType, const SourceLocation& sourceLocation, const Stringifier& typeStringifier = {});
 }
 

@@ -50,7 +50,7 @@ fn main()
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
 
 		nzsl::Ast::BranchSplitterTransformer branchSplitterTransformer;
-		nzsl::Ast::Transformer::Context context;
+		nzsl::Ast::TransformerContext context;
 
 		REQUIRE_NOTHROW(branchSplitterTransformer.Transform(*shaderModule, context));
 
@@ -222,7 +222,7 @@ fn main()
 		options.removeCompoundAssignment = true;
 
 		nzsl::Ast::CompoundAssignmentTransformer assignmentTransformer;
-		nzsl::Ast::Transformer::Context context;
+		nzsl::Ast::TransformerContext context;
 
 		REQUIRE_NOTHROW(assignmentTransformer.Transform(*shaderModule, context, options));
 
@@ -422,7 +422,7 @@ fn testMat4CompoundMinusMat4(x: mat4[f32], y: mat4[f32]) -> mat4[f32]
 )";
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
-		nzsl::Ast::Transformer::Context transformContext;
+		nzsl::Ast::TransformerContext transformContext;
 		{
 			nzsl::Ast::TransformerExecutor executor;
 			executor.AddPass<nzsl::Ast::ResolveTransformer>();
@@ -645,7 +645,7 @@ fn main()
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
 
-		nzsl::Ast::Transformer::Context context;
+		nzsl::Ast::TransformerContext context;
 		context.partialCompilation = true;
 
 		nzsl::Ast::TransformerExecutor executor;

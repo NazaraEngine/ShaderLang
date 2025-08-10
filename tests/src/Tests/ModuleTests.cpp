@@ -11,7 +11,7 @@ void RegisterModule(const std::shared_ptr<nzsl::FilesystemModuleResolver>& modul
 
 	WHEN("Compiling module")
 	{
-		nzsl::Ast::Transformer::Context context;
+		nzsl::Ast::TransformerContext context;
 		context.partialCompilation = true;
 
 		nzsl::Ast::ResolveTransformer transformer;
@@ -895,14 +895,14 @@ fn FragMain() -> FragOut
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
 
-		nzsl::Ast::Transformer::Context context;
+		nzsl::Ast::TransformerContext context;
 		context.partialCompilation = true;
 
 		nzsl::Ast::ResolveTransformer resolverTransformer;
 
 		REQUIRE_NOTHROW(resolverTransformer.Transform(*shaderModule, context));
 
-		context.partialCompilation = false;
+		context.Reset();
 
 		auto directoryModuleResolver = std::make_shared<nzsl::FilesystemModuleResolver>();
 		RegisterModule(directoryModuleResolver, gbufferOutput);
@@ -1055,7 +1055,7 @@ fn FragMain() -> FragOut
 		resolverOptions.moduleResolver = directoryModuleResolver;
 
 		nzsl::Ast::ResolveTransformer identifierResolver;
-		nzsl::Ast::Transformer::Context context;
+		nzsl::Ast::TransformerContext context;
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(mainSource);
 		REQUIRE_NOTHROW(identifierResolver.Transform(*shaderModule, context, resolverOptions));
