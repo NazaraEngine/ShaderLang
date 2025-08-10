@@ -21,11 +21,11 @@ namespace nzsl::Ast
 
 	inline bool TransformerExecutor::Transform(Module& module, std::string* error) const
 	{
-		Transformer::Context context;
+		TransformerContext context;
 		return Transform(module, context, error);
 	}
 
-	inline bool TransformerExecutor::Transform(Module& module, Transformer::Context& context, std::string* error) const
+	inline bool TransformerExecutor::Transform(Module& module, TransformerContext& context, std::string* error) const
 	{
 		for (auto& passPtr : m_passes)
 		{
@@ -37,7 +37,7 @@ namespace nzsl::Ast
 	}
 
 	template<typename T>
-	bool TransformerExecutor::Pass<T>::Transform(Module& module, Transformer::Context& context, std::string* error)
+	bool TransformerExecutor::Pass<T>::Transform(Module& module, TransformerContext& context, std::string* error)
 	{
 		return transformer.Transform(module, context, options, error);
 	}

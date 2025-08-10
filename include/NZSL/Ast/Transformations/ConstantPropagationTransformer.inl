@@ -4,23 +4,23 @@
 
 namespace nzsl::Ast
 {
-	inline bool ConstantPropagationTransformer::Transform(ExpressionPtr& expression, Context& context, std::string* error)
+	inline bool ConstantPropagationTransformer::Transform(ExpressionPtr& expression, TransformerContext& context, std::string* error)
 	{
 		return Transform(expression, context, {}, error);
 	}
 
-	inline bool ConstantPropagationTransformer::Transform(ExpressionPtr& expression, Context& context, const Options& options, std::string* error)
+	inline bool ConstantPropagationTransformer::Transform(ExpressionPtr& expression, TransformerContext& context, const Options& options, std::string* error)
 	{
 		m_options = &options;
 		return TransformExpression(expression, context, error);
 	}
 
-	inline bool ConstantPropagationTransformer::Transform(Module& shaderModule, Context& context, std::string* error)
+	inline bool ConstantPropagationTransformer::Transform(Module& shaderModule, TransformerContext& context, std::string* error)
 	{
 		return Transform(shaderModule, context, {}, error);
 	}
 
-	inline bool ConstantPropagationTransformer::Transform(Module& shaderModule, Context& context, const Options& options, std::string* error)
+	inline bool ConstantPropagationTransformer::Transform(Module& shaderModule, TransformerContext& context, const Options& options, std::string* error)
 	{
 		m_options = &options;
 
@@ -30,12 +30,12 @@ namespace nzsl::Ast
 		return TransformModule(shaderModule, context, error);
 	}
 
-	inline bool ConstantPropagationTransformer::Transform(StatementPtr& statement, Context& context, std::string* error)
+	inline bool ConstantPropagationTransformer::Transform(StatementPtr& statement, TransformerContext& context, std::string* error)
 	{
 		return Transform(statement, context, {}, error);
 	}
 
-	inline bool ConstantPropagationTransformer::Transform(StatementPtr& statement, Context& context, const Options& options, std::string* error)
+	inline bool ConstantPropagationTransformer::Transform(StatementPtr& statement, TransformerContext& context, const Options& options, std::string* error)
 	{
 		m_options = &options;
 		return TransformStatement(statement, context, error);

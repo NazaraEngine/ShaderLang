@@ -8,6 +8,7 @@
 #define NZSL_AST_TRANSFORMATIONS_RESOLVETRANSFORMER_HPP
 
 #include <NZSL/Ast/Transformations/Transformer.hpp>
+#include <NZSL/Ast/Transformations/TransformerContext.hpp>
 
 namespace nzsl
 {
@@ -25,8 +26,8 @@ namespace nzsl::Ast
 
 			ResolveTransformer() = default;
 
-			inline bool Transform(Module& module, Context& context, std::string* error = nullptr);
-			bool Transform(Module& module, Context& context, const Options& options, std::string* error = nullptr);
+			inline bool Transform(Module& module, TransformerContext& context, std::string* error = nullptr);
+			bool Transform(Module& module, TransformerContext& context, const Options& options, std::string* error = nullptr);
 
 			struct Options
 			{
@@ -37,82 +38,64 @@ namespace nzsl::Ast
 			};
 
 		private:
-			struct ConstantData;
 			struct Environment;
-			struct FunctionData;
-			struct Identifier;
-			struct IdentifierData;
-			template<typename T> struct IdentifierList;
 			struct NamedExternalBlock;
-			struct NamedPartialType;
 			struct PendingFunction;
 			struct Scope;
 			struct States;
-			struct StructData;
 
 			using Transformer::Transform;
-
-			Stringifier BuildStringifier(const SourceLocation& sourceLocation) const;
 
 			std::optional<ConstantValue> ComputeConstantValue(ExpressionPtr& expr) const;
 			template<typename T> bool ComputeExprValue(ExpressionValue<T>& attribute, const SourceLocation& sourceLocation);
 			ExpressionType ComputeSwizzleType(const ExpressionType& type, std::size_t componentCount, const SourceLocation& sourceLocation) const;
 
-			const IdentifierData* FindIdentifier(std::string_view identifierName) const;
-			template<typename F> const IdentifierData* FindIdentifier(std::string_view identifierName, F&& functor) const;
-			const IdentifierData* FindIdentifier(const Environment& environment, std::string_view identifierName) const;
-			template<typename F> const IdentifierData* FindIdentifier(const Environment& environment, std::string_view identifierName, F&& functor) const;
+			const TransformerContext::IdentifierData* FindIdentifier(std::string_view identifierName) const;
+			template<typename F> const TransformerContext::IdentifierData* FindIdentifier(std::string_view identifierName, F&& functor) const;
+			const TransformerContext::IdentifierData* FindIdentifier(const Environment& environment, std::string_view identifierName) const;
+			template<typename F> const TransformerContext::IdentifierData* FindIdentifier(const Environment& environment, std::string_view identifierName, F&& functor) const;
 
-			const ExpressionType& GetExpressionTypeSecure(Expression& expr) const;
-
-			ExpressionPtr HandleIdentifier(const IdentifierData* identifierData, const SourceLocation& sourceLocation);
+			ExpressionPtr HandleIdentifier(const TransformerContext::IdentifierData* identifierData, const SourceLocation& sourceLocation);
 
 			bool IsFeatureEnabled(ModuleFeature feature) const;
 			bool IsIdentifierAvailable(std::string_view identifier, bool allowReserved = true) const;
 
 			void PopScope() override;
 
-			void PropagateConstants(ExpressionPtr& expr) const;
-
 			void PushScope() override;
 
-			std::size_t RegisterAlias(std::string name, std::optional<Identifier> aliasData, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
+			std::size_t RegisterAlias(std::string name, std::optional<TransformerContext::AliasData> aliasData, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
 			void RegisterBuiltin();
-			std::size_t RegisterConstant(std::string name, std::optional<ConstantData>&& value, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
-			std::size_t RegisterExternalBlock(std::string name, NamedExternalBlock&& namedExternalBlock, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
-			std::size_t RegisterFunction(std::string name, std::optional<FunctionData>&& funcData, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
-			std::size_t RegisterIntrinsic(std::string name, IntrinsicType type);
-			std::size_t RegisterModule(std::string moduleIdentifier, std::size_t moduleIndex);
+			std::size_t RegisterConstant(std::string name, std::optional<TransformerContext::ConstantData>&& value, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
+			std::size_t RegisterExternalBlock(std::string name, TransformerContext::ExternalBlockData&& namedExternalBlock, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
+			std::size_t RegisterFunction(std::string name, std::optional<TransformerContext::FunctionData>&& funcData, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
+			std::size_t RegisterIntrinsic(std::string name, TransformerContext::IntrinsicData&& intrinsicData, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
+			std::size_t RegisterModule(std::string moduleIdentifier, TransformerContext::ModuleData&& moduleData, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
 			void RegisterReservedName(std::string name);
-			std::size_t RegisterStruct(std::string name, std::optional<StructData>&& description, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
-			std::size_t RegisterType(std::string name, std::optional<ExpressionType>&& expressionType, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
-			std::size_t RegisterType(std::string name, std::optional<PartialType>&& partialType, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
+			std::size_t RegisterStruct(std::string name, std::optional<TransformerContext::StructData>&& description, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
+			std::size_t RegisterType(std::string name, std::optional<TransformerContext::TypeData>&& expressionType, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
 			void RegisterUnresolved(std::string name);
-			std::size_t RegisterVariable(std::string name, std::optional<ExpressionType>&& type, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
+			std::size_t RegisterVariable(std::string name, std::optional<TransformerContext::VariableData>&& typeData, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
 
 			void PreregisterIndices(const Module& module);
 
-			const Identifier* ResolveAliasIdentifier(const Identifier* identifier, const SourceLocation& sourceLocation) const;
+			const TransformerContext::Identifier* ResolveAliasIdentifier(const TransformerContext::Identifier* identifier, const SourceLocation& sourceLocation) const;
 			void ResolveFunctions();
 			std::size_t ResolveStructIndex(const ExpressionType& exprType, const SourceLocation& sourceLocation);
 			ExpressionType ResolveType(const ExpressionType& exprType, bool resolveAlias, const SourceLocation& sourceLocation);
 			std::optional<ExpressionType> ResolveTypeExpr(ExpressionValue<ExpressionType>& exprTypeValue, bool resolveAlias, const SourceLocation& sourceLocation);
 
-			std::string ToString(const ExpressionType& exprType, const SourceLocation& sourceLocation) const;
-			std::string ToString(const NamedPartialType& partialType, const SourceLocation& sourceLocation) const;
-			template<typename... Args> std::string ToString(const std::variant<Args...>& value, const SourceLocation& sourceLocation) const;
-
 			ExpressionTransformation Transform(AccessFieldExpression&& accessFieldExpr) override;
 			ExpressionTransformation Transform(AccessIdentifierExpression&& accessIdentifierExpr) override;
 			ExpressionTransformation Transform(AccessIndexExpression&& accessIndexExpr) override;
-			ExpressionTransformation Transform(AssignExpression&& assignExpr) override;
 			ExpressionTransformation Transform(AliasValueExpression&& accessIndexExpr) override;
+			ExpressionTransformation Transform(AssignExpression&& assignExpr) override;
 			ExpressionTransformation Transform(BinaryExpression&& binaryExpression) override;
 			ExpressionTransformation Transform(CallFunctionExpression&& callFuncExpression) override;
 			ExpressionTransformation Transform(CastExpression&& castExpression) override;
 			ExpressionTransformation Transform(ConstantExpression&& constantExpression) override;
-			ExpressionTransformation Transform(IntrinsicExpression&& intrinsicExpr) override;
 			ExpressionTransformation Transform(IdentifierExpression&& identifierExpr) override;
+			ExpressionTransformation Transform(IntrinsicExpression&& intrinsicExpr) override;
 			ExpressionTransformation Transform(SwizzleExpression&& swizzleExpr) override;
 			ExpressionTransformation Transform(UnaryExpression&& unaryExpr) override;
 			ExpressionTransformation Transform(VariableValueExpression&& variableValExpr) override;
@@ -133,37 +116,12 @@ namespace nzsl::Ast
 			void Transform(ExpressionType& expressionType) override;
 			void Transform(ExpressionValue<ExpressionType>& expressionType) override;
 
+			using Transformer::ToString;
+			std::string ToString(const TransformerContext::TypeData& typeData, const SourceLocation& sourceLocation);
+
 			void ValidateConcreteType(const ExpressionType& exprType, const SourceLocation& sourceLocation);
 
 			static std::uint32_t ToSwizzleIndex(char c, const SourceLocation& sourceLocation);
-
-			enum class IdentifierCategory
-			{
-				Alias,
-				Constant,
-				ExternalBlock,
-				Function,
-				Intrinsic,
-				Module,
-				ReservedName,
-				Struct,
-				Type,
-				Unresolved,
-				Variable
-			};
-
-			struct IdentifierData
-			{
-				std::size_t index;
-				IdentifierCategory category;
-				unsigned int conditionalIndex = 0;
-			};
-
-			struct Identifier
-			{
-				std::string name;
-				IdentifierData target;
-			};
 
 			const Options* m_options;
 			States* m_states;

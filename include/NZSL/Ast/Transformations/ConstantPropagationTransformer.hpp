@@ -23,12 +23,12 @@ namespace nzsl::Ast
 			ConstantPropagationTransformer(ConstantPropagationTransformer&&) = delete;
 			~ConstantPropagationTransformer() = default;
 
-			inline bool Transform(ExpressionPtr& expression, Context& context, std::string* error = nullptr);
-			inline bool Transform(ExpressionPtr& expression, Context& context, const Options& options, std::string* error = nullptr);
-			inline bool Transform(Module& shaderModule, Context& context, std::string* error = nullptr);
-			inline bool Transform(Module& shaderModule, Context& context, const Options& options, std::string* error = nullptr);
-			inline bool Transform(StatementPtr& statement, Context& context, std::string* error = nullptr);
-			inline bool Transform(StatementPtr& statement, Context& context, const Options& options, std::string* error = nullptr);
+			inline bool Transform(ExpressionPtr& expression, TransformerContext& context, std::string* error = nullptr);
+			inline bool Transform(ExpressionPtr& expression, TransformerContext& context, const Options& options, std::string* error = nullptr);
+			inline bool Transform(Module& shaderModule, TransformerContext& context, std::string* error = nullptr);
+			inline bool Transform(Module& shaderModule, TransformerContext& context, const Options& options, std::string* error = nullptr);
+			inline bool Transform(StatementPtr& statement, TransformerContext& context, std::string* error = nullptr);
+			inline bool Transform(StatementPtr& statement, TransformerContext& context, const Options& options, std::string* error = nullptr);
 
 			ConstantPropagationTransformer& operator=(const ConstantPropagationTransformer&) = delete;
 			ConstantPropagationTransformer& operator=(ConstantPropagationTransformer&&) = delete;

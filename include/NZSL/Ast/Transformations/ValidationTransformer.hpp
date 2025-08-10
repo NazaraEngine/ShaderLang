@@ -18,10 +18,10 @@ namespace nzsl::Ast
 
 			inline ValidationTransformer();
 
-			inline bool Transform(Module& module, Context& context, std::string* error = nullptr);
-			bool Transform(Module& module, Context& context, const Options& options, std::string* error = nullptr);
-			bool TransformExpression(Module& module, ExpressionPtr& expression, Context& context, const Options& options, std::string* error = nullptr);
-			bool TransformStatement(Module& module, StatementPtr& statement, Context& context, const Options& options, std::string* error = nullptr);
+			inline bool Transform(Module& module, TransformerContext& context, std::string* error = nullptr);
+			bool Transform(Module& module, TransformerContext& context, const Options& options, std::string* error = nullptr);
+			bool TransformExpression(Module& module, ExpressionPtr& expression, TransformerContext& context, const Options& options, std::string* error = nullptr);
+			bool TransformStatement(Module& module, StatementPtr& statement, TransformerContext& context, const Options& options, std::string* error = nullptr);
 
 			struct Options
 			{
@@ -107,7 +107,7 @@ namespace nzsl::Ast
 			StatementTransformation Transform(ScopedStatement&& node) override;
 			StatementTransformation Transform(WhileStatement&& node) override;
 
-			bool TransformModule(Module& module, Context& context, std::string* error, Nz::FunctionRef<void()> postCallback = nullptr) override;
+			bool TransformModule(Module& module, TransformerContext& context, std::string* error, Nz::FunctionRef<void()> postCallback = nullptr) override;
 
 			void TypeMustMatch(const ExpressionPtr& left, const ExpressionPtr& right, const SourceLocation& sourceLocation) const;
 			void TypeMustMatch(const ExpressionType& left, const ExpressionType& right, const SourceLocation& sourceLocation) const;
