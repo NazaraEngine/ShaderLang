@@ -107,14 +107,19 @@ namespace nzsl::Ast
 	enum class IdentifierType
 	{
 		Alias,
-		Const,
+		Constant,
 		ExternalBlock,
 		ExternalVariable,
 		Field,
 		Function,
+		Intrinsic,
+		Module,
 		Option,
 		Parameter,
+		ReservedName,
 		Struct,
+		Type,
+		Unresolved,
 		Variable
 	};
 

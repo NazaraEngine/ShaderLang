@@ -5,8 +5,10 @@
 #include <NZSL/Ast/Transformations/ConstantPropagationTransformer.hpp>
 #include <NazaraUtils/TypeTraits.hpp>
 #include <NZSL/ShaderBuilder.hpp>
+#include <NZSL/Ast/Utils.hpp>
 #include <NZSL/Lang/Errors.hpp>
 #include <NZSL/Ast/Transformations/CompoundAssignmentTransformer.hpp>
+#include <NZSL/Ast/Transformations/TransformerContext.hpp>
 #include <cassert>
 #include <cmath>
 #include <stdexcept>
@@ -642,7 +644,7 @@ namespace nzsl::Ast
 				}
 
 				if (!IsPrimitiveType(*constantType) || std::get<PrimitiveType>(*constantType) != PrimitiveType::Boolean)
-					throw AstConditionExpectedBoolError{ condStatement.condition->sourceLocation, ToString(*constantType) };
+					throw AstConditionExpectedBoolError{ condStatement.condition->sourceLocation, ToString(*constantType, condStatement.condition->sourceLocation) };
 
 				bool cValue = std::get<bool>(constant.value);
 				if (!cValue)
@@ -706,7 +708,7 @@ namespace nzsl::Ast
 		const ExpressionType& constantType = constant.cachedExpressionType.value();
 
 		if (!IsPrimitiveType(constantType) || std::get<PrimitiveType>(constantType) != PrimitiveType::Boolean)
-			throw AstConditionExpectedBoolError{ node.condition->sourceLocation, ToString(constantType) };
+			throw AstConditionExpectedBoolError{ node.condition->sourceLocation, ToString(constantType, node.condition->sourceLocation) };
 
 		bool cValue = std::get<bool>(constant.value);
 		if (cValue)

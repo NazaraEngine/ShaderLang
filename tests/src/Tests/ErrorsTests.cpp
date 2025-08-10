@@ -1013,10 +1013,12 @@ import * from Module;
 
 			shaderModule = nzsl::Parse(wildcardImportSource);
 			
-			nzsl::Ast::ResolveTransformer resolver;
-			nzsl::Ast::Transformer::Context context;
+			nzsl::Ast::TransformerExecutor executor;
+			executor.AddPass<nzsl::Ast::ResolveTransformer>(resolveOptions);
+			executor.AddPass<nzsl::Ast::ValidationTransformer>();
+			executor.AddPass<nzsl::Ast::BindingResolverTransformer>();
 
-			CHECK_THROWS_WITH(resolver.Transform(*shaderModule, context, resolveOptions), "(5,1 -> 21): CModuleFeatureMismatch error: module Module requires feature primitive_externals");
+			CHECK_THROWS_WITH(executor.Transform(*shaderModule), "(5,1 -> 21): CModuleFeatureMismatch error: module Module requires feature primitive_externals");
 
 			std::string_view nonExistentImportShaderSource = R"(
 [nzsl_version("1.0")]
@@ -1027,7 +1029,7 @@ import Foo from Module;
 )";
 
 			shaderModule = nzsl::Parse(nonExistentImportShaderSource);
-			CHECK_THROWS_WITH(resolver.Transform(*shaderModule, context, resolveOptions), "(6,1 -> 23): CImportIdentifierNotFound error: identifier(s) Foo not found in module Module");
+			CHECK_THROWS_WITH(executor.Transform(*shaderModule), "(6,1 -> 23): CImportIdentifierNotFound error: identifier(s) Foo not found in module Module");
 
 			std::string_view multipleNonExistentImportShaderSource = R"(
 [nzsl_version("1.0")]
@@ -1038,7 +1040,7 @@ import Foo, Bar, Baz as Qix from Module;
 )";
 
 			shaderModule = nzsl::Parse(multipleNonExistentImportShaderSource);
-			CHECK_THROWS_WITH(resolver.Transform(*shaderModule, context, resolveOptions), "(6,1 -> 40): CImportIdentifierNotFound error: identifier(s) Foo, Baz not found in module Module");
+			CHECK_THROWS_WITH(executor.Transform(*shaderModule), "(6,1 -> 40): CImportIdentifierNotFound error: identifier(s) Foo, Baz not found in module Module");
 		}
 
 		/************************************************************************/

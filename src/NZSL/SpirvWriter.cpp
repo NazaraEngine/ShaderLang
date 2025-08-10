@@ -671,7 +671,7 @@ namespace nzsl
 			if (parameters.backendPasses.Test(BackendPass::Validate))
 				executor.AddPass<Ast::ValidationTransformer>();
 
-			Ast::Transformer::Context context;
+			Ast::TransformerContext context;
 			context.optionValues = parameters.optionValues;
 
 			executor.Transform(module, context);

@@ -5,11 +5,12 @@
 #include <NZSL/Ast/Transformations/MatrixTransformer.hpp>
 #include <NZSL/Ast/Cloner.hpp>
 #include <NZSL/Lang/Errors.hpp>
+#include <NZSL/Ast/Transformations/TransformerContext.hpp>
 #include <numeric>
 
 namespace nzsl::Ast
 {
-	bool MatrixTransformer::Transform(Module& module, Context& context, const Options& options, std::string* error)
+	bool MatrixTransformer::Transform(Module& module, TransformerContext& context, const Options& options, std::string* error)
 	{
 		m_options = &options;
 

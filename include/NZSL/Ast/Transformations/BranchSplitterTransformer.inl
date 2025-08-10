@@ -9,7 +9,7 @@ namespace nzsl::Ast
 	{
 	}
 
-	inline bool BranchSplitterTransformer::Transform(Module& module, Context& context, std::string* error)
+	inline bool BranchSplitterTransformer::Transform(Module& module, TransformerContext& context, std::string* error)
 	{
 		return Transform(module, context, {}, error);
 	}
