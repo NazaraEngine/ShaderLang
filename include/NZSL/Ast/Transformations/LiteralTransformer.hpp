@@ -29,7 +29,7 @@ namespace nzsl::Ast
 		private:
 			using Transformer::Transform;
 
-			bool ResolveUntyped(ExpressionPtr& expression, std::optional<ExpressionType> enforcedType, const SourceLocation& sourceLocation) const;
+			bool ResolveUntyped(ExpressionPtr& expression, std::optional<ExpressionType> referenceType, const SourceLocation& sourceLocation) const;
 
 			ExpressionTransformation Transform(AccessIndexExpression&& accessIndexExpr) override;
 			ExpressionTransformation Transform(AssignExpression&& assignExpr) override;

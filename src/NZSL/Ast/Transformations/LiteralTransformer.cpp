@@ -219,24 +219,28 @@ namespace nzsl::Ast
 						break;
 					}
 
+					ResolveUntyped(intrinsicExpr.parameters[paramIndex], {}, intrinsicExpr.sourceLocation);
 					paramIndex++;
 					break;
 				}
 
 				case ParameterType::FValVec1632:
 				{
+					ResolveUntyped(intrinsicExpr.parameters[paramIndex], {}, intrinsicExpr.sourceLocation);
 					paramIndex++;
 					break;
 				}
 
 				case ParameterType::FVec:
 				{
+					ResolveUntyped(intrinsicExpr.parameters[paramIndex], {}, intrinsicExpr.sourceLocation);
 					paramIndex++;
 					break;
 				}
 
 				case ParameterType::FVec3:
 				{
+					ResolveUntyped(intrinsicExpr.parameters[paramIndex], {}, intrinsicExpr.sourceLocation);
 					paramIndex++;
 					break;
 				}
@@ -255,37 +259,42 @@ namespace nzsl::Ast
 
 				case ParameterType::Numerical:
 				{
+					ResolveUntyped(intrinsicExpr.parameters[paramIndex], {}, intrinsicExpr.sourceLocation);
 					paramIndex++;
 					break;
 				}
 
 				case ParameterType::NumericalVec:
 				{
+					ResolveUntyped(intrinsicExpr.parameters[paramIndex], {}, intrinsicExpr.sourceLocation);
 					paramIndex++;
 					break;
 				}
 
 				case ParameterType::Scalar:
 				{
-					//ResolveUntyped(intrinsicExpr.parameters[paramIndex], PrimitiveType::Float32, intrinsicExpr.sourceLocation);
+					ResolveUntyped(intrinsicExpr.parameters[paramIndex], {}, intrinsicExpr.sourceLocation);
 					paramIndex++;
 					break;
 				}
 
 				case ParameterType::ScalarVec:
 				{
+					ResolveUntyped(intrinsicExpr.parameters[paramIndex], {}, intrinsicExpr.sourceLocation);
 					paramIndex++;
 					break;
 				}
 
 				case ParameterType::SignedNumerical:
 				{
+					ResolveUntyped(intrinsicExpr.parameters[paramIndex], {}, intrinsicExpr.sourceLocation);
 					paramIndex++;
 					break;
 				}
 
 				case ParameterType::SignedNumericalVec:
 				{
+					ResolveUntyped(intrinsicExpr.parameters[paramIndex], {}, intrinsicExpr.sourceLocation);
 					paramIndex++;
 					break;
 				}
@@ -350,6 +359,9 @@ namespace nzsl::Ast
 				}
 			}
 		}
+
+		// Update return type as we changed parameter type
+		intrinsicExpr.cachedExpressionType = GetIntrinsicReturnType(intrinsicExpr);
 
 		return DontVisitChildren();
 	}
@@ -489,7 +501,7 @@ namespace nzsl::Ast
 		return DontVisitChildren{};
 	}
 
-	bool LiteralTransformer::ResolveUntyped(ExpressionPtr& expressionPtr, std::optional<ExpressionType> enforcedType, const SourceLocation& sourceLocation) const
+	bool LiteralTransformer::ResolveUntyped(ExpressionPtr& expressionPtr, std::optional<ExpressionType> referenceType, const SourceLocation& sourceLocation) const
 	{
 		const ExpressionType* exprType = GetExpressionType(*expressionPtr);
 		if (!exprType)
@@ -524,9 +536,9 @@ namespace nzsl::Ast
 
 					ConstantValueExpression& constantExpr = static_cast<ConstantValueExpression&>(expression);
 
-					if (enforcedType)
+					if (referenceType)
 					{
-						const ExpressionType& resolvedType = ResolveAlias(*enforcedType);
+						const ExpressionType& resolvedType = ResolveAlias(*referenceType);
 
 						PrimitiveType targetType;
 						if (IsPrimitiveType(resolvedType))
@@ -534,9 +546,12 @@ namespace nzsl::Ast
 						else if (IsVectorType(resolvedType))
 							targetType = std::get<VectorType>(resolvedType).type;
 						else
-							throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(*primType), Ast::ToString(*enforcedType) };
+							throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(*primType), Ast::ToString(*referenceType) };
 
-						if (targetType == PrimitiveType::Float32 || targetType == PrimitiveType::FloatLiteral)
+						if (targetType == PrimitiveType::FloatLiteral)
+							targetType = PrimitiveType::Float32;
+
+						if (targetType == PrimitiveType::Float32)
 							constantExpr.value = static_cast<float>(std::get<FloatLiteral>(constantExpr.value));
 						else if (targetType == PrimitiveType::Float64)
 							constantExpr.value = static_cast<double>(std::get<FloatLiteral>(constantExpr.value));
@@ -576,9 +591,9 @@ namespace nzsl::Ast
 						constantExpr.cachedExpressionType = ExpressionType{ PrimitiveType::Int32 };
 					};
 
-					if (enforcedType)
+					if (referenceType)
 					{
-						const ExpressionType& resolvedType = ResolveAlias(*enforcedType);
+						const ExpressionType& resolvedType = ResolveAlias(*referenceType);
 
 						PrimitiveType targetType;
 						if (IsPrimitiveType(resolvedType))
@@ -586,9 +601,12 @@ namespace nzsl::Ast
 						else if (IsVectorType(resolvedType))
 							targetType = std::get<VectorType>(resolvedType).type;
 						else
-							throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(*primType), Ast::ToString(*enforcedType) };
+							throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(*primType), Ast::ToString(*referenceType) };
 
-						if (targetType == PrimitiveType::Int32 || targetType == PrimitiveType::IntLiteral)
+						if (targetType == PrimitiveType::IntLiteral)
+							targetType = PrimitiveType::Int32;
+
+						if (targetType == PrimitiveType::Int32)
 							ConvertToInt32();
 						else if (targetType == PrimitiveType::UInt32)
 						{
@@ -635,17 +653,17 @@ namespace nzsl::Ast
 					ConstantValueExpression& constantExpr = static_cast<ConstantValueExpression&>(expression);
 
 					VectorType targetType;
-					if (enforcedType)
+					if (referenceType)
 					{
-						const ExpressionType& resolvedType = ResolveAlias(*enforcedType);
+						const ExpressionType& resolvedType = ResolveAlias(*referenceType);
 						if (!IsVectorType(resolvedType))
-							throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(*vecType), Ast::ToString(*enforcedType) };
+							throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(*vecType), Ast::ToString(*referenceType) };
 
 						targetType = std::get<VectorType>(resolvedType);
 						if (targetType.componentCount != vecType->componentCount)
-							throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(*vecType), Ast::ToString(*enforcedType) };
+							throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(*vecType), Ast::ToString(*referenceType) };
 
-						constantExpr.cachedExpressionType = *enforcedType;
+						constantExpr.cachedExpressionType = *referenceType;
 					}
 					else
 					{
@@ -749,17 +767,17 @@ namespace nzsl::Ast
 					ConstantValueExpression& constantExpr = static_cast<ConstantValueExpression&>(expression);
 
 					VectorType targetType;
-					if (enforcedType)
+					if (referenceType)
 					{
-						const ExpressionType& resolvedType = ResolveAlias(*enforcedType);
+						const ExpressionType& resolvedType = ResolveAlias(*referenceType);
 						if (!IsVectorType(resolvedType))
-							throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(*vecType), Ast::ToString(*enforcedType) };
+							throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(*vecType), Ast::ToString(*referenceType) };
 
 						targetType = std::get<VectorType>(resolvedType);
 						if (targetType.componentCount != vecType->componentCount)
-							throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(*vecType), Ast::ToString(*enforcedType) };
+							throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(*vecType), Ast::ToString(*referenceType) };
 
-						constantExpr.cachedExpressionType = *enforcedType;
+						constantExpr.cachedExpressionType = *referenceType;
 					}
 					else
 					{

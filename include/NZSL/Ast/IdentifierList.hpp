@@ -20,7 +20,6 @@ namespace nzsl::Ast
 		inline IdentifierList(std::string_view identifierName);
 
 		inline void Clear();
-
 		void PreregisterIndex(std::size_t index, const SourceLocation& sourceLocation);
 		std::size_t Register(std::optional<std::size_t> index, const SourceLocation& sourceLocation);
 		std::size_t RegisterNewIndex(bool preregister = false);

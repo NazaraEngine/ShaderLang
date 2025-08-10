@@ -4,6 +4,8 @@
 
 #include <NZSL/Ast/Utils.hpp>
 #include <NZSL/Lang/Errors.hpp>
+#include <NZSL/Lang/LangData.hpp>
+#include <fmt/format.h>
 #include <cassert>
 
 namespace nzsl::Ast
@@ -172,6 +174,115 @@ namespace nzsl::Ast
 		m_expressionCategory = ExpressionCategory::RValue;
 	}
 
+
+	std::optional<ExpressionType> GetIntrinsicReturnType(const IntrinsicExpression& intrinsicExpr)
+	{
+		auto intrinsicIt = LangData::s_intrinsicData.find(intrinsicExpr.intrinsic);
+		if (intrinsicIt == LangData::s_intrinsicData.end())
+			throw AstInternalError{ intrinsicExpr.sourceLocation, fmt::format("missing intrinsic data for intrinsic {}", Nz::UnderlyingCast(intrinsicExpr.intrinsic)) };
+
+		const auto& intrinsicData = intrinsicIt->second;
+
+		// return type attribution
+		switch (intrinsicData.returnType)
+		{
+			using namespace LangData::IntrinsicHelper;
+
+			case ReturnType::Param0SampledValue:
+			{
+				const ExpressionType* expressionType = GetExpressionType(*intrinsicExpr.parameters[0]);
+				if (!expressionType)
+					return std::nullopt; //< unresolved type
+
+				const ExpressionType& paramType = ResolveAlias(*expressionType);
+				if (!IsSamplerType(paramType))
+					throw AstInternalError{ intrinsicExpr.sourceLocation, fmt::format("intrinsic {} first parameter is not a sampler", intrinsicData.functionName) };
+
+				const SamplerType& samplerType = std::get<SamplerType>(paramType);
+				if (samplerType.depth)
+					return PrimitiveType::Float32;
+				else
+					return VectorType{ 4, samplerType.sampledType };
+			}
+
+			case ReturnType::Param0TextureValue:
+			{
+				const ExpressionType* expressionType = GetExpressionType(*intrinsicExpr.parameters[0]);
+				if (!expressionType)
+					return std::nullopt; //< unresolved type
+
+				const ExpressionType& paramType = ResolveAlias(*expressionType);
+				if (!IsTextureType(paramType))
+					throw AstInternalError{ intrinsicExpr.sourceLocation, fmt::format("intrinsic {} first parameter is not a sampler", intrinsicData.functionName) };
+
+				const TextureType& textureType = std::get<TextureType>(paramType);
+				return VectorType{ 4, textureType.baseType };
+			}
+
+			case ReturnType::Param0Transposed:
+			{
+				const ExpressionType* expressionType = GetExpressionType(*intrinsicExpr.parameters[0]);
+				if (!expressionType)
+					return std::nullopt; //< unresolved type
+
+				const ExpressionType& paramType = ResolveAlias(*expressionType);
+				if (!IsMatrixType(paramType))
+					throw AstInternalError{ intrinsicExpr.sourceLocation, fmt::format("intrinsic {} first parameter is not a matrix", intrinsicData.functionName) };
+
+				MatrixType matrixType = std::get<MatrixType>(paramType);
+				std::swap(matrixType.columnCount, matrixType.rowCount);
+
+				return matrixType;
+			}
+
+			case ReturnType::Param0Type:
+			{
+				const ExpressionType* expressionType = GetExpressionType(*intrinsicExpr.parameters[0]);
+				if (!expressionType)
+					return std::nullopt; //< unresolved type
+
+				return *expressionType;
+			}
+
+			case ReturnType::Param1Type:
+			{
+				const ExpressionType* expressionType = GetExpressionType(*intrinsicExpr.parameters[1]);
+				if (!expressionType)
+					return std::nullopt; //< unresolved type
+
+				return *expressionType;
+			}
+
+			case ReturnType::Param0VecComponent:
+			{
+				const ExpressionType* expressionType = GetExpressionType(*intrinsicExpr.parameters[0]);
+				if (!expressionType)
+					return std::nullopt; //< unresolved type
+
+				const ExpressionType& paramType = ResolveAlias(*expressionType);
+				if (!IsVectorType(paramType))
+					throw AstInternalError{ intrinsicExpr.sourceLocation, fmt::format("intrinsic {} first parameter is not a vector", intrinsicData.functionName) };
+
+				const VectorType& vecType = std::get<VectorType>(paramType);
+				return vecType.type;
+			}
+
+			case ReturnType::U32:
+				return PrimitiveType::UInt32;
+
+			case ReturnType::Void:
+				return NoType{};
+		}
+	}
+
+	StatementPtr Unscope(StatementPtr&& statement)
+	{
+		if (statement->GetType() == NodeType::ScopedStatement)
+			return std::move(static_cast<ScopedStatement&>(*statement).statement);
+		else
+			return std::move(statement);
+	}
+
 	bool ValidateMatchingTypes(const ExpressionPtr& left, const ExpressionPtr& right)
 	{
 		const ExpressionType* leftType = GetExpressionType(*left);
@@ -192,7 +303,7 @@ namespace nzsl::Ast
 
 		if (IsLiteralType(resolvedLeftType) != IsLiteralType(resolvedRightType))
 		{
-			auto CheckUntypedType = [](PrimitiveType leftType, PrimitiveType rightType)
+			auto CheckLiteralType = [](PrimitiveType leftType, PrimitiveType rightType)
 			{
 				PrimitiveType unresolvedType = leftType;
 				PrimitiveType resolvedType = rightType;
@@ -222,20 +333,12 @@ namespace nzsl::Ast
 
 			// One of the two type is unresolved but not both
 			if (IsPrimitiveType(resolvedLeftType) && IsPrimitiveType(resolvedRightType))
-				return CheckUntypedType(std::get<PrimitiveType>(resolvedLeftType), std::get<PrimitiveType>(resolvedRightType));
+				return CheckLiteralType(std::get<PrimitiveType>(resolvedLeftType), std::get<PrimitiveType>(resolvedRightType));
 			else if (IsVectorType(resolvedLeftType) && IsVectorType(resolvedRightType))
-				return CheckUntypedType(std::get<VectorType>(resolvedLeftType).type, std::get<VectorType>(resolvedRightType).type);
+				return CheckLiteralType(std::get<VectorType>(resolvedLeftType).type, std::get<VectorType>(resolvedRightType).type);
 		}
 
 		return false;
-	}
-
-	StatementPtr Unscope(StatementPtr&& statement)
-	{
-		if (statement->GetType() == NodeType::ScopedStatement)
-			return std::move(static_cast<ScopedStatement&>(*statement).statement);
-		else
-			return std::move(statement);
 	}
 
 	ExpressionType ValidateBinaryOp(BinaryType op, const ExpressionType& leftExprType, const ExpressionType& rightExprType, const SourceLocation& sourceLocation, const Stringifier& typeStringifier)

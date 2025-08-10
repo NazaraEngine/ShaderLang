@@ -1145,12 +1145,12 @@ fn main()
 		ExpectSPIRV(*shaderModule, R"(
        OpCapability Capability(Shader)
        OpCapability Capability(Float64)
- %43 = OpExtInstImport "GLSL.std.450"
+ %52 = OpExtInstImport "GLSL.std.450"
        OpMemoryModel AddressingModel(Logical) MemoryModel(GLSL450)
-       OpEntryPoint ExecutionModel(Fragment) %44 "main"
-       OpExecutionMode %44 ExecutionMode(OriginUpperLeft)
+       OpEntryPoint ExecutionModel(Fragment) %53 "main"
+       OpExecutionMode %53 ExecutionMode(OriginUpperLeft)
        OpSource SourceLanguage(NZSL) 4194304
-       OpName %44 "main"
+       OpName %53 "main"
   %1 = OpTypeVoid
   %2 = OpTypeFunction %1
   %3 = OpTypeFloat 32
@@ -1185,103 +1185,97 @@ fn main()
  %32 = OpTypeVector %31 3
  %33 = OpTypeMatrix %32 3
  %34 = OpTypePointer StorageClass(Function) %33
- %35 = OpTypeVector %31 2
- %36 = OpTypeMatrix %35 3
- %37 = OpTypePointer StorageClass(Function) %36
- %38 = OpTypeVector %3 2
- %39 = OpTypeMatrix %38 3
- %40 = OpTypePointer StorageClass(Function) %39
- %41 = OpTypeMatrix %32 2
- %42 = OpTypePointer StorageClass(Function) %41
- %60 = OpTypePointer StorageClass(Function) %4
- %70 = OpTypePointer StorageClass(Function) %28
- %79 = OpTypePointer StorageClass(Function) %32
- %95 = OpTypePointer StorageClass(Function) %35
- %44 = OpFunction %1 FunctionControl(0) %2
- %45 = OpLabel
- %46 = OpVariable %6 StorageClass(Function)
- %47 = OpVariable %6 StorageClass(Function)
- %48 = OpVariable %30 StorageClass(Function)
- %49 = OpVariable %30 StorageClass(Function)
- %50 = OpVariable %34 StorageClass(Function)
- %51 = OpVariable %34 StorageClass(Function)
- %52 = OpVariable %37 StorageClass(Function)
- %53 = OpVariable %37 StorageClass(Function)
- %54 = OpVariable %6 StorageClass(Function)
- %55 = OpVariable %34 StorageClass(Function)
- %56 = OpVariable %40 StorageClass(Function)
- %57 = OpVariable %42 StorageClass(Function)
- %58 = OpCompositeConstruct %4 %9 %10 %11 %12
- %59 = OpAccessChain %60 %46 %8
-       OpStore %59 %58
- %61 = OpCompositeConstruct %4 %14 %15 %16 %17
- %62 = OpAccessChain %60 %46 %13
-       OpStore %62 %61
- %63 = OpCompositeConstruct %4 %19 %20 %21 %22
- %64 = OpAccessChain %60 %46 %18
-       OpStore %64 %63
- %65 = OpCompositeConstruct %4 %24 %25 %26 %27
- %66 = OpAccessChain %60 %46 %23
-       OpStore %66 %65
- %67 = OpLoad %5 %46
-       OpStore %47 %67
- %68 = OpCompositeConstruct %28 %9 %10 %11
- %69 = OpAccessChain %70 %48 %8
-       OpStore %69 %68
- %71 = OpCompositeConstruct %28 %12 %14 %15
- %72 = OpAccessChain %70 %48 %13
-       OpStore %72 %71
- %73 = OpLoad %29 %48
-       OpStore %49 %73
- %74 = OpFConvert %31 %9
- %75 = OpFConvert %31 %10
- %76 = OpFConvert %31 %11
- %77 = OpCompositeConstruct %32 %74 %75 %76
- %78 = OpAccessChain %79 %50 %8
+ %35 = OpConstant %31 f64(0)
+ %36 = OpConstant %31 f64(1)
+ %37 = OpConstant %31 f64(2)
+ %38 = OpConstant %31 f64(3)
+ %39 = OpConstant %31 f64(4)
+ %40 = OpConstant %31 f64(5)
+ %41 = OpConstant %31 f64(6)
+ %42 = OpConstant %31 f64(7)
+ %43 = OpConstant %31 f64(8)
+ %44 = OpTypeVector %31 2
+ %45 = OpTypeMatrix %44 3
+ %46 = OpTypePointer StorageClass(Function) %45
+ %47 = OpTypeVector %3 2
+ %48 = OpTypeMatrix %47 3
+ %49 = OpTypePointer StorageClass(Function) %48
+ %50 = OpTypeMatrix %32 2
+ %51 = OpTypePointer StorageClass(Function) %50
+ %69 = OpTypePointer StorageClass(Function) %4
+ %79 = OpTypePointer StorageClass(Function) %28
+ %85 = OpTypePointer StorageClass(Function) %32
+ %93 = OpTypePointer StorageClass(Function) %44
+ %53 = OpFunction %1 FunctionControl(0) %2
+ %54 = OpLabel
+ %55 = OpVariable %6 StorageClass(Function)
+ %56 = OpVariable %6 StorageClass(Function)
+ %57 = OpVariable %30 StorageClass(Function)
+ %58 = OpVariable %30 StorageClass(Function)
+ %59 = OpVariable %34 StorageClass(Function)
+ %60 = OpVariable %34 StorageClass(Function)
+ %61 = OpVariable %46 StorageClass(Function)
+ %62 = OpVariable %46 StorageClass(Function)
+ %63 = OpVariable %6 StorageClass(Function)
+ %64 = OpVariable %34 StorageClass(Function)
+ %65 = OpVariable %49 StorageClass(Function)
+ %66 = OpVariable %51 StorageClass(Function)
+ %67 = OpCompositeConstruct %4 %9 %10 %11 %12
+ %68 = OpAccessChain %69 %55 %8
+       OpStore %68 %67
+ %70 = OpCompositeConstruct %4 %14 %15 %16 %17
+ %71 = OpAccessChain %69 %55 %13
+       OpStore %71 %70
+ %72 = OpCompositeConstruct %4 %19 %20 %21 %22
+ %73 = OpAccessChain %69 %55 %18
+       OpStore %73 %72
+ %74 = OpCompositeConstruct %4 %24 %25 %26 %27
+ %75 = OpAccessChain %69 %55 %23
+       OpStore %75 %74
+ %76 = OpLoad %5 %55
+       OpStore %56 %76
+ %77 = OpCompositeConstruct %28 %9 %10 %11
+ %78 = OpAccessChain %79 %57 %8
        OpStore %78 %77
- %80 = OpFConvert %31 %12
- %81 = OpFConvert %31 %14
- %82 = OpFConvert %31 %15
- %83 = OpCompositeConstruct %32 %80 %81 %82
- %84 = OpAccessChain %79 %50 %13
+ %80 = OpCompositeConstruct %28 %12 %14 %15
+ %81 = OpAccessChain %79 %57 %13
+       OpStore %81 %80
+ %82 = OpLoad %29 %57
+       OpStore %58 %82
+ %83 = OpCompositeConstruct %32 %35 %36 %37
+ %84 = OpAccessChain %85 %59 %8
        OpStore %84 %83
- %85 = OpFConvert %31 %16
- %86 = OpFConvert %31 %17
- %87 = OpFConvert %31 %19
- %88 = OpCompositeConstruct %32 %85 %86 %87
- %89 = OpAccessChain %79 %50 %18
+ %86 = OpCompositeConstruct %32 %38 %39 %40
+ %87 = OpAccessChain %85 %59 %13
+       OpStore %87 %86
+ %88 = OpCompositeConstruct %32 %41 %42 %43
+ %89 = OpAccessChain %85 %59 %18
        OpStore %89 %88
- %90 = OpLoad %33 %50
-       OpStore %51 %90
- %91 = OpFConvert %31 %9
- %92 = OpFConvert %31 %10
- %93 = OpCompositeConstruct %35 %91 %92
- %94 = OpAccessChain %95 %52 %8
-       OpStore %94 %93
- %96 = OpFConvert %31 %11
- %97 = OpFConvert %31 %12
- %98 = OpCompositeConstruct %35 %96 %97
- %99 = OpAccessChain %95 %52 %13
-       OpStore %99 %98
-%100 = OpFConvert %31 %14
-%101 = OpFConvert %31 %15
-%102 = OpCompositeConstruct %35 %100 %101
-%103 = OpAccessChain %95 %52 %18
-       OpStore %103 %102
-%104 = OpLoad %36 %52
-       OpStore %53 %104
-%105 = OpLoad %5 %47
-%106 = OpExtInst %5 GLSLstd450 MatrixInverse %105
-       OpStore %54 %106
-%107 = OpLoad %33 %51
-%108 = OpExtInst %33 GLSLstd450 MatrixInverse %107
-       OpStore %55 %108
-%109 = OpLoad %29 %49
-%110 = OpTranspose %39 %109
-       OpStore %56 %110
-%111 = OpLoad %36 %53
-%112 = OpTranspose %41 %111
-       OpStore %57 %112
+ %90 = OpLoad %33 %59
+       OpStore %60 %90
+ %91 = OpCompositeConstruct %44 %35 %36
+ %92 = OpAccessChain %93 %61 %8
+       OpStore %92 %91
+ %94 = OpCompositeConstruct %44 %37 %38
+ %95 = OpAccessChain %93 %61 %13
+       OpStore %95 %94
+ %96 = OpCompositeConstruct %44 %39 %40
+ %97 = OpAccessChain %93 %61 %18
+       OpStore %97 %96
+ %98 = OpLoad %45 %61
+       OpStore %62 %98
+ %99 = OpLoad %5 %56
+%100 = OpExtInst %5 GLSLstd450 MatrixInverse %99
+       OpStore %63 %100
+%101 = OpLoad %33 %60
+%102 = OpExtInst %33 GLSLstd450 MatrixInverse %101
+       OpStore %64 %102
+%103 = OpLoad %29 %58
+%104 = OpTranspose %48 %103
+       OpStore %65 %104
+%105 = OpLoad %45 %62
+%106 = OpTranspose %50 %105
+       OpStore %66 %106
        OpReturn
        OpFunctionEnd)", {}, {}, true);
 	}
@@ -1296,14 +1290,15 @@ module;
 [entry(frag)]
 fn main()
 {
-	double d1 = 42.0lf;
-	double d2 = 1337.0lf;
-	float f1 = 42.0;
-	float f2 = 1337.0;
-	vec3 v1 = vec3(0.0, 1.0, 2.0);
-	vec3 v2 = vec3(2.0, 1.0, 0.0);
-	dvec3 dv1 = dvec3(0.0lf, 1.0lf, 2.0lf);
-	dvec3 dv2 = dvec3(2.0lf, 1.0lf, 0.0lf);
+	let d1: f64 = 42.0;
+	let d2: f64 = 1337.0;
+	let f1 = 42.0;
+	let f2 = 1337.0;
+	let v1 = vec3[f32](0.0, 1.0, 2.0);
+	let v2 = vec3[f32](2.0, 1.0, 0.0);
+	let dv1 = vec3[f64](0.0, 1.0, 2.0);
+	let dv2 = vec3[f64](2.0, 1.0, 0.0);
+
 	let acosResult1 = acos(f1);
 	let acosResult2 = acos(v1);
 	let acoshResult1 = acosh(f1);
@@ -1345,14 +1340,14 @@ fn main()
 		ExpectGLSL(*shaderModule, R"(
 void main()
 {
-	double d1 = 42.0;
-	double d2 = 1337.0;
+	double d1 = 42.0lf;
+	double d2 = 1337.0lf;
 	float f1 = 42.0;
 	float f2 = 1337.0;
 	vec3 v1 = vec3(0.0, 1.0, 2.0);
 	vec3 v2 = vec3(2.0, 1.0, 0.0);
-	dvec3 dv1 = dvec3(0.0, 1.0, 2.0);
-	dvec3 dv2 = dvec3(2.0, 1.0, 0.0);
+	dvec3 dv1 = dvec3(0.0lf, 1.0lf, 2.0lf);
+	dvec3 dv2 = dvec3(2.0lf, 1.0lf, 0.0lf);
 	float acosResult1 = acos(f1);
 	vec3 acosResult2 = acos(v1);
 	float acoshResult1 = acosh(f1);
@@ -1385,8 +1380,8 @@ void main()
 		ExpectNZSL(*shaderModule, R"(
 fn main()
 {
-	let d1: f64 = f64(42.0);
-	let d2: f64 = f64(1337.0);
+	let d1: f64 = 42.0;
+	let d2: f64 = 1337.0;
 	let f1: f32 = 42.0;
 	let f2: f32 = 1337.0;
 	let v1: vec3[f32] = vec3[f32](0.0, 1.0, 2.0);
@@ -1767,163 +1762,147 @@ fn main()
 			env.spvMinorVersion = 0;
 
 			ExpectSPIRV(*shaderModule, R"(
- %35 = OpFunction %1 FunctionControl(0) %2
- %36 = OpLabel
- %37 = OpVariable %5 StorageClass(Function)
- %38 = OpVariable %5 StorageClass(Function)
- %39 = OpVariable %10 StorageClass(Function)
- %40 = OpVariable %10 StorageClass(Function)
- %41 = OpVariable %12 StorageClass(Function)
- %42 = OpVariable %12 StorageClass(Function)
- %43 = OpVariable %15 StorageClass(Function)
- %44 = OpVariable %15 StorageClass(Function)
- %45 = OpVariable %18 StorageClass(Function)
- %46 = OpVariable %18 StorageClass(Function)
- %47 = OpVariable %23 StorageClass(Function)
- %48 = OpVariable %23 StorageClass(Function)
- %49 = OpVariable %25 StorageClass(Function)
- %50 = OpVariable %25 StorageClass(Function)
- %51 = OpVariable %27 StorageClass(Function)
- %52 = OpVariable %27 StorageClass(Function)
- %53 = OpVariable %32 StorageClass(Function)
- %54 = OpVariable %32 StorageClass(Function)
- %55 = OpVariable %34 StorageClass(Function)
- %56 = OpVariable %34 StorageClass(Function)
- %57 = OpVariable %10 StorageClass(Function)
- %58 = OpVariable %12 StorageClass(Function)
- %59 = OpVariable %15 StorageClass(Function)
- %60 = OpVariable %18 StorageClass(Function)
- %61 = OpVariable %23 StorageClass(Function)
- %62 = OpVariable %25 StorageClass(Function)
- %63 = OpVariable %27 StorageClass(Function)
- %64 = OpVariable %32 StorageClass(Function)
- %65 = OpVariable %34 StorageClass(Function)
- %66 = OpVariable %23 StorageClass(Function)
- %67 = OpVariable %25 StorageClass(Function)
- %68 = OpVariable %27 StorageClass(Function)
- %69 = OpVariable %32 StorageClass(Function)
- %70 = OpVariable %34 StorageClass(Function)
-       OpStore %37 %4
-       OpStore %38 %6
- %71 = OpFConvert %9 %8
-       OpStore %39 %71
- %72 = OpFConvert %9 %11
-       OpStore %40 %72
-       OpStore %41 %8
-       OpStore %42 %11
-       OpStore %43 %14
-       OpStore %44 %16
- %73 = OpBitcast %17 %14
-       OpStore %45 %73
- %74 = OpBitcast %17 %16
-       OpStore %46 %74
- %75 = OpCompositeConstruct %22 %19 %20 %21
-       OpStore %47 %75
- %76 = OpCompositeConstruct %22 %21 %20 %19
-       OpStore %48 %76
- %77 = OpCompositeConstruct %24 %6 %4 %6
-       OpStore %49 %77
- %78 = OpCompositeConstruct %24 %4 %4 %6
-       OpStore %50 %78
- %79 = OpFConvert %9 %19
- %80 = OpFConvert %9 %20
- %81 = OpFConvert %9 %21
- %82 = OpCompositeConstruct %26 %79 %80 %81
-       OpStore %51 %82
- %83 = OpFConvert %9 %21
- %84 = OpFConvert %9 %20
- %85 = OpFConvert %9 %19
- %86 = OpCompositeConstruct %26 %83 %84 %85
-       OpStore %52 %86
- %87 = OpCompositeConstruct %31 %28 %29 %30
-       OpStore %53 %87
- %88 = OpCompositeConstruct %31 %30 %29 %28
-       OpStore %54 %88
- %89 = OpBitcast %17 %28
- %90 = OpBitcast %17 %29
- %91 = OpBitcast %17 %30
- %92 = OpCompositeConstruct %33 %89 %90 %91
-       OpStore %55 %92
- %93 = OpBitcast %17 %30
- %94 = OpBitcast %17 %29
- %95 = OpBitcast %17 %28
- %96 = OpCompositeConstruct %33 %93 %94 %95
-       OpStore %56 %96
- %97 = OpLoad %3 %37
- %98 = OpLoad %9 %39
- %99 = OpLoad %9 %40
-%100 = OpSelect %9 %97 %98 %99
-       OpStore %57 %100
-%101 = OpLoad %3 %38
-%102 = OpLoad %7 %41
-%103 = OpLoad %7 %42
-%104 = OpSelect %7 %101 %102 %103
-       OpStore %58 %104
-%105 = OpLoad %3 %37
-%106 = OpLoad %13 %43
-%107 = OpLoad %13 %44
-%108 = OpSelect %13 %105 %106 %107
-       OpStore %59 %108
-%109 = OpLoad %3 %38
-%110 = OpLoad %17 %45
-%111 = OpLoad %17 %46
-%112 = OpSelect %17 %109 %110 %111
-       OpStore %60 %112
-%113 = OpLoad %3 %37
-%114 = OpLoad %22 %47
-%115 = OpLoad %22 %48
-%116 = OpCompositeConstruct %24 %113 %113 %113
-%117 = OpSelect %22 %116 %114 %115
-       OpStore %61 %117
-%118 = OpLoad %3 %38
-%119 = OpLoad %24 %49
-%120 = OpLoad %24 %50
-%121 = OpCompositeConstruct %24 %118 %118 %118
-%122 = OpSelect %24 %121 %119 %120
-       OpStore %62 %122
-%123 = OpLoad %3 %37
-%124 = OpLoad %26 %51
-%125 = OpLoad %26 %52
-%126 = OpCompositeConstruct %24 %123 %123 %123
-%127 = OpSelect %26 %126 %124 %125
-       OpStore %63 %127
-%128 = OpLoad %3 %38
-%129 = OpLoad %31 %53
-%130 = OpLoad %31 %54
-%131 = OpCompositeConstruct %24 %128 %128 %128
-%132 = OpSelect %31 %131 %129 %130
-       OpStore %64 %132
-%133 = OpLoad %3 %37
-%134 = OpLoad %33 %55
-%135 = OpLoad %33 %56
-%136 = OpCompositeConstruct %24 %133 %133 %133
-%137 = OpSelect %33 %136 %134 %135
-       OpStore %65 %137
-%138 = OpLoad %24 %49
-%139 = OpLoad %22 %47
-%140 = OpLoad %22 %48
-%141 = OpSelect %22 %138 %139 %140
-       OpStore %66 %141
-%142 = OpLoad %24 %50
-%143 = OpLoad %24 %49
-%144 = OpLoad %24 %50
-%145 = OpSelect %24 %142 %143 %144
-       OpStore %67 %145
-%146 = OpLoad %24 %49
-%147 = OpLoad %26 %51
-%148 = OpLoad %26 %52
-%149 = OpSelect %26 %146 %147 %148
-       OpStore %68 %149
-%150 = OpLoad %24 %50
-%151 = OpLoad %31 %53
-%152 = OpLoad %31 %54
-%153 = OpSelect %31 %150 %151 %152
-       OpStore %69 %153
-%154 = OpLoad %24 %49
-%155 = OpLoad %33 %55
-%156 = OpLoad %33 %56
-%157 = OpSelect %33 %154 %155 %156
-       OpStore %70 %157
+ %45 = OpFunction %1 FunctionControl(0) %2
+ %46 = OpLabel
+ %47 = OpVariable %5 StorageClass(Function)
+ %48 = OpVariable %5 StorageClass(Function)
+ %49 = OpVariable %9 StorageClass(Function)
+ %50 = OpVariable %9 StorageClass(Function)
+ %51 = OpVariable %13 StorageClass(Function)
+ %52 = OpVariable %13 StorageClass(Function)
+ %53 = OpVariable %17 StorageClass(Function)
+ %54 = OpVariable %17 StorageClass(Function)
+ %55 = OpVariable %21 StorageClass(Function)
+ %56 = OpVariable %21 StorageClass(Function)
+ %57 = OpVariable %27 StorageClass(Function)
+ %58 = OpVariable %27 StorageClass(Function)
+ %59 = OpVariable %29 StorageClass(Function)
+ %60 = OpVariable %29 StorageClass(Function)
+ %61 = OpVariable %34 StorageClass(Function)
+ %62 = OpVariable %34 StorageClass(Function)
+ %63 = OpVariable %39 StorageClass(Function)
+ %64 = OpVariable %39 StorageClass(Function)
+ %65 = OpVariable %44 StorageClass(Function)
+ %66 = OpVariable %44 StorageClass(Function)
+ %67 = OpVariable %9 StorageClass(Function)
+ %68 = OpVariable %13 StorageClass(Function)
+ %69 = OpVariable %17 StorageClass(Function)
+ %70 = OpVariable %21 StorageClass(Function)
+ %71 = OpVariable %27 StorageClass(Function)
+ %72 = OpVariable %29 StorageClass(Function)
+ %73 = OpVariable %34 StorageClass(Function)
+ %74 = OpVariable %39 StorageClass(Function)
+ %75 = OpVariable %44 StorageClass(Function)
+ %76 = OpVariable %27 StorageClass(Function)
+ %77 = OpVariable %29 StorageClass(Function)
+ %78 = OpVariable %34 StorageClass(Function)
+ %79 = OpVariable %39 StorageClass(Function)
+ %80 = OpVariable %44 StorageClass(Function)
+       OpStore %47 %4
+       OpStore %48 %6
+       OpStore %49 %8
+       OpStore %50 %10
+       OpStore %51 %12
+       OpStore %52 %14
+       OpStore %53 %16
+       OpStore %54 %18
+       OpStore %55 %20
+       OpStore %56 %22
+ %81 = OpCompositeConstruct %26 %23 %24 %25
+       OpStore %57 %81
+ %82 = OpCompositeConstruct %26 %25 %24 %23
+       OpStore %58 %82
+ %83 = OpCompositeConstruct %28 %6 %4 %6
+       OpStore %59 %83
+ %84 = OpCompositeConstruct %28 %4 %4 %6
+       OpStore %60 %84
+ %85 = OpCompositeConstruct %33 %30 %31 %32
+       OpStore %61 %85
+ %86 = OpCompositeConstruct %33 %32 %31 %30
+       OpStore %62 %86
+ %87 = OpCompositeConstruct %38 %35 %36 %37
+       OpStore %63 %87
+ %88 = OpCompositeConstruct %38 %37 %36 %35
+       OpStore %64 %88
+ %89 = OpCompositeConstruct %43 %40 %41 %42
+       OpStore %65 %89
+ %90 = OpCompositeConstruct %43 %42 %41 %40
+       OpStore %66 %90
+ %91 = OpLoad %3 %47
+ %92 = OpLoad %7 %49
+ %93 = OpLoad %7 %50
+ %94 = OpSelect %7 %91 %92 %93
+       OpStore %67 %94
+ %95 = OpLoad %3 %48
+ %96 = OpLoad %11 %51
+ %97 = OpLoad %11 %52
+ %98 = OpSelect %11 %95 %96 %97
+       OpStore %68 %98
+ %99 = OpLoad %3 %47
+%100 = OpLoad %15 %53
+%101 = OpLoad %15 %54
+%102 = OpSelect %15 %99 %100 %101
+       OpStore %69 %102
+%103 = OpLoad %3 %48
+%104 = OpLoad %19 %55
+%105 = OpLoad %19 %56
+%106 = OpSelect %19 %103 %104 %105
+       OpStore %70 %106
+%107 = OpLoad %3 %47
+%108 = OpLoad %26 %57
+%109 = OpLoad %26 %58
+%110 = OpCompositeConstruct %28 %107 %107 %107
+%111 = OpSelect %26 %110 %108 %109
+       OpStore %71 %111
+%112 = OpLoad %3 %48
+%113 = OpLoad %28 %59
+%114 = OpLoad %28 %60
+%115 = OpCompositeConstruct %28 %112 %112 %112
+%116 = OpSelect %28 %115 %113 %114
+       OpStore %72 %116
+%117 = OpLoad %3 %47
+%118 = OpLoad %33 %61
+%119 = OpLoad %33 %62
+%120 = OpCompositeConstruct %28 %117 %117 %117
+%121 = OpSelect %33 %120 %118 %119
+       OpStore %73 %121
+%122 = OpLoad %3 %48
+%123 = OpLoad %38 %63
+%124 = OpLoad %38 %64
+%125 = OpCompositeConstruct %28 %122 %122 %122
+%126 = OpSelect %38 %125 %123 %124
+       OpStore %74 %126
+%127 = OpLoad %3 %47
+%128 = OpLoad %43 %65
+%129 = OpLoad %43 %66
+%130 = OpCompositeConstruct %28 %127 %127 %127
+%131 = OpSelect %43 %130 %128 %129
+       OpStore %75 %131
+%132 = OpLoad %28 %59
+%133 = OpLoad %26 %57
+%134 = OpLoad %26 %58
+%135 = OpSelect %26 %132 %133 %134
+       OpStore %76 %135
+%136 = OpLoad %28 %60
+%137 = OpLoad %28 %59
+%138 = OpLoad %28 %60
+%139 = OpSelect %28 %136 %137 %138
+       OpStore %77 %139
+%140 = OpLoad %28 %59
+%141 = OpLoad %33 %61
+%142 = OpLoad %33 %62
+%143 = OpSelect %33 %140 %141 %142
+       OpStore %78 %143
+%144 = OpLoad %28 %60
+%145 = OpLoad %38 %63
+%146 = OpLoad %38 %64
+%147 = OpSelect %38 %144 %145 %146
+       OpStore %79 %147
+%148 = OpLoad %28 %59
+%149 = OpLoad %43 %65
+%150 = OpLoad %43 %66
+%151 = OpSelect %43 %148 %149 %150
+       OpStore %80 %151
        OpReturn
        OpFunctionEnd)", {}, env, true);
 		}
@@ -1936,158 +1915,142 @@ fn main()
 			env.spvMinorVersion = 4;
 
 			ExpectSPIRV(*shaderModule, R"(
- %35 = OpFunction %1 FunctionControl(0) %2
- %36 = OpLabel
- %37 = OpVariable %5 StorageClass(Function)
- %38 = OpVariable %5 StorageClass(Function)
- %39 = OpVariable %10 StorageClass(Function)
- %40 = OpVariable %10 StorageClass(Function)
- %41 = OpVariable %12 StorageClass(Function)
- %42 = OpVariable %12 StorageClass(Function)
- %43 = OpVariable %15 StorageClass(Function)
- %44 = OpVariable %15 StorageClass(Function)
- %45 = OpVariable %18 StorageClass(Function)
- %46 = OpVariable %18 StorageClass(Function)
- %47 = OpVariable %23 StorageClass(Function)
- %48 = OpVariable %23 StorageClass(Function)
- %49 = OpVariable %25 StorageClass(Function)
- %50 = OpVariable %25 StorageClass(Function)
- %51 = OpVariable %27 StorageClass(Function)
- %52 = OpVariable %27 StorageClass(Function)
- %53 = OpVariable %32 StorageClass(Function)
- %54 = OpVariable %32 StorageClass(Function)
- %55 = OpVariable %34 StorageClass(Function)
- %56 = OpVariable %34 StorageClass(Function)
- %57 = OpVariable %10 StorageClass(Function)
- %58 = OpVariable %12 StorageClass(Function)
- %59 = OpVariable %15 StorageClass(Function)
- %60 = OpVariable %18 StorageClass(Function)
- %61 = OpVariable %23 StorageClass(Function)
- %62 = OpVariable %25 StorageClass(Function)
- %63 = OpVariable %27 StorageClass(Function)
- %64 = OpVariable %32 StorageClass(Function)
- %65 = OpVariable %34 StorageClass(Function)
- %66 = OpVariable %23 StorageClass(Function)
- %67 = OpVariable %25 StorageClass(Function)
- %68 = OpVariable %27 StorageClass(Function)
- %69 = OpVariable %32 StorageClass(Function)
- %70 = OpVariable %34 StorageClass(Function)
-       OpStore %37 %4
-       OpStore %38 %6
- %71 = OpFConvert %9 %8
-       OpStore %39 %71
- %72 = OpFConvert %9 %11
-       OpStore %40 %72
-       OpStore %41 %8
-       OpStore %42 %11
-       OpStore %43 %14
-       OpStore %44 %16
- %73 = OpBitcast %17 %14
-       OpStore %45 %73
- %74 = OpBitcast %17 %16
-       OpStore %46 %74
- %75 = OpCompositeConstruct %22 %19 %20 %21
-       OpStore %47 %75
- %76 = OpCompositeConstruct %22 %21 %20 %19
-       OpStore %48 %76
- %77 = OpCompositeConstruct %24 %6 %4 %6
-       OpStore %49 %77
- %78 = OpCompositeConstruct %24 %4 %4 %6
-       OpStore %50 %78
- %79 = OpFConvert %9 %19
- %80 = OpFConvert %9 %20
- %81 = OpFConvert %9 %21
- %82 = OpCompositeConstruct %26 %79 %80 %81
-       OpStore %51 %82
- %83 = OpFConvert %9 %21
- %84 = OpFConvert %9 %20
- %85 = OpFConvert %9 %19
- %86 = OpCompositeConstruct %26 %83 %84 %85
-       OpStore %52 %86
- %87 = OpCompositeConstruct %31 %28 %29 %30
-       OpStore %53 %87
- %88 = OpCompositeConstruct %31 %30 %29 %28
-       OpStore %54 %88
- %89 = OpBitcast %17 %28
- %90 = OpBitcast %17 %29
- %91 = OpBitcast %17 %30
- %92 = OpCompositeConstruct %33 %89 %90 %91
-       OpStore %55 %92
- %93 = OpBitcast %17 %30
- %94 = OpBitcast %17 %29
- %95 = OpBitcast %17 %28
- %96 = OpCompositeConstruct %33 %93 %94 %95
-       OpStore %56 %96
- %97 = OpLoad %3 %37
- %98 = OpLoad %9 %39
- %99 = OpLoad %9 %40
-%100 = OpSelect %9 %97 %98 %99
-       OpStore %57 %100
-%101 = OpLoad %3 %38
-%102 = OpLoad %7 %41
-%103 = OpLoad %7 %42
-%104 = OpSelect %7 %101 %102 %103
-       OpStore %58 %104
-%105 = OpLoad %3 %37
-%106 = OpLoad %13 %43
-%107 = OpLoad %13 %44
-%108 = OpSelect %13 %105 %106 %107
-       OpStore %59 %108
-%109 = OpLoad %3 %38
-%110 = OpLoad %17 %45
-%111 = OpLoad %17 %46
-%112 = OpSelect %17 %109 %110 %111
-       OpStore %60 %112
-%113 = OpLoad %3 %37
-%114 = OpLoad %22 %47
-%115 = OpLoad %22 %48
-%116 = OpSelect %22 %113 %114 %115
-       OpStore %61 %116
-%117 = OpLoad %3 %38
-%118 = OpLoad %24 %49
-%119 = OpLoad %24 %50
-%120 = OpSelect %24 %117 %118 %119
-       OpStore %62 %120
-%121 = OpLoad %3 %37
-%122 = OpLoad %26 %51
-%123 = OpLoad %26 %52
-%124 = OpSelect %26 %121 %122 %123
-       OpStore %63 %124
-%125 = OpLoad %3 %38
-%126 = OpLoad %31 %53
-%127 = OpLoad %31 %54
-%128 = OpSelect %31 %125 %126 %127
-       OpStore %64 %128
-%129 = OpLoad %3 %37
-%130 = OpLoad %33 %55
-%131 = OpLoad %33 %56
-%132 = OpSelect %33 %129 %130 %131
-       OpStore %65 %132
-%133 = OpLoad %24 %49
-%134 = OpLoad %22 %47
-%135 = OpLoad %22 %48
-%136 = OpSelect %22 %133 %134 %135
-       OpStore %66 %136
-%137 = OpLoad %24 %50
-%138 = OpLoad %24 %49
-%139 = OpLoad %24 %50
-%140 = OpSelect %24 %137 %138 %139
-       OpStore %67 %140
-%141 = OpLoad %24 %49
-%142 = OpLoad %26 %51
-%143 = OpLoad %26 %52
-%144 = OpSelect %26 %141 %142 %143
-       OpStore %68 %144
-%145 = OpLoad %24 %50
-%146 = OpLoad %31 %53
-%147 = OpLoad %31 %54
-%148 = OpSelect %31 %145 %146 %147
-       OpStore %69 %148
-%149 = OpLoad %24 %49
-%150 = OpLoad %33 %55
-%151 = OpLoad %33 %56
-%152 = OpSelect %33 %149 %150 %151
-       OpStore %70 %152
+ %45 = OpFunction %1 FunctionControl(0) %2
+ %46 = OpLabel
+ %47 = OpVariable %5 StorageClass(Function)
+ %48 = OpVariable %5 StorageClass(Function)
+ %49 = OpVariable %9 StorageClass(Function)
+ %50 = OpVariable %9 StorageClass(Function)
+ %51 = OpVariable %13 StorageClass(Function)
+ %52 = OpVariable %13 StorageClass(Function)
+ %53 = OpVariable %17 StorageClass(Function)
+ %54 = OpVariable %17 StorageClass(Function)
+ %55 = OpVariable %21 StorageClass(Function)
+ %56 = OpVariable %21 StorageClass(Function)
+ %57 = OpVariable %27 StorageClass(Function)
+ %58 = OpVariable %27 StorageClass(Function)
+ %59 = OpVariable %29 StorageClass(Function)
+ %60 = OpVariable %29 StorageClass(Function)
+ %61 = OpVariable %34 StorageClass(Function)
+ %62 = OpVariable %34 StorageClass(Function)
+ %63 = OpVariable %39 StorageClass(Function)
+ %64 = OpVariable %39 StorageClass(Function)
+ %65 = OpVariable %44 StorageClass(Function)
+ %66 = OpVariable %44 StorageClass(Function)
+ %67 = OpVariable %9 StorageClass(Function)
+ %68 = OpVariable %13 StorageClass(Function)
+ %69 = OpVariable %17 StorageClass(Function)
+ %70 = OpVariable %21 StorageClass(Function)
+ %71 = OpVariable %27 StorageClass(Function)
+ %72 = OpVariable %29 StorageClass(Function)
+ %73 = OpVariable %34 StorageClass(Function)
+ %74 = OpVariable %39 StorageClass(Function)
+ %75 = OpVariable %44 StorageClass(Function)
+ %76 = OpVariable %27 StorageClass(Function)
+ %77 = OpVariable %29 StorageClass(Function)
+ %78 = OpVariable %34 StorageClass(Function)
+ %79 = OpVariable %39 StorageClass(Function)
+ %80 = OpVariable %44 StorageClass(Function)
+       OpStore %47 %4
+       OpStore %48 %6
+       OpStore %49 %8
+       OpStore %50 %10
+       OpStore %51 %12
+       OpStore %52 %14
+       OpStore %53 %16
+       OpStore %54 %18
+       OpStore %55 %20
+       OpStore %56 %22
+ %81 = OpCompositeConstruct %26 %23 %24 %25
+       OpStore %57 %81
+ %82 = OpCompositeConstruct %26 %25 %24 %23
+       OpStore %58 %82
+ %83 = OpCompositeConstruct %28 %6 %4 %6
+       OpStore %59 %83
+ %84 = OpCompositeConstruct %28 %4 %4 %6
+       OpStore %60 %84
+ %85 = OpCompositeConstruct %33 %30 %31 %32
+       OpStore %61 %85
+ %86 = OpCompositeConstruct %33 %32 %31 %30
+       OpStore %62 %86
+ %87 = OpCompositeConstruct %38 %35 %36 %37
+       OpStore %63 %87
+ %88 = OpCompositeConstruct %38 %37 %36 %35
+       OpStore %64 %88
+ %89 = OpCompositeConstruct %43 %40 %41 %42
+       OpStore %65 %89
+ %90 = OpCompositeConstruct %43 %42 %41 %40
+       OpStore %66 %90
+ %91 = OpLoad %3 %47
+ %92 = OpLoad %7 %49
+ %93 = OpLoad %7 %50
+ %94 = OpSelect %7 %91 %92 %93
+       OpStore %67 %94
+ %95 = OpLoad %3 %48
+ %96 = OpLoad %11 %51
+ %97 = OpLoad %11 %52
+ %98 = OpSelect %11 %95 %96 %97
+       OpStore %68 %98
+ %99 = OpLoad %3 %47
+%100 = OpLoad %15 %53
+%101 = OpLoad %15 %54
+%102 = OpSelect %15 %99 %100 %101
+       OpStore %69 %102
+%103 = OpLoad %3 %48
+%104 = OpLoad %19 %55
+%105 = OpLoad %19 %56
+%106 = OpSelect %19 %103 %104 %105
+       OpStore %70 %106
+%107 = OpLoad %3 %47
+%108 = OpLoad %26 %57
+%109 = OpLoad %26 %58
+%110 = OpSelect %26 %107 %108 %109
+       OpStore %71 %110
+%111 = OpLoad %3 %48
+%112 = OpLoad %28 %59
+%113 = OpLoad %28 %60
+%114 = OpSelect %28 %111 %112 %113
+       OpStore %72 %114
+%115 = OpLoad %3 %47
+%116 = OpLoad %33 %61
+%117 = OpLoad %33 %62
+%118 = OpSelect %33 %115 %116 %117
+       OpStore %73 %118
+%119 = OpLoad %3 %48
+%120 = OpLoad %38 %63
+%121 = OpLoad %38 %64
+%122 = OpSelect %38 %119 %120 %121
+       OpStore %74 %122
+%123 = OpLoad %3 %47
+%124 = OpLoad %43 %65
+%125 = OpLoad %43 %66
+%126 = OpSelect %43 %123 %124 %125
+       OpStore %75 %126
+%127 = OpLoad %28 %59
+%128 = OpLoad %26 %57
+%129 = OpLoad %26 %58
+%130 = OpSelect %26 %127 %128 %129
+       OpStore %76 %130
+%131 = OpLoad %28 %60
+%132 = OpLoad %28 %59
+%133 = OpLoad %28 %60
+%134 = OpSelect %28 %131 %132 %133
+       OpStore %77 %134
+%135 = OpLoad %28 %59
+%136 = OpLoad %33 %61
+%137 = OpLoad %33 %62
+%138 = OpSelect %33 %135 %136 %137
+       OpStore %78 %138
+%139 = OpLoad %28 %60
+%140 = OpLoad %38 %63
+%141 = OpLoad %38 %64
+%142 = OpSelect %38 %139 %140 %141
+       OpStore %79 %142
+%143 = OpLoad %28 %59
+%144 = OpLoad %43 %65
+%145 = OpLoad %43 %66
+%146 = OpSelect %43 %143 %144 %145
+       OpStore %80 %146
        OpReturn
        OpFunctionEnd)", {}, env, true);
 		}
