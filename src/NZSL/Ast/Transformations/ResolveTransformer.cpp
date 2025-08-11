@@ -204,33 +204,6 @@ namespace nzsl::Ast
 		}
 	}
 
-	ExpressionType ResolveTransformer::ComputeSwizzleType(const ExpressionType& type, std::size_t componentCount, const SourceLocation& sourceLocation) const
-	{
-		assert(IsPrimitiveType(type) || IsVectorType(type));
-
-		PrimitiveType baseType;
-		if (IsPrimitiveType(type))
-			baseType = std::get<PrimitiveType>(type);
-		else
-		{
-			const VectorType& vecType = std::get<VectorType>(type);
-			baseType = vecType.type;
-		}
-
-		if (componentCount > 1)
-		{
-			if (componentCount > 4)
-				throw CompilerInvalidSwizzleError{ sourceLocation };
-
-			return VectorType{
-				componentCount,
-				baseType
-			};
-		}
-		else
-			return baseType;
-	}
-
 	template<typename T>
 	bool ResolveTransformer::ComputeExprValue(ExpressionValue<T>& attribute, const SourceLocation& sourceLocation)
 	{
@@ -2354,7 +2327,7 @@ namespace nzsl::Ast
 	{
 		HandleChildren(intrinsicExpr);
 
-		intrinsicExpr.cachedExpressionType = GetIntrinsicReturnType(intrinsicExpr);
+		intrinsicExpr.cachedExpressionType = ComputeExpressionType(intrinsicExpr, BuildStringifier(intrinsicExpr.sourceLocation));
 		return DontVisitChildren{};
 	}
 
@@ -2363,17 +2336,8 @@ namespace nzsl::Ast
 		MandatoryExpr(swizzleExpr.expression, swizzleExpr.sourceLocation);
 
 		HandleChildren(swizzleExpr);
-		const ExpressionType* exprType = GetExpressionType(*swizzleExpr.expression);
-		if (!exprType)
-			return DontVisitChildren{}; //< unresolved
 
-		const ExpressionType& resolvedExprType = ResolveAlias(*exprType);
-
-		if (!IsPrimitiveType(resolvedExprType) && !IsVectorType(resolvedExprType))
-			throw CompilerSwizzleUnexpectedTypeError{ swizzleExpr.sourceLocation, ToString(*exprType, swizzleExpr.expression->sourceLocation) };
-
-		swizzleExpr.cachedExpressionType = ComputeSwizzleType(resolvedExprType, swizzleExpr.componentCount, swizzleExpr.sourceLocation);
-
+		swizzleExpr.cachedExpressionType = ComputeExpressionType(swizzleExpr, BuildStringifier(swizzleExpr.sourceLocation));
 		return DontVisitChildren{};
 	}
 

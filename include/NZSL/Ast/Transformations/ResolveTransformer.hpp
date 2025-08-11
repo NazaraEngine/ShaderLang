@@ -48,7 +48,6 @@ namespace nzsl::Ast
 
 			std::optional<ConstantValue> ComputeConstantValue(ExpressionPtr& expr) const;
 			template<typename T> bool ComputeExprValue(ExpressionValue<T>& attribute, const SourceLocation& sourceLocation);
-			ExpressionType ComputeSwizzleType(const ExpressionType& type, std::size_t componentCount, const SourceLocation& sourceLocation) const;
 
 			const TransformerContext::IdentifierData* FindIdentifier(std::string_view identifierName) const;
 			template<typename F> const TransformerContext::IdentifierData* FindIdentifier(std::string_view identifierName, F&& functor) const;

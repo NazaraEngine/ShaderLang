@@ -6,8 +6,8 @@
 #include <NZSL/Ast/Utils.hpp>
 #include <NZSL/Lang/Errors.hpp>
 #include <NZSL/Lang/LangData.hpp>
-#include <NZSL/Ast/Transformations/TransformerContext.hpp>
 #include <NZSL/Ast/Transformations/ConstantPropagationTransformer.hpp>
+#include <NZSL/Ast/Transformations/TransformerContext.hpp>
 #include <fmt/format.h>
 
 namespace nzsl::Ast
@@ -16,6 +16,7 @@ namespace nzsl::Ast
 	{
 		m_currentFunction = nullptr;
 		m_options = &options;
+		m_recomputeExprType = false;
 
 		if (!TransformImportedModules(module, context, error))
 			return false;
@@ -35,10 +36,10 @@ namespace nzsl::Ast
 
 			ResolveUntyped(indexExpr, { PrimitiveType::Int32 }, indexExpr->sourceLocation);
 		}
-	
+
 		return DontVisitChildren{};
 	}
-	
+
 	auto LiteralTransformer::Transform(AssignExpression&& assignExpr) -> ExpressionTransformation
 	{
 		if (!m_options->resolveUntypedLiterals)
@@ -86,8 +87,11 @@ namespace nzsl::Ast
 					rightExprType = GetExpressionType(*binaryExpr.right);
 			}
 
-			binaryExpr.cachedExpressionType = ValidateBinaryOp(binaryExpr.op, *leftExprType, *rightExprType, binaryExpr.sourceLocation);
+			m_recomputeExprType = true;
 		}
+
+		if (m_recomputeExprType)
+			binaryExpr.cachedExpressionType = ValidateBinaryOp(binaryExpr.op, *leftExprType, *rightExprType, binaryExpr.sourceLocation);
 
 		return DontVisitChildren{};
 	}
@@ -204,7 +208,9 @@ namespace nzsl::Ast
 
 				case ParameterType::F32:
 				case ParameterType::FVal:
-					ResolveUntyped(intrinsicExpr.parameters[paramIndex], PrimitiveType::Float32, intrinsicExpr.sourceLocation);
+					if (ResolveUntyped(intrinsicExpr.parameters[paramIndex], PrimitiveType::Float32, intrinsicExpr.sourceLocation))
+						m_recomputeExprType = true;
+
 					paramIndex++;
 					break;
 
@@ -219,28 +225,36 @@ namespace nzsl::Ast
 						break;
 					}
 
-					ResolveUntyped(intrinsicExpr.parameters[paramIndex], {}, intrinsicExpr.sourceLocation);
+					if (ResolveUntyped(intrinsicExpr.parameters[paramIndex], {}, intrinsicExpr.sourceLocation))
+						m_recomputeExprType = true;
+
 					paramIndex++;
 					break;
 				}
 
 				case ParameterType::FValVec1632:
 				{
-					ResolveUntyped(intrinsicExpr.parameters[paramIndex], {}, intrinsicExpr.sourceLocation);
+					if (ResolveUntyped(intrinsicExpr.parameters[paramIndex], {}, intrinsicExpr.sourceLocation))
+						m_recomputeExprType = true;
+
 					paramIndex++;
 					break;
 				}
 
 				case ParameterType::FVec:
 				{
-					ResolveUntyped(intrinsicExpr.parameters[paramIndex], {}, intrinsicExpr.sourceLocation);
+					if (ResolveUntyped(intrinsicExpr.parameters[paramIndex], {}, intrinsicExpr.sourceLocation))
+						m_recomputeExprType = true;
+
 					paramIndex++;
 					break;
 				}
 
 				case ParameterType::FVec3:
 				{
-					ResolveUntyped(intrinsicExpr.parameters[paramIndex], {}, intrinsicExpr.sourceLocation);
+					if (ResolveUntyped(intrinsicExpr.parameters[paramIndex], {}, intrinsicExpr.sourceLocation))
+						m_recomputeExprType = true;
+
 					paramIndex++;
 					break;
 				}
@@ -259,42 +273,54 @@ namespace nzsl::Ast
 
 				case ParameterType::Numerical:
 				{
-					ResolveUntyped(intrinsicExpr.parameters[paramIndex], {}, intrinsicExpr.sourceLocation);
+					if (ResolveUntyped(intrinsicExpr.parameters[paramIndex], {}, intrinsicExpr.sourceLocation))
+						m_recomputeExprType = true;
+
 					paramIndex++;
 					break;
 				}
 
 				case ParameterType::NumericalVec:
 				{
-					ResolveUntyped(intrinsicExpr.parameters[paramIndex], {}, intrinsicExpr.sourceLocation);
+					if (ResolveUntyped(intrinsicExpr.parameters[paramIndex], {}, intrinsicExpr.sourceLocation))
+						m_recomputeExprType = true;
+
 					paramIndex++;
 					break;
 				}
 
 				case ParameterType::Scalar:
 				{
-					ResolveUntyped(intrinsicExpr.parameters[paramIndex], {}, intrinsicExpr.sourceLocation);
+					if (ResolveUntyped(intrinsicExpr.parameters[paramIndex], {}, intrinsicExpr.sourceLocation))
+						m_recomputeExprType = true;
+
 					paramIndex++;
 					break;
 				}
 
 				case ParameterType::ScalarVec:
 				{
-					ResolveUntyped(intrinsicExpr.parameters[paramIndex], {}, intrinsicExpr.sourceLocation);
+					if (ResolveUntyped(intrinsicExpr.parameters[paramIndex], {}, intrinsicExpr.sourceLocation))
+						m_recomputeExprType = true;
+
 					paramIndex++;
 					break;
 				}
 
 				case ParameterType::SignedNumerical:
 				{
-					ResolveUntyped(intrinsicExpr.parameters[paramIndex], {}, intrinsicExpr.sourceLocation);
+					if (ResolveUntyped(intrinsicExpr.parameters[paramIndex], {}, intrinsicExpr.sourceLocation))
+						m_recomputeExprType = true;
+
 					paramIndex++;
 					break;
 				}
 
 				case ParameterType::SignedNumericalVec:
 				{
-					ResolveUntyped(intrinsicExpr.parameters[paramIndex], {}, intrinsicExpr.sourceLocation);
+					if (ResolveUntyped(intrinsicExpr.parameters[paramIndex], {}, intrinsicExpr.sourceLocation))
+						m_recomputeExprType = true;
+
 					paramIndex++;
 					break;
 				}
@@ -311,7 +337,8 @@ namespace nzsl::Ast
 					if (exprType && IsLiteralType(*exprType) && IsVectorType(*exprType))
 					{
 						const VectorType& vecType = std::get<VectorType>(*exprType);
-						ResolveUntyped(intrinsicExpr.parameters[paramIndex], VectorType{ vecType.componentCount, PrimitiveType::Float32 }, intrinsicExpr.sourceLocation);
+						if (ResolveUntyped(intrinsicExpr.parameters[paramIndex], VectorType{ vecType.componentCount, PrimitiveType::Float32 }, intrinsicExpr.sourceLocation))
+							m_recomputeExprType = true;
 					}
 
 					paramIndex++;
@@ -361,28 +388,28 @@ namespace nzsl::Ast
 		}
 
 		// Update return type as we changed parameter type
-		intrinsicExpr.cachedExpressionType = GetIntrinsicReturnType(intrinsicExpr);
+		if (m_recomputeExprType)
+			intrinsicExpr.cachedExpressionType = ComputeExpressionType(intrinsicExpr, BuildStringifier(intrinsicExpr.sourceLocation));
+
+		return DontVisitChildren();
+	}
+
+	auto LiteralTransformer::Transform(SwizzleExpression&& swizzleExpr) -> ExpressionTransformation
+	{
+		HandleChildren(swizzleExpr);
+
+		if (m_recomputeExprType)
+			swizzleExpr.cachedExpressionType = ComputeExpressionType(swizzleExpr, BuildStringifier(swizzleExpr.sourceLocation));
 
 		return DontVisitChildren();
 	}
 
 	auto LiteralTransformer::Transform(UnaryExpression&& unaryExpr) -> ExpressionTransformation
 	{
-		if (!m_options->resolveUntypedLiterals)
-			return VisitChildren{};
-
 		HandleChildren(unaryExpr);
 
-		// Unary doesn't need to resolve untyped but its operation may be applied to the untyped value (-IntLiteral(42) => IntLiteral(-42)) 
-		const ExpressionType* exprType = GetResolvedExpressionType(unaryExpr);
-		if (!exprType)
-			return DontVisitChildren{};
-
-		if (IsLiteralType(*exprType))
-		{
-			ConstantPropagationTransformer constantPropagation;
-			constantPropagation.Transform(GetCurrentExpressionPtr(), *m_context);
-		}
+		if (m_recomputeExprType)
+			unaryExpr.cachedExpressionType = ComputeExpressionType(unaryExpr, BuildStringifier(unaryExpr.sourceLocation));
 
 		return DontVisitChildren{};
 	}
@@ -499,6 +526,11 @@ namespace nzsl::Ast
 			ResolveUntyped(returnStatement.returnExpr, m_currentFunction->returnType.GetResultingValue(), returnStatement.sourceLocation);
 
 		return DontVisitChildren{};
+	}
+
+	void LiteralTransformer::FinishExpressionHandling()
+	{
+		m_recomputeExprType = false;
 	}
 
 	bool LiteralTransformer::ResolveUntyped(ExpressionPtr& expressionPtr, std::optional<ExpressionType> referenceType, const SourceLocation& sourceLocation) const

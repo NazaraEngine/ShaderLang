@@ -29,6 +29,8 @@ namespace nzsl::Ast
 		private:
 			using Transformer::Transform;
 
+			void FinishExpressionHandling() override;
+
 			bool ResolveUntyped(ExpressionPtr& expression, std::optional<ExpressionType> referenceType, const SourceLocation& sourceLocation) const;
 
 			ExpressionTransformation Transform(AccessIndexExpression&& accessIndexExpr) override;
@@ -37,6 +39,7 @@ namespace nzsl::Ast
 			ExpressionTransformation Transform(CallFunctionExpression&& callFuncExpr) override;
 			ExpressionTransformation Transform(CastExpression&& castExpr) override;
 			ExpressionTransformation Transform(IntrinsicExpression&& intrinsicExpr) override;
+			ExpressionTransformation Transform(SwizzleExpression&& swizzleExpr) override;
 			ExpressionTransformation Transform(UnaryExpression&& unaryExpr) override;
 
 			StatementTransformation Transform(DeclareConstStatement&& declConst) override;
@@ -47,6 +50,7 @@ namespace nzsl::Ast
 
 			DeclareFunctionStatement* m_currentFunction;
 			const Options* m_options;
+			bool m_recomputeExprType;
 	};
 }
 

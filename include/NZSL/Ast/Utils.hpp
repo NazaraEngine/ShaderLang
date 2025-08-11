@@ -58,14 +58,22 @@ namespace nzsl::Ast
 			ExpressionCategory m_expressionCategory;
 	};
 
+	NZSL_API std::optional<ExpressionType> ComputeExpressionType(const IntrinsicExpression& intrinsicExpr, const Stringifier& typeStringifier);
+	NZSL_API std::optional<ExpressionType> ComputeExpressionType(const SwizzleExpression& swizzleExpr, const Stringifier& typeStringifier);
+	NZSL_API std::optional<ExpressionType> ComputeExpressionType(const UnaryExpression& unaryExpr, const Stringifier& typeStringifier);
+	NZSL_API ExpressionType ComputeSwizzleType(const ExpressionType& type, std::size_t componentCount, const SourceLocation& sourceLocation);
+
 	inline ExpressionCategory GetExpressionCategory(Expression& expression);
-	std::optional<ExpressionType> GetIntrinsicReturnType(const IntrinsicExpression& intrinsicExpr);
-	StatementPtr Unscope(StatementPtr&& statement);
 
-	ExpressionType ValidateBinaryOp(BinaryType op, const ExpressionType& leftExprType, const ExpressionType& rightExprType, const SourceLocation& sourceLocation, const Stringifier& typeStringifier = {});
+	NZSL_API Expression& MandatoryExpr(const ExpressionPtr& node, const SourceLocation& sourceLocation);
+	NZSL_API Statement& MandatoryStatement(const StatementPtr& node, const SourceLocation& sourceLocation);
 
-	bool ValidateMatchingTypes(const ExpressionPtr& left, const ExpressionPtr& right);
-	bool ValidateMatchingTypes(const ExpressionType& left, const ExpressionType& right);
+	NZSL_API StatementPtr Unscope(StatementPtr&& statement);
+
+	NZSL_API ExpressionType ValidateBinaryOp(BinaryType op, const ExpressionType& leftExprType, const ExpressionType& rightExprType, const SourceLocation& sourceLocation, const Stringifier& typeStringifier = {});
+
+	NZSL_API bool ValidateMatchingTypes(const ExpressionPtr& left, const ExpressionPtr& right);
+	NZSL_API bool ValidateMatchingTypes(const ExpressionType& left, const ExpressionType& right);
 }
 
 #include <NZSL/Ast/Utils.inl>

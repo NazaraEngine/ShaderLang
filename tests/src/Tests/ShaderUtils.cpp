@@ -503,14 +503,14 @@ void ResolveModule(nzsl::Ast::Module& module, const ResolveOptions& resolveOptio
 		if (resolveOptions.identifierResolverOptions)
 			executor.AddPass<nzsl::Ast::ResolveTransformer>(*resolveOptions.identifierResolverOptions);
 
+		if (resolveOptions.literalOptions)
+			executor.AddPass<nzsl::Ast::LiteralTransformer>(*resolveOptions.literalOptions);
+
 		if (resolveOptions.constantRemovalOptions)
 			executor.AddPass<nzsl::Ast::ConstantRemovalTransformer>(*resolveOptions.constantRemovalOptions);
 
 		if (resolveOptions.bindingResolverOptions)
 			executor.AddPass<nzsl::Ast::BindingResolverTransformer>(*resolveOptions.bindingResolverOptions);
-
-		//if (resolveOptions.untypedOptions)
-		//	executor.AddPass<nzsl::Ast::LiteralTransformer>(*resolveOptions.untypedOptions);
 
 		REQUIRE_NOTHROW(executor.Transform(module, context));
 		hasBeenResolved = true;
@@ -581,4 +581,4 @@ void ResolveModule(nzsl::Ast::Module& module, const ResolveOptions& resolveOptio
 
 const nzsl::Ast::BindingResolverTransformer::Options ResolveOptions::defaultBindingResolverOptions;
 const nzsl::Ast::ResolveTransformer::Options ResolveOptions::defaultIdentifierResolveOptions;
-const nzsl::Ast::LiteralTransformer::Options ResolveOptions::defaultUntypedOptions;
+const nzsl::Ast::LiteralTransformer::Options ResolveOptions::defaultLiteralOptions;
