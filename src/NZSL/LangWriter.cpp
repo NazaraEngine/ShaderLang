@@ -198,6 +198,7 @@ namespace nzsl
 		std::vector<std::string> moduleNames;
 		const Ast::Module* module;
 		bool isInEntryPoint = false;
+		bool shouldEnforceTypes = false;
 		int streamEmptyLine = 1;
 		unsigned int indentLevel = 0;
 	};
@@ -838,6 +839,8 @@ namespace nzsl
 			bool v = value;
 			return AppendValue(v);
 		}
+		else if constexpr (std::is_same_v<T, double> || std::is_same_v<T, std::uint32_t>)
+			Append(Ast::ToString(value, m_currentState->shouldEnforceTypes));
 		else
 			Append(Ast::ConstantToString(value));
 	}
@@ -1290,6 +1293,10 @@ namespace nzsl
 				break;
 		}
 
+		// We have to enforce constant types for intrinsics for the right overload to be used
+		bool prevShouldEnforceTypes = m_currentState->shouldEnforceTypes;
+		m_currentState->shouldEnforceTypes = true;
+
 		Append("(");
 		bool first = true;
 		for (std::size_t i = (method) ? 1 : 0; i < node.parameters.size(); ++i)
@@ -1302,6 +1309,8 @@ namespace nzsl
 			node.parameters[i]->Visit(*this);
 		}
 		Append(")");
+
+		m_currentState->shouldEnforceTypes = prevShouldEnforceTypes;
 	}
 
 	void LangWriter::Visit(Ast::ModuleExpression& node)

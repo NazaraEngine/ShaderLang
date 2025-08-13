@@ -123,9 +123,7 @@ namespace nzsl::Ast
 				throw std::runtime_error("invalid type (value expected)");
 			else if constexpr (std::is_same_v<T, bool>)
 				return (arg) ? "true" : "false";
-			else if constexpr (std::is_same_v<T, double> || std::is_same_v<T, float> || std::is_same_v<T, std::int32_t> || std::is_same_v<T, std::uint32_t>)
-				return ToString(arg);
-			else if constexpr (IsLiteral_v<T>)
+			else if constexpr (IsLiteral_v<T> || std::is_same_v<T, double> || std::is_same_v<T, float> || std::is_same_v<T, std::int32_t> || std::is_same_v<T, std::uint32_t>)
 				return ToString(arg);
 			else if constexpr (std::is_same_v<T, std::string>)
 				return EscapeString(arg, true);

@@ -179,6 +179,8 @@ namespace nzsl::Ast
 
 	auto LiteralTransformer::Transform(IntrinsicExpression&& intrinsicExpr) -> ExpressionTransformation
 	{
+		using namespace LangData::IntrinsicHelper;
+
 		if (!m_options->resolveUntypedLiterals)
 			return VisitChildren{};
 
@@ -190,132 +192,100 @@ namespace nzsl::Ast
 
 		const auto& intrinsicData = intrinsicIt->second;
 
-		std::optional<std::size_t> unresolvedParameter;
-
+		// First, resolve same type parameters
 		std::size_t paramIndex = 0;
-		std::size_t lastSameComponentCountBarrierIndex = 0;
 		std::size_t lastSameParamBarrierIndex = 0;
 		for (std::size_t i = 0; i < intrinsicData.parameterCount; ++i)
 		{
-			using namespace LangData::IntrinsicHelper;
+			switch (intrinsicData.parameterTypes[i])
+			{
+				case ParameterType::SameType:
+				{
+					// Find first non-literal parameter (if any) and use it as a reference to resolve other parameters
+					const ExpressionType* referenceType = nullptr;
+					auto it = std::find_if(intrinsicExpr.parameters.begin() + lastSameParamBarrierIndex, intrinsicExpr.parameters.begin() + paramIndex, 
+					[&](ExpressionPtr& paramExpr)
+					{
+						const ExpressionType* parameterType = GetExpressionType(MandatoryExpr(paramExpr, intrinsicExpr.sourceLocation));
+						if (!parameterType)
+							return false; //< unresolved, skip
 
+						const ExpressionType& resolvedParamType = ResolveAlias(*parameterType);
+
+						if (IsLiteralType(resolvedParamType))
+							return false;
+
+						referenceType = &resolvedParamType;
+						return true;
+					});
+
+					if (!referenceType)
+						break; //< either unresolved or all types are literals
+
+					for (std::size_t j = lastSameParamBarrierIndex; j < paramIndex; ++j)
+					{
+						const ExpressionType* parameterType = GetExpressionType(*intrinsicExpr.parameters[j]);
+						if (!parameterType)
+							continue;
+
+						if (ResolveUntyped(intrinsicExpr.parameters[j], *referenceType, intrinsicExpr.parameters[j]->sourceLocation))
+							m_recomputeExprType = true;
+					}
+
+					break;
+				}
+
+				case ParameterType::SameTypeBarrier:
+					lastSameParamBarrierIndex = paramIndex;
+					break;
+
+				case ParameterType::SameVecComponentCount:
+				case ParameterType::SameVecComponentCountBarrier:
+					break;
+
+				default:
+					paramIndex++;
+					break;
+			}
+		}
+
+		// Then resolve other parameters
+		paramIndex = 0;
+
+		for (std::size_t i = 0; i < intrinsicData.parameterCount; ++i)
+		{
 			switch (intrinsicData.parameterTypes[i])
 			{
 				case ParameterType::ArrayDyn:
 				case ParameterType::BValVec:
+				case ParameterType::Sampler:
+				case ParameterType::Texture:
+				case ParameterType::TextureData:
 					paramIndex++;
 					break;
 
 				case ParameterType::F32:
 				case ParameterType::FVal:
+				case ParameterType::SampleCoordinates:
+				{
 					if (ResolveUntyped(intrinsicExpr.parameters[paramIndex], PrimitiveType::Float32, intrinsicExpr.sourceLocation))
 						m_recomputeExprType = true;
 
 					paramIndex++;
 					break;
+				}
 
 				case ParameterType::FValVec:
-				{
-					auto& parameter = MandatoryExpr(intrinsicExpr.parameters[paramIndex], intrinsicExpr.sourceLocation);
-
-					const ExpressionType* type = GetExpressionType(parameter);
-					if (!type)
-					{
-						paramIndex++;
-						break;
-					}
-
-					if (ResolveUntyped(intrinsicExpr.parameters[paramIndex], {}, intrinsicExpr.sourceLocation))
-						m_recomputeExprType = true;
-
-					paramIndex++;
-					break;
-				}
-
 				case ParameterType::FValVec1632:
-				{
-					if (ResolveUntyped(intrinsicExpr.parameters[paramIndex], {}, intrinsicExpr.sourceLocation))
-						m_recomputeExprType = true;
-
-					paramIndex++;
-					break;
-				}
-
 				case ParameterType::FVec:
-				{
-					if (ResolveUntyped(intrinsicExpr.parameters[paramIndex], {}, intrinsicExpr.sourceLocation))
-						m_recomputeExprType = true;
-
-					paramIndex++;
-					break;
-				}
-
 				case ParameterType::FVec3:
-				{
-					if (ResolveUntyped(intrinsicExpr.parameters[paramIndex], {}, intrinsicExpr.sourceLocation))
-						m_recomputeExprType = true;
-
-					paramIndex++;
-					break;
-				}
-
 				case ParameterType::Matrix:
-				{
-					paramIndex++;
-					break;
-				}
-
 				case ParameterType::MatrixSquare:
-				{
-					paramIndex++;
-					break;
-				}
-
 				case ParameterType::Numerical:
-				{
-					if (ResolveUntyped(intrinsicExpr.parameters[paramIndex], {}, intrinsicExpr.sourceLocation))
-						m_recomputeExprType = true;
-
-					paramIndex++;
-					break;
-				}
-
 				case ParameterType::NumericalVec:
-				{
-					if (ResolveUntyped(intrinsicExpr.parameters[paramIndex], {}, intrinsicExpr.sourceLocation))
-						m_recomputeExprType = true;
-
-					paramIndex++;
-					break;
-				}
-
 				case ParameterType::Scalar:
-				{
-					if (ResolveUntyped(intrinsicExpr.parameters[paramIndex], {}, intrinsicExpr.sourceLocation))
-						m_recomputeExprType = true;
-
-					paramIndex++;
-					break;
-				}
-
 				case ParameterType::ScalarVec:
-				{
-					if (ResolveUntyped(intrinsicExpr.parameters[paramIndex], {}, intrinsicExpr.sourceLocation))
-						m_recomputeExprType = true;
-
-					paramIndex++;
-					break;
-				}
-
 				case ParameterType::SignedNumerical:
-				{
-					if (ResolveUntyped(intrinsicExpr.parameters[paramIndex], {}, intrinsicExpr.sourceLocation))
-						m_recomputeExprType = true;
-
-					paramIndex++;
-					break;
-				}
-
 				case ParameterType::SignedNumericalVec:
 				{
 					if (ResolveUntyped(intrinsicExpr.parameters[paramIndex], {}, intrinsicExpr.sourceLocation))
@@ -325,65 +295,20 @@ namespace nzsl::Ast
 					break;
 				}
 
-				case ParameterType::Sampler:
+				case ParameterType::TextureCoordinates:
 				{
-					paramIndex++;
-					break;
-				}
-
-				case ParameterType::SampleCoordinates:
-				{
-					const ExpressionType* exprType = GetExpressionType(*intrinsicExpr.parameters[paramIndex]);
-					if (exprType && IsLiteralType(*exprType) && IsVectorType(*exprType))
-					{
-						const VectorType& vecType = std::get<VectorType>(*exprType);
-						if (ResolveUntyped(intrinsicExpr.parameters[paramIndex], VectorType{ vecType.componentCount, PrimitiveType::Float32 }, intrinsicExpr.sourceLocation))
-							m_recomputeExprType = true;
-					}
+					if (ResolveUntyped(intrinsicExpr.parameters[paramIndex], PrimitiveType::Int32, intrinsicExpr.sourceLocation))
+						m_recomputeExprType = true;
 
 					paramIndex++;
 					break;
 				}
 
 				case ParameterType::SameType:
-				{
-					break;
-				}
-
 				case ParameterType::SameTypeBarrier:
-				{
-					lastSameParamBarrierIndex = paramIndex;
-					break; //< Handled by SameType
-				}
-
 				case ParameterType::SameVecComponentCount:
-				{
-					break;
-				}
-
 				case ParameterType::SameVecComponentCountBarrier:
-				{
-					lastSameComponentCountBarrierIndex = paramIndex;
 					break; //< Handled by SameType
-				}
-
-				case ParameterType::Texture:
-				{
-					paramIndex++;
-					break;
-				}
-
-				case ParameterType::TextureCoordinates:
-				{
-					paramIndex++;
-					break;
-				}
-
-				case ParameterType::TextureData:
-				{
-					paramIndex++;
-					break;
-				}
 			}
 		}
 
@@ -535,14 +460,14 @@ namespace nzsl::Ast
 
 	bool LiteralTransformer::ResolveUntyped(ExpressionPtr& expressionPtr, std::optional<ExpressionType> referenceType, const SourceLocation& sourceLocation) const
 	{
-		const ExpressionType* exprType = GetExpressionType(*expressionPtr);
+		const ExpressionType* exprType = GetResolvedExpressionType(*expressionPtr);
 		if (!exprType)
 			return false;
 
 		if (IsLiteralType(*exprType))
 		{
 			PropagateConstants(expressionPtr);
-			exprType = GetExpressionType(*expressionPtr);
+			exprType = GetResolvedExpressionType(*expressionPtr);
 			if (!exprType)
 				return false;
 		}
@@ -688,14 +613,22 @@ namespace nzsl::Ast
 					if (referenceType)
 					{
 						const ExpressionType& resolvedType = ResolveAlias(*referenceType);
-						if (!IsVectorType(resolvedType))
-							throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(*vecType), Ast::ToString(*referenceType) };
+						if (IsPrimitiveType(resolvedType))
+						{
+							targetType = VectorType{ vecType->componentCount, PrimitiveType::Float32 };
 
-						targetType = std::get<VectorType>(resolvedType);
-						if (targetType.componentCount != vecType->componentCount)
-							throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(*vecType), Ast::ToString(*referenceType) };
+							constantExpr.cachedExpressionType = targetType;
+						}
+						else if (IsVectorType(resolvedType))
+						{
+							targetType = std::get<VectorType>(resolvedType);
+							if (targetType.componentCount != vecType->componentCount)
+								throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(*vecType), Ast::ToString(*referenceType) };
 
-						constantExpr.cachedExpressionType = *referenceType;
+							constantExpr.cachedExpressionType = *referenceType;
+						}
+						else
+							throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(*vecType), Ast::ToString(*referenceType) };
 					}
 					else
 					{

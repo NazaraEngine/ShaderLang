@@ -1720,7 +1720,7 @@ namespace nzsl::Ast
 						if (vectorType.componentCount != 3)
 							return false;
 
-						return vectorType.type == PrimitiveType::Float32 || vectorType.type == PrimitiveType::Float64 || vectorType.type == PrimitiveType::Float64;
+						return vectorType.type == PrimitiveType::Float32 || vectorType.type == PrimitiveType::Float64 || vectorType.type == PrimitiveType::FloatLiteral;
 					};
 
 					if (ValidateIntrinsicParameterType(node, Check, "floating-point vec3", paramIndex) == ValidationResult::Unresolved)
@@ -2345,7 +2345,7 @@ namespace nzsl::Ast
 
 	auto ValidationTransformer::ValidateIntrinsicParamMatchingVecComponent(IntrinsicExpression& node, std::size_t from, std::size_t to) -> ValidationResult
 	{
-		// Check if all types prior to this one matches their type
+		// Check if all vector types prior to this one matches their component count
 		std::size_t componentCount = 0;
 		for (; from < to; ++from)
 		{

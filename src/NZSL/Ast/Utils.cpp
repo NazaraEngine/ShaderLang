@@ -176,20 +176,84 @@ namespace nzsl::Ast
 
 	std::optional<ExpressionType> ComputeExpressionType(const IntrinsicExpression& intrinsicExpr, const Stringifier& /*typeStringifier*/)
 	{
+		using namespace LangData::IntrinsicHelper;
+
 		auto intrinsicIt = LangData::s_intrinsicData.find(intrinsicExpr.intrinsic);
 		if (intrinsicIt == LangData::s_intrinsicData.end())
 			throw AstInternalError{ intrinsicExpr.sourceLocation, fmt::format("missing intrinsic data for intrinsic {}", Nz::UnderlyingCast(intrinsicExpr.intrinsic)) };
 
 		const auto& intrinsicData = intrinsicIt->second;
 
+		std::array<std::optional<ExpressionType>, 2> parameterTypes;
+		if (intrinsicData.returnType == ReturnType::Param0Type || intrinsicData.returnType == ReturnType::Param1Type)
+		{
+			std::size_t targetParamIndex = (intrinsicData.returnType == ReturnType::Param0Type) ? 0 : 1;
+
+			// Resolve same type parameters
+			std::size_t paramIndex = 0;
+			std::size_t lastSameParamBarrierIndex = 0;
+			for (std::size_t i = 0; i < intrinsicData.parameterCount; ++i)
+			{
+				switch (intrinsicData.parameterTypes[i])
+				{
+					case ParameterType::SameType:
+					{
+						if (targetParamIndex < lastSameParamBarrierIndex || targetParamIndex > paramIndex)
+							continue;
+
+						// Find first non-literal parameter (if any) and use it as a reference to resolve other parameters
+						const ExpressionType* referenceType = nullptr;
+						auto it = std::find_if(intrinsicExpr.parameters.begin() + lastSameParamBarrierIndex, intrinsicExpr.parameters.begin() + paramIndex, 
+						[&](const ExpressionPtr& paramExpr)
+						{
+							const ExpressionType* parameterType = GetExpressionType(MandatoryExpr(paramExpr, intrinsicExpr.sourceLocation));
+							if (!parameterType)
+								return false; //< unresolved, skip
+
+							const ExpressionType& resolvedParamType = ResolveAlias(*parameterType);
+
+							if (IsLiteralType(resolvedParamType))
+								return false;
+
+							referenceType = &resolvedParamType;
+							return true;
+						});
+
+						if (!referenceType)
+							break; //< either unresolved or all types are literals
+
+						const ExpressionType* parameterType = GetExpressionType(*intrinsicExpr.parameters[targetParamIndex]);
+						if (!parameterType)
+							continue;
+
+						parameterTypes[targetParamIndex] = ResolveLiteralType(*parameterType, *referenceType, intrinsicExpr.parameters[targetParamIndex]->sourceLocation);
+						break;
+					}
+
+					case ParameterType::SameTypeBarrier:
+						lastSameParamBarrierIndex = paramIndex;
+						break;
+
+					case ParameterType::SameVecComponentCount:
+					case ParameterType::SameVecComponentCountBarrier:
+						break;
+
+					default:
+						paramIndex++;
+						break;
+				}
+			}
+		}
+
 		// return type attribution
 		switch (intrinsicData.returnType)
 		{
-			using namespace LangData::IntrinsicHelper;
+			case ReturnType::None:
+				return NoType{};
 
 			case ReturnType::Param0SampledValue:
 			{
-				const ExpressionType* expressionType = GetExpressionType(*intrinsicExpr.parameters[0]);
+				const ExpressionType* expressionType = (parameterTypes[0]) ? &*parameterTypes[0] : GetExpressionType(*intrinsicExpr.parameters[0]);
 				if (!expressionType)
 					return std::nullopt; //< unresolved type
 
@@ -206,7 +270,7 @@ namespace nzsl::Ast
 
 			case ReturnType::Param0TextureValue:
 			{
-				const ExpressionType* expressionType = GetExpressionType(*intrinsicExpr.parameters[0]);
+				const ExpressionType* expressionType = (parameterTypes[0]) ? &*parameterTypes[0] : GetExpressionType(*intrinsicExpr.parameters[0]);
 				if (!expressionType)
 					return std::nullopt; //< unresolved type
 
@@ -220,7 +284,7 @@ namespace nzsl::Ast
 
 			case ReturnType::Param0Transposed:
 			{
-				const ExpressionType* expressionType = GetExpressionType(*intrinsicExpr.parameters[0]);
+				const ExpressionType* expressionType = (parameterTypes[0]) ? &*parameterTypes[0] : GetExpressionType(*intrinsicExpr.parameters[0]);
 				if (!expressionType)
 					return std::nullopt; //< unresolved type
 
@@ -236,7 +300,7 @@ namespace nzsl::Ast
 
 			case ReturnType::Param0Type:
 			{
-				const ExpressionType* expressionType = GetExpressionType(*intrinsicExpr.parameters[0]);
+				const ExpressionType* expressionType = (parameterTypes[0]) ? &*parameterTypes[0] : GetExpressionType(*intrinsicExpr.parameters[0]);
 				if (!expressionType)
 					return std::nullopt; //< unresolved type
 
@@ -245,7 +309,7 @@ namespace nzsl::Ast
 
 			case ReturnType::Param1Type:
 			{
-				const ExpressionType* expressionType = GetExpressionType(*intrinsicExpr.parameters[1]);
+				const ExpressionType* expressionType = (parameterTypes[1]) ? &*parameterTypes[1] : GetExpressionType(*intrinsicExpr.parameters[1]);
 				if (!expressionType)
 					return std::nullopt; //< unresolved type
 
@@ -254,7 +318,7 @@ namespace nzsl::Ast
 
 			case ReturnType::Param0VecComponent:
 			{
-				const ExpressionType* expressionType = GetExpressionType(*intrinsicExpr.parameters[0]);
+				const ExpressionType* expressionType = (parameterTypes[0]) ? &*parameterTypes[0] : GetExpressionType(*intrinsicExpr.parameters[0]);
 				if (!expressionType)
 					return std::nullopt; //< unresolved type
 
@@ -268,9 +332,6 @@ namespace nzsl::Ast
 
 			case ReturnType::U32:
 				return PrimitiveType::UInt32;
-
-			case ReturnType::Void:
-				return NoType{};
 		}
 
 		return std::nullopt;
@@ -339,6 +400,56 @@ namespace nzsl::Ast
 			throw AstMissingStatementError{ sourceLocation };
 
 		return *node;
+	}
+
+	std::optional<ExpressionType> ResolveLiteralType(const ExpressionType& expressionType, std::optional<ExpressionType> referenceType, const SourceLocation& sourceLocation)
+	{
+		const ExpressionType& resolvedType = ResolveAlias(expressionType);
+		std::optional<PrimitiveType> resolvedReferenceType;
+		if (referenceType)
+		{
+			if (IsPrimitiveType(*referenceType))
+				resolvedReferenceType = std::get<PrimitiveType>(*referenceType);
+			else if (IsVectorType(*referenceType))
+				resolvedReferenceType = std::get<VectorType>(*referenceType).type;
+			else
+				throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(expressionType), Ast::ToString(*referenceType) };
+		}
+
+		if (IsPrimitiveType(resolvedType))
+		{
+			PrimitiveType primitiveType = std::get<PrimitiveType>(resolvedType);
+			if (primitiveType == PrimitiveType::FloatLiteral)
+			{
+				if (!resolvedReferenceType)
+					return PrimitiveType::Float32;
+				else if (resolvedReferenceType == PrimitiveType::Float32 || resolvedReferenceType == PrimitiveType::Float64)
+					return *resolvedReferenceType;
+				else
+					throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(expressionType), Ast::ToString(*referenceType) };
+			}
+			else if (primitiveType == PrimitiveType::IntLiteral)
+			{
+				if (!resolvedReferenceType)
+					return PrimitiveType::Int32;
+				else if (resolvedReferenceType == PrimitiveType::Int32 || resolvedReferenceType == PrimitiveType::UInt32)
+					return *resolvedReferenceType;
+				else
+					throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(expressionType), Ast::ToString(*referenceType) };
+			}
+		}
+		else if (IsVectorType(resolvedType))
+		{
+			VectorType vecType = std::get<VectorType>(resolvedType);
+			
+			if (auto resolvedTypeOpt = ResolveLiteralType(vecType.type, referenceType, sourceLocation))
+			{
+				vecType.type = std::get<PrimitiveType>(*resolvedTypeOpt);
+				return vecType;
+			}
+		}
+		
+		return std::nullopt;
 	}
 
 	StatementPtr Unscope(StatementPtr&& statement)
