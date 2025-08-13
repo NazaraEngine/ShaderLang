@@ -21,34 +21,6 @@ namespace nzsl::Ast
 
 	struct NZSL_API TransformerContext
 	{
-		struct AliasData;
-		struct ConstantData;
-		struct FunctionData;
-		struct Identifier;
-		struct IntrinsicData;
-		struct ModuleData;
-		struct ExternalBlockData;
-		struct StructData;
-		struct TypeData;
-		struct VariableData;
-
-		TransformerContext();
-
-		void Reset();
-
-		std::unordered_map<OptionHash, ConstantValue> optionValues;
-		IdentifierListWithValues<AliasData> aliases;
-		IdentifierListWithValues<ConstantData> constants;
-		IdentifierListWithValues<ExternalBlockData> namedExternalBlocks;
-		IdentifierListWithValues<FunctionData> functions;
-		IdentifierListWithValues<IntrinsicData> intrinsics;
-		IdentifierListWithValues<ModuleData> modules;
-		IdentifierListWithValues<StructData> structs;
-		IdentifierListWithValues<TypeData> types;
-		IdentifierListWithValues<VariableData> variables;
-		bool allowUnknownIdentifiers = false;
-		bool partialCompilation = false;
-
 		struct IdentifierData
 		{
 			std::size_t index;
@@ -113,6 +85,23 @@ namespace nzsl::Ast
 		{
 			ExpressionType type;
 		};
+		
+		TransformerContext();
+
+		void Reset();
+
+		std::unordered_map<OptionHash, ConstantValue> optionValues;
+		IdentifierListWithValues<AliasData> aliases;
+		IdentifierListWithValues<ConstantData> constants;
+		IdentifierListWithValues<ExternalBlockData> namedExternalBlocks;
+		IdentifierListWithValues<FunctionData> functions;
+		IdentifierListWithValues<IntrinsicData> intrinsics;
+		IdentifierListWithValues<ModuleData> modules;
+		IdentifierListWithValues<StructData> structs;
+		IdentifierListWithValues<TypeData> types;
+		IdentifierListWithValues<VariableData> variables;
+		bool allowUnknownIdentifiers = false;
+		bool partialCompilation = false;
 	};
 }
 
