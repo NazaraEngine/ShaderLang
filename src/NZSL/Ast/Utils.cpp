@@ -203,21 +203,20 @@ namespace nzsl::Ast
 
 						// Find first non-literal parameter (if any) and use it as a reference to resolve other parameters
 						const ExpressionType* referenceType = nullptr;
-						auto it = std::find_if(intrinsicExpr.parameters.begin() + lastSameParamBarrierIndex, intrinsicExpr.parameters.begin() + paramIndex, 
-						[&](const ExpressionPtr& paramExpr)
+						for (std::size_t j = lastSameParamBarrierIndex; j < paramIndex; ++j)
 						{
-							const ExpressionType* parameterType = GetExpressionType(MandatoryExpr(paramExpr, intrinsicExpr.sourceLocation));
+							const ExpressionType* parameterType = GetExpressionType(MandatoryExpr(intrinsicExpr.parameters[j], intrinsicExpr.sourceLocation));
 							if (!parameterType)
-								return false; //< unresolved, skip
+								continue; //< unresolved, skip
 
 							const ExpressionType& resolvedParamType = ResolveAlias(*parameterType);
 
 							if (IsLiteralType(resolvedParamType))
-								return false;
+								continue;
 
 							referenceType = &resolvedParamType;
-							return true;
-						});
+							break;
+						}
 
 						if (!referenceType)
 							break; //< either unresolved or all types are literals
@@ -405,23 +404,24 @@ namespace nzsl::Ast
 	std::optional<ExpressionType> ResolveLiteralType(const ExpressionType& expressionType, std::optional<ExpressionType> referenceType, const SourceLocation& sourceLocation)
 	{
 		const ExpressionType& resolvedType = ResolveAlias(expressionType);
-		std::optional<PrimitiveType> resolvedReferenceType;
-		if (referenceType)
-		{
-			if (IsPrimitiveType(*referenceType))
-				resolvedReferenceType = std::get<PrimitiveType>(*referenceType);
-			else if (IsVectorType(*referenceType))
-				resolvedReferenceType = std::get<VectorType>(*referenceType).type;
-			else
-				throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(expressionType), Ast::ToString(*referenceType) };
-		}
 
 		if (IsPrimitiveType(resolvedType))
 		{
+			std::optional<PrimitiveType> resolvedReferenceType;
+			if (referenceType)
+			{
+				if (IsPrimitiveType(*referenceType))
+					resolvedReferenceType = std::get<PrimitiveType>(*referenceType);
+				else if (IsVectorType(*referenceType))
+					resolvedReferenceType = std::get<VectorType>(*referenceType).type;
+				else
+					throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(expressionType), Ast::ToString(*referenceType) };
+			}
+
 			PrimitiveType primitiveType = std::get<PrimitiveType>(resolvedType);
 			if (primitiveType == PrimitiveType::FloatLiteral)
 			{
-				if (!resolvedReferenceType)
+				if (!resolvedReferenceType || resolvedReferenceType == PrimitiveType::FloatLiteral)
 					return PrimitiveType::Float32;
 				else if (resolvedReferenceType == PrimitiveType::Float32 || resolvedReferenceType == PrimitiveType::Float64)
 					return *resolvedReferenceType;
@@ -430,7 +430,7 @@ namespace nzsl::Ast
 			}
 			else if (primitiveType == PrimitiveType::IntLiteral)
 			{
-				if (!resolvedReferenceType)
+				if (!resolvedReferenceType || resolvedReferenceType == PrimitiveType::IntLiteral)
 					return PrimitiveType::Int32;
 				else if (resolvedReferenceType == PrimitiveType::Int32 || resolvedReferenceType == PrimitiveType::UInt32)
 					return *resolvedReferenceType;
