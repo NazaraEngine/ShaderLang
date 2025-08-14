@@ -86,6 +86,7 @@ namespace nzsl::Ast
 		{
 			ExpressionType type;
 		};
+
 		TransformerContext();
 
 		void Reset();

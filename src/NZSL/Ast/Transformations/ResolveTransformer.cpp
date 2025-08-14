@@ -136,7 +136,8 @@ namespace nzsl::Ast
 			}
 
 			m_states->currentEnv = m_states->globalEnv;
-			RegisterModule(importedModule.identifier, TransformerContext::ModuleData{ moduleId }, std::nullopt, {});
+
+			RegisterModule(importedModule.identifier, TransformerContext::ModuleData{ moduleId, moduleData.moduleName }, std::nullopt, {});
 		}
 
 		m_states->currentEnv = m_states->moduleEnv;
@@ -3414,7 +3415,7 @@ namespace nzsl::Ast
 
 			m_states->currentEnv = std::move(previousEnv);
 
-			RegisterModule(identifier, TransformerContext::ModuleData{ moduleIndex }, {}, importStatement.sourceLocation);
+			RegisterModule(identifier, TransformerContext::ModuleData{ moduleIndex, moduleName }, {}, importStatement.sourceLocation);
 
 			m_states->moduleByName[moduleName] = moduleIndex;
 		}

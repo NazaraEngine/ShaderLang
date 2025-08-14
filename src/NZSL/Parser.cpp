@@ -1780,7 +1780,7 @@ namespace nzsl
 		if (m_context->module->metadata->shaderLangVersion >= Version::UntypedLiterals)
 			constantExpr = ShaderBuilder::ConstantValue(Ast::IntLiteral{ std::get<std::int64_t>(integerToken.data) });
 		else
-			constantExpr = ShaderBuilder::ConstantValue(Nz::SafeCast<std::int32_t>(std::get<long long>(integerToken.data)));
+			constantExpr = ShaderBuilder::ConstantValue(Nz::SafeCast<std::int32_t>(std::get<std::int64_t>(integerToken.data)));
 
 		constantExpr->sourceLocation = integerToken.location;
 		return constantExpr;

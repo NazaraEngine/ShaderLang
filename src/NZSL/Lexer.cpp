@@ -6,16 +6,12 @@
 #include <NazaraUtils/Algorithm.hpp>
 #include <NZSL/Lang/Errors.hpp>
 #include <fast_float/fast_float.h>
-#include <fmt/format.h>
 #include <frozen/string.h>
 #include <frozen/unordered_map.h>
 #include <cctype>
 #include <charconv>
-#include <locale>
 #include <optional>
 #include <sstream>
-#include <stdexcept>
-#include <unordered_map>
 
 namespace nzsl
 {

@@ -134,17 +134,6 @@ namespace NAZARA_ANONYMOUS_NAMESPACE
 		}
 	};
 
-	std::string CappedStr(std::string str, std::size_t maxSize)
-	{
-		if (str.size() > maxSize)
-		{
-			str.resize(maxSize);
-			str += "...";
-		}
-
-		return str;
-	}
-
 	std::string_view CappedView(std::string_view view, std::size_t maxSize)
 	{
 		if (view.size() > maxSize)

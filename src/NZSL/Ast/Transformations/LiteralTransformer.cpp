@@ -203,21 +203,20 @@ namespace nzsl::Ast
 				{
 					// Find first non-literal parameter (if any) and use it as a reference to resolve other parameters
 					const ExpressionType* referenceType = nullptr;
-					auto it = std::find_if(intrinsicExpr.parameters.begin() + lastSameParamBarrierIndex, intrinsicExpr.parameters.begin() + paramIndex, 
-					[&](ExpressionPtr& paramExpr)
+					for (std::size_t j = lastSameParamBarrierIndex; j < paramIndex; ++j)
 					{
-						const ExpressionType* parameterType = GetExpressionType(MandatoryExpr(paramExpr, intrinsicExpr.sourceLocation));
+						const ExpressionType* parameterType = GetExpressionType(MandatoryExpr(intrinsicExpr.parameters[j], intrinsicExpr.sourceLocation));
 						if (!parameterType)
-							return false; //< unresolved, skip
+							continue; //< unresolved, skip
 
 						const ExpressionType& resolvedParamType = ResolveAlias(*parameterType);
 
 						if (IsLiteralType(resolvedParamType))
-							return false;
+							continue;
 
 						referenceType = &resolvedParamType;
-						return true;
-					});
+						break;
+					}
 
 					if (!referenceType)
 						break; //< either unresolved or all types are literals
