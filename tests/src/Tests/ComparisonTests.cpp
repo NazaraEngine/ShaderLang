@@ -9,7 +9,7 @@ TEST_CASE("Comparison", "[Shader]")
 	SECTION("Scalar arithmetic comparisons")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 [entry(frag)]
@@ -343,7 +343,7 @@ fn main()
 	SECTION("Unary operators combined with binary operators")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 fn foo() -> bool { return false; }

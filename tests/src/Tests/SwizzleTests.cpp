@@ -11,7 +11,7 @@ TEST_CASE("swizzle", "[Shader]")
 		WHEN("reading")
 		{
 			std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 [entry(frag)]
@@ -59,7 +59,7 @@ OpFunctionEnd)");
 		WHEN("writing")
 		{
 			std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 [entry(frag)]
@@ -110,7 +110,7 @@ OpFunctionEnd)");
 		GIVEN("a variable")
 		{
 			std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 [entry(frag)]
@@ -157,7 +157,7 @@ OpFunctionEnd)");
 		GIVEN("a function value")
 		{
 			std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 [entry(frag)]
@@ -211,7 +211,7 @@ OpFunctionEnd)");
 		WHEN("reading")
 		{
 			std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 [entry(frag)]
@@ -262,7 +262,7 @@ OpFunctionEnd)");
 		WHEN("writing")
 		{
 			std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 [entry(frag)]

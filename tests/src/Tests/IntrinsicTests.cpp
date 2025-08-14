@@ -9,7 +9,7 @@ TEST_CASE("intrinsics", "[Shader]")
 	WHEN("testing general intrinsics")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 [layout(std140)]
@@ -115,7 +115,7 @@ fn main()
 	WHEN("testing texture intrinsics")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 [feature(texture1D)]
 module;
 
@@ -242,7 +242,8 @@ fn main()
        OpMemoryModel AddressingModel(Logical) MemoryModel(GLSL450)
        OpEntryPoint ExecutionModel(Fragment) %59 "main"
        OpExecutionMode %59 ExecutionMode(OriginUpperLeft)
-       OpSource SourceLanguage(NZSL) 4194304
+       OpSource SourceLanguage(NZSL) 4198400
+       OpSourceExtension "Version: 1.1"
        OpName %5 "tex1D"
        OpName %9 "tex1DArray"
        OpName %13 "tex2D"
@@ -414,7 +415,7 @@ fn main()
 	WHEN("testing math intrinsics")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 [feature(float64)]
 module;
 
@@ -1086,7 +1087,7 @@ fn main()
 	WHEN("testing matrix intrinsics")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 [feature(float64)]
 module;
 
@@ -1149,7 +1150,8 @@ fn main()
        OpMemoryModel AddressingModel(Logical) MemoryModel(GLSL450)
        OpEntryPoint ExecutionModel(Fragment) %53 "main"
        OpExecutionMode %53 ExecutionMode(OriginUpperLeft)
-       OpSource SourceLanguage(NZSL) 4194304
+       OpSource SourceLanguage(NZSL) 4198400
+       OpSourceExtension "Version: 1.1"
        OpName %53 "main"
   %1 = OpTypeVoid
   %2 = OpTypeFunction %1
@@ -1283,7 +1285,7 @@ fn main()
 	WHEN("testing trigonometry intrinsics")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 [feature(float64)]
 module;
 
@@ -1505,7 +1507,7 @@ fn main()
 	WHEN("testing select intrinsic")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 [feature(float64)]
 module;
 
@@ -1711,7 +1713,7 @@ void main()
 		}
 
 		ExpectNZSL(*shaderModule, R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 [feature(float64)]
 module;
 

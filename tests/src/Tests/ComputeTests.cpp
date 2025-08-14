@@ -9,7 +9,7 @@ TEST_CASE("compute", "[Shader]")
 	SECTION("Simple texture copy")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 struct Data
@@ -97,7 +97,7 @@ void main()
 })", {}, glslEnv);
 
 		ExpectNZSL(*shaderModule, R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 struct Data
@@ -135,7 +135,8 @@ fn main(input: Input)
       OpMemoryModel AddressingModel(Logical) MemoryModel(GLSL450)
       OpEntryPoint ExecutionModel(GLCompute) %26 "main" %15
       OpExecutionMode %26 ExecutionMode(LocalSize) 32 32 1
-      OpSource SourceLanguage(NZSL) 4194304
+      OpSource SourceLanguage(NZSL) 4198400
+      OpSourceExtension "Version: 1.1"
       OpName %8 "Data"
       OpMemberName %8 0 "tex_size"
       OpName %19 "Input"

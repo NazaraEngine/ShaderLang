@@ -233,7 +233,7 @@ TEST_CASE("serialization", "[Shader]")
 	WHEN("serializing and unserializing a simple shader")
 	{
 		ParseSerializeDeserialize(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 [author("Lynix")]
 [desc("Serialization\" \"test")]
 [license("Public domain")]
@@ -268,7 +268,7 @@ fn main() -> Output
 	WHEN("serializing and unserializing a shader using features")
 	{
 		ParseSerializeDeserialize(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 [feature(primitive_externals)]
 module;
 
@@ -296,7 +296,7 @@ fn main() -> Output
 	WHEN("serializing and unserializing branches")
 	{
 		ParseSerializeDeserialize(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 struct inputStruct
@@ -328,7 +328,7 @@ fn main()
 	WHEN("serializing and unserializing const arrays")
 	{
 		ParseSerializeDeserialize(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 const bArray = array[bool](false, true, true);
@@ -376,7 +376,7 @@ const v4iArray = array[vec4[i32]](
 	WHEN("serializing and unserializing consts")
 	{
 		ParseSerializeDeserialize(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 const Pi = 3.14159;
@@ -423,7 +423,7 @@ fn main()
 	WHEN("serializing and unserializing function")
 	{
 		ParseSerializeDeserialize(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 fn SampleTexture(tex: sampler2D[f32], uv: vec2[f32]) -> vec4[f32]
@@ -460,7 +460,7 @@ fn main(input: FragIn) -> FragOut
 )");
 
 		ParseSerializeDeserialize(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 external
@@ -482,7 +482,7 @@ fn main()
 	WHEN("serializing and unserializing loops")
 	{
 		ParseSerializeDeserialize(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 struct inputStruct
@@ -529,7 +529,7 @@ fn main()
 	WHEN("serializing and unserializing swizzles")
 	{
 		ParseSerializeDeserialize(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 [entry(frag)]
@@ -545,7 +545,7 @@ fn main()
 	WHEN("serializing and unserializing imports")
 	{
 		ParseSerializeDeserialize(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 import * from FirstModule;

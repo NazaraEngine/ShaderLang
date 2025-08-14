@@ -9,6 +9,7 @@
 #include <NZSL/Enums.hpp>
 #include <NZSL/Parser.hpp>
 #include <NZSL/Ast/RecursiveVisitor.hpp>
+#include <NZSL/Lang/Constants.hpp>
 #include <NZSL/Lang/LangData.hpp>
 #include <NZSL/SpirV/SpirvAstVisitor.hpp>
 #include <NZSL/SpirV/SpirvBlock.hpp>
@@ -760,6 +761,7 @@ namespace nzsl
 				}
 
 				m_currentState->constantTypeCache.RegisterSource(SpirvSourceLanguage::NZSL, module.metadata->shaderLangVersion, fileId, source);
+				m_currentState->constantTypeCache.RegisterSourceExtension("Version: " + Version::ToString(module.metadata->shaderLangVersion));
 
 				if (!module.metadata->moduleName.empty())
 					m_currentState->constantTypeCache.RegisterSourceExtension("ModuleName: " + module.metadata->moduleName);
@@ -794,7 +796,10 @@ namespace nzsl
 				RegisterSourceFile(*importedModule.module);
 		}
 		else if (parameters.debugLevel >= DebugLevel::Minimal)
+		{
 			m_currentState->constantTypeCache.RegisterSource(SpirvSourceLanguage::NZSL, module.metadata->shaderLangVersion);
+			m_currentState->constantTypeCache.RegisterSourceExtension("Version: " + Version::ToString(module.metadata->shaderLangVersion));
+		}
 
 		auto funcDataRetriever = [&](std::size_t funcIndex) -> SpirvAstVisitor::FuncData&
 		{
