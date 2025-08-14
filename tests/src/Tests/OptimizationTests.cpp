@@ -42,7 +42,7 @@ TEST_CASE("optimizations", "[Shader]")
 	WHEN("propagating constants")
 	{
 		PropagateConstantAndExpect(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 [feature(float64)]
 module;
 
@@ -69,7 +69,7 @@ fn main()
 	WHEN("propagating bitwise constants")
 	{
 		PropagateConstantAndExpect(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 [feature(float64)]
 module;
 
@@ -110,7 +110,7 @@ fn main()
 	WHEN("propagating vector constants")
 	{
 		PropagateConstantAndExpect(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 [feature(float64)]
 module;
 
@@ -139,7 +139,7 @@ fn main()
 	WHEN("eliminating simple branches")
 	{
 		PropagateConstantAndExpect(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 [feature(float64)]
 module;
 
@@ -170,7 +170,7 @@ fn main()
 	WHEN("eliminating multiple branches")
 	{
 		PropagateConstantAndExpect(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 [entry(frag)]
@@ -204,7 +204,7 @@ fn main()
 	WHEN("eliminating multiple split branches")
 	{
 		PropagateConstantAndExpect(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 [entry(frag)]
@@ -249,7 +249,7 @@ fn main()
 	WHEN("optimizing out scalar swizzle")
 	{
 		PropagateConstantAndExpect(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 [feature(float64)]
 module;
 
@@ -276,7 +276,7 @@ fn main()
 	WHEN("optimizing out scalar swizzle to vector")
 	{
 		PropagateConstantAndExpect(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 [entry(frag)]
@@ -296,7 +296,7 @@ fn main()
 	WHEN("optimizing out vector swizzle")
 	{
 		PropagateConstantAndExpect(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 [entry(frag)]
@@ -316,7 +316,7 @@ fn main()
 	WHEN("optimizing out vector swizzle with repetition")
 	{
 		PropagateConstantAndExpect(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 [entry(frag)]
@@ -336,7 +336,7 @@ fn main()
 	WHEN("optimizing out complex swizzle")
 	{
 		PropagateConstantAndExpect(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 [entry(frag)]
@@ -356,7 +356,7 @@ fn main()
 	WHEN("optimizing out complex swizzle on unknown value")
 	{
 		PropagateConstantAndExpect(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 struct inputStruct
@@ -386,7 +386,7 @@ fn main()
 	WHEN("eliminating unused code")
 	{
 		EliminateUnusedAndExpect(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 struct inputStruct
@@ -424,7 +424,7 @@ fn main() -> Output
 	output.value = data.value;
 	return output;
 })", R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 struct inputStruct

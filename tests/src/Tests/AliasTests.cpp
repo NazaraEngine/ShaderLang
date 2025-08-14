@@ -10,7 +10,7 @@ TEST_CASE("aliases", "[Shader]")
 	SECTION("Alias of structs")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 struct Data
@@ -98,7 +98,7 @@ OpFunctionEnd)");
 	SECTION("Conditional aliases")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 struct ForwardOutput

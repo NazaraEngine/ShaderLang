@@ -17,7 +17,7 @@ TEST_CASE("errors", "[Shader]")
 		CHECK_THROWS_WITH(nzsl::Tokenize(R"("hello \p")"), "(1,1 -> 9): LUnrecognizedChar error: unrecognized character");
 		CHECK_THROWS_WITH(nzsl::Tokenize("$"), "(1, 1): LUnrecognizedToken error: unrecognized token");
 		CHECK_THROWS_WITH(nzsl::Tokenize(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 fn main()
@@ -41,34 +41,34 @@ fn main()
 		CHECK_THROWS_WITH(nzsl::Parse("[nzsl_version(\"1.0\"), author(\"Lynix\"), desc(\"Desc\"), license(\"Public domain\")] [license(\"MIT\")] module;"), "(1,81 -> 94): PAttributeMultipleUnique error: attribute license can only be present once");
 
 		CHECK_THROWS_WITH(nzsl::Parse(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 [feature(non_existent)]
 module;
 )"), "(3,10 -> 21): PAttributeInvalidParameter error: invalid parameter non_existent for attribute feature");
 
 		CHECK_THROWS_WITH(nzsl::Parse(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 [feature(primitive_externals)]
 [feature(primitive_externals)]
 module;
 )"), "(4,2 -> 29): PModuleFeatureMultipleUnique error: module feature primitive_externals has already been specified");
 
 		CHECK_THROWS_WITH(nzsl::Parse(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 [cond(true)]
 )"), "(6, 1): PUnexpectedToken error: unexpected token EndOfStream");
 
 		CHECK_THROWS_WITH(nzsl::Parse(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 [autor("Typo")]
 module;
 )"), "(3,2 -> 6): PUnknownAttribute error: unknown attribute \"autor\"");
 
 		// alias statements don't support attributes
 		CHECK_THROWS_WITH(nzsl::Parse(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 [layout(std140)]
@@ -77,7 +77,7 @@ alias vec3f32 = vec3[f32];
 
 		// import statements don't support cond attribute
 		CHECK_THROWS_WITH(nzsl::Parse(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 [cond(true)]
@@ -85,7 +85,7 @@ import Stuff;
 )"), "(5,2 -> 11): PUnexpectedAttribute error: unexpected attribute cond on import statement");
 
 		CHECK_THROWS_WITH(nzsl::Parse(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 import Foo.Bar from Baz;
@@ -93,7 +93,7 @@ import Foo.Bar from Baz;
 
 		// option statements don't support attributes
 		CHECK_THROWS_WITH(nzsl::Parse(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 [cond(false)]
@@ -119,7 +119,7 @@ option enable: bool;
 		{
 			// unsized arrays can only be used on declaration (for implicit size)
 			CHECK_NOTHROW(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 const data = array[f32](1.0, 2.0, 3.0);
@@ -132,14 +132,14 @@ fn main()
 
 			// however it's an error to give a size and provide less parameters than specified
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 const data = array[f32, 4](1.0, 2.0, 3.0);
 )"), "(5,14 -> 41): CCastComponentMismatch error: component count (3) doesn't match required component count (4)");
 
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 const data = array[f32, 4]();
@@ -147,7 +147,7 @@ const data = array[f32, 4]();
 
 			// or to give more
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 const data = array[f32, 2](1.0, 2.0, 3.0);
@@ -155,7 +155,7 @@ const data = array[f32, 2](1.0, 2.0, 3.0);
 
 			// or to give it incompatible types
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 const data = array[f32, 3](1, 2, 3);
@@ -164,7 +164,7 @@ const data = array[f32, 3](1, 2, 3);
 
 			// it's an error to declare an unsized array outside of this case
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 fn main()
@@ -174,7 +174,7 @@ fn main()
 )"), "(7,2 -> 22): CArrayLengthRequired error: array length is required in this context");
 
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 struct Data
@@ -184,7 +184,7 @@ struct Data
 )"), "(7,2 -> 5): CArrayLengthRequired error: array length is required in this context");
 
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 fn test(param: array[f32])
@@ -194,7 +194,7 @@ fn test(param: array[f32])
 
 			// TODO: if the error happens on the return type, the whole function gets flagged (add source location to ExpressionValue ?)
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 fn test() -> array[f32]
@@ -210,7 +210,7 @@ fn test() -> array[f32]
 		SECTION("Builtins")
 		{
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 struct Input
@@ -221,7 +221,7 @@ struct Input
 
 			// If the member is not used, no error should happen
 			CHECK_NOTHROW(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 struct Input
@@ -240,7 +240,7 @@ fn main(input: Input)
 })"));
 
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 struct Input
@@ -261,7 +261,7 @@ fn main(input: Input)
 })"), "(13,3 -> 9): CInvalidStageDependency error: this is only valid in the fragment stage but this functions gets called in the vertex stage");
 
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 struct Input
@@ -286,7 +286,7 @@ fn main(input: Input)
 		SECTION("Casts")
 		{
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 fn main()
@@ -303,7 +303,7 @@ fn main()
 		SECTION("Constants")
 		{
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 const Pi: f32 = 3;
@@ -311,7 +311,7 @@ const Pi: f32 = 3;
 )"), "(5,1 -> 18): CVarDeclarationTypeUnmatching error: initial expression type (IntLiteral) doesn't match specified type (f32)");
 
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 struct foo {}
@@ -327,7 +327,7 @@ const WrongType: bar = 42;
 		SECTION("Constant propagation")
 		{
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 const V = 21 * 2 / (9 - 3 * 3);
@@ -335,7 +335,7 @@ const V = 21 * 2 / (9 - 3 * 3);
 )"), "(5,11 -> 30): CIntegralDivisionByZero error: integral division by zero in expression (42 / 0)");
 
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 const V = vec4[i32](7, 6, 5, 4) / vec4[i32](3, 2, 1, 0);
@@ -343,7 +343,7 @@ const V = vec4[i32](7, 6, 5, 4) / vec4[i32](3, 2, 1, 0);
 )"), "(5,11 -> 55): CIntegralDivisionByZero error: integral division by zero in expression (4 / 0)");
 
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 const V = 21 * 2 % (9 - 3 * 3);
@@ -351,7 +351,7 @@ const V = 21 * 2 % (9 - 3 * 3);
 )"), "(5,11 -> 30): CIntegralModuloByZero error: integral modulo by zero in expression (42 % 0)");
 
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 const V = vec4[i32](7, 6, 5, 4) % vec4[i32](3, 2, 1, 0);
@@ -359,7 +359,7 @@ const V = vec4[i32](7, 6, 5, 4) % vec4[i32](3, 2, 1, 0);
 )"), "(5,11 -> 55): CIntegralModuloByZero error: integral modulo by zero in expression (4 % 0)");
 
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 const V = 42 << -1;
@@ -367,7 +367,7 @@ const V = 42 << -1;
 )"), "(5,11 -> 18): CBinaryNegativeShift error: negative shift in expression (42 << -1)");
 
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 const V = 42 >> -1;
@@ -375,7 +375,7 @@ const V = 42 >> -1;
 )"), "(5,11 -> 18): CBinaryNegativeShift error: negative shift in expression (42 >> -1)");
 
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 const V = u32(42) << 32;
@@ -383,7 +383,7 @@ const V = u32(42) << 32;
 )"), "(5,11 -> 23): CBinaryTooLargeShift error: shift is too large in expression (42 << 32) for type u32");
 
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 const V = u32(42) >> 82;
@@ -396,7 +396,7 @@ const V = u32(42) >> 82;
 		SECTION("Externals")
 		{
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 struct Foo
@@ -411,7 +411,7 @@ external
 )"), "(11,2 -> 18): CExtMissingBindingIndex error: external variable requires a binding index");
 
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 struct Foo
@@ -426,7 +426,7 @@ external
 )"), "(11,11 -> 33): CUnexpectedAttributeOnPushConstant error: unexpected attribute set on push_constant");
 
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 struct Foo
@@ -442,7 +442,7 @@ external
 )"), "(12,2 -> 24): CMultiplePushConstant error: there can be only one push constant external in a shader stage");
 
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 external
@@ -453,7 +453,7 @@ external
 )"), "(7,15 -> 22): CExtTypeNotAllowed error: external variable foo has unauthorized type (i32): only storage buffers, samplers, push constants and uniform buffers (and primitives, vectors and matrices if primitive external feature is enabled) are allowed in external blocks");
 			
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 struct Foo
@@ -468,7 +468,7 @@ external
 )"), "(11,15 -> 22): CExtTypeNotAllowed error: external variable foo has unauthorized type (struct Foo): only storage buffers, samplers, push constants and uniform buffers (and primitives, vectors and matrices if primitive external feature is enabled) are allowed in external blocks");
 
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 struct Foo
@@ -483,7 +483,7 @@ external
 )"), "(11,11 -> 17): CAttributeUnexpectedType error: unexpected attribute type (expected u32, got string)");
 
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 external
@@ -494,7 +494,7 @@ external
 )"), "(7,16 -> 34): CLiteralOutOfRange error: type u32 cannot represent the value -1");
 
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 const foo = 42;
@@ -507,7 +507,7 @@ external
 )"), "(9,15 -> 33): CIdentifierAlreadyUsed error: identifier foo is already used");
 
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 external
@@ -519,7 +519,7 @@ external
 )"), "(8,15 -> 33): CExtBindingAlreadyUsed error: binding (set=0, binding=0) is already in use");
 
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 external
@@ -531,7 +531,7 @@ external
 )"), "(8,15 -> 33): CExtAlreadyDeclared error: external variable foo is already declared");
 
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 external
@@ -547,7 +547,7 @@ external
 )"), "(12,15 -> 33): CExtBindingAlreadyUsed error: binding (set=0, binding=1) is already in use");
 
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 external
@@ -563,7 +563,7 @@ external
 )"), "(12,15 -> 33): CExtBindingAlreadyUsed error: binding (set=0, binding=1) is already in use");
 
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 [tag("First")]
@@ -576,7 +576,7 @@ external
 )"), "(6,2 -> 14): PAttributeMultipleUnique error: attribute tag can only be present once");
 
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 external
@@ -588,7 +588,7 @@ external
 )"), "(7,17 -> 29): PAttributeMultipleUnique error: attribute tag can only be present once");
 
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 struct Data
@@ -614,7 +614,7 @@ fn main()
 )"), "(23,19 -> 22): CFunctionCallUnmatchingParameterType error: function GetValue parameter #0 type mismatch (expected struct Data, got uniform[struct Data])");
 
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 struct Inner
@@ -645,7 +645,7 @@ fn main()
 )"), "(28,19 -> 28): CFunctionCallUnmatchingParameterType error: function GetValue parameter #0 type mismatch (expected struct Inner, got uniform[struct Inner])");
 
 		CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 struct Inner
@@ -676,7 +676,7 @@ fn main()
 )"), "(28,19 -> 28): CFunctionCallUnmatchingParameterType error: function GetValue parameter #0 type mismatch (expected array[struct Inner, 3], got array[uniform[struct Inner], 3])");
 
 		CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 external Viewer
@@ -699,7 +699,7 @@ fn main()
 )"), "(11,1 -> 8): CIdentifierAlreadyUsed error: identifier Viewer is already used");
 
 		CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 external Viewer
@@ -724,7 +724,7 @@ fn main()
 		{
 			// Float64
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 fn main()
@@ -735,7 +735,7 @@ fn main()
 
 			// Primitive externals
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 external
@@ -750,7 +750,7 @@ external
 		SECTION("Functions")
 		{
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 fn test() -> i32
@@ -760,7 +760,7 @@ fn test() -> i32
 )"), "(7,2 -> 15): CFunctionReturnUnmatchingTypes error: return expression type (FloatLiteral) must match function return expression type (i32)");
 
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 fn test() -> i32
@@ -770,7 +770,7 @@ fn test() -> i32
 )"), "(7,2 -> 8): CFunctionReturnWithNoValue error: return with no value, in function returning i32");
 
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 fn test()
@@ -780,7 +780,7 @@ fn test()
 )"), "(7,2 -> 11): CFunctionReturnWithAValue error: return with a value, in function returning no value");
 
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 fn Test(inout color: vec3[f32])
@@ -796,7 +796,7 @@ fn main()
 )"), "(13, 7): CFunctionCallUnmatchingParameterSemanticType error: function Test parameter #0 semantic mismatch (expected inout, got in)");
 
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 fn Test(inout color: vec3[f32])
@@ -816,7 +816,7 @@ fn main()
 		SECTION("Import")
 		{
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 import *, * from Module;
@@ -824,7 +824,7 @@ import *, * from Module;
 )"), "(5, 11): CImportMultipleWildcard error: only one wildcard can be present in an import directive");
 
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 import * as Y from Module;
@@ -832,7 +832,7 @@ import * as Y from Module;
 )"), "(5,8 -> 13): CImportWildcardRename error: wildcard cannot be renamed");
 
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 import X, X from Module;
@@ -845,7 +845,7 @@ import X, X from Module;
 		SECTION("Intrinsics")
 		{
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 fn main()
@@ -856,7 +856,7 @@ fn main()
 )"), "(8, 18): CIntrinsicExpectedType error: expected type square matrix for parameter #0, got mat2x3[f32]");
 
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 external
@@ -871,7 +871,7 @@ fn main()
 )"), "(12,21 -> 44): CIntrinsicExpectedType error: expected type floating-point vector of 2 components for parameter #1, got vec3[f32]");
 
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 external
@@ -891,7 +891,7 @@ fn main()
 		SECTION("Layouts")
 		{
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 [layout(std140)]
@@ -902,7 +902,7 @@ struct Foo
 )"), "(8, 2): CStructLayoutTypeNotAllowed error: bool type is not allowed in std140 layout");
 
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 [layout(std140)]
@@ -925,7 +925,7 @@ struct Bar
 		SECTION("Loops")
 		{
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 fn main()
@@ -935,7 +935,7 @@ fn main()
 )"), "(7,2 -> 6): CLoopControlOutsideOfLoop error: loop control instruction break found outside of loop");
 
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 fn main()
@@ -946,7 +946,7 @@ fn main()
 
 			// break is forbidden in a unrolled loop
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 fn main()
@@ -962,7 +962,7 @@ fn main()
 
 			// continue is forbidden in a unrolled loop
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 fn main()
@@ -982,7 +982,7 @@ fn main()
 		SECTION("Modules")
 		{
 			std::string_view importedSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 [feature(primitive_externals)]
 module Module;
 
@@ -997,7 +997,7 @@ struct Bar {}
 )";
 
 			std::string_view wildcardImportSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 import * from Module;
@@ -1021,7 +1021,7 @@ import * from Module;
 			CHECK_THROWS_WITH(executor.Transform(*shaderModule), "(5,1 -> 21): CModuleFeatureMismatch error: module Module requires feature primitive_externals");
 
 			std::string_view nonExistentImportShaderSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 [feature(primitive_externals)]
 module;
 
@@ -1032,7 +1032,7 @@ import Foo from Module;
 			CHECK_THROWS_WITH(executor.Transform(*shaderModule), "(6,1 -> 23): CImportIdentifierNotFound error: identifier(s) Foo not found in module Module");
 
 			std::string_view multipleNonExistentImportShaderSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 [feature(primitive_externals)]
 module;
 
@@ -1048,7 +1048,7 @@ import Foo, Bar, Baz as Qix from Module;
 		SECTION("Options")
 		{
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 option test: bool = 42;
@@ -1056,7 +1056,7 @@ option test: bool = 42;
 )"), "(5,1 -> 23): CVarDeclarationTypeUnmatching error: initial expression type (bool) doesn't match specified type (IntLiteral)");
 
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 struct foo {}
@@ -1078,12 +1078,32 @@ module;
 
 fn main()
 {
+	let a: u32 = 42;
+}
+)"), "(7,2 -> 17): CVarDeclarationTypeUnmatching error: initial expression type (u32) doesn't match specified type (i32)");
+
+			CHECK_NOTHROW(Compile(R"(
+[nzsl_version("1.1")]
+module;
+
+fn main()
+{
+	let a: u32 = 42;
+}
+)"));
+
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.1")]
+module;
+
+fn main()
+{
 	let a: i32 = 42.66;
 }
 )"), "(7,2 -> 20): CVarDeclarationTypeUnmatching error: initial expression type (i32) doesn't match specified type (FloatLiteral)");
 
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 fn main()
@@ -1093,7 +1113,7 @@ fn main()
 )"), "(7,9 -> 17): CMatrixExpectedFloat error: expected floating-point primitive as matrix type, got i32");
 
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 fn main()
@@ -1103,7 +1123,7 @@ fn main()
 )"), "(7,10 -> 20): CCastComponentMismatch error: component count (0) doesn't match required component count (3)");
 
 			CHECK_THROWS_WITH(Compile(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 fn main()

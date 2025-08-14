@@ -9,7 +9,7 @@ TEST_CASE("Casts", "[Shader]")
 	SECTION("Scalar casts")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 [feature(float64)]
 module;
 

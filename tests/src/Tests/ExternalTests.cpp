@@ -10,7 +10,7 @@ TEST_CASE("external", "[Shader]")
 	SECTION("Texture 2D")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 external
@@ -90,7 +90,7 @@ fn main()
 	SECTION("Arrays of texture")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 external
@@ -175,7 +175,7 @@ fn main()
 	SECTION("Uniform buffers")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 [tag("DataStruct")]
@@ -236,7 +236,8 @@ fn main()
 })");
 
 		ExpectSPIRV(*shaderModule, R"(
-      OpSource SourceLanguage(NZSL) 4194304
+      OpSource SourceLanguage(NZSL) 4198400
+      OpSourceExtension "Version: 1.1"
       OpName %9 "Data"
       OpMemberName %9 0 "values"
       OpMemberName %9 1 "matrices"
@@ -291,7 +292,7 @@ fn main()
 		SECTION("With fixed-size array")
 		{
 			std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 [layout(std430)]
@@ -375,7 +376,8 @@ fn main()
 			{
 				nzsl::SpirvWriter::Environment spirvEnv;
 				ExpectSPIRV(*shaderModule, R"(
-      OpSource SourceLanguage(NZSL) 4194304
+      OpSource SourceLanguage(NZSL) 4198400
+      OpSourceExtension "Version: 1.1"
       OpName %5 "Data"
       OpMemberName %5 0 "values"
       OpName %7 "inData"
@@ -448,7 +450,8 @@ fn main()
 				spirvEnv.spvMinorVersion = 3;
 
 				ExpectSPIRV(*shaderModule, R"(
-      OpSource SourceLanguage(NZSL) 4194304
+      OpSource SourceLanguage(NZSL) 4198400
+      OpSourceExtension "Version: 1.1"
       OpName %5 "Data"
       OpMemberName %5 0 "values"
       OpName %7 "inData"
@@ -518,7 +521,7 @@ fn main()
 		SECTION("With dynamically sized arrays")
 		{
 			std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 [layout(std430)]
@@ -587,7 +590,8 @@ fn main()
 				nzsl::SpirvWriter::Environment spirvEnv;
 
 				ExpectSPIRV(*shaderModule, R"(
-      OpSource SourceLanguage(NZSL) 4194304
+      OpSource SourceLanguage(NZSL) 4198400
+      OpSourceExtension "Version: 1.1"
       OpName %4 "Data"
       OpMemberName %4 0 "data"
       OpMemberName %4 1 "values"
@@ -634,7 +638,8 @@ fn main()
 				spirvEnv.spvMinorVersion = 3;
 
 				ExpectSPIRV(*shaderModule, R"(
-      OpSource SourceLanguage(NZSL) 4194304
+      OpSource SourceLanguage(NZSL) 4198400
+      OpSourceExtension "Version: 1.1"
       OpName %4 "Data"
       OpMemberName %4 0 "data"
       OpMemberName %4 1 "values"
@@ -679,7 +684,7 @@ fn main()
 	SECTION("Primitive external")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 [feature(primitive_externals)]
 module;
 
@@ -786,7 +791,7 @@ fn main()
 	SECTION("Auto binding generation")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 struct Foo
@@ -958,7 +963,7 @@ fn main()
 	SECTION("Push constant generation")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 [layout(std140)]
@@ -1011,7 +1016,8 @@ fn main()
 })");
 
 	ExpectSPIRV(*shaderModule, R"(
-     OpSource SourceLanguage(NZSL) 4194304
+     OpSource SourceLanguage(NZSL) 4198400
+     OpSourceExtension "Version: 1.1"
      OpName %2 "Data"
      OpMemberName %2 0 "index"
      OpName %4 "data"
@@ -1034,7 +1040,7 @@ fn main()
 	SECTION("Incompatible structs test")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 const MaxLightCascadeCount = 4;
@@ -1283,7 +1289,7 @@ fn main()
 	SECTION("named external")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 [layout(std140)]
@@ -1379,7 +1385,7 @@ fn main()
 	SECTION("named external shadowing")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 external Viewer
@@ -1441,7 +1447,8 @@ fn main()
       OpMemoryModel AddressingModel(Logical) MemoryModel(GLSL450)
       OpEntryPoint ExecutionModel(Fragment) %10 "main"
       OpExecutionMode %10 ExecutionMode(OriginUpperLeft)
-      OpSource SourceLanguage(NZSL) 4194304
+      OpSource SourceLanguage(NZSL) 4198400
+      OpSourceExtension "Version: 1.1"
       OpName %5 "Viewer_tex"
       OpName %10 "main"
       OpDecorate %5 Decoration(Binding) 0

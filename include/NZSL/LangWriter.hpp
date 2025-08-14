@@ -106,7 +106,7 @@ namespace nzsl
 			void AppendAttribute(WorkgroupAttribute attribute);
 			void AppendComment(std::string_view section);
 			void AppendCommentSection(std::string_view section);
-			void AppendHeader();
+			void AppendHeader(const Ast::Module& module);
 			template<typename T> void AppendIdentifier(const T& map, std::size_t id);
 			void AppendLine(std::string_view txt = {});
 			template<typename... Args> void AppendLine(Args&&... params);

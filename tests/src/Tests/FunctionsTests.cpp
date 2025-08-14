@@ -9,7 +9,7 @@ TEST_CASE("functions", "[Shader]")
 	SECTION("Simple function call")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 struct FragOut
@@ -91,7 +91,7 @@ OpFunctionEnd)");
 	SECTION("Unordered functions")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 struct FragOut
@@ -216,7 +216,7 @@ OpFunctionEnd)");
 	SECTION("inout function call")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 struct FragOut
@@ -367,7 +367,7 @@ fn main() -> FragOut
 	SECTION("passing sampler to function")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 fn sample_center(tex: sampler2D[f32]) -> vec4[f32]
@@ -494,7 +494,7 @@ fn main() -> FragOut
 	SECTION("passing sampler array to function")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 fn sample_center(tex: array[sampler2D[f32], 3]) -> vec4[f32]

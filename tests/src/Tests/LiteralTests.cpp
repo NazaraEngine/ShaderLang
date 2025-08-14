@@ -12,7 +12,7 @@ TEST_CASE("literal", "[Shader]")
 	SECTION("Literal primitives")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 [entry(frag)]

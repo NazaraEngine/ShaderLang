@@ -19,7 +19,7 @@ TEST_CASE("transformations", "[Shader]")
 	WHEN("splitting branches")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 struct inputStruct
@@ -92,7 +92,7 @@ fn main()
 	WHEN("reducing for to while")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 struct inputStruct
@@ -148,7 +148,7 @@ fn main()
 	WHEN("reducing for-each to while")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 struct inputStruct
@@ -204,7 +204,7 @@ fn main()
 	WHEN("removing compound assignment")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 fn main()
@@ -227,7 +227,7 @@ fn main()
 		REQUIRE_NOTHROW(assignmentTransformer.Transform(*shaderModule, context, options));
 
 		ExpectNZSL(*shaderModule, R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 fn main()
@@ -244,7 +244,7 @@ fn main()
 	WHEN("removing matrix casts")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 fn buildMat2x3(a: f32, b: f32, c: f32, d: f32, e: f32, f: f32) -> mat2x3[f32]
@@ -390,7 +390,7 @@ fn testMat4ToMat4(input: mat4[f32]) -> mat4[f32]
 	WHEN("removing matrix add/sub")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 fn testMat4PlusMat4(x: mat4[f32], y: mat4[f32]) -> mat4[f32]
@@ -507,7 +507,7 @@ fn testMat4SubMat4TimesMat4(x: mat4[f32], y: mat4[f32], z: mat4[f32]) -> mat4[f3
 	WHEN("removing aliases")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 struct inputStruct
@@ -548,7 +548,7 @@ external
 	WHEN("removing scalar swizzle")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 fn expr() -> i32
@@ -574,7 +574,7 @@ fn main()
 		REQUIRE_NOTHROW(executor.Transform(*shaderModule));
 
 		ExpectNZSL(*shaderModule, R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 fn expr() -> i32
@@ -597,7 +597,7 @@ fn main()
 	WHEN("splitting field assignation")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 option HasQux: bool = true;
@@ -655,7 +655,7 @@ fn main()
 		REQUIRE_NOTHROW(executor.Transform(*shaderModule, context));
 
 		ExpectNZSL(*shaderModule, R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 option HasQux: bool = true;

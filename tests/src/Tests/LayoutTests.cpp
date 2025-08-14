@@ -10,7 +10,7 @@ TEST_CASE("layout", "[Shader]")
 	SECTION("std140")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 [layout(std140)]
@@ -89,7 +89,8 @@ fn main()
       OpMemoryModel AddressingModel(Logical) MemoryModel(GLSL450)
       OpEntryPoint ExecutionModel(Fragment) %10 "main"
       OpExecutionMode %10 ExecutionMode(OriginUpperLeft)
-      OpSource SourceLanguage(NZSL) 4194304
+      OpSource SourceLanguage(NZSL) 4198400
+      OpSourceExtension "Version: 1.1"
       OpName %3 "Foo"
       OpMemberName %3 0 "v0"
       OpMemberName %3 1 "v1"
@@ -123,7 +124,7 @@ fn main()
 	SECTION("std430")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 [layout(std430)]
@@ -196,7 +197,7 @@ void main()
 )", {}, glslEnv);
 
 		ExpectNZSL(*shaderModule, R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 [layout(std430)]
@@ -234,7 +235,8 @@ fn main()
       OpMemoryModel AddressingModel(Logical) MemoryModel(GLSL450)
       OpEntryPoint ExecutionModel(Fragment) %15 "main"
       OpExecutionMode %15 ExecutionMode(OriginUpperLeft)
-      OpSource SourceLanguage(NZSL) 4194304
+      OpSource SourceLanguage(NZSL) 4198400
+      OpSourceExtension "Version: 1.1"
       OpName %7 "Bar"
       OpMemberName %7 0 "v0"
       OpName %8 "Foo"
@@ -285,7 +287,7 @@ fn main()
 		SECTION("scalar")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 [layout(scalar)]
@@ -343,7 +345,8 @@ fn main()
       OpMemoryModel AddressingModel(Logical) MemoryModel(GLSL450)
       OpEntryPoint ExecutionModel(Fragment) %10 "main"
       OpExecutionMode %10 ExecutionMode(OriginUpperLeft)
-      OpSource SourceLanguage(NZSL) 4194304
+      OpSource SourceLanguage(NZSL) 4198400
+      OpSourceExtension "Version: 1.1"
       OpName %3 "Foo"
       OpMemberName %3 0 "v0"
       OpMemberName %3 1 "v1"
@@ -383,7 +386,8 @@ fn main()
       OpMemoryModel AddressingModel(Logical) MemoryModel(GLSL450)
       OpEntryPoint ExecutionModel(Fragment) %10 "main"
       OpExecutionMode %10 ExecutionMode(OriginUpperLeft)
-      OpSource SourceLanguage(NZSL) 4194304
+      OpSource SourceLanguage(NZSL) 4198400
+      OpSourceExtension "Version: 1.1"
       OpName %3 "Foo"
       OpMemberName %3 0 "v0"
       OpMemberName %3 1 "v1"

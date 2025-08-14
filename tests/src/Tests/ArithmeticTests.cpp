@@ -9,7 +9,7 @@ TEST_CASE("Arithmetic", "[Shader]")
 	SECTION("Scalar arithmetic operations")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 [entry(frag)]
@@ -273,7 +273,7 @@ fn main()
 	SECTION("Bitwise operations")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 [entry(frag)]
@@ -421,7 +421,7 @@ fn main()
 	SECTION("Matrix/matrix operations")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 [entry(frag)]
@@ -625,7 +625,7 @@ fn main()
 	SECTION("Matrix/scalars operations")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 [entry(frag)]
@@ -703,7 +703,7 @@ fn main()
 	SECTION("Vector/vector operations")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 [entry(frag)]
@@ -845,7 +845,7 @@ fn main()
 	SECTION("Vector/scalars operations")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 [entry(frag)]
@@ -1011,7 +1011,7 @@ fn main()
 	SECTION("Unary operators")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 [entry(frag)]

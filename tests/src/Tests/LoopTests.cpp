@@ -9,7 +9,7 @@ TEST_CASE("loops", "[Shader]")
 	WHEN("using a while")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 struct inputStruct
@@ -97,7 +97,7 @@ OpFunctionEnd)");
 		WHEN("using break and continue")
 		{
 			std::string_view nzslSource2 = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 struct inputStruct
@@ -243,7 +243,7 @@ fn main()
 	WHEN("using a for range")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 [entry(frag)]
@@ -413,7 +413,7 @@ OpFunctionEnd)");
 		WHEN("using break and continue")
 		{
 			std::string_view nzslSource2 = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 [entry(frag)]
@@ -540,7 +540,7 @@ fn main()
 	WHEN("using a for range with step")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 [entry(frag)]
@@ -627,7 +627,7 @@ OpFunctionEnd)");
 	WHEN("using a for-each")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 struct inputStruct
@@ -723,7 +723,7 @@ OpFunctionEnd)");
 		WHEN("using break and continue")
 		{
 			std::string_view nzslSource2 = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 struct inputStruct
