@@ -9,7 +9,7 @@ TEST_CASE("arrays", "[Shader]")
 	SECTION("Const array")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 const vertices = array[vec3[f32]](

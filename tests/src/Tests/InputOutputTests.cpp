@@ -9,7 +9,7 @@ TEST_CASE("InputsOutputs", "[Shader]")
 	SECTION("Testing interpolation qualifiers")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 [layout(std430)]
@@ -169,7 +169,7 @@ void main()
 )", {}, glslEnv);
 
 		ExpectNZSL(*shaderModule, R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 [layout(std430)]
@@ -232,7 +232,8 @@ fn main(input: VertIn) -> VertOut
       OpEntryPoint ExecutionModel(Fragment) %37 "main" %11 %15 %18 %23
       OpEntryPoint ExecutionModel(Vertex) %38 "main" %27 %28 %29 %33 %35 %36
       OpExecutionMode %37 ExecutionMode(OriginUpperLeft)
-      OpSource SourceLanguage(NZSL) 4194304
+      OpSource SourceLanguage(NZSL) 4198400
+      OpSourceExtension "Version: 1.1"
       OpName %4 "ColorData"
       OpMemberName %4 0 "colors"
       OpName %20 "VertOut"

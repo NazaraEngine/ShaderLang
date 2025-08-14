@@ -9,7 +9,7 @@ TEST_CASE("structure member access", "[Shader]")
 	SECTION("Nested member loading")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 struct innerStruct

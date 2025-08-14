@@ -23,7 +23,7 @@ TEST_CASE("const", "[Shader]")
 	WHEN("Using const for constants")
 	{
 		std::string_view sourceCode = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 const LightCount = 3;
@@ -57,7 +57,7 @@ struct LightData
 	WHEN("using const if")
 	{
 		std::string_view sourceCode = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 option UseInt: bool = false;
@@ -162,7 +162,7 @@ fn main()
 	WHEN("using [unroll] attribute on numerical for")
 	{
 		std::string_view sourceCode = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 const LightCount = 3;
@@ -242,7 +242,7 @@ fn main()
 	WHEN("using [unroll] attribute on for-each")
 	{
 		std::string_view sourceCode = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 const LightCount = 3;
@@ -312,7 +312,7 @@ fn main()
 
 		// Use a module to prevent loop unrolling on first pass (and don't resolve modules)
 		std::string_view importedSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module ValueModule;
 
 [export]
@@ -320,7 +320,7 @@ const MaxLoop = 3;
 )";
 
 		std::string_view shaderSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 import MaxLoop from ValueModule;

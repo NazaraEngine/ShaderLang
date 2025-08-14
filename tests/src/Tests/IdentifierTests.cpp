@@ -10,7 +10,7 @@ TEST_CASE("identifiers", "[Shader]")
 	{
 		// Here's a shader using exclusively GLSL reversed words as identifiers, it should generate proper GLSL
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 external
@@ -89,7 +89,7 @@ void main()
 )");
 
 		ExpectNZSL(*shaderModule, R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 external
