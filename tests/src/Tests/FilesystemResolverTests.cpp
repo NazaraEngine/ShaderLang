@@ -93,12 +93,12 @@ void main()
 )");
 
 	ExpectNZSL(*shaderModule, R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 [author("SirLynix"), desc("Test module")]
 [license("MIT")]
 module Shader;
 
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 [author("SirLynix"), desc("Test color module")]
 [license("MIT")]
 module _Color
@@ -131,7 +131,7 @@ module _DataStruct
 	}
 
 }
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module _OutputStruct
 {
 	alias Data = _DataStruct.Data;

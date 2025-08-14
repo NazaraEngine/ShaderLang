@@ -25,7 +25,7 @@ Some people got interested in the language to use in their own projects without 
 
 Simple example:
 ```nzsl
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module TextureBlit;
 
 import VertOut, VertexShader from Engine.FullscreenVertex;

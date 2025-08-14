@@ -31,7 +31,7 @@ TEST_CASE("Modules", "[Shader]")
 	WHEN("Importing a simple module")
 	{
 		std::string_view importedSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 [author("Lynix")]
 [desc("Simple \"module\" for testing")]
 [license("Public domain")]
@@ -75,7 +75,7 @@ struct OutputData
 )";
 
 		std::string_view shaderSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 [author("Sir Lynix")]
 [desc("Main file")]
 [license("MIT")]
@@ -172,12 +172,12 @@ void main()
 )");
 
 		ExpectNZSL(*shaderModule, R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 [author("Sir Lynix"), desc("Main file")]
 [license("MIT")]
 module;
 
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 [author("Lynix"), desc("Simple \"module\" for testing")]
 [license("Public domain")]
 module _SimpleModule
@@ -272,7 +272,7 @@ OpFunctionEnd)");
 	WHEN("Importing nested modules")
 	{
 		std::string_view dataModule = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module Modules.Data;
 
 fn dummy() {}
@@ -286,7 +286,7 @@ struct Data
 )";
 
 		std::string_view blockModule = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module Modules.Block;
 
 import * from Modules.Data;
@@ -302,7 +302,7 @@ struct Unused {}
 )";
 
 		std::string_view inputOutputModule = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module Modules.InputOutput;
 
 [export]
@@ -325,7 +325,7 @@ fn UnusedFunction() {}
 )";
 
 		std::string_view shaderSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 import Block, * from Modules.Block;
@@ -412,10 +412,10 @@ void main()
 )");
 
 		ExpectNZSL(*shaderModule, R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module _Modules_Data
 {
 	[layout(std140)]
@@ -425,7 +425,7 @@ module _Modules_Data
 	}
 
 }
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module _Modules_Block
 {
 	alias Data = _Modules_Data.Data;
@@ -437,7 +437,7 @@ module _Modules_Block
 	}
 
 }
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module _Modules_InputOutput
 {
 	struct InputData
@@ -493,7 +493,7 @@ OpFunctionEnd)");
 	WHEN("Testing AST variable indices remapping")
 	{
 		std::string_view dataModule = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module Modules.Data;
 
 [export]
@@ -513,7 +513,7 @@ struct Lights
 )";
 
 		std::string_view funcModule = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module Modules.Func;
 
 import Lights from Modules.Data;
@@ -540,7 +540,7 @@ fn SumLightIntensities(lightData: Lights) -> vec2[i32]
 )";
 
 		std::string_view shaderSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 import Lights as LightData from Modules.Data;
@@ -641,10 +641,10 @@ void main()
 )");
 
 		ExpectNZSL(*shaderModule, R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module _Modules_Data
 {
 	[layout(std140)]
@@ -661,7 +661,7 @@ module _Modules_Data
 	}
 
 }
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module _Modules_Func
 {
 	alias Lights = _Modules_Data.Lights;
@@ -839,7 +839,7 @@ OpFunctionEnd)");
 		// Tests a bugfix where an unresolved identifier (identifier imported from an unknown module when precompiling) was being resolved in 
 
 		std::string_view gbufferOutput = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module DeferredShading.GBuffer;
 
 [export]
@@ -851,7 +851,7 @@ struct GBufferOutput
 )";
 
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 import GBufferOutput from DeferredShading.GBuffer;
@@ -942,7 +942,7 @@ fn FragMain() -> FragOut
 			REQUIRE_NOTHROW(resolverTransformer.Transform(*shaderModule, context, resolverOptions));
 
 			ExpectNZSL(*shaderModule, R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module _DeferredShading_GBuffer
 {
 	struct GBufferOutput
@@ -979,7 +979,7 @@ fn FragMain() -> FragOut
 		// Tests a more complex hierarchy where the same module is imported at multiple levels, which caused a bug at some point
 
 		std::string_view lightingLightData = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module Lighting.LightData;
 
 [export]
@@ -992,7 +992,7 @@ struct LightData
 )";
 
 		std::string_view lightingPhongData = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module Lighting.Phong;
 
 import LightData from Lighting.LightData;
@@ -1006,7 +1006,7 @@ fn ComputeLighting(light: LightData, worldPos: vec3[f32]) -> vec3[f32]
 )";
 
 		std::string_view lightingShadowData = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module Lighting.Shadow;
 
 import LightData from Lighting.LightData;
@@ -1019,7 +1019,7 @@ fn ComputeLightShadow(light: LightData) -> f32
 )";
 
 		std::string_view mainSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 import LightData from Lighting.LightData;
@@ -1060,10 +1060,10 @@ fn FragMain() -> FragOut
 		REQUIRE_NOTHROW(identifierResolver.Transform(*shaderModule, context, resolverOptions));
 
 		ExpectNZSL(*shaderModule, R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module _Lighting_LightData
 {
 	struct LightData
@@ -1074,7 +1074,7 @@ module _Lighting_LightData
 	}
 
 }
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module _Lighting_Phong
 {
 	alias LightData = _Lighting_LightData.LightData;
@@ -1086,7 +1086,7 @@ module _Lighting_Phong
 	}
 
 }
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module _Lighting_Shadow
 {
 	alias LightData = _Lighting_LightData.LightData;
@@ -1123,7 +1123,7 @@ fn FragMain() -> FragOut
 	WHEN("Importing a simple module by name")
 	{
 		std::string_view importedSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 [author("Lynix")]
 [desc("Simple \"module\" for testing")]
 [license("Public domain")]
@@ -1167,7 +1167,7 @@ struct OutputData
 )";
 
 		std::string_view shaderSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 [author("Sir Lynix")]
 [desc("Main file")]
 [license("MIT")]
@@ -1264,12 +1264,12 @@ void main()
 )");
 
 		ExpectNZSL(*shaderModule, R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 [author("Sir Lynix"), desc("Main file")]
 [license("MIT")]
 module;
 
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 [author("Lynix"), desc("Simple \"module\" for testing")]
 [license("Public domain")]
 module _Simple_Module
@@ -1356,7 +1356,7 @@ OpFunctionEnd)");
 	WHEN("Importing a simple module by name with renaming")
 	{
 		std::string_view importedSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 [author("Lynix")]
 [desc("Simple \"module\" for testing")]
 [license("Public domain")]
@@ -1400,7 +1400,7 @@ struct OutputData
 )";
 
 		std::string_view shaderSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 [author("Sir Lynix")]
 [desc("Main file")]
 [license("MIT")]
@@ -1497,12 +1497,12 @@ void main()
 )");
 
 		ExpectNZSL(*shaderModule, R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 [author("Sir Lynix"), desc("Main file")]
 [license("MIT")]
 module;
 
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 [author("Lynix"), desc("Simple \"module\" for testing")]
 [license("Public domain")]
 module _Simple_Module
