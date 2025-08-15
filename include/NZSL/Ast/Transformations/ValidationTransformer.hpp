@@ -25,7 +25,6 @@ namespace nzsl::Ast
 
 			struct Options
 			{
-				const Stringifier* stringifier = nullptr;
 				bool allowUntyped = true;
 				bool checkIndices = true;
 			};
@@ -34,8 +33,6 @@ namespace nzsl::Ast
 			enum class ValidationResult;
 
 			using Transformer::Transform;
-
-			Stringifier BuildStringifier(const SourceLocation& sourceLocation) const;
 
 			void CheckAliasIndex(std::optional<std::size_t> aliasIndex, const SourceLocation& sourceLocation) const;
 			void CheckConstIndex(std::optional<std::size_t> constIndex, const SourceLocation& sourceLocation) const;
