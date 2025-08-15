@@ -61,6 +61,7 @@ namespace nzsl
 
 			void Append(const Ast::AliasType& type);
 			void Append(const Ast::ArrayType& type);
+			void Append(const Ast::DeducedVectorType& type);
 			void Append(const Ast::DynArrayType& type);
 			void Append(const Ast::ExpressionType& type);
 			void Append(const Ast::ExpressionValue<Ast::ExpressionType>& type);
@@ -106,7 +107,7 @@ namespace nzsl
 			void AppendAttribute(WorkgroupAttribute attribute);
 			void AppendComment(std::string_view section);
 			void AppendCommentSection(std::string_view section);
-			void AppendHeader();
+			void AppendHeader(const Ast::Module& module);
 			template<typename T> void AppendIdentifier(const T& map, std::size_t id);
 			void AppendLine(std::string_view txt = {});
 			template<typename... Args> void AppendLine(Args&&... params);

@@ -25,7 +25,7 @@ namespace nzsl::Ast
 
 			struct Options
 			{
-				const Stringifier* stringifier = nullptr;
+				bool allowUntyped = true;
 				bool checkIndices = true;
 			};
 
@@ -33,8 +33,6 @@ namespace nzsl::Ast
 			enum class ValidationResult;
 
 			using Transformer::Transform;
-
-			Stringifier BuildStringifier(const SourceLocation& sourceLocation) const;
 
 			void CheckAliasIndex(std::optional<std::size_t> aliasIndex, const SourceLocation& sourceLocation) const;
 			void CheckConstIndex(std::optional<std::size_t> constIndex, const SourceLocation& sourceLocation) const;
@@ -107,10 +105,9 @@ namespace nzsl::Ast
 			StatementTransformation Transform(ScopedStatement&& node) override;
 			StatementTransformation Transform(WhileStatement&& node) override;
 
-			bool TransformModule(Module& module, TransformerContext& context, std::string* error, Nz::FunctionRef<void()> postCallback = nullptr) override;
+			void Transform(ExpressionType& expressionType, const SourceLocation& sourceLocation) override;
 
-			void TypeMustMatch(const ExpressionPtr& left, const ExpressionPtr& right, const SourceLocation& sourceLocation) const;
-			void TypeMustMatch(const ExpressionType& left, const ExpressionType& right, const SourceLocation& sourceLocation) const;
+			bool TransformModule(Module& module, TransformerContext& context, std::string* error, Nz::FunctionRef<void()> postCallback = nullptr) override;
 
 			void ValidateConcreteType(const ExpressionType& exprType, const SourceLocation& sourceLocation);
 			void ValidateIntrinsicParameters(IntrinsicExpression& node);

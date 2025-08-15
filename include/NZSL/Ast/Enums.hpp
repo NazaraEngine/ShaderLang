@@ -263,12 +263,14 @@ namespace nzsl::Ast
 
 	enum class PrimitiveType
 	{
-		Boolean = 0, //< bool
-		Float32 = 1, //< f32
-		Float64 = 5, //< f64
-		Int32   = 2, //< i32
-		UInt32  = 3, //< u32
-		String  = 4  //< str
+		Boolean        = 0, //< bool
+		Float32        = 1, //< f32
+		Float64        = 5, //< f64
+		Int32          = 2, //< i32
+		String         = 4, //< str
+		UInt32         = 3, //< u32
+		FloatLiteral   = 6, //< FloatLiteral
+		IntLiteral     = 7, //< IntLiteral
 	};
 
 	enum class UnaryType

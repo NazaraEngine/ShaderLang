@@ -6,6 +6,7 @@
 #include <NazaraUtils/PathUtils.hpp>
 #include <NZSL/ShaderBuilder.hpp>
 #include <NZSL/Ast/Utils.hpp>
+#include <NZSL/Lang/Constants.hpp>
 #include <NZSL/Lang/Errors.hpp>
 #include <NZSL/Lang/LangData.hpp>
 #include <frozen/string.h>
@@ -364,16 +365,31 @@ namespace nzsl
 
 					assert(versionMatch.size() == 6);
 
-					std::uint32_t version = 0;
-					version += std::stoi(versionMatch[1]) * 100;
+					std::uint32_t majorVersion = std::stoi(versionMatch[1]);
+					std::uint32_t minorVersion = 0;
+					std::uint32_t patchVersion = 0;
 
 					if (versionMatch.length(3) > 0)
-						version += std::stoi(versionMatch[3]) * 10;
+						minorVersion = std::stoi(versionMatch[3]);
 
 					if (versionMatch.length(5) > 0)
-						version += std::stoi(versionMatch[5]) * 1;
+						patchVersion = std::stoi(versionMatch[5]);
 
-					moduleVersion = version;
+					if (majorVersion > Version::MaxMajorVersion || minorVersion > Version::MaxMinorVersion || patchVersion > Version::MaxPatchVersion)
+						throw ParserInvalidVersionError{ attribute.sourceLocation, versionStr };
+
+					moduleVersion = Version::Build(majorVersion, minorVersion, patchVersion);
+					if (*moduleVersion > Version::MaxSupportedVersion)
+					{
+						std::string_view moduleName;
+						if (m_context->parsingImportedModule)
+							moduleName = m_context->module->metadata->moduleName;
+						else
+							moduleName = "root";
+
+						throw ParserUnhandledModuleVersionError{ attribute.sourceLocation, moduleName, Version::ToString(*moduleVersion), Version::ToString(Version::MaxSupportedVersion) };
+					}
+
 					break;
 				}
 
@@ -403,13 +419,19 @@ namespace nzsl
 
 		if (m_context->module)
 		{
+			if (m_context->parsingImportedModule)
+				throw ParserModuleInnerImportError{ moduleToken.location };
+
 			moduleMetadata->moduleName = ParseModuleName(nullptr);
 			auto module = std::make_shared<Ast::Module>(std::move(moduleMetadata));
 
 			// Imported module
 			Expect(Advance(), TokenType::OpenCurlyBracket);
 
+			auto rootModule = std::move(m_context->module);
+
 			m_context->parsingImportedModule = true;
+			m_context->module = module;
 
 			while (Peek().type != TokenType::ClosingCurlyBracket)
 			{
@@ -424,6 +446,7 @@ namespace nzsl
 			}
 			Consume(); //< Consume ClosingCurlyBracket
 
+			m_context->module = std::move(rootModule);
 			m_context->parsingImportedModule = false;
 
 			auto& importedModule = m_context->module->importedModules.emplace_back();
@@ -1727,9 +1750,14 @@ namespace nzsl
 	Ast::ExpressionPtr Parser::ParseFloatingPointExpression()
 	{
 		const Token& floatingPointToken = Expect(Advance(), TokenType::FloatingPointValue);
-		auto constantExpr = ShaderBuilder::ConstantValue(float(std::get<double>(floatingPointToken.data))); //< FIXME
-		constantExpr->sourceLocation = floatingPointToken.location;
 
+		Ast::ConstantValueExpressionPtr constantExpr;
+		if (m_context->module->metadata->shaderLangVersion >= Version::UntypedLiterals)
+			constantExpr = ShaderBuilder::ConstantValue(Ast::FloatLiteral{ std::get<double>(floatingPointToken.data) });
+		else
+			constantExpr = ShaderBuilder::ConstantValue(float(std::get<double>(floatingPointToken.data)));
+
+		constantExpr->sourceLocation = floatingPointToken.location;
 		return constantExpr;
 	}
 
@@ -1747,9 +1775,14 @@ namespace nzsl
 	Ast::ExpressionPtr Parser::ParseIntegerExpression()
 	{
 		const Token& integerToken = Expect(Advance(), TokenType::IntegerValue);
-		auto constantExpr = ShaderBuilder::ConstantValue(Nz::SafeCast<std::int32_t>(std::get<long long>(integerToken.data))); //< FIXME
-		constantExpr->sourceLocation = integerToken.location;
 
+		Ast::ConstantValueExpressionPtr constantExpr;
+		if (m_context->module->metadata->shaderLangVersion >= Version::UntypedLiterals)
+			constantExpr = ShaderBuilder::ConstantValue(Ast::IntLiteral{ std::get<std::int64_t>(integerToken.data) });
+		else
+			constantExpr = ShaderBuilder::ConstantValue(Nz::SafeCast<std::int32_t>(std::get<std::int64_t>(integerToken.data)));
+
+		constantExpr->sourceLocation = integerToken.location;
 		return constantExpr;
 	}
 
@@ -1843,9 +1876,9 @@ namespace nzsl
 
 	Ast::ExpressionPtr Parser::ParseStringExpression()
 	{
-		const Token& litteralToken = Expect(Advance(), TokenType::StringValue);
-		auto constantExpr = ShaderBuilder::ConstantValue(std::get<std::string>(litteralToken.data));
-		constantExpr->sourceLocation = litteralToken.location;
+		const Token& literalToken = Expect(Advance(), TokenType::StringValue);
+		auto constantExpr = ShaderBuilder::ConstantValue(std::get<std::string>(literalToken.data));
+		constantExpr->sourceLocation = literalToken.location;
 
 		return constantExpr;
 	}

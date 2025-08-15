@@ -45,6 +45,19 @@ namespace nzsl
 	}
 
 	template<typename T, std::size_t N>
+	template<typename U>
+	constexpr Vector<U, N> Vector<T, N>::Cast() const
+	{
+		static_assert(std::is_convertible_v<T, U>);
+
+		Vector<U, N> castedVec;
+		for (std::size_t i = 0; i < N; ++i)
+			castedVec[i] = static_cast<U>(values[i]);
+
+		return castedVec;
+	}
+
+	template<typename T, std::size_t N>
 	constexpr Vector<bool, N> Vector<T, N>::ComponentEq(const Vector& vec) const
 	{
 		Vector<bool, N> result;
@@ -192,6 +205,17 @@ namespace nzsl
 	constexpr T Vector<T, N>::operator[](std::size_t i) const
 	{
 		return values[i];
+	}
+
+	template<typename T, std::size_t N>
+	template<typename U, typename>
+	constexpr Vector<T, N>::operator Vector<U, N>() const
+	{
+		Vector<U, N> result;
+		for (std::size_t i = 0; i < N; ++i)
+			result.values[i] = static_cast<U>(values[i]);
+
+		return result;
 	}
 
 	template<typename T, std::size_t N>

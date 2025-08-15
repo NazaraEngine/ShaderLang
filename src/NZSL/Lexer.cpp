@@ -6,16 +6,12 @@
 #include <NazaraUtils/Algorithm.hpp>
 #include <NZSL/Lang/Errors.hpp>
 #include <fast_float/fast_float.h>
-#include <fmt/format.h>
 #include <frozen/string.h>
 #include <frozen/unordered_map.h>
 #include <cctype>
 #include <charconv>
-#include <locale>
 #include <optional>
 #include <sstream>
-#include <stdexcept>
-#include <unordered_map>
 
 namespace nzsl
 {
@@ -331,7 +327,7 @@ namespace nzsl
 					{
 						tokenType = TokenType::IntegerValue;
 
-						long long value;
+						std::int64_t value;
 						std::from_chars_result r = std::from_chars(first, last, value, base);
 						if (r.ptr == last && r.ec == std::errc{})
 							token.data = value;
@@ -659,7 +655,7 @@ namespace nzsl
 					break;
 
 				case TokenType::IntegerValue:
-					ss << "(" << std::get<long long>(token.data) << ")";
+					ss << "(" << std::get<std::int64_t>(token.data) << ")";
 					break;
 
 				case TokenType::StringValue:

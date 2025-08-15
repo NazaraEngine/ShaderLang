@@ -42,7 +42,7 @@ TEST_CASE("optimizations", "[Shader]")
 	WHEN("propagating constants")
 	{
 		PropagateConstantAndExpect(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 [feature(float64)]
 module;
 
@@ -60,8 +60,8 @@ fn main()
 {
 	let output: f32 = 42.0;
 	let output2: i32 = 42;
-	let output3: f64 = f64(42.0);
-	let output4: u32 = u32(42);
+	let output3: f64 = 42.0;
+	let output4: u32 = 42;
 }
 )");
 	}
@@ -69,7 +69,7 @@ fn main()
 	WHEN("propagating bitwise constants")
 	{
 		PropagateConstantAndExpect(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 [feature(float64)]
 module;
 
@@ -96,13 +96,13 @@ fn main()
 	let output1: i32 = 214;
 	let output2: i32 = 42;
 	let output3: i32 = 170;
-	let output4: u32 = u32(42);
-	let output5: u32 = u32(42);
-	let output6: u32 = u32(170);
+	let output4: u32 = 42;
+	let output5: u32 = 42;
+	let output6: u32 = 170;
 	let output7: i32 = -43008;
-	let output8: i32 = -1;
-	let output9: u32 = u32(1024);
-	let output10: u32 = u32(1);
+	let output8: i32 = 0;
+	let output9: u32 = 1024;
+	let output10: u32 = 0;
 }
 )");
 	}
@@ -110,7 +110,7 @@ fn main()
 	WHEN("propagating vector constants")
 	{
 		PropagateConstantAndExpect(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 [feature(float64)]
 module;
 
@@ -129,8 +129,8 @@ fn main()
 {
 	let output: vec4[f32] = vec4[f32](48.0, 12.0, -42.0, 0.0);
 	let output2: vec4[i32] = vec4[i32](48, 12, -42, 0);
-	let output3: vec4[f64] = vec4[f64](f64(48.0), f64(12.0), f64(-42.0), f64(0.0));
-	let output4: vec4[u32] = vec4[u32](u32(48), u32(12), u32(42), u32(0));
+	let output3: vec4[f64] = vec4[f64](48.0, 12.0, -42.0, 0.0);
+	let output4: vec4[u32] = vec4[u32](48, 12, 42, 0);
 	let output5: vec4[bool] = vec4[bool](false, false, true, true);
 }
 )");
@@ -139,7 +139,7 @@ fn main()
 	WHEN("eliminating simple branches")
 	{
 		PropagateConstantAndExpect(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 [feature(float64)]
 module;
 
@@ -170,7 +170,7 @@ fn main()
 	WHEN("eliminating multiple branches")
 	{
 		PropagateConstantAndExpect(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 [entry(frag)]
@@ -204,7 +204,7 @@ fn main()
 	WHEN("eliminating multiple split branches")
 	{
 		PropagateConstantAndExpect(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 [entry(frag)]
@@ -249,7 +249,7 @@ fn main()
 	WHEN("optimizing out scalar swizzle")
 	{
 		PropagateConstantAndExpect(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 [feature(float64)]
 module;
 
@@ -266,9 +266,9 @@ fn main()
 fn main()
 {
 	let v1: f32 = 1.0;
-	let v2: f64 = f64(-5.0);
+	let v2: f64 = -5.0;
 	let v3: i32 = 0;
-	let v4: u32 = u32(42);
+	let v4: u32 = 42;
 }
 )");
 	}
@@ -276,7 +276,7 @@ fn main()
 	WHEN("optimizing out scalar swizzle to vector")
 	{
 		PropagateConstantAndExpect(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 [entry(frag)]
@@ -288,7 +288,7 @@ fn main()
 [entry(frag)]
 fn main()
 {
-	let value: vec4[f32] = vec4[f32](42.0, 42.0, 42.0, 42.0);
+	let value: vec4[f32] = vec4(42.0, 42.0, 42.0, 42.0);
 }
 )");
 	}
@@ -296,7 +296,7 @@ fn main()
 	WHEN("optimizing out vector swizzle")
 	{
 		PropagateConstantAndExpect(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 [entry(frag)]
@@ -316,7 +316,7 @@ fn main()
 	WHEN("optimizing out vector swizzle with repetition")
 	{
 		PropagateConstantAndExpect(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 [entry(frag)]
@@ -336,7 +336,7 @@ fn main()
 	WHEN("optimizing out complex swizzle")
 	{
 		PropagateConstantAndExpect(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 [entry(frag)]
@@ -356,7 +356,7 @@ fn main()
 	WHEN("optimizing out complex swizzle on unknown value")
 	{
 		PropagateConstantAndExpect(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 struct inputStruct
@@ -386,7 +386,7 @@ fn main()
 	WHEN("eliminating unused code")
 	{
 		EliminateUnusedAndExpect(R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 struct inputStruct
@@ -424,7 +424,7 @@ fn main() -> Output
 	output.value = data.value;
 	return output;
 })", R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 struct inputStruct

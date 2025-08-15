@@ -48,7 +48,6 @@ namespace nzsl::Ast
 
 			std::optional<ConstantValue> ComputeConstantValue(ExpressionPtr& expr) const;
 			template<typename T> bool ComputeExprValue(ExpressionValue<T>& attribute, const SourceLocation& sourceLocation);
-			ExpressionType ComputeSwizzleType(const ExpressionType& type, std::size_t componentCount, const SourceLocation& sourceLocation) const;
 
 			const TransformerContext::IdentifierData* FindIdentifier(std::string_view identifierName) const;
 			template<typename F> const TransformerContext::IdentifierData* FindIdentifier(std::string_view identifierName, F&& functor) const;
@@ -84,6 +83,8 @@ namespace nzsl::Ast
 			std::size_t ResolveStructIndex(const ExpressionType& exprType, const SourceLocation& sourceLocation);
 			ExpressionType ResolveType(const ExpressionType& exprType, bool resolveAlias, const SourceLocation& sourceLocation);
 			std::optional<ExpressionType> ResolveTypeExpr(ExpressionValue<ExpressionType>& exprTypeValue, bool resolveAlias, const SourceLocation& sourceLocation);
+			void ResolveUntyped(const ExpressionType& expressionType, ConstantValue& constantValue, const SourceLocation& sourceLocation);
+			void ResolveUntyped(ExpressionType& expressionType, const SourceLocation& sourceLocation);
 
 			ExpressionTransformation Transform(AccessFieldExpression&& accessFieldExpr) override;
 			ExpressionTransformation Transform(AccessIdentifierExpression&& accessIdentifierExpr) override;
@@ -113,8 +114,8 @@ namespace nzsl::Ast
 			StatementTransformation Transform(ForStatement&& forStatement) override;
 			StatementTransformation Transform(ImportStatement&& importStatement) override;
 
-			void Transform(ExpressionType& expressionType) override;
-			void Transform(ExpressionValue<ExpressionType>& expressionType) override;
+			void Transform(ExpressionType& expressionType, const SourceLocation& sourceLocation) override;
+			void Transform(ExpressionValue<ExpressionType>& expressionType, const SourceLocation& sourceLocation) override;
 
 			using Transformer::ToString;
 			std::string ToString(const TransformerContext::TypeData& typeData, const SourceLocation& sourceLocation);

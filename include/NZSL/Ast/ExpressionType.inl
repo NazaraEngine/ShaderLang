@@ -169,6 +169,16 @@ namespace nzsl::Ast
 		return !operator==(rhs);
 	}
 
+	inline bool DeducedVectorType::operator==(const DeducedVectorType& rhs) const
+	{
+		return componentCount == rhs.componentCount;
+	}
+
+	inline bool DeducedVectorType::operator!=(const DeducedVectorType& rhs) const
+	{
+		return !operator==(rhs);
+	}
+
 
 	inline bool StorageType::operator==(const StorageType& rhs) const
 	{
@@ -211,6 +221,16 @@ namespace nzsl::Ast
 	inline bool IsArrayType(const ExpressionType& type)
 	{
 		return std::holds_alternative<ArrayType>(type);
+	}
+
+	inline bool IsDeducedType(const ExpressionType& type)
+	{
+		return IsDeducedVectorType(type);
+	}
+
+	inline bool IsDeducedVectorType(const ExpressionType& type)
+	{
+		return std::holds_alternative<DeducedVectorType>(type);
 	}
 
 	inline bool IsDynArrayType(const ExpressionType& type)
@@ -324,6 +344,37 @@ namespace nzsl::Ast
 		}
 		else
 			return IsSamplerType(exprType) || IsTextureType(exprType);
+	}
+
+	inline bool IsLiteralType(const ExpressionType& exprType)
+	{
+		if (IsArrayType(exprType))
+			return IsLiteralType(std::get<ArrayType>(exprType).containedType->type);
+
+		PrimitiveType primType;
+		if (IsPrimitiveType(exprType))
+			primType = std::get<PrimitiveType>(exprType);
+		else if (IsVectorType(exprType))
+			primType = std::get<VectorType>(exprType).type;
+		else
+			return false;
+
+		switch (primType)
+		{
+			case PrimitiveType::Boolean:
+			case PrimitiveType::Float32:
+			case PrimitiveType::Float64:
+			case PrimitiveType::Int32:
+			case PrimitiveType::UInt32:
+			case PrimitiveType::String:
+				return false;
+
+			case PrimitiveType::FloatLiteral:
+			case PrimitiveType::IntLiteral:
+				return true;
+		}
+
+		NAZARA_UNREACHABLE();
 	}
 
 	inline bool IsStructAddressible(const ExpressionType& exprType)
@@ -453,6 +504,15 @@ namespace std
 				Nz::HashCombine(h, arrayType.containedType->type);
 
 			return h;
+		}
+	};
+
+	template<>
+	struct hash<nzsl::Ast::DeducedVectorType>
+	{
+		std::size_t operator()(const nzsl::Ast::DeducedVectorType& vectorType) const
+		{
+			return Nz::HashCombine(vectorType.componentCount);
 		}
 	};
 

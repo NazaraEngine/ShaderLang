@@ -10,7 +10,7 @@ TEST_CASE("builtin attributes", "[Shader]")
 	SECTION("vertex draw parameters")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 struct Input
@@ -251,7 +251,7 @@ fn main(input: Input) -> Output
 	SECTION("vertex index")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 struct Input
@@ -330,7 +330,7 @@ fn main(input: Input) -> Output
 	SECTION("vertex position")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 struct Output

@@ -9,6 +9,7 @@
 #include <NZSL/Ast/Transformations/BindingResolverTransformer.hpp>
 #include <NZSL/Ast/Transformations/ConstantRemovalTransformer.hpp>
 #include <NZSL/Ast/Transformations/ResolveTransformer.hpp>
+#include <NZSL/Ast/Transformations/LiteralTransformer.hpp>
 #include <spirv-tools/libspirv.hpp>
 #include <filesystem>
 
@@ -16,12 +17,14 @@ struct ResolveOptions
 {
 	static const nzsl::Ast::BindingResolverTransformer::Options defaultBindingResolverOptions;
 	static const nzsl::Ast::ResolveTransformer::Options defaultIdentifierResolveOptions;
+	static const nzsl::Ast::LiteralTransformer::Options defaultLiteralOptions;
 
 	std::unordered_map<nzsl::Ast::OptionHash, nzsl::Ast::ConstantValue> optionValues;
 	bool partialCompilation = false;
 	const nzsl::Ast::BindingResolverTransformer::Options* bindingResolverOptions = &defaultBindingResolverOptions;
 	const nzsl::Ast::ConstantRemovalTransformer::Options* constantRemovalOptions = nullptr;
 	const nzsl::Ast::ResolveTransformer::Options* identifierResolverOptions = &defaultIdentifierResolveOptions;
+	const nzsl::Ast::LiteralTransformer::Options* literalOptions = nullptr;
 };
 
 void ExpectGLSL(nzsl::ShaderStageType stageType, nzsl::Ast::Module& shader, std::string_view expectedOutput, const nzsl::BackendParameters& options = {}, const nzsl::GlslWriter::Environment& env = {}, bool testShaderCompilation = true);

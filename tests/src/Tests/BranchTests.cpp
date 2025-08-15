@@ -9,7 +9,7 @@ TEST_CASE("branching", "[Shader]")
 	WHEN("using a simple branch")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 struct inputStruct
@@ -92,7 +92,7 @@ OpFunctionEnd)");
 	WHEN("using a more complex branch")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 struct inputStruct
@@ -183,7 +183,7 @@ OpFunctionEnd)");
 	WHEN("discarding in a branch")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 struct inputStruct
@@ -274,7 +274,7 @@ OpFunctionEnd)");
 	WHEN("discarding in a const branch")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 struct Output
@@ -342,7 +342,7 @@ OpFunctionEnd)");
 	WHEN("using a complex branch")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 struct inputStruct

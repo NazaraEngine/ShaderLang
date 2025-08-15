@@ -8,8 +8,8 @@
 #include <NazaraUtils/PathUtils.hpp>
 #include <NZSL/Enums.hpp>
 #include <NZSL/Parser.hpp>
-#include <NZSL/Ast/Cloner.hpp>
 #include <NZSL/Ast/RecursiveVisitor.hpp>
+#include <NZSL/Lang/Constants.hpp>
 #include <NZSL/Lang/LangData.hpp>
 #include <NZSL/SpirV/SpirvAstVisitor.hpp>
 #include <NZSL/SpirV/SpirvBlock.hpp>
@@ -24,10 +24,10 @@
 #include <NZSL/Ast/Transformations/ConstantRemovalTransformer.hpp>
 #include <NZSL/Ast/Transformations/EliminateUnusedTransformer.hpp>
 #include <NZSL/Ast/Transformations/ForToWhileTransformer.hpp>
+#include <NZSL/Ast/Transformations/LiteralTransformer.hpp>
 #include <NZSL/Ast/Transformations/MatrixTransformer.hpp>
 #include <NZSL/Ast/Transformations/ResolveTransformer.hpp>
 #include <NZSL/Ast/Transformations/StructAssignmentTransformer.hpp>
-#include <NZSL/Ast/Transformations/SwizzleTransformer.hpp>
 #include <NZSL/Ast/Transformations/ValidationTransformer.hpp>
 #include <fmt/format.h>
 #include <frozen/unordered_map.h>
@@ -669,7 +669,7 @@ namespace nzsl
 				executor.AddPass<Ast::ConstantPropagationTransformer>();
 
 			if (parameters.backendPasses.Test(BackendPass::Validate))
-				executor.AddPass<Ast::ValidationTransformer>();
+				executor.AddPass<Ast::ValidationTransformer>({ false, true });
 
 			Ast::TransformerContext context;
 			context.optionValues = parameters.optionValues;
@@ -761,6 +761,7 @@ namespace nzsl
 				}
 
 				m_currentState->constantTypeCache.RegisterSource(SpirvSourceLanguage::NZSL, module.metadata->shaderLangVersion, fileId, source);
+				m_currentState->constantTypeCache.RegisterSourceExtension("Version: " + Version::ToString(module.metadata->shaderLangVersion));
 
 				if (!module.metadata->moduleName.empty())
 					m_currentState->constantTypeCache.RegisterSourceExtension("ModuleName: " + module.metadata->moduleName);
@@ -795,7 +796,10 @@ namespace nzsl
 				RegisterSourceFile(*importedModule.module);
 		}
 		else if (parameters.debugLevel >= DebugLevel::Minimal)
+		{
 			m_currentState->constantTypeCache.RegisterSource(SpirvSourceLanguage::NZSL, module.metadata->shaderLangVersion);
+			m_currentState->constantTypeCache.RegisterSourceExtension("Version: " + Version::ToString(module.metadata->shaderLangVersion));
+		}
 
 		auto funcDataRetriever = [&](std::size_t funcIndex) -> SpirvAstVisitor::FuncData&
 		{
@@ -893,13 +897,14 @@ namespace nzsl
 
 	void SpirvWriter::RegisterPasses(Ast::TransformerExecutor& executor)
 	{
+		executor.AddPass<Ast::ConstantRemovalTransformer>();
+		executor.AddPass<Ast::LiteralTransformer>();
 		executor.AddPass<Ast::BranchSplitterTransformer>();
 		executor.AddPass<Ast::ForToWhileTransformer>();
 		executor.AddPass<Ast::StructAssignmentTransformer>({ true, true });
 		executor.AddPass<Ast::CompoundAssignmentTransformer>({ true });
 		executor.AddPass<Ast::MatrixTransformer>({ true, true });
 		executor.AddPass<Ast::BindingResolverTransformer>();
-		executor.AddPass<Ast::ConstantRemovalTransformer>();
 	}
 
 	std::uint32_t SpirvWriter::AllocateResultId()
@@ -987,8 +992,8 @@ namespace nzsl
 						appender(func.funcId);
 						appender(execMode.mode);
 
-						for (std::uint32_t litteral : execMode.params)
-							appender(litteral);
+						for (std::uint32_t literal : execMode.params)
+							appender(literal);
 					});
 				}
 			}

@@ -9,7 +9,7 @@ TEST_CASE("arrays", "[Shader]")
 	SECTION("Const array")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.0")]
+[nzsl_version("1.1")]
 module;
 
 const vertices = array[vec3[f32]](
@@ -37,7 +37,7 @@ fn main(input: VertIn) -> VertOut
 	else
 		output.pos = vec4[f32](0.0, 0.0, 0.0, 0.0);
 
-	let customData = array[i32, vertices.Size() + u32(2)](
+	let customData = array[i32, vertices.Size() + 2](
 		1, 2, 3, 4, 5
 	);
 

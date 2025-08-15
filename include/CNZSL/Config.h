@@ -29,7 +29,7 @@
 #define CNZSL_CONFIG_H
 
 /* CNZSL version macro */
-#define CNZSL_VERSION_MAJOR 0
+#define CNZSL_VERSION_MAJOR 1
 #define CNZSL_VERSION_MINOR 1
 #define CNZSL_VERSION_PATCH 0
 
