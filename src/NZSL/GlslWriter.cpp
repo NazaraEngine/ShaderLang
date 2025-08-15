@@ -695,6 +695,11 @@ namespace nzsl
 		throw std::runtime_error("unexpected FunctionType");
 	}
 
+	void GlslWriter::Append(const Ast::ImplicitVectorType& /*type*/)
+	{
+		throw std::runtime_error("unexpected DeducedVectorType");
+	}
+
 	void GlslWriter::Append(Ast::InterpolationQualifier interpolation)
 	{
 		switch (interpolation)
@@ -739,9 +744,24 @@ namespace nzsl
 		throw std::runtime_error("unexpected module type");
 	}
 
+	void GlslWriter::Append(Ast::MemoryLayout layout)
+	{
+		switch (layout)
+		{
+			case Ast::MemoryLayout::Std140: Append("std140"); break;
+			case Ast::MemoryLayout::Std430: Append("std430"); break;
+			case Ast::MemoryLayout::Scalar: Append("scalar"); break;
+		}
+	}
+
 	void GlslWriter::Append(const Ast::NamedExternalBlockType& /*namedExternalBlockType*/)
 	{
 		throw std::runtime_error("unexpected named external block type");
+	}
+
+	void GlslWriter::Append(Ast::NoType)
+	{
+		return Append("void");
 	}
 
 	void GlslWriter::Append(Ast::PrimitiveType type)
@@ -878,21 +898,6 @@ namespace nzsl
 
 		Append("vec");
 		Append(vecType.componentCount);
-	}
-
-	void GlslWriter::Append(Ast::MemoryLayout layout)
-	{
-		switch (layout)
-		{
-			case Ast::MemoryLayout::Std140: Append("std140"); break;
-			case Ast::MemoryLayout::Std430: Append("std430"); break;
-			case Ast::MemoryLayout::Scalar: Append("scalar"); break;
-		}
-	}
-
-	void GlslWriter::Append(Ast::NoType)
-	{
-		return Append("void");
 	}
 
 	template<typename T>
@@ -2264,6 +2269,12 @@ namespace nzsl
 			Append(componentStr[node.components[i]]);
 	}
 
+	void GlslWriter::Visit(Ast::VariableValueExpression& node)
+	{
+		const std::string& varName = Nz::Retrieve(m_currentState->variableNames, node.variableId);
+		Append(varName);
+	}
+
 	void GlslWriter::Visit(Ast::UnaryExpression& node)
 	{
 		switch (node.op)
@@ -2287,13 +2298,6 @@ namespace nzsl
 
 		Visit(node.expression);
 	}
-
-	void GlslWriter::Visit(Ast::VariableValueExpression& node)
-	{
-		const std::string& varName = Nz::Retrieve(m_currentState->variableNames, node.variableId);
-		Append(varName);
-	}
-
 
 	void GlslWriter::Visit(Ast::BranchStatement& node)
 	{
