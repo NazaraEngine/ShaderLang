@@ -9,13 +9,13 @@ namespace nzsl::Ast
 	{
 	}
 
-	inline void Transformer::HandleExpressionValue(ExpressionValue<ExpressionType>& expressionValue)
+	inline void Transformer::HandleExpressionValue(ExpressionValue<ExpressionType>& expressionValue, const SourceLocation& sourceLocation)
 	{
-		Transform(expressionValue);
+		Transform(expressionValue, sourceLocation);
 	}
 
 	template<typename T>
-	void Transformer::HandleExpressionValue(ExpressionValue<T>& expressionValue)
+	void Transformer::HandleExpressionValue(ExpressionValue<T>& expressionValue, const SourceLocation& /*sourceLocation*/)
 	{
 		if (expressionValue.IsExpression())
 			HandleExpression(expressionValue.GetExpression());

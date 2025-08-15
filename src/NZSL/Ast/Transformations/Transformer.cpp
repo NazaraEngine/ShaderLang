@@ -171,14 +171,14 @@ namespace nzsl::Ast
 	{
 		HandleExpression(node.expr);
 		if (node.cachedExpressionType)
-			Transform(*node.cachedExpressionType);
+			Transform(*node.cachedExpressionType, node.sourceLocation);
 	}
 
 	void Transformer::HandleChildren(AccessIdentifierExpression& node)
 	{
 		HandleExpression(node.expr);
 		if (node.cachedExpressionType)
-			Transform(*node.cachedExpressionType);
+			Transform(*node.cachedExpressionType, node.sourceLocation);
 	}
 
 	void Transformer::HandleChildren(AccessIndexExpression& node)
@@ -188,13 +188,13 @@ namespace nzsl::Ast
 			HandleExpression(index);
 
 		if (node.cachedExpressionType)
-			Transform(*node.cachedExpressionType);
+			Transform(*node.cachedExpressionType, node.sourceLocation);
 	}
 
 	void Transformer::HandleChildren(AliasValueExpression& node)
 	{
 		if (node.cachedExpressionType)
-			Transform(*node.cachedExpressionType);
+			Transform(*node.cachedExpressionType, node.sourceLocation);
 	}
 
 	void Transformer::HandleChildren(AssignExpression& node)
@@ -203,7 +203,7 @@ namespace nzsl::Ast
 		HandleExpression(node.right);
 
 		if (node.cachedExpressionType)
-			Transform(*node.cachedExpressionType);
+			Transform(*node.cachedExpressionType, node.sourceLocation);
 	}
 
 	void Transformer::HandleChildren(BinaryExpression& node)
@@ -212,7 +212,7 @@ namespace nzsl::Ast
 		HandleExpression(node.right);
 
 		if (node.cachedExpressionType)
-			Transform(*node.cachedExpressionType);
+			Transform(*node.cachedExpressionType, node.sourceLocation);
 	}
 
 	void Transformer::HandleChildren(CallFunctionExpression& node)
@@ -223,7 +223,7 @@ namespace nzsl::Ast
 			HandleExpression(param.expr);
 
 		if (node.cachedExpressionType)
-			Transform(*node.cachedExpressionType);
+			Transform(*node.cachedExpressionType, node.sourceLocation);
 	}
 
 	void Transformer::HandleChildren(CallMethodExpression& node)
@@ -234,19 +234,19 @@ namespace nzsl::Ast
 			HandleExpression(param);
 
 		if (node.cachedExpressionType)
-			Transform(*node.cachedExpressionType);
+			Transform(*node.cachedExpressionType, node.sourceLocation);
 	}
 
 	void Transformer::HandleChildren(CastExpression& node)
 	{
 		if (!m_flags.Test(TransformerFlag::IgnoreExpressions))
-			HandleExpressionValue(node.targetType);
+			HandleExpressionValue(node.targetType, node.sourceLocation);
 
 		for (auto& expr : node.expressions)
 			HandleExpression(expr);
 
 		if (node.cachedExpressionType)
-			Transform(*node.cachedExpressionType);
+			Transform(*node.cachedExpressionType, node.sourceLocation);
 	}
 
 	void Transformer::HandleChildren(ConditionalExpression& node)
@@ -255,37 +255,37 @@ namespace nzsl::Ast
 		HandleExpression(node.falsePath);
 
 		if (node.cachedExpressionType)
-			Transform(*node.cachedExpressionType);
+			Transform(*node.cachedExpressionType, node.sourceLocation);
 	}
 
 	void Transformer::HandleChildren(ConstantExpression& node)
 	{
 		if (node.cachedExpressionType)
-			Transform(*node.cachedExpressionType);
+			Transform(*node.cachedExpressionType, node.sourceLocation);
 	}
 
 	void Transformer::HandleChildren(ConstantArrayValueExpression& node)
 	{
 		if (node.cachedExpressionType)
-			Transform(*node.cachedExpressionType);
+			Transform(*node.cachedExpressionType, node.sourceLocation);
 	}
 
 	void Transformer::HandleChildren(ConstantValueExpression& node)
 	{
 		if (node.cachedExpressionType)
-			Transform(*node.cachedExpressionType);
+			Transform(*node.cachedExpressionType, node.sourceLocation);
 	}
 
 	void Transformer::HandleChildren(FunctionExpression& node)
 	{
 		if (node.cachedExpressionType)
-			Transform(*node.cachedExpressionType);
+			Transform(*node.cachedExpressionType, node.sourceLocation);
 	}
 
 	void Transformer::HandleChildren(IdentifierExpression& node)
 	{
 		if (node.cachedExpressionType)
-			Transform(*node.cachedExpressionType);
+			Transform(*node.cachedExpressionType, node.sourceLocation);
 	}
 
 	void Transformer::HandleChildren(IntrinsicExpression& node)
@@ -294,31 +294,31 @@ namespace nzsl::Ast
 			HandleExpression(param);
 
 		if (node.cachedExpressionType)
-			Transform(*node.cachedExpressionType);
+			Transform(*node.cachedExpressionType, node.sourceLocation);
 	}
 
 	void Transformer::HandleChildren(IntrinsicFunctionExpression& node)
 	{
 		if (node.cachedExpressionType)
-			Transform(*node.cachedExpressionType);
+			Transform(*node.cachedExpressionType, node.sourceLocation);
 	}
 
 	void Transformer::HandleChildren(ModuleExpression& node)
 	{
 		if (node.cachedExpressionType)
-			Transform(*node.cachedExpressionType);
+			Transform(*node.cachedExpressionType, node.sourceLocation);
 	}
 
 	void Transformer::HandleChildren(NamedExternalBlockExpression& node)
 	{
 		if (node.cachedExpressionType)
-			Transform(*node.cachedExpressionType);
+			Transform(*node.cachedExpressionType, node.sourceLocation);
 	}
 
 	void Transformer::HandleChildren(StructTypeExpression& node)
 	{
 		if (node.cachedExpressionType)
-			Transform(*node.cachedExpressionType);
+			Transform(*node.cachedExpressionType, node.sourceLocation);
 	}
 
 	void Transformer::HandleChildren(SwizzleExpression& node)
@@ -327,13 +327,13 @@ namespace nzsl::Ast
 			HandleExpression(node.expression);
 
 		if (node.cachedExpressionType)
-			Transform(*node.cachedExpressionType);
+			Transform(*node.cachedExpressionType, node.sourceLocation);
 	}
 
 	void Transformer::HandleChildren(TypeExpression& node)
 	{
 		if (node.cachedExpressionType)
-			Transform(*node.cachedExpressionType);
+			Transform(*node.cachedExpressionType, node.sourceLocation);
 	}
 
 	void Transformer::HandleChildren(UnaryExpression& node)
@@ -342,13 +342,13 @@ namespace nzsl::Ast
 			HandleExpression(node.expression);
 
 		if (node.cachedExpressionType)
-			Transform(*node.cachedExpressionType);
+			Transform(*node.cachedExpressionType, node.sourceLocation);
 	}
 
 	void Transformer::HandleChildren(VariableValueExpression& node)
 	{
 		if (node.cachedExpressionType)
-			Transform(*node.cachedExpressionType);
+			Transform(*node.cachedExpressionType, node.sourceLocation);
 	}
 
 	void Transformer::HandleChildren(BranchStatement& node)
@@ -402,8 +402,8 @@ namespace nzsl::Ast
 	{
 		if (!m_flags.Test(TransformerFlag::IgnoreExpressions))
 		{
-			HandleExpressionValue(node.isExported);
-			HandleExpressionValue(node.type);
+			HandleExpressionValue(node.isExported, node.sourceLocation);
+			HandleExpressionValue(node.type, node.sourceLocation);
 
 			HandleExpression(node.expression);
 
@@ -415,14 +415,14 @@ namespace nzsl::Ast
 	{
 		if (!m_flags.Test(TransformerFlag::IgnoreExpressions))
 		{
-			HandleExpressionValue(node.autoBinding);
-			HandleExpressionValue(node.bindingSet);
+			HandleExpressionValue(node.autoBinding, node.sourceLocation);
+			HandleExpressionValue(node.bindingSet, node.sourceLocation);
 
 			for (auto& externalVar : node.externalVars)
 			{
-				HandleExpressionValue(externalVar.bindingIndex);
-				HandleExpressionValue(externalVar.bindingSet);
-				HandleExpressionValue(externalVar.type);
+				HandleExpressionValue(externalVar.bindingIndex, externalVar.sourceLocation);
+				HandleExpressionValue(externalVar.bindingSet, externalVar.sourceLocation);
+				HandleExpressionValue(externalVar.type, externalVar.sourceLocation);
 			}
 
 			FinishExpressionHandling();
@@ -435,15 +435,15 @@ namespace nzsl::Ast
 
 		if (!m_flags.Test(TransformerFlag::IgnoreExpressions))
 		{
-			HandleExpressionValue(node.depthWrite);
-			HandleExpressionValue(node.returnType);
-			HandleExpressionValue(node.entryStage);
-			HandleExpressionValue(node.workgroupSize);
-			HandleExpressionValue(node.earlyFragmentTests);
-			HandleExpressionValue(node.isExported);
+			HandleExpressionValue(node.depthWrite, node.sourceLocation);
+			HandleExpressionValue(node.returnType, node.sourceLocation);
+			HandleExpressionValue(node.entryStage, node.sourceLocation);
+			HandleExpressionValue(node.workgroupSize, node.sourceLocation);
+			HandleExpressionValue(node.earlyFragmentTests, node.sourceLocation);
+			HandleExpressionValue(node.isExported, node.sourceLocation);
 
 			for (auto& param : node.parameters)
-				HandleExpressionValue(param.type);
+				HandleExpressionValue(param.type, param.sourceLocation);
 
 			FinishExpressionHandling();
 		}
@@ -463,7 +463,7 @@ namespace nzsl::Ast
 	{
 		if (!m_flags.Test(TransformerFlag::IgnoreExpressions))
 		{
-			HandleExpressionValue(node.optType);
+			HandleExpressionValue(node.optType, node.sourceLocation);
 
 			if (node.defaultValue)
 				HandleExpression(node.defaultValue);
@@ -476,16 +476,16 @@ namespace nzsl::Ast
 	{
 		if (!m_flags.Test(TransformerFlag::IgnoreExpressions))
 		{
-			HandleExpressionValue(node.isExported);
-			HandleExpressionValue(node.description.layout);
+			HandleExpressionValue(node.isExported, node.sourceLocation);
+			HandleExpressionValue(node.description.layout, node.sourceLocation);
 
 			for (auto& member : node.description.members)
 			{
-				HandleExpressionValue(member.builtin);
-				HandleExpressionValue(member.cond);
-				HandleExpressionValue(member.interp);
-				HandleExpressionValue(member.locationIndex);
-				HandleExpressionValue(member.type);
+				HandleExpressionValue(member.builtin, member.sourceLocation);
+				HandleExpressionValue(member.cond, member.sourceLocation);
+				HandleExpressionValue(member.interp, member.sourceLocation);
+				HandleExpressionValue(member.locationIndex, member.sourceLocation);
+				HandleExpressionValue(member.type, member.sourceLocation);
 			}
 
 			FinishExpressionHandling();
@@ -496,7 +496,7 @@ namespace nzsl::Ast
 	{
 		if (!m_flags.Test(TransformerFlag::IgnoreExpressions))
 		{
-			HandleExpressionValue(node.varType);
+			HandleExpressionValue(node.varType, node.sourceLocation);
 
 			if (node.initialExpression)
 				HandleExpression(node.initialExpression);
@@ -528,7 +528,7 @@ namespace nzsl::Ast
 			if (node.stepExpr)
 				HandleExpression(node.stepExpr);
 
-			HandleExpressionValue(node.unroll);
+			HandleExpressionValue(node.unroll, node.sourceLocation);
 
 			FinishExpressionHandling();
 		}
@@ -547,7 +547,7 @@ namespace nzsl::Ast
 		{
 			HandleExpression(node.expression);
 
-			HandleExpressionValue(node.unroll);
+			HandleExpressionValue(node.unroll, node.sourceLocation);
 
 			FinishExpressionHandling();
 		}
@@ -615,7 +615,7 @@ namespace nzsl::Ast
 		{
 			HandleExpression(node.condition);
 
-			HandleExpressionValue(node.unroll);
+			HandleExpressionValue(node.unroll, node.sourceLocation);
 
 			FinishExpressionHandling();
 		}
@@ -672,16 +672,16 @@ namespace nzsl::Ast
 
 #include <NZSL/Ast/NodeList.hpp>
 
-	void Transformer::Transform(ExpressionType& /*expressionType*/)
+	void Transformer::Transform(ExpressionType& /*expressionType*/, const SourceLocation& /*sourceLocation*/)
 	{
 	}
 
-	void Transformer::Transform(ExpressionValue<ExpressionType>& expressionValue)
+	void Transformer::Transform(ExpressionValue<ExpressionType>& expressionValue, const SourceLocation& sourceLocation)
 	{
 		if (expressionValue.IsExpression())
 			HandleExpression(expressionValue.GetExpression());
 		else if (expressionValue.IsResultingValue())
-			Transform(expressionValue.GetResultingValue());
+			Transform(expressionValue.GetResultingValue(), sourceLocation);
 	}
 
 	bool Transformer::TransformExpression(ExpressionPtr& expression, TransformerContext& context, std::string* error)

@@ -196,7 +196,8 @@ NZSL_SHADERLANG_AST_ERROR(NoIdentifier, "at least one identifier is required")
 NZSL_SHADERLANG_AST_ERROR(NoIndex, "at least one index is required")
 NZSL_SHADERLANG_AST_ERROR(UnexpectedIdentifier, "unexpected identifier of type {}", std::string)
 NZSL_SHADERLANG_AST_ERROR(UnexpectedUntyped, "unexpected \"untyped\" type")
-NZSL_SHADERLANG_AST_ERROR(UntypedExpectedConstant, "got untyped from a non-constant expression of type {}", std::string_view)
+NZSL_SHADERLANG_AST_ERROR(UnresolvedLiteral, "unresolved literal in an unauthorized context")
+NZSL_SHADERLANG_AST_ERROR(UntypedExpectedConstant, "got untyped literal from a non-constant expression of type {}", std::string_view)
 
 #undef NZSL_SHADERLANG_ERROR
 #undef NZSL_SHADERLANG_AST_ERROR
