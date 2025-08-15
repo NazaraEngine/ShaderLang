@@ -231,7 +231,7 @@ namespace nzsl::Ast
 				{
 					if (std::holds_alternative<FloatLiteral>(*value))
 					{
-						attribute = static_cast<float>(std::get<FloatLiteral>(*value));
+						attribute = LiteralToFloat32(std::get<FloatLiteral>(*value), sourceLocation);
 						return true;
 					}
 				}
@@ -239,7 +239,7 @@ namespace nzsl::Ast
 				{
 					if (std::holds_alternative<FloatLiteral>(*value))
 					{
-						attribute = static_cast<double>(std::get<FloatLiteral>(*value));
+						attribute = LiteralToFloat64(std::get<FloatLiteral>(*value), sourceLocation);
 						return true;
 					}
 				}
@@ -247,14 +247,7 @@ namespace nzsl::Ast
 				{
 					if (std::holds_alternative<IntLiteral>(*value))
 					{
-						std::int64_t iValue = std::get<IntLiteral>(*value);
-						if (iValue > std::numeric_limits<std::int32_t>::max())
-							throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::Int32), std::to_string(iValue) };
-
-						if (iValue < std::numeric_limits<std::int32_t>::min())
-							throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::Int32), std::to_string(iValue) };
-
-						attribute = static_cast<std::int32_t>(iValue);
+						attribute = LiteralToInt32(std::get<IntLiteral>(*value), sourceLocation);
 						return true;
 					}
 				}
@@ -262,14 +255,7 @@ namespace nzsl::Ast
 				{
 					if (std::holds_alternative<IntLiteral>(*value))
 					{
-						std::int64_t iValue = std::get<IntLiteral>(*value);
-						if (iValue < 0)
-							throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::UInt32), std::to_string(iValue) };
-
-						if (static_cast<std::uint64_t>(iValue) > std::numeric_limits<std::uint32_t>::max())
-							throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::UInt32), std::to_string(iValue) };
-
-						attribute = static_cast<std::uint32_t>(iValue);
+						attribute = LiteralToUInt32(std::get<IntLiteral>(*value), sourceLocation);
 						return true;
 					}
 					else if (m_states->currentModule->metadata->shaderLangVersion < Version::UntypedLiterals)
@@ -1366,32 +1352,16 @@ namespace nzsl::Ast
 			if constexpr (std::is_same_v<T, FloatLiteral>)
 			{
 				if (expressionType == ExpressionType{ PrimitiveType::Float32 })
-					constantValue = static_cast<float>(value);
+					constantValue = LiteralToFloat32(value, sourceLocation);
 				else if (expressionType == ExpressionType{ PrimitiveType::Float64 })
-					constantValue = static_cast<double>(value);
+					constantValue = LiteralToFloat64(value, sourceLocation);
 			}
 			else if constexpr (std::is_same_v<T, IntLiteral>)
 			{
 				if (expressionType == ExpressionType{ PrimitiveType::Int32 })
-				{
-					if (value > std::numeric_limits<std::int32_t>::max())
-						throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::Int32), std::to_string(value) };
-
-					if (value < std::numeric_limits<std::int32_t>::min())
-						throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::Int32), std::to_string(value) };
-
-					constantValue = static_cast<std::int32_t>(value);
-				}
+					constantValue = LiteralToInt32(value, sourceLocation);
 				else if (expressionType == ExpressionType{ PrimitiveType::UInt32 })
-				{
-					if (value < 0)
-						throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::UInt32), std::to_string(value) };
-
-					if (static_cast<std::uint64_t>(value) > std::numeric_limits<std::uint32_t>::max())
-						throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::UInt32), std::to_string(value) };
-
-					constantValue = static_cast<std::uint32_t>(value);
-				}
+					constantValue = LiteralToUInt32(value, sourceLocation);
 			}
 			else if constexpr (IsVector_v<T>)
 			{
@@ -1404,15 +1374,15 @@ namespace nzsl::Ast
 					{
 						Vector<float, T::Dimensions> vec;
 						for (std::size_t i = 0; i < T::Dimensions; ++i)
-							vec[i] = static_cast<float>(value[i]);
+							vec[i] = LiteralToFloat32(value[i], sourceLocation);
 
 						constantValue = vec;
 					}
-					else if (expressionType == ExpressionType{ VectorType{ T::Dimensions, PrimitiveType::Float32 } })
+					else if (expressionType == ExpressionType{ VectorType{ T::Dimensions, PrimitiveType::Float64 } })
 					{
 						Vector<double, T::Dimensions> vec;
 						for (std::size_t i = 0; i < T::Dimensions; ++i)
-							vec[i] = static_cast<double>(value[i]);
+							vec[i] = LiteralToFloat64(value[i], sourceLocation);
 
 						constantValue = vec;
 					}
@@ -1423,29 +1393,13 @@ namespace nzsl::Ast
 					{
 						Vector<std::int32_t, T::Dimensions> vec;
 						for (std::size_t i = 0; i < T::Dimensions; ++i)
-						{
-							if (value[i] > std::numeric_limits<std::int32_t>::max())
-								throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::Int32), std::to_string(value[i]) };
-
-							if (value[i] < std::numeric_limits<std::int32_t>::min())
-								throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::Int32), std::to_string(value[i]) };
-
-							vec[i] = static_cast<std::int32_t>(value[i]);
-						}
+							vec[i] = LiteralToInt32(value[i], sourceLocation);
 					}
-					else if (expressionType == ExpressionType{ VectorType{ T::Dimensions, PrimitiveType::Float32 } })
+					else if (expressionType == ExpressionType{ VectorType{ T::Dimensions, PrimitiveType::UInt32 } })
 					{
 						Vector<std::uint32_t, T::Dimensions> vec;
 						for (std::size_t i = 0; i < T::Dimensions; ++i)
-						{
-							if (value[i] < 0)
-								throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::UInt32), std::to_string(value[i]) };
-
-							if (static_cast<std::uint64_t>(value[i]) > std::numeric_limits<std::uint32_t>::max())
-								throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::UInt32), std::to_string(value[i]) };
-
-							vec[i] = static_cast<std::uint32_t>(value[i]);
-						}
+							vec[i] = LiteralToUInt32(value[i], sourceLocation);
 					}
 				}
 			}
@@ -3158,27 +3112,10 @@ namespace nzsl::Ast
 					{
 						if (const IntLiteral* literal = std::get_if<IntLiteral>(&constantValue))
 						{
-							std::int64_t iValue = *literal;
 							if constexpr (std::is_same_v<T, std::int32_t>)
-							{
-								if (iValue > std::numeric_limits<std::int32_t>::max())
-									throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::Int32), std::to_string(iValue) };
-
-								if (iValue < std::numeric_limits<std::int32_t>::min())
-									throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::Int32), std::to_string(iValue) };
-
-								return static_cast<T>(iValue);
-							}
+								return LiteralToInt32(*literal, sourceLocation);
 							else if constexpr (std::is_same_v<T, std::uint32_t>)
-							{
-								if (iValue < 0)
-									throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::UInt32), std::to_string(iValue) };
-
-								if (static_cast<std::uint64_t>(iValue) > std::numeric_limits<std::uint32_t>::max())
-									throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::UInt32), std::to_string(iValue) };
-
-								return static_cast<T>(iValue);
-							}
+								return LiteralToUInt32(*literal, sourceLocation);
 						}
 
 						return std::get<T>(constantValue);

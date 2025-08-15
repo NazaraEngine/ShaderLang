@@ -378,32 +378,16 @@ namespace nzsl::Ast
 						if constexpr (std::is_same_v<T, FloatLiteral>)
 						{
 							if (vecType.type == PrimitiveType::Float32)
-								constantValues.push_back(static_cast<float>(value));
+								constantValues.push_back(LiteralToFloat32(value, node.expressions[i]->sourceLocation));
 							else if (vecType.type == PrimitiveType::Float64)
-								constantValues.push_back(static_cast<double>(value));
+								constantValues.push_back(LiteralToFloat64(value, node.expressions[i]->sourceLocation));
 						}
 						else if constexpr (std::is_same_v<T, IntLiteral>)
 						{
 							if (vecType.type == PrimitiveType::Int32)
-							{
-								if (value > std::numeric_limits<std::int32_t>::max())
-									throw CompilerLiteralOutOfRangeError{ node.expressions[i]->sourceLocation, Ast::ToString(PrimitiveType::Int32), std::to_string(value) };
-
-								if (value < std::numeric_limits<std::int32_t>::min())
-									throw CompilerLiteralOutOfRangeError{ node.expressions[i]->sourceLocation, Ast::ToString(PrimitiveType::Int32), std::to_string(value) };
-
-								constantValues.push_back(static_cast<std::int32_t>(value));
-							}
+								constantValues.push_back(LiteralToInt32(value, node.expressions[i]->sourceLocation));
 							else if (vecType.type == PrimitiveType::UInt32)
-							{
-								if (value < 0)
-									throw CompilerLiteralOutOfRangeError{ node.expressions[i]->sourceLocation, Ast::ToString(PrimitiveType::UInt32), std::to_string(value) };
-
-								if (static_cast<std::uint64_t>(value) > std::numeric_limits<std::uint32_t>::max())
-									throw CompilerLiteralOutOfRangeError{ node.expressions[i]->sourceLocation, Ast::ToString(PrimitiveType::UInt32), std::to_string(value) };
-
-								constantValues.push_back(static_cast<std::uint32_t>(value));
-							}
+								constantValues.push_back(LiteralToUInt32(value, node.expressions[i]->sourceLocation));
 						}
 					}
 					else if constexpr (IsVector_v<T> && T::Dimensions == 2)

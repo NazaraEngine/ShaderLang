@@ -504,9 +504,9 @@ namespace nzsl::Ast
 						targetType = PrimitiveType::Float32;
 
 					if (targetType == PrimitiveType::Float32)
-						constantExpr.value = static_cast<float>(std::get<FloatLiteral>(constantExpr.value));
+						constantExpr.value = LiteralToFloat32(std::get<FloatLiteral>(constantExpr.value), sourceLocation);
 					else if (targetType == PrimitiveType::Float64)
-						constantExpr.value = static_cast<double>(std::get<FloatLiteral>(constantExpr.value));
+						constantExpr.value = LiteralToFloat64(std::get<FloatLiteral>(constantExpr.value), sourceLocation);
 					else
 						throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(*primType), Ast::ToString(*targetType) };
 
@@ -521,31 +521,13 @@ namespace nzsl::Ast
 
 					ConstantValueExpression& constantExpr = static_cast<ConstantValueExpression&>(expression);
 
-					std::int64_t value = std::get<IntLiteral>(constantExpr.value);
-
 					if (!targetType)
 						targetType = PrimitiveType::Int32;
 
 					if (targetType == PrimitiveType::Int32)
-					{
-						if (value > std::numeric_limits<std::int32_t>::max())
-							throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::Int32), std::to_string(value) };
-
-						if (value < std::numeric_limits<std::int32_t>::min())
-							throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::Int32), std::to_string(value) };
-
-						constantExpr.value = static_cast<std::int32_t>(std::get<IntLiteral>(constantExpr.value));
-					}
+						constantExpr.value = LiteralToInt32(std::get<IntLiteral>(constantExpr.value), sourceLocation);
 					else if (targetType == PrimitiveType::UInt32)
-					{
-						if (value < 0)
-							throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(*targetType), std::to_string(value) };
-
-						if (static_cast<std::uint64_t>(value) > std::numeric_limits<std::uint32_t>::max())
-							throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(*targetType), std::to_string(value) };
-
-						constantExpr.value = static_cast<std::uint32_t>(std::get<IntLiteral>(constantExpr.value));
-					}
+						constantExpr.value = LiteralToUInt32(std::get<IntLiteral>(constantExpr.value), sourceLocation);
 					else
 						throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(*primType), Ast::ToString(*targetType) };
 
@@ -586,7 +568,7 @@ namespace nzsl::Ast
 						targetType = VectorType{ vecType->componentCount, PrimitiveType::Float32 };
 
 					constantExpr.cachedExpressionType = targetType;
-					
+
 					auto ResolveVector = [&](auto sizeConstant)
 					{
 						constexpr std::size_t Dims = sizeConstant();
@@ -597,7 +579,7 @@ namespace nzsl::Ast
 						{
 							Vector<float, Dims> vec;
 							for (std::size_t i = 0; i < targetType->componentCount; ++i)
-								vec[i] = static_cast<float>(vecUntyped[i]);
+								vec[i] = LiteralToFloat32(vecUntyped[i], sourceLocation);
 
 							constantExpr.value = vec;
 						}
@@ -605,14 +587,14 @@ namespace nzsl::Ast
 						{
 							Vector<double, Dims> vec;
 							for (std::size_t i = 0; i < targetType->componentCount; ++i)
-								vec[i] = static_cast<double>(vecUntyped[i]);
+								vec[i] = LiteralToFloat64(vecUntyped[i], sourceLocation);
 
 							constantExpr.value = vec;
 						}
 						else
 							throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(*vecType), Ast::ToString(*targetType) };
 					};
-					
+
 					switch (targetType->componentCount)
 					{
 						case 2: ResolveVector(std::integral_constant<std::size_t, 2>{}); break;
@@ -648,16 +630,7 @@ namespace nzsl::Ast
 						{
 							Vector<std::int32_t, Dims> vec;
 							for (std::size_t i = 0; i < Dims; ++i)
-							{
-								std::int64_t component = vecUntyped[i];
-								if (component > std::numeric_limits<std::int32_t>::max())
-									throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::Int32), std::to_string(component) };
-
-								if (component < std::numeric_limits<std::int32_t>::min())
-									throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::Int32), std::to_string(component) };
-
-								vec[i] = static_cast<std::int32_t>(component);
-							}
+								vec[i] = LiteralToInt32(vecUntyped[i], sourceLocation);
 
 							constantExpr.value = vec;
 						}
@@ -665,16 +638,7 @@ namespace nzsl::Ast
 						{
 							Vector<std::uint32_t, Dims> vec;
 							for (std::size_t i = 0; i < Dims; ++i)
-							{
-								std::int64_t component = vecUntyped[i];
-								if (component < 0)
-									throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::UInt32), std::to_string(component) };
-
-								if (static_cast<std::uint64_t>(component) > std::numeric_limits<std::uint32_t>::max())
-									throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::UInt32), std::to_string(component) };
-
-								vec[i] = static_cast<std::uint32_t>(component);
-							}
+								vec[i] = LiteralToUInt32(vecUntyped[i], sourceLocation);
 
 							constantExpr.value = vec;
 						}
