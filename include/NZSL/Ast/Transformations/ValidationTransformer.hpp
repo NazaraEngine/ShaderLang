@@ -105,6 +105,8 @@ namespace nzsl::Ast
 			StatementTransformation Transform(ScopedStatement&& node) override;
 			StatementTransformation Transform(WhileStatement&& node) override;
 
+			void Transform(ExpressionType& expressionType, const SourceLocation& sourceLocation) override;
+
 			bool TransformModule(Module& module, TransformerContext& context, std::string* error, Nz::FunctionRef<void()> postCallback = nullptr) override;
 
 			void ValidateConcreteType(const ExpressionType& exprType, const SourceLocation& sourceLocation);
