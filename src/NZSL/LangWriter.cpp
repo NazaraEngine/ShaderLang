@@ -300,6 +300,11 @@ namespace nzsl
 		throw std::runtime_error("unexpected function type");
 	}
 
+	void LangWriter::Append(const Ast::ImplicitVectorType& /*vecType*/)
+	{
+		throw std::runtime_error("unexpected DeducedVectorType");
+	}
+
 	void LangWriter::Append(const Ast::IntrinsicFunctionType& /*functionType*/)
 	{
 		throw std::runtime_error("unexpected intrinsic function type");
@@ -336,6 +341,11 @@ namespace nzsl
 	void LangWriter::Append(const Ast::NamedExternalBlockType& namedExternalBlockType)
 	{
 		Append(m_currentState->externalBlockNames[namedExternalBlockType.namedExternalBlockIndex]);
+	}
+
+	void LangWriter::Append(Ast::NoType)
+	{
+		return Append("()");
 	}
 
 	void LangWriter::Append(Ast::PrimitiveType type)
@@ -438,11 +448,6 @@ namespace nzsl
 	void LangWriter::Append(const Ast::VectorType& vecType)
 	{
 		Append("vec", vecType.componentCount, "[", vecType.type, "]");
-	}
-
-	void LangWriter::Append(Ast::NoType)
-	{
-		return Append("()");
 	}
 
 	template<typename T>
@@ -801,17 +806,6 @@ namespace nzsl
 		AppendLine();
 	}
 
-	void LangWriter::AppendLine(std::string_view txt)
-	{
-		assert(m_currentState && "This function should only be called while processing an AST");
-
-		if (txt.empty() && m_currentState->streamEmptyLine > 1)
-			return;
-
-		m_currentState->stream << txt << '\n';
-		m_currentState->streamEmptyLine++;
-	}
-
 	template<typename T>
 	void LangWriter::AppendIdentifier(const T& map, std::size_t id)
 	{
@@ -823,6 +817,17 @@ namespace nzsl
 			Append(m_currentState->externalBlockNames[*identifier.externalBlockIndex], '.');
 
 		Append(identifier.name);
+	}
+
+	void LangWriter::AppendLine(std::string_view txt)
+	{
+		assert(m_currentState && "This function should only be called while processing an AST");
+
+		if (txt.empty() && m_currentState->streamEmptyLine > 1)
+			return;
+
+		m_currentState->stream << txt << '\n';
+		m_currentState->streamEmptyLine++;
 	}
 
 	template<typename... Args>
@@ -850,6 +855,15 @@ namespace nzsl
 			Append(Ast::ConstantToString(value));
 	}
 
+	void LangWriter::AppendHeader(const Ast::Module& module)
+	{
+		AppendModuleAttributes(*module.metadata);
+		if (!module.metadata->moduleName.empty() && module.metadata->moduleName[0] != '_')
+			AppendLine("module ", module.metadata->moduleName, ";");
+		else
+			AppendLine("module;");
+		AppendLine();
+	}
 	void LangWriter::AppendModuleAttributes(const Ast::Module::Metadata& metadata)
 	{
 		AppendAttributes(true, LangVersionAttribute{ metadata.shaderLangVersion });
@@ -1736,13 +1750,4 @@ namespace nzsl
 		ScopeVisit(*node.body);
 	}
 
-	void LangWriter::AppendHeader(const Ast::Module& module)
-	{
-		AppendModuleAttributes(*module.metadata);
-		if (!module.metadata->moduleName.empty() && module.metadata->moduleName[0] != '_')
-			AppendLine("module ", module.metadata->moduleName, ";");
-		else
-			AppendLine("module;");
-		AppendLine();
-	}
 }

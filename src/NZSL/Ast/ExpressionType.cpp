@@ -292,6 +292,7 @@ namespace nzsl::Ast
 				return ResolveStructIndex(arg);
 			else if constexpr (std::is_same_v<T, NoType> ||
 			                   std::is_same_v<T, ArrayType> ||
+			                   std::is_same_v<T, ImplicitVectorType> ||
 			                   std::is_same_v<T, DynArrayType> ||
 			                   std::is_same_v<T, FunctionType> ||
 			                   std::is_same_v<T, IntrinsicFunctionType> ||
@@ -346,6 +347,11 @@ namespace nzsl::Ast
 			return fmt::format("array[{}, {}]", ToString(type.containedType->type, stringifier), type.length);
 		else
 			return fmt::format("array[{}]", ToString(type.containedType->type, stringifier));
+	}
+
+	std::string ToString(const ImplicitVectorType& type, const Stringifier& /*stringifier*/)
+	{
+		return fmt::format("vec{}", type.componentCount);
 	}
 
 	std::string ToString(const DynArrayType& type, const Stringifier& stringifier)

@@ -100,6 +100,14 @@ namespace nzsl::Ast
 		inline bool operator!=(const FunctionType& rhs) const;
 	};
 
+	struct ImplicitVectorType
+	{
+		std::size_t componentCount;
+
+		inline bool operator==(const ImplicitVectorType& rhs) const;
+		inline bool operator!=(const ImplicitVectorType& rhs) const;
+	};
+
 	struct IntrinsicFunctionType
 	{
 		IntrinsicType intrinsic;
@@ -229,7 +237,7 @@ namespace nzsl::Ast
 		inline bool operator!=(const PushConstantType& rhs) const;
 	};
 
-	using ExpressionType = std::variant<NoType, AliasType, ArrayType, DynArrayType, FunctionType, IntrinsicFunctionType, MatrixType, MethodType, ModuleType, NamedExternalBlockType, PrimitiveType, PushConstantType, SamplerType, StorageType, StructType, TextureType, Type, UniformType, VectorType>;
+	using ExpressionType = std::variant<NoType, AliasType, ArrayType, DynArrayType, FunctionType, ImplicitVectorType, IntrinsicFunctionType, MatrixType, MethodType, ModuleType, NamedExternalBlockType, PrimitiveType, PushConstantType, SamplerType, StorageType, StructType, TextureType, Type, UniformType, VectorType>;
 
 	struct ContainedType
 	{
@@ -261,6 +269,8 @@ namespace nzsl::Ast
 	inline bool IsArrayType(const ExpressionType& type);
 	inline bool IsDynArrayType(const ExpressionType& type);
 	inline bool IsFunctionType(const ExpressionType& type);
+	inline bool IsImplicitType(const ExpressionType& type);
+	inline bool IsImplicitVectorType(const ExpressionType& type);
 	inline bool IsIntrinsicFunctionType(const ExpressionType& type);
 	inline bool IsMatrixType(const ExpressionType& type);
 	inline bool IsMethodType(const ExpressionType& type);
@@ -320,6 +330,7 @@ namespace nzsl::Ast
 
 	NZSL_API std::string ToString(const AliasType& type, const Stringifier& stringifier = {});
 	NZSL_API std::string ToString(const ArrayType& type, const Stringifier& stringifier = {});
+	NZSL_API std::string ToString(const ImplicitVectorType& type, const Stringifier& stringifier = {});
 	NZSL_API std::string ToString(const DynArrayType& type, const Stringifier& stringifier = {});
 	NZSL_API std::string ToString(const ExpressionType& type, const Stringifier& stringifier = {});
 	NZSL_API std::string ToString(const FunctionType& type, const Stringifier& stringifier = {});

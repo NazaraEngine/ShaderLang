@@ -341,9 +341,30 @@ namespace nzsl::Ast
 				}
 			}
 		}
-		else if (IsVectorType(targetType))
+		else if (IsImplicitVectorType(targetType) || IsVectorType(targetType))
 		{
-			const auto& vecType = std::get<VectorType>(targetType);
+			PrimitiveType innerType;
+			std::size_t componentCount;
+			if (IsImplicitVectorType(targetType))
+			{
+				componentCount = std::get<ImplicitVectorType>(targetType).componentCount;
+				for (std::size_t i = 0; i < node.expressions.size(); ++i)
+				{
+					const ExpressionType* exprType = GetResolvedExpressionType(MandatoryExpr(node.expressions[i], node.sourceLocation), true);
+					if (!exprType || !IsPrimitiveType(*exprType))
+						return DontVisitChildren{};
+
+					innerType = std::get<PrimitiveType>(*exprType);
+					if (!IsLiteralType(innerType))
+						break; //< continue if literal type as we could encounter a non-literal type later (e.g. vec3(1, u32(2), 3))
+				}
+			}
+			else
+			{
+				VectorType vecType = std::get<VectorType>(targetType);
+				componentCount = vecType.componentCount;
+				innerType = vecType.type;
+			}
 
 			// Decompose vector into values (cast(vec3, float) => cast(float, float, float, float))
 			std::vector<ConstantSingleValue> constantValues;
@@ -364,49 +385,61 @@ namespace nzsl::Ast
 					break;
 				}
 
+				auto PushConstantValue = [&](auto value)
+				{
+					using T = std::decay_t<decltype(value)>;
+
+					if constexpr (IsLiteral_v<T>)
+					{
+						// Convert literals
+						if constexpr (std::is_same_v<T, FloatLiteral>)
+						{
+							if (innerType == PrimitiveType::Float32)
+								constantValues.push_back(LiteralToFloat32(value, node.expressions[i]->sourceLocation));
+							else if (innerType == PrimitiveType::Float64)
+								constantValues.push_back(LiteralToFloat64(value, node.expressions[i]->sourceLocation));
+							else if (innerType == PrimitiveType::FloatLiteral)
+								constantValues.push_back(value);
+						}
+						else if constexpr (std::is_same_v<T, IntLiteral>)
+						{
+							if (innerType == PrimitiveType::Int32)
+								constantValues.push_back(LiteralToInt32(value, node.expressions[i]->sourceLocation));
+							else if (innerType == PrimitiveType::UInt32)
+								constantValues.push_back(LiteralToUInt32(value, node.expressions[i]->sourceLocation));
+							else if (innerType == PrimitiveType::IntLiteral)
+								constantValues.push_back(value);
+						}
+					}
+					else
+						constantValues.push_back(value);
+				};
+
 				std::visit([&](auto&& value)
 				{
 					using T = std::decay_t<decltype(value)>;
 
 					if constexpr (std::is_same_v<T, NoValue>)
 						throw std::runtime_error("invalid type (value expected)");
-					else if constexpr (std::is_same_v<T, bool> || std::is_same_v<T, double> || std::is_same_v<T, float> || std::is_same_v<T, std::int32_t> || std::is_same_v<T, std::uint32_t> || std::is_same_v<T, std::string>)
-						constantValues.push_back(value);
-					else if constexpr (IsLiteral_v<T>)
-					{
-						// Convert untyped
-						if constexpr (std::is_same_v<T, FloatLiteral>)
-						{
-							if (vecType.type == PrimitiveType::Float32)
-								constantValues.push_back(LiteralToFloat32(value, node.expressions[i]->sourceLocation));
-							else if (vecType.type == PrimitiveType::Float64)
-								constantValues.push_back(LiteralToFloat64(value, node.expressions[i]->sourceLocation));
-						}
-						else if constexpr (std::is_same_v<T, IntLiteral>)
-						{
-							if (vecType.type == PrimitiveType::Int32)
-								constantValues.push_back(LiteralToInt32(value, node.expressions[i]->sourceLocation));
-							else if (vecType.type == PrimitiveType::UInt32)
-								constantValues.push_back(LiteralToUInt32(value, node.expressions[i]->sourceLocation));
-						}
-					}
+					else if constexpr (IsLiteral_v<T> || std::is_same_v<T, bool> || std::is_same_v<T, double> || std::is_same_v<T, float> || std::is_same_v<T, std::int32_t> || std::is_same_v<T, std::uint32_t> || std::is_same_v<T, std::string>)
+						PushConstantValue(value);
 					else if constexpr (IsVector_v<T> && T::Dimensions == 2)
 					{
-						constantValues.push_back(value.x());
-						constantValues.push_back(value.y());
+						PushConstantValue(value.x());
+						PushConstantValue(value.y());
 					}
 					else if constexpr (IsVector_v<T> && T::Dimensions == 3)
 					{
-						constantValues.push_back(value.x());
-						constantValues.push_back(value.y());
-						constantValues.push_back(value.z());
+						PushConstantValue(value.x());
+						PushConstantValue(value.y());
+						PushConstantValue(value.z());
 					}
 					else if constexpr (IsVector_v<T> && T::Dimensions == 4)
 					{
-						constantValues.push_back(value.x());
-						constantValues.push_back(value.y());
-						constantValues.push_back(value.z());
-						constantValues.push_back(value.w());
+						PushConstantValue(value.x());
+						PushConstantValue(value.y());
+						PushConstantValue(value.z());
+						PushConstantValue(value.w());
 					}
 					else
 						static_assert(Nz::AlwaysFalse<T>(), "non-exhaustive visitor");
@@ -415,7 +448,7 @@ namespace nzsl::Ast
 
 			if (!constantValues.empty())
 			{
-				assert(constantValues.size() == vecType.componentCount);
+				assert(constantValues.size() == componentCount);
 
 				std::visit([&](auto&& arg)
 				{
@@ -423,7 +456,7 @@ namespace nzsl::Ast
 
 					if constexpr (Nz::TypeListHas<ConstantPrimitiveTypes, T> && !std::is_same_v<T, std::string>)
 					{
-						switch (vecType.componentCount)
+						switch (componentCount)
 						{
 							case 2:
 								optimized = ShaderBuilder::ConstantValue(Vector2<T>{ std::get<T>(constantValues[0]), std::get<T>(constantValues[1]) }, node.sourceLocation);
@@ -494,68 +527,6 @@ namespace nzsl::Ast
 			optimized->sourceLocation = node.sourceLocation;
 
 			return ReplaceExpression{ std::move(optimized) };
-		}
-
-		return DontVisitChildren{};
-	}
-
-	auto ConstantPropagationTransformer::Transform(BranchStatement&& node) -> StatementTransformation
-	{
-		for (auto it = node.condStatements.begin(); it != node.condStatements.end();)
-		{
-			auto& condStatement = *it;
-			HandleExpression(condStatement.condition);
-
-			if (condStatement.condition->GetType() == NodeType::ConstantValueExpression)
-			{
-				auto& constant = static_cast<ConstantValueExpression&>(*condStatement.condition);
-
-				const ExpressionType* constantType = GetExpressionType(constant);
-				if (!constantType)
-				{
-					// unresolved type, can't continue propagating this branch
-					break;
-				}
-
-				if (!IsPrimitiveType(*constantType) || std::get<PrimitiveType>(*constantType) != PrimitiveType::Boolean)
-					throw AstConditionExpectedBoolError{ condStatement.condition->sourceLocation, ToString(*constantType, condStatement.condition->sourceLocation) };
-
-				bool cValue = std::get<bool>(constant.value);
-				if (!cValue)
-				{
-					it = node.condStatements.erase(it);
-					continue;
-				}
-
-				if (node.condStatements.begin() == it)
-				{
-					// First condition is true, dismiss the whole branch
-					HandleStatement(condStatement.statement);
-					return ReplaceStatement{ Unscope(std::move(condStatement.statement)) };
-				}
-				else
-				{
-					// Some condition after the first condition is true, make it the else statement and dismiss the rest
-					// No need to call HandleStatement as the Transformer will do it when keeping the node
-					node.elseStatement = std::move(condStatement.statement);
-					node.condStatements.erase(it, node.condStatements.end());
-					return VisitChildren{};
-				}
-			}
-			else
-				++it;
-		}
-
-		if (node.condStatements.empty())
-		{
-			// All conditions have been removed, replace by else statement or no-op
-			if (node.elseStatement)
-			{
-				HandleStatement(node.elseStatement);
-				return ReplaceStatement{ Unscope(std::move(node.elseStatement)) };
-			}
-			else
-				return RemoveStatement{};
 		}
 
 		return DontVisitChildren{};
@@ -782,6 +753,68 @@ namespace nzsl::Ast
 		return DontVisitChildren{};
 	}
 
+	auto ConstantPropagationTransformer::Transform(BranchStatement&& node) -> StatementTransformation
+	{
+		for (auto it = node.condStatements.begin(); it != node.condStatements.end();)
+		{
+			auto& condStatement = *it;
+			HandleExpression(condStatement.condition);
+
+			if (condStatement.condition->GetType() == NodeType::ConstantValueExpression)
+			{
+				auto& constant = static_cast<ConstantValueExpression&>(*condStatement.condition);
+
+				const ExpressionType* constantType = GetExpressionType(constant);
+				if (!constantType)
+				{
+					// unresolved type, can't continue propagating this branch
+					break;
+				}
+
+				if (!IsPrimitiveType(*constantType) || std::get<PrimitiveType>(*constantType) != PrimitiveType::Boolean)
+					throw AstConditionExpectedBoolError{ condStatement.condition->sourceLocation, ToString(*constantType, condStatement.condition->sourceLocation) };
+
+				bool cValue = std::get<bool>(constant.value);
+				if (!cValue)
+				{
+					it = node.condStatements.erase(it);
+					continue;
+				}
+
+				if (node.condStatements.begin() == it)
+				{
+					// First condition is true, dismiss the whole branch
+					HandleStatement(condStatement.statement);
+					return ReplaceStatement{ Unscope(std::move(condStatement.statement)) };
+				}
+				else
+				{
+					// Some condition after the first condition is true, make it the else statement and dismiss the rest
+					// No need to call HandleStatement as the Transformer will do it when keeping the node
+					node.elseStatement = std::move(condStatement.statement);
+					node.condStatements.erase(it, node.condStatements.end());
+					return VisitChildren{};
+				}
+			}
+			else
+				++it;
+		}
+
+		if (node.condStatements.empty())
+		{
+			// All conditions have been removed, replace by else statement or no-op
+			if (node.elseStatement)
+			{
+				HandleStatement(node.elseStatement);
+				return ReplaceStatement{ Unscope(std::move(node.elseStatement)) };
+			}
+			else
+				return RemoveStatement{};
+		}
+
+		return DontVisitChildren{};
+	}
+
 	auto ConstantPropagationTransformer::Transform(ConditionalStatement&& node) -> StatementTransformation
 	{
 		HandleExpression(node.condition);
@@ -809,32 +842,6 @@ namespace nzsl::Ast
 		}
 		else
 			return RemoveStatement{};
-	}
-
-	template<typename TargetType>
-	ExpressionPtr ConstantPropagationTransformer::PropagateSingleValueCast(const ConstantValueExpression& operand, const SourceLocation& sourceLocation)
-	{
-		NAZARA_USE_ANONYMOUS_NAMESPACE
-
-		ConstantValueExpressionPtr optimized;
-
-		std::visit([&](auto&& arg)
-		{
-			using T = std::decay_t<decltype(arg)>;
-
-			if constexpr (!std::is_same_v<TargetType, T>)
-			{
-				using CCType = CastConstant<TargetType, T>;
-
-				if constexpr (Nz::IsComplete_v<CCType>)
-					optimized = CCType{}(arg, sourceLocation);
-			}
-			else
-				optimized = ShaderBuilder::ConstantValue(arg);
-
-		}, operand.value);
-
-		return optimized;
 	}
 
 	ExpressionPtr ConstantPropagationTransformer::PropagateConstantSwizzle(std::size_t targetComponentCount, const std::array<std::uint32_t, 4>& components, const ConstantValueExpression& operand, const SourceLocation& sourceLocation)
@@ -868,6 +875,32 @@ namespace nzsl::Ast
 						throw std::runtime_error("unexpected target component count " + std::to_string(targetComponentCount));
 				}
 			}
+		}, operand.value);
+
+		return optimized;
+	}
+
+	template<typename TargetType>
+	ExpressionPtr ConstantPropagationTransformer::PropagateSingleValueCast(const ConstantValueExpression& operand, const SourceLocation& sourceLocation)
+	{
+		NAZARA_USE_ANONYMOUS_NAMESPACE
+
+		ConstantValueExpressionPtr optimized;
+
+		std::visit([&](auto&& arg)
+		{
+			using T = std::decay_t<decltype(arg)>;
+
+			if constexpr (!std::is_same_v<TargetType, T>)
+			{
+				using CCType = CastConstant<TargetType, T>;
+
+				if constexpr (Nz::IsComplete_v<CCType>)
+					optimized = CCType{}(arg, sourceLocation);
+			}
+			else
+				optimized = ShaderBuilder::ConstantValue(arg);
+
 		}, operand.value);
 
 		return optimized;
