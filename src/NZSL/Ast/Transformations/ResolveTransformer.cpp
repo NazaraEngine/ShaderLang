@@ -188,11 +188,8 @@ namespace nzsl::Ast
 			{
 				// Propagation failure may be because of misuse, try to run ValidationTransformer to produce a better error message before throwing ConstantExpressionRequired
 
-				Stringifier stringifier = BuildStringifier(expr->sourceLocation);
-
 				ValidationTransformer::Options validationOpts;
 				validationOpts.checkIndices = false;
-				validationOpts.stringifier = &stringifier;
 
 				ValidationTransformer validation;
 				validation.TransformExpression(*m_states->currentModule, expr, *m_context, validationOpts);
