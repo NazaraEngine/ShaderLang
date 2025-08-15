@@ -1337,7 +1337,7 @@ namespace nzsl::Ast
 
 		if (exprTypeValue.IsResultingValue())
 		{
-			Transform(exprTypeValue.GetResultingValue());
+			Transform(exprTypeValue.GetResultingValue(), sourceLocation);
 			return ResolveType(exprTypeValue.GetResultingValue(), resolveAlias, sourceLocation);
 		}
 
@@ -1349,7 +1349,7 @@ namespace nzsl::Ast
 		if (!exprType)
 			return std::nullopt;
 
-		Transform(*expression->cachedExpressionType);
+		Transform(*expression->cachedExpressionType, sourceLocation);
 
 		//if (!IsTypeType(exprType))
 		//  throw AstError{ "type expected" };
@@ -2729,7 +2729,7 @@ namespace nzsl::Ast
 	{
 		for (auto& parameter : declFunction.parameters)
 		{
-			Transform(parameter.type);
+			Transform(parameter.type, parameter.sourceLocation);
 
 			if (parameter.type.IsResultingValue())
 				ValidateConcreteType(parameter.type.GetResultingValue(), parameter.sourceLocation);
@@ -2737,7 +2737,7 @@ namespace nzsl::Ast
 
 		if (declFunction.returnType.HasValue())
 		{
-			Transform(declFunction.returnType);
+			Transform(declFunction.returnType, declFunction.sourceLocation);
 
 			if (declFunction.returnType.IsResultingValue())
 				ValidateConcreteType(declFunction.returnType.GetResultingValue(), declFunction.sourceLocation);
@@ -2877,7 +2877,7 @@ namespace nzsl::Ast
 			if (!member.type.HasValue())
 				throw AstMissingExpressionError{ member.sourceLocation };
 
-			HandleExpressionValue(member.type);
+			HandleExpressionValue(member.type, member.sourceLocation);
 
 			if (member.type.IsExpression())
 			{
@@ -3591,7 +3591,7 @@ namespace nzsl::Ast
 		return ReplaceStatement{ std::move(aliasBlock) };
 	}
 
-	void ResolveTransformer::Transform(ExpressionType& expressionType)
+	void ResolveTransformer::Transform(ExpressionType& expressionType, const SourceLocation& sourceLocation)
 	{
 		ExpressionType resolvedType;
 		if (IsAliasType(expressionType))
@@ -3604,9 +3604,9 @@ namespace nzsl::Ast
 
 		if (IsStructAddressible(resolvedType))
 		{
-			std::size_t structIndex = ResolveStructIndex(resolvedType, SourceLocation{});
+			std::size_t structIndex = ResolveStructIndex(resolvedType, sourceLocation);
 
-			auto& structData = m_context->structs.Retrieve(structIndex, SourceLocation{});
+			auto& structData = m_context->structs.Retrieve(structIndex, sourceLocation);
 			if (structData.moduleIndex != m_states->currentModuleId)
 			{
 				assert(structData.moduleIndex < m_states->modules.size());
@@ -3617,7 +3617,7 @@ namespace nzsl::Ast
 		{
 			std::size_t funcIndex = std::get<FunctionType>(resolvedType).funcIndex;
 
-			auto& funcData = m_context->functions.Retrieve(funcIndex, SourceLocation{});
+			auto& funcData = m_context->functions.Retrieve(funcIndex, sourceLocation);
 			if (funcData.moduleIndex != m_states->currentModuleId)
 			{
 				assert(funcData.moduleIndex < m_states->modules.size());
@@ -3626,12 +3626,12 @@ namespace nzsl::Ast
 		}
 	}
 
-	void ResolveTransformer::Transform(ExpressionValue<ExpressionType>& expressionType)
+	void ResolveTransformer::Transform(ExpressionValue<ExpressionType>& expressionType, const SourceLocation& sourceLocation)
 	{
 		if (!expressionType.HasValue())
 			return;
 
-		std::optional<ExpressionType> resolvedType = ResolveTypeExpr(expressionType, false, {});
+		std::optional<ExpressionType> resolvedType = ResolveTypeExpr(expressionType, false, sourceLocation);
 		if (!resolvedType.has_value())
 			return;
 
