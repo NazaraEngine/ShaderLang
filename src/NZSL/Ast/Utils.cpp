@@ -385,6 +385,41 @@ namespace nzsl::Ast
 			return baseType;
 	}
 
+	float LiteralToFloat32(FloatLiteral literal, const SourceLocation& /*sourceLocation*/)
+	{
+		return static_cast<float>(literal);
+	}
+
+	double LiteralToFloat64(FloatLiteral literal, const SourceLocation& /*sourceLocation*/)
+	{
+		return static_cast<double>(literal);
+	}
+
+	std::int32_t LiteralToInt32(IntLiteral literal, const SourceLocation& sourceLocation)
+	{
+		std::int64_t value = literal;
+		if (value > std::numeric_limits<std::int32_t>::max())
+			throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::Int32), std::to_string(value) };
+
+		if (value < std::numeric_limits<std::int32_t>::min())
+			throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::Int32), std::to_string(value) };
+
+		return static_cast<std::int32_t>(value);
+	}
+
+	std::uint32_t LiteralToUInt32(IntLiteral literal, const SourceLocation& sourceLocation)
+	{
+		std::int64_t value = literal;
+		if (value < 0)
+			throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::UInt32), std::to_string(value) };
+
+		if (static_cast<std::uint64_t>(value) > std::numeric_limits<std::uint32_t>::max())
+			throw CompilerLiteralOutOfRangeError{ sourceLocation, Ast::ToString(PrimitiveType::UInt32), std::to_string(value) };
+
+		return static_cast<std::uint32_t>(value);
+	}
+
+
 	Expression& MandatoryExpr(const ExpressionPtr& node, const SourceLocation& sourceLocation)
 	{
 		if (!node)
@@ -441,14 +476,14 @@ namespace nzsl::Ast
 		else if (IsVectorType(resolvedType))
 		{
 			VectorType vecType = std::get<VectorType>(resolvedType);
-			
+
 			if (auto resolvedTypeOpt = ResolveLiteralType(vecType.type, referenceType, sourceLocation))
 			{
 				vecType.type = std::get<PrimitiveType>(*resolvedTypeOpt);
 				return vecType;
 			}
 		}
-		
+
 		return std::nullopt;
 	}
 
