@@ -170,6 +170,8 @@ namespace nzsl
 					case StructFieldType::Double4:
 						return 4 * 8;
 				}
+
+				NAZARA_UNREACHABLE();
 			}
 
 			case StructLayout::Scalar:
@@ -200,6 +202,8 @@ namespace nzsl
 					case StructFieldType::Double4:
 						return 8;
 				}
+
+				NAZARA_UNREACHABLE();
 			}
 
 		}

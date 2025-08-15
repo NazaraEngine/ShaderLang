@@ -667,18 +667,23 @@ namespace nzsl::Ast
 		for (std::size_t componentCount = 2; componentCount <= 4; ++componentCount)
 		{
 			RegisterPartialType(fmt::format("vec{}", componentCount), PartialType {
-				{ TypeParameterCategory::PrimitiveType }, {},
+				{}, { TypeParameterCategory::PrimitiveType },
 				[=](const TypeParameter* parameters, [[maybe_unused]] std::size_t parameterCount, const SourceLocation& /*sourceLocation*/) -> ExpressionType
 				{
-					assert(parameterCount == 1);
-					assert(std::holds_alternative<ExpressionType>(*parameters));
+					if (parameterCount == 0)
+						return ImplicitVectorType{ componentCount };
+					else
+					{
+						assert(parameterCount == 1);
+						assert(std::holds_alternative<ExpressionType>(*parameters));
 
-					const ExpressionType& exprType = std::get<ExpressionType>(*parameters);
-					assert(IsPrimitiveType(exprType));
+						const ExpressionType& exprType = std::get<ExpressionType>(*parameters);
+						assert(IsPrimitiveType(exprType));
 
-					return VectorType {
-						componentCount, std::get<PrimitiveType>(exprType)
-					};
+						return VectorType {
+							componentCount, std::get<PrimitiveType>(exprType)
+						};
+					}
 				}
 			});
 		}
@@ -1843,7 +1848,7 @@ namespace nzsl::Ast
 
 						ExpressionType resolvedType = ResolveType(*indexExprType, typeCategory != TypeParameterCategory::FullType, accessIndexExpr.sourceLocation);
 
-						switch (partialType.parameters[i])
+						switch (typeCategory)
 						{
 							case TypeParameterCategory::PrimitiveType:
 							{
@@ -2186,6 +2191,23 @@ namespace nzsl::Ast
 						throw CompilerPartialTypeTooFewParametersError{ callFuncExpr.sourceLocation, Nz::SafeCast<std::uint32_t>(requiredParameterCount), 0 };
 
 					callFuncExpr.cachedExpressionType = partialType.buildFunc(nullptr, 0, callFuncExpr.sourceLocation);
+					if (IsImplicitType(*callFuncExpr.cachedExpressionType))
+					{
+						// Deduced types can be built from casting
+						auto castExpr = std::make_unique<CastExpression>();
+						castExpr->sourceLocation = callFuncExpr.sourceLocation;
+						castExpr->targetType = *callFuncExpr.cachedExpressionType;
+
+						castExpr->expressions.reserve(callFuncExpr.parameters.size());
+						for (std::size_t i = 0; i < callFuncExpr.parameters.size(); ++i)
+							castExpr->expressions.push_back(std::move(callFuncExpr.parameters[i].expr));
+
+						ExpressionPtr expr = std::move(castExpr);
+						HandleExpression(expr);
+
+						return ReplaceExpression{ std::move(expr) };
+					}
+
 					return DontVisitChildren{};
 				}
 			}, type.content);
@@ -2214,7 +2236,7 @@ namespace nzsl::Ast
 	{
 		HandleChildren(castExpr);
 
-		std::optional<ExpressionType> targetTypeOpt = ResolveTypeExpr(castExpr.targetType, false, castExpr.sourceLocation);
+		std::optional<ExpressionType> targetTypeOpt = ResolveTypeExpr(castExpr.targetType, true, castExpr.sourceLocation);
 		if (!targetTypeOpt)
 			return DontVisitChildren{}; //< unresolved
 
@@ -2225,6 +2247,27 @@ namespace nzsl::Ast
 			ArrayType& targetArrayType = std::get<ArrayType>(targetType);
 			if (targetArrayType.length == 0)
 				targetArrayType.length = Nz::SafeCast<std::uint32_t>(castExpr.expressions.size());
+		}
+		else if (IsImplicitVectorType(targetType))
+		{
+			std::optional<PrimitiveType> innerType;
+			for (std::size_t i = 0; i < castExpr.expressions.size(); ++i)
+			{
+				const ExpressionType* exprType = GetResolvedExpressionType(MandatoryExpr(castExpr.expressions[i], castExpr.sourceLocation), true);
+				if (!exprType || !IsPrimitiveType(*exprType))
+					break;
+
+				innerType = std::get<PrimitiveType>(*exprType);
+				if (!IsLiteralType(*innerType))
+					break; //< continue if literal type as we could encounter a non-literal type later (e.g. vec3(1, u32(2), 3))
+			}
+
+			if (innerType)
+			{
+				std::size_t componentCount = std::get<ImplicitVectorType>(targetType).componentCount;
+
+				targetType = VectorType{ componentCount, *innerType };
+			}
 		}
 
 		castExpr.cachedExpressionType = targetType;

@@ -66,6 +66,17 @@ namespace nzsl::Ast
 	}
 
 
+	inline bool ImplicitVectorType::operator==(const ImplicitVectorType& rhs) const
+	{
+		return componentCount == rhs.componentCount;
+	}
+
+	inline bool ImplicitVectorType::operator!=(const ImplicitVectorType& rhs) const
+	{
+		return !operator==(rhs);
+	}
+
+
 	inline bool IntrinsicFunctionType::operator==(const IntrinsicFunctionType& rhs) const
 	{
 		return intrinsic == rhs.intrinsic;
@@ -221,6 +232,16 @@ namespace nzsl::Ast
 	inline bool IsFunctionType(const ExpressionType& type)
 	{
 		return std::holds_alternative<FunctionType>(type);
+	}
+
+	inline bool IsImplicitType(const ExpressionType& type)
+	{
+		return IsImplicitVectorType(type);
+	}
+
+	inline bool IsImplicitVectorType(const ExpressionType& type)
+	{
+		return std::holds_alternative<ImplicitVectorType>(type);
 	}
 
 	inline bool IsIntrinsicFunctionType(const ExpressionType& type)
@@ -506,6 +527,15 @@ namespace std
 		std::size_t operator()(const nzsl::Ast::FunctionType& functionType) const
 		{
 			return Nz::HashCombine(functionType.funcIndex);
+		}
+	};
+
+	template<>
+	struct hash<nzsl::Ast::ImplicitVectorType>
+	{
+		std::size_t operator()(const nzsl::Ast::ImplicitVectorType& vectorType) const
+		{
+			return Nz::HashCombine(vectorType.componentCount);
 		}
 	};
 
