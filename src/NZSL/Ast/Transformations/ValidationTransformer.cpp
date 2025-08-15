@@ -1443,6 +1443,12 @@ namespace nzsl::Ast
 		return DontVisitChildren{};
 	}
 
+	void ValidationTransformer::Transform(ExpressionType& expressionType, const SourceLocation& sourceLocation)
+	{
+		if (!m_options->allowUntyped && IsLiteralType(expressionType))
+			throw AstUnresolvedLiteralError{ sourceLocation };
+	}
+
 	bool ValidationTransformer::TransformModule(Module& module, TransformerContext& context, std::string* error, Nz::FunctionRef<void()> postCallback)
 	{
 		m_states->pendingFunctions.clear();

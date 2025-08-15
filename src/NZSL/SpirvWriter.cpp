@@ -669,7 +669,7 @@ namespace nzsl
 				executor.AddPass<Ast::ConstantPropagationTransformer>();
 
 			if (parameters.backendPasses.Test(BackendPass::Validate))
-				executor.AddPass<Ast::ValidationTransformer>();
+				executor.AddPass<Ast::ValidationTransformer>({ false, true });
 
 			Ast::TransformerContext context;
 			context.optionValues = parameters.optionValues;

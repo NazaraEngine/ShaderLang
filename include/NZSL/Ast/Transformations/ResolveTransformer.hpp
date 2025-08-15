@@ -114,8 +114,8 @@ namespace nzsl::Ast
 			StatementTransformation Transform(ForStatement&& forStatement) override;
 			StatementTransformation Transform(ImportStatement&& importStatement) override;
 
-			void Transform(ExpressionType& expressionType) override;
-			void Transform(ExpressionValue<ExpressionType>& expressionType) override;
+			void Transform(ExpressionType& expressionType, const SourceLocation& sourceLocation) override;
+			void Transform(ExpressionValue<ExpressionType>& expressionType, const SourceLocation& sourceLocation) override;
 
 			using Transformer::ToString;
 			std::string ToString(const TransformerContext::TypeData& typeData, const SourceLocation& sourceLocation);
