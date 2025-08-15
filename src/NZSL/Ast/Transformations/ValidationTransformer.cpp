@@ -95,39 +95,6 @@ namespace nzsl::Ast
 		return Transformer::TransformStatement(statement, context, error);
 	}
 
-	Stringifier ValidationTransformer::BuildStringifier(const SourceLocation& /*sourceLocation*/) const
-	{
-		Stringifier stringifier;
-		/*stringifier.aliasStringifier = [&](std::size_t aliasIndex)
-		{
-			return m_states->aliases.Retrieve(aliasIndex, sourceLocation).name;
-		};*/
-
-		stringifier.moduleStringifier = [&](std::size_t moduleIndex)
-		{
-			const std::string& moduleName = m_states->rootModule->importedModules[moduleIndex].identifier;
-			return (!moduleName.empty()) ? moduleName : fmt::format("<anonymous module #{}>", moduleIndex);
-		};
-
-		/*stringifier.namedExternalBlockStringifier = [&](std::size_t namedExternalBlockIndex)
-		{
-			return m_states->namedExternalBlocks.Retrieve(namedExternalBlockIndex, sourceLocation).name;
-		};*/
-
-		stringifier.structStringifier = [&](std::size_t structIndex)
-		{
-			const StructDescription* structDesc = Nz::Retrieve(m_states->structs, structIndex);
-			return structDesc->name;
-		};
-
-		/*stringifier.typeStringifier = [&](std::size_t typeIndex)
-		{
-			return ToString(m_states->types.Retrieve(typeIndex, sourceLocation), sourceLocation);
-		};*/
-
-		return stringifier;
-	}
-
 	void ValidationTransformer::CheckAliasIndex(std::optional<std::size_t> aliasIndex, const SourceLocation& sourceLocation) const
 	{
 		assert(m_options->checkIndices);
@@ -453,7 +420,7 @@ namespace nzsl::Ast
 
 	std::string ValidationTransformer::ToString(const ExpressionType& exprType, const SourceLocation& sourceLocation) const
 	{
-		return Ast::ToString(exprType, (m_options->stringifier) ? *m_options->stringifier : BuildStringifier(sourceLocation));
+		return Ast::ToString(exprType, BuildStringifier(sourceLocation));
 	}
 
 	auto ValidationTransformer::Transform(AccessFieldExpression&& node) -> ExpressionTransformation
