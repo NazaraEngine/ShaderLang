@@ -273,6 +273,11 @@ namespace nzsl
 			Append("array[", type.containedType->type, "]");
 	}
 
+	void LangWriter::Append(const Ast::DeducedVectorType& /*vecType*/)
+	{
+		throw std::runtime_error("unexpected DeducedVectorType");
+	}
+
 	void LangWriter::Append(const Ast::DynArrayType& type)
 	{
 		Append("dyn_array[", type.containedType->type, "]");

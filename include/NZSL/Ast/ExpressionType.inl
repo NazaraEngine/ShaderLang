@@ -169,6 +169,16 @@ namespace nzsl::Ast
 		return !operator==(rhs);
 	}
 
+	inline bool DeducedVectorType::operator==(const DeducedVectorType& rhs) const
+	{
+		return componentCount == rhs.componentCount;
+	}
+
+	inline bool DeducedVectorType::operator!=(const DeducedVectorType& rhs) const
+	{
+		return !operator==(rhs);
+	}
+
 
 	inline bool StorageType::operator==(const StorageType& rhs) const
 	{
@@ -211,6 +221,16 @@ namespace nzsl::Ast
 	inline bool IsArrayType(const ExpressionType& type)
 	{
 		return std::holds_alternative<ArrayType>(type);
+	}
+
+	inline bool IsDeducedType(const ExpressionType& type)
+	{
+		return IsDeducedVectorType(type);
+	}
+
+	inline bool IsDeducedVectorType(const ExpressionType& type)
+	{
+		return std::holds_alternative<DeducedVectorType>(type);
 	}
 
 	inline bool IsDynArrayType(const ExpressionType& type)
@@ -484,6 +504,15 @@ namespace std
 				Nz::HashCombine(h, arrayType.containedType->type);
 
 			return h;
+		}
+	};
+
+	template<>
+	struct hash<nzsl::Ast::DeducedVectorType>
+	{
+		std::size_t operator()(const nzsl::Ast::DeducedVectorType& vectorType) const
+		{
+			return Nz::HashCombine(vectorType.componentCount);
 		}
 	};
 

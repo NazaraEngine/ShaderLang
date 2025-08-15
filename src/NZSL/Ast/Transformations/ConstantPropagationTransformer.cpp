@@ -341,9 +341,30 @@ namespace nzsl::Ast
 				}
 			}
 		}
-		else if (IsVectorType(targetType))
+		else if (IsDeducedVectorType(targetType) || IsVectorType(targetType))
 		{
-			const auto& vecType = std::get<VectorType>(targetType);
+			PrimitiveType innerType;
+			std::size_t componentCount;
+			if (IsDeducedVectorType(targetType))
+			{
+				componentCount = std::get<DeducedVectorType>(targetType).componentCount;
+				for (std::size_t i = 0; i < node.expressions.size(); ++i)
+				{
+					const ExpressionType* exprType = GetResolvedExpressionType(MandatoryExpr(node.expressions[i], node.sourceLocation), true);
+					if (!exprType || !IsPrimitiveType(*exprType))
+						return DontVisitChildren{};
+
+					innerType = std::get<PrimitiveType>(*exprType);
+					if (!IsLiteralType(innerType))
+						break; //< continue if literal type as we could encounter a non-literal type later (e.g. vec3(1, u32(2), 3))
+				}
+			}
+			else
+			{
+				VectorType vecType = std::get<VectorType>(targetType);
+				componentCount = vecType.componentCount;
+				innerType = vecType.type;
+			}
 
 			// Decompose vector into values (cast(vec3, float) => cast(float, float, float, float))
 			std::vector<ConstantSingleValue> constantValues;
@@ -364,49 +385,61 @@ namespace nzsl::Ast
 					break;
 				}
 
+				auto PushConstantValue = [&](auto value)
+				{
+					using T = std::decay_t<decltype(value)>;
+
+					if constexpr (IsLiteral_v<T>)
+					{
+						// Convert literals
+						if constexpr (std::is_same_v<T, FloatLiteral>)
+						{
+							if (innerType == PrimitiveType::Float32)
+								constantValues.push_back(LiteralToFloat32(value, node.expressions[i]->sourceLocation));
+							else if (innerType == PrimitiveType::Float64)
+								constantValues.push_back(LiteralToFloat64(value, node.expressions[i]->sourceLocation));
+							else if (innerType == PrimitiveType::FloatLiteral)
+								constantValues.push_back(value);
+						}
+						else if constexpr (std::is_same_v<T, IntLiteral>)
+						{
+							if (innerType == PrimitiveType::Int32)
+								constantValues.push_back(LiteralToInt32(value, node.expressions[i]->sourceLocation));
+							else if (innerType == PrimitiveType::UInt32)
+								constantValues.push_back(LiteralToUInt32(value, node.expressions[i]->sourceLocation));
+							else if (innerType == PrimitiveType::IntLiteral)
+								constantValues.push_back(value);
+						}
+					}
+					else
+						constantValues.push_back(value);
+				};
+
 				std::visit([&](auto&& value)
 				{
 					using T = std::decay_t<decltype(value)>;
 
 					if constexpr (std::is_same_v<T, NoValue>)
 						throw std::runtime_error("invalid type (value expected)");
-					else if constexpr (std::is_same_v<T, bool> || std::is_same_v<T, double> || std::is_same_v<T, float> || std::is_same_v<T, std::int32_t> || std::is_same_v<T, std::uint32_t> || std::is_same_v<T, std::string>)
-						constantValues.push_back(value);
-					else if constexpr (IsLiteral_v<T>)
-					{
-						// Convert untyped
-						if constexpr (std::is_same_v<T, FloatLiteral>)
-						{
-							if (vecType.type == PrimitiveType::Float32)
-								constantValues.push_back(LiteralToFloat32(value, node.expressions[i]->sourceLocation));
-							else if (vecType.type == PrimitiveType::Float64)
-								constantValues.push_back(LiteralToFloat64(value, node.expressions[i]->sourceLocation));
-						}
-						else if constexpr (std::is_same_v<T, IntLiteral>)
-						{
-							if (vecType.type == PrimitiveType::Int32)
-								constantValues.push_back(LiteralToInt32(value, node.expressions[i]->sourceLocation));
-							else if (vecType.type == PrimitiveType::UInt32)
-								constantValues.push_back(LiteralToUInt32(value, node.expressions[i]->sourceLocation));
-						}
-					}
+					else if constexpr (IsLiteral_v<T> || std::is_same_v<T, bool> || std::is_same_v<T, double> || std::is_same_v<T, float> || std::is_same_v<T, std::int32_t> || std::is_same_v<T, std::uint32_t> || std::is_same_v<T, std::string>)
+						PushConstantValue(value);
 					else if constexpr (IsVector_v<T> && T::Dimensions == 2)
 					{
-						constantValues.push_back(value.x());
-						constantValues.push_back(value.y());
+						PushConstantValue(value.x());
+						PushConstantValue(value.y());
 					}
 					else if constexpr (IsVector_v<T> && T::Dimensions == 3)
 					{
-						constantValues.push_back(value.x());
-						constantValues.push_back(value.y());
-						constantValues.push_back(value.z());
+						PushConstantValue(value.x());
+						PushConstantValue(value.y());
+						PushConstantValue(value.z());
 					}
 					else if constexpr (IsVector_v<T> && T::Dimensions == 4)
 					{
-						constantValues.push_back(value.x());
-						constantValues.push_back(value.y());
-						constantValues.push_back(value.z());
-						constantValues.push_back(value.w());
+						PushConstantValue(value.x());
+						PushConstantValue(value.y());
+						PushConstantValue(value.z());
+						PushConstantValue(value.w());
 					}
 					else
 						static_assert(Nz::AlwaysFalse<T>(), "non-exhaustive visitor");
@@ -415,7 +448,7 @@ namespace nzsl::Ast
 
 			if (!constantValues.empty())
 			{
-				assert(constantValues.size() == vecType.componentCount);
+				assert(constantValues.size() == componentCount);
 
 				std::visit([&](auto&& arg)
 				{
@@ -423,7 +456,7 @@ namespace nzsl::Ast
 
 					if constexpr (Nz::TypeListHas<ConstantPrimitiveTypes, T> && !std::is_same_v<T, std::string>)
 					{
-						switch (vecType.componentCount)
+						switch (componentCount)
 						{
 							case 2:
 								optimized = ShaderBuilder::ConstantValue(Vector2<T>{ std::get<T>(constantValues[0]), std::get<T>(constantValues[1]) }, node.sourceLocation);

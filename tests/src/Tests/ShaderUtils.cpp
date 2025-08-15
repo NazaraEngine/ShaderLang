@@ -356,7 +356,7 @@ void ExpectNZSL(const nzsl::Ast::Module& shaderModule, std::string_view expected
 
 	std::string source = SanitizeSource(expectedOutput);
 
-	SECTION("Generating NZSL")
+	DYNAMIC_SECTION("Generating NZSL")
 	{
 		nzsl::Ast::ModulePtr sanitizedModule;
 		WHEN("Resolving a second time")
@@ -370,7 +370,7 @@ void ExpectNZSL(const nzsl::Ast::Module& shaderModule, std::string_view expected
 		nzsl::LangWriter writer;
 		std::string output = SanitizeSource(writer.Generate(targetModule));
 
-		SECTION("Validating expected code")
+		DYNAMIC_SECTION("Validating expected code")
 		{
 			if (output.find(source) == std::string::npos)
 				HandleSourceError("NZSL", source, output);

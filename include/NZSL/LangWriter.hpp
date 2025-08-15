@@ -61,6 +61,7 @@ namespace nzsl
 
 			void Append(const Ast::AliasType& type);
 			void Append(const Ast::ArrayType& type);
+			void Append(const Ast::DeducedVectorType& type);
 			void Append(const Ast::DynArrayType& type);
 			void Append(const Ast::ExpressionType& type);
 			void Append(const Ast::ExpressionValue<Ast::ExpressionType>& type);

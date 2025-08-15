@@ -138,6 +138,9 @@ namespace nzsl::Ast
 		HandleChildren(castExpr);
 
 		const ExpressionType& targetType = castExpr.targetType.GetResultingValue();
+		if (IsLiteralType(targetType))
+			return DontVisitChildren{};
+
 		if (IsPrimitiveType(targetType))
 		{
 			ExpressionPtr& expr = castExpr.expressions.front();

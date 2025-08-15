@@ -672,6 +672,11 @@ namespace nzsl
 		}
 	}
 
+	void GlslWriter::Append(const Ast::DeducedVectorType& /*type*/)
+	{
+		throw std::runtime_error("unexpected DeducedVectorType");
+	}
+
 	void GlslWriter::Append(const Ast::DynArrayType& type)
 	{
 		AppendArray(type);
