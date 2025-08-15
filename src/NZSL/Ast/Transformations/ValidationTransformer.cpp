@@ -1634,7 +1634,7 @@ namespace nzsl::Ast
 							return false;
 
 						// no float16 for now
-						if (primitiveType != PrimitiveType::Float32)
+						if (primitiveType != PrimitiveType::Float32 && primitiveType != PrimitiveType::FloatLiteral)
 							return false;
 
 						return true;
