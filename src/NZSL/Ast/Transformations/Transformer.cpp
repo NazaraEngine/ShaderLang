@@ -251,6 +251,7 @@ namespace nzsl::Ast
 
 	void Transformer::HandleChildren(ConditionalExpression& node)
 	{
+		HandleExpression(node.condition);
 		HandleExpression(node.truePath);
 		HandleExpression(node.falsePath);
 
