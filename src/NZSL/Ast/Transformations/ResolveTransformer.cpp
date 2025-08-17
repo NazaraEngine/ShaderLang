@@ -6,6 +6,7 @@
 #include <NazaraUtils/Bitset.hpp>
 #include <NazaraUtils/CallOnExit.hpp>
 #include <NazaraUtils/StackVector.hpp>
+#include <NazaraUtils/TypeTag.hpp>
 #include <NZSL/ModuleResolver.hpp>
 #include <NZSL/Ast/Cloner.hpp>
 #include <NZSL/Ast/DependencyCheckerVisitor.hpp>
@@ -1717,6 +1718,44 @@ namespace nzsl::Ast
 				}
 
 				indexedExpr = HandleIdentifier(identifierData, identifierEntry.sourceLocation);
+			}
+			else if (IsTypeExpression(resolvedType))
+			{
+				// Type constants
+				ExpressionType indexedType = ResolveType(resolvedType, true, identifierEntry.sourceLocation);
+				if (!IsPrimitiveType(indexedType))
+					throw CompilerUnexpectedAccessedTypeError{ accessIdentifier.sourceLocation };
+
+				auto HandleTypeConstant = [&](auto typeTag)
+				{
+					using T = std::decay_t<decltype(typeTag)>;
+					using PrimitiveType = typename T::Type;
+
+					if (identifierEntry.identifier == "Max")
+						return ShaderBuilder::ConstantValue(Nz::MaxValue<PrimitiveType>());
+					else if (identifierEntry.identifier == "Min")
+						return ShaderBuilder::ConstantValue(Nz::MinValue<PrimitiveType>());
+
+					if constexpr (std::is_floating_point_v<PrimitiveType>)
+					{
+						if (identifierEntry.identifier == "Inf")
+							return ShaderBuilder::ConstantValue(Nz::Infinity<PrimitiveType>());
+						else if (identifierEntry.identifier == "NaN")
+							return ShaderBuilder::ConstantValue(Nz::NaN<PrimitiveType>());
+					}
+
+					throw CompilerUnexpectedAccessedTypeError{ accessIdentifier.sourceLocation };
+				};
+
+				switch (std::get<PrimitiveType>(indexedType))
+				{
+					case PrimitiveType::Float32: indexedExpr = HandleTypeConstant(Nz::TypeTag<float>{}); break;
+					case PrimitiveType::Float64: indexedExpr = HandleTypeConstant(Nz::TypeTag<double>{}); break;
+					case PrimitiveType::Int32:   indexedExpr = HandleTypeConstant(Nz::TypeTag<std::int32_t>{}); break;
+					case PrimitiveType::UInt32:  indexedExpr = HandleTypeConstant(Nz::TypeTag<std::uint32_t>{}); break;
+					default:
+						throw CompilerUnexpectedAccessedTypeError{ accessIdentifier.sourceLocation };
+				}
 			}
 			else
 				throw CompilerUnexpectedAccessedTypeError{ accessIdentifier.sourceLocation };
