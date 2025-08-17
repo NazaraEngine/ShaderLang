@@ -47,3 +47,15 @@ namespace nzsl::Ast
 		}, std::move(value));
 	}
 }
+
+namespace std
+{
+	template<typename T>
+	struct hash<nzsl::Ast::Literal<T>>
+	{
+		std::size_t operator()(nzsl::Ast::Literal<T> literal) const
+		{
+			return std::hash<T>{}(literal.value);
+		}
+	};
+}
