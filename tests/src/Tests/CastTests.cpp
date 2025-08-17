@@ -33,6 +33,8 @@ fn main()
 	let x = f32(uVal);
 	let x = f64(uVal);
 	let x = i32(uVal);
+
+	let fToIVal = f32(42); //< IntLiteral to f32
 }
 )";
 
@@ -60,6 +62,7 @@ void main()
 	float x_7 = float(uVal);
 	double x_8 = double(uVal);
 	int x_9 = int(uVal);
+	float fToIVal = float(42);
 }
 )", {}, glslEnv);
 
@@ -79,6 +82,7 @@ fn main()
 	let x: f32 = f32(uVal);
 	let x: f64 = f64(uVal);
 	let x: i32 = i32(uVal);
+	let fToIVal: f32 = f32(42);
 }
 )");
 
@@ -97,36 +101,39 @@ fn main()
 %25 = OpVariable %5 StorageClass(Function)
 %26 = OpVariable %7 StorageClass(Function)
 %27 = OpVariable %9 StorageClass(Function)
+%28 = OpVariable %5 StorageClass(Function)
       OpStore %16 %4
-%28 = OpLoad %3 %16
-%29 = OpFConvert %6 %28
-      OpStore %17 %29
-%30 = OpLoad %3 %16
-%31 = OpConvertFToS %8 %30
-      OpStore %18 %31
-%32 = OpLoad %3 %16
-%33 = OpConvertFToU %10 %32
-      OpStore %19 %33
+%29 = OpLoad %3 %16
+%30 = OpFConvert %6 %29
+      OpStore %17 %30
+%31 = OpLoad %3 %16
+%32 = OpConvertFToS %8 %31
+      OpStore %18 %32
+%33 = OpLoad %3 %16
+%34 = OpConvertFToU %10 %33
+      OpStore %19 %34
       OpStore %20 %12
-%34 = OpLoad %8 %20
-%35 = OpConvertSToF %3 %34
-      OpStore %21 %35
-%36 = OpLoad %8 %20
-%37 = OpConvertSToF %6 %36
-      OpStore %22 %37
-%38 = OpLoad %8 %20
-%39 = OpBitcast %10 %38
-      OpStore %23 %39
+%35 = OpLoad %8 %20
+%36 = OpConvertSToF %3 %35
+      OpStore %21 %36
+%37 = OpLoad %8 %20
+%38 = OpConvertSToF %6 %37
+      OpStore %22 %38
+%39 = OpLoad %8 %20
+%40 = OpBitcast %10 %39
+      OpStore %23 %40
       OpStore %24 %13
-%40 = OpLoad %10 %24
-%41 = OpConvertUToF %3 %40
-      OpStore %25 %41
-%42 = OpLoad %10 %24
-%43 = OpConvertUToF %6 %42
-      OpStore %26 %43
-%44 = OpLoad %10 %24
-%45 = OpBitcast %8 %44
-      OpStore %27 %45
+%41 = OpLoad %10 %24
+%42 = OpConvertUToF %3 %41
+      OpStore %25 %42
+%43 = OpLoad %10 %24
+%44 = OpConvertUToF %6 %43
+      OpStore %26 %44
+%45 = OpLoad %10 %24
+%46 = OpBitcast %8 %45
+      OpStore %27 %46
+%47 = OpConvertSToF %3 %12
+      OpStore %28 %47
       OpReturn
       OpFunctionEnd)", {}, {}, true);
 	}
