@@ -283,6 +283,101 @@ namespace nzsl::Ast
 		return true;
 	}
 
+	void ResolveTransformer::EnsureLiteralType(ExpressionType& expressionType, const SourceLocation& sourceLocation)
+	{
+		if (!IsLiteralType(expressionType))
+			return;
+
+		if (IsPrimitiveType(expressionType))
+		{
+			PrimitiveType& primitiveType = std::get<PrimitiveType>(expressionType);
+
+			if (primitiveType == PrimitiveType::FloatLiteral)
+				primitiveType = PrimitiveType::Float32;
+			else if (primitiveType == PrimitiveType::IntLiteral)
+				primitiveType = PrimitiveType::Int32;
+		}
+		else if (IsVectorType(expressionType))
+		{
+			VectorType& vecType = std::get<VectorType>(expressionType);
+
+			if (vecType.type == PrimitiveType::FloatLiteral)
+				vecType.type = PrimitiveType::Float32;
+			else if (vecType.type == PrimitiveType::IntLiteral)
+				vecType.type = PrimitiveType::Int32;
+		}
+		else if (IsArrayType(expressionType))
+		{
+			ArrayType& arrayType = std::get<ArrayType>(expressionType);
+			EnsureLiteralType(arrayType.containedType->type, sourceLocation);
+		}
+		else
+			throw AstInternalError{ sourceLocation, "unexpected untyped type " + ToString(expressionType, sourceLocation) };
+	}
+
+	void ResolveTransformer::EnsureLiteralValue(const ExpressionType& expressionType, ConstantValue& constantValue, const SourceLocation& sourceLocation)
+	{
+		std::visit([&](auto& value)
+		{
+			using T = std::decay_t<decltype(value)>;
+
+			if constexpr (std::is_same_v<T, FloatLiteral>)
+			{
+				if (expressionType == ExpressionType{ PrimitiveType::Float32 })
+					constantValue = LiteralToFloat32(value, sourceLocation);
+				else if (expressionType == ExpressionType{ PrimitiveType::Float64 })
+					constantValue = LiteralToFloat64(value, sourceLocation);
+			}
+			else if constexpr (std::is_same_v<T, IntLiteral>)
+			{
+				if (expressionType == ExpressionType{ PrimitiveType::Int32 })
+					constantValue = LiteralToInt32(value, sourceLocation);
+				else if (expressionType == ExpressionType{ PrimitiveType::UInt32 })
+					constantValue = LiteralToUInt32(value, sourceLocation);
+			}
+			else if constexpr (IsVector_v<T>)
+			{
+				using VecBase = typename T::Base;
+
+				ExpressionType baseType;
+				if constexpr (std::is_same_v<VecBase, FloatLiteral>)
+				{
+					if (expressionType == ExpressionType{ VectorType{ T::Dimensions, PrimitiveType::Float32 } })
+					{
+						Vector<float, T::Dimensions> vec;
+						for (std::size_t i = 0; i < T::Dimensions; ++i)
+							vec[i] = LiteralToFloat32(value[i], sourceLocation);
+
+						constantValue = vec;
+					}
+					else if (expressionType == ExpressionType{ VectorType{ T::Dimensions, PrimitiveType::Float64 } })
+					{
+						Vector<double, T::Dimensions> vec;
+						for (std::size_t i = 0; i < T::Dimensions; ++i)
+							vec[i] = LiteralToFloat64(value[i], sourceLocation);
+
+						constantValue = vec;
+					}
+				}
+				else if constexpr (std::is_same_v<VecBase, IntLiteral>)
+				{
+					if (expressionType == ExpressionType{ VectorType{ T::Dimensions, PrimitiveType::Int32 } })
+					{
+						Vector<std::int32_t, T::Dimensions> vec;
+						for (std::size_t i = 0; i < T::Dimensions; ++i)
+							vec[i] = LiteralToInt32(value[i], sourceLocation);
+					}
+					else if (expressionType == ExpressionType{ VectorType{ T::Dimensions, PrimitiveType::UInt32 } })
+					{
+						Vector<std::uint32_t, T::Dimensions> vec;
+						for (std::size_t i = 0; i < T::Dimensions; ++i)
+							vec[i] = LiteralToUInt32(value[i], sourceLocation);
+					}
+				}
+			}
+		}, constantValue);
+	}
+
 	auto ResolveTransformer::FindIdentifier(std::string_view identifierName) const -> const TransformerContext::IdentifierData*
 	{
 		return FindIdentifier(*m_states->currentEnv, identifierName);
@@ -1346,101 +1441,6 @@ namespace nzsl::Ast
 		//  throw AstError{ "type expected" };
 
 		return ResolveType(*exprType, resolveAlias, sourceLocation);
-	}
-
-	void ResolveTransformer::ResolveUntyped(const ExpressionType& expressionType, ConstantValue& constantValue, const SourceLocation& sourceLocation)
-	{
-		std::visit([&](auto& value)
-		{
-			using T = std::decay_t<decltype(value)>;
-
-			if constexpr (std::is_same_v<T, FloatLiteral>)
-			{
-				if (expressionType == ExpressionType{ PrimitiveType::Float32 })
-					constantValue = LiteralToFloat32(value, sourceLocation);
-				else if (expressionType == ExpressionType{ PrimitiveType::Float64 })
-					constantValue = LiteralToFloat64(value, sourceLocation);
-			}
-			else if constexpr (std::is_same_v<T, IntLiteral>)
-			{
-				if (expressionType == ExpressionType{ PrimitiveType::Int32 })
-					constantValue = LiteralToInt32(value, sourceLocation);
-				else if (expressionType == ExpressionType{ PrimitiveType::UInt32 })
-					constantValue = LiteralToUInt32(value, sourceLocation);
-			}
-			else if constexpr (IsVector_v<T>)
-			{
-				using VecBase = typename T::Base;
-
-				ExpressionType baseType;
-				if constexpr (std::is_same_v<VecBase, FloatLiteral>)
-				{
-					if (expressionType == ExpressionType{ VectorType{ T::Dimensions, PrimitiveType::Float32 } })
-					{
-						Vector<float, T::Dimensions> vec;
-						for (std::size_t i = 0; i < T::Dimensions; ++i)
-							vec[i] = LiteralToFloat32(value[i], sourceLocation);
-
-						constantValue = vec;
-					}
-					else if (expressionType == ExpressionType{ VectorType{ T::Dimensions, PrimitiveType::Float64 } })
-					{
-						Vector<double, T::Dimensions> vec;
-						for (std::size_t i = 0; i < T::Dimensions; ++i)
-							vec[i] = LiteralToFloat64(value[i], sourceLocation);
-
-						constantValue = vec;
-					}
-				}
-				else if constexpr (std::is_same_v<VecBase, IntLiteral>)
-				{
-					if (expressionType == ExpressionType{ VectorType{ T::Dimensions, PrimitiveType::Int32 } })
-					{
-						Vector<std::int32_t, T::Dimensions> vec;
-						for (std::size_t i = 0; i < T::Dimensions; ++i)
-							vec[i] = LiteralToInt32(value[i], sourceLocation);
-					}
-					else if (expressionType == ExpressionType{ VectorType{ T::Dimensions, PrimitiveType::UInt32 } })
-					{
-						Vector<std::uint32_t, T::Dimensions> vec;
-						for (std::size_t i = 0; i < T::Dimensions; ++i)
-							vec[i] = LiteralToUInt32(value[i], sourceLocation);
-					}
-				}
-			}
-		}, constantValue);
-	}
-
-	void ResolveTransformer::ResolveUntyped(ExpressionType& expressionType, const SourceLocation& sourceLocation)
-	{
-		if (!IsLiteralType(expressionType))
-			return;
-
-		if (IsPrimitiveType(expressionType))
-		{
-			PrimitiveType& primitiveType = std::get<PrimitiveType>(expressionType);
-
-			if (primitiveType == PrimitiveType::FloatLiteral)
-				primitiveType = PrimitiveType::Float32;
-			else if (primitiveType == PrimitiveType::IntLiteral)
-				primitiveType = PrimitiveType::Int32;
-		}
-		else if (IsVectorType(expressionType))
-		{
-			VectorType& vecType = std::get<VectorType>(expressionType);
-
-			if (vecType.type == PrimitiveType::FloatLiteral)
-				vecType.type = PrimitiveType::Float32;
-			else if (vecType.type == PrimitiveType::IntLiteral)
-				vecType.type = PrimitiveType::Int32;
-		}
-		else if (IsArrayType(expressionType))
-		{
-			ArrayType& arrayType = std::get<ArrayType>(expressionType);
-			ResolveUntyped(arrayType.containedType->type, sourceLocation);
-		}
-		else
-			throw AstInternalError{ sourceLocation, "unexpected untyped type " + ToString(expressionType, sourceLocation) };
 	}
 
 	auto ResolveTransformer::Transform(AccessIdentifierExpression&& accessIdentifier) -> ExpressionTransformation
@@ -2594,11 +2594,11 @@ namespace nzsl::Ast
 			expressionType = GetConstantType(*value);
 
 			if (constType.has_value())
-				ResolveUntyped(*constType, *value, declConst.sourceLocation);
+				EnsureLiteralValue(*constType, *value, declConst.sourceLocation);
 			else
-				ResolveUntyped(expressionType, declConst.sourceLocation);
+				EnsureLiteralType(expressionType, declConst.sourceLocation);
 
-			ResolveUntyped(expressionType, *value, declConst.sourceLocation);
+			EnsureLiteralValue(expressionType, *value, declConst.sourceLocation);
 
 			declConst.constIndex = RegisterConstant(declConst.name, TransformerContext::ConstantData{ m_states->currentModuleId, *value }, declConst.constIndex, declConst.sourceLocation);
 		}
@@ -2611,7 +2611,7 @@ namespace nzsl::Ast
 				throw CompilerVarDeclarationTypeUnmatchingError{ declConst.sourceLocation, ToString(expressionType, declConst.sourceLocation), ToString(*constType, declConst.sourceLocation) };
 		}
 		else
-			ResolveUntyped(expressionType, declConst.sourceLocation);
+			EnsureLiteralType(expressionType, declConst.sourceLocation);
 
 		if (!IsLiteralType(expressionType))
 			declConst.type = expressionType;
@@ -2822,7 +2822,7 @@ namespace nzsl::Ast
 
 				std::optional<ConstantValue> value = ComputeConstantValue(declOption.defaultValue);
 				if (value)
-					ResolveUntyped(optType, *value, declOption.sourceLocation);
+					EnsureLiteralValue(optType, *value, declOption.sourceLocation);
 
 				declOption.optIndex = RegisterConstant(declOption.optName, TransformerContext::ConstantData{ m_states->currentModuleId, std::move(value) }, declOption.optIndex, declOption.sourceLocation);
 			}
@@ -2952,7 +2952,7 @@ namespace nzsl::Ast
 			if (!declVariable.initialExpression)
 				throw CompilerVarDeclarationMissingTypeAndValueError{ declVariable.sourceLocation };
 
-			ResolveUntyped(initialExprType, declVariable.sourceLocation);
+			EnsureLiteralType(initialExprType, declVariable.sourceLocation);
 
 			resolvedType = initialExprType;
 		}
@@ -3112,7 +3112,19 @@ namespace nzsl::Ast
 				if (fromExprType && wontUnroll)
 				{
 					ExpressionType varType = *fromExprType;
-					ResolveUntyped(varType, forStatement.sourceLocation);
+					if (IsLiteralType(ResolveAlias(varType)))
+					{
+						const ExpressionType* toExprType = GetExpressionType(*forStatement.toExpr);
+						if (toExprType && !IsLiteralType(ResolveAlias(*toExprType)))
+							varType = *toExprType;
+						else if (forStatement.stepExpr)
+						{
+							const ExpressionType* stepExprType = GetExpressionType(*forStatement.stepExpr);
+							if (stepExprType)
+								varType = *stepExprType;
+						}
+					}
+					EnsureLiteralType(varType, forStatement.sourceLocation);
 
 					forStatement.varIndex = RegisterVariable(forStatement.varName, TransformerContext::VariableData{ std::move(varType) }, forStatement.varIndex, forStatement.sourceLocation);
 				}

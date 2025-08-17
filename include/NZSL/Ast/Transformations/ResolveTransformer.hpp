@@ -49,6 +49,9 @@ namespace nzsl::Ast
 			std::optional<ConstantValue> ComputeConstantValue(ExpressionPtr& expr) const;
 			template<typename T> bool ComputeExprValue(ExpressionValue<T>& attribute, const SourceLocation& sourceLocation);
 
+			void EnsureLiteralType(ExpressionType& expressionType, const SourceLocation& sourceLocation);
+			void EnsureLiteralValue(const ExpressionType& expressionType, ConstantValue& constantValue, const SourceLocation& sourceLocation);
+
 			const TransformerContext::IdentifierData* FindIdentifier(std::string_view identifierName) const;
 			template<typename F> const TransformerContext::IdentifierData* FindIdentifier(std::string_view identifierName, F&& functor) const;
 			const TransformerContext::IdentifierData* FindIdentifier(const Environment& environment, std::string_view identifierName) const;
@@ -83,8 +86,6 @@ namespace nzsl::Ast
 			std::size_t ResolveStructIndex(const ExpressionType& exprType, const SourceLocation& sourceLocation);
 			ExpressionType ResolveType(const ExpressionType& exprType, bool resolveAlias, const SourceLocation& sourceLocation);
 			std::optional<ExpressionType> ResolveTypeExpr(ExpressionValue<ExpressionType>& exprTypeValue, bool resolveAlias, const SourceLocation& sourceLocation);
-			void ResolveUntyped(const ExpressionType& expressionType, ConstantValue& constantValue, const SourceLocation& sourceLocation);
-			void ResolveUntyped(ExpressionType& expressionType, const SourceLocation& sourceLocation);
 
 			ExpressionTransformation Transform(AccessFieldExpression&& accessFieldExpr) override;
 			ExpressionTransformation Transform(AccessIdentifierExpression&& accessIdentifierExpr) override;

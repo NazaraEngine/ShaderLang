@@ -858,4 +858,92 @@ fn main()
       OpFunctionEnd)", {}, {}, true);
 		}
 	}
+
+	WHEN("using literals")
+	{
+		// This is testing a bug found in literals implementation where a for loop index was not properly resolved to a u32
+		std::string_view nzslSource = R"(
+[nzsl_version("1.1")]
+module;
+
+[entry(frag)]
+fn main()
+{
+	let cascadeIndex: u32 = 0;
+	let cascadeCount: u32 = 4;
+	for index in 0 -> cascadeCount //< index should be u32
+	{
+		cascadeIndex = index;
+	}
+}
+)";
+
+		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
+		ResolveModule(*shaderModule);
+
+		ExpectGLSL(*shaderModule, R"(
+void main()
+{
+	uint cascadeIndex = 0u;
+	uint cascadeCount = 4u;
+	{
+		uint index = 0u;
+		uint _nzsl_to = cascadeCount;
+		while (index < _nzsl_to)
+		{
+			cascadeIndex = index;
+			index += 1u;
+		}
+
+	}
+
+}
+)");
+
+		ExpectNZSL(*shaderModule, R"(
+[entry(frag)]
+fn main()
+{
+	let cascadeIndex: u32 = 0;
+	let cascadeCount: u32 = 4;
+	for index in 0 -> cascadeCount
+	{
+		cascadeIndex = index;
+	}
+
+}
+)");
+
+		ExpectSPIRV(*shaderModule, R"(
+OpFunction
+OpLabel
+OpVariable
+OpVariable
+OpVariable
+OpVariable
+OpStore
+OpStore
+OpStore
+OpLoad
+OpStore
+OpBranch
+OpLabel
+OpLoad
+OpLoad
+OpULessThan
+OpLoopMerge
+OpBranchConditional
+OpLabel
+OpLoad
+OpStore
+OpLoad
+OpIAdd
+OpStore
+OpBranch
+OpLabel
+OpBranch
+OpLabel
+OpReturn
+OpFunctionEnd)");
+	}
 }
