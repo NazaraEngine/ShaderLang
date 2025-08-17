@@ -95,7 +95,10 @@ namespace nzsl::Ast
 			ExpressionTransformation Transform(BinaryExpression&& binaryExpression) override;
 			ExpressionTransformation Transform(CallFunctionExpression&& callFuncExpression) override;
 			ExpressionTransformation Transform(CastExpression&& castExpression) override;
+			ExpressionTransformation Transform(ConditionalExpression&& conditionalExpression) override;
+			ExpressionTransformation Transform(ConstantArrayValueExpression&& constantExpression) override;
 			ExpressionTransformation Transform(ConstantExpression&& constantExpression) override;
+			ExpressionTransformation Transform(ConstantValueExpression&& constantExpression) override;
 			ExpressionTransformation Transform(IdentifierExpression&& identifierExpr) override;
 			ExpressionTransformation Transform(IntrinsicExpression&& intrinsicExpr) override;
 			ExpressionTransformation Transform(SwizzleExpression&& swizzleExpr) override;

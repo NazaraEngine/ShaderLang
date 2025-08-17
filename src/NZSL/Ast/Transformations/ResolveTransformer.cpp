@@ -2272,6 +2272,38 @@ namespace nzsl::Ast
 		return DontVisitChildren{};
 	}
 
+	auto ResolveTransformer::Transform(ConditionalExpression&& conditionalExpression) -> ExpressionTransformation
+	{
+		MandatoryExpr(conditionalExpression.condition, conditionalExpression.sourceLocation);
+		MandatoryExpr(conditionalExpression.truePath, conditionalExpression.sourceLocation);
+		MandatoryExpr(conditionalExpression.falsePath, conditionalExpression.sourceLocation);
+
+		HandleChildren(conditionalExpression);
+
+		std::optional<ConstantValue> conditionValue = ComputeConstantValue(conditionalExpression.condition);
+		if (!conditionValue.has_value())
+		{
+			// Unresolvable condition
+			return DontVisitChildren{};
+		}
+
+		if (GetConstantType(*conditionValue) != ExpressionType{ PrimitiveType::Boolean })
+			throw CompilerConditionExpectedBoolError{ conditionalExpression.sourceLocation, ToString(GetConstantType(*conditionValue), conditionalExpression.condition->sourceLocation) };
+
+		if (std::get<bool>(*conditionValue))
+			return ReplaceExpression{ std::move(conditionalExpression.truePath) };
+		else
+			return ReplaceExpression{ std::move(conditionalExpression.falsePath) };
+	}
+
+	auto ResolveTransformer::Transform(ConstantArrayValueExpression&& constantExpression) -> ExpressionTransformation
+	{
+		if (!constantExpression.cachedExpressionType)
+			constantExpression.cachedExpressionType = GetConstantType(constantExpression.values);
+
+		return VisitChildren{};
+	}
+
 	auto ResolveTransformer::Transform(ConstantExpression&& constantExpression) -> ExpressionTransformation
 	{
 		const TransformerContext::ConstantData* constantData = m_context->constants.TryRetrieve(constantExpression.constantId, constantExpression.sourceLocation);
@@ -2290,6 +2322,14 @@ namespace nzsl::Ast
 		}
 
 		constantExpression.cachedExpressionType = GetConstantType(*constantData->value);
+		return VisitChildren{};
+	}
+
+	auto ResolveTransformer::Transform(ConstantValueExpression&& constantExpression) -> ExpressionTransformation
+	{
+		if (!constantExpression.cachedExpressionType)
+			constantExpression.cachedExpressionType = GetConstantType(constantExpression.value);
+
 		return VisitChildren{};
 	}
 
