@@ -351,19 +351,26 @@ namespace nzsl::Ast
 
 		HandleChildren(castExpr);
 
-		const ExpressionType& targetType = castExpr.targetType.GetResultingValue();
+		const ExpressionType& targetType = ResolveAlias(castExpr.targetType.GetResultingValue());
 		if (IsLiteralType(targetType))
 			return DontVisitChildren{};
 
 		if (IsPrimitiveType(targetType))
 		{
 			ExpressionPtr& expr = castExpr.expressions.front();
-			if (IsLiteralType(EnsureExpressionType(*castExpr.expressions.front())))
+			const ExpressionType& exprType = ResolveAlias(EnsureExpressionType(*expr));
+			if (IsLiteralType(exprType))
 			{
-				if (!ResolveLiteral(expr, targetType, expr->sourceLocation))
-					throw AstUntypedExpectedConstantError{ expr->sourceLocation, Ast::ToString(expr->GetType()) };
+				// handle casting to a non-compatible type, e.g. f32(42) will be resolved to f32(i32(42))
+				if (ValidateMatchingTypes(exprType, targetType))
+				{
+					if (!ResolveLiteral(expr, targetType, expr->sourceLocation))
+						throw AstUntypedExpectedConstantError{ expr->sourceLocation, Ast::ToString(expr->GetType()) };
 
-				return ReplaceExpression{ std::move(castExpr.expressions.front()) };
+					return ReplaceExpression{ std::move(expr) };
+				}
+				else if (!ResolveLiteral(expr, {}, expr->sourceLocation))
+					throw AstUntypedExpectedConstantError{ expr->sourceLocation, Ast::ToString(expr->GetType()) };
 			}
 		}
 		else if (IsVectorType(targetType))

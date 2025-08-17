@@ -1072,9 +1072,6 @@ namespace nzsl::Ast
 		if (!IsIdentifierAvailable(name))
 			throw CompilerIdentifierAlreadyUsedError{ sourceLocation, name };
 
-		//if (value && IsLiteralType(GetConstantType(*value->value)))
-		//  NazaraDebugBreak();
-
 		std::size_t constantIndex;
 		if (value)
 			constantIndex = m_context->constants.Register(std::move(*value), index, sourceLocation);
