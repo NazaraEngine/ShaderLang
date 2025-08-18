@@ -101,18 +101,21 @@ namespace nzsl::Ast
 		HandleChildren(declConst);
 
 		NodeType constantType = declConst.expression->GetType();
-		if (constantType != NodeType::ConstantValueExpression && constantType != NodeType::ConstantArrayValueExpression)
+		if (constantType != NodeType::ConstantValueExpression && constantType != NodeType::ConstantArrayValueExpression && constantType != NodeType::ConstantExpression)
 		{
 			// Constant propagation failed
 			if (!m_context->partialCompilation)
 				throw CompilerConstantExpressionRequiredError{ declConst.expression->sourceLocation };
 		}
 
-		if (constantType != NodeType::ConstantValueExpression)
+		if (constantType == NodeType::ConstantArrayValueExpression)
 			return DontVisitChildren{}; //< keep const arrays
 
-		const auto& constant = static_cast<ConstantValueExpression&>(*declConst.expression);
-		m_constantSingleValues.emplace(*declConst.constIndex, constant.value);
+		if (constantType == NodeType::ConstantValueExpression)
+		{
+			const auto& constant = static_cast<ConstantValueExpression&>(*declConst.expression);
+			m_constantSingleValues.emplace(*declConst.constIndex, constant.value);
+		}
 
 		if (m_options->removeConstantDeclaration)
 			return RemoveStatement{};
@@ -139,7 +142,6 @@ namespace nzsl::Ast
 			if (!declOption.defaultValue)
 				throw CompilerMissingOptionValueError{ declOption.sourceLocation, declOption.optName };
 
-			//throw CompilerConflictingOptionDefaultValuesError{ declOption.sourceLocation, declOption.optName, Ast::ConstantToString(*declOption.defaultValue) };
 			if (declOption.defaultValue->GetType() == NodeType::ConstantValueExpression)
 			{
 				const auto& constant = static_cast<ConstantValueExpression&>(*declOption.defaultValue);
