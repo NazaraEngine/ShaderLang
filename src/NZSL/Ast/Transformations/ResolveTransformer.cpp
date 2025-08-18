@@ -2844,7 +2844,12 @@ namespace nzsl::Ast
 		OptionHash optionHash = HashOption(declOption.optName.data());
 
 		if (auto optionValueIt = m_context->optionValues.find(optionHash); optionValueIt != m_context->optionValues.end())
-			declOption.optIndex = RegisterConstant(declOption.optName, TransformerContext::ConstantData{ m_states->currentModuleId, optionValueIt->second }, declOption.optIndex, declOption.sourceLocation);
+		{
+			ConstantValue& optionValue = optionValueIt->second;
+			EnsureLiteralValue(optType, optionValue, declOption.sourceLocation);
+		
+			declOption.optIndex = RegisterConstant(declOption.optName, TransformerContext::ConstantData{ m_states->currentModuleId, optionValue }, declOption.optIndex, declOption.sourceLocation);
+		}
 		else
 		{
 			if (m_context->partialCompilation)

@@ -6,11 +6,11 @@
 
 TEST_CASE("literal", "[Shader]")
 {
-	ResolveOptions resolveOpt;
-	resolveOpt.literalOptions = &ResolveOptions::defaultLiteralOptions;
-
 	SECTION("Literal primitives")
 	{
+		ResolveOptions resolveOpt;
+		resolveOpt.literalOptions = &ResolveOptions::defaultLiteralOptions;
+
 		std::string_view nzslSource = R"(
 [nzsl_version("1.1")]
 module;
@@ -83,6 +83,61 @@ fn foo()
 %40 = OpExtInst %14 GLSLstd450 UMax %15 %16
       OpStore %30 %40
       OpStore %31 %20
+      OpReturn
+      OpFunctionEnd)", {}, {}, true);
+	}
+
+	
+	SECTION("Literal from options")
+	{
+		ResolveOptions resolveOpt;
+		resolveOpt.literalOptions = &ResolveOptions::defaultLiteralOptions;
+		resolveOpt.optionValues[nzsl::Ast::HashOption("OptSet")] = nzsl::Ast::IntLiteral{42};
+
+		// tests for a bug where the Option default value (as a literal) was used
+		std::string_view nzslSource = R"(
+[nzsl_version("1.1")]
+module;
+
+option OptDefault: u32 = 4;
+option OptSet: u32 = 5;
+
+[entry(frag)]
+fn foo()
+{
+	let bar = OptDefault;
+	let bar = OptSet;
+}
+)";
+
+		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
+		ResolveModule(*shaderModule, resolveOpt);
+
+		ExpectGLSL(*shaderModule, R"(
+void main()
+{
+	uint bar = 4u;
+	uint bar_2 = 5u;
+})");
+
+		ExpectNZSL(*shaderModule, R"(
+option OptDefault: u32 = 4;
+option OptSet: u32 = 5;
+[entry(frag)]
+fn foo()
+{
+	let bar: u32 = OptDefault;
+	let bar: u32 = OptSet;
+}
+)");
+
+		ExpectSPIRV(*shaderModule, R"(
+ %7 = OpFunction %1 FunctionControl(0) %2
+ %8 = OpLabel
+ %9 = OpVariable %5 StorageClass(Function)
+%10 = OpVariable %5 StorageClass(Function)
+      OpStore %9 %4
+      OpStore %10 %6
       OpReturn
       OpFunctionEnd)", {}, {}, true);
 	}
