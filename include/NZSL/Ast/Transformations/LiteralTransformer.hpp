@@ -44,6 +44,7 @@ namespace nzsl::Ast
 
 			StatementTransformation Transform(DeclareConstStatement&& declConst) override;
 			StatementTransformation Transform(DeclareFunctionStatement&& declFunction) override;
+			StatementTransformation Transform(DeclareOptionStatement&& declOption) override;
 			StatementTransformation Transform(DeclareVariableStatement&& declVariable) override;
 			StatementTransformation Transform(ForStatement&& forStatement) override;
 			StatementTransformation Transform(ReturnStatement&& returnStatement) override;

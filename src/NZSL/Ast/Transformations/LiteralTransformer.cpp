@@ -597,6 +597,24 @@ namespace nzsl::Ast
 		return DontVisitChildren{};
 	}
 
+	auto LiteralTransformer::Transform(DeclareOptionStatement&& declOption) -> StatementTransformation
+	{
+		if (!m_options->resolveUntypedLiterals)
+			return VisitChildren{};
+
+		HandleChildren(declOption);
+
+		if (declOption.defaultValue)
+		{
+			if (!declOption.optType.IsResultingValue())
+				return DontVisitChildren{};
+
+			ResolveLiteral(declOption.defaultValue, declOption.optType.GetResultingValue(), declOption.sourceLocation);
+		}
+
+		return DontVisitChildren{};
+	}
+
 	auto LiteralTransformer::Transform(DeclareVariableStatement&& declVariable) -> StatementTransformation
 	{
 		if (!m_options->resolveUntypedLiterals)
