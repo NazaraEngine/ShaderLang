@@ -127,15 +127,28 @@ jobs:
         path: ${{ env.XMAKE_GLOBALDIR }}/.xmake/packages
         key: ${{ matrix.confs.plat }}-${{ matrix.confs.arch }}-${{ matrix.confs.mode }}-${{ steps.dep_hash.outputs.hash }}-W${{ steps.cache_key.outputs.key }}
 
-    # Setup test configs
-    - name: Setup config
+    # Setup platform configs
+    - name: Setup platform config
       if: ${{ matrix.confs.test }}
-      run: echo "ADDITIONAL_CONF=${{ env.ADDITIONAL_CONF }} --examples=y --tests=y" >> $GITHUB_ENV
+      run: |
+        PLATFORM_CONF=""
+        if [ "${{ matrix.confs.test }}" == "true" ]; then
+          PLATFORM_CONF="$PLATFORM_CONF --examples=y --tests=y" >> $GITHUB_ENV
+        fi
+        # MinGW has some issues with unitybuild
+        if [ "${{ matrix.confs.name }}" != "Mingw" ]; then
+          PLATFORM_CONF="$PLATFORM_CONF --unitybuild=y" >> $GITHUB_ENV
+        fi
+        # Android and Emscripten don't support filesystem watcher
+        if [ "${{ matrix.confs.plat }}" == "android" ] || [ "${{ matrix.confs.plat }}" == "wasm" ]; then
+          PLATFORM_CONF="$PLATFORM_CONF --fs_watcher=n" >> $GITHUB_ENV
+        fi
+        echo "ADDITIONAL_CONF="${{ env.ADDITIONAL_CONF }} $PLATFORM_CONF" >> $GITHUB_ENV
       shell: bash
 
     # Setup compilation mode and install project dependencies
     - name: Configure xmake and install dependencies
-      run: xmake config --plat=${{ matrix.confs.plat }} --arch=${{ matrix.confs.arch }} --kind=${{ matrix.kind }} --mode=${{ matrix.config.mode }} ${{ env.ADDITIONAL_CONF }} --ccache=n --unitybuild=y --yes
+      run: xmake config --plat=${{ matrix.confs.plat }} --arch=${{ matrix.confs.arch }} --kind=${{ matrix.kind }} --mode=${{ matrix.config.mode }} ${{ env.ADDITIONAL_CONF }} --ccache=n --yes
 
     # Save dependencies
     - name: Save cached xmake dependencies
