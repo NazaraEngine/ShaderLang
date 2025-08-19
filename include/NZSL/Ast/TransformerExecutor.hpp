@@ -27,7 +27,9 @@ namespace nzsl::Ast
 			~TransformerExecutor() = default;
 
 			template<typename T> void AddPass(const typename T::Options& options = {});
+			template<typename T> void AddPass(Nz::FunctionRef<void(typename T::Options&)> callback);
 			template<typename T> void AddPassAt(std::size_t index, const typename T::Options& options = {});
+			template<typename T> void AddPassAt(std::size_t index, Nz::FunctionRef<void(typename T::Options&)> callback);
 
 			inline bool Transform(Module& module, std::string* error = nullptr) const;
 			inline bool Transform(Module& module, TransformerContext& context, std::string* error = nullptr) const;

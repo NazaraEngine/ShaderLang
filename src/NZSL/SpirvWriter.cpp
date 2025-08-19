@@ -660,7 +660,13 @@ namespace nzsl
 		{
 			Ast::TransformerExecutor executor;
 			if (parameters.backendPasses.Test(BackendPass::Resolve))
-				executor.AddPass<Ast::ResolveTransformer>({ parameters.shaderModuleResolver, true });
+			{
+				executor.AddPass<Ast::ResolveTransformer>([&](Ast::ResolveTransformer::Options& opt)
+				{
+					opt.moduleResolver = parameters.shaderModuleResolver;
+					opt.removeAliases = true;
+				});
+			}
 
 			if (parameters.backendPasses.Test(BackendPass::TargetRequired))
 				RegisterPasses(executor);
@@ -669,7 +675,13 @@ namespace nzsl
 				executor.AddPass<Ast::ConstantPropagationTransformer>();
 
 			if (parameters.backendPasses.Test(BackendPass::Validate))
-				executor.AddPass<Ast::ValidationTransformer>({ false, true });
+			{
+				executor.AddPass<Ast::ValidationTransformer>([](Ast::ValidationTransformer::Options& opt)
+				{
+					opt.allowUntyped = false;
+					opt.checkIndices = true;
+				});
+			}
 
 			Ast::TransformerContext context;
 			context.optionValues = parameters.optionValues;
@@ -901,9 +913,20 @@ namespace nzsl
 		executor.AddPass<Ast::LiteralTransformer>();
 		executor.AddPass<Ast::BranchSplitterTransformer>();
 		executor.AddPass<Ast::ForToWhileTransformer>();
-		executor.AddPass<Ast::StructAssignmentTransformer>({ true, true });
-		executor.AddPass<Ast::CompoundAssignmentTransformer>({ true });
-		executor.AddPass<Ast::MatrixTransformer>({ true, true });
+		executor.AddPass<Ast::StructAssignmentTransformer>([](Ast::StructAssignmentTransformer::Options& opt)
+		{
+			opt.splitWrappedArrayAssignation = true;
+			opt.splitWrappedStructAssignation = true;
+		});
+		executor.AddPass<Ast::CompoundAssignmentTransformer>([](Ast::CompoundAssignmentTransformer::Options& opt)
+		{
+			opt.removeCompoundAssignment = true;
+		});
+		executor.AddPass<Ast::MatrixTransformer>([](Ast::MatrixTransformer::Options& opt)
+		{
+			opt.removeMatrixBinaryAddSub = true;
+			opt.removeMatrixCast = true;
+		});
 		executor.AddPass<Ast::BindingResolverTransformer>();
 	}
 
