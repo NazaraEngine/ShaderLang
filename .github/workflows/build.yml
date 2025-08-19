@@ -189,10 +189,10 @@ jobs:
         file_path: ${{ env.OUTPUT_FILE }}
         verbose: true
 
-    # Nightly tags (for commits to dev branch)
-    - name: Upload binaries to release (Dev)
+    # Nightly tags (for commits to main branch)
+    - name: Upload binaries to release (Main)
       uses: svenstaro/upload-release-action@v2
-      if: ${{ (github.ref == 'refs/heads/dev') && github.event_name == 'push' }}
+      if: ${{ (github.ref == 'refs/heads/main') && github.event_name == 'push' }}
       with:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
         file: ${{ env.OUTPUT_FILE }}
