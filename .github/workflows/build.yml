@@ -66,10 +66,6 @@ jobs:
     if: ${{ !contains(github.event.head_commit.message, 'ci skip') }}
 
     steps:
-    - name: Get current date as package key
-      id: cache_key
-      run: echo "key=$(date +'%W')" >> $GITHUB_OUTPUT
-
     - name: Checkout repository
       uses: actions/checkout@v4
 
@@ -104,6 +100,11 @@ jobs:
         wget -q https://dl.google.com/android/repository/android-ndk-r${{ matrix.confs.ndk_ver }}-linux.zip
         unzip -q -o ./android-ndk-r${{ matrix.confs.ndk_ver }}-linux.zip
         echo "ADDITIONAL_CONF=--ndk=`pwd`/android-ndk-r${{ matrix.confs.ndk_ver }} --ndk_sdkver=${{ matrix.confs.ndk_sdkver }}" >> $GITHUB_ENV
+
+    - name: Get current date as package key
+      id: cache_key
+      run: echo "key=$(date +'%W')" >> $GITHUB_OUTPUT
+      shell: bash
 
     # Force xmake to a specific folder (for cache)
     - name: Set xmake global dir
