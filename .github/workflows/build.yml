@@ -53,6 +53,9 @@ jobs:
         - { name: Emscripten,        runner: ubuntu-latest,  shell: bash,        plat: wasm,     arch: wasm64,      mode: debug,      test: false,                               }
         - { name: Emscripten,        runner: ubuntu-latest,  shell: bash,        plat: wasm,     arch: wasm64,      mode: releasedbg, test: false,                               }
         kind: [shared, static]
+        exclude:
+          - confs.name: Emscripten
+            kind: shared
 
     defaults:
       run:
@@ -142,7 +145,7 @@ jobs:
           PLATFORM_CONF="$PLATFORM_CONF --examples=y --tests=y" >> $GITHUB_ENV
         fi
         # MinGW has some issues with unitybuild
-        if [ "${{ matrix.confs.name }}" != "Mingw" ]; then
+        if [ "${{ matrix.confs.name }}" != "MinGW" ]; then
           PLATFORM_CONF="$PLATFORM_CONF --unitybuild=y" >> $GITHUB_ENV
         fi
         # Android and Emscripten don't support filesystem watcher
