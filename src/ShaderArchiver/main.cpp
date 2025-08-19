@@ -10,9 +10,9 @@ int main(int argc, char* argv[])
 		auto options = cmdOptions.parse(argc, argv);
 		if (options.count("version") > 0)
 		{
-			fmt::print("nzsla version {}.{}.{} using nzsl {}.{}.{}\n", 
+			fmt::print("nzsla version {}.{}.{} using nzsl {}.{}.{}{}\n", 
 				nzsla::Archiver::MajorVersion, nzsla::Archiver::MinorVersion, nzsla::Archiver::PatchVersion,
-				NZSL_VERSION_MAJOR, NZSL_VERSION_MINOR, NZSL_VERSION_PATCH);
+				NZSL_VERSION_MAJOR, NZSL_VERSION_MINOR, NZSL_VERSION_PATCH, NZSL_VERSION_SUFFIX);
 
 			return EXIT_SUCCESS;
 		}

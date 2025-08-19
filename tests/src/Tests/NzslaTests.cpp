@@ -17,7 +17,7 @@ TEST_CASE("Standalone archiver", "[NZSLA]")
 
 	WHEN("Printing version")
 	{
-		ExecuteCommand("./nzsla --version", fmt::format(R"(nzsla version \d\.\d\.\d using nzsl {}\.{}\.{})", NZSL_VERSION_MAJOR, NZSL_VERSION_MINOR, NZSL_VERSION_PATCH));
+		ExecuteCommand("./nzsla --version", fmt::format(R"(nzsla version \d\.\d\.\d using nzsl {}\.{}\.{}{})", NZSL_VERSION_MAJOR, NZSL_VERSION_MINOR, NZSL_VERSION_PATCH, NZSL_VERSION_SUFFIX));
 	}
 
 	WHEN("Compiling shader modules")
