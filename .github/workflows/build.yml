@@ -19,12 +19,12 @@ jobs:
       fail-fast: false
       matrix:
         confs:
-        - { name: Windows,           runner: windows-latest, shell: pwsh,        plat: windows,  arch: x86,         mode: debug,      test: true,                                }
-        - { name: Windows,           runner: windows-latest, shell: pwsh,        plat: windows,  arch: x86,         mode: releasedbg, test: true,                                }
-        - { name: Windows,           runner: windows-latest, shell: pwsh,        plat: windows,  arch: x64,         mode: debug,      test: true,                                }
-        - { name: Windows,           runner: windows-latest, shell: pwsh,        plat: windows,  arch: x64,         mode: releasedbg, test: true,                                }
-        - { name: Windows,           runner: windows-latest, shell: pwsh,        plat: windows,  arch: arm64,       mode: debug,      test: false,                               }
-        - { name: Windows,           runner: windows-latest, shell: pwsh,        plat: windows,  arch: arm64,       mode: releasedbg, test: false,                               }
+        - { name: Windows,           runner: windows-latest, shell: bash,        plat: windows,  arch: x86,         mode: debug,      test: true,                                }
+        - { name: Windows,           runner: windows-latest, shell: bash,        plat: windows,  arch: x86,         mode: releasedbg, test: true,                                }
+        - { name: Windows,           runner: windows-latest, shell: bash,        plat: windows,  arch: x64,         mode: debug,      test: true,                                }
+        - { name: Windows,           runner: windows-latest, shell: bash,        plat: windows,  arch: x64,         mode: releasedbg, test: true,                                }
+        - { name: Windows,           runner: windows-latest, shell: bash,        plat: windows,  arch: arm64,       mode: debug,      test: false,                               }
+        - { name: Windows,           runner: windows-latest, shell: bash,        plat: windows,  arch: arm64,       mode: releasedbg, test: false,                               }
         - { name: MinGW,             runner: windows-latest, shell: 'msys2 {0}', plat: mingw,    arch: i686,        mode: debug,      test: true, msystem: mingw32               }
         - { name: MinGW,             runner: windows-latest, shell: 'msys2 {0}', plat: mingw,    arch: i686,        mode: releasedbg, test: true, msystem: mingw32               }
         - { name: MinGW,             runner: windows-latest, shell: 'msys2 {0}', plat: mingw,    arch: x86_64,      mode: debug,      test: true, msystem: mingw64               }
@@ -69,7 +69,6 @@ jobs:
     - name: Get current date as package key
       id: cache_key
       run: echo "key=$(date +'%W')" >> $GITHUB_OUTPUT
-      shell: bash
 
     - name: Checkout repository
       uses: actions/checkout@v4
@@ -109,7 +108,6 @@ jobs:
     # Force xmake to a specific folder (for cache)
     - name: Set xmake global dir
       run: echo "XMAKE_GLOBALDIR=${{ runner.workspace }}/xmake-global" >> $GITHUB_ENV
-      shell: bash
 
     # Install xmake
     - name: Setup xmake
@@ -127,7 +125,6 @@ jobs:
     - name: Retrieve dependencies hash
       id: dep_hash
       run: echo "hash=$(xmake l utils.ci.packageskey)" >> $GITHUB_OUTPUT
-      shell: bash
 
     # Restore xmake dependencies
     - name: Restore cached xmake dependencies
@@ -153,7 +150,6 @@ jobs:
           PLATFORM_CONF="$PLATFORM_CONF --fs_watcher=n" >> $GITHUB_ENV
         fi
         echo "ADDITIONAL_CONF=${{ env.ADDITIONAL_CONF }} $PLATFORM_CONF" >> $GITHUB_ENV
-      shell: bash
 
     # Setup compilation mode and install project dependencies
     - name: Configure xmake and install dependencies
