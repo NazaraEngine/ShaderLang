@@ -14,7 +14,7 @@ TEST_CASE("Standalone compiler", "[NZSLC]")
 
 	WHEN("Printing version")
 	{
-		ExecuteCommand("./nzslc --version", fmt::format(R"(nzslc version \d\.\d\.\d using nzsl {}\.{}\.{})", NZSL_VERSION_MAJOR, NZSL_VERSION_MINOR, NZSL_VERSION_PATCH));
+		ExecuteCommand("./nzslc --version", fmt::format(R"(nzslc version \d\.\d\.\d using nzsl {}\.{}\.{}{})", NZSL_VERSION_MAJOR, NZSL_VERSION_MINOR, NZSL_VERSION_PATCH, NZSL_VERSION_SUFFIX));
 	}
 
 	WHEN("Compiling shader modules")
