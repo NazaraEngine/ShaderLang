@@ -71,8 +71,15 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
+    # Install system dependencies
+    - name: Setup Linux
+      if: ${{ matrix.confs.plat == 'linux' }}
+      run: |
+        sudo apt-get update
+        sudo apt-get -y install mesa-common-dev
+
     # Setup Emsdk
-    - name: Setup emscripten
+    - name: Setup Emscripten
       if: ${{ matrix.confs.plat == 'wasm' }}
       uses: mymindstorm/setup-emsdk@v14
       with:
@@ -97,7 +104,7 @@ jobs:
         echo "ADDITIONAL_CONF=--ndk=`pwd`/android-ndk-r${{ matrix.confs.ndk_ver }} --ndk_sdkver=${{ matrix.confs.ndk_sdkver }}" >> $GITHUB_ENV
 
     # Force xmake to a specific folder (for cache)
-    - name: Set xmake env
+    - name: Set xmake global dir
       run: echo "XMAKE_GLOBALDIR=${{ runner.workspace }}/xmake-global" >> $GITHUB_ENV
       shell: bash
 
@@ -143,7 +150,7 @@ jobs:
         if [ "${{ matrix.confs.plat }}" == "android" ] || [ "${{ matrix.confs.plat }}" == "wasm" ]; then
           PLATFORM_CONF="$PLATFORM_CONF --fs_watcher=n" >> $GITHUB_ENV
         fi
-        echo "ADDITIONAL_CONF="${{ env.ADDITIONAL_CONF }} $PLATFORM_CONF" >> $GITHUB_ENV
+        echo "ADDITIONAL_CONF=${{ env.ADDITIONAL_CONF }} $PLATFORM_CONF" >> $GITHUB_ENV
       shell: bash
 
     # Setup compilation mode and install project dependencies
