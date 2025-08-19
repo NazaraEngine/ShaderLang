@@ -1,0 +1,212 @@
+name: Build and test
+
+permissions:
+  contents: write
+
+on:
+  pull_request:
+  push:
+    paths-ignore:
+      - '.github/workflows/coverage.yml'
+      - '.gitignore'
+      - 'LICENSE'
+      - 'CHANGELOG.md'
+      - 'README.md'
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        confs:
+        - { name: Windows,           runner: windows-latest, shell: bash,        plat: windows,  arch: x86,         mode: debug,      test: true,                                }
+        - { name: Windows,           runner: windows-latest, shell: bash,        plat: windows,  arch: x86,         mode: releasedbg, test: true,                                }
+        - { name: Windows,           runner: windows-latest, shell: bash,        plat: windows,  arch: x64,         mode: debug,      test: true,                                }
+        - { name: Windows,           runner: windows-latest, shell: bash,        plat: windows,  arch: x64,         mode: releasedbg, test: true,                                }
+        - { name: Windows,           runner: windows-latest, shell: bash,        plat: windows,  arch: arm64,       mode: debug,      test: false,                               }
+        - { name: Windows,           runner: windows-latest, shell: bash,        plat: windows,  arch: arm64,       mode: releasedbg, test: false,                               }
+        - { name: MinGW,             runner: windows-latest, shell: 'msys2 {0}', plat: mingw,    arch: i686,        mode: debug,      test: true, msystem: mingw32               }
+        - { name: MinGW,             runner: windows-latest, shell: 'msys2 {0}', plat: mingw,    arch: i686,        mode: releasedbg, test: true, msystem: mingw32               }
+        - { name: MinGW,             runner: windows-latest, shell: 'msys2 {0}', plat: mingw,    arch: x86_64,      mode: debug,      test: true, msystem: mingw64               }
+        - { name: MinGW,             runner: windows-latest, shell: 'msys2 {0}', plat: mingw,    arch: x86_64,      mode: releasedbg, test: true, msystem: mingw64               }
+        - { name: Linux,             runner: ubuntu-latest,  shell: bash,        plat: linux,    arch: x86_64,      mode: debug,      test: true,                                }
+        - { name: Linux,             runner: ubuntu-latest,  shell: bash,        plat: linux,    arch: x86_64,      mode: debug,      test: true, config: --asan=y               }
+        - { name: Linux,             runner: ubuntu-latest,  shell: bash,        plat: linux,    arch: x86_64,      mode: debug,      test: true, config: --lsan=y               }
+        - { name: Linux,             runner: ubuntu-latest,  shell: bash,        plat: linux,    arch: x86_64,      mode: debug,      test: true, config: --tsan=y               }
+        - { name: Linux,             runner: ubuntu-latest,  shell: bash,        plat: linux,    arch: x86_64,      mode: releasedbg, test: true,                                }
+        - { name: Android NDK 25c,   runner: ubuntu-latest,  shell: bash,        plat: android,  arch: armeabi-v7a, mode: debug,      test: false, ndk_ver: 25c, ndk_sdkver: 28  }
+        - { name: Android NDK 25c,   runner: ubuntu-latest,  shell: bash,        plat: android,  arch: armeabi-v7a, mode: releasedbg, test: false, ndk_ver: 25c, ndk_sdkver: 28  }
+        - { name: Android NDK 25c,   runner: ubuntu-latest,  shell: bash,        plat: android,  arch: arm64-v8a,   mode: debug,      test: false, ndk_ver: 25c, ndk_sdkver: 28  }
+        - { name: Android NDK 25c,   runner: ubuntu-latest,  shell: bash,        plat: android,  arch: arm64-v8a,   mode: releasedbg, test: false, ndk_ver: 25c, ndk_sdkver: 28  }
+        - { name: Android NDK 26b,   runner: ubuntu-latest,  shell: bash,        plat: android,  arch: armeabi-v7a, mode: debug,      test: false, ndk_ver: 26b, ndk_sdkver: 28  }
+        - { name: Android NDK 26b,   runner: ubuntu-latest,  shell: bash,        plat: android,  arch: armeabi-v7a, mode: releasedbg, test: false, ndk_ver: 26b, ndk_sdkver: 28  }
+        - { name: Android NDK 26b,   runner: ubuntu-latest,  shell: bash,        plat: android,  arch: arm64-v8a,   mode: debug,      test: false, ndk_ver: 26b, ndk_sdkver: 28  }
+        - { name: Android NDK 26b,   runner: ubuntu-latest,  shell: bash,        plat: android,  arch: arm64-v8a,   mode: releasedbg, test: false, ndk_ver: 26b, ndk_sdkver: 28  }
+        - { name: macOS x86_64,      runner: macos-latest,   shell: bash,        plat: macosx,   arch: x86_64,      mode: debug,      test: true,                                }
+        - { name: macOS x86_64,      runner: macos-latest,   shell: bash,        plat: macosx,   arch: x86_64,      mode: releasedbg, test: true,                                }
+        - { name: macOS ARM64,       runner: macos-14,       shell: bash,        plat: macosx,   arch: arm64,       mode: debug,      test: true,                                }
+        - { name: macOS ARM64,       runner: macos-14,       shell: bash,        plat: macosx,   arch: arm64,       mode: releasedbg, test: true,                                }
+        - { name: iOS,               runner: macos-latest,   shell: bash,        plat: iphoneos, arch: arm64,       mode: debug,      test: false,                               }
+        - { name: iOS,               runner: macos-latest,   shell: bash,        plat: iphoneos, arch: arm64,       mode: releasedbg, test: false,                               }
+        - { name: Emscripten,        runner: ubuntu-latest,  shell: bash,        plat: wasm,     arch: wasm32,      mode: debug,      test: false,                               }
+        - { name: Emscripten,        runner: ubuntu-latest,  shell: bash,        plat: wasm,     arch: wasm32,      mode: releasedbg, test: false,                               }
+        - { name: Emscripten,        runner: ubuntu-latest,  shell: bash,        plat: wasm,     arch: wasm64,      mode: debug,      test: false,                               }
+        - { name: Emscripten,        runner: ubuntu-latest,  shell: bash,        plat: wasm,     arch: wasm64,      mode: releasedbg, test: false,                               }
+        kind: [shared, static]
+        exclude:
+          - confs: { name: Emscripten }
+            kind: shared
+
+    defaults:
+      run:
+        shell: ${{ matrix.confs.shell }}
+
+    name: ${{ matrix.confs.name }} ${{ matrix.confs.arch }} (${{ matrix.kind }} ${{ matrix.confs.mode }})
+    runs-on: ${{ matrix.confs.runner }}
+    if: ${{ !contains(github.event.head_commit.message, 'ci skip') }}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    # Install system dependencies
+    - name: Setup Linux
+      if: ${{ matrix.confs.plat == 'linux' }}
+      run: |
+        sudo apt-get update
+        sudo apt-get -y install mesa-common-dev
+
+    # Setup Emsdk
+    - name: Setup Emscripten
+      if: ${{ matrix.confs.plat == 'wasm' }}
+      uses: mymindstorm/setup-emsdk@v14
+      with:
+        version: 3.1.31
+        actions-cache-folder: emsdk-cache-${{ matrix.confs.mode }}
+
+    # Setup MSYS2
+    - name: Setup MSYS2
+      if: ${{ matrix.confs.plat == 'mingw' }}
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: ${{ matrix.confs.msystem }}
+        install: base-devel git unzip p7zip mingw-w64-${{ matrix.confs.arch }}-toolchain mingw-w64-${{ matrix.confs.arch }}-xmake
+        update: true
+
+    # Setup NDK
+    - name: Setup Android NDK (${{ matrix.confs.ndk_ver }})
+      if: ${{ matrix.confs.plat == 'android' }}
+      run: |
+        wget -q https://dl.google.com/android/repository/android-ndk-r${{ matrix.confs.ndk_ver }}-linux.zip
+        unzip -q -o ./android-ndk-r${{ matrix.confs.ndk_ver }}-linux.zip
+        echo "ADDITIONAL_CONF=--ndk=`pwd`/android-ndk-r${{ matrix.confs.ndk_ver }} --ndk_sdkver=${{ matrix.confs.ndk_sdkver }}" >> $GITHUB_ENV
+
+    - name: Get current date as package key
+      id: cache_key
+      run: echo "key=$(date +'%W')" >> $GITHUB_OUTPUT
+      shell: bash
+
+    # Force xmake to a specific folder (for cache)
+    - name: Set xmake global dir
+      run: echo "XMAKE_GLOBALDIR=${{ runner.workspace }}/xmake-global" >> $GITHUB_ENV
+
+    # Install xmake
+    - name: Setup xmake
+      if: ${{ matrix.confs.plat != 'mingw' }}
+      uses: xmake-io/github-action-setup-xmake@v1
+      with:
+        xmake-version: latest
+        actions-cache-folder: .xmake-cache-W${{ steps.cache_key.outputs.key }}
+
+    # Update xmake repository (in order to have the file that will be cached)
+    - name: Update xmake repository
+      run: xmake repo --update
+
+    # Fetch xmake dephash
+    - name: Retrieve dependencies hash
+      id: dep_hash
+      run: echo "hash=$(xmake l utils.ci.packageskey)" >> $GITHUB_OUTPUT
+
+    # Restore xmake dependencies
+    - name: Restore cached xmake dependencies
+      id: restore-depcache
+      uses: actions/cache/restore@v4
+      with:
+        path: ${{ env.XMAKE_GLOBALDIR }}/.xmake/packages
+        key: ${{ matrix.confs.plat }}-${{ matrix.confs.arch }}-${{ matrix.confs.mode }}-${{ steps.dep_hash.outputs.hash }}-W${{ steps.cache_key.outputs.key }}
+
+    # Setup platform configs
+    - name: Setup platform config
+      run: |
+        PLATFORM_CONF=""
+        if [ "${{ matrix.confs.test }}" == "true" ]; then
+          PLATFORM_CONF="$PLATFORM_CONF --examples=y --tests=y" >> $GITHUB_ENV
+        fi
+        # MinGW has some issues with unitybuild
+        if [ "${{ matrix.confs.name }}" != "MinGW" ]; then
+          PLATFORM_CONF="$PLATFORM_CONF --unitybuild=y" >> $GITHUB_ENV
+        fi
+        # Android and Emscripten don't support filesystem watcher
+        if [ "${{ matrix.confs.plat }}" == "android" ] || [ "${{ matrix.confs.plat }}" == "wasm" ]; then
+          PLATFORM_CONF="$PLATFORM_CONF --fs_watcher=n" >> $GITHUB_ENV
+        fi
+        echo "ADDITIONAL_CONF=${{ env.ADDITIONAL_CONF }} $PLATFORM_CONF" >> $GITHUB_ENV
+
+    # Setup compilation mode and install project dependencies
+    - name: Configure xmake and install dependencies
+      run: xmake config --plat=${{ matrix.confs.plat }} --arch=${{ matrix.confs.arch }} --kind=${{ matrix.kind }} --mode=${{ matrix.config.mode }} ${{ env.ADDITIONAL_CONF }} --ccache=n --yes
+
+    # Save dependencies
+    - name: Save cached xmake dependencies
+      if: ${{ !steps.restore-depcache.outputs.cache-hit }}
+      uses: actions/cache/save@v4
+      with:
+        path: ${{ env.XMAKE_GLOBALDIR }}/.xmake/packages
+        key: ${{ steps.restore-depcache.outputs.cache-primary-key }}
+
+    # Build library and tests
+    - name: Build library
+      run: xmake
+
+    # Run unit tests
+    - name: Run unit tests
+      if: ${{ matrix.confs.test }}
+      run: xmake run UnitTests
+
+    - name: Install
+      run: xmake install -vo nzsl
+
+    # For some reason macOS-14 doesn't seem to have Python
+    - uses: actions/setup-python@v5
+      if: ${{ matrix.platform.runner == 'macos-14' }}
+      with:
+        python-version: "3.11"
+
+    - name: Archive result
+      uses: ihiroky/archive-action@v1
+      with:
+        root_dir: nzsl
+        file_path: ${{ env.OUTPUT_FILE }}
+        verbose: true
+
+    # Nightly tags (for commits to dev branch)
+    - name: Upload binaries to release (Dev)
+      uses: svenstaro/upload-release-action@v2
+      if: ${{ (github.ref == 'refs/heads/dev') && github.event_name == 'push' }}
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: ${{ env.OUTPUT_FILE }}
+        asset_name: ${{ env.OUTPUT_FILE }}
+        tag: "0.0.0-nightly"
+        overwrite: true
+
+    # Release tags (for tags)
+    - name: Upload binaries to release (Tag)
+      uses: svenstaro/upload-release-action@v2
+      if: ${{ startsWith(github.event.ref, 'refs/tags/') && matrix.mode == 'releasedbg' }}
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: ${{ env.OUTPUT_FILE }}
+        asset_name: ${{ env.OUTPUT_FILE }}
+        tag: ${{ github.ref }}
+        overwrite: true
