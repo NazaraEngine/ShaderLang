@@ -54,7 +54,7 @@ jobs:
         - { name: Emscripten,        runner: ubuntu-latest,  shell: bash,        plat: wasm,     arch: wasm64,      mode: releasedbg, test: false,                               }
         kind: [shared, static]
         exclude:
-          - name: Emscripten
+          - confs: { name: Emscripten }
             kind: shared
 
     defaults:
