@@ -136,7 +136,6 @@ jobs:
 
     # Setup platform configs
     - name: Setup platform config
-      if: ${{ matrix.confs.test }}
       run: |
         PLATFORM_CONF=""
         if [ "${{ matrix.confs.test }}" == "true" ]; then
