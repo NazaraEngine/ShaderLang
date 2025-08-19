@@ -302,7 +302,11 @@ fn testMat4ToMat4(input: mat4[f32]) -> mat4[f32]
 
 		nzsl::Ast::TransformerExecutor executor;
 		executor.AddPass<nzsl::Ast::ResolveTransformer>();
-		executor.AddPass<nzsl::Ast::MatrixTransformer>({ false, true });
+		executor.AddPass<nzsl::Ast::MatrixTransformer>([](nzsl::Ast::MatrixTransformer::Options& opt)
+		{
+			opt.removeMatrixBinaryAddSub = false;
+			opt.removeMatrixCast = true;
+		});
 
 		REQUIRE_NOTHROW(executor.Transform(*shaderModule));
 
@@ -426,8 +430,15 @@ fn testMat4CompoundMinusMat4(x: mat4[f32], y: mat4[f32]) -> mat4[f32]
 		{
 			nzsl::Ast::TransformerExecutor executor;
 			executor.AddPass<nzsl::Ast::ResolveTransformer>();
-			executor.AddPass<nzsl::Ast::CompoundAssignmentTransformer>({ true });
-			executor.AddPass<nzsl::Ast::MatrixTransformer>({ true, false });
+			executor.AddPass<nzsl::Ast::CompoundAssignmentTransformer>([](nzsl::Ast::CompoundAssignmentTransformer::Options& opt)
+			{
+				opt.removeCompoundAssignment = true;
+			});
+			executor.AddPass<nzsl::Ast::MatrixTransformer>([](nzsl::Ast::MatrixTransformer::Options& opt)
+			{
+				opt.removeMatrixBinaryAddSub = true;
+				opt.removeMatrixCast = false;
+			});
 
 			REQUIRE_NOTHROW(executor.Transform(*shaderModule, transformContext));
 		}
@@ -465,7 +476,11 @@ fn testMat4CompoundMinusMat4(x: mat4[f32], y: mat4[f32]) -> mat4[f32]
 		WHEN("Removing matrix casts")
 		{
 			nzsl::Ast::TransformerExecutor executor;
-			executor.AddPass<nzsl::Ast::MatrixTransformer>({ false, true });
+			executor.AddPass<nzsl::Ast::MatrixTransformer>([](nzsl::Ast::MatrixTransformer::Options& opt)
+			{
+				opt.removeMatrixBinaryAddSub = false;
+				opt.removeMatrixCast = true;
+			});
 
 			REQUIRE_NOTHROW(executor.Transform(*shaderModule, transformContext));
 
@@ -527,7 +542,10 @@ external
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
 
 		nzsl::Ast::TransformerExecutor executor;
-		executor.AddPass<nzsl::Ast::ResolveTransformer>({ nullptr, true });
+		executor.AddPass<nzsl::Ast::ResolveTransformer>([](nzsl::Ast::ResolveTransformer::Options& opt)
+		{ 
+			opt.removeAliases = true;
+		});
 
 		REQUIRE_NOTHROW(executor.Transform(*shaderModule));
 
@@ -569,7 +587,10 @@ fn main()
 
 		nzsl::Ast::TransformerExecutor executor;
 		executor.AddPass<nzsl::Ast::ResolveTransformer>();
-		executor.AddPass<nzsl::Ast::SwizzleTransformer>({ true });
+		executor.AddPass<nzsl::Ast::SwizzleTransformer>([](nzsl::Ast::SwizzleTransformer::Options& opt)
+		{ 
+			opt.removeScalarSwizzling = true;
+		});
 
 		REQUIRE_NOTHROW(executor.Transform(*shaderModule));
 
@@ -650,7 +671,11 @@ fn main()
 
 		nzsl::Ast::TransformerExecutor executor;
 		executor.AddPass<nzsl::Ast::ResolveTransformer>();
-		executor.AddPass<nzsl::Ast::StructAssignmentTransformer>({ true, true });
+		executor.AddPass<nzsl::Ast::StructAssignmentTransformer>([](nzsl::Ast::StructAssignmentTransformer::Options& opt)
+		{
+			opt.splitWrappedArrayAssignation = true;
+			opt.splitWrappedStructAssignation = true;
+		});
 
 		REQUIRE_NOTHROW(executor.Transform(*shaderModule, context));
 

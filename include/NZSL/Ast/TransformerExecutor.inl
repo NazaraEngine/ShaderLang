@@ -10,11 +10,26 @@ namespace nzsl::Ast
 		return AddPassAt<T>(m_passes.size(), options);
 	}
 
+	template<typename T> 
+	void TransformerExecutor::AddPass(Nz::FunctionRef<void(typename T::Options&)> callback)
+	{
+		return AddPassAt<T>(m_passes.size(), callback);
+	}
+
 	template<typename T>
 	void TransformerExecutor::AddPassAt(std::size_t index, const typename T::Options& options)
 	{
 		auto passPtr = std::make_unique<Pass<T>>();
 		passPtr->options = options;
+
+		m_passes.emplace(m_passes.begin() + index, std::move(passPtr));
+	}
+
+	template<typename T>
+	void TransformerExecutor::AddPassAt(std::size_t index, Nz::FunctionRef<void(typename T::Options&)> callback)
+	{
+		auto passPtr = std::make_unique<Pass<T>>();
+		callback(passPtr->options);
 
 		m_passes.emplace(m_passes.begin() + index, std::move(passPtr));
 	}
