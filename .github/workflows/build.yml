@@ -143,7 +143,7 @@ jobs:
           PLATFORM_CONF="$PLATFORM_CONF --examples=y --tests=y" >> $GITHUB_ENV
         fi
         # MinGW has some issues with unitybuild
-        if [ "${{ matrix.confs.name }}" != "MinGW" ]; then
+        if [ "${{ matrix.confs.plat }}" != "mingw" ]; then
           PLATFORM_CONF="$PLATFORM_CONF --unitybuild=y" >> $GITHUB_ENV
         fi
         # Android and Emscripten don't support filesystem watcher
@@ -151,6 +151,11 @@ jobs:
           PLATFORM_CONF="$PLATFORM_CONF --fs_watcher=n" >> $GITHUB_ENV
         fi
         echo "ADDITIONAL_CONF=${{ env.ADDITIONAL_CONF }} $PLATFORM_CONF" >> $GITHUB_ENV
+        if [ "${{ matrix.confs.plat }}" == "windows" ]; then
+          echo "OUTPUT_FILE=${{ matrix.confs.plat }}_${{ matrix.confs.arch }}_${{ matrix.confs.mode }}.zip" >> $GITHUB_ENV
+        else
+          echo "OUTPUT_FILE=${{ matrix.confs.plat }}_${{ matrix.confs.arch }}_${{ matrix.confs.mode }}.tgz" >> $GITHUB_ENV
+        fi
 
     # Setup compilation mode and install project dependencies
     - name: Configure xmake and install dependencies
