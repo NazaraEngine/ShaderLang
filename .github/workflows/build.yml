@@ -19,39 +19,39 @@ jobs:
       fail-fast: false
       matrix:
         confs:
-        - { name: Windows,           runner: windows-latest, shell: bash,        plat: windows,  arch: x86,         mode: debug,      test: true,                                }
-        - { name: Windows,           runner: windows-latest, shell: bash,        plat: windows,  arch: x86,         mode: releasedbg, test: true,                                }
-        - { name: Windows,           runner: windows-latest, shell: bash,        plat: windows,  arch: x64,         mode: debug,      test: true,                                }
-        - { name: Windows,           runner: windows-latest, shell: bash,        plat: windows,  arch: x64,         mode: releasedbg, test: true,                                }
-        - { name: Windows,           runner: windows-latest, shell: bash,        plat: windows,  arch: arm64,       mode: debug,      test: false,                               }
-        - { name: Windows,           runner: windows-latest, shell: bash,        plat: windows,  arch: arm64,       mode: releasedbg, test: false,                               }
-        - { name: MinGW,             runner: windows-latest, shell: 'msys2 {0}', plat: mingw,    arch: i686,        mode: debug,      test: true, msystem: mingw32               }
-        - { name: MinGW,             runner: windows-latest, shell: 'msys2 {0}', plat: mingw,    arch: i686,        mode: releasedbg, test: true, msystem: mingw32               }
-        - { name: MinGW,             runner: windows-latest, shell: 'msys2 {0}', plat: mingw,    arch: x86_64,      mode: debug,      test: true, msystem: mingw64               }
-        - { name: MinGW,             runner: windows-latest, shell: 'msys2 {0}', plat: mingw,    arch: x86_64,      mode: releasedbg, test: true, msystem: mingw64               }
-        - { name: Linux,             runner: ubuntu-latest,  shell: bash,        plat: linux,    arch: x86_64,      mode: debug,      test: true,                                }
-        - { name: Linux,             runner: ubuntu-latest,  shell: bash,        plat: linux,    arch: x86_64,      mode: debug,      test: true, config: --asan=y               }
-        - { name: Linux,             runner: ubuntu-latest,  shell: bash,        plat: linux,    arch: x86_64,      mode: debug,      test: true, config: --lsan=y               }
-        - { name: Linux,             runner: ubuntu-latest,  shell: bash,        plat: linux,    arch: x86_64,      mode: debug,      test: true, config: --tsan=y               }
-        - { name: Linux,             runner: ubuntu-latest,  shell: bash,        plat: linux,    arch: x86_64,      mode: releasedbg, test: true,                                }
-        - { name: Android NDK 25c,   runner: ubuntu-latest,  shell: bash,        plat: android,  arch: armeabi-v7a, mode: debug,      test: false, ndk_ver: 25c, ndk_sdkver: 28  }
-        - { name: Android NDK 25c,   runner: ubuntu-latest,  shell: bash,        plat: android,  arch: armeabi-v7a, mode: releasedbg, test: false, ndk_ver: 25c, ndk_sdkver: 28  }
-        - { name: Android NDK 25c,   runner: ubuntu-latest,  shell: bash,        plat: android,  arch: arm64-v8a,   mode: debug,      test: false, ndk_ver: 25c, ndk_sdkver: 28  }
-        - { name: Android NDK 25c,   runner: ubuntu-latest,  shell: bash,        plat: android,  arch: arm64-v8a,   mode: releasedbg, test: false, ndk_ver: 25c, ndk_sdkver: 28  }
-        - { name: Android NDK 26b,   runner: ubuntu-latest,  shell: bash,        plat: android,  arch: armeabi-v7a, mode: debug,      test: false, ndk_ver: 26b, ndk_sdkver: 28  }
-        - { name: Android NDK 26b,   runner: ubuntu-latest,  shell: bash,        plat: android,  arch: armeabi-v7a, mode: releasedbg, test: false, ndk_ver: 26b, ndk_sdkver: 28  }
-        - { name: Android NDK 26b,   runner: ubuntu-latest,  shell: bash,        plat: android,  arch: arm64-v8a,   mode: debug,      test: false, ndk_ver: 26b, ndk_sdkver: 28  }
-        - { name: Android NDK 26b,   runner: ubuntu-latest,  shell: bash,        plat: android,  arch: arm64-v8a,   mode: releasedbg, test: false, ndk_ver: 26b, ndk_sdkver: 28  }
-        - { name: macOS x86_64,      runner: macos-latest,   shell: bash,        plat: macosx,   arch: x86_64,      mode: debug,      test: true,                                }
-        - { name: macOS x86_64,      runner: macos-latest,   shell: bash,        plat: macosx,   arch: x86_64,      mode: releasedbg, test: true,                                }
-        - { name: macOS ARM64,       runner: macos-14,       shell: bash,        plat: macosx,   arch: arm64,       mode: debug,      test: true,                                }
-        - { name: macOS ARM64,       runner: macos-14,       shell: bash,        plat: macosx,   arch: arm64,       mode: releasedbg, test: true,                                }
-        - { name: iOS,               runner: macos-latest,   shell: bash,        plat: iphoneos, arch: arm64,       mode: debug,      test: false,                               }
-        - { name: iOS,               runner: macos-latest,   shell: bash,        plat: iphoneos, arch: arm64,       mode: releasedbg, test: false,                               }
-        - { name: Emscripten,        runner: ubuntu-latest,  shell: bash,        plat: wasm,     arch: wasm32,      mode: debug,      test: false,                               }
-        - { name: Emscripten,        runner: ubuntu-latest,  shell: bash,        plat: wasm,     arch: wasm32,      mode: releasedbg, test: false,                               }
-        - { name: Emscripten,        runner: ubuntu-latest,  shell: bash,        plat: wasm,     arch: wasm64,      mode: debug,      test: false,                               }
-        - { name: Emscripten,        runner: ubuntu-latest,  shell: bash,        plat: wasm,     arch: wasm64,      mode: releasedbg, test: false,                               }
+        - { name: Windows,           runner: windows-latest, shell: bash,        plat: windows,  arch: x86,         mode: debug,      package: true,  test: true,                                }
+        - { name: Windows,           runner: windows-latest, shell: bash,        plat: windows,  arch: x86,         mode: releasedbg, package: true,  test: true,                                }
+        - { name: Windows,           runner: windows-latest, shell: bash,        plat: windows,  arch: x64,         mode: debug,      package: true,  test: true,                                }
+        - { name: Windows,           runner: windows-latest, shell: bash,        plat: windows,  arch: x64,         mode: releasedbg, package: true,  test: true,                                }
+        - { name: Windows,           runner: windows-latest, shell: bash,        plat: windows,  arch: arm64,       mode: debug,      package: true,  test: false,                               }
+        - { name: Windows,           runner: windows-latest, shell: bash,        plat: windows,  arch: arm64,       mode: releasedbg, package: true,  test: false,                               }
+        - { name: MinGW,             runner: windows-latest, shell: 'msys2 {0}', plat: mingw,    arch: i686,        mode: debug,      package: true,  test: true, msystem: mingw32               }
+        - { name: MinGW,             runner: windows-latest, shell: 'msys2 {0}', plat: mingw,    arch: i686,        mode: releasedbg, package: true,  test: true, msystem: mingw32               }
+        - { name: MinGW,             runner: windows-latest, shell: 'msys2 {0}', plat: mingw,    arch: x86_64,      mode: debug,      package: true,  test: true, msystem: mingw64               }
+        - { name: MinGW,             runner: windows-latest, shell: 'msys2 {0}', plat: mingw,    arch: x86_64,      mode: releasedbg, package: true,  test: true, msystem: mingw64               }
+        - { name: Linux,             runner: ubuntu-latest,  shell: bash,        plat: linux,    arch: x86_64,      mode: debug,      package: true,  test: true,                                }
+        - { name: Linux,             runner: ubuntu-latest,  shell: bash,        plat: linux,    arch: x86_64,      mode: debug,      package: false, test: true, config: --asan=y               }
+        - { name: Linux,             runner: ubuntu-latest,  shell: bash,        plat: linux,    arch: x86_64,      mode: debug,      package: false, test: true, config: --lsan=y               }
+        - { name: Linux,             runner: ubuntu-latest,  shell: bash,        plat: linux,    arch: x86_64,      mode: debug,      package: false, test: true, config: --tsan=y               }
+        - { name: Linux,             runner: ubuntu-latest,  shell: bash,        plat: linux,    arch: x86_64,      mode: releasedbg, package: true,  test: true,                                }
+        - { name: Android NDK 25c,   runner: ubuntu-latest,  shell: bash,        plat: android,  arch: armeabi-v7a, mode: debug,      package: false, test: false, ndk_ver: 25c, ndk_sdkver: 28  }
+        - { name: Android NDK 25c,   runner: ubuntu-latest,  shell: bash,        plat: android,  arch: armeabi-v7a, mode: releasedbg, package: false, test: false, ndk_ver: 25c, ndk_sdkver: 28  }
+        - { name: Android NDK 25c,   runner: ubuntu-latest,  shell: bash,        plat: android,  arch: arm64-v8a,   mode: debug,      package: false, test: false, ndk_ver: 25c, ndk_sdkver: 28  }
+        - { name: Android NDK 25c,   runner: ubuntu-latest,  shell: bash,        plat: android,  arch: arm64-v8a,   mode: releasedbg, package: false, test: false, ndk_ver: 25c, ndk_sdkver: 28  }
+        - { name: Android NDK 26b,   runner: ubuntu-latest,  shell: bash,        plat: android,  arch: armeabi-v7a, mode: debug,      package: true,  test: false, ndk_ver: 26b, ndk_sdkver: 28  }
+        - { name: Android NDK 26b,   runner: ubuntu-latest,  shell: bash,        plat: android,  arch: armeabi-v7a, mode: releasedbg, package: true,  test: false, ndk_ver: 26b, ndk_sdkver: 28  }
+        - { name: Android NDK 26b,   runner: ubuntu-latest,  shell: bash,        plat: android,  arch: arm64-v8a,   mode: debug,      package: true,  test: false, ndk_ver: 26b, ndk_sdkver: 28  }
+        - { name: Android NDK 26b,   runner: ubuntu-latest,  shell: bash,        plat: android,  arch: arm64-v8a,   mode: releasedbg, package: true,  test: false, ndk_ver: 26b, ndk_sdkver: 28  }
+        - { name: macOS x86_64,      runner: macos-latest,   shell: bash,        plat: macosx,   arch: x86_64,      mode: debug,      package: true,  test: true,                                }
+        - { name: macOS x86_64,      runner: macos-latest,   shell: bash,        plat: macosx,   arch: x86_64,      mode: releasedbg, package: true,  test: true,                                }
+        - { name: macOS ARM64,       runner: macos-14,       shell: bash,        plat: macosx,   arch: arm64,       mode: debug,      package: true,  test: true,                                }
+        - { name: macOS ARM64,       runner: macos-14,       shell: bash,        plat: macosx,   arch: arm64,       mode: releasedbg, package: true,  test: true,                                }
+        - { name: iOS,               runner: macos-latest,   shell: bash,        plat: iphoneos, arch: arm64,       mode: debug,      package: true,  test: false,                               }
+        - { name: iOS,               runner: macos-latest,   shell: bash,        plat: iphoneos, arch: arm64,       mode: releasedbg, package: true,  test: false,                               }
+        - { name: Emscripten,        runner: ubuntu-latest,  shell: bash,        plat: wasm,     arch: wasm32,      mode: debug,      package: false, test: false,                               }
+        - { name: Emscripten,        runner: ubuntu-latest,  shell: bash,        plat: wasm,     arch: wasm32,      mode: releasedbg, package: false, test: false,                               }
+        - { name: Emscripten,        runner: ubuntu-latest,  shell: bash,        plat: wasm,     arch: wasm64,      mode: debug,      package: false, test: false,                               }
+        - { name: Emscripten,        runner: ubuntu-latest,  shell: bash,        plat: wasm,     arch: wasm64,      mode: releasedbg, package: false, test: false,                               }
         kind: [shared, static]
         exclude:
           - confs: { name: Emscripten }
@@ -143,7 +143,7 @@ jobs:
           PLATFORM_CONF="$PLATFORM_CONF --examples=y --tests=y" >> $GITHUB_ENV
         fi
         # MinGW has some issues with unitybuild
-        if [ "${{ matrix.confs.name }}" != "MinGW" ]; then
+        if [ "${{ matrix.confs.plat }}" != "mingw" ]; then
           PLATFORM_CONF="$PLATFORM_CONF --unitybuild=y" >> $GITHUB_ENV
         fi
         # Android and Emscripten don't support filesystem watcher
@@ -151,6 +151,11 @@ jobs:
           PLATFORM_CONF="$PLATFORM_CONF --fs_watcher=n" >> $GITHUB_ENV
         fi
         echo "ADDITIONAL_CONF=${{ env.ADDITIONAL_CONF }} $PLATFORM_CONF" >> $GITHUB_ENV
+        if [ "${{ matrix.confs.plat }}" == "windows" ]; then
+          echo "OUTPUT_FILE=${{ matrix.confs.plat }}_${{ matrix.confs.arch }}_${{ matrix.kind }}_${{ matrix.confs.mode }}.zip" >> $GITHUB_ENV
+        else
+          echo "OUTPUT_FILE=${{ matrix.confs.plat }}_${{ matrix.confs.arch }}_${{ matrix.kind }}_${{ matrix.confs.mode }}.tgz" >> $GITHUB_ENV
+        fi
 
     # Setup compilation mode and install project dependencies
     - name: Configure xmake and install dependencies
@@ -192,7 +197,7 @@ jobs:
     # Nightly tags (for commits to main branch)
     - name: Upload binaries to release (Main)
       uses: svenstaro/upload-release-action@v2
-      if: ${{ (github.ref == 'refs/heads/main') && github.event_name == 'push' }}
+      if: ${{ (github.ref == 'refs/heads/main') && github.event_name == 'push' && matrix.confs.package }}
       with:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
         file: ${{ env.OUTPUT_FILE }}
@@ -203,7 +208,7 @@ jobs:
     # Release tags (for tags)
     - name: Upload binaries to release (Tag)
       uses: svenstaro/upload-release-action@v2
-      if: ${{ startsWith(github.event.ref, 'refs/tags/') && matrix.mode == 'releasedbg' }}
+      if: ${{ startsWith(github.event.ref, 'refs/tags/') && matrix.confs.mode == 'releasedbg' && matrix.confs.package }}
       with:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
         file: ${{ env.OUTPUT_FILE }}
