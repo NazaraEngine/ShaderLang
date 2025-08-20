@@ -1,17 +1,9 @@
-﻿Platform | Build Status
------------- | -------------
-Windows | [![Windows build status](https://github.com/NazaraEngine/ShaderLang/actions/workflows/windows-build.yml/badge.svg)](https://github.com/NazaraEngine/ShaderLang/actions/workflows/windows-build.yml)
-MSYS2 (MinGW64) | [![Windows build status](https://github.com/NazaraEngine/ShaderLang/actions/workflows/msys2-build.yml/badge.svg)](https://github.com/NazaraEngine/ShaderLang/actions/workflows/msys2-build.yml)
-Linux | [![Linux build status](https://github.com/NazaraEngine/ShaderLang/actions/workflows/linux-build.yml/badge.svg)](https://github.com/NazaraEngine/ShaderLang/actions/workflows/linux-build.yml)
-macOS | [![macOS build status](https://github.com/NazaraEngine/ShaderLang/actions/workflows/macos-build.yml/badge.svg)](https://github.com/NazaraEngine/ShaderLang/actions/workflows/macos-build.yml)
-Android | [![Android build status](https://github.com/NazaraEngine/ShaderLang/actions/workflows/android-build.yml/badge.svg)](https://github.com/NazaraEngine/ShaderLang/actions/workflows/android-build.yml)
-iOS | [![iOS build status](https://github.com/NazaraEngine/ShaderLang/actions/workflows/ios-build.yml/badge.svg)](https://github.com/NazaraEngine/ShaderLang/actions/workflows/ios-build.yml)
-Emscripten | [![Emscripten build status](https://github.com/NazaraEngine/ShaderLang/actions/workflows/wasm-build.yml/badge.svg)](https://github.com/NazaraEngine/ShaderLang/actions/workflows/wasm-build.yml)
-Coverage | [![codecov](https://codecov.io/gh/NazaraEngine/ShaderLang/branch/main/graph/badge.svg?token=VE71FIB616)](https://codecov.io/gh/NazaraEngine/ShaderLang)
+﻿[![build status](https://github.com/NazaraEngine/ShaderLang/actions/workflows/build.yml/badge.svg)](https://github.com/NazaraEngine/ShaderLang/actions/workflows/build.yml)  
+[![codecov](https://codecov.io/gh/NazaraEngine/ShaderLang/branch/main/graph/badge.svg?token=VE71FIB616)](https://codecov.io/gh/NazaraEngine/ShaderLang)
 
 # Nazara Shading Language (NZSL)
 
-NZSL is a shader language inspired by Rust and C++ which compiles to GLSL or SPIRV (without depending on SPIRV-Cross).
+NZSL is a shader language inspired by Rust and C++ which compiles to GLSL or SPIR-V (without depending on SPIRV-Cross).
 
 ### Why a new shader language?
 
@@ -54,6 +46,8 @@ fn main(input: VertOut) -> FragOut
 
 ## How to use
 
+You can find precompiled binaries in the [releases](https://github.com/NazaraEngine/ShaderLang/releases).
+
 NZSL is designed to be embedded in a game engine / game / graphics application that uses GLSL / SPIR-V for its shaders.
 
 You can use it to generate GLSL, GLSL ES and SPIR-V in two non-exclusive ways:
@@ -63,9 +57,11 @@ You can use it to generate GLSL, GLSL ES and SPIR-V in two non-exclusive ways:
 
 ### Offline compilation
 
-Since there are no release binaries yet, build the compiler using [xmake](https://xmake.io) which will handle all dependencies and build for you, simply run `xmake` in the project folder and you should have a standalone `nzslc` executable.
+There are two binary tools you can use:
+- **nzslc**: shader compiler, for compiling nzsl files to binary nzsl or directly to GLSL/SPIR-V.
+- **nzsla**: shader archiver, store and compress all your compiled shaders in a single file.
 
-**Example usage:**
+**nzslc example usage:**
 
 - Validating shader: `nzslc file.nzsl`
 - Compile a shader to GLSL: `nzsl --compile=glsl file.nzsl`
@@ -74,17 +70,15 @@ Since there are no release binaries yet, build the compiler using [xmake](https:
 
 Run `nzslc -h` to see all supported options.
 
+**nzsla example usage:**
+
+- Create an archive: `nzsla --archive -o shaders.nzsla shader1.nzsl shader2.nzslb`
+- Create a compressed archive (lz4hc by default): `nzsla --archive --compress -o shaders.nzsla shader1.nzsl shader2.nzslb`
+- View the content of an archive: `nzsla shaders.nzsla`
+
+Run `nzsla -h` to see all supported options.
+
 ### Use it as a library
-
-You can easily integrate NZSL as a library in your project if you're using [xmake](https://xmake.io) as a build system (try it, it's amazing!) with:
-
-```lua
-add_requires("nzsl")
-```
-
-Simply add the `nzsl` package to your target and xmake will download/compile the latest version.
-
-If you're using CMake, check out [xrepo-cmake](https://github.com/xmake-io/xrepo-cmake) to integrate it.
 
 **Example usage:**
 
@@ -109,6 +103,20 @@ int main()
 
 The library contains a lot of options to customize the generation process (target SPIR-V/GLSL version, GLSL ES, gl_Position.y flipping, gl_Position.z remapping to match Vulkan semantics, supported OpenGL extensions, etc.).
 
+## Integration
+
+You can find precompiled binaries in the [releases](https://github.com/NazaraEngine/ShaderLang/releases).
+
+You can easily integrate NZSL as a library in your project if you're using [xmake](https://xmake.io) as a build system (try it, it's amazing!) with:
+
+```lua
+add_requires("nzsl")
+```
+
+Simply add the `nzsl` package to your target and xmake will download/compile the latest version.
+
+If you're using CMake, you can also check out [xrepo-cmake](https://github.com/xmake-io/xrepo-cmake) to integrate it.
+
 # Commonly asked questions
 
 ## Where can I find the language specification?
@@ -124,7 +132,7 @@ resemblance with WGSL is accidental as I discovered it after the [first working 
 
 [SPIRV-Cross](https://github.com/KhronosGroup/SPIRV-Cross) is interesting but it requires you to generate SPIR-V offline first, and thus use GLSL/HLSL which I grew out of love after a few years.
 
-At my working place we're currently using huge HLSL-derived shaders with thousands of lines relying on #include and #pragma once, and it's very impractical and a pain to debug. The more translation layers you add, the more information you lose.
+At one of my previous working place we were using huge HLSL-derived shaders with thousands of lines relying on #include and #pragma once, and it's very impractical and a pain to debug. The more translation layers you add, the more information you lose.
 
 NZSL is designed to be small, fast and easy to debug, for example NZSL to GLSL retains a lot of the source code information which could be lost during SSA (SPIR-V) translation, even with debug symbols enabled.
 
@@ -138,7 +146,7 @@ See [this issue](https://github.com/NazaraEngine/ShaderLang/issues/13) for WGSL.
 
 ## Are there limitations?
 
-Unfortunately yes, NZSL is in its early stage and is currently only capable of regular operations in compute, fragment and vertex stages, not all intrinsics are supported, bit operators are not yet supported (see [#8](https://github.com/NazaraEngine/ShaderLang/issues/8)) and more.
+Unfortunately yes, NZSL is in its early stage and is currently only capable of regular operations in compute, fragment and vertex stages, not all intrinsics are supported, and more.
 
 The reason isn't that it's complicated to add, but that I didn't need it yet. Most feature can be added quite fast so do not hesitate to [open an issue](https://github.com/NazaraEngine/ShaderLang/issues) and/or check the [roadmap](https://github.com/NazaraEngine/ShaderLang/projects/1).
 
