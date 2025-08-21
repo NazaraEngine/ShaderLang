@@ -1544,6 +1544,35 @@ namespace nzsl::Ast
 					paramIndex++;
 					break;
 				}
+				
+				case ParameterType::BVec:
+				{
+					auto Check = [](const ExpressionType& type)
+					{
+						PrimitiveType primitiveType;
+						if (IsVectorType(type))
+							primitiveType = std::get<VectorType>(type).type;
+						else
+							return false;
+
+						if (primitiveType != PrimitiveType::Boolean)
+							return false;
+
+						return true;
+					};
+
+					if (ValidateIntrinsicParameterType(node, Check, "boolean vector", paramIndex) == ValidationResult::Unresolved)
+					{
+						if (!unresolvedParameter)
+							unresolvedParameter = paramIndex;
+
+						paramIndex++;
+						continue;
+					}
+
+					paramIndex++;
+					break;
+				}
 
 				case ParameterType::F32:
 				{

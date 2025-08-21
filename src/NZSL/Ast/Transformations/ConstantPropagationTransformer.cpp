@@ -625,6 +625,8 @@ namespace nzsl::Ast
 
 			// TODO
 			case IntrinsicType::Abs:
+			case IntrinsicType::All:
+			case IntrinsicType::Any:
 			case IntrinsicType::ArcCos:
 			case IntrinsicType::ArcCosh:
 			case IntrinsicType::ArcSin:
@@ -645,6 +647,8 @@ namespace nzsl::Ast
 			case IntrinsicType::Floor:
 			case IntrinsicType::Fract:
 			case IntrinsicType::InverseSqrt:
+			case IntrinsicType::IsInf:
+			case IntrinsicType::IsNaN:
 			case IntrinsicType::Length:
 			case IntrinsicType::Lerp:
 			case IntrinsicType::Log:
@@ -654,6 +658,7 @@ namespace nzsl::Ast
 			case IntrinsicType::Max:
 			case IntrinsicType::Min:
 			case IntrinsicType::Normalize:
+			case IntrinsicType::Not:
 			case IntrinsicType::Pow:
 			case IntrinsicType::RadToDeg:
 			case IntrinsicType::Reflect:

@@ -481,6 +481,7 @@ namespace nzsl::Ast
 			{
 				case ParameterType::ArrayDyn:
 				case ParameterType::BValVec:
+				case ParameterType::BVec:
 				case ParameterType::Sampler:
 				case ParameterType::Texture:
 				case ParameterType::TextureData:

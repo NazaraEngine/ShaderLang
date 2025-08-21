@@ -111,7 +111,7 @@ fn main()
       OpReturn
       OpFunctionEnd)", {}, {}, true);
 	}
-	
+
 	WHEN("testing texture intrinsics")
 	{
 		std::string_view nzslSource = R"(
@@ -2056,5 +2056,143 @@ fn main()
        OpReturn
        OpFunctionEnd)", {}, env, true);
 		}
+	}
+
+	WHEN("testing all/any/not intrinsics")
+	{
+		std::string_view nzslSource = R"(
+[nzsl_version("1.1")]
+module;
+
+[entry(frag)]
+fn main()
+{
+	let x = vec3(true, false, false);
+
+	let r = all(x);
+	let r = any(x);
+	let r = not(x);
+}
+)";
+
+		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
+		ResolveModule(*shaderModule);
+
+		ExpectGLSL(*shaderModule, R"(
+void main()
+{
+	bvec3 x = bvec3(true, false, false);
+	bool r = all(x);
+	bool r_2 = any(x);
+	bvec3 r_3 = not(x);
+}
+)");
+
+		ExpectNZSL(*shaderModule, R"(
+[entry(frag)]
+fn main()
+{
+	let x: vec3[bool] = vec3[bool](true, false, false);
+	let r: bool = all(x);
+	let r: bool = any(x);
+	let r: vec3[bool] = not(x);
+}
+)");
+
+		ExpectSPIRV(*shaderModule, R"(
+ %1 = OpTypeVoid
+ %2 = OpTypeFunction %1
+ %3 = OpTypeBool
+ %4 = OpConstantTrue %3
+ %5 = OpConstantFalse %3
+ %6 = OpTypeVector %3 3
+ %7 = OpTypePointer StorageClass(Function) %6
+ %8 = OpTypePointer StorageClass(Function) %3
+ %9 = OpFunction %1 FunctionControl(0) %2
+%10 = OpLabel
+%11 = OpVariable %7 StorageClass(Function)
+%12 = OpVariable %8 StorageClass(Function)
+%13 = OpVariable %8 StorageClass(Function)
+%14 = OpVariable %7 StorageClass(Function)
+%15 = OpCompositeConstruct %6 %4 %5 %5
+      OpStore %11 %15
+%16 = OpLoad %6 %11
+%17 = OpAll %3 %16
+      OpStore %12 %17
+%18 = OpLoad %6 %11
+%19 = OpAny %3 %18
+      OpStore %13 %19
+%20 = OpLoad %6 %11
+%21 = OpLogicalNot %6 %20
+      OpStore %14 %21
+      OpReturn
+      OpFunctionEnd)", {}, {}, true);
+	}
+
+	WHEN("testing isinf/isnan intrinsics")
+	{
+		std::string_view nzslSource = R"(
+[nzsl_version("1.1")]
+module;
+
+[entry(frag)]
+fn main()
+{
+	let x = vec3(1.0, 2.0, 3.0);
+
+	let r = isinf(x);
+	let r = isnan(x);
+}
+)";
+
+		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
+		ResolveModule(*shaderModule);
+
+		ExpectGLSL(*shaderModule, R"(
+void main()
+{
+	vec3 x = vec3(1.0, 2.0, 3.0);
+	bvec3 r = isinf(x);
+	bvec3 r_2 = isnan(x);
+}
+)");
+
+		ExpectNZSL(*shaderModule, R"(
+[entry(frag)]
+fn main()
+{
+	let x: vec3[f32] = vec3(1.0, 2.0, 3.0);
+	let r: vec3[bool] = isinf(x);
+	let r: vec3[bool] = isnan(x);
+}
+)");
+
+		ExpectSPIRV(*shaderModule, R"(
+ %1 = OpTypeVoid
+ %2 = OpTypeFunction %1
+ %3 = OpTypeFloat 32
+ %4 = OpTypeVector %3 3
+ %5 = OpConstant %3 f32(1)
+ %6 = OpConstant %3 f32(2)
+ %7 = OpConstant %3 f32(3)
+ %8 = OpConstantComposite %4 %5 %6 %7
+ %9 = OpTypePointer StorageClass(Function) %4
+%10 = OpTypeBool
+%11 = OpTypeVector %10 3
+%12 = OpTypePointer StorageClass(Function) %11
+%13 = OpFunction %1 FunctionControl(0) %2
+%14 = OpLabel
+%15 = OpVariable %9 StorageClass(Function)
+%16 = OpVariable %12 StorageClass(Function)
+%17 = OpVariable %12 StorageClass(Function)
+      OpStore %15 %8
+%18 = OpLoad %4 %15
+%19 = OpIsInf %11 %18
+      OpStore %16 %19
+%20 = OpLoad %4 %15
+%21 = OpIsNan %11 %20
+      OpStore %17 %21
+      OpReturn
+      OpFunctionEnd)", {}, {}, true);
 	}
 }

@@ -250,6 +250,29 @@ namespace nzsl::Ast
 			case ReturnType::None:
 				return NoType{};
 
+			case ReturnType::Bool:
+				return PrimitiveType::Boolean;
+
+			case ReturnType::Param0AsBool:
+			{
+				const ExpressionType* expressionType = (parameterTypes[0]) ? &*parameterTypes[0] : GetExpressionType(*intrinsicExpr.parameters[0]);
+				if (!expressionType)
+					return std::nullopt; //< unresolved type
+
+				const ExpressionType& paramType = ResolveAlias(*expressionType);
+				if (IsPrimitiveType(paramType))
+					return PrimitiveType::Boolean;
+				else if (IsVectorType(paramType))
+				{
+					VectorType vecType = std::get<VectorType>(paramType);
+					vecType.type = PrimitiveType::Boolean;
+
+					return vecType;
+				}
+				else
+					throw AstInternalError{ intrinsicExpr.sourceLocation, fmt::format("intrinsic {} first parameter is not a primitive nor vector", intrinsicData.functionName) };
+			}
+
 			case ReturnType::Param0SampledValue:
 			{
 				const ExpressionType* expressionType = (parameterTypes[0]) ? &*parameterTypes[0] : GetExpressionType(*intrinsicExpr.parameters[0]);

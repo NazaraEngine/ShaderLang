@@ -1224,6 +1224,8 @@ namespace nzsl
 		{
 			// Function intrinsics
 			case Ast::IntrinsicType::Abs:
+			case Ast::IntrinsicType::All:
+			case Ast::IntrinsicType::Any:
 			case Ast::IntrinsicType::ArcCos:
 			case Ast::IntrinsicType::ArcCosh:
 			case Ast::IntrinsicType::ArcSin:
@@ -1244,6 +1246,8 @@ namespace nzsl
 			case Ast::IntrinsicType::Floor:
 			case Ast::IntrinsicType::Fract:
 			case Ast::IntrinsicType::InverseSqrt:
+			case Ast::IntrinsicType::IsInf:
+			case Ast::IntrinsicType::IsNaN:
 			case Ast::IntrinsicType::Length:
 			case Ast::IntrinsicType::Lerp:
 			case Ast::IntrinsicType::Log:
@@ -1253,6 +1257,7 @@ namespace nzsl
 			case Ast::IntrinsicType::Max:
 			case Ast::IntrinsicType::Min:
 			case Ast::IntrinsicType::Normalize:
+			case Ast::IntrinsicType::Not:
 			case Ast::IntrinsicType::Pow:
 			case Ast::IntrinsicType::RadToDeg:
 			case Ast::IntrinsicType::Reflect:
