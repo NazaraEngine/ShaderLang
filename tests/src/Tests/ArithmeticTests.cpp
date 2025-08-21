@@ -296,6 +296,25 @@ fn main()
 	let r = x ^ y;
 	let r = x << y;
 	let r = x >> y;
+
+	let x = vec3[i32](0, 1, 2);
+	let y = vec3[i32](2, 1, 0);
+	
+	let r = x & y;
+	let r = x | y;
+	let r = x ^ y;
+	let r = x << y;
+	let r = x >> y;
+	
+	let x = vec3[u32](0, 1, 2);
+	let y = vec3[u32](2, 1, 0);
+	
+	let r = x & y;
+	let r = x | y;
+	let r = x ^ y;
+	let r = x << y;
+	let r = x >> y;
+
 }
 )";
 
@@ -319,6 +338,20 @@ void main()
 	uint r_8 = x_2 ^ y_2;
 	uint r_9 = x_2 << y_2;
 	uint r_10 = x_2 >> y_2;
+	ivec3 x_3 = ivec3(0, 1, 2);
+	ivec3 y_3 = ivec3(2, 1, 0);
+	ivec3 r_11 = x_3 & y_3;
+	ivec3 r_12 = x_3 | y_3;
+	ivec3 r_13 = x_3 ^ y_3;
+	ivec3 r_14 = x_3 << y_3;
+	ivec3 r_15 = x_3 >> y_3;
+	uvec3 x_4 = uvec3(0u, 1u, 2u);
+	uvec3 y_4 = uvec3(2u, 1u, 0u);
+	uvec3 r_16 = x_4 & y_4;
+	uvec3 r_17 = x_4 | y_4;
+	uvec3 r_18 = x_4 ^ y_4;
+	uvec3 r_19 = x_4 << y_4;
+	uvec3 r_20 = x_4 >> y_4;
 }
 )");
 
@@ -340,82 +373,166 @@ fn main()
 	let r: u32 = x ^ y;
 	let r: u32 = x << y;
 	let r: u32 = x >> y;
+	let x: vec3[i32] = vec3[i32](0, 1, 2);
+	let y: vec3[i32] = vec3[i32](2, 1, 0);
+	let r: vec3[i32] = x & y;
+	let r: vec3[i32] = x | y;
+	let r: vec3[i32] = x ^ y;
+	let r: vec3[i32] = x << y;
+	let r: vec3[i32] = x >> y;
+	let x: vec3[u32] = vec3[u32](0, 1, 2);
+	let y: vec3[u32] = vec3[u32](2, 1, 0);
+	let r: vec3[u32] = x & y;
+	let r: vec3[u32] = x | y;
+	let r: vec3[u32] = x ^ y;
+	let r: vec3[u32] = x << y;
+	let r: vec3[u32] = x >> y;
 }
 )");
 
 		ExpectSPIRV(*shaderModule, R"(
- %1 = OpTypeVoid
- %2 = OpTypeFunction %1
- %3 = OpTypeInt 32 1
- %4 = OpConstant %3 i32(5)
- %5 = OpTypePointer StorageClass(Function) %3
- %6 = OpConstant %3 i32(2)
- %7 = OpTypeInt 32 0
- %8 = OpConstant %7 u32(5)
- %9 = OpTypePointer StorageClass(Function) %7
-%10 = OpConstant %7 u32(2)
-%11 = OpFunction %1 FunctionControl(0) %2
-%12 = OpLabel
-%13 = OpVariable %5 StorageClass(Function)
-%14 = OpVariable %5 StorageClass(Function)
-%15 = OpVariable %5 StorageClass(Function)
-%16 = OpVariable %5 StorageClass(Function)
-%17 = OpVariable %5 StorageClass(Function)
-%18 = OpVariable %5 StorageClass(Function)
-%19 = OpVariable %5 StorageClass(Function)
-%20 = OpVariable %9 StorageClass(Function)
-%21 = OpVariable %9 StorageClass(Function)
-%22 = OpVariable %9 StorageClass(Function)
-%23 = OpVariable %9 StorageClass(Function)
-%24 = OpVariable %9 StorageClass(Function)
-%25 = OpVariable %9 StorageClass(Function)
-%26 = OpVariable %9 StorageClass(Function)
-      OpStore %13 %4
-      OpStore %14 %6
-%27 = OpLoad %3 %13
-%28 = OpLoad %3 %14
-%29 = OpBitwiseAnd %3 %27 %28
-      OpStore %15 %29
-%30 = OpLoad %3 %13
-%31 = OpLoad %3 %14
-%32 = OpBitwiseOr %3 %30 %31
-      OpStore %16 %32
-%33 = OpLoad %3 %13
-%34 = OpLoad %3 %14
-%35 = OpBitwiseXor %3 %33 %34
-      OpStore %17 %35
-%36 = OpLoad %3 %13
-%37 = OpLoad %3 %14
-%38 = OpShiftLeftLogical %3 %36 %37
-      OpStore %18 %38
-%39 = OpLoad %3 %13
-%40 = OpLoad %3 %14
-%41 = OpShiftRightArithmetic %3 %39 %40
-      OpStore %19 %41
-      OpStore %20 %8
-      OpStore %21 %10
-%42 = OpLoad %7 %20
-%43 = OpLoad %7 %21
-%44 = OpBitwiseAnd %7 %42 %43
-      OpStore %22 %44
-%45 = OpLoad %7 %20
-%46 = OpLoad %7 %21
-%47 = OpBitwiseOr %7 %45 %46
-      OpStore %23 %47
-%48 = OpLoad %7 %20
-%49 = OpLoad %7 %21
-%50 = OpBitwiseXor %7 %48 %49
-      OpStore %24 %50
-%51 = OpLoad %7 %20
-%52 = OpLoad %7 %21
-%53 = OpShiftLeftLogical %7 %51 %52
-      OpStore %25 %53
-%54 = OpLoad %7 %20
-%55 = OpLoad %7 %21
-%56 = OpShiftRightLogical %7 %54 %55
-      OpStore %26 %56
-      OpReturn
-      OpFunctionEnd)", {}, {}, true);
+  %1 = OpTypeVoid
+  %2 = OpTypeFunction %1
+  %3 = OpTypeInt 32 1
+  %4 = OpConstant %3 i32(5)
+  %5 = OpTypePointer StorageClass(Function) %3
+  %6 = OpConstant %3 i32(2)
+  %7 = OpTypeInt 32 0
+  %8 = OpConstant %7 u32(5)
+  %9 = OpTypePointer StorageClass(Function) %7
+ %10 = OpConstant %7 u32(2)
+ %11 = OpConstant %3 i32(0)
+ %12 = OpConstant %3 i32(1)
+ %13 = OpTypeVector %3 3
+ %14 = OpTypePointer StorageClass(Function) %13
+ %15 = OpConstant %7 u32(0)
+ %16 = OpConstant %7 u32(1)
+ %17 = OpTypeVector %7 3
+ %18 = OpTypePointer StorageClass(Function) %17
+ %19 = OpFunction %1 FunctionControl(0) %2
+ %20 = OpLabel
+ %21 = OpVariable %5 StorageClass(Function)
+ %22 = OpVariable %5 StorageClass(Function)
+ %23 = OpVariable %5 StorageClass(Function)
+ %24 = OpVariable %5 StorageClass(Function)
+ %25 = OpVariable %5 StorageClass(Function)
+ %26 = OpVariable %5 StorageClass(Function)
+ %27 = OpVariable %5 StorageClass(Function)
+ %28 = OpVariable %9 StorageClass(Function)
+ %29 = OpVariable %9 StorageClass(Function)
+ %30 = OpVariable %9 StorageClass(Function)
+ %31 = OpVariable %9 StorageClass(Function)
+ %32 = OpVariable %9 StorageClass(Function)
+ %33 = OpVariable %9 StorageClass(Function)
+ %34 = OpVariable %9 StorageClass(Function)
+ %35 = OpVariable %14 StorageClass(Function)
+ %36 = OpVariable %14 StorageClass(Function)
+ %37 = OpVariable %14 StorageClass(Function)
+ %38 = OpVariable %14 StorageClass(Function)
+ %39 = OpVariable %14 StorageClass(Function)
+ %40 = OpVariable %14 StorageClass(Function)
+ %41 = OpVariable %14 StorageClass(Function)
+ %42 = OpVariable %18 StorageClass(Function)
+ %43 = OpVariable %18 StorageClass(Function)
+ %44 = OpVariable %18 StorageClass(Function)
+ %45 = OpVariable %18 StorageClass(Function)
+ %46 = OpVariable %18 StorageClass(Function)
+ %47 = OpVariable %18 StorageClass(Function)
+ %48 = OpVariable %18 StorageClass(Function)
+       OpStore %21 %4
+       OpStore %22 %6
+ %49 = OpLoad %3 %21
+ %50 = OpLoad %3 %22
+ %51 = OpBitwiseAnd %3 %49 %50
+       OpStore %23 %51
+ %52 = OpLoad %3 %21
+ %53 = OpLoad %3 %22
+ %54 = OpBitwiseOr %3 %52 %53
+       OpStore %24 %54
+ %55 = OpLoad %3 %21
+ %56 = OpLoad %3 %22
+ %57 = OpBitwiseXor %3 %55 %56
+       OpStore %25 %57
+ %58 = OpLoad %3 %21
+ %59 = OpLoad %3 %22
+ %60 = OpShiftLeftLogical %3 %58 %59
+       OpStore %26 %60
+ %61 = OpLoad %3 %21
+ %62 = OpLoad %3 %22
+ %63 = OpShiftRightArithmetic %3 %61 %62
+       OpStore %27 %63
+       OpStore %28 %8
+       OpStore %29 %10
+ %64 = OpLoad %7 %28
+ %65 = OpLoad %7 %29
+ %66 = OpBitwiseAnd %7 %64 %65
+       OpStore %30 %66
+ %67 = OpLoad %7 %28
+ %68 = OpLoad %7 %29
+ %69 = OpBitwiseOr %7 %67 %68
+       OpStore %31 %69
+ %70 = OpLoad %7 %28
+ %71 = OpLoad %7 %29
+ %72 = OpBitwiseXor %7 %70 %71
+       OpStore %32 %72
+ %73 = OpLoad %7 %28
+ %74 = OpLoad %7 %29
+ %75 = OpShiftLeftLogical %7 %73 %74
+       OpStore %33 %75
+ %76 = OpLoad %7 %28
+ %77 = OpLoad %7 %29
+ %78 = OpShiftRightLogical %7 %76 %77
+       OpStore %34 %78
+ %79 = OpCompositeConstruct %13 %11 %12 %6
+       OpStore %35 %79
+ %80 = OpCompositeConstruct %13 %6 %12 %11
+       OpStore %36 %80
+ %81 = OpLoad %13 %35
+ %82 = OpLoad %13 %36
+ %83 = OpBitwiseAnd %13 %81 %82
+       OpStore %37 %83
+ %84 = OpLoad %13 %35
+ %85 = OpLoad %13 %36
+ %86 = OpBitwiseOr %13 %84 %85
+       OpStore %38 %86
+ %87 = OpLoad %13 %35
+ %88 = OpLoad %13 %36
+ %89 = OpBitwiseXor %13 %87 %88
+       OpStore %39 %89
+ %90 = OpLoad %13 %35
+ %91 = OpLoad %13 %36
+ %92 = OpShiftLeftLogical %13 %90 %91
+       OpStore %40 %92
+ %93 = OpLoad %13 %35
+ %94 = OpLoad %13 %36
+ %95 = OpShiftRightArithmetic %13 %93 %94
+       OpStore %41 %95
+ %96 = OpCompositeConstruct %17 %15 %16 %10
+       OpStore %42 %96
+ %97 = OpCompositeConstruct %17 %10 %16 %15
+       OpStore %43 %97
+ %98 = OpLoad %17 %42
+ %99 = OpLoad %17 %43
+%100 = OpBitwiseAnd %17 %98 %99
+       OpStore %44 %100
+%101 = OpLoad %17 %42
+%102 = OpLoad %17 %43
+%103 = OpBitwiseOr %17 %101 %102
+       OpStore %45 %103
+%104 = OpLoad %17 %42
+%105 = OpLoad %17 %43
+%106 = OpBitwiseXor %17 %104 %105
+       OpStore %46 %106
+%107 = OpLoad %17 %42
+%108 = OpLoad %17 %43
+%109 = OpShiftLeftLogical %17 %107 %108
+       OpStore %47 %109
+%110 = OpLoad %17 %42
+%111 = OpLoad %17 %43
+%112 = OpShiftRightLogical %17 %110 %111
+       OpStore %48 %112
+       OpReturn
+       OpFunctionEnd)", {}, {}, true);
 	}
 
 	SECTION("Matrix/matrix operations")
@@ -1022,6 +1139,9 @@ fn main()
 	let r = -r * +r;
 	let r = ~i32(42);
 	let r = ~u32(42);
+	let r = !true;
+	let r = ~vec3[i32](1, 2, 3);
+	let r = ~vec3[u32](1, 2, 3);
 }
 )";
 
@@ -1036,6 +1156,9 @@ void main()
 	float r_3 = (-r_2) * (+r_2);
 	int r_4 = ~42;
 	uint r_5 = ~42u;
+	bool r_6 = !true;
+	ivec3 r_7 = ~ivec3(1, 2, 3);
+	uvec3 r_8 = ~uvec3(1u, 2u, 3u);
 }
 )");
 
@@ -1048,6 +1171,9 @@ fn main()
 	let r: f32 = (-r) * (+r);
 	let r: i32 = ~i32(42);
 	let r: u32 = ~u32(42);
+	let r: bool = !true;
+	let r: vec3[i32] = ~vec3[i32](1, 2, 3);
+	let r: vec3[u32] = ~vec3[u32](1, 2, 3);
 }
 )");
 
@@ -1064,24 +1190,48 @@ fn main()
 %10 = OpTypeInt 32 0
 %11 = OpConstant %10 u32(42)
 %12 = OpTypePointer StorageClass(Function) %10
-%13 = OpFunction %1 FunctionControl(0) %2
-%14 = OpLabel
-%15 = OpVariable %5 StorageClass(Function)
-%16 = OpVariable %5 StorageClass(Function)
-%17 = OpVariable %5 StorageClass(Function)
-%18 = OpVariable %9 StorageClass(Function)
-%19 = OpVariable %12 StorageClass(Function)
-      OpStore %15 %4
-      OpStore %16 %6
-%20 = OpLoad %3 %16
-%21 = OpFNegate %3 %20
-%22 = OpLoad %3 %16
-%23 = OpFMul %3 %21 %22
-      OpStore %17 %23
-%24 = OpNot %7 %8
-      OpStore %18 %24
-%25 = OpNot %10 %11
-      OpStore %19 %25
+%13 = OpTypeBool
+%14 = OpConstantTrue %13
+%15 = OpTypePointer StorageClass(Function) %13
+%16 = OpConstant %7 i32(1)
+%17 = OpConstant %7 i32(2)
+%18 = OpConstant %7 i32(3)
+%19 = OpTypeVector %7 3
+%20 = OpTypePointer StorageClass(Function) %19
+%21 = OpConstant %10 u32(1)
+%22 = OpConstant %10 u32(2)
+%23 = OpConstant %10 u32(3)
+%24 = OpTypeVector %10 3
+%25 = OpTypePointer StorageClass(Function) %24
+%26 = OpFunction %1 FunctionControl(0) %2
+%27 = OpLabel
+%28 = OpVariable %5 StorageClass(Function)
+%29 = OpVariable %5 StorageClass(Function)
+%30 = OpVariable %5 StorageClass(Function)
+%31 = OpVariable %9 StorageClass(Function)
+%32 = OpVariable %12 StorageClass(Function)
+%33 = OpVariable %15 StorageClass(Function)
+%34 = OpVariable %20 StorageClass(Function)
+%35 = OpVariable %25 StorageClass(Function)
+      OpStore %28 %4
+      OpStore %29 %6
+%36 = OpLoad %3 %29
+%37 = OpFNegate %3 %36
+%38 = OpLoad %3 %29
+%39 = OpFMul %3 %37 %38
+      OpStore %30 %39
+%40 = OpNot %7 %8
+      OpStore %31 %40
+%41 = OpNot %10 %11
+      OpStore %32 %41
+%42 = OpLogicalNot %13 %14
+      OpStore %33 %42
+%43 = OpCompositeConstruct %19 %16 %17 %18
+%44 = OpNot %19 %43
+      OpStore %34 %44
+%45 = OpCompositeConstruct %24 %21 %22 %23
+%46 = OpNot %24 %45
+      OpStore %35 %46
       OpReturn
       OpFunctionEnd)", {}, {}, true);
 	}
