@@ -610,7 +610,7 @@ namespace nzsl::Ast
 				// Special case: we don't need the array values here, only its type (and thus length)
 				if (node.parameters.size() == 1)
 				{
-					const ExpressionType* parameterType = GetExpressionType(*node.parameters.front());
+					const ExpressionType* parameterType = GetResolvedExpressionType(*node.parameters.front());
 					if (parameterType && IsArrayType(*parameterType)) //< DynArray cannot be handled for obvious reasons
 					{
 						const ArrayType& arrayType = std::get<ArrayType>(*parameterType);
