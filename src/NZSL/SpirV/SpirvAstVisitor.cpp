@@ -1170,69 +1170,47 @@ namespace nzsl
 
 		std::uint32_t resultId = [&]
 		{
+			Ast::PrimitiveType basicType;
+			if (IsPrimitiveType(*exprType))
+				basicType = std::get<Ast::PrimitiveType>(*exprType);
+			else if (IsVectorType(*exprType))
+				basicType = std::get<Ast::VectorType>(*exprType).type;
+			else
+				throw std::runtime_error("unexpected expression type");
+
+			SpirvOp op;
 			switch (node.op)
 			{
-				case Ast::UnaryType::BitwiseNot: 
-				{
-					assert(IsPrimitiveType(*exprType));
-					assert(std::get<Ast::PrimitiveType>(*resultType) == Ast::PrimitiveType::Int32 || std::get<Ast::PrimitiveType>(*resultType) == Ast::PrimitiveType::UInt32);
-
-					HandleSourceLocation(node.sourceLocation);
-					std::uint32_t resultId = m_writer.AllocateResultId();
-					m_currentBlock->Append(SpirvOp::OpNot, m_writer.GetTypeId(*resultType), resultId, operand);
-
-					return resultId;
-				}
+				case Ast::UnaryType::BitwiseNot:
+					assert(basicType == Ast::PrimitiveType::Int32 || basicType == Ast::PrimitiveType::UInt32);
+					op = SpirvOp::OpNot;
+					break;
 
 				case Ast::UnaryType::LogicalNot:
-				{
-					assert(IsPrimitiveType(*exprType));
-					assert(std::get<Ast::PrimitiveType>(*resultType) == Ast::PrimitiveType::Boolean);
-
-					HandleSourceLocation(node.sourceLocation);
-
-					std::uint32_t resultId = m_writer.AllocateResultId();
-					m_currentBlock->Append(SpirvOp::OpLogicalNot, m_writer.GetTypeId(*resultType), resultId, operand);
-
-					return resultId;
-				}
+					assert(basicType == Ast::PrimitiveType::Boolean);
+					op = SpirvOp::OpLogicalNot;
+					break;
 
 				case Ast::UnaryType::Minus:
-				{
-					Ast::PrimitiveType basicType;
-					if (IsPrimitiveType(*exprType))
-						basicType = std::get<Ast::PrimitiveType>(*exprType);
-					else if (IsVectorType(*exprType))
-						basicType = std::get<Ast::VectorType>(*exprType).type;
+					if (basicType == Ast::PrimitiveType::Float32 || basicType == Ast::PrimitiveType::Float64)
+						op = SpirvOp::OpFNegate;
+					else if (basicType == Ast::PrimitiveType::Int32 || basicType == Ast::PrimitiveType::UInt32)
+						op = SpirvOp::OpSNegate;
 					else
-						throw std::runtime_error("unexpected expression type");
+						throw std::runtime_error("unexpected basic type");
 
-					HandleSourceLocation(node.sourceLocation);
-
-					std::uint32_t resultId = m_writer.AllocateResultId();
-
-					switch (basicType)
-					{
-						case Ast::PrimitiveType::Float32:
-							m_currentBlock->Append(SpirvOp::OpFNegate, m_writer.GetTypeId(*resultType), resultId, operand);
-							return resultId;
-
-						case Ast::PrimitiveType::Int32:
-						case Ast::PrimitiveType::UInt32:
-							m_currentBlock->Append(SpirvOp::OpSNegate, m_writer.GetTypeId(*resultType), resultId, operand);
-							return resultId;
-
-						default:
-							break;
-					}
 					break;
-				}
 
 				case Ast::UnaryType::Plus:
 					return operand;
 			}
 
-			throw std::runtime_error("unexpected unary operation");
+			HandleSourceLocation(node.sourceLocation);
+
+			std::uint32_t resultId = m_writer.AllocateResultId();
+			m_currentBlock->Append(op, m_writer.GetTypeId(*resultType), resultId, operand);
+
+			return resultId;
 		}();
 
 		PushResultId(resultId);

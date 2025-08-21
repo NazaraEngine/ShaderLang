@@ -78,6 +78,7 @@ namespace nzsl::Ast
 	NZSL_API StatementPtr Unscope(StatementPtr&& statement);
 
 	NZSL_API ExpressionType ValidateBinaryOp(BinaryType op, const ExpressionType& leftExprType, const ExpressionType& rightExprType, const SourceLocation& sourceLocation, const Stringifier& typeStringifier = {});
+	NZSL_API void ValidateUnaryOp(UnaryType op, const ExpressionType& exprType, const SourceLocation& sourceLocation, const Stringifier& typeStringifier = {});
 
 	NZSL_API bool ValidateMatchingTypes(const ExpressionPtr& left, const ExpressionPtr& right);
 	NZSL_API bool ValidateMatchingTypes(const ExpressionType& left, const ExpressionType& right);

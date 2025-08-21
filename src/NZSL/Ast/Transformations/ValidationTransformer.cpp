@@ -507,7 +507,7 @@ namespace nzsl::Ast
 		{
 			case AssignType::Simple:
 			{
-				if (!ValidateMatchingTypes(*leftExprType, UnwrapExternalType(ResolveAlias(*rightExprType))))
+				if (!ValidateMatchingTypes(*leftExprType, UnwrapExternalType(*rightExprType)))
 					throw CompilerUnmatchingTypesError{ node.sourceLocation, ToString(*leftExprType, node.sourceLocation), ToString(*rightExprType, node.sourceLocation) };
 
 				break;
@@ -524,7 +524,7 @@ namespace nzsl::Ast
 
 		if (binaryType)
 		{
-			ExpressionType expressionType = ValidateBinaryOp(*binaryType, ResolveAlias(*leftExprType), UnwrapExternalType(ResolveAlias(*rightExprType)), node.sourceLocation);
+			ExpressionType expressionType = ValidateBinaryOp(*binaryType, *leftExprType, UnwrapExternalType(*rightExprType), node.sourceLocation);
 			if (!ValidateMatchingTypes(UnwrapExternalType(*leftExprType), expressionType))
 				throw CompilerUnmatchingTypesError{ node.sourceLocation, ToString(*leftExprType, node.sourceLocation), ToString(expressionType, node.sourceLocation) };
 		}
@@ -1009,6 +1009,11 @@ namespace nzsl::Ast
 	{
 		HandleChildren(node);
 
+		const ExpressionType* exprType = GetExpressionType(MandatoryExpr(node.expression, node.sourceLocation));
+		if (!exprType)
+			return DontVisitChildren{};
+
+		ValidateUnaryOp(node.op, *exprType, node.sourceLocation, BuildStringifier(node.sourceLocation));
 		return DontVisitChildren{};
 	}
 

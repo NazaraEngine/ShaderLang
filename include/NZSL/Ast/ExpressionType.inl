@@ -396,13 +396,15 @@ namespace nzsl::Ast
 
 	inline ExpressionType UnwrapExternalType(const ExpressionType& exprType)
 	{
-		if (IsStorageType(exprType))
-			return std::get<StorageType>(exprType).containedType;
-		else if (IsUniformType(exprType))
-			return std::get<UniformType>(exprType).containedType;
-		else if (IsArrayType(exprType))
+		const ExpressionType& resolvedExprType = ResolveAlias(exprType);
+
+		if (IsStorageType(resolvedExprType))
+			return std::get<StorageType>(resolvedExprType).containedType;
+		else if (IsUniformType(resolvedExprType))
+			return std::get<UniformType>(resolvedExprType).containedType;
+		else if (IsArrayType(resolvedExprType))
 		{
-			const ArrayType& arrayType = std::get<ArrayType>(exprType);
+			const ArrayType& arrayType = std::get<ArrayType>(resolvedExprType);
 			if (arrayType.isWrapped)
 			{
 				ArrayType unwrappedArrayType;

@@ -2038,7 +2038,7 @@ namespace nzsl::Ast
 		if (!rightExprType)
 			return DontVisitChildren{};
 
-		binaryExpression.cachedExpressionType = ValidateBinaryOp(binaryExpression.op, ResolveAlias(*leftExprType), ResolveAlias(*rightExprType), binaryExpression.sourceLocation, BuildStringifier(binaryExpression.sourceLocation));
+		binaryExpression.cachedExpressionType = ValidateBinaryOp(binaryExpression.op, *leftExprType, *rightExprType, binaryExpression.sourceLocation, BuildStringifier(binaryExpression.sourceLocation));
 		return DontVisitChildren{};
 	}
 
@@ -2380,55 +2380,6 @@ namespace nzsl::Ast
 		const ExpressionType* exprType = GetExpressionType(MandatoryExpr(node.expression, node.sourceLocation));
 		if (!exprType)
 			return DontVisitChildren{};
-
-		const ExpressionType& resolvedExprType = ResolveAlias(*exprType);
-
-		switch (node.op)
-		{
-			case UnaryType::BitwiseNot:
-			{
-				if (resolvedExprType != ExpressionType(PrimitiveType::Int32) && resolvedExprType != ExpressionType(PrimitiveType::UInt32))
-					throw CompilerUnaryUnsupportedError{ node.sourceLocation, ToString(*exprType, node.sourceLocation) };
-
-				break;
-			}
-
-			case UnaryType::LogicalNot:
-			{
-				if (resolvedExprType != ExpressionType(PrimitiveType::Boolean))
-					throw CompilerUnaryUnsupportedError{ node.sourceLocation, ToString(*exprType, node.sourceLocation) };
-
-				break;
-			}
-
-			case UnaryType::Minus:
-			case UnaryType::Plus:
-			{
-				PrimitiveType basicType;
-				if (IsPrimitiveType(resolvedExprType))
-					basicType = std::get<PrimitiveType>(resolvedExprType);
-				else if (IsVectorType(resolvedExprType))
-					basicType = std::get<VectorType>(resolvedExprType).type;
-				else
-					throw CompilerUnaryUnsupportedError{ node.sourceLocation, ToString(*exprType, node.sourceLocation) };
-
-				switch (basicType)
-				{
-					case PrimitiveType::Float32:
-					case PrimitiveType::Float64:
-					case PrimitiveType::Int32:
-					case PrimitiveType::UInt32:
-					case PrimitiveType::FloatLiteral:
-					case PrimitiveType::IntLiteral:
-						break;
-
-					default:
-						throw CompilerUnaryUnsupportedError{ node.sourceLocation, ToString(*exprType, node.sourceLocation) };
-				}
-
-				break;
-			}
-		}
 
 		node.cachedExpressionType = *exprType;
 		return DontVisitChildren{};
@@ -2847,7 +2798,7 @@ namespace nzsl::Ast
 		{
 			ConstantValue& optionValue = optionValueIt->second;
 			EnsureLiteralValue(optType, optionValue, declOption.sourceLocation);
-		
+
 			declOption.optIndex = RegisterConstant(declOption.optName, TransformerContext::ConstantData{ m_states->currentModuleId, optionValue }, declOption.optIndex, declOption.sourceLocation);
 		}
 		else

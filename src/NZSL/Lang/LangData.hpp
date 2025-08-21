@@ -155,6 +155,7 @@ namespace nzsl::LangData
 		enum class ReturnType
 		{
 			None,               // ()
+			Bool,               // bool
 			Param0SampledValue, // Assuming first parameter is a sampler, this represents the return type of a Sample operation on it
 			Param0TextureValue, // Assuming first parameter is a texture, this represents the return type of a Read operation on it
 			Param0Transposed,   // Assuming first parameter is a matrix, this represents the transposed matrix type

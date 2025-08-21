@@ -135,6 +135,47 @@ fn main()
 }
 )");
 	}
+	
+	WHEN("propagating vector bitwise constants")
+	{
+		PropagateConstantAndExpect(R"(
+[nzsl_version("1.1")]
+[feature(float64)]
+module;
+
+[entry(frag)]
+fn main()
+{
+	let output1 = vec2(-26666, -26666) & vec2(0b1111_1111, 0b1111_1111);
+	let output2 = vec2(0b100000, 0b100000) | vec2(0b1010, 0b1010);
+	let output3 = vec2(0b1111_0000, 0b1111_0000) ^ vec2(0b0101_1010, 0b0101_1010);
+	
+	let output4 = vec2[u32](26666, 26666) & vec2[u32](0b1111_1111, 0b1111_1111);
+	let output5 = vec2[u32](0b100000, 0b100000) | vec2[u32](0b1010, 0b1010);
+	let output6 = vec2[u32](0b1111_0000, 0b1111_0000) ^ vec2[u32](0b0101_1010, 0b0101_1010);
+
+	let output7 = vec2(-42, -42) << vec2(10, 10);
+	let output8 = vec2(-42, -42) >> vec2(10, 10);
+	let output9 = vec2[u32](1, 1) << vec2(10, 10);
+	let output10 = vec2[u32](1024, 1024) >> vec2(10, 10);
+}
+)", R"(
+[entry(frag)]
+fn main()
+{
+	let output1: vec2[i32] = vec2(214, 214);
+	let output2: vec2[i32] = vec2(42, 42);
+	let output3: vec2[i32] = vec2(170, 170);
+	let output4: vec2[u32] = vec2[u32](42, 42);
+	let output5: vec2[u32] = vec2[u32](42, 42);
+	let output6: vec2[u32] = vec2[u32](170, 170);
+	let output7: vec2[i32] = vec2(-43008, -43008);
+	let output8: vec2[i32] = vec2(0, 0);
+	let output9: vec2[u32] = vec2[u32](1024, 1024);
+	let output10: vec2[u32] = vec2[u32](0, 0);
+}
+)");
+	}
 
 	WHEN("eliminating simple branches")
 	{
