@@ -447,7 +447,9 @@ namespace nzsl
 
 	void LangWriter::Append(const Ast::VectorType& vecType)
 	{
-		Append("vec", vecType.componentCount, "[", vecType.type, "]");
+		Append("vec", vecType.componentCount);
+		if (vecType.type != Ast::PrimitiveType::FloatLiteral && vecType.type != Ast::PrimitiveType::IntLiteral)
+			Append("[", vecType.type, "]");
 	}
 
 	template<typename T>
