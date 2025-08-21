@@ -132,7 +132,7 @@ namespace nzsl::Ast
 
 	enum class IntrinsicType
 	{
-		// Next free index: 48
+		// Next free index: 53
 		Abs                               = 31,
 		ArcCos                            = 21,
 		ArcCosh                           = 22,
@@ -142,6 +142,8 @@ namespace nzsl::Ast
 		ArcTan2                           = 25,
 		ArcTanh                           = 23,
 		ArraySize                         = 10,
+		All                               = 48,
+		Any                               = 49,
 		Ceil                              = 34,
 		Clamp                             = 41,
 		Cos                               = 15,
@@ -155,6 +157,8 @@ namespace nzsl::Ast
 		Floor                             = 33,
 		Fract                             = 35,
 		InverseSqrt                       = 26,
+		IsInf                             = 51,
+		IsNaN                             = 52,
 		Length                            = 3,
 		Lerp                              = 42,
 		Log                               = 38,
@@ -164,6 +168,7 @@ namespace nzsl::Ast
 		Max                               = 4,
 		Min                               = 5,
 		Normalize                         = 9,
+		Not                               = 50,
 		Pow                               = 6,
 		RadToDeg                          = 36,
 		Reflect                           = 8,

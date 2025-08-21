@@ -74,6 +74,8 @@ namespace nzsl::SpirvGenData
 
 	constexpr auto s_intrinsicData = frozen::make_unordered_map<Ast::IntrinsicType, IntrinsicData>({
 		{ Ast::IntrinsicType::Abs,                               { &SpirvAstVisitor::SelectAbs } },
+		{ Ast::IntrinsicType::All,                               { SpirvOp::OpAll } },
+		{ Ast::IntrinsicType::Any,                               { SpirvOp::OpAny } },
 		{ Ast::IntrinsicType::ArcCos,                            { SpirvGlslStd450Op::Acos  } },
 		{ Ast::IntrinsicType::ArcCosh,                           { SpirvGlslStd450Op::Acosh } },
 		{ Ast::IntrinsicType::ArcSin,                            { SpirvGlslStd450Op::Asinh } },
@@ -94,6 +96,8 @@ namespace nzsl::SpirvGenData
 		{ Ast::IntrinsicType::Exp2,                              { SpirvGlslStd450Op::Exp2 } },
 		{ Ast::IntrinsicType::Floor,                             { SpirvGlslStd450Op::Floor } },
 		{ Ast::IntrinsicType::Fract,                             { SpirvGlslStd450Op::Fract } },
+		{ Ast::IntrinsicType::IsInf,                             { SpirvOp::OpIsInf } },
+		{ Ast::IntrinsicType::IsNaN,                             { SpirvOp::OpIsNan } },
 		{ Ast::IntrinsicType::InverseSqrt,                       { SpirvGlslStd450Op::InverseSqrt } },
 		{ Ast::IntrinsicType::Length,                            { SpirvGlslStd450Op::Length } },
 		{ Ast::IntrinsicType::Lerp,                              { &SpirvAstVisitor::SelectLerp } },
@@ -104,6 +108,7 @@ namespace nzsl::SpirvGenData
 		{ Ast::IntrinsicType::Max,                               { &SpirvAstVisitor::SelectMaxMin } },
 		{ Ast::IntrinsicType::Min,                               { &SpirvAstVisitor::SelectMaxMin } },
 		{ Ast::IntrinsicType::Normalize,                         { SpirvGlslStd450Op::Normalize } },
+		{ Ast::IntrinsicType::Not,                               { SpirvOp::OpLogicalNot } },
 		{ Ast::IntrinsicType::Pow,                               { SpirvGlslStd450Op::Pow } },
 		{ Ast::IntrinsicType::RadToDeg,                          { SpirvGlslStd450Op::Radians } },
 		{ Ast::IntrinsicType::Reflect,                           { SpirvGlslStd450Op::Reflect } },

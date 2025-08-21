@@ -410,7 +410,7 @@ namespace nzsl
 			if (parameters.backendPasses.Test(BackendPass::Resolve))
 			{
 				executor.AddPass<Ast::ResolveTransformer>([&](Ast::ResolveTransformer::Options& opt)
-				{ 
+				{
 					opt.moduleResolver = parameters.shaderModuleResolver;
 					opt.removeAliases = true;
 				});
@@ -614,7 +614,7 @@ namespace nzsl
 		executor.AddPass<Ast::IdentifierTransformer>(firstIdentifierPassOptions);
 		executor.AddPass<Ast::ForToWhileTransformer>();
 		executor.AddPass<Ast::StructAssignmentTransformer>([](Ast::StructAssignmentTransformer::Options& opt)
-		{ 
+		{
 			opt.splitWrappedArrayAssignation = false;
 			opt.splitWrappedStructAssignation = true; //< TODO: Only split for base uniforms/storage
 		});
@@ -2078,6 +2078,8 @@ namespace nzsl
 		{
 			// Function intrinsics
 			case Ast::IntrinsicType::Abs:                      Append("abs");         break;
+			case Ast::IntrinsicType::All:                      Append("all");         break;
+			case Ast::IntrinsicType::Any:                      Append("any");         break;
 			case Ast::IntrinsicType::ArcCos:                   Append("acos");        break;
 			case Ast::IntrinsicType::ArcCosh:                  Append("acosh");       break;
 			case Ast::IntrinsicType::ArcSin:                   Append("asin");        break;
@@ -2097,6 +2099,8 @@ namespace nzsl
 			case Ast::IntrinsicType::Exp2:                     Append("exp2");        break;
 			case Ast::IntrinsicType::Floor:                    Append("floor");       break;
 			case Ast::IntrinsicType::Fract:                    Append("fract");       break;
+			case Ast::IntrinsicType::IsInf:                    Append("isinf");       break;
+			case Ast::IntrinsicType::IsNaN:                    Append("isnan");       break;
 			case Ast::IntrinsicType::Length:                   Append("length");      break;
 			case Ast::IntrinsicType::Lerp:                     Append("mix");         break;
 			case Ast::IntrinsicType::Log:                      Append("log");         break;
@@ -2107,6 +2111,7 @@ namespace nzsl
 			case Ast::IntrinsicType::Max:                      Append("max");         break;
 			case Ast::IntrinsicType::Min:                      Append("min");         break;
 			case Ast::IntrinsicType::Normalize:                Append("normalize");   break;
+			case Ast::IntrinsicType::Not:                      Append("not");         break;
 			case Ast::IntrinsicType::Pow:                      Append("pow");         break;
 			case Ast::IntrinsicType::Reflect:                  Append("reflect");     break;
 			case Ast::IntrinsicType::Sin:                      Append("sin");         break;
