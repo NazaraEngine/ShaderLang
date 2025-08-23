@@ -42,8 +42,7 @@ namespace nzsl::Ast
 			if constexpr (VectorInner::IsVector)
 			{
 				ArrayType arrayType;
-				arrayType.containedType = std::make_unique<ContainedType>();
-				arrayType.containedType->type = GetConstantExpressionType<Type>();
+				arrayType.SetupInnerType(GetConstantExpressionType<Type>());
 				arrayType.length = Nz::SafeCast<std::uint32_t>(arg.size());
 
 				return arrayType;
@@ -67,8 +66,7 @@ namespace nzsl::Ast
 				using InnerType = typename GetVectorInnerType<T>::type;
 
 				ArrayType arrayType;
-				arrayType.containedType = std::make_unique<ContainedType>();
-				arrayType.containedType->type = GetConstantExpressionType<InnerType>();
+				arrayType.SetupInnerType(GetConstantExpressionType<InnerType>());
 				arrayType.length = Nz::SafeCast<std::uint32_t>(arg.size());
 
 				return arrayType;

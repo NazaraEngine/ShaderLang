@@ -873,7 +873,7 @@ namespace nzsl::Ast
 			else
 				targetArrayType.length = Nz::SafeCast<std::uint32_t>(node.expressions.size());
 
-			const ExpressionType& innerType = targetArrayType.containedType->type;
+			const ExpressionType& innerType = targetArrayType.InnerType();
 			for (std::size_t i = 0; i < node.expressions.size(); ++i)
 			{
 				const auto& exprPtr = node.expressions[i];

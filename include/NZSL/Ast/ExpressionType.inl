@@ -16,9 +16,33 @@ namespace nzsl::Ast
 		return containedType->type;
 	}
 
+	template<typename T>
+	void BaseArrayType::SetupInnerType(T&& value)
+	{
+		containedType = std::make_unique<ContainedType>();
+		containedType->type = std::forward<T>(value);
+	}
+
 	inline bool BaseArrayType::operator!=(const BaseArrayType& rhs) const
 	{
 		return !operator==(rhs);
+	}
+
+	inline auto& AliasType::TargetType()
+	{
+		return targetType->type;
+	}
+
+	inline const auto& AliasType::TargetType() const
+	{
+		return targetType->type;
+	}
+
+	template<typename T>
+	void AliasType::SetupTargetType(T&& value)
+	{
+		targetType = std::make_unique<ContainedType>();
+		targetType->type = std::forward<T>(value);
 	}
 
 	inline bool AliasType::operator!=(const AliasType& rhs) const
@@ -337,7 +361,7 @@ namespace nzsl::Ast
 			if (arrayType.isWrapped)
 				return false;
 
-			const ExpressionType& innerType = arrayType.containedType->type;
+			const ExpressionType& innerType = arrayType.InnerType();
 			return IsConstantType(innerType);
 		}
 		else
@@ -350,7 +374,7 @@ namespace nzsl::Ast
 		{
 			const ArrayType& arrayType = std::get<ArrayType>(exprType);
 
-			const ExpressionType& innerType = arrayType.containedType->type;
+			const ExpressionType& innerType = arrayType.InnerType();
 			return IsExternalPointerType(innerType);
 		}
 		else
@@ -360,7 +384,7 @@ namespace nzsl::Ast
 	inline bool IsLiteralType(const ExpressionType& exprType)
 	{
 		if (IsArrayType(exprType))
-			return IsLiteralType(std::get<ArrayType>(exprType).containedType->type);
+			return IsLiteralType(std::get<ArrayType>(exprType).InnerType());
 
 		PrimitiveType primType;
 		if (IsPrimitiveType(exprType))
@@ -418,8 +442,7 @@ namespace nzsl::Ast
 			if (arrayType.isWrapped)
 			{
 				ArrayType unwrappedArrayType;
-				unwrappedArrayType.containedType = std::make_unique<ContainedType>();
-				unwrappedArrayType.containedType->type = UnwrapExternalType(arrayType.containedType->type);
+				unwrappedArrayType.SetupInnerType(UnwrapExternalType(arrayType.InnerType()));
 				unwrappedArrayType.length = arrayType.length;
 
 				return unwrappedArrayType;
@@ -446,8 +469,7 @@ namespace nzsl::Ast
 			const ArrayType& arrayType = std::get<ArrayType>(exprType);
 
 			ArrayType wrappedArrayType;
-			wrappedArrayType.containedType = std::make_unique<ContainedType>();
-			wrappedArrayType.containedType->type = WrapExternalType<T>(arrayType.containedType->type);
+			wrappedArrayType.SetupInnerType(WrapExternalType<T>(arrayType.InnerType()));
 			wrappedArrayType.length = arrayType.length;
 			wrappedArrayType.isWrapped = true;
 
@@ -458,8 +480,7 @@ namespace nzsl::Ast
 			const DynArrayType& arrayType = std::get<DynArrayType>(exprType);
 
 			DynArrayType wrappedDynArrayType;
-			wrappedDynArrayType.containedType = std::make_unique<ContainedType>();
-			wrappedDynArrayType.containedType->type = WrapExternalType<T>(arrayType.containedType->type);
+			wrappedDynArrayType.SetupInnerType(WrapExternalType<T>(arrayType.InnerType()));
 			wrappedDynArrayType.isWrapped = true;
 
 			return wrappedDynArrayType;
@@ -475,9 +496,9 @@ namespace nzsl::Ast
 		else if (IsUniformType(referenceType))
 			return WrapExternalType<StorageType>(exprType);
 		else if (IsArrayType(referenceType))
-			return WrapExternalType(exprType, std::get<ArrayType>(referenceType).containedType->type);
+			return WrapExternalType(exprType, std::get<ArrayType>(referenceType).InnerType());
 		else if (IsDynArrayType(referenceType))
-			return WrapExternalType(exprType, std::get<DynArrayType>(referenceType).containedType->type);
+			return WrapExternalType(exprType, std::get<DynArrayType>(referenceType).InnerType());
 		else
 			return exprType;
 	}
@@ -501,7 +522,7 @@ namespace std
 		{
 			std::size_t h = Nz::HashCombine(aliasType.aliasIndex);
 			if (aliasType.targetType)
-				Nz::HashCombine(h, aliasType.targetType->type);
+				Nz::HashCombine(h, aliasType.TargetType());
 
 			return h;
 		}
@@ -514,7 +535,7 @@ namespace std
 		{
 			std::size_t h = Nz::HashCombine(arrayType.length);
 			if (arrayType.containedType)
-				Nz::HashCombine(h, arrayType.containedType->type);
+				Nz::HashCombine(h, arrayType.InnerType());
 
 			return h;
 		}
@@ -527,7 +548,7 @@ namespace std
 		{
 			std::size_t h = 1;
 			if (dynArrayType.containedType)
-				Nz::HashCombine(h, dynArrayType.containedType->type);
+				Nz::HashCombine(h, dynArrayType.InnerType());
 
 			return h;
 		}

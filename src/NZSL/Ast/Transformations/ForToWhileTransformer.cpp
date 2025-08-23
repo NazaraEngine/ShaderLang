@@ -34,7 +34,7 @@ namespace nzsl::Ast
 		HandleStatement(forEachStatement.statement);
 
 		const ArrayType& arrayType = std::get<ArrayType>(*exprType);
-		const ExpressionType& innerType = ResolveAlias(arrayType.containedType->type);
+		const ExpressionType& innerType = ResolveAlias(arrayType.InnerType());
 
 		auto multi = std::make_unique<MultiStatement>();
 		multi->sourceLocation = forEachStatement.sourceLocation;

@@ -369,7 +369,7 @@ namespace nzsl::Ast
 		{
 			const ArrayType& arrType = std::get<ArrayType>(targetType);
 
-			const ExpressionType& baseType = arrType.containedType->type;
+			const ExpressionType& baseType = arrType.InnerType();
 			for (auto& exprPtr : castExpr.expressions)
 				ResolveLiteral(exprPtr, baseType, exprPtr->sourceLocation);
 		}

@@ -38,6 +38,8 @@ namespace nzsl::Ast
 		inline auto& InnerType();
 		inline const auto& InnerType() const;
 
+		template<typename T> void SetupInnerType(T&& value);
+
 		BaseArrayType& operator=(const BaseArrayType& array);
 		BaseArrayType& operator=(BaseArrayType&&) noexcept = default;
 
@@ -54,6 +56,11 @@ namespace nzsl::Ast
 		AliasType(const AliasType& alias);
 		AliasType(AliasType&&) noexcept = default;
 		~AliasType() = default;
+
+		inline auto& TargetType();
+		inline const auto& TargetType() const;
+
+		template<typename T> void SetupTargetType(T&& value);
 
 		AliasType& operator=(const AliasType& alias);
 		AliasType& operator=(AliasType&&) noexcept = default;

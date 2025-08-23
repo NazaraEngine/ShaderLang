@@ -329,7 +329,7 @@ namespace nzsl::Ast
 		else if (IsArrayType(expressionType))
 		{
 			ArrayType& arrayType = std::get<ArrayType>(expressionType);
-			EnsureLiteralType(arrayType.containedType->type, sourceLocation);
+			EnsureLiteralType(arrayType.InnerType(), sourceLocation);
 		}
 		else
 			throw AstInternalError{ sourceLocation, "unexpected untyped type " + ToString(expressionType, sourceLocation) };
@@ -435,8 +435,7 @@ namespace nzsl::Ast
 
 				AliasType aliasType;
 				aliasType.aliasIndex = identifierData->index;
-				aliasType.targetType = std::make_unique<ContainedType>();
-				aliasType.targetType->type = *targetExpr->cachedExpressionType;
+				aliasType.SetupTargetType(*targetExpr->cachedExpressionType);
 
 				auto aliasValue = std::make_unique<AliasValueExpression>();
 				aliasValue->aliasId = identifierData->index;
@@ -701,8 +700,7 @@ namespace nzsl::Ast
 					lengthValue = 0;
 
 				ArrayType arrayType;
-				arrayType.containedType = std::make_unique<ContainedType>();
-				arrayType.containedType->type = exprType;
+				arrayType.SetupInnerType(exprType);
 				arrayType.length = lengthValue;
 
 				return arrayType;
@@ -720,8 +718,7 @@ namespace nzsl::Ast
 				const ExpressionType& exprType = std::get<ExpressionType>(parameters[0]);
 
 				DynArrayType arrayType;
-				arrayType.containedType = std::make_unique<ContainedType>();
-				arrayType.containedType->type = exprType;
+				arrayType.SetupInnerType(exprType);
 
 				return arrayType;
 			}
@@ -1900,13 +1897,13 @@ namespace nzsl::Ast
 				if (IsArrayType(resolvedExprType))
 				{
 					const ArrayType& arrayType = std::get<ArrayType>(resolvedExprType);
-					ExpressionType containedType = arrayType.containedType->type; //< Don't overwrite exprType directly since it contains arrayType
+					ExpressionType containedType = arrayType.InnerType(); //< Don't overwrite exprType directly since it contains arrayType
 					resolvedExprType = std::move(containedType);
 				}
 				else if (IsDynArrayType(resolvedExprType))
 				{
 					const DynArrayType& arrayType = std::get<DynArrayType>(resolvedExprType);
-					ExpressionType containedType = arrayType.containedType->type; //< Don't overwrite exprType directly since it contains arrayType
+					ExpressionType containedType = arrayType.InnerType(); //< Don't overwrite exprType directly since it contains arrayType
 					resolvedExprType = std::move(containedType);
 				}
 				else if (IsStructAddressible(resolvedExprType))
@@ -2005,8 +2002,7 @@ namespace nzsl::Ast
 
 		AliasType aliasType;
 		aliasType.aliasIndex = accessIndexExpr.aliasId;
-		aliasType.targetType = std::make_unique<ContainedType>();
-		aliasType.targetType->type = *targetExpr->cachedExpressionType;
+		aliasType.SetupTargetType( *targetExpr->cachedExpressionType);
 
 		accessIndexExpr.cachedExpressionType = std::move(aliasType);
 		return DontVisitChildren{};
@@ -2668,7 +2664,7 @@ namespace nzsl::Ast
 			ExpressionType varType;
 			if (IsArrayType(targetType))
 			{
-				const ExpressionType& innerType = std::get<ArrayType>(targetType).containedType->type;
+				const ExpressionType& innerType = std::get<ArrayType>(targetType).InnerType();
 				if (IsSamplerType(innerType) || IsTextureType(innerType))
 					varType = targetType;
 				else if (IsPrimitiveType(innerType) || IsVectorType(innerType) || IsMatrixType(innerType))
@@ -2997,7 +2993,7 @@ namespace nzsl::Ast
 		if (IsArrayType(resolvedExprType))
 		{
 			const ArrayType& arrayType = std::get<ArrayType>(resolvedExprType);
-			innerType = arrayType.containedType->type;
+			innerType = arrayType.InnerType();
 		}
 		else
 			throw CompilerForEachUnsupportedTypeError{ forEachStatement.sourceLocation, ToString(*exprType, forEachStatement.sourceLocation) };

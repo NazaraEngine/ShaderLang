@@ -70,8 +70,7 @@ TEST_CASE("RegisterStructField", "[FieldOffsets]")
 	};
 
 	nzsl::Ast::ArrayType innerArray;
-	innerArray.containedType = std::make_unique<nzsl::Ast::ContainedType>();
-	innerArray.containedType->type = nzsl::Ast::StructType{ 0 };
+	innerArray.SetupInnerType(nzsl::Ast::StructType{ 0 });
 	innerArray.length = 3;
 
 	nzsl::FieldOffsets fieldOffsets(nzsl::StructLayout::Std140);
