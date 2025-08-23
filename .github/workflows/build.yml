@@ -159,7 +159,7 @@ jobs:
 
     # Setup compilation mode and install project dependencies
     - name: Configure xmake and install dependencies
-      run: xmake config --plat=${{ matrix.confs.plat }} --arch=${{ matrix.confs.arch }} --kind=${{ matrix.kind }} --mode=${{ matrix.config.mode }} ${{ env.ADDITIONAL_CONF }} --ccache=n --yes
+      run: xmake config --plat=${{ matrix.confs.plat }} --arch=${{ matrix.confs.arch }} --kind=${{ matrix.kind }} --mode=${{ matrix.confs.mode }} ${{ env.ADDITIONAL_CONF }} --ccache=n --yes
 
     # Save dependencies
     - name: Save cached xmake dependencies
