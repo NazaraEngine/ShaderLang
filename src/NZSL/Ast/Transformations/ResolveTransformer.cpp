@@ -31,6 +31,21 @@
 
 namespace nzsl::Ast
 {
+	namespace NAZARA_ANONYMOUS_NAMESPACE
+	{
+		template<typename T>
+		struct ConstantInnerTypeExtractor
+		{
+			using Type = T;
+		};
+
+		template<typename T, std::size_t N>
+		struct ConstantInnerTypeExtractor<Vector<T, N>>
+		{
+			using Type = typename ConstantInnerTypeExtractor<T>::Type;
+		};
+	}
+
 	struct ResolveTransformer::Scope
 	{
 		std::size_t previousSize;
@@ -321,59 +336,29 @@ namespace nzsl::Ast
 		{
 			using T = std::decay_t<decltype(value)>;
 
-			if constexpr (std::is_same_v<T, FloatLiteral>)
+			PrimitiveType innerType;
+			if (IsPrimitiveType(expressionType))
+				innerType = std::get<PrimitiveType>(expressionType);
+			else if (IsVectorType(expressionType))
+				innerType = std::get<VectorType>(expressionType).type;
+			else
+				return;
+
+			using InnerType = typename ConstantInnerTypeExtractor<T>::Type;
+
+			if constexpr (std::is_same_v<InnerType, FloatLiteral>)
 			{
-				if (expressionType == ExpressionType{ PrimitiveType::Float32 })
+				if (innerType == PrimitiveType::Float32)
 					constantValue = LiteralToFloat32(value, sourceLocation);
-				else if (expressionType == ExpressionType{ PrimitiveType::Float64 })
+				else if (innerType == PrimitiveType::Float64)
 					constantValue = LiteralToFloat64(value, sourceLocation);
 			}
-			else if constexpr (std::is_same_v<T, IntLiteral>)
+			else if constexpr (std::is_same_v<InnerType, IntLiteral>)
 			{
 				if (expressionType == ExpressionType{ PrimitiveType::Int32 })
 					constantValue = LiteralToInt32(value, sourceLocation);
 				else if (expressionType == ExpressionType{ PrimitiveType::UInt32 })
 					constantValue = LiteralToUInt32(value, sourceLocation);
-			}
-			else if constexpr (IsVector_v<T>)
-			{
-				using VecBase = typename T::Base;
-
-				ExpressionType baseType;
-				if constexpr (std::is_same_v<VecBase, FloatLiteral>)
-				{
-					if (expressionType == ExpressionType{ VectorType{ T::Dimensions, PrimitiveType::Float32 } })
-					{
-						Vector<float, T::Dimensions> vec;
-						for (std::size_t i = 0; i < T::Dimensions; ++i)
-							vec[i] = LiteralToFloat32(value[i], sourceLocation);
-
-						constantValue = vec;
-					}
-					else if (expressionType == ExpressionType{ VectorType{ T::Dimensions, PrimitiveType::Float64 } })
-					{
-						Vector<double, T::Dimensions> vec;
-						for (std::size_t i = 0; i < T::Dimensions; ++i)
-							vec[i] = LiteralToFloat64(value[i], sourceLocation);
-
-						constantValue = vec;
-					}
-				}
-				else if constexpr (std::is_same_v<VecBase, IntLiteral>)
-				{
-					if (expressionType == ExpressionType{ VectorType{ T::Dimensions, PrimitiveType::Int32 } })
-					{
-						Vector<std::int32_t, T::Dimensions> vec;
-						for (std::size_t i = 0; i < T::Dimensions; ++i)
-							vec[i] = LiteralToInt32(value[i], sourceLocation);
-					}
-					else if (expressionType == ExpressionType{ VectorType{ T::Dimensions, PrimitiveType::UInt32 } })
-					{
-						Vector<std::uint32_t, T::Dimensions> vec;
-						for (std::size_t i = 0; i < T::Dimensions; ++i)
-							vec[i] = LiteralToUInt32(value[i], sourceLocation);
-					}
-				}
 			}
 		}, constantValue);
 	}

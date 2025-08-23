@@ -68,6 +68,11 @@ namespace nzsl::Ast
 	NZSL_API std::int32_t LiteralToInt32(IntLiteral literal, const SourceLocation& sourceLocation);
 	NZSL_API std::uint32_t LiteralToUInt32(IntLiteral literal, const SourceLocation& sourceLocation);
 
+	template<std::size_t N> Vector<float, N> LiteralToFloat32(const Vector<FloatLiteral, N>& literal, const SourceLocation& sourceLocation);
+	template<std::size_t N> Vector<double, N> LiteralToFloat64(const Vector<FloatLiteral, N>& literal, const SourceLocation& sourceLocation);
+	template<std::size_t N> Vector<std::int32_t, N> LiteralToInt32(const Vector<IntLiteral, N>& literal, const SourceLocation& sourceLocation);
+	template<std::size_t N> Vector<std::uint32_t, N> LiteralToUInt32(const Vector<IntLiteral, N>& literal, const SourceLocation& sourceLocation);
+
 	inline ExpressionCategory GetExpressionCategory(Expression& expression);
 
 	NZSL_API Expression& MandatoryExpr(const ExpressionPtr& node, const SourceLocation& sourceLocation);

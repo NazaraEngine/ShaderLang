@@ -148,21 +148,9 @@ namespace nzsl::Ast
 						Vector<FloatLiteral, Dims> vecUntyped = std::get<Vector<FloatLiteral, Dims>>(constantExpr.value);
 
 						if (targetType->type == PrimitiveType::Float32 || targetType->type == PrimitiveType::FloatLiteral)
-						{
-							Vector<float, Dims> vec;
-							for (std::size_t i = 0; i < targetType->componentCount; ++i)
-								vec[i] = LiteralToFloat32(vecUntyped[i], sourceLocation);
-
-							constantExpr.value = vec;
-						}
+							constantExpr.value = LiteralToFloat32(vecUntyped, sourceLocation);
 						else if (targetType->type == PrimitiveType::Float64)
-						{
-							Vector<double, Dims> vec;
-							for (std::size_t i = 0; i < targetType->componentCount; ++i)
-								vec[i] = LiteralToFloat64(vecUntyped[i], sourceLocation);
-
-							constantExpr.value = vec;
-						}
+							constantExpr.value = LiteralToFloat64(vecUntyped, sourceLocation);
 						else
 							throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(*vecType), Ast::ToString(*targetType) };
 					};
@@ -199,21 +187,9 @@ namespace nzsl::Ast
 						Vector<IntLiteral, Dims> vecUntyped = std::get<Vector<IntLiteral, Dims>>(constantExpr.value);
 
 						if (targetType->type == PrimitiveType::Int32 || targetType->type == PrimitiveType::IntLiteral)
-						{
-							Vector<std::int32_t, Dims> vec;
-							for (std::size_t i = 0; i < Dims; ++i)
-								vec[i] = LiteralToInt32(vecUntyped[i], sourceLocation);
-
-							constantExpr.value = vec;
-						}
+							constantExpr.value = LiteralToInt32(vecUntyped, sourceLocation);
 						else if (targetType->type == PrimitiveType::UInt32)
-						{
-							Vector<std::uint32_t, Dims> vec;
-							for (std::size_t i = 0; i < Dims; ++i)
-								vec[i] = LiteralToUInt32(vecUntyped[i], sourceLocation);
-
-							constantExpr.value = vec;
-						}
+							constantExpr.value = LiteralToUInt32(vecUntyped, sourceLocation);
 						else
 							throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(*vecType), Ast::ToString(*targetType) };
 					};
