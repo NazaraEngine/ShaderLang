@@ -74,7 +74,29 @@ namespace nzsl::Ast
 					assert(expression->GetType() == NodeType::ConstantValueExpression);
 
 					const auto& constantValueExpr = static_cast<const ConstantValueExpression&>(*expression);
-					values.push_back(std::get<T>(constantValueExpr.value));
+					bool typeMatch = std::visit([&](auto&& arg)
+					{
+						using ValueType = std::decay_t<decltype(arg)>;
+
+						if constexpr (!std::is_same_v<ValueType, NoValue>)
+						{
+							auto value = ConstantPropagationTransformer::ResolveUntypedIfNecessary<ValueType, T>(arg);
+							using ResolvedValue = std::decay_t<decltype(value)>;
+
+							if constexpr (std::is_same_v<T, ResolvedValue>)
+							{
+								values.push_back(value);
+								return true;
+							}
+							else
+								return false;
+						}
+						else
+							return false;
+					}, constantValueExpr.value);
+
+					if (!typeMatch)
+						return nullptr;
 				}
 
 				return ShaderBuilder::ConstantArrayValue(std::move(values));
@@ -504,19 +526,21 @@ namespace nzsl::Ast
 
 				if (canOptimize)
 				{
-					// Rely on first type (TODO: Use innerType instead to handle empty arrays)
-					const auto& constantValExpr = static_cast<ConstantValueExpression&>(*node.expressions.front());
-					std::visit([&](auto&& arg)
+					std::optional<ConstantTypeTag> constantTypeTag = GetConstantType(innerType);
+					if (constantTypeTag)
 					{
-						using T = std::decay_t<decltype(arg)>;
-
-						if constexpr (Nz::IsComplete_v<ArrayBuilder<T>>)
+						std::visit([&](auto&& tag)
 						{
-							ArrayBuilder<T> builder;
-							optimized = builder(node.expressions, node.sourceLocation);
-						}
+							using TagType = std::decay_t<decltype(tag)>;
+							using T = typename TagType::Type;
 
-					}, constantValExpr.value);
+							if constexpr (Nz::IsComplete_v<ArrayBuilder<T>>)
+							{
+								ArrayBuilder<T> builder;
+								optimized = builder(node.expressions, node.sourceLocation);
+							}
+						}, *constantTypeTag);
+					}
 				}
 			}
 		}

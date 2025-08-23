@@ -4,6 +4,57 @@
 
 namespace nzsl::Ast
 {
+	inline std::optional<ConstantTypeTag> GetConstantType(const ExpressionType& exprType)
+	{
+		if (const PrimitiveType* primitiveType = std::get_if<PrimitiveType>(&exprType))
+		{
+			switch (*primitiveType)
+			{
+				case PrimitiveType::Boolean:      return Nz::TypeTag<bool>{};
+				case PrimitiveType::Float32:      return Nz::TypeTag<float>{};
+				case PrimitiveType::Float64:      return Nz::TypeTag<double>{};
+				case PrimitiveType::Int32:        return Nz::TypeTag<std::int32_t>{};
+				case PrimitiveType::String:       return std::nullopt;
+				case PrimitiveType::UInt32:       return Nz::TypeTag<std::uint32_t>{};
+				case PrimitiveType::FloatLiteral: return Nz::TypeTag<FloatLiteral>{};
+				case PrimitiveType::IntLiteral:   return Nz::TypeTag<IntLiteral>{};
+			}
+		}
+		else if (const VectorType* vecType = std::get_if<VectorType>(&exprType))
+		{
+			auto ResolveVector = [&](auto sizeConstant) -> std::optional<ConstantTypeTag>
+			{
+				constexpr std::size_t Dims = sizeConstant();
+
+				switch (vecType->type)
+				{
+					case PrimitiveType::Boolean:      return Nz::TypeTag<Vector<bool, Dims>>{};
+					case PrimitiveType::Float32:      return Nz::TypeTag<Vector<float, Dims>>{};
+					case PrimitiveType::Float64:      return Nz::TypeTag<Vector<double, Dims>>{};
+					case PrimitiveType::Int32:        return Nz::TypeTag<Vector<std::int32_t, Dims>>{};
+					case PrimitiveType::String:       return std::nullopt;
+					case PrimitiveType::UInt32:       return Nz::TypeTag<Vector<std::uint32_t, Dims>>{};
+					case PrimitiveType::FloatLiteral: return Nz::TypeTag<Vector<FloatLiteral, Dims>>{};
+					case PrimitiveType::IntLiteral:   return Nz::TypeTag<Vector<IntLiteral, Dims>>{};
+				}
+
+				return std::nullopt;
+			};
+
+			switch (vecType->componentCount)
+			{
+				case 2: return ResolveVector(std::integral_constant<std::size_t, 2>{}); break;
+				case 3: return ResolveVector(std::integral_constant<std::size_t, 3>{}); break;
+				case 4: return ResolveVector(std::integral_constant<std::size_t, 4>{}); break;
+
+				default:
+					NAZARA_UNREACHABLE();
+			}
+		}
+
+		return std::nullopt;
+	}
+
 	template<typename T>
 	ExpressionType GetConstantExpressionType()
 	{

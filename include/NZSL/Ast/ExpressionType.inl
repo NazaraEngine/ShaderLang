@@ -6,6 +6,16 @@
 
 namespace nzsl::Ast
 {
+	inline auto& BaseArrayType::InnerType()
+	{
+		return containedType->type;
+	}
+
+	inline const auto& BaseArrayType::InnerType() const
+	{
+		return containedType->type;
+	}
+
 	inline bool BaseArrayType::operator!=(const BaseArrayType& rhs) const
 	{
 		return !operator==(rhs);

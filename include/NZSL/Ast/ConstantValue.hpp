@@ -8,9 +8,11 @@
 #define NZSL_AST_CONSTANTVALUE_HPP
 
 #include <NazaraUtils/TypeList.hpp>
+#include <NazaraUtils/TypeTag.hpp>
 #include <NZSL/Config.hpp>
 #include <NZSL/Ast/ExpressionType.hpp>
 #include <NZSL/Math/Vector.hpp>
+#include <optional>
 #include <variant>
 #include <vector>
 
@@ -113,6 +115,18 @@ namespace nzsl::Ast
 	using ConstantArrayValue = Nz::TypeListInstantiate<Nz::TypeListConcat<Nz::TypeList<NoValue>, ConstantArrayTypes>, std::variant>;
 	using ConstantValue = Nz::TypeListInstantiate<Nz::TypeListConcat<Nz::TypeList<NoValue>, ConstantTypes>, std::variant>;
 
+	template<typename T>
+	struct WrapInTypeTag
+	{
+		using type = Nz::TypeTag<T>;
+	};
+
+	using ConstantTypeTag = Nz::TypeListInstantiate<Nz::TypeListTransform<ConstantTypes, WrapInTypeTag>, std::variant>;
+
+	template<typename T> struct ExpressionToConstantType_t;
+	template<typename T> using ExpressionToConstantType = typename ExpressionToConstantType_t<T>::type;
+
+	inline std::optional<ConstantTypeTag> GetConstantType(const ExpressionType& exprType);
 	template<typename T> ExpressionType GetConstantExpressionType();
 
 	NZSL_API ExpressionType GetConstantType(const ConstantValue& constant);
@@ -123,6 +137,9 @@ namespace nzsl::Ast
 	NZSL_API std::string ConstantToString(const ConstantArrayValue& value);
 	NZSL_API std::string ConstantToString(const ConstantSingleValue& value);
 
+	inline ConstantValue ToConstantValue(ConstantSingleValue value);
+	inline ConstantValue ToConstantValue(ConstantArrayValue value);
+
 	NZSL_API std::string ToString(bool value);
 	NZSL_API std::string ToString(double value, bool enforceType = false);
 	NZSL_API std::string ToString(float value, bool enforceType = false);
@@ -130,9 +147,6 @@ namespace nzsl::Ast
 	NZSL_API std::string ToString(std::uint32_t value, bool enforceType = false);
 	NZSL_API std::string ToString(FloatLiteral value, bool dummy = false);
 	NZSL_API std::string ToString(IntLiteral value, bool dummy = false);
-
-	inline ConstantValue ToConstantValue(ConstantSingleValue value);
-	inline ConstantValue ToConstantValue(ConstantArrayValue value);
 }
 
 #include <NZSL/Ast/ConstantValue.inl>

@@ -20,7 +20,6 @@
 #include <NZSL/Lang/Constants.hpp>
 #include <NZSL/Lang/Errors.hpp>
 #include <NZSL/Lang/LangData.hpp>
-#include <NZSL/Ast/Transformations/ConstantPropagationTransformer.hpp>
 #include <NZSL/Ast/Transformations/EliminateUnusedTransformer.hpp>
 #include <NZSL/Ast/Transformations/TransformerContext.hpp>
 #include <NZSL/Ast/Transformations/ValidationTransformer.hpp>
@@ -41,6 +40,12 @@ namespace nzsl::Ast
 
 		template<typename T, std::size_t N>
 		struct ConstantInnerTypeExtractor<Vector<T, N>>
+		{
+			using Type = typename ConstantInnerTypeExtractor<T>::Type;
+		};
+
+		template<typename T>
+		struct ConstantInnerTypeExtractor<std::vector<T>>
 		{
 			using Type = typename ConstantInnerTypeExtractor<T>::Type;
 		};
@@ -341,6 +346,18 @@ namespace nzsl::Ast
 				innerType = std::get<PrimitiveType>(expressionType);
 			else if (IsVectorType(expressionType))
 				innerType = std::get<VectorType>(expressionType).type;
+			else if (IsArrayType(expressionType))
+			{
+				const ArrayType& arrType = std::get<ArrayType>(expressionType);
+				
+				const ExpressionType& arrayInnerType = arrType.InnerType();
+				if (IsPrimitiveType(arrayInnerType))
+					innerType = std::get<PrimitiveType>(arrayInnerType);
+				else if (IsVectorType(arrayInnerType))
+					innerType = std::get<VectorType>(arrayInnerType).type;
+				else
+					return;
+			}
 			else
 				return;
 
@@ -1283,9 +1300,6 @@ namespace nzsl::Ast
 			if (identifier->conditionalIndex != m_states->currentConditionalIndex)
 				unresolved = true; //< right variable isn't know from this point
 		}
-
-		if (typeData && IsLiteralType(typeData->type))
-			NazaraDebugBreak();
 
 		std::size_t varIndex;
 		if (typeData)

@@ -38,6 +38,8 @@ namespace nzsl::Ast
 				std::function<const ConstantValue*(std::size_t constantId)> constantQueryCallback;
 			};
 
+			template<typename T, typename Other> static auto ResolveUntypedIfNecessary(T value);
+
 		protected:
 			using Transformer::Transform;
 
@@ -60,8 +62,6 @@ namespace nzsl::Ast
 			ExpressionPtr PropagateConstantSwizzle(std::size_t targetComponentCount, const std::array<std::uint32_t, 4>& components, const ConstantValueExpression& operand, const SourceLocation& sourceLocation);
 			template<typename TargetType> ExpressionPtr PropagateSingleValueCast(const ConstantValueExpression& operand, const SourceLocation& sourceLocation);
 			template<UnaryType Type> ExpressionPtr PropagateUnaryConstant(const ConstantValueExpression& operand, const SourceLocation& sourceLocation);
-
-			template<typename T, typename Other> static auto ResolveUntypedIfNecessary(T value);
 
 		private:
 			const Options* m_options;

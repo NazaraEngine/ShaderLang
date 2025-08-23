@@ -35,6 +35,9 @@ namespace nzsl::Ast
 		BaseArrayType(BaseArrayType&&) noexcept = default;
 		~BaseArrayType() = default;
 
+		inline auto& InnerType();
+		inline const auto& InnerType() const;
+
 		BaseArrayType& operator=(const BaseArrayType& array);
 		BaseArrayType& operator=(BaseArrayType&&) noexcept = default;
 
