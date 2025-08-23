@@ -2,6 +2,7 @@
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
+#include <type_traits>
 
 namespace nzsl::Ast
 {
@@ -49,5 +50,57 @@ namespace nzsl::Ast
 			output[i] = LiteralToUInt32(literal[i], sourceLocation);
 
 		return output;
+	}
+
+	template<typename T>
+	auto LiteralToFloat32(const std::vector<T>& literalVec, const SourceLocation& sourceLocation)
+	{
+		using RetT = decltype(LiteralToFloat32(std::declval<T>(), sourceLocation));
+
+		std::vector<RetT> ret;
+		ret.reserve(literalVec.size());
+		for (const auto& literal : literalVec)
+			ret.push_back(LiteralToFloat32(literal, sourceLocation));
+
+		return ret;
+	}
+
+	template<typename T>
+	auto LiteralToFloat64(const std::vector<T>& literalVec, const SourceLocation& sourceLocation)
+	{
+		using RetT = decltype(LiteralToFloat64(std::declval<T>(), sourceLocation));
+
+		std::vector<RetT> ret;
+		ret.reserve(literalVec.size());
+		for (const auto& literal : literalVec)
+			ret.push_back(LiteralToFloat64(literal, sourceLocation));
+
+		return ret;
+	}
+
+	template<typename T>
+	auto LiteralToInt32(const std::vector<T>& literalVec, const SourceLocation& sourceLocation)
+	{
+		using RetT = decltype(LiteralToInt32(std::declval<T>(), sourceLocation));
+
+		std::vector<RetT> ret;
+		ret.reserve(literalVec.size());
+		for (const auto& literal : literalVec)
+			ret.push_back(LiteralToInt32(literal, sourceLocation));
+
+		return ret;
+	}
+
+	template<typename T>
+	auto LiteralToUInt32(const std::vector<T>& literalVec, const SourceLocation& sourceLocation)
+	{
+		using RetT = decltype(LiteralToUInt32(std::declval<T>(), sourceLocation));
+
+		std::vector<RetT> ret;
+		ret.reserve(literalVec.size());
+		for (const auto& literal : literalVec)
+			ret.push_back(LiteralToUInt32(literal, sourceLocation));
+
+		return ret;
 	}
 }
