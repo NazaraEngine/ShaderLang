@@ -337,6 +337,8 @@ namespace nzsl::Ast
 
 	void ResolveTransformer::EnsureLiteralValue(const ExpressionType& expressionType, ConstantValue& constantValue, const SourceLocation& sourceLocation)
 	{
+		NAZARA_USE_ANONYMOUS_NAMESPACE
+
 		std::visit([&](auto& value)
 		{
 			using T = std::decay_t<decltype(value)>;
