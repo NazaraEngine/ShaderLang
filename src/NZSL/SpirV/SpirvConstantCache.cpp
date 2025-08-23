@@ -711,7 +711,7 @@ namespace nzsl
 
 	auto SpirvConstantCache::BuildType(const Ast::ArrayType& type) const -> TypePtr
 	{
-		const auto& containedType = type.containedType->type;
+		const auto& containedType = type.InnerType();
 
 		TypePtr builtContainedType = BuildType(containedType);
 
@@ -736,7 +736,7 @@ namespace nzsl
 
 	auto SpirvConstantCache::BuildType(const Ast::DynArrayType& type) const -> TypePtr
 	{
-		const auto& containedType = type.containedType->type;
+		const auto& containedType = type.InnerType();
 
 		TypePtr builtContainedType = BuildType(containedType);
 

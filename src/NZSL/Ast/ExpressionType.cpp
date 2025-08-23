@@ -37,7 +37,7 @@ namespace nzsl::Ast
 		if (aliasIndex != rhs.aliasIndex)
 			return false;
 
-		if (targetType->type != rhs.targetType->type)
+		if (TargetType() != rhs.TargetType())
 			return false;
 
 		return true;
@@ -67,7 +67,7 @@ namespace nzsl::Ast
 		if (isWrapped != rhs.isWrapped)
 			return false;
 
-		if (containedType->type != rhs.containedType->type)
+		if (InnerType() != rhs.InnerType())
 			return false;
 
 		return true;
@@ -126,13 +126,13 @@ namespace nzsl::Ast
 
 	std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const ArrayType& arrayType, const StructFinder& structFinder)
 	{
-		return RegisterStructField(fieldOffsets, arrayType.containedType->type, arrayType.length, structFinder);
+		return RegisterStructField(fieldOffsets, arrayType.InnerType(), arrayType.length, structFinder);
 	}
 
 	std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const ArrayType& arrayType, std::size_t arraySize, const StructFinder& structFinder)
 	{
 		FieldOffsets dummyStruct(fieldOffsets.GetLayout());
-		RegisterStructField(dummyStruct, arrayType.containedType->type, arrayType.length, structFinder);
+		RegisterStructField(dummyStruct, arrayType.InnerType(), arrayType.length, structFinder);
 
 		return fieldOffsets.AddStructArray(dummyStruct, arraySize);
 	}
@@ -140,7 +140,7 @@ namespace nzsl::Ast
 	std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const DynArrayType& arrayType, const StructFinder& structFinder)
 	{
 		FieldOffsets dummyStruct(fieldOffsets.GetLayout());
-		RegisterStructField(dummyStruct, arrayType.containedType->type, 1, structFinder);
+		RegisterStructField(dummyStruct, arrayType.InnerType(), 1, structFinder);
 
 		return fieldOffsets.AddStruct(dummyStruct);
 	}
@@ -148,7 +148,7 @@ namespace nzsl::Ast
 	std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const DynArrayType& arrayType, std::size_t arraySize, const StructFinder& structFinder)
 	{
 		FieldOffsets dummyStruct(fieldOffsets.GetLayout());
-		RegisterStructField(dummyStruct, arrayType.containedType->type, 1, structFinder);
+		RegisterStructField(dummyStruct, arrayType.InnerType(), 1, structFinder);
 
 		return fieldOffsets.AddStructArray(dummyStruct, arraySize);
 	}
@@ -279,7 +279,7 @@ namespace nzsl::Ast
 
 	std::size_t ResolveStructIndex(const AliasType& aliasType)
 	{
-		return ResolveStructIndex(aliasType.targetType->type);
+		return ResolveStructIndex(aliasType.TargetType());
 	}
 
 	std::size_t ResolveStructIndex(const ExpressionType& exprType)
@@ -336,17 +336,17 @@ namespace nzsl::Ast
 	std::string ToString(const AliasType& type, const Stringifier& stringifier)
 	{
 		if (stringifier.aliasStringifier)
-			return fmt::format("alias {} -> {}", stringifier.aliasStringifier(type.aliasIndex), ToString(type.targetType->type, stringifier));
+			return fmt::format("alias {} -> {}", stringifier.aliasStringifier(type.aliasIndex), ToString(type.TargetType(), stringifier));
 		else
-			return fmt::format("alias #{} -> {}", type.aliasIndex, ToString(type.targetType->type, stringifier));
+			return fmt::format("alias #{} -> {}", type.aliasIndex, ToString(type.TargetType(), stringifier));
 	}
 
 	std::string ToString(const ArrayType& type, const Stringifier& stringifier)
 	{
 		if (type.length > 0)
-			return fmt::format("array[{}, {}]", ToString(type.containedType->type, stringifier), type.length);
+			return fmt::format("array[{}, {}]", ToString(type.InnerType(), stringifier), type.length);
 		else
-			return fmt::format("array[{}]", ToString(type.containedType->type, stringifier));
+			return fmt::format("array[{}]", ToString(type.InnerType(), stringifier));
 	}
 
 	std::string ToString(const ImplicitVectorType& type, const Stringifier& /*stringifier*/)
@@ -356,7 +356,7 @@ namespace nzsl::Ast
 
 	std::string ToString(const DynArrayType& type, const Stringifier& stringifier)
 	{
-		return fmt::format("dyn_array[{}]", ToString(type.containedType->type, stringifier));
+		return fmt::format("dyn_array[{}]", ToString(type.InnerType(), stringifier));
 	}
 
 	std::string ToString(const ExpressionType& type, const Stringifier& stringifier)

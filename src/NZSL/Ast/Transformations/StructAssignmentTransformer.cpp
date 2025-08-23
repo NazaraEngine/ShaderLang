@@ -127,15 +127,15 @@ namespace nzsl::Ast
 				for (std::uint32_t i = 0; i < arrayType.length; ++i)
 				{
 					ExpressionPtr dstAccess = ShaderBuilder::AccessIndex(Clone(*dstVar), Nz::SafeCast<std::int32_t>(i));
-					dstAccess->cachedExpressionType = arrayType.containedType->type;
+					dstAccess->cachedExpressionType = arrayType.InnerType();
 					dstAccess->sourceLocation = assign.sourceLocation;
 
 					ExpressionPtr srcAccess = ShaderBuilder::AccessIndex(Clone(*srcVar), Nz::SafeCast<std::int32_t>(i));
-					srcAccess->cachedExpressionType = WrapExternalType(arrayType.containedType->type, *sourceType);
+					srcAccess->cachedExpressionType = WrapExternalType(arrayType.InnerType(), *sourceType);
 					srcAccess->sourceLocation = assign.sourceLocation;
 
 					ExpressionPtr memberAssign = ShaderBuilder::Assign(AssignType::Simple, std::move(dstAccess), std::move(srcAccess));
-					memberAssign->cachedExpressionType = arrayType.containedType->type;
+					memberAssign->cachedExpressionType = arrayType.InnerType();
 					memberAssign->sourceLocation = assign.sourceLocation;
 					HandleExpression(memberAssign);
 

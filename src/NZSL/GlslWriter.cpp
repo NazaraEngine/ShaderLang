@@ -135,9 +135,9 @@ namespace nzsl
 					requiredPrecisionQualifiers.insert(textureType);
 				}
 				else if (IsArrayType(type))
-					RegisterPrecisionQualifiers(std::get<Ast::ArrayType>(type).containedType->type);
+					RegisterPrecisionQualifiers(std::get<Ast::ArrayType>(type).InnerType());
 				else if (IsDynArrayType(type))
-					RegisterPrecisionQualifiers(std::get<Ast::DynArrayType>(type).containedType->type);
+					RegisterPrecisionQualifiers(std::get<Ast::DynArrayType>(type).InnerType());
 			}
 
 			void RegisterStructType(const Ast::ExpressionType& type)
@@ -156,9 +156,9 @@ namespace nzsl
 				else if (IsStructType(type))
 					usedStructs.UnboundedSet(std::get<Ast::StructType>(type).structIndex);
 				else if (IsArrayType(type))
-					RegisterStructType(std::get<Ast::ArrayType>(type).containedType->type);
+					RegisterStructType(std::get<Ast::ArrayType>(type).InnerType());
 				else if (IsDynArrayType(type))
-					RegisterStructType(std::get<Ast::DynArrayType>(type).containedType->type);
+					RegisterStructType(std::get<Ast::DynArrayType>(type).InnerType());
 			}
 
 			void Resolve()
@@ -968,14 +968,14 @@ namespace nzsl
 				const auto& arrayType = std::get<Ast::ArrayType>(*exprType);
 				lengths.push_back(arrayType.length);
 
-				exprType = &arrayType.containedType->type;
+				exprType = &arrayType.InnerType();
 			}
 			else if (Ast::IsDynArrayType(*exprType))
 			{
 				const auto& arrayType = std::get<Ast::DynArrayType>(*exprType);
 				lengths.push_back(0);
 
-				exprType = &arrayType.containedType->type;
+				exprType = &arrayType.InnerType();
 			}
 			else
 				break;

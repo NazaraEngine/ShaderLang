@@ -504,7 +504,7 @@ namespace nzsl::Ast
 
 			if (!node.expressions.empty())
 			{
-				const ExpressionType& innerType = arrayType.containedType->type;
+				const ExpressionType& innerType = arrayType.InnerType();
 
 				// Check if every value is constant
 				bool canOptimize = true;

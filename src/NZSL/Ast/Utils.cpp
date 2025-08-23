@@ -574,7 +574,7 @@ namespace nzsl::Ast
 				return CheckLiteralType(std::get<VectorType>(resolvedLeftType).type, std::get<VectorType>(resolvedRightType).type);
 			
 			if (IsArrayType(resolvedLeftType) && IsArrayType(resolvedRightType))
-				return ValidateMatchingTypes(std::get<ArrayType>(resolvedLeftType).containedType->type, std::get<ArrayType>(resolvedRightType).containedType->type);
+				return ValidateMatchingTypes(std::get<ArrayType>(resolvedLeftType).InnerType(), std::get<ArrayType>(resolvedRightType).InnerType());
 		}
 
 		return false;

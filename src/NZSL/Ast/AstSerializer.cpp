@@ -715,7 +715,7 @@ namespace nzsl::Ast
 			{
 				m_serializer.Serialize(std::uint8_t(8));
 				Value(arg.length);
-				Type(arg.containedType->type);
+				Type(arg.InnerType());
 				if (IsVersionGreaterOrEqual(8))
 					Value(arg.isWrapped);
 			}
@@ -744,7 +744,7 @@ namespace nzsl::Ast
 			{
 				m_serializer.Serialize(std::uint8_t(13));
 				SizeT(arg.aliasIndex);
-				Type(arg.targetType->type);
+				Type(arg.TargetType());
 			}
 			else if constexpr (std::is_same_v<T, Ast::StorageType>)
 			{
@@ -756,7 +756,7 @@ namespace nzsl::Ast
 			else if constexpr (std::is_same_v<T, Ast::DynArrayType>)
 			{
 				m_serializer.Serialize(std::uint8_t(15));
-				Type(arg.containedType->type);
+				Type(arg.InnerType());
 			}
 			else if constexpr (std::is_same_v<T, Ast::TextureType>)
 			{
@@ -1077,8 +1077,7 @@ NAZARA_WARNING_GCC_DISABLE("-Wmaybe-uninitialized")
 
 				ArrayType arrayType;
 				arrayType.length = length;
-				arrayType.containedType = std::make_unique<ContainedType>();
-				arrayType.containedType->type = std::move(containedType);
+				arrayType.SetupInnerType(std::move(containedType));
 
 				if (IsVersionGreaterOrEqual(8))
 					Value(arrayType.isWrapped);
@@ -1146,8 +1145,7 @@ NAZARA_WARNING_GCC_DISABLE("-Wmaybe-uninitialized")
 
 				AliasType aliasType;
 				aliasType.aliasIndex = aliasIndex;
-				aliasType.targetType = std::make_unique<ContainedType>();
-				aliasType.targetType->type = std::move(containedType);
+				aliasType.SetupTargetType(std::move(containedType));
 
 				type = std::move(aliasType);
 				break;
@@ -1177,8 +1175,7 @@ NAZARA_WARNING_GCC_DISABLE("-Wmaybe-uninitialized")
 				Type(containedType);
 
 				DynArrayType arrayType;
-				arrayType.containedType = std::make_unique<ContainedType>();
-				arrayType.containedType->type = std::move(containedType);
+				arrayType.SetupInnerType(std::move(containedType));
 
 				type = std::move(arrayType);
 				break;

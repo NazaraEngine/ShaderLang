@@ -429,8 +429,7 @@ namespace nzsl::Ast
 
 			AliasType remappedAliasType;
 			remappedAliasType.aliasIndex = it->second;
-			remappedAliasType.targetType = std::make_unique<ContainedType>();
-			remappedAliasType.targetType->type = RemapType(aliasType.targetType->type);
+			remappedAliasType.SetupTargetType(RemapType(aliasType.TargetType()));
 
 			return remappedAliasType;
 		}
@@ -439,8 +438,7 @@ namespace nzsl::Ast
 			const ArrayType& arrayType = std::get<ArrayType>(exprType);
 
 			ArrayType remappedArrayType;
-			remappedArrayType.containedType = std::make_unique<ContainedType>();
-			remappedArrayType.containedType->type = RemapType(arrayType.containedType->type);
+			remappedArrayType.SetupInnerType(RemapType(arrayType.InnerType()));
 			remappedArrayType.length = arrayType.length;
 
 			return remappedArrayType;
@@ -450,8 +448,7 @@ namespace nzsl::Ast
 			const DynArrayType& arrayType = std::get<DynArrayType>(exprType);
 
 			DynArrayType remappedArrayType;
-			remappedArrayType.containedType = std::make_unique<ContainedType>();
-			remappedArrayType.containedType->type = RemapType(arrayType.containedType->type);
+			remappedArrayType.SetupInnerType(RemapType(arrayType.InnerType()));
 
 			return remappedArrayType;
 		}
