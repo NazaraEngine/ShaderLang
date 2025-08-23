@@ -63,7 +63,7 @@ fn foo()
 {
 	let x: f32;
 	let v: vec3[f32] = vec3[f32](x, x, x);
-	let runtimeArray: array[vec3[i32], 3] = array[vec3[i32], 3](vec3[i32](-1, 1, 0), vec3[i32](-1, -3, 42), vec3[i32](3, 1, -1))
+	let runtimeArray: array[vec3[i32], 3] = array[vec3[i32], 3](vec3[i32](-1, 1, 0), vec3[i32](-1, -3, 42), vec3[i32](3, 1, -1));
 }
 )");
 
