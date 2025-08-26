@@ -27,11 +27,8 @@ fn foo()
 	let x: f32;
 	let v = vec3(x, x, x); // no need to write vec3[f32](x, x, x)
 	
-	let runtimeArray = array[vec3[i32]](
-		vec3[i32](-1, 1, 0),
-		vec3(-1, -3, 42),
-		vec3( 3, 1, -1)
-	);
+	let value = vec3(-1, -3, 42);
+	let runtimeArray = array[vec3[i32]](value, value, vec3(1, 2, 3));
 }
 )";
 
@@ -48,7 +45,8 @@ void main()
 {
 	float x;
 	vec3 v = vec3(x, x, x);
-	ivec3 runtimeArray[3] = ivec3[3](ivec3(-1, 1, 0), ivec3(-1, -3, 42), ivec3(3, 1, -1));
+	ivec3 value = ivec3(-1, -3, 42);
+	ivec3 runtimeArray[3] = ivec3[3](value, value, ivec3(1, 2, 3));
 })");
 
 		ExpectNZSL(*shaderModule, R"(
@@ -63,7 +61,8 @@ fn foo()
 {
 	let x: f32;
 	let v: vec3[f32] = vec3[f32](x, x, x);
-	let runtimeArray: array[vec3[i32], 3] = array[vec3[i32], 3](vec3[i32](-1, 1, 0), vec3[i32](-1, -3, 42), vec3[i32](3, 1, -1));
+	let value: vec3[i32] = vec3[i32](-1, -3, 42);
+	let runtimeArray: array[vec3[i32], 3] = array[vec3[i32], 3](value, value, vec3[i32](1, 2, 3));
 }
 )");
 
@@ -88,31 +87,35 @@ fn foo()
 %19 = OpTypeVector %1 3
 %20 = OpTypePointer StorageClass(Function) %19
 %21 = OpTypeInt 32 1
-%22 = OpConstant %21 i32(-1)
-%23 = OpConstant %21 i32(1)
-%24 = OpConstant %21 i32(0)
-%25 = OpTypeVector %21 3
-%26 = OpConstant %21 i32(-3)
-%27 = OpConstant %21 i32(42)
-%28 = OpConstantComposite %25 %22 %26 %27
-%29 = OpConstant %21 i32(3)
-%30 = OpConstantComposite %25 %29 %23 %22
-%31 = OpTypeArray %25 %4
-%32 = OpTypePointer StorageClass(Function) %31
+%22 = OpTypeVector %21 3
+%23 = OpConstant %21 i32(-1)
+%24 = OpConstant %21 i32(-3)
+%25 = OpConstant %21 i32(42)
+%26 = OpConstantComposite %22 %23 %24 %25
+%27 = OpTypePointer StorageClass(Function) %22
+%28 = OpConstant %21 i32(1)
+%29 = OpConstant %21 i32(2)
+%30 = OpConstant %21 i32(3)
+%31 = OpConstantComposite %22 %28 %29 %30
+%32 = OpTypeArray %22 %4
+%33 = OpTypePointer StorageClass(Function) %32
 %15 = OpVariable %6 StorageClass(Private) %14
-%33 = OpFunction %16 FunctionControl(0) %17
-%34 = OpLabel
-%35 = OpVariable %18 StorageClass(Function)
-%36 = OpVariable %20 StorageClass(Function)
-%37 = OpVariable %32 StorageClass(Function)
-%38 = OpLoad %1 %35
-%39 = OpLoad %1 %35
-%40 = OpLoad %1 %35
-%41 = OpCompositeConstruct %19 %38 %39 %40
-      OpStore %36 %41
-%42 = OpCompositeConstruct %25 %22 %23 %24
-%43 = OpCompositeConstruct %31 %42 %28 %30
+%34 = OpFunction %16 FunctionControl(0) %17
+%35 = OpLabel
+%36 = OpVariable %18 StorageClass(Function)
+%37 = OpVariable %20 StorageClass(Function)
+%38 = OpVariable %27 StorageClass(Function)
+%39 = OpVariable %33 StorageClass(Function)
+%40 = OpLoad %1 %36
+%41 = OpLoad %1 %36
+%42 = OpLoad %1 %36
+%43 = OpCompositeConstruct %19 %40 %41 %42
       OpStore %37 %43
+      OpStore %38 %26
+%44 = OpLoad %22 %38
+%45 = OpLoad %22 %38
+%46 = OpCompositeConstruct %32 %44 %45 %31
+      OpStore %39 %46
       OpReturn
       OpFunctionEnd)", {}, {}, true);
 	}
