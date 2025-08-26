@@ -158,6 +158,22 @@ namespace nzsl::Ast
 		}, value);
 	}
 
+	ConstantValue ToConstantValue(ConstantSingleValue value)
+	{
+		return std::visit([&](auto&& arg) -> ConstantValue
+		{
+			return std::move(arg);
+		}, std::move(value));
+	}
+
+	ConstantValue ToConstantValue(ConstantArrayValue value)
+	{
+		return std::visit([&](auto&& arg) -> ConstantValue
+		{
+			return std::move(arg);
+		}, std::move(value));
+	}
+
 	std::string ToString(bool value)
 	{
 		return (value) ? "true" : "false";
