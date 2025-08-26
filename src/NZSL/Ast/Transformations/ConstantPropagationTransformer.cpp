@@ -295,34 +295,7 @@ namespace nzsl::Ast
 			const ConstantValueExpression& lhsConstant = static_cast<const ConstantValueExpression&>(*node.left);
 			const ConstantValueExpression& rhsConstant = static_cast<const ConstantValueExpression&>(*node.right);
 
-			ExpressionPtr optimized;
-			switch (node.op)
-			{
-				case BinaryType::Add:
-				case BinaryType::BitwiseAnd:
-				case BinaryType::BitwiseOr:
-				case BinaryType::BitwiseXor:
-				case BinaryType::Divide:
-				case BinaryType::ShiftLeft:
-				case BinaryType::LogicalAnd:
-				case BinaryType::LogicalOr:
-				case BinaryType::Modulo:
-				case BinaryType::Multiply:
-				case BinaryType::ShiftRight:
-				case BinaryType::Subtract:
-					optimized = PropagateBinaryArithmeticsConstant(node.op, lhsConstant, rhsConstant, node.sourceLocation);
-					break;
-
-				case BinaryType::CompEq:
-				case BinaryType::CompGe:
-				case BinaryType::CompGt:
-				case BinaryType::CompLe:
-				case BinaryType::CompLt:
-				case BinaryType::CompNe:
-					optimized = PropagateBinaryComparisonConstant(node.op, lhsConstant, rhsConstant, node.sourceLocation);
-					break;
-			}
-
+			ExpressionPtr optimized = PropagateBinaryConstant(node.op, lhsConstant, rhsConstant, node.sourceLocation);
 			if (optimized)
 			{
 				optimized->cachedExpressionType = node.cachedExpressionType;
