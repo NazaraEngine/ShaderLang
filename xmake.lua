@@ -46,6 +46,7 @@ add_rules("plugin.vsxmake.autoupdate")
 
 add_includedirs("include", "src")
 set_exceptions("cxx")
+set_fpmodels("precise")
 set_languages("c89", "c++17")
 set_rundir("./bin/$(plat)_$(arch)_$(mode)")
 set_targetdir("./bin/$(plat)_$(arch)_$(mode)")
@@ -87,7 +88,6 @@ elseif is_mode("coverage") then
 		add_links("gcov")
 	end
 elseif is_mode("releasedbg") then
-	set_fpmodels("fast")
 	add_vectorexts("sse", "sse2", "sse3", "ssse3")
 end
 
