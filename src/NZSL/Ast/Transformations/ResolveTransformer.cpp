@@ -189,19 +189,9 @@ namespace nzsl::Ast
 		PropagateConstants(expr);
 
 		if (expr->GetType() == NodeType::ConstantValueExpression)
-		{
-			return std::visit([&](auto&& value) -> ConstantValue
-			{
-				return value;
-			}, static_cast<ConstantValueExpression&>(*expr).value);
-		}
+			return ToConstantValue(static_cast<ConstantValueExpression&>(*expr).value);
 		else if (expr->GetType() == NodeType::ConstantArrayValueExpression)
-		{
-			return std::visit([&](auto&& values) -> ConstantValue
-			{
-				return values;
-			}, static_cast<ConstantArrayValueExpression&>(*expr).values);
-		}
+			return ToConstantValue(static_cast<ConstantArrayValueExpression&>(*expr).values);
 		else
 		{
 			if (!m_context->partialCompilation)
