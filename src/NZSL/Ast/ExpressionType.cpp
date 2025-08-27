@@ -350,7 +350,7 @@ namespace nzsl::Ast
 			return fmt::format("array[{}]", ToString(type.InnerType(), stringifier));
 	}
 
-	std::string ToString(const ImplicitArrayType& type, const Stringifier& /*stringifier*/)
+	std::string ToString(const ImplicitArrayType& /*type*/, const Stringifier& /*stringifier*/)
 	{
 		return "array";
 	}
