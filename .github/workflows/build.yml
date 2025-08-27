@@ -42,16 +42,16 @@ jobs:
         - { name: Android NDK 26b,   runner: ubuntu-latest,  shell: bash,        plat: android,  arch: armeabi-v7a, mode: releasedbg, package: true,  test: false, ndk_ver: 26b, ndk_sdkver: 28  }
         - { name: Android NDK 26b,   runner: ubuntu-latest,  shell: bash,        plat: android,  arch: arm64-v8a,   mode: debug,      package: true,  test: false, ndk_ver: 26b, ndk_sdkver: 28  }
         - { name: Android NDK 26b,   runner: ubuntu-latest,  shell: bash,        plat: android,  arch: arm64-v8a,   mode: releasedbg, package: true,  test: false, ndk_ver: 26b, ndk_sdkver: 28  }
-        - { name: macOS x86_64,      runner: macos-latest,   shell: bash,        plat: macosx,   arch: x86_64,      mode: debug,      package: true,  test: true,                                }
-        - { name: macOS x86_64,      runner: macos-latest,   shell: bash,        plat: macosx,   arch: x86_64,      mode: releasedbg, package: true,  test: true,                                }
-        - { name: macOS ARM64,       runner: macos-14,       shell: bash,        plat: macosx,   arch: arm64,       mode: debug,      package: true,  test: true,                                }
-        - { name: macOS ARM64,       runner: macos-14,       shell: bash,        plat: macosx,   arch: arm64,       mode: releasedbg, package: true,  test: true,                                }
+        - { name: macOS,             runner: macos-latest,   shell: bash,        plat: macosx,   arch: x86_64,      mode: debug,      package: true,  test: true,                                }
+        - { name: macOS,             runner: macos-latest,   shell: bash,        plat: macosx,   arch: x86_64,      mode: releasedbg, package: true,  test: true,                                }
+        - { name: macOS,             runner: macos-14,       shell: bash,        plat: macosx,   arch: arm64,       mode: debug,      package: true,  test: true,                                }
+        - { name: macOS,             runner: macos-14,       shell: bash,        plat: macosx,   arch: arm64,       mode: releasedbg, package: true,  test: true,                                }
         - { name: iOS,               runner: macos-latest,   shell: bash,        plat: iphoneos, arch: arm64,       mode: debug,      package: true,  test: false,                               }
         - { name: iOS,               runner: macos-latest,   shell: bash,        plat: iphoneos, arch: arm64,       mode: releasedbg, package: true,  test: false,                               }
-        - { name: Emscripten,        runner: ubuntu-latest,  shell: bash,        plat: wasm,     arch: wasm32,      mode: debug,      package: false, test: false,                               }
-        - { name: Emscripten,        runner: ubuntu-latest,  shell: bash,        plat: wasm,     arch: wasm32,      mode: releasedbg, package: false, test: false,                               }
-        - { name: Emscripten,        runner: ubuntu-latest,  shell: bash,        plat: wasm,     arch: wasm64,      mode: debug,      package: false, test: false,                               }
-        - { name: Emscripten,        runner: ubuntu-latest,  shell: bash,        plat: wasm,     arch: wasm64,      mode: releasedbg, package: false, test: false,                               }
+        - { name: Emscripten,        runner: ubuntu-latest,  shell: bash,        plat: wasm,     arch: wasm32,      mode: debug,      package: true,  test: false,                               }
+        - { name: Emscripten,        runner: ubuntu-latest,  shell: bash,        plat: wasm,     arch: wasm32,      mode: releasedbg, package: true,  test: false,                               }
+        - { name: Emscripten,        runner: ubuntu-latest,  shell: bash,        plat: wasm,     arch: wasm64,      mode: debug,      package: true,  test: false,                               }
+        - { name: Emscripten,        runner: ubuntu-latest,  shell: bash,        plat: wasm,     arch: wasm64,      mode: releasedbg, package: true,  test: false,                               }
         kind: [shared, static]
         exclude:
           - confs: { name: Emscripten }
