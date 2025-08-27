@@ -151,11 +151,16 @@ jobs:
           PLATFORM_CONF="$PLATFORM_CONF --fs_watcher=n" >> $GITHUB_ENV
         fi
         echo "ADDITIONAL_CONF=${{ env.ADDITIONAL_CONF }} $PLATFORM_CONF" >> $GITHUB_ENV
-        if [ "${{ matrix.confs.plat }}" == "windows" ]; then
-          echo "OUTPUT_FILE=${{ matrix.confs.plat }}_${{ matrix.confs.arch }}_${{ matrix.kind }}_${{ matrix.confs.mode }}.zip" >> $GITHUB_ENV
-        else
-          echo "OUTPUT_FILE=${{ matrix.confs.plat }}_${{ matrix.confs.arch }}_${{ matrix.kind }}_${{ matrix.confs.mode }}.tgz" >> $GITHUB_ENV
+        FILENAME="nzsl_${{ matrix.confs.plat }}_${{ matrix.confs.arch }}_${{ matrix.kind }}"
+        if [ ! "${{ startsWith(github.event.ref, 'refs/tags/') }}" ]; then
+          FILENAME="$FILENAME_${{ matrix.confs.mode }}"
         fi
+        if [ "${{ matrix.confs.plat }}" == "windows" ]; then
+          FILENAME="$FILENAME.zip"
+        else
+          FILENAME="$FILENAME.tgz"
+        fi
+        echo "OUTPUT_FILE=$FILENAME" >> $GITHUB_ENV
 
     # Setup compilation mode and install project dependencies
     - name: Configure xmake and install dependencies
