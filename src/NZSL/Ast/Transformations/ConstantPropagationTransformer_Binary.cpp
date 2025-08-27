@@ -403,7 +403,7 @@ namespace nzsl::Ast
 			{
 				using T1Base = typename T1Resolved::Base;
 				static_assert(std::is_same_v<T1Base, T2Resolved>);
-			
+
 				using RetType = Vector<T1Base, T1Resolved::Dimensions>;
 
 				RetType value;
