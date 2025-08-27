@@ -331,6 +331,14 @@ namespace nzsl::Ast
 			Transform(*node.cachedExpressionType, node.sourceLocation);
 	}
 
+	void Transformer::HandleChildren(TypeConstantExpression& node)
+	{
+		Transform(node.type, node.sourceLocation);
+
+		if (node.cachedExpressionType)
+			Transform(*node.cachedExpressionType, node.sourceLocation);
+	}
+
 	void Transformer::HandleChildren(TypeExpression& node)
 	{
 		if (node.cachedExpressionType)

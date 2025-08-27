@@ -207,6 +207,11 @@ namespace nzsl::ShaderBuilder
 			inline Ast::SwizzleExpressionPtr operator()(Ast::ExpressionPtr expression, std::vector<std::uint32_t> swizzleComponents) const;
 		};
 
+		struct TypeConstant
+		{
+			inline Ast::TypeConstantExpressionPtr operator()(Ast::ExpressionType expressionType, Ast::TypeConstant typeConstant) const;
+		};
+
 		struct Unary
 		{
 			inline Ast::UnaryExpressionPtr operator()(Ast::UnaryType op, Ast::ExpressionPtr expression) const;
@@ -262,6 +267,7 @@ namespace nzsl::ShaderBuilder
 	constexpr Impl::Scoped Scoped;
 	constexpr Impl::StructType StructType;
 	constexpr Impl::Swizzle Swizzle;
+	constexpr Impl::TypeConstant TypeConstant;
 	constexpr Impl::Unary Unary;
 	constexpr Impl::Variable Variable;
 	constexpr Impl::While While;

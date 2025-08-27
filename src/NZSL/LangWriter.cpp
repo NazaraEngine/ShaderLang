@@ -440,6 +440,11 @@ namespace nzsl
 		throw std::runtime_error("unexpected type?");
 	}
 
+	void LangWriter::Append(Ast::TypeConstant typeConstant)
+	{
+		Append(Parser::ToString(typeConstant));
+	}
+
 	void LangWriter::Append(const Ast::UniformType& uniformType)
 	{
 		Append("uniform[", uniformType.containedType, "]");
@@ -1362,6 +1367,11 @@ namespace nzsl
 		const char* componentStr = "xyzw";
 		for (std::size_t i = 0; i < node.componentCount; ++i)
 			Append(componentStr[node.components[i]]);
+	}
+
+	void LangWriter::Visit(Ast::TypeConstantExpression& node)
+	{
+		Append(node.type, ".", Parser::ToString(node.typeConstant));
 	}
 
 	void LangWriter::Visit(Ast::VariableValueExpression& node)

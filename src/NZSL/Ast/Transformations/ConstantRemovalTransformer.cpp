@@ -93,6 +93,55 @@ namespace nzsl::Ast
 		return DontVisitChildren{};
 	}
 
+	auto ConstantRemovalTransformer::Transform(TypeConstantExpression&& typeConstantExpr) -> ExpressionTransformation
+	{
+		if (!m_options->removeTypeConstant)
+			return VisitChildren{};
+
+		HandleChildren(typeConstantExpr);
+
+		assert(IsPrimitiveType(typeConstantExpr.type));
+		PrimitiveType primitiveType = std::get<PrimitiveType>(typeConstantExpr.type);
+
+		auto ReplaceByValue = [&](auto&& type)
+		{
+			using T = std::decay_t<decltype(type)>;
+
+			if (typeConstantExpr.typeConstant == TypeConstant::Max)
+				return ShaderBuilder::ConstantValue(Nz::MaxValue<T>());
+
+			if (typeConstantExpr.typeConstant == TypeConstant::Min)
+				return ShaderBuilder::ConstantValue(Nz::MinValue<T>());
+
+			if constexpr (std::is_floating_point_v<T>)
+			{
+				if (typeConstantExpr.typeConstant == TypeConstant::Infinity)
+					return ShaderBuilder::ConstantValue(Nz::Infinity<T>());
+
+				if (typeConstantExpr.typeConstant == TypeConstant::NaN)
+					return ShaderBuilder::ConstantValue(Nz::NaN<T>());
+			}
+
+			throw std::runtime_error("unexpected type constant with type");
+		};
+
+		switch (primitiveType)
+		{
+			case PrimitiveType::Float32: return ReplaceExpression{ ReplaceByValue(float{}) };
+			case PrimitiveType::Float64: return ReplaceExpression{ ReplaceByValue(double{}) };
+			case PrimitiveType::Int32:   return ReplaceExpression{ ReplaceByValue(std::int32_t{}) };
+			case PrimitiveType::UInt32:  return ReplaceExpression{ ReplaceByValue(std::uint32_t{}) };
+
+			case PrimitiveType::Boolean:
+			case PrimitiveType::FloatLiteral:
+			case PrimitiveType::IntLiteral:
+			case PrimitiveType::String:
+				throw std::runtime_error("unexpected primitive type");
+		}
+
+		return DontVisitChildren{};
+	}
+
 	auto ConstantRemovalTransformer::Transform(DeclareConstStatement&& declConst) -> StatementTransformation
 	{
 		if (!declConst.constIndex)

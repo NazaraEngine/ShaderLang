@@ -236,6 +236,7 @@ namespace nzsl::Ast
 		NamedExternalBlockExpression = 43,
 		StructTypeExpression         = 16,
 		SwizzleExpression            = 17,
+		TypeConstantExpression       = 45,
 		TypeExpression               = 18,
 		VariableValueExpression      = 19,
 		UnaryExpression              = 20,
@@ -263,7 +264,7 @@ namespace nzsl::Ast
 		ScopedStatement          = 38,
 		WhileStatement           = 39,
 
-		Max = AccessFieldExpression
+		Max = TypeConstantExpression
 	};
 
 	enum class PrimitiveType
@@ -276,6 +277,14 @@ namespace nzsl::Ast
 		UInt32         = 3, //< u32
 		FloatLiteral   = 6, //< FloatLiteral
 		IntLiteral     = 7, //< IntLiteral
+	};
+
+	enum class TypeConstant
+	{
+		Infinity = 0,
+		Max      = 1,
+		Min      = 2,
+		NaN      = 3
 	};
 
 	enum class UnaryType

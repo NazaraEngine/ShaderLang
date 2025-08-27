@@ -998,6 +998,39 @@ namespace nzsl::Ast
 		return DontVisitChildren{};
 	}
 
+	auto ValidationTransformer::Transform(TypeConstantExpression&& node) -> ExpressionTransformation
+	{
+		HandleChildren(node);
+
+		if (!IsPrimitiveType(node.type))
+			throw CompilerTypeConstantUnsupportedTypeError{ node.sourceLocation, ToString(node.type, node.sourceLocation), node.typeConstant };
+
+		PrimitiveType primitiveType = std::get<PrimitiveType>(node.type);
+
+		switch (node.typeConstant)
+		{
+			case TypeConstant::Max:
+			case TypeConstant::Min:
+			{
+				if (primitiveType != PrimitiveType::Float32 && primitiveType != PrimitiveType::Float64 && primitiveType != PrimitiveType::Int32 && primitiveType != PrimitiveType::UInt32)
+					throw CompilerTypeConstantUnsupportedTypeError{ node.sourceLocation, ToString(node.type, node.sourceLocation), node.typeConstant };
+
+				break;
+			}
+
+			case TypeConstant::Infinity:
+			case TypeConstant::NaN:
+			{
+				if (primitiveType != PrimitiveType::Float32 && primitiveType != PrimitiveType::Float64)
+					throw CompilerTypeConstantUnsupportedTypeError{ node.sourceLocation, ToString(node.type, node.sourceLocation), node.typeConstant };
+
+				break;
+			}
+		}
+
+		return DontVisitChildren{};
+	}
+
 	auto ValidationTransformer::Transform(TypeExpression&& node) -> ExpressionTransformation
 	{
 		HandleChildren(node);

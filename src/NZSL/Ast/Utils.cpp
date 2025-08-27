@@ -159,6 +159,11 @@ namespace nzsl::Ast
 		}
 	}
 
+	void ValueCategory::Visit(TypeConstantExpression& /*node*/)
+	{
+		m_expressionCategory = ExpressionCategory::RValue;
+	}
+
 	void ValueCategory::Visit(TypeExpression& /*node*/)
 	{
 		m_expressionCategory = ExpressionCategory::LValue;

@@ -549,6 +549,17 @@ namespace nzsl::Ast
 		return true;
 	}
 
+	bool Compare(const TypeConstantExpression& lhs, const TypeConstantExpression& rhs, const ComparisonParams& params)
+	{
+		if (!Compare(lhs.typeConstant, rhs.typeConstant, params))
+			return false;
+
+		if (!Compare(lhs.type, rhs.type, params))
+			return false;
+
+		return true;
+	}
+
 	bool Compare(const TypeExpression& lhs, const TypeExpression& rhs, const ComparisonParams& params)
 	{
 		if (!Compare(lhs.typeId, rhs.typeId, params))
