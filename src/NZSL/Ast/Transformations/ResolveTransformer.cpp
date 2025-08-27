@@ -644,10 +644,13 @@ namespace nzsl::Ast
 
 		// Array
 		RegisterPartialType("array", PartialType {
-			{ TypeParameterCategory::FullType }, { TypeParameterCategory::ConstantValue },
+			{}, { TypeParameterCategory::FullType, TypeParameterCategory::ConstantValue },
 			[=](const TypeParameter* parameters, std::size_t parameterCount, const SourceLocation& sourceLocation) -> ExpressionType
 			{
-				assert(parameterCount >= 1 && parameterCount <= 2);
+				assert(parameterCount <= 2);
+
+				if (parameterCount == 0)
+					return ImplicitArrayType{};
 
 				assert(std::holds_alternative<ExpressionType>(parameters[0]));
 				const ExpressionType& exprType = std::get<ExpressionType>(parameters[0]);
@@ -2231,6 +2234,29 @@ namespace nzsl::Ast
 			ArrayType& targetArrayType = std::get<ArrayType>(targetType);
 			if (targetArrayType.length == 0)
 				targetArrayType.length = Nz::SafeCast<std::uint32_t>(castExpr.expressions.size());
+		}
+		else if (IsImplicitArrayType(targetType))
+		{
+			ExpressionType innerType;
+			for (std::size_t i = 0; i < castExpr.expressions.size(); ++i)
+			{
+				const ExpressionType* exprType = GetResolvedExpressionType(MandatoryExpr(castExpr.expressions[i], castExpr.sourceLocation), true);
+				if (!exprType)
+					break;
+
+				innerType = *exprType;
+				if (!IsLiteralType(innerType))
+					break; //< continue if literal type as we could encounter a non-literal type later (e.g. array(1, u32(2), 3))
+			}
+
+			if (!IsNoType(innerType))
+			{
+				ArrayType targetArrayType;
+				targetArrayType.length = Nz::SafeCast<std::uint32_t>(castExpr.expressions.size());
+				targetArrayType.SetupInnerType(std::move(innerType));
+
+				targetType = std::move(targetArrayType);
+			}
 		}
 		else if (IsImplicitVectorType(targetType))
 		{

@@ -15,7 +15,7 @@ TEST_CASE("implicit", "[Shader]")
 [nzsl_version("1.1")]
 module;
 
-const vertPos = array[vec2[f32]](
+const vertPos = array( //< no neet to set array type
 	vec2[f32](-1.0, 1.0),
 	vec2(-1.0, -3.0), //< no need to write vec2[f32] for every value
 	vec2( 3.0, 1.0)
@@ -28,7 +28,7 @@ fn foo()
 	let v = vec3(x, x, x); // no need to write vec3[f32](x, x, x)
 	
 	let value = vec3(-1, -3, 42);
-	let runtimeArray = array[vec3[i32]](value, value, vec3(1, 2, 3));
+	let runtimeArray = array(value, value, vec3(1, 2, 3));
 }
 )";
 

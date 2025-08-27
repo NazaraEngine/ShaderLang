@@ -786,6 +786,10 @@ namespace nzsl::Ast
 				m_serializer.Serialize(std::uint8_t(20));
 				SizeT(arg.componentCount);
 			}
+			else if constexpr (std::is_same_v<T, ImplicitArrayType>)
+			{
+				m_serializer.Serialize(std::uint8_t(21));
+			}
 			else
 				static_assert(Nz::AlwaysFalse<T>(), "non-exhaustive visitor");
 		}, type);
@@ -1236,7 +1240,7 @@ NAZARA_WARNING_GCC_DISABLE("-Wmaybe-uninitialized")
 				break;
 			}
 
-			case 20: //< DeducedVectorType
+			case 20: //< ImplicitVectorType
 			{
 				std::size_t componentCount;
 				SizeT(componentCount);
@@ -1246,6 +1250,10 @@ NAZARA_WARNING_GCC_DISABLE("-Wmaybe-uninitialized")
 				};
 				break;
 			}
+
+			case 21: //< ImplicitArray
+				type = ImplicitArrayType{};
+				break;
 
 			default:
 				throw std::runtime_error("unexpected type index " + std::to_string(typeIndex));
