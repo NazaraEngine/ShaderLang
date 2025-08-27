@@ -718,9 +718,14 @@ namespace nzsl
 		throw std::runtime_error("unexpected FunctionType");
 	}
 
+	void GlslWriter::Append(const Ast::ImplicitArrayType& /*type*/)
+	{
+		throw std::runtime_error("unexpected ImplicitArrayType");
+	}
+
 	void GlslWriter::Append(const Ast::ImplicitVectorType& /*type*/)
 	{
-		throw std::runtime_error("unexpected DeducedVectorType");
+		throw std::runtime_error("unexpected ImplicitVectorType");
 	}
 
 	void GlslWriter::Append(Ast::InterpolationQualifier interpolation)

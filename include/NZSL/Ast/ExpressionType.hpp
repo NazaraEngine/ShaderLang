@@ -110,6 +110,12 @@ namespace nzsl::Ast
 		inline bool operator!=(const FunctionType& rhs) const;
 	};
 
+	struct ImplicitArrayType
+	{
+		inline bool operator==(const ImplicitArrayType& rhs) const;
+		inline bool operator!=(const ImplicitArrayType& rhs) const;
+	};
+
 	struct ImplicitVectorType
 	{
 		std::size_t componentCount;
@@ -247,7 +253,7 @@ namespace nzsl::Ast
 		inline bool operator!=(const PushConstantType& rhs) const;
 	};
 
-	using ExpressionType = std::variant<NoType, AliasType, ArrayType, DynArrayType, FunctionType, ImplicitVectorType, IntrinsicFunctionType, MatrixType, MethodType, ModuleType, NamedExternalBlockType, PrimitiveType, PushConstantType, SamplerType, StorageType, StructType, TextureType, Type, UniformType, VectorType>;
+	using ExpressionType = std::variant<NoType, AliasType, ArrayType, DynArrayType, FunctionType, ImplicitArrayType, ImplicitVectorType, IntrinsicFunctionType, MatrixType, MethodType, ModuleType, NamedExternalBlockType, PrimitiveType, PushConstantType, SamplerType, StorageType, StructType, TextureType, Type, UniformType, VectorType>;
 
 	struct ContainedType
 	{
@@ -280,6 +286,7 @@ namespace nzsl::Ast
 	inline bool IsDynArrayType(const ExpressionType& type);
 	inline bool IsFunctionType(const ExpressionType& type);
 	inline bool IsImplicitType(const ExpressionType& type);
+	inline bool IsImplicitArrayType(const ExpressionType& type);
 	inline bool IsImplicitVectorType(const ExpressionType& type);
 	inline bool IsIntrinsicFunctionType(const ExpressionType& type);
 	inline bool IsMatrixType(const ExpressionType& type);
