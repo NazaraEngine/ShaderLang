@@ -1544,7 +1544,7 @@ namespace nzsl::Ast
 					paramIndex++;
 					break;
 				}
-				
+
 				case ParameterType::BVec:
 				{
 					auto Check = [](const ExpressionType& type)

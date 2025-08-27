@@ -569,10 +569,10 @@ namespace nzsl::Ast
 			// One of the two type is unresolved but not both
 			if (IsPrimitiveType(resolvedLeftType) && IsPrimitiveType(resolvedRightType))
 				return CheckLiteralType(std::get<PrimitiveType>(resolvedLeftType), std::get<PrimitiveType>(resolvedRightType));
-			
+
 			if (IsVectorType(resolvedLeftType) && IsVectorType(resolvedRightType))
 				return CheckLiteralType(std::get<VectorType>(resolvedLeftType).type, std::get<VectorType>(resolvedRightType).type);
-			
+
 			if (IsArrayType(resolvedLeftType) && IsArrayType(resolvedRightType))
 				return ValidateMatchingTypes(std::get<ArrayType>(resolvedLeftType).InnerType(), std::get<ArrayType>(resolvedRightType).InnerType());
 		}

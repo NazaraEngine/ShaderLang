@@ -87,9 +87,6 @@ namespace nzsl
 	{
 		node.expr->Visit(*this);
 
-		const Ast::ExpressionType* exprType = GetExpressionType(node);
-		assert(exprType);
-
 		std::int32_t compositeIndex = static_cast<std::int32_t>(node.fieldIndex);
 
 		std::visit(Nz::Overloaded
@@ -117,9 +114,6 @@ namespace nzsl
 	void SpirvExpressionStore::Visit(Ast::AccessIndexExpression& node)
 	{
 		node.expr->Visit(*this);
-
-		const Ast::ExpressionType* exprType = GetExpressionType(node);
-		assert(exprType);
 
 		std::visit(Nz::Overloaded
 		{

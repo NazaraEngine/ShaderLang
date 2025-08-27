@@ -341,7 +341,7 @@ namespace nzsl::Ast
 			else if (IsArrayType(expressionType))
 			{
 				const ArrayType& arrType = std::get<ArrayType>(expressionType);
-				
+
 				const ExpressionType& arrayInnerType = arrType.InnerType();
 				if (IsPrimitiveType(arrayInnerType))
 					innerType = std::get<PrimitiveType>(arrayInnerType);
