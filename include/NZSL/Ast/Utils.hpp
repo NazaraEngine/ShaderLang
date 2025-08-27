@@ -83,7 +83,7 @@ namespace nzsl::Ast
 	NZSL_API Expression& MandatoryExpr(const ExpressionPtr& node, const SourceLocation& sourceLocation);
 	NZSL_API Statement& MandatoryStatement(const StatementPtr& node, const SourceLocation& sourceLocation);
 
-	NZSL_API std::optional<ExpressionType> ResolveLiteralType(const ExpressionType& expressionType, std::optional<ExpressionType> referenceType, const SourceLocation& sourceLocation);
+	NZSL_API std::optional<ExpressionType> ResolveLiteralType(const ExpressionType& expressionType, const std::optional<ExpressionType>& referenceType, const SourceLocation& sourceLocation);
 
 	NZSL_API StatementPtr Unscope(StatementPtr&& statement);
 

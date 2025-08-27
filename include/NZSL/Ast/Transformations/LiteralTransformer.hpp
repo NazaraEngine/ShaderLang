@@ -31,7 +31,9 @@ namespace nzsl::Ast
 
 			void FinishExpressionHandling() override;
 
-			bool ResolveLiteral(ExpressionPtr& expression, std::optional<ExpressionType> referenceType, const SourceLocation& sourceLocation) const;
+			bool ResolveLiteral(ExpressionPtr& expression, const std::optional<ExpressionType>& referenceType, const SourceLocation& sourceLocation) const;
+			ConstantArrayValue ResolveLiteral(const ExpressionType& resolvedExprType, const ConstantArrayValue& constantValues, const std::optional<ExpressionType>& referenceType, const SourceLocation& sourceLocation) const;
+			ConstantSingleValue ResolveLiteral(const ExpressionType& resolvedExprType, const ConstantSingleValue& constantValue, const std::optional<ExpressionType>& referenceType, const SourceLocation& sourceLocation) const;
 
 			ExpressionTransformation Transform(AccessIndexExpression&& accessIndexExpr) override;
 			ExpressionTransformation Transform(AssignExpression&& assignExpr) override;

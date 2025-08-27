@@ -459,7 +459,7 @@ namespace nzsl::Ast
 		return *node;
 	}
 
-	std::optional<ExpressionType> ResolveLiteralType(const ExpressionType& expressionType, std::optional<ExpressionType> referenceType, const SourceLocation& sourceLocation)
+	std::optional<ExpressionType> ResolveLiteralType(const ExpressionType& expressionType, const std::optional<ExpressionType>& referenceType, const SourceLocation& sourceLocation)
 	{
 		const ExpressionType& resolvedType = ResolveAlias(expressionType);
 
@@ -472,6 +472,16 @@ namespace nzsl::Ast
 					resolvedReferenceType = std::get<PrimitiveType>(*referenceType);
 				else if (IsVectorType(*referenceType))
 					resolvedReferenceType = std::get<VectorType>(*referenceType).type;
+				else if (IsArrayType(*referenceType))
+				{
+					const ArrayType& arrType = std::get<ArrayType>(*referenceType);
+					if (IsPrimitiveType(arrType.InnerType()))
+						resolvedReferenceType = std::get<PrimitiveType>(arrType.InnerType());
+					else if (IsVectorType(arrType.InnerType()))
+						resolvedReferenceType = std::get<VectorType>(arrType.InnerType()).type;
+					else
+						throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(expressionType), Ast::ToString(*referenceType) };
+				}
 				else
 					throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(expressionType), Ast::ToString(*referenceType) };
 			}
@@ -504,6 +514,19 @@ namespace nzsl::Ast
 			{
 				vecType.type = std::get<PrimitiveType>(*resolvedTypeOpt);
 				return vecType;
+			}
+		}
+		else if (IsArrayType(resolvedType))
+		{
+			const ArrayType& arrType = std::get<ArrayType>(resolvedType);
+
+			if (auto resolvedTypeOpt = ResolveLiteralType(arrType.InnerType(), referenceType, sourceLocation))
+			{
+				ArrayType newArrayType;
+				newArrayType.length = arrType.length;
+				newArrayType.SetupInnerType(*resolvedTypeOpt);
+
+				return newArrayType;
 			}
 		}
 

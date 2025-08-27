@@ -12,6 +12,27 @@
 
 namespace nzsl::Ast
 {
+	namespace NAZARA_ANONYMOUS_NAMESPACE
+	{
+		template<typename T>
+		struct InnerTypeExtractor
+		{
+			using Type = T;
+		};
+
+		template<typename T, std::size_t N>
+		struct InnerTypeExtractor<Vector<T, N>>
+		{
+			using Type = typename InnerTypeExtractor<T>::Type;
+		};
+
+		template<typename T>
+		struct InnerTypeExtractor<std::vector<T>>
+		{
+			using Type = typename InnerTypeExtractor<T>::Type;
+		};
+	}
+
 	bool LiteralTransformer::Transform(Module& module, TransformerContext& context, const Options& options, std::string* error)
 	{
 		m_currentFunction = nullptr;
@@ -29,7 +50,7 @@ namespace nzsl::Ast
 		m_recomputeExprType = false;
 	}
 
-	bool LiteralTransformer::ResolveLiteral(ExpressionPtr& expressionPtr, std::optional<ExpressionType> referenceType, const SourceLocation& sourceLocation) const
+	bool LiteralTransformer::ResolveLiteral(ExpressionPtr& expressionPtr, const std::optional<ExpressionType>& referenceType, const SourceLocation& sourceLocation) const
 	{
 		const ExpressionType* exprType = GetResolvedExpressionType(*expressionPtr);
 		if (!exprType)
@@ -45,11 +66,116 @@ namespace nzsl::Ast
 			return false;
 
 		Expression& expression = *expressionPtr;
+		if (expression.GetType() == NodeType::ConstantValueExpression)
+		{
+			ConstantValueExpression& constantExpr = static_cast<ConstantValueExpression&>(expression);
 
-		if (const PrimitiveType* primType = std::get_if<PrimitiveType>(exprType))
+			if (ConstantSingleValue resolvedValue = ResolveLiteral(*exprType, constantExpr.value, referenceType, sourceLocation); !std::holds_alternative<NoValue>(resolvedValue))
+			{
+				constantExpr.value = resolvedValue;
+				constantExpr.cachedExpressionType = GetConstantType(constantExpr.value);
+				return true;
+			}
+		}
+		else if (expression.GetType() == NodeType::ConstantArrayValueExpression)
+		{
+			ConstantArrayValueExpression& constantArrayExpr = static_cast<ConstantArrayValueExpression&>(expression);
+
+			if (ConstantArrayValue resolvedValues = ResolveLiteral(*exprType, constantArrayExpr.values, referenceType, sourceLocation); !std::holds_alternative<NoValue>(resolvedValues))
+			{
+				constantArrayExpr.values = std::move(resolvedValues);
+				constantArrayExpr.cachedExpressionType = GetConstantType(constantArrayExpr.values);
+				return true;
+			}
+		}
+		else
+			throw AstUntypedExpectedConstantError{ expression.sourceLocation, Ast::ToString(expression.GetType()) };
+
+		return false;
+	}
+
+	ConstantArrayValue LiteralTransformer::ResolveLiteral(const ExpressionType& resolvedExprType, const ConstantArrayValue& constantValues, const std::optional<ExpressionType>& referenceType, const SourceLocation& sourceLocation) const
+	{
+		NAZARA_USE_ANONYMOUS_NAMESPACE
+
+		if (const ArrayType* arrayType = std::get_if<ArrayType>(&resolvedExprType))
 		{
 			std::optional<PrimitiveType> targetType;
-			if (auto targetTypeOpt = ResolveLiteralType(*exprType, referenceType, sourceLocation))
+			if (auto targetTypeOpt = ResolveLiteralType(arrayType->InnerType(), referenceType, sourceLocation))
+			{
+				if (IsVectorType(*targetTypeOpt))
+					targetType = std::get<VectorType>(*targetTypeOpt).type;
+				else
+				{
+					NazaraAssert(IsPrimitiveType(*targetTypeOpt));
+					targetType = std::get<PrimitiveType>(*targetTypeOpt);
+				}
+			}
+
+			PrimitiveType primitiveType;
+			if (const ExpressionType& innerType = arrayType->InnerType(); IsVectorType(innerType))
+				primitiveType = std::get<VectorType>(innerType).type;
+			else
+				primitiveType = std::get<PrimitiveType>(innerType);
+
+			return std::visit([&](auto&& values) -> ConstantArrayValue
+			{
+				using T = std::decay_t<decltype(values)>;
+				if constexpr (!std::is_same_v<T, NoValue>)
+				{
+					using InnerType = typename InnerTypeExtractor<T>::Type; // T=std::vector<InnerType>
+					using InnerInnerType = typename InnerTypeExtractor<InnerType>::Type; // InnerInnerType=Vector<InnerType>
+
+					if constexpr (IsLiteral_v<InnerInnerType>)
+					{
+						if constexpr (std::is_same_v<InnerInnerType, FloatLiteral>)
+						{
+							if (primitiveType == PrimitiveType::FloatLiteral)
+							{
+								if (!targetType)
+									targetType = PrimitiveType::Float32;
+
+								if (targetType == PrimitiveType::Float32)
+									return LiteralToFloat32(values, sourceLocation);
+								else if (targetType == PrimitiveType::Float64)
+									return LiteralToFloat64(values, sourceLocation);
+								else
+									throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(primitiveType), Ast::ToString(*targetType) };
+							}
+						}
+						else if constexpr (std::is_same_v<InnerInnerType, IntLiteral>)
+						{
+							if (primitiveType == PrimitiveType::IntLiteral)
+							{
+								if (!targetType)
+									targetType = PrimitiveType::Int32;
+
+								if (targetType == PrimitiveType::Int32)
+									return LiteralToInt32(values, sourceLocation);
+								else if (targetType == PrimitiveType::UInt32)
+									return LiteralToUInt32(values, sourceLocation);
+								else
+									throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(primitiveType), Ast::ToString(*targetType) };
+							}
+						}
+						else
+							static_assert(Nz::AlwaysFalse<InnerInnerType>(), "unhandled case");
+					}
+				}
+
+				return NoValue{};
+			}, constantValues);
+		}
+
+		return NoValue{};
+	}
+
+	ConstantSingleValue LiteralTransformer::ResolveLiteral(const ExpressionType& resolvedExprType, const ConstantSingleValue& constantValue, const std::optional<ExpressionType>& referenceType, const SourceLocation& sourceLocation) const
+	{
+		if (const PrimitiveType* primType = std::get_if<PrimitiveType>(&resolvedExprType))
+		{
+			std::optional<PrimitiveType> targetType;
+			if (auto targetTypeOpt = ResolveLiteralType(resolvedExprType, referenceType, sourceLocation))
 			{
 				NazaraAssert(IsPrimitiveType(*targetTypeOpt));
 				targetType = std::get<PrimitiveType>(*targetTypeOpt);
@@ -63,57 +189,41 @@ namespace nzsl::Ast
 				case PrimitiveType::Int32:
 				case PrimitiveType::String:
 				case PrimitiveType::UInt32:
-					return false; //< not untyped
+					return NoValue{}; //< not untyped
 
 				case PrimitiveType::FloatLiteral:
 				{
-					if (expression.GetType() != NodeType::ConstantValueExpression)
-						throw AstUntypedExpectedConstantError{ expression.sourceLocation, Ast::ToString(expression.GetType()) };
-
-					ConstantValueExpression& constantExpr = static_cast<ConstantValueExpression&>(expression);
-
 					if (!targetType)
 						targetType = PrimitiveType::Float32;
 
 					if (targetType == PrimitiveType::Float32)
-						constantExpr.value = LiteralToFloat32(std::get<FloatLiteral>(constantExpr.value), sourceLocation);
+						return LiteralToFloat32(std::get<FloatLiteral>(constantValue), sourceLocation);
 					else if (targetType == PrimitiveType::Float64)
-						constantExpr.value = LiteralToFloat64(std::get<FloatLiteral>(constantExpr.value), sourceLocation);
+						return LiteralToFloat64(std::get<FloatLiteral>(constantValue), sourceLocation);
 					else
 						throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(*primType), Ast::ToString(*targetType) };
-
-					constantExpr.cachedExpressionType = targetType;
-					return true;
 				}
 
 				case PrimitiveType::IntLiteral:
 				{
-					if (expression.GetType() != NodeType::ConstantValueExpression)
-						throw AstUntypedExpectedConstantError{ expression.sourceLocation, Ast::ToString(expression.GetType()) };
-
-					ConstantValueExpression& constantExpr = static_cast<ConstantValueExpression&>(expression);
-
 					if (!targetType)
 						targetType = PrimitiveType::Int32;
 
 					if (targetType == PrimitiveType::Int32)
-						constantExpr.value = LiteralToInt32(std::get<IntLiteral>(constantExpr.value), sourceLocation);
+						return LiteralToInt32(std::get<IntLiteral>(constantValue), sourceLocation);
 					else if (targetType == PrimitiveType::UInt32)
-						constantExpr.value = LiteralToUInt32(std::get<IntLiteral>(constantExpr.value), sourceLocation);
+						return LiteralToUInt32(std::get<IntLiteral>(constantValue), sourceLocation);
 					else
 						throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(*primType), Ast::ToString(*targetType) };
-
-					constantExpr.cachedExpressionType = targetType;
-					return true;
 				}
 			}
 
 			NAZARA_UNREACHABLE();
 		}
-		else if (const VectorType* vecType = std::get_if<VectorType>(exprType))
+		else if (const VectorType* vecType = std::get_if<VectorType>(&resolvedExprType))
 		{
 			std::optional<VectorType> targetType;
-			if (auto targetTypeOpt = ResolveLiteralType(*exprType, referenceType, sourceLocation))
+			if (auto targetTypeOpt = ResolveLiteralType(resolvedExprType, referenceType, sourceLocation))
 			{
 				NazaraAssert(IsVectorType(*targetTypeOpt));
 				targetType = std::get<VectorType>(*targetTypeOpt);
@@ -131,87 +241,69 @@ namespace nzsl::Ast
 
 				case PrimitiveType::FloatLiteral:
 				{
-					if (expression.GetType() != NodeType::ConstantValueExpression)
-						throw AstUntypedExpectedConstantError{ expression.sourceLocation, Ast::ToString(expression.GetType()) };
-
-					ConstantValueExpression& constantExpr = static_cast<ConstantValueExpression&>(expression);
-
 					if (!targetType)
 						targetType = VectorType{ vecType->componentCount, PrimitiveType::Float32 };
 
-					constantExpr.cachedExpressionType = targetType;
-
-					auto ResolveVector = [&](auto sizeConstant)
+					auto ResolveVector = [&](auto sizeConstant) -> ConstantSingleValue
 					{
 						constexpr std::size_t Dims = sizeConstant();
 
-						Vector<FloatLiteral, Dims> vecUntyped = std::get<Vector<FloatLiteral, Dims>>(constantExpr.value);
+						Vector<FloatLiteral, Dims> vecUntyped = std::get<Vector<FloatLiteral, Dims>>(constantValue);
 
 						if (targetType->type == PrimitiveType::Float32 || targetType->type == PrimitiveType::FloatLiteral)
-							constantExpr.value = LiteralToFloat32(vecUntyped, sourceLocation);
+							return LiteralToFloat32(vecUntyped, sourceLocation);
 						else if (targetType->type == PrimitiveType::Float64)
-							constantExpr.value = LiteralToFloat64(vecUntyped, sourceLocation);
+							return LiteralToFloat64(vecUntyped, sourceLocation);
 						else
 							throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(*vecType), Ast::ToString(*targetType) };
 					};
 
 					switch (targetType->componentCount)
 					{
-						case 2: ResolveVector(std::integral_constant<std::size_t, 2>{}); break;
-						case 3: ResolveVector(std::integral_constant<std::size_t, 3>{}); break;
-						case 4: ResolveVector(std::integral_constant<std::size_t, 4>{}); break;
+						case 2: return ResolveVector(std::integral_constant<std::size_t, 2>{}); break;
+						case 3: return ResolveVector(std::integral_constant<std::size_t, 3>{}); break;
+						case 4: return ResolveVector(std::integral_constant<std::size_t, 4>{}); break;
 
 						default:
 							NAZARA_UNREACHABLE();
 					}
-
-					return true;
 				}
 
 				case PrimitiveType::IntLiteral:
 				{
-					if (expression.GetType() != NodeType::ConstantValueExpression)
-						throw AstUntypedExpectedConstantError{ expression.sourceLocation, Ast::ToString(expression.GetType()) };
-
-					ConstantValueExpression& constantExpr = static_cast<ConstantValueExpression&>(expression);
-
 					if (!targetType)
 						targetType = VectorType{ vecType->componentCount, PrimitiveType::Int32 };
 
-					constantExpr.cachedExpressionType = targetType;
-
-					auto ResolveVector = [&](auto sizeConstant)
+					auto ResolveVector = [&](auto sizeConstant) -> ConstantSingleValue
 					{
 						constexpr std::size_t Dims = sizeConstant();
 
-						Vector<IntLiteral, Dims> vecUntyped = std::get<Vector<IntLiteral, Dims>>(constantExpr.value);
+						Vector<IntLiteral, Dims> vecUntyped = std::get<Vector<IntLiteral, Dims>>(constantValue);
 
 						if (targetType->type == PrimitiveType::Int32 || targetType->type == PrimitiveType::IntLiteral)
-							constantExpr.value = LiteralToInt32(vecUntyped, sourceLocation);
+							return LiteralToInt32(vecUntyped, sourceLocation);
 						else if (targetType->type == PrimitiveType::UInt32)
-							constantExpr.value = LiteralToUInt32(vecUntyped, sourceLocation);
+							return LiteralToUInt32(vecUntyped, sourceLocation);
 						else
 							throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(*vecType), Ast::ToString(*targetType) };
 					};
 
 					switch (targetType->componentCount)
 					{
-						case 2: ResolveVector(std::integral_constant<std::size_t, 2>{}); break;
-						case 3: ResolveVector(std::integral_constant<std::size_t, 3>{}); break;
-						case 4: ResolveVector(std::integral_constant<std::size_t, 4>{}); break;
+						case 2: return ResolveVector(std::integral_constant<std::size_t, 2>{}); break;
+						case 3: return ResolveVector(std::integral_constant<std::size_t, 3>{}); break;
+						case 4: return ResolveVector(std::integral_constant<std::size_t, 4>{}); break;
 
 						default:
 							NAZARA_UNREACHABLE();
 					}
-
-					return true;
 				}
 			}
 
 			NAZARA_UNREACHABLE();
 		}
 
-		return false;
+		return NoValue{};
 	}
 
 	auto LiteralTransformer::Transform(AccessIndexExpression&& accessIndexExpr) -> ExpressionTransformation
