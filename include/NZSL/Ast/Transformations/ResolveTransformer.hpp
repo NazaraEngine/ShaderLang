@@ -83,6 +83,7 @@ namespace nzsl::Ast
 
 			const TransformerContext::Identifier* ResolveAliasIdentifier(const TransformerContext::Identifier* identifier, const SourceLocation& sourceLocation) const;
 			void ResolveFunctions();
+			ExpressionType ResolveImplicitType(const ExpressionType& expressionType);
 			std::size_t ResolveStructIndex(const ExpressionType& exprType, const SourceLocation& sourceLocation);
 			ExpressionType ResolveType(const ExpressionType& exprType, bool resolveAlias, const SourceLocation& sourceLocation);
 			std::optional<ExpressionType> ResolveTypeExpr(ExpressionValue<ExpressionType>& exprTypeValue, bool resolveAlias, const SourceLocation& sourceLocation);
