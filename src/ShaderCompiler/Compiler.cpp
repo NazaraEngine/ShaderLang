@@ -435,6 +435,7 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 
 		nzsl::BackendParameters backendParameters = BuildWriterOptions();
 
+		bool first = true;
 		for (nzsl::ShaderStageType entryType : entryTypes)
 		{
 			nzsl::GlslWriter::Output output = writer.Generate(entryType, module, backendParameters, parameters);
@@ -443,8 +444,16 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 
 			if (m_outputToStdout)
 			{
+				const char* stageName = nullptr;
+				switch (entryType)
+				{
+					case nzsl::ShaderStageType::Compute:  stageName = "Compute"; break;
+					case nzsl::ShaderStageType::Fragment: stageName = "Fragment"; break;
+					case nzsl::ShaderStageType::Vertex:   stageName = "Vertex"; break;
+				}
+				fmt::print("{}{}:\n", (first) ? "" : "\n", stageName);
 				OutputToStdout(output.code);
-				return;
+				continue;
 			}
 
 			std::filesystem::path filePath = outputPath;
@@ -456,6 +465,7 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 			}
 
 			OutputFile(std::move(filePath), output.code.data(), output.code.size());
+			first = false;
 		}
 	}
 
@@ -733,7 +743,7 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 		m_profiling = true;
 		m_verbose = wasVerbose;
 
-		Nz::CallOnExit onExit([&]
+		NAZARA_DEFER(
 		{
 			auto& step = m_steps[stepIndex];
 			step.childrenCount = m_steps.size() - stepIndex - 1;
