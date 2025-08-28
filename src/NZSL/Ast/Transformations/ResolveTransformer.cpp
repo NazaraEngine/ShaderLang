@@ -640,10 +640,16 @@ namespace nzsl::Ast
 		RegisterFullType("i32",  PrimitiveType::Int32);
 		RegisterFullType("u32",  PrimitiveType::UInt32);
 
-		RegisterFullType("f64", PrimitiveType::Float64, IsFeatureEnabled(ModuleFeature::Float64) ? nullptr : [](const SourceLocation& sourceLocation)
+		std::function<void(const SourceLocation& sourceLocation)> float64Check;
+		if (IsFeatureEnabled(ModuleFeature::Float64))
 		{
-			throw CompilerModuleFeatureNotEnabledError{ sourceLocation, "f64", ModuleFeature::Float64 };
-		});
+			float64Check = [](const SourceLocation& sourceLocation)
+			{
+				throw CompilerModuleFeatureNotEnabledError{ sourceLocation, "f64", ModuleFeature::Float64 };
+			};
+		}
+
+		RegisterFullType("f64", PrimitiveType::Float64, std::move(float64Check));
 
 		// Partial types
 
