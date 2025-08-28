@@ -1018,7 +1018,9 @@ namespace nzsl::Ast
 				break;
 			}
 
+			case TypeConstant::Epsilon:
 			case TypeConstant::Infinity:
+			case TypeConstant::MinPositive:
 			case TypeConstant::NaN:
 			{
 				if (primitiveType != PrimitiveType::Float32 && primitiveType != PrimitiveType::Float64)

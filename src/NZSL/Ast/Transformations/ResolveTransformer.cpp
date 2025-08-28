@@ -1714,12 +1714,16 @@ namespace nzsl::Ast
 				ExpressionType indexedType = ResolveType(resolvedType, false, identifierEntry.sourceLocation);
 
 				//< FIXME: Have a proper way to handle access
-				if (identifierEntry.identifier == "Max")
+				if (identifierEntry.identifier == "Epsilon")
+					indexedExpr = ShaderBuilder::TypeConstant(std::move(indexedType), TypeConstant::Epsilon);
+				else if (identifierEntry.identifier == "Infinity")
+					indexedExpr = ShaderBuilder::TypeConstant(std::move(indexedType), TypeConstant::Infinity);
+				else if (identifierEntry.identifier == "Max")
 					indexedExpr = ShaderBuilder::TypeConstant(std::move(indexedType), TypeConstant::Max);
 				else if (identifierEntry.identifier == "Min")
 					indexedExpr = ShaderBuilder::TypeConstant(std::move(indexedType), TypeConstant::Min);
-				else if (identifierEntry.identifier == "Infinity")
-					indexedExpr = ShaderBuilder::TypeConstant(std::move(indexedType), TypeConstant::Infinity);
+				else if (identifierEntry.identifier == "MinPositive")
+					indexedExpr = ShaderBuilder::TypeConstant(std::move(indexedType), TypeConstant::MinPositive);
 				else if (identifierEntry.identifier == "NaN")
 					indexedExpr = ShaderBuilder::TypeConstant(std::move(indexedType), TypeConstant::NaN);
 				else

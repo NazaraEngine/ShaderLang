@@ -283,10 +283,12 @@ namespace nzsl::Ast
 
 	enum class TypeConstant
 	{
-		Infinity = 0,
-		Max      = 1,
-		Min      = 2,
-		NaN      = 3
+		Epsilon     = 5,
+		Infinity    = 0,
+		Max         = 1,
+		Min         = 2,
+		MinPositive = 4,
+		NaN         = 3
 	};
 
 	enum class UnaryType
