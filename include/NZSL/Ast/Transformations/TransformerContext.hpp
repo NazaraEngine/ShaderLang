@@ -79,6 +79,7 @@ namespace nzsl::Ast
 		{
 			std::string name;
 			std::variant<ExpressionType, PartialType> content;
+			std::function<void(const SourceLocation& sourceLocation)> check;
 		};
 
 		struct VariableData

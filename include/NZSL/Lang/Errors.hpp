@@ -11,6 +11,7 @@
 #include <NZSL/Parser.hpp>
 #include <NZSL/Ast/Enums.hpp>
 #include <NZSL/Lang/SourceLocation.hpp>
+#include <NZSL/Lang/Version.hpp>
 #include <exception>
 #include <memory>
 #include <string>

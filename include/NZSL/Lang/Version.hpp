@@ -11,17 +11,25 @@
 #include <cstdint>
 #include <string>
 
-namespace nzsl::Version
+namespace nzsl
 {
-	// Functions
-	constexpr std::uint32_t Build(std::uint32_t majorVersion, std::uint32_t minorVersion, std::uint32_t patchVersion);
-	constexpr void Decompose(std::uint32_t version, std::uint32_t& majorVersion, std::uint32_t& minorVersion, std::uint32_t& patchVersion);
-	std::string ToString(std::uint32_t version);
+	struct VersionTag
+	{
+		std::uint32_t version;
+	};
 
-	// Constants
-	constexpr std::uint32_t MaxMajorVersion = 1u << 10;
-	constexpr std::uint32_t MaxMinorVersion = 1u << 10;
-	constexpr std::uint32_t MaxPatchVersion = 1u << 12;
+	namespace Version
+	{
+		// Functions
+		constexpr std::uint32_t Build(std::uint32_t majorVersion, std::uint32_t minorVersion, std::uint32_t patchVersion);
+		constexpr void Decompose(std::uint32_t version, std::uint32_t& majorVersion, std::uint32_t& minorVersion, std::uint32_t& patchVersion);
+		std::string ToString(std::uint32_t version);
+
+		// Constants
+		constexpr std::uint32_t MaxMajorVersion = 1u << 10;
+		constexpr std::uint32_t MaxMinorVersion = 1u << 10;
+		constexpr std::uint32_t MaxPatchVersion = 1u << 12;
+	}
 }
 
 #include <NZSL/Lang/Version.inl>

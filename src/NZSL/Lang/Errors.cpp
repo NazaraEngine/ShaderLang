@@ -5,6 +5,7 @@
 #include <NZSL/Lang/Errors.hpp>
 #include <NZSL/Parser.hpp>
 #include <NZSL/Lang/LangData.hpp>
+#include <NZSL/Lang/Version.hpp>
 #include <fmt/format.h>
 #include <string>
 #include <utility>
@@ -91,6 +92,16 @@ struct fmt::formatter<nzsl::TokenType> : formatter<string_view>
 	auto format(const nzsl::TokenType& p, FormatContext& ctx) const -> decltype(ctx.out())
 	{
 		return formatter<string_view>::format(ToString(p), ctx);
+	}
+};
+
+template<>
+struct fmt::formatter<nzsl::VersionTag> : formatter<string_view>
+{
+	template<typename FormatContext>
+	auto format(const nzsl::VersionTag& p, FormatContext& ctx) const -> decltype(ctx.out())
+	{
+		return formatter<string_view>::format(nzsl::Version::ToString(p.version), ctx);
 	}
 };
 

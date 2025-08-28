@@ -16,6 +16,8 @@ namespace nzsl::Version
 	constexpr std::uint32_t MinVersion = Build(1, 0, 0);
 
 	// Features
+	constexpr std::uint32_t ImplicitTypes = Build(1, 1, 0);
+	constexpr std::uint32_t TypeConstants = Build(1, 1, 0);
 	constexpr std::uint32_t UntypedLiterals = Build(1, 1, 0);
 }
 
