@@ -1,6 +1,6 @@
 option("tests", { description = "Build unit tests", default = false })
 
-add_repositories("local-repo /home/kbz_8/Documents/Code/nazara-xmake-repo")
+add_repositories("nazara-engine-repo https://github.com/NazaraEngine/xmake-repo")
 
 if has_config("tests") then
 	if has_config("asan") then

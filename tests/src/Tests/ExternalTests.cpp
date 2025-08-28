@@ -471,22 +471,21 @@ fn main()
       OpFunctionEnd)", {}, spirvEnv, true);
 
 			ExpectWGSL(*shaderModule, R"(
-@layout(std430)
 struct Data
 {
 	values: array<f32, 47>
 }
 
 @group(0) @binding(0) var<storage, read> inData: Data;
-@group(0) @binding(1) var<storage, write> outData: Data;
+@group(0) @binding(1) var<storage, read_write> outData: Data;
 
 @fragment
 fn main()
 {
 	{
 		var i: i32 = 0;
-		var to: i32 = 47;
-		while (i < to)
+		var _nzsl_to: i32 = 47;
+		while (i < _nzsl_to)
 		{
 			outData.values[i] = inData.values[i];
 			i += 1;

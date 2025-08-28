@@ -387,7 +387,6 @@ OpVariable
 OpKill
 OpFunctionEnd)");
 
-/*
 		ExpectWGSL(*shaderModule, R"(
 @fragment
 fn main() -> Output
@@ -401,7 +400,6 @@ fn main() -> Output
 	return output;
 }
 )");
-*/
 	}
 	
 	WHEN("using a complex branch")
