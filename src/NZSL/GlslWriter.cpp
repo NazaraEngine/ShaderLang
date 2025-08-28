@@ -2320,18 +2320,36 @@ namespace nzsl
 
 			if (node.typeConstant == Ast::TypeConstant::Max)
 			{
-				Append(Nz::MaxValue<T>());
-				return;
+				if constexpr (std::is_same_v<T, float>)
+					return Append("3.402823466e+38");
+				else if constexpr (std::is_same_v<T, double>)
+					return Append("1.7976931348623158e+308lf");
+				else
+					return AppendValue(Nz::MaxValue<T>());
 			}
 
 			if (node.typeConstant == Ast::TypeConstant::Min)
 			{
-				Append(Nz::MinValue<T>());
-				return;
+				if constexpr (std::is_same_v<T, float>)
+					return Append("-3.402823466e+38");
+				else if constexpr (std::is_same_v<T, double>)
+					return Append("-1.7976931348623158e+308lf");
+				else
+					return AppendValue(std::numeric_limits<T>::lowest()); //< Nz::MinValue is implemented by std::numeric_limits<T>::min() which doesn't give the value we want
 			}
 
 			if constexpr (std::is_floating_point_v<T>)
 			{
+				if (node.typeConstant == Ast::TypeConstant::Epsilon)
+				{
+					if constexpr (std::is_same_v<T, float>)
+						return Append("1.192092896e-07");
+					else if constexpr (std::is_same_v<T, double>)
+						return Append("2.2204460492503131e-016lf");
+					else
+						static_assert(Nz::AlwaysFalse<T>(), "unhandled type");
+				}
+
 				if (node.typeConstant == Ast::TypeConstant::Infinity)
 				{
 					Append("(");
@@ -2340,6 +2358,16 @@ namespace nzsl
 					AppendValue(T{ 0 });
 					Append(")");
 					return;
+				}
+
+				if (node.typeConstant == Ast::TypeConstant::MinPositive)
+				{
+					if constexpr (std::is_same_v<T, float>)
+						return Append("1.175494351e-38");
+					else if constexpr (std::is_same_v<T, double>)
+						return Append("2.2250738585072014e-308lf");
+					else
+						static_assert(Nz::AlwaysFalse<T>(), "unhandled type");
 				}
 
 				if (node.typeConstant == Ast::TypeConstant::NaN)

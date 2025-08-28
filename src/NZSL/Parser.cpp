@@ -182,10 +182,12 @@ namespace nzsl
 	{
 		switch (typeConstant)
 		{
-			case Ast::TypeConstant::Infinity: return "Infinity";
-			case Ast::TypeConstant::Max:      return "Max";
-			case Ast::TypeConstant::Min:      return "Min";
-			case Ast::TypeConstant::NaN:      return "NaN";
+			case Ast::TypeConstant::Epsilon:     return "Epsilon";
+			case Ast::TypeConstant::Infinity:    return "Infinity";
+			case Ast::TypeConstant::Max:         return "Max";
+			case Ast::TypeConstant::Min:         return "Min";
+			case Ast::TypeConstant::MinPositive: return "MinPositive";
+			case Ast::TypeConstant::NaN:         return "NaN";
 		}
 
 		NAZARA_UNREACHABLE();

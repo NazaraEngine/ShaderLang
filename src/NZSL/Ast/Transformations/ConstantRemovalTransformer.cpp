@@ -111,12 +111,18 @@ namespace nzsl::Ast
 				return ShaderBuilder::ConstantValue(Nz::MaxValue<T>());
 
 			if (typeConstantExpr.typeConstant == TypeConstant::Min)
-				return ShaderBuilder::ConstantValue(Nz::MinValue<T>());
+				return ShaderBuilder::ConstantValue(std::numeric_limits<T>::lowest()); //< Nz::MinValue is implemented by std::numeric_limits<T>::min() which doesn't give the value we want
 
 			if constexpr (std::is_floating_point_v<T>)
 			{
+				if (typeConstantExpr.typeConstant == TypeConstant::Epsilon)
+					return ShaderBuilder::ConstantValue(std::numeric_limits<T>::epsilon());
+
 				if (typeConstantExpr.typeConstant == TypeConstant::Infinity)
 					return ShaderBuilder::ConstantValue(Nz::Infinity<T>());
+
+				if (typeConstantExpr.typeConstant == TypeConstant::MinPositive)
+					return ShaderBuilder::ConstantValue(std::numeric_limits<T>::min());
 
 				if (typeConstantExpr.typeConstant == TypeConstant::NaN)
 					return ShaderBuilder::ConstantValue(Nz::NaN<T>());
