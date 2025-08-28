@@ -79,6 +79,7 @@ namespace nzsl::Ast
 			ExpressionTransformation Transform(NamedExternalBlockExpression&& node) override;
 			ExpressionTransformation Transform(StructTypeExpression&& node) override;
 			ExpressionTransformation Transform(SwizzleExpression&& node) override;
+			ExpressionTransformation Transform(TypeConstantExpression&& node) override;
 			ExpressionTransformation Transform(TypeExpression&& node) override;
 			ExpressionTransformation Transform(UnaryExpression&& node) override;
 			ExpressionTransformation Transform(VariableValueExpression&& node) override;

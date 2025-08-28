@@ -64,6 +64,7 @@ namespace nzsl::Ast
 			virtual ExpressionPtr Clone(NamedExternalBlockExpression& node);
 			virtual ExpressionPtr Clone(StructTypeExpression& node);
 			virtual ExpressionPtr Clone(SwizzleExpression& node);
+			virtual ExpressionPtr Clone(TypeConstantExpression& node);
 			virtual ExpressionPtr Clone(TypeExpression& node);
 			virtual ExpressionPtr Clone(VariableValueExpression& node);
 			virtual ExpressionPtr Clone(UnaryExpression& node);

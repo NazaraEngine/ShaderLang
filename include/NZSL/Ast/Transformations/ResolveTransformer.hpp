@@ -102,6 +102,7 @@ namespace nzsl::Ast
 			ExpressionTransformation Transform(IdentifierExpression&& identifierExpr) override;
 			ExpressionTransformation Transform(IntrinsicExpression&& intrinsicExpr) override;
 			ExpressionTransformation Transform(SwizzleExpression&& swizzleExpr) override;
+			ExpressionTransformation Transform(TypeConstantExpression&& typeConstantExpr) override;
 			ExpressionTransformation Transform(UnaryExpression&& unaryExpr) override;
 			ExpressionTransformation Transform(VariableValueExpression&& variableValExpr) override;
 

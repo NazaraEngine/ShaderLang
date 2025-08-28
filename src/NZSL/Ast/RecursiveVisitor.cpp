@@ -125,6 +125,11 @@ namespace nzsl::Ast
 			node.expression->Visit(*this);
 	}
 
+	void RecursiveVisitor::Visit(TypeConstantExpression& /*node*/)
+	{
+		/* Nothing to do */
+	}
+
 	void RecursiveVisitor::Visit(TypeExpression& /*node*/)
 	{
 		/* Nothing to do */

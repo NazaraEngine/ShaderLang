@@ -212,6 +212,15 @@ namespace nzsl::Ast
 		RemapExpression(node);
 	}
 
+	void IndexRemapperVisitor::Visit(TypeConstantExpression& node)
+	{
+		RecursiveVisitor::Visit(node);
+
+		node.type = RemapType(node.type);
+
+		RemapExpression(node);
+	}
+
 	void IndexRemapperVisitor::Visit(TypeExpression& node)
 	{
 		RecursiveVisitor::Visit(node);

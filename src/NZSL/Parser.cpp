@@ -178,6 +178,19 @@ namespace nzsl
 		return it->second.identifier;
 	}
 
+	std::string_view Parser::ToString(Ast::TypeConstant typeConstant)
+	{
+		switch (typeConstant)
+		{
+			case Ast::TypeConstant::Infinity: return "Infinity";
+			case Ast::TypeConstant::Max:      return "Max";
+			case Ast::TypeConstant::Min:      return "Min";
+			case Ast::TypeConstant::NaN:      return "NaN";
+		}
+
+		NAZARA_UNREACHABLE();
+	}
+
 	std::string_view Parser::ToString(ShaderStageType shaderStage)
 	{
 		auto it = LangData::s_entryPoints.find(shaderStage);

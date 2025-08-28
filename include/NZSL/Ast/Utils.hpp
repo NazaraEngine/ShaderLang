@@ -51,6 +51,7 @@ namespace nzsl::Ast
 			void Visit(NamedExternalBlockExpression& node) override;
 			void Visit(StructTypeExpression& node) override;
 			void Visit(SwizzleExpression& node) override;
+			void Visit(TypeConstantExpression& node) override;
 			void Visit(TypeExpression& node) override;
 			void Visit(VariableValueExpression& node) override;
 			void Visit(UnaryExpression& node) override;
@@ -79,6 +80,7 @@ namespace nzsl::Ast
 	template<typename T> auto LiteralToUInt32(const std::vector<T>& literalVec, const SourceLocation& sourceLocation);
 
 	inline ExpressionCategory GetExpressionCategory(Expression& expression);
+	inline std::optional<PrimitiveType> GetInnerPrimitiveType(const ExpressionType& expressionType);
 
 	NZSL_API Expression& MandatoryExpr(const ExpressionPtr& node, const SourceLocation& sourceLocation);
 	NZSL_API Statement& MandatoryStatement(const StatementPtr& node, const SourceLocation& sourceLocation);

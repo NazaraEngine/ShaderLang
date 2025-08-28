@@ -79,6 +79,7 @@ namespace nzsl
 			void Append(const Ast::StructType& structType);
 			void Append(const Ast::TextureType& samplerType);
 			void Append(const Ast::Type& type);
+			void Append(Ast::TypeConstant typeConstant);
 			void Append(const Ast::UniformType& uniformType);
 			void Append(const Ast::VectorType& vecType);
 			template<typename T> void Append(const T& param);
@@ -149,6 +150,7 @@ namespace nzsl
 			void Visit(Ast::NamedExternalBlockExpression& node) override;
 			void Visit(Ast::StructTypeExpression& node) override;
 			void Visit(Ast::SwizzleExpression& node) override;
+			void Visit(Ast::TypeConstantExpression& node) override;
 			void Visit(Ast::VariableValueExpression& node) override;
 			void Visit(Ast::UnaryExpression& node) override;
 
