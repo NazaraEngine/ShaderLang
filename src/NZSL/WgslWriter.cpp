@@ -3,6 +3,7 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include "NZSL/Ast/Enums.hpp"
+#include "NZSL/Ast/ExpressionType.hpp"
 #include <NZSL/WgslWriter.hpp>
 #include <NazaraUtils/Algorithm.hpp>
 #include <NazaraUtils/CallOnExit.hpp>
@@ -15,6 +16,18 @@
 #include <NZSL/Ast/RecursiveVisitor.hpp>
 #include <NZSL/Ast/Utils.hpp>
 #include <NZSL/Lang/LangData.hpp>
+#include <NZSL/Ast/Transformations/BindingResolverTransformer.hpp>
+#include <NZSL/Ast/Transformations/ConstantPropagationTransformer.hpp>
+#include <NZSL/Ast/Transformations/ConstantRemovalTransformer.hpp>
+#include <NZSL/Ast/Transformations/EliminateUnusedTransformer.hpp>
+#include <NZSL/Ast/Transformations/ForToWhileTransformer.hpp>
+#include <NZSL/Ast/Transformations/IdentifierTransformer.hpp>
+#include <NZSL/Ast/Transformations/LiteralTransformer.hpp>
+#include <NZSL/Ast/Transformations/ResolveTransformer.hpp>
+#include <NZSL/Ast/Transformations/StructAssignmentTransformer.hpp>
+#include <NZSL/Ast/Transformations/SwizzleTransformer.hpp>
+#include <NZSL/Ast/Transformations/ValidationTransformer.hpp>
+#include <fmt/format.h>
 #include <frozen/unordered_map.h>
 #include <frozen/unordered_set.h>
 #include <cassert>
@@ -22,6 +35,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <unordered_map>
+#include <unordered_set>
 #include <variant>
 #include <algorithm>
 
@@ -188,8 +202,146 @@ namespace nzsl
 		{ Ast::BuiltinEntry::WorkgroupIndices,        "workgroup_id" }
 	});
 
-	Ast::SanitizeVisitor::Options WgslWriter::GetSanitizeOptions()
+	struct WgslWriter::State
 	{
+		State(const BackendParameters& backendParameters) :
+		backendParameters(backendParameters)
+		{
+		}
+
+		struct Identifier
+		{
+			std::optional<std::size_t> externalBlockIndex;
+			std::size_t moduleIndex;
+			std::string name;
+		};
+
+		struct StructData : Identifier
+		{
+			const Ast::StructDescription* desc;
+		};
+
+		std::optional<std::size_t> currentExternalBlockIndex;
+		std::size_t currentModuleIndex;
+		std::stringstream stream;
+		std::unordered_map<std::size_t, Identifier> aliases;
+		std::unordered_map<std::size_t, Identifier> constants;
+		std::unordered_map<std::size_t, Identifier> functions;
+		std::unordered_map<std::size_t, Identifier> modules;
+		std::unordered_map<std::size_t, StructData> structs;
+		std::unordered_map<std::size_t, Identifier> variables;
+		std::unordered_map<std::uint64_t, unsigned int> bindingRemap;
+		std::vector<std::string> externalBlockNames;
+		std::vector<std::string> moduleNames;
+		const BackendParameters& backendParameters;
+		bool isInEntryPoint = false;
+		int streamEmptyLine = 1;
+		unsigned int indentLevel = 0;
+		bool isTerminatedScope = false;
+	};
+
+	WgslWriter::Output WgslWriter::Generate(Ast::Module& module, const BackendParameters& parameters)
+	{
+		State state(parameters);
+
+		m_currentState = &state;
+		NAZARA_DEFER({ m_currentState = nullptr; });
+
+		if (parameters.backendPasses)
+		{
+			Ast::TransformerExecutor executor;
+			if (parameters.backendPasses.Test(BackendPass::Resolve))
+			{
+				executor.AddPass<Ast::ResolveTransformer>([&](Ast::ResolveTransformer::Options& opt)
+				{
+					opt.moduleResolver = parameters.shaderModuleResolver;
+					opt.removeAliases = true;
+				});
+			}
+
+			if (parameters.backendPasses.Test(BackendPass::TargetRequired))
+				RegisterPasses(executor);
+
+			if (parameters.backendPasses.Test(BackendPass::Optimize))
+				executor.AddPass<Ast::ConstantPropagationTransformer>();
+
+			if (parameters.backendPasses.Test(BackendPass::Validate))
+			{
+				executor.AddPass<Ast::ValidationTransformer>([](Ast::ValidationTransformer::Options& opt)
+				{
+					opt.allowUntyped = false;
+					opt.checkIndices = true;
+				});
+			}
+
+			Ast::TransformerContext context;
+			context.optionValues = parameters.optionValues;
+
+			executor.Transform(module, context);
+		}
+
+		if (parameters.backendPasses.Test(BackendPass::RemoveDeadCode))
+		{
+			Ast::DependencyCheckerVisitor::Config dependencyConfig;
+			dependencyConfig.usedShaderStages = ShaderStageType_All;
+
+			Ast::EliminateUnusedPass(module, dependencyConfig);
+		}
+
+		AppendHeader(*module.metadata);
+
+		// First registration pass (required to register function names)
+		PreVisitor previsitor(*this);
+		{
+			m_currentState->currentModuleIndex = 0;
+			for (const auto& importedModule : module.importedModules)
+			{
+				importedModule.module->rootNode->Visit(previsitor);
+				m_currentState->currentModuleIndex++;
+				m_currentState->moduleNames.push_back(importedModule.identifier);
+			}
+
+			m_currentState->currentModuleIndex = std::numeric_limits<std::size_t>::max();
+
+			std::size_t moduleIndex = 0;
+			for (const auto& importedModule : module.importedModules)
+				RegisterModule(moduleIndex++, importedModule.identifier);
+
+			module.rootNode->Visit(previsitor);
+		}
+
+		// Register imported modules
+		m_currentState->currentModuleIndex = 0;
+		for (const auto& importedModule : module.importedModules)
+		{
+			AppendModuleAttributes(*importedModule.module->metadata);
+			AppendLine("module ", importedModule.identifier);
+			EnterScope();
+			importedModule.module->rootNode->Visit(*this);
+			LeaveScope(true);
+
+			m_currentState->currentModuleIndex++;
+			m_currentState->moduleNames.push_back(importedModule.identifier);
+		}
+
+		m_currentState->currentModuleIndex = std::numeric_limits<std::size_t>::max();
+		module.rootNode->Visit(*this);
+
+		Output output;
+		output.code = std::move(state.stream).str();
+		output.bindingRemap = std::move(state.bindingRemap);
+
+		return output;
+	}
+
+	void WgslWriter::SetEnv(Environment environment)
+	{
+		m_environment = std::move(environment);
+	}
+
+	void WgslWriter::RegisterPasses(Ast::TransformerExecutor& executor)
+	{
+		// Wtf WGSL ?
 		static constexpr auto s_reservedKeywords = frozen::make_unordered_set<frozen::string>({
 			"NULL", "Self", "abstract", "active", "alignas", "alignof", "as", "asm", "asm_fragment", "async",
 			"attribute", "auto", "await", "become", "cast", "catch", "class", "co_await", "co_return", "co_yield",
@@ -210,17 +362,28 @@ namespace nzsl
 			"continue", "continuing", "default", "diagnostic", "discard", "else", "enable", "false", "fn", "for",
 			"if", "let", "loop", "override", "requires", "return", "struct", "switch", "true", "var", "while"
 		});
+		
+		// We need two identifiers passes, the first one to rename reserved/forbidden variable names and the second one to ensure all variables name are uniques (which isn't guaranteed by the transformation passes)
+		// We can't do this at once at the end because transformations passes will introduce variables prefixed by _nzsl which is forbidden in user code
+		Ast::IdentifierTransformer::Options firstIdentifierPassOptions;
+		firstIdentifierPassOptions.makeVariableNameUnique = false;
+		firstIdentifierPassOptions.identifierSanitizer = [](std::string& identifier, Ast::IdentifierType /*scope*/)
+		{
+			using namespace std::string_view_literals;
 
-		Ast::SanitizeVisitor::Options options;
-		options.makeVariableNameUnique = true;
-		options.reduceLoopsToWhile = true;
-		options.removeAliases = true;
-		options.removeCompoundAssignments = false;
-		options.removeOptionDeclaration = true;
-		options.removeScalarSwizzling = true;
-		options.removeSingleConstDeclaration = true;
-		options.splitWrappedStructAssignation = true; //< TODO: Only split for base uniforms/storage
-		options.identifierSanitizer = [](std::string& identifier, Ast::IdentifierScope /*scope*/)
+			// Identifier can't start with _nzsl
+			if (identifier.compare(0, 5, "_nzsl") == 0)
+			{
+				identifier.replace(0, 5, "_"sv);
+				return true;
+			}
+
+			return false;
+		};
+
+		Ast::IdentifierTransformer::Options secondIdentifierPassOptions;
+		secondIdentifierPassOptions.makeVariableNameUnique = true;
+		secondIdentifierPassOptions.identifierSanitizer = [](std::string& identifier, Ast::IdentifierType /*scope*/)
 		{
 			using namespace std::string_view_literals;
 
@@ -231,135 +394,46 @@ namespace nzsl
 				nameChanged = true;
 			}
 
-			// Identifier can't start with _nzsl
-			if (identifier.compare(0, 5, "_nzsl") == 0)
+			// Identifier can't start with gl_
+			if (identifier.compare(0, 3, "gl_") == 0)
 			{
-				identifier.replace(0, 5, "_"sv);
+				identifier.replace(0, 3, "_gl_"sv);
+				nameChanged = true;
+			}
+
+			// Replace __ by _X_
+			std::size_t startPos = 0;
+			while ((startPos = identifier.find("__"sv, startPos)) != std::string::npos)
+			{
+				std::size_t endPos = identifier.find_first_not_of('_', startPos);
+				identifier.replace(startPos, endPos - startPos, fmt::format("{}{}_", (startPos == 0) ? "_" : "", endPos - startPos));
+
+				startPos = endPos;
 				nameChanged = true;
 			}
 
 			return nameChanged;
 		};
 
-		return options;
-	}
-
-	struct WgslWriter::State
-	{
-		struct Identifier
+		executor.AddPass<Ast::LiteralTransformer>();
+		executor.AddPass<Ast::IdentifierTransformer>(firstIdentifierPassOptions);
+		executor.AddPass<Ast::ForToWhileTransformer>();
+		executor.AddPass<Ast::StructAssignmentTransformer>([](Ast::StructAssignmentTransformer::Options& opt)
 		{
-			std::optional<std::size_t> externalBlockIndex;
-			std::size_t moduleIndex;
-			std::string name;
-		};
-
-		std::optional<std::size_t> currentExternalBlockIndex;
-		std::size_t currentModuleIndex;
-		std::stringstream stream;
-		std::unordered_map<std::size_t, Identifier> aliases;
-		std::unordered_map<std::size_t, Identifier> constants;
-		std::unordered_map<std::size_t, Identifier> functions;
-		std::unordered_map<std::size_t, Identifier> modules;
-		std::unordered_map<std::size_t, Identifier> structs;
-		std::unordered_map<std::size_t, Identifier> variables;
-		std::unordered_map<std::uint64_t, unsigned int> bindingRemap;
-		std::vector<std::string> externalBlockNames;
-		std::vector<std::string> moduleNames;
-		const BackendParameters& backendParameters;
-		bool isInEntryPoint = false;
-		int streamEmptyLine = 1;
-		unsigned int indentLevel = 0;
-		bool isTerminatedScope = false;
-	};
-
-	WgslWriter::Output WgslWriter::Generate(const Ast::Module& module, const BackendParameters& parameters)
-	{
-		State state;
-		state.states = &states;
-
-		m_currentState = &state;
-		Nz::CallOnExit onExit([this]()
-		{
-			m_currentState = nullptr;
+			opt.splitWrappedArrayAssignation = false;
+			opt.splitWrappedStructAssignation = true; //< TODO: Only split for base uniforms/storage
 		});
-
-		state.module = &module;
-
-		Ast::ModulePtr sanitizedModule;
-		const Ast::Module* targetModule;
-		if (!states.sanitized)
+		executor.AddPass<Ast::SwizzleTransformer>([](Ast::SwizzleTransformer::Options& opt)
 		{
-			Ast::SanitizeVisitor::Options options = GetSanitizeOptions();
-			options.optionValues = states.optionValues;
-			options.moduleResolver = states.shaderModuleResolver;
-
-			sanitizedModule = Ast::Sanitize(module, options);
-			targetModule = sanitizedModule.get();
-		}
-		else
-			targetModule = &module;
-
-		if (states.optimize)
+			opt.removeScalarSwizzling = true;
+		});
+		executor.AddPass<Ast::BindingResolverTransformer>();
+		executor.AddPass<Ast::ConstantRemovalTransformer>([](Ast::ConstantRemovalTransformer::Options& opt)
 		{
-			sanitizedModule = Ast::PropagateConstants(*targetModule);
-			
-			Ast::DependencyCheckerVisitor::Config dependencyConfig;
-			dependencyConfig.usedShaderStages = ShaderStageType_All;
-
-			sanitizedModule = Ast::EliminateUnusedPass(*sanitizedModule, dependencyConfig);
-
-			targetModule = sanitizedModule.get();
-		}
-
-		AppendHeader();
-
-		// First registration pass (required to register function names)
-		PreVisitor previsitor(*this);
-		{
-			m_currentState->currentModuleIndex = 0;
-			for (const auto& importedModule : targetModule->importedModules)
-			{
-				importedModule.module->rootNode->Visit(previsitor);
-				m_currentState->currentModuleIndex++;
-				m_currentState->moduleNames.push_back(importedModule.identifier);
-			}
-
-			m_currentState->currentModuleIndex = std::numeric_limits<std::size_t>::max();
-
-			std::size_t moduleIndex = 0;
-			for (const auto& importedModule : targetModule->importedModules)
-				RegisterModule(moduleIndex++, importedModule.identifier);
-
-			module.rootNode->Visit(previsitor);
-		}
-
-		// Register imported modules
-		m_currentState->currentModuleIndex = 0;
-		for (const auto& importedModule : targetModule->importedModules)
-		{
-			AppendModuleAttributes(*importedModule.module->metadata);
-			AppendLine("module ", importedModule.identifier);
-			EnterScope();
-			importedModule.module->rootNode->Visit(*this);
-			LeaveScope(true);
-
-			m_currentState->currentModuleIndex++;
-			m_currentState->moduleNames.push_back(importedModule.identifier);
-		}
-
-		m_currentState->currentModuleIndex = std::numeric_limits<std::size_t>::max();
-		targetModule->rootNode->Visit(*this);
-
-		Output output;
-		output.code = std::move(state.stream).str();
-		output.bindingRemap = std::move(state.bindingRemap);
-
-		return output;
-	}
-
-	void WgslWriter::SetEnv(Environment environment)
-	{
-		m_environment = std::move(environment);
+			opt.removeConstArraySize = false;
+			opt.removeTypeConstant = false;
+		});
+		executor.AddPass<Ast::IdentifierTransformer>(secondIdentifierPassOptions);
 	}
 
 	void WgslWriter::Append(const Ast::AliasType& type)
@@ -407,6 +481,21 @@ namespace nzsl
 		throw std::runtime_error("unexpected intrinsic function type");
 	}
 
+	void WgslWriter::Append(const Ast::ImplicitArrayType& /*type*/)
+	{
+		throw std::runtime_error("unexpected ImplicitArrayType");
+	}
+
+	void WgslWriter::Append(const Ast::ImplicitMatrixType& /*type*/)
+	{
+		throw std::runtime_error("unexpected ImplicitMatrixType");
+	}
+
+	void WgslWriter::Append(const Ast::ImplicitVectorType& /*type*/)
+	{
+		throw std::runtime_error("unexpected ImplicitVectorType");
+	}
+
 	void WgslWriter::Append(const Ast::MatrixType& matrixType)
 	{
 		Append("mat");
@@ -440,7 +529,9 @@ namespace nzsl
 			case Ast::PrimitiveType::Float64: return Append("f64");
 			case Ast::PrimitiveType::Int32:   return Append("i32");
 			case Ast::PrimitiveType::UInt32:  return Append("u32");
-			case Ast::PrimitiveType::String:  return Append("string");
+			case Ast::PrimitiveType::FloatLiteral: throw std::runtime_error("unexpected untyped float");
+			case Ast::PrimitiveType::IntLiteral:   throw std::runtime_error("unexpected untyped integer");
+			case Ast::PrimitiveType::String:       throw std::runtime_error("unexpected string type");
 		}
 	}
 
@@ -723,20 +814,9 @@ namespace nzsl
 		Append(")");
 	}
 
-	void WgslWriter::AppendAttribute(bool first, LayoutAttribute attribute)
+	void WgslWriter::AppendAttribute(bool /*first*/, LayoutAttribute /*attribute*/)
 	{
-		if (!attribute.HasValue())
-			return;
-		if (!first)
-			Append(" ");
-		Append("@");
-
-		Append("layout(");
-		if (attribute.layout.IsResultingValue())
-			Append(Parser::ToString(attribute.layout.GetResultingValue()));
-		else
-			attribute.layout.GetExpression()->Visit(*this);
-		Append(")");
+		// WGSL does not have memory layout management syntax
 	}
 
 	void WgslWriter::AppendAttribute(bool /*first*/, LicenseAttribute /*attribute*/)
@@ -918,6 +998,11 @@ namespace nzsl
 			std::replace(str.begin(), str.end(), ']', '>');
 			Append(str);
 		}
+		else if constexpr (std::is_same_v<T, std::uint32_t>)
+		{
+			Append(Ast::ToString(value));
+			Append("u");
+		}
 		else
 			Append(Ast::ConstantToString(value));
 	}
@@ -1009,14 +1094,15 @@ namespace nzsl
 		m_currentState->modules.emplace(moduleIndex, std::move(identifier));
 	}
 
-	void WgslWriter::RegisterStruct(std::size_t structIndex, std::string structName)
+	void WgslWriter::RegisterStruct(std::size_t structIndex, const Ast::StructDescription& structDescription)
 	{
-		State::Identifier identifier;
-		identifier.moduleIndex = m_currentState->currentModuleIndex;
-		identifier.name = std::move(structName);
+		State::StructData structData;
+		structData.moduleIndex = m_currentState->currentModuleIndex;
+		structData.name = structDescription.name;
+		structData.desc = &structDescription;
 
 		assert(m_currentState->structs.find(structIndex) == m_currentState->structs.end());
-		m_currentState->structs.emplace(structIndex, std::move(identifier));
+		m_currentState->structs.emplace(structIndex, std::move(structData));
 	}
 
 	void WgslWriter::RegisterVariable(std::size_t varIndex, std::string varName)
@@ -1053,6 +1139,36 @@ namespace nzsl
 
 		if (enclose)
 			Append(")");
+	}
+
+	void WgslWriter::Visit(Ast::AccessFieldExpression& node)
+	{
+		Visit(node.expr, true);
+
+		const Ast::ExpressionType* exprType = GetExpressionType(*node.expr);
+		NazaraUnused(exprType);
+		assert(exprType);
+		assert(IsStructAddressible(*exprType));
+
+		std::size_t structIndex = Ast::ResolveStructIndex(*exprType);
+		assert(structIndex != std::numeric_limits<std::size_t>::max());
+
+		const auto& structData = Nz::Retrieve(m_currentState->structs, structIndex);
+
+		std::uint32_t remainingIndices = node.fieldIndex;
+		for (const auto& member : structData.desc->members)
+		{
+			if (member.cond.HasValue() && !member.cond.GetResultingValue())
+				continue;
+
+			if (remainingIndices == 0)
+			{
+				Append(".", member.name);
+				break;
+			}
+
+			remainingIndices--;
+		}
 	}
 
 	void WgslWriter::Visit(Ast::AccessIdentifierExpression& node)
@@ -1109,7 +1225,7 @@ namespace nzsl
 
 	void WgslWriter::Visit(Ast::BinaryExpression& node)
 	{
-		bool rightCastU32 = false;
+		bool needsClosingCast = false;
 
 		Visit(node.left, true);
 
@@ -1134,14 +1250,33 @@ namespace nzsl
 			case Ast::BinaryType::BitwiseAnd:  Append(" & ");  break;
 			case Ast::BinaryType::BitwiseOr:   Append(" | ");  break;
 			case Ast::BinaryType::BitwiseXor:  Append(" ^ ");  break;
-			case Ast::BinaryType::ShiftLeft:   Append(" << "); rightCastU32 = true; break;
-			case Ast::BinaryType::ShiftRight:  Append(" >> "); rightCastU32 = true; break;
+			case Ast::BinaryType::ShiftLeft:   Append(" << "); break;
+			case Ast::BinaryType::ShiftRight:  Append(" >> "); break;
 		}
 
-		if (rightCastU32)
-			Append("u32(");
+		if (node.op == Ast::BinaryType::ShiftLeft || node.op == Ast::BinaryType::ShiftRight)
+		{
+			const Ast::ExpressionType& rightType = Ast::ResolveAlias(Ast::EnsureExpressionType(*node.right));
+
+			if (Ast::IsVectorType(rightType))
+			{
+				Ast::VectorType vectorType = std::get<Ast::VectorType>(rightType);
+				if (vectorType.type == Ast::PrimitiveType::Int32)
+				{
+					Append("vec");
+					Append(std::to_string(vectorType.componentCount));
+					Append("<u32>(");
+					needsClosingCast = true;
+				}
+			}
+			else if (Ast::IsPrimitiveType(rightType) && std::get<Ast::PrimitiveType>(rightType) == Ast::PrimitiveType::Int32)
+			{
+				Append("u32(");
+				needsClosingCast = true;
+			}
+		}
 		Visit(node.right, true);
-		if (rightCastU32)
+		if (needsClosingCast)
 			Append(")");
 	}
 
@@ -1222,7 +1357,10 @@ namespace nzsl
 				[&](const Ast::ModuleType&) { throw std::runtime_error("unexpected ModuleType?"); },
 				[&](const Ast::StructType&) { throw std::runtime_error("unexpected StructType?"); },
 				[&](const Ast::Type&) { throw std::runtime_error("unexpected Type?"); },
-				[&](const Ast::NamedExternalBlockType&) { throw std::runtime_error("unexpected NamedExternalBlockType?"); }
+				[&](const Ast::NamedExternalBlockType&) { throw std::runtime_error("unexpected NamedExternalBlockType?"); },
+				[&](const Ast::ImplicitArrayType&) { throw std::runtime_error("unexpected ImplicitArrayType?"); },
+				[&](const Ast::ImplicitMatrixType&) { throw std::runtime_error("unexpected ImplicitMatrixType?"); },
+				[&](const Ast::ImplicitVectorType&) { throw std::runtime_error("unexpected ImplicitVectorType?"); },
 			}, node.targetType.GetResultingValue());
 
 			for (std::size_t i = 0; i < nbParams; i++)
@@ -1306,6 +1444,8 @@ namespace nzsl
 		{
 			// Function intrinsics
 			case Ast::IntrinsicType::Abs:
+			case Ast::IntrinsicType::All:
+			case Ast::IntrinsicType::Any:
 			case Ast::IntrinsicType::ArcCos:
 			case Ast::IntrinsicType::ArcCosh:
 			case Ast::IntrinsicType::ArcSin:
@@ -1325,6 +1465,8 @@ namespace nzsl
 			case Ast::IntrinsicType::Exp2:
 			case Ast::IntrinsicType::Floor:
 			case Ast::IntrinsicType::Fract:
+			case Ast::IntrinsicType::IsInf:
+			case Ast::IntrinsicType::IsNaN:
 			case Ast::IntrinsicType::InverseSqrt:
 			case Ast::IntrinsicType::Length:
 			case Ast::IntrinsicType::Lerp:
@@ -1335,6 +1477,7 @@ namespace nzsl
 			case Ast::IntrinsicType::Max:
 			case Ast::IntrinsicType::Min:
 			case Ast::IntrinsicType::Normalize:
+			case Ast::IntrinsicType::Not:
 			case Ast::IntrinsicType::Pow:
 			case Ast::IntrinsicType::RadToDeg:
 			case Ast::IntrinsicType::Reflect:
@@ -1344,7 +1487,9 @@ namespace nzsl
 			case Ast::IntrinsicType::Sign:
 			case Ast::IntrinsicType::Sin:
 			case Ast::IntrinsicType::Sinh:
+			case Ast::IntrinsicType::SmoothStep:
 			case Ast::IntrinsicType::Sqrt:
+			case Ast::IntrinsicType::Step:
 			case Ast::IntrinsicType::Tan:
 			case Ast::IntrinsicType::Tanh:
 			case Ast::IntrinsicType::Trunc:
@@ -1571,7 +1716,7 @@ namespace nzsl
 
 		for (const auto& externalVar : node.externalVars)
 		{
-			if (!externalVar.tag.empty() && m_currentState->states->debugLevel >= DebugLevel::Minimal)
+			if (!externalVar.tag.empty() && m_currentState->backendParameters.debugLevel >= DebugLevel::Minimal)
 				AppendComment("external var tag: " + externalVar.tag);
 
 			std::uint32_t binding = 0;
@@ -1603,8 +1748,8 @@ namespace nzsl
 					switch (storageType.accessPolicy)
 					{
 						case AccessPolicy::ReadOnly:  Append("read"); break;
+						case AccessPolicy::WriteOnly:
 						case AccessPolicy::ReadWrite: Append("read_write"); break;
-						case AccessPolicy::WriteOnly: Append("write"); break;
 					}
 					Append("> ", externalVar.name, ": ", storageType.containedType);
 				},
@@ -1634,6 +1779,10 @@ namespace nzsl
 
 						case Ast::PrimitiveType::String:
 							throw std::runtime_error("unexpected string type for texture");
+
+						case Ast::PrimitiveType::FloatLiteral:
+						case Ast::PrimitiveType::IntLiteral:
+							throw std::runtime_error("unexpected untyped for sampler");
 					}
 					AppendLine(" ", externalVar.name, ": texture_", dimension, type, ";");
 					AppendAttributes(false, SetAttribute{ externalVar.bindingSet }, BindingAttribute{ Ast::ExpressionValue{ binding + 1 } });
@@ -1708,7 +1857,10 @@ namespace nzsl
 				[&](const Ast::StructType&) { throw std::runtime_error("unexpected Type?"); },
 				[&](const Ast::Type&) { throw std::runtime_error("unexpected Type?"); },
 				[&](const Ast::VectorType&) { throw std::runtime_error("unexpected Type?"); },
-				[&](const Ast::NamedExternalBlockType&) { throw std::runtime_error("unexpected Type?"); }
+				[&](const Ast::NamedExternalBlockType&) { throw std::runtime_error("unexpected Type?"); },
+				[&](const Ast::ImplicitArrayType&) { throw std::runtime_error("unexpected Type?"); },
+				[&](const Ast::ImplicitMatrixType&) { throw std::runtime_error("unexpected Type?"); },
+				[&](const Ast::ImplicitVectorType&) { throw std::runtime_error("unexpected Type?"); },
 			}, externalVar.type.GetResultingValue());
 
 			AppendLine(";");
@@ -1791,7 +1943,7 @@ namespace nzsl
 	void WgslWriter::Visit(Ast::DeclareStructStatement& node)
 	{
 		if (node.structIndex)
-			RegisterStruct(*node.structIndex, node.description.name);
+			RegisterStruct(*node.structIndex, node.description);
 
 		AppendAttributes(true, LayoutAttribute{ node.description.layout }, TagAttribute{ node.description.tag });
 		Append("struct ");
@@ -1965,9 +2117,9 @@ namespace nzsl
 		ScopeVisit(*node.body);
 	}
 
-	void WgslWriter::AppendHeader()
+	void WgslWriter::AppendHeader(const Ast::Module::Metadata& metadata)
 	{
-		AppendModuleAttributes(*m_currentState->module->metadata);
+		AppendModuleAttributes(metadata);
 		AppendLine();
 	}
 }

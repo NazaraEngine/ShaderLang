@@ -350,7 +350,6 @@ namespace nzsl
 		};
 	}
 
-
 	struct GlslWriter::State
 	{
 		State(const BackendParameters& backendParameters, const GlslWriter::Parameters& glslParameters) :

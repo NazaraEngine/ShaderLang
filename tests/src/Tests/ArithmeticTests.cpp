@@ -580,13 +580,27 @@ fn main()
 	var r_3: i32 = x ^ y;
 	var r_4: i32 = x << u32(y);
 	var r_5: i32 = x >> u32(y);
-	var x_2: u32 = u32(5);
-	var y_2: u32 = u32(2);
+	var x_2: u32 = 5u;
+	var y_2: u32 = 2u;
 	var r_6: u32 = x_2 & y_2;
 	var r_7: u32 = x_2 | y_2;
 	var r_8: u32 = x_2 ^ y_2;
-	var r_9: u32 = x_2 << u32(y_2);
-	var r_10: u32 = x_2 >> u32(y_2);
+	var r_9: u32 = x_2 << y_2;
+	var r_10: u32 = x_2 >> y_2;
+	var x_3: vec3<i32> = vec3<i32>(0, 1, 2);
+	var y_3: vec3<i32> = vec3<i32>(2, 1, 0);
+	var r_11: vec3<i32> = x_3 & y_3;
+	var r_12: vec3<i32> = x_3 | y_3;
+	var r_13: vec3<i32> = x_3 ^ y_3;
+	var r_14: vec3<i32> = x_3 << vec3<u32>(y_3);
+	var r_15: vec3<i32> = x_3 >> vec3<u32>(y_3);
+	var x_4: vec3<u32> = vec3<u32>(0u, 1u, 2u);
+	var y_4: vec3<u32> = vec3<u32>(2u, 1u, 0u);
+	var r_16: vec3<u32> = x_4 & y_4;
+	var r_17: vec3<u32> = x_4 | y_4;
+	var r_18: vec3<u32> = x_4 ^ y_4;
+	var r_19: vec3<u32> = x_4 << y_4;
+	var r_20: vec3<u32> = x_4 >> y_4;
 }
 )"); // r_9 and r_10 expressions should perhaps not cast the right node to u32
 	}
@@ -1051,8 +1065,8 @@ fn main()
 	var r_3: vec3<f32> = x * y;
 	var r_4: vec3<f32> = x / y;
 	var r_5: vec3<f32> = x % y;
-	var x_2: vec3<u32> = vec3<u32>(u32(0), u32(1), u32(2));
-	var y_2: vec3<u32> = vec3<u32>(u32(2), u32(1), u32(0));
+	var x_2: vec3<u32> = vec3<u32>(0u, 1u, 2u);
+	var y_2: vec3<u32> = vec3<u32>(2u, 1u, 0u);
 	var r_6: vec3<u32> = x_2 + y_2;
 	var r_7: vec3<u32> = x_2 - y_2;
 	var r_8: vec3<u32> = x_2 * y_2;
@@ -1369,7 +1383,10 @@ fn main()
 	var r_2: f32 = -6.0;
 	var r_3: f32 = (-r_2) * (r_2);
 	var r_4: i32 = ~42;
-	var r_5: u32 = ~u32(42);
+	var r_5: u32 = ~42u;
+	var r_6: bool = !true;
+	var r_7: vec3<i32> = ~vec3<i32>(1, 2, 3);
+	var r_8: vec3<u32> = ~vec3<u32>(1u, 2u, 3u);
 }
 )");
 	}
