@@ -11,11 +11,8 @@
 #include <NZSL/Parser.hpp>
 #include <NZSL/ShaderBuilder.hpp>
 #include <NZSL/Ast/Cloner.hpp>
-#include <NZSL/Ast/ConstantPropagationVisitor.hpp>
 #include <NZSL/Ast/ConstantValue.hpp>
-#include <NZSL/Ast/EliminateUnusedPassVisitor.hpp>
 #include <NZSL/Ast/RecursiveVisitor.hpp>
-#include <NZSL/Ast/SanitizeVisitor.hpp>
 #include <NZSL/Ast/Utils.hpp>
 #include <NZSL/Lang/LangData.hpp>
 #include <frozen/unordered_map.h>
@@ -25,7 +22,6 @@
 #include <sstream>
 #include <stdexcept>
 #include <unordered_map>
-#include <unordered_set>
 #include <variant>
 #include <algorithm>
 
@@ -269,15 +265,14 @@ namespace nzsl
 		std::unordered_map<std::uint64_t, unsigned int> bindingRemap;
 		std::vector<std::string> externalBlockNames;
 		std::vector<std::string> moduleNames;
-		const States* states = nullptr;
-		const Ast::Module* module;
+		const BackendParameters& backendParameters;
 		bool isInEntryPoint = false;
 		int streamEmptyLine = 1;
 		unsigned int indentLevel = 0;
 		bool isTerminatedScope = false;
 	};
 
-	WgslWriter::Output WgslWriter::Generate(const Ast::Module& module, const States& states)
+	WgslWriter::Output WgslWriter::Generate(const Ast::Module& module, const BackendParameters& parameters)
 	{
 		State state;
 		state.states = &states;
