@@ -293,6 +293,7 @@ namespace nzsl::Ast
 			else if constexpr (std::is_same_v<T, NoType> ||
 			                   std::is_same_v<T, ArrayType> ||
 			                   std::is_same_v<T, ImplicitArrayType> ||
+			                   std::is_same_v<T, ImplicitMatrixType> ||
 			                   std::is_same_v<T, ImplicitVectorType> ||
 			                   std::is_same_v<T, DynArrayType> ||
 			                   std::is_same_v<T, FunctionType> ||
@@ -353,6 +354,14 @@ namespace nzsl::Ast
 	std::string ToString(const ImplicitArrayType& /*type*/, const Stringifier& /*stringifier*/)
 	{
 		return "array";
+	}
+
+	std::string ToString(const ImplicitMatrixType& type, const Stringifier& /*stringifier*/)
+	{
+		if (type.columnCount == type.rowCount)
+			return fmt::format("mat{}", type.columnCount);
+		else
+			return fmt::format("mat{}x{}", type.columnCount, type.rowCount);
 	}
 
 	std::string ToString(const ImplicitVectorType& type, const Stringifier& /*stringifier*/)

@@ -796,6 +796,12 @@ namespace nzsl::Ast
 			{
 				m_serializer.Serialize(std::uint8_t(21));
 			}
+			else if constexpr (std::is_same_v<T, ImplicitMatrixType>)
+			{
+				m_serializer.Serialize(std::uint8_t(22));
+				SizeT(arg.columnCount);
+				SizeT(arg.rowCount);
+			}
 			else
 				static_assert(Nz::AlwaysFalse<T>(), "non-exhaustive visitor");
 		}, type);
@@ -1260,6 +1266,19 @@ NAZARA_WARNING_GCC_DISABLE("-Wmaybe-uninitialized")
 			case 21: //< ImplicitArray
 				type = ImplicitArrayType{};
 				break;
+
+			case 22: //< ImplicitMatrixType
+			{
+				std::size_t columnCount;
+				std::size_t rowCount;
+				SizeT(columnCount);
+				SizeT(rowCount);
+
+				type = ImplicitMatrixType{
+					columnCount, rowCount
+				};
+				break;
+			}
 
 			default:
 				throw std::runtime_error("unexpected type index " + std::to_string(typeIndex));
