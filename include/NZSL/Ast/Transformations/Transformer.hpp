@@ -94,6 +94,7 @@ namespace nzsl::Ast
 			void HandleChildren(NamedExternalBlockExpression& node);
 			void HandleChildren(StructTypeExpression& node);
 			void HandleChildren(SwizzleExpression& node);
+			void HandleChildren(TypeConstantExpression& node);
 			void HandleChildren(TypeExpression& node);
 			void HandleChildren(UnaryExpression& node);
 			void HandleChildren(VariableValueExpression& node);

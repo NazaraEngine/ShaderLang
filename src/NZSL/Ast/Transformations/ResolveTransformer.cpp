@@ -6,6 +6,7 @@
 #include <NazaraUtils/Bitset.hpp>
 #include <NazaraUtils/CallOnExit.hpp>
 #include <NazaraUtils/StackVector.hpp>
+#include <NazaraUtils/TypeTag.hpp>
 #include <NZSL/ModuleResolver.hpp>
 #include <NZSL/Ast/Cloner.hpp>
 #include <NZSL/Ast/DependencyCheckerVisitor.hpp>
@@ -1703,6 +1704,23 @@ namespace nzsl::Ast
 
 				indexedExpr = HandleIdentifier(identifierData, identifierEntry.sourceLocation);
 			}
+			else if (IsTypeExpression(resolvedType))
+			{
+				// Type constants
+				ExpressionType indexedType = ResolveType(resolvedType, false, identifierEntry.sourceLocation);
+
+				//< FIXME: Have a proper way to handle access
+				if (identifierEntry.identifier == "Max")
+					indexedExpr = ShaderBuilder::TypeConstant(std::move(indexedType), TypeConstant::Max);
+				else if (identifierEntry.identifier == "Min")
+					indexedExpr = ShaderBuilder::TypeConstant(std::move(indexedType), TypeConstant::Min);
+				else if (identifierEntry.identifier == "Infinity")
+					indexedExpr = ShaderBuilder::TypeConstant(std::move(indexedType), TypeConstant::Infinity);
+				else if (identifierEntry.identifier == "NaN")
+					indexedExpr = ShaderBuilder::TypeConstant(std::move(indexedType), TypeConstant::NaN);
+				else
+					throw CompilerUnexpectedAccessedTypeError{ accessIdentifier.sourceLocation };
+			}
 			else
 				throw CompilerUnexpectedAccessedTypeError{ accessIdentifier.sourceLocation };
 		}
@@ -2358,6 +2376,14 @@ namespace nzsl::Ast
 
 		swizzleExpr.cachedExpressionType = ComputeExpressionType(swizzleExpr, BuildStringifier(swizzleExpr.sourceLocation));
 		return DontVisitChildren{};
+	}
+
+	auto ResolveTransformer::Transform(TypeConstantExpression&& typeConstantExpr) -> ExpressionTransformation
+	{
+		if (!typeConstantExpr.cachedExpressionType)
+			typeConstantExpr.cachedExpressionType = typeConstantExpr.type;
+
+		return VisitChildren{};
 	}
 
 	auto ResolveTransformer::Transform(UnaryExpression&& node) -> ExpressionTransformation

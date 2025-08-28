@@ -44,6 +44,7 @@ namespace nzsl::Ast
 			void Serialize(NamedExternalBlockExpression& node);
 			void Serialize(StructTypeExpression& node);
 			void Serialize(SwizzleExpression& node);
+			void Serialize(TypeConstantExpression& node);
 			void Serialize(TypeExpression& node);
 			void Serialize(VariableValueExpression& node);
 			void Serialize(UnaryExpression& node);

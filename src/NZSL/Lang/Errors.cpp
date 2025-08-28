@@ -41,6 +41,16 @@ struct fmt::formatter<nzsl::Ast::ModuleFeature> : formatter<string_view>
 };
 
 template<>
+struct fmt::formatter<nzsl::Ast::TypeConstant> : formatter<string_view>
+{
+	template<typename FormatContext>
+	auto format(const nzsl::Ast::TypeConstant& p, FormatContext& ctx) const -> decltype(ctx.out())
+	{
+		return formatter<string_view>::format(nzsl::Parser::ToString(p), ctx);
+	}
+};
+
+template<>
 struct fmt::formatter<nzsl::ErrorCategory> : formatter<string_view>
 {
 	template<typename FormatContext>

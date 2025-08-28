@@ -31,6 +31,7 @@ namespace nzsl
 			static std::string_view ToString(Ast::LoopUnroll loopUnroll);
 			static std::string_view ToString(Ast::MemoryLayout memoryLayout);
 			static std::string_view ToString(Ast::ModuleFeature moduleFeature);
+			static std::string_view ToString(Ast::TypeConstant typeConstant);
 			static std::string_view ToString(ShaderStageType shaderStage);
 
 		private:

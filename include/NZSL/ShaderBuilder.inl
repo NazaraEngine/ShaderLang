@@ -542,6 +542,17 @@ namespace nzsl::ShaderBuilder
 		return swizzleNode;
 	}
 
+	inline Ast::TypeConstantExpressionPtr Impl::TypeConstant::operator()(Ast::ExpressionType expressionType, Ast::TypeConstant typeConstant) const
+	{
+		auto typeConstantNode = std::make_unique<Ast::TypeConstantExpression>();
+		typeConstantNode->type = std::move(expressionType);
+		typeConstantNode->typeConstant = typeConstant;
+
+		typeConstantNode->cachedExpressionType = typeConstantNode->type;
+
+		return typeConstantNode;
+	}
+
 	inline Ast::UnaryExpressionPtr Impl::Unary::operator()(Ast::UnaryType op, Ast::ExpressionPtr expression) const
 	{
 		auto unaryNode = std::make_unique<Ast::UnaryExpression>();

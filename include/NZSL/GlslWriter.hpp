@@ -142,6 +142,7 @@ namespace nzsl
 			void Visit(Ast::FunctionExpression& node) override;
 			void Visit(Ast::IntrinsicExpression& node) override;
 			void Visit(Ast::SwizzleExpression& node) override;
+			void Visit(Ast::TypeConstantExpression& node) override;
 			void Visit(Ast::VariableValueExpression& node) override;
 			void Visit(Ast::UnaryExpression& node) override;
 

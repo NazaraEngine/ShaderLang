@@ -12,6 +12,26 @@ namespace nzsl::Ast
 		return visitor.GetExpressionCategory(expression);
 	}
 
+	inline std::optional<PrimitiveType> GetInnerPrimitiveType(const ExpressionType& expressionType)
+	{
+		if (IsPrimitiveType(expressionType))
+			return std::get<PrimitiveType>(expressionType);
+		else if (IsVectorType(expressionType))
+			return std::get<VectorType>(expressionType).type;
+		else if (IsArrayType(expressionType))
+		{
+			const ArrayType& arrType = std::get<ArrayType>(expressionType);
+			return GetInnerPrimitiveType(arrType.InnerType());
+		}
+		else if (IsDynArrayType(expressionType))
+		{
+			const DynArrayType& arrType = std::get<DynArrayType>(expressionType);
+			return GetInnerPrimitiveType(arrType.InnerType());
+		}
+
+		return std::nullopt;
+	}
+
 	template<std::size_t N>
 	Vector<float, N> LiteralToFloat32(const Vector<FloatLiteral, N>& literal, const SourceLocation& sourceLocation)
 	{
