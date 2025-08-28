@@ -14,7 +14,7 @@
 #include <NZSL/Ast/Transformations/BindingResolverTransformer.hpp>
 #include <NZSL/Ast/Transformations/LiteralTransformer.hpp>
 #include <NZSL/Ast/Cloner.hpp>
-#include <sstream>
+#include <NazaraUtils/CallOnExit.hpp>
 #include <wgsl_validator.h>
 
 namespace NAZARA_ANONYMOUS_NAMESPACE
@@ -464,9 +464,12 @@ void ExpectSPIRV(nzsl::Ast::Module& shaderModule, std::string_view expectedOutpu
 	}
 }
 
-void ExpectWGSL(const nzsl::Ast::Module& shaderModule, std::string_view expectedOutput, const nzsl::ShaderWriter::States& options)
+void ExpectWGSL(const nzsl::Ast::Module& shaderModule, std::string_view expectedOutput)
 {
 	NAZARA_USE_ANONYMOUS_NAMESPACE
+
+	// Clone to avoid cross-test changes
+	nzsl::Ast::ModulePtr moduleClone = nzsl::Ast::Clone(shaderModule);
 
 	std::string source = SanitizeSource(expectedOutput);
 
@@ -475,12 +478,14 @@ void ExpectWGSL(const nzsl::Ast::Module& shaderModule, std::string_view expected
 		nzsl::Ast::ModulePtr sanitizedModule;
 		WHEN("Sanitizing a second time")
 		{
-			CHECK_NOTHROW(sanitizedModule = nzsl::Ast::Sanitize(shaderModule));
+			nzsl::Ast::TransformerContext context;
+			nzsl::Ast::ResolveTransformer resolver;
+			REQUIRE_NOTHROW(resolver.Transform(*moduleClone, context));
 		}
-		const nzsl::Ast::Module& targetModule = (sanitizedModule) ? *sanitizedModule : shaderModule;
+		nzsl::Ast::Module& targetModule = (sanitizedModule) ? *sanitizedModule : *moduleClone;
 
 		nzsl::WgslWriter writer;
-		nzsl::WgslWriter::Output output = writer.Generate(targetModule, options);
+		nzsl::WgslWriter::Output output = writer.Generate(targetModule);
 
 		SECTION("Validating expected code")
 		{

@@ -31,7 +31,7 @@ void ExpectGLSL(nzsl::ShaderStageType stageType, nzsl::Ast::Module& shader, std:
 void ExpectGLSL(nzsl::Ast::Module& shader, std::string_view expectedOutput, const nzsl::BackendParameters& options = {}, const nzsl::GlslWriter::Environment& env = {}, bool testShaderCompilation = true);
 void ExpectNZSL(const nzsl::Ast::Module& shader, std::string_view expectedOutput);
 void ExpectSPIRV(nzsl::Ast::Module& shader, std::string_view expectedOutput, const nzsl::BackendParameters& options = {}, const nzsl::SpirvWriter::Environment& env = {}, bool outputParameter = false, const spvtools::ValidatorOptions& validatorOptions = {});
-void ExpectWGSL(const nzsl::Ast::Module& shader, std::string_view expectedOutput, const nzsl::ShaderWriter::States& options = {});
+void ExpectWGSL(const nzsl::Ast::Module& shader, std::string_view expectedOutput);
 
 std::filesystem::path GetResourceDir();
 

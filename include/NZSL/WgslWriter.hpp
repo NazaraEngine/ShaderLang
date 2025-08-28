@@ -7,17 +7,17 @@
 #ifndef NZSL_WGSLWRITER_HPP
 #define NZSL_WGSLWRITER_HPP
 
+#include <NZSL/BackendParameters.hpp>
 #include <NZSL/Config.hpp>
-#include <NZSL/ShaderWriter.hpp>
 #include <NZSL/Ast/ExpressionVisitorExcept.hpp>
 #include <NZSL/Ast/Module.hpp>
-#include <NZSL/Ast/SanitizeVisitor.hpp>
 #include <NZSL/Ast/StatementVisitorExcept.hpp>
+#include <NZSL/Ast/TransformerExecutor.hpp>
 #include <string>
 
 namespace nzsl
 {
-	class NZSL_API WgslWriter : public ShaderWriter, public Ast::ExpressionVisitorExcept, public Ast::StatementVisitorExcept
+	class NZSL_API WgslWriter : Ast::ExpressionVisitorExcept, Ast::StatementVisitorExcept
 	{
 		public:
 			struct Environment;
@@ -28,7 +28,7 @@ namespace nzsl
 			WgslWriter(WgslWriter&&) = delete;
 			~WgslWriter() = default;
 
-			Output Generate(const Ast::Module& module, const States& states = {});
+			Output Generate(const Ast::Module& module, const BackendParameters& parameters = {});
 
 			void SetEnv(Environment environment);
 
@@ -42,7 +42,7 @@ namespace nzsl
 				std::unordered_map<std::uint64_t /* set | binding */, unsigned int /*new binding*/> bindingRemap;
 			};
 
-			static Ast::SanitizeVisitor::Options GetSanitizeOptions();
+			static void RegisterPasses(Ast::TransformerExecutor& executor);
 
 		private:
 			struct PreVisitor;
