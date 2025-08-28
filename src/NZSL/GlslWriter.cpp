@@ -2116,7 +2116,9 @@ namespace nzsl
 			case Ast::IntrinsicType::Reflect:                  Append("reflect");     break;
 			case Ast::IntrinsicType::Sin:                      Append("sin");         break;
 			case Ast::IntrinsicType::Sinh:                     Append("sinh");        break;
+			case Ast::IntrinsicType::SmoothStep:               Append("smoothstep");  break;
 			case Ast::IntrinsicType::Sqrt:                     Append("sqrt");        break;
+			case Ast::IntrinsicType::Step:                     Append("step");        break;
 			case Ast::IntrinsicType::Tan:                      Append("tan");         break;
 			case Ast::IntrinsicType::Tanh:                     Append("tanh");        break;
 			case Ast::IntrinsicType::RadToDeg:                 Append("degrees");     break;

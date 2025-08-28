@@ -527,10 +527,18 @@ fn main()
 	let signResult4 = sign(v1);
 	let signResult5 = sign(dv1);
 	let signResult6 = sign(iv1);
+	let smoothStepResult1 = smoothstep(f1, f2, f3);
+	let smoothStepResult2 = smoothstep(v1, v2, v3);
+	let smoothStepResult1 = smoothstep(d1, d2, d3);
+	let smoothStepResult2 = smoothstep(dv1, dv2, dv3);
 	let sqrtResult1 = sqrt(f1);
 	let sqrtResult2 = sqrt(v1);
 	let sqrtResult3 = sqrt(d1);
 	let sqrtResult4 = sqrt(dv1);
+	let stepResult1 = step(f1, f2);
+	let stepResult2 = step(v1, v2);
+	let stepResult1 = step(d1, d2);
+	let stepResult2 = step(dv1, dv2);
 	let truncResult1 = trunc(f1);
 	let truncResult2 = trunc(v1);
 	let truncResult3 = trunc(d1);
@@ -653,10 +661,18 @@ void main()
 	vec3 signResult4 = sign(v1);
 	dvec3 signResult5 = sign(dv1);
 	ivec3 signResult6 = sign(iv1);
+	float smoothStepResult1 = smoothstep(f1, f2, f3);
+	vec3 smoothStepResult2 = smoothstep(v1, v2, v3);
+	double smoothStepResult1_2 = smoothstep(d1, d2, d3);
+	dvec3 smoothStepResult2_2 = smoothstep(dv1, dv2, dv3);
 	float sqrtResult1 = sqrt(f1);
 	vec3 sqrtResult2 = sqrt(v1);
 	double sqrtResult3 = sqrt(d1);
 	dvec3 sqrtResult4 = sqrt(dv1);
+	float stepResult1 = step(f1, f2);
+	vec3 stepResult2 = step(v1, v2);
+	double stepResult1_2 = step(d1, d2);
+	dvec3 stepResult2_2 = step(dv1, dv2);
 	float truncResult1 = trunc(f1);
 	vec3 truncResult2 = trunc(v1);
 	double truncResult3 = trunc(d1);
@@ -770,10 +786,18 @@ fn main()
 	let signResult4: vec3[f32] = sign(v1);
 	let signResult5: vec3[f64] = sign(dv1);
 	let signResult6: vec3[i32] = sign(iv1);
+	let smoothStepResult1: f32 = smoothstep(f1, f2, f3);
+	let smoothStepResult2: vec3[f32] = smoothstep(v1, v2, v3);
+	let smoothStepResult1: f64 = smoothstep(d1, d2, d3);
+	let smoothStepResult2: vec3[f64] = smoothstep(dv1, dv2, dv3);
 	let sqrtResult1: f32 = sqrt(f1);
 	let sqrtResult2: vec3[f32] = sqrt(v1);
 	let sqrtResult3: f64 = sqrt(d1);
 	let sqrtResult4: vec3[f64] = sqrt(dv1);
+	let stepResult1: f32 = step(f1, f2);
+	let stepResult2: vec3[f32] = step(v1, v2);
+	let stepResult1: f64 = step(d1, d2);
+	let stepResult2: vec3[f64] = step(dv1, dv2);
 	let truncResult1: f32 = trunc(f1);
 	let truncResult2: vec3[f32] = trunc(v1);
 	let truncResult3: f64 = trunc(d1);
@@ -782,304 +806,340 @@ fn main()
 )");
 
 		ExpectSPIRV(*shaderModule, R"(
-%172 = OpLoad %8 %51
-%173 = OpExtInst %8 GLSLstd450 FAbs %172
-       OpStore %73 %173
-%174 = OpLoad %28 %61
-%175 = OpExtInst %28 GLSLstd450 FAbs %174
-       OpStore %74 %175
-%176 = OpLoad %3 %48
-%177 = OpExtInst %3 GLSLstd450 FAbs %176
-       OpStore %75 %177
-%178 = OpLoad %33 %64
-%179 = OpExtInst %33 GLSLstd450 FAbs %178
-       OpStore %76 %179
 %180 = OpLoad %8 %51
-%181 = OpExtInst %8 GLSLstd450 Ceil %180
-       OpStore %77 %181
+%181 = OpExtInst %8 GLSLstd450 FAbs %180
+       OpStore %73 %181
 %182 = OpLoad %28 %61
-%183 = OpExtInst %28 GLSLstd450 Ceil %182
-       OpStore %78 %183
+%183 = OpExtInst %28 GLSLstd450 FAbs %182
+       OpStore %74 %183
 %184 = OpLoad %3 %48
-%185 = OpExtInst %3 GLSLstd450 Ceil %184
-       OpStore %79 %185
+%185 = OpExtInst %3 GLSLstd450 FAbs %184
+       OpStore %75 %185
 %186 = OpLoad %33 %64
-%187 = OpExtInst %33 GLSLstd450 Ceil %186
-       OpStore %80 %187
+%187 = OpExtInst %33 GLSLstd450 FAbs %186
+       OpStore %76 %187
 %188 = OpLoad %8 %51
-%189 = OpLoad %8 %53
-%190 = OpLoad %8 %52
-%191 = OpExtInst %8 GLSLstd450 FClamp %188 %189 %190
-       OpStore %81 %191
-%192 = OpLoad %28 %61
-%193 = OpLoad %28 %63
-%194 = OpLoad %28 %62
-%195 = OpExtInst %28 GLSLstd450 FClamp %192 %193 %194
-       OpStore %82 %195
-%196 = OpLoad %3 %48
-%197 = OpLoad %3 %50
-%198 = OpLoad %3 %49
-%199 = OpExtInst %3 GLSLstd450 FClamp %196 %197 %198
-       OpStore %83 %199
-%200 = OpLoad %33 %64
-%201 = OpLoad %33 %66
-%202 = OpLoad %33 %65
-%203 = OpExtInst %33 GLSLstd450 FClamp %200 %201 %202
-       OpStore %84 %203
-%204 = OpLoad %28 %61
-%205 = OpLoad %28 %62
-%206 = OpExtInst %28 GLSLstd450 Cross %204 %205
-       OpStore %85 %206
-%207 = OpLoad %33 %64
-%208 = OpLoad %33 %65
-%209 = OpExtInst %33 GLSLstd450 Cross %207 %208
-       OpStore %86 %209
-%210 = OpLoad %28 %61
-%211 = OpLoad %28 %62
-%212 = OpExtInst %8 GLSLstd450 Distance %210 %211
-       OpStore %87 %212
-%213 = OpLoad %33 %64
-%214 = OpLoad %33 %65
-%215 = OpExtInst %3 GLSLstd450 Distance %213 %214
-       OpStore %88 %215
-%216 = OpLoad %28 %61
-%217 = OpLoad %28 %62
-%218 = OpDot %8 %216 %217
-       OpStore %89 %218
-%219 = OpLoad %33 %64
-%220 = OpLoad %33 %65
-%221 = OpDot %3 %219 %220
-       OpStore %90 %221
-%222 = OpLoad %28 %61
-%223 = OpExtInst %28 GLSLstd450 Exp %222
-       OpStore %91 %223
-%224 = OpLoad %8 %51
-%225 = OpExtInst %8 GLSLstd450 Exp %224
-       OpStore %92 %225
-%226 = OpLoad %28 %61
-%227 = OpExtInst %28 GLSLstd450 Exp2 %226
-       OpStore %93 %227
-%228 = OpLoad %8 %51
-%229 = OpExtInst %8 GLSLstd450 Exp2 %228
-       OpStore %94 %229
-%230 = OpLoad %8 %51
-%231 = OpExtInst %8 GLSLstd450 Floor %230
-       OpStore %95 %231
-%232 = OpLoad %28 %61
-%233 = OpExtInst %28 GLSLstd450 Floor %232
-       OpStore %96 %233
-%234 = OpLoad %3 %48
-%235 = OpExtInst %3 GLSLstd450 Floor %234
-       OpStore %97 %235
-%236 = OpLoad %33 %64
-%237 = OpExtInst %33 GLSLstd450 Floor %236
-       OpStore %98 %237
+%189 = OpExtInst %8 GLSLstd450 Ceil %188
+       OpStore %77 %189
+%190 = OpLoad %28 %61
+%191 = OpExtInst %28 GLSLstd450 Ceil %190
+       OpStore %78 %191
+%192 = OpLoad %3 %48
+%193 = OpExtInst %3 GLSLstd450 Ceil %192
+       OpStore %79 %193
+%194 = OpLoad %33 %64
+%195 = OpExtInst %33 GLSLstd450 Ceil %194
+       OpStore %80 %195
+%196 = OpLoad %8 %51
+%197 = OpLoad %8 %53
+%198 = OpLoad %8 %52
+%199 = OpExtInst %8 GLSLstd450 FClamp %196 %197 %198
+       OpStore %81 %199
+%200 = OpLoad %28 %61
+%201 = OpLoad %28 %63
+%202 = OpLoad %28 %62
+%203 = OpExtInst %28 GLSLstd450 FClamp %200 %201 %202
+       OpStore %82 %203
+%204 = OpLoad %3 %48
+%205 = OpLoad %3 %50
+%206 = OpLoad %3 %49
+%207 = OpExtInst %3 GLSLstd450 FClamp %204 %205 %206
+       OpStore %83 %207
+%208 = OpLoad %33 %64
+%209 = OpLoad %33 %66
+%210 = OpLoad %33 %65
+%211 = OpExtInst %33 GLSLstd450 FClamp %208 %209 %210
+       OpStore %84 %211
+%212 = OpLoad %28 %61
+%213 = OpLoad %28 %62
+%214 = OpExtInst %28 GLSLstd450 Cross %212 %213
+       OpStore %85 %214
+%215 = OpLoad %33 %64
+%216 = OpLoad %33 %65
+%217 = OpExtInst %33 GLSLstd450 Cross %215 %216
+       OpStore %86 %217
+%218 = OpLoad %28 %61
+%219 = OpLoad %28 %62
+%220 = OpExtInst %8 GLSLstd450 Distance %218 %219
+       OpStore %87 %220
+%221 = OpLoad %33 %64
+%222 = OpLoad %33 %65
+%223 = OpExtInst %3 GLSLstd450 Distance %221 %222
+       OpStore %88 %223
+%224 = OpLoad %28 %61
+%225 = OpLoad %28 %62
+%226 = OpDot %8 %224 %225
+       OpStore %89 %226
+%227 = OpLoad %33 %64
+%228 = OpLoad %33 %65
+%229 = OpDot %3 %227 %228
+       OpStore %90 %229
+%230 = OpLoad %28 %61
+%231 = OpExtInst %28 GLSLstd450 Exp %230
+       OpStore %91 %231
+%232 = OpLoad %8 %51
+%233 = OpExtInst %8 GLSLstd450 Exp %232
+       OpStore %92 %233
+%234 = OpLoad %28 %61
+%235 = OpExtInst %28 GLSLstd450 Exp2 %234
+       OpStore %93 %235
+%236 = OpLoad %8 %51
+%237 = OpExtInst %8 GLSLstd450 Exp2 %236
+       OpStore %94 %237
 %238 = OpLoad %8 %51
-%239 = OpExtInst %8 GLSLstd450 Fract %238
-       OpStore %99 %239
+%239 = OpExtInst %8 GLSLstd450 Floor %238
+       OpStore %95 %239
 %240 = OpLoad %28 %61
-%241 = OpExtInst %28 GLSLstd450 Fract %240
-       OpStore %100 %241
+%241 = OpExtInst %28 GLSLstd450 Floor %240
+       OpStore %96 %241
 %242 = OpLoad %3 %48
-%243 = OpExtInst %3 GLSLstd450 Fract %242
-       OpStore %101 %243
+%243 = OpExtInst %3 GLSLstd450 Floor %242
+       OpStore %97 %243
 %244 = OpLoad %33 %64
-%245 = OpExtInst %33 GLSLstd450 Fract %244
-       OpStore %102 %245
+%245 = OpExtInst %33 GLSLstd450 Floor %244
+       OpStore %98 %245
 %246 = OpLoad %8 %51
-%247 = OpExtInst %8 GLSLstd450 InverseSqrt %246
-       OpStore %103 %247
+%247 = OpExtInst %8 GLSLstd450 Fract %246
+       OpStore %99 %247
 %248 = OpLoad %28 %61
-%249 = OpExtInst %28 GLSLstd450 InverseSqrt %248
-       OpStore %104 %249
+%249 = OpExtInst %28 GLSLstd450 Fract %248
+       OpStore %100 %249
 %250 = OpLoad %3 %48
-%251 = OpExtInst %3 GLSLstd450 InverseSqrt %250
-       OpStore %105 %251
+%251 = OpExtInst %3 GLSLstd450 Fract %250
+       OpStore %101 %251
 %252 = OpLoad %33 %64
-%253 = OpExtInst %33 GLSLstd450 InverseSqrt %252
-       OpStore %106 %253
-%254 = OpLoad %28 %61
-%255 = OpExtInst %8 GLSLstd450 Length %254
-       OpStore %107 %255
-%256 = OpLoad %33 %64
-%257 = OpExtInst %3 GLSLstd450 Length %256
-       OpStore %108 %257
-%258 = OpLoad %8 %51
-%259 = OpLoad %8 %53
-%260 = OpLoad %8 %52
-%261 = OpExtInst %8 GLSLstd450 FMix %258 %259 %260
-       OpStore %109 %261
+%253 = OpExtInst %33 GLSLstd450 Fract %252
+       OpStore %102 %253
+%254 = OpLoad %8 %51
+%255 = OpExtInst %8 GLSLstd450 InverseSqrt %254
+       OpStore %103 %255
+%256 = OpLoad %28 %61
+%257 = OpExtInst %28 GLSLstd450 InverseSqrt %256
+       OpStore %104 %257
+%258 = OpLoad %3 %48
+%259 = OpExtInst %3 GLSLstd450 InverseSqrt %258
+       OpStore %105 %259
+%260 = OpLoad %33 %64
+%261 = OpExtInst %33 GLSLstd450 InverseSqrt %260
+       OpStore %106 %261
 %262 = OpLoad %28 %61
-%263 = OpLoad %28 %63
-%264 = OpLoad %28 %62
-%265 = OpExtInst %28 GLSLstd450 FMix %262 %263 %264
-       OpStore %110 %265
-%266 = OpLoad %3 %48
-%267 = OpLoad %3 %50
-%268 = OpLoad %3 %49
-%269 = OpExtInst %3 GLSLstd450 FMix %266 %267 %268
-       OpStore %111 %269
-%270 = OpLoad %33 %64
-%271 = OpLoad %33 %66
-%272 = OpLoad %33 %65
-%273 = OpExtInst %33 GLSLstd450 FMix %270 %271 %272
-       OpStore %112 %273
-%274 = OpLoad %28 %61
-%275 = OpExtInst %28 GLSLstd450 Log %274
-       OpStore %113 %275
-%276 = OpLoad %8 %51
-%277 = OpExtInst %8 GLSLstd450 Log %276
-       OpStore %114 %277
-%278 = OpLoad %28 %61
-%279 = OpExtInst %28 GLSLstd450 Log2 %278
-       OpStore %115 %279
-%280 = OpLoad %8 %51
-%281 = OpExtInst %8 GLSLstd450 Log2 %280
-       OpStore %116 %281
-%282 = OpLoad %8 %51
-%283 = OpLoad %8 %52
-%284 = OpExtInst %8 GLSLstd450 FMax %282 %283
-       OpStore %117 %284
-%285 = OpLoad %13 %54
-%286 = OpLoad %13 %55
-%287 = OpExtInst %13 GLSLstd450 SMax %285 %286
-       OpStore %118 %287
-%288 = OpLoad %18 %57
-%289 = OpLoad %18 %58
-%290 = OpExtInst %18 GLSLstd450 UMax %288 %289
-       OpStore %119 %290
-%291 = OpLoad %28 %61
-%292 = OpLoad %28 %62
-%293 = OpExtInst %28 GLSLstd450 FMax %291 %292
-       OpStore %120 %293
-%294 = OpLoad %33 %64
-%295 = OpLoad %33 %65
-%296 = OpExtInst %33 GLSLstd450 FMax %294 %295
-       OpStore %121 %296
-%297 = OpLoad %38 %67
-%298 = OpLoad %38 %68
-%299 = OpExtInst %38 GLSLstd450 SMax %297 %298
-       OpStore %122 %299
-%300 = OpLoad %43 %70
-%301 = OpLoad %43 %71
-%302 = OpExtInst %43 GLSLstd450 UMax %300 %301
-       OpStore %123 %302
-%303 = OpLoad %8 %51
-%304 = OpLoad %8 %52
-%305 = OpExtInst %8 GLSLstd450 FMin %303 %304
-       OpStore %124 %305
-%306 = OpLoad %13 %54
-%307 = OpLoad %13 %55
-%308 = OpExtInst %13 GLSLstd450 SMin %306 %307
-       OpStore %125 %308
-%309 = OpLoad %18 %57
-%310 = OpLoad %18 %58
-%311 = OpExtInst %18 GLSLstd450 UMin %309 %310
-       OpStore %126 %311
-%312 = OpLoad %28 %61
-%313 = OpLoad %28 %62
-%314 = OpExtInst %28 GLSLstd450 FMin %312 %313
-       OpStore %127 %314
-%315 = OpLoad %33 %64
-%316 = OpLoad %33 %65
-%317 = OpExtInst %33 GLSLstd450 FMin %315 %316
-       OpStore %128 %317
-%318 = OpLoad %38 %67
-%319 = OpLoad %38 %68
-%320 = OpExtInst %38 GLSLstd450 SMin %318 %319
-       OpStore %129 %320
-%321 = OpLoad %43 %70
-%322 = OpLoad %43 %71
-%323 = OpExtInst %43 GLSLstd450 UMin %321 %322
-       OpStore %130 %323
-%324 = OpLoad %28 %61
-%325 = OpExtInst %28 GLSLstd450 Normalize %324
-       OpStore %131 %325
-%326 = OpLoad %33 %64
-%327 = OpExtInst %33 GLSLstd450 Normalize %326
-       OpStore %132 %327
-%328 = OpLoad %8 %51
-%329 = OpLoad %8 %52
-%330 = OpExtInst %8 GLSLstd450 Pow %328 %329
-       OpStore %133 %330
-%331 = OpLoad %28 %61
-%332 = OpLoad %28 %62
-%333 = OpExtInst %28 GLSLstd450 Pow %331 %332
-       OpStore %134 %333
-%334 = OpLoad %28 %61
-%335 = OpLoad %28 %62
-%336 = OpExtInst %28 GLSLstd450 Reflect %334 %335
-       OpStore %135 %336
-%337 = OpLoad %33 %64
-%338 = OpLoad %33 %65
-%339 = OpExtInst %33 GLSLstd450 Reflect %337 %338
-       OpStore %136 %339
-%340 = OpLoad %8 %51
-%341 = OpExtInst %8 GLSLstd450 Round %340
-       OpStore %137 %341
+%263 = OpExtInst %8 GLSLstd450 Length %262
+       OpStore %107 %263
+%264 = OpLoad %33 %64
+%265 = OpExtInst %3 GLSLstd450 Length %264
+       OpStore %108 %265
+%266 = OpLoad %8 %51
+%267 = OpLoad %8 %53
+%268 = OpLoad %8 %52
+%269 = OpExtInst %8 GLSLstd450 FMix %266 %267 %268
+       OpStore %109 %269
+%270 = OpLoad %28 %61
+%271 = OpLoad %28 %63
+%272 = OpLoad %28 %62
+%273 = OpExtInst %28 GLSLstd450 FMix %270 %271 %272
+       OpStore %110 %273
+%274 = OpLoad %3 %48
+%275 = OpLoad %3 %50
+%276 = OpLoad %3 %49
+%277 = OpExtInst %3 GLSLstd450 FMix %274 %275 %276
+       OpStore %111 %277
+%278 = OpLoad %33 %64
+%279 = OpLoad %33 %66
+%280 = OpLoad %33 %65
+%281 = OpExtInst %33 GLSLstd450 FMix %278 %279 %280
+       OpStore %112 %281
+%282 = OpLoad %28 %61
+%283 = OpExtInst %28 GLSLstd450 Log %282
+       OpStore %113 %283
+%284 = OpLoad %8 %51
+%285 = OpExtInst %8 GLSLstd450 Log %284
+       OpStore %114 %285
+%286 = OpLoad %28 %61
+%287 = OpExtInst %28 GLSLstd450 Log2 %286
+       OpStore %115 %287
+%288 = OpLoad %8 %51
+%289 = OpExtInst %8 GLSLstd450 Log2 %288
+       OpStore %116 %289
+%290 = OpLoad %8 %51
+%291 = OpLoad %8 %52
+%292 = OpExtInst %8 GLSLstd450 FMax %290 %291
+       OpStore %117 %292
+%293 = OpLoad %13 %54
+%294 = OpLoad %13 %55
+%295 = OpExtInst %13 GLSLstd450 SMax %293 %294
+       OpStore %118 %295
+%296 = OpLoad %18 %57
+%297 = OpLoad %18 %58
+%298 = OpExtInst %18 GLSLstd450 UMax %296 %297
+       OpStore %119 %298
+%299 = OpLoad %28 %61
+%300 = OpLoad %28 %62
+%301 = OpExtInst %28 GLSLstd450 FMax %299 %300
+       OpStore %120 %301
+%302 = OpLoad %33 %64
+%303 = OpLoad %33 %65
+%304 = OpExtInst %33 GLSLstd450 FMax %302 %303
+       OpStore %121 %304
+%305 = OpLoad %38 %67
+%306 = OpLoad %38 %68
+%307 = OpExtInst %38 GLSLstd450 SMax %305 %306
+       OpStore %122 %307
+%308 = OpLoad %43 %70
+%309 = OpLoad %43 %71
+%310 = OpExtInst %43 GLSLstd450 UMax %308 %309
+       OpStore %123 %310
+%311 = OpLoad %8 %51
+%312 = OpLoad %8 %52
+%313 = OpExtInst %8 GLSLstd450 FMin %311 %312
+       OpStore %124 %313
+%314 = OpLoad %13 %54
+%315 = OpLoad %13 %55
+%316 = OpExtInst %13 GLSLstd450 SMin %314 %315
+       OpStore %125 %316
+%317 = OpLoad %18 %57
+%318 = OpLoad %18 %58
+%319 = OpExtInst %18 GLSLstd450 UMin %317 %318
+       OpStore %126 %319
+%320 = OpLoad %28 %61
+%321 = OpLoad %28 %62
+%322 = OpExtInst %28 GLSLstd450 FMin %320 %321
+       OpStore %127 %322
+%323 = OpLoad %33 %64
+%324 = OpLoad %33 %65
+%325 = OpExtInst %33 GLSLstd450 FMin %323 %324
+       OpStore %128 %325
+%326 = OpLoad %38 %67
+%327 = OpLoad %38 %68
+%328 = OpExtInst %38 GLSLstd450 SMin %326 %327
+       OpStore %129 %328
+%329 = OpLoad %43 %70
+%330 = OpLoad %43 %71
+%331 = OpExtInst %43 GLSLstd450 UMin %329 %330
+       OpStore %130 %331
+%332 = OpLoad %28 %61
+%333 = OpExtInst %28 GLSLstd450 Normalize %332
+       OpStore %131 %333
+%334 = OpLoad %33 %64
+%335 = OpExtInst %33 GLSLstd450 Normalize %334
+       OpStore %132 %335
+%336 = OpLoad %8 %51
+%337 = OpLoad %8 %52
+%338 = OpExtInst %8 GLSLstd450 Pow %336 %337
+       OpStore %133 %338
+%339 = OpLoad %28 %61
+%340 = OpLoad %28 %62
+%341 = OpExtInst %28 GLSLstd450 Pow %339 %340
+       OpStore %134 %341
 %342 = OpLoad %28 %61
-%343 = OpExtInst %28 GLSLstd450 Round %342
-       OpStore %138 %343
-%344 = OpLoad %3 %48
-%345 = OpExtInst %3 GLSLstd450 Round %344
-       OpStore %139 %345
-%346 = OpLoad %33 %64
-%347 = OpExtInst %33 GLSLstd450 Round %346
-       OpStore %140 %347
+%343 = OpLoad %28 %62
+%344 = OpExtInst %28 GLSLstd450 Reflect %342 %343
+       OpStore %135 %344
+%345 = OpLoad %33 %64
+%346 = OpLoad %33 %65
+%347 = OpExtInst %33 GLSLstd450 Reflect %345 %346
+       OpStore %136 %347
 %348 = OpLoad %8 %51
-%349 = OpExtInst %8 GLSLstd450 RoundEven %348
-       OpStore %141 %349
+%349 = OpExtInst %8 GLSLstd450 Round %348
+       OpStore %137 %349
 %350 = OpLoad %28 %61
-%351 = OpExtInst %28 GLSLstd450 RoundEven %350
-       OpStore %142 %351
+%351 = OpExtInst %28 GLSLstd450 Round %350
+       OpStore %138 %351
 %352 = OpLoad %3 %48
-%353 = OpExtInst %3 GLSLstd450 RoundEven %352
-       OpStore %143 %353
+%353 = OpExtInst %3 GLSLstd450 Round %352
+       OpStore %139 %353
 %354 = OpLoad %33 %64
-%355 = OpExtInst %33 GLSLstd450 RoundEven %354
-       OpStore %144 %355
+%355 = OpExtInst %33 GLSLstd450 Round %354
+       OpStore %140 %355
 %356 = OpLoad %8 %51
-%357 = OpExtInst %8 GLSLstd450 FSign %356
-       OpStore %145 %357
-%358 = OpLoad %13 %54
-%359 = OpExtInst %13 GLSLstd450 SSign %358
-       OpStore %146 %359
+%357 = OpExtInst %8 GLSLstd450 RoundEven %356
+       OpStore %141 %357
+%358 = OpLoad %28 %61
+%359 = OpExtInst %28 GLSLstd450 RoundEven %358
+       OpStore %142 %359
 %360 = OpLoad %3 %48
-%361 = OpExtInst %3 GLSLstd450 FSign %360
-       OpStore %147 %361
-%362 = OpLoad %28 %61
-%363 = OpExtInst %28 GLSLstd450 FSign %362
-       OpStore %148 %363
-%364 = OpLoad %33 %64
-%365 = OpExtInst %33 GLSLstd450 FSign %364
-       OpStore %149 %365
-%366 = OpLoad %38 %67
-%367 = OpExtInst %38 GLSLstd450 SSign %366
-       OpStore %150 %367
-%368 = OpLoad %8 %51
-%369 = OpExtInst %8 GLSLstd450 Sqrt %368
-       OpStore %151 %369
+%361 = OpExtInst %3 GLSLstd450 RoundEven %360
+       OpStore %143 %361
+%362 = OpLoad %33 %64
+%363 = OpExtInst %33 GLSLstd450 RoundEven %362
+       OpStore %144 %363
+%364 = OpLoad %8 %51
+%365 = OpExtInst %8 GLSLstd450 FSign %364
+       OpStore %145 %365
+%366 = OpLoad %13 %54
+%367 = OpExtInst %13 GLSLstd450 SSign %366
+       OpStore %146 %367
+%368 = OpLoad %3 %48
+%369 = OpExtInst %3 GLSLstd450 FSign %368
+       OpStore %147 %369
 %370 = OpLoad %28 %61
-%371 = OpExtInst %28 GLSLstd450 Sqrt %370
-       OpStore %152 %371
-%372 = OpLoad %3 %48
-%373 = OpExtInst %3 GLSLstd450 Sqrt %372
-       OpStore %153 %373
-%374 = OpLoad %33 %64
-%375 = OpExtInst %33 GLSLstd450 Sqrt %374
-       OpStore %154 %375
+%371 = OpExtInst %28 GLSLstd450 FSign %370
+       OpStore %148 %371
+%372 = OpLoad %33 %64
+%373 = OpExtInst %33 GLSLstd450 FSign %372
+       OpStore %149 %373
+%374 = OpLoad %38 %67
+%375 = OpExtInst %38 GLSLstd450 SSign %374
+       OpStore %150 %375
 %376 = OpLoad %8 %51
-%377 = OpExtInst %8 GLSLstd450 Trunc %376
-       OpStore %155 %377
-%378 = OpLoad %28 %61
-%379 = OpExtInst %28 GLSLstd450 Trunc %378
-       OpStore %156 %379
-%380 = OpLoad %3 %48
-%381 = OpExtInst %3 GLSLstd450 Trunc %380
-       OpStore %157 %381
-%382 = OpLoad %33 %64
-%383 = OpExtInst %33 GLSLstd450 Trunc %382
-       OpStore %158 %383
+%377 = OpLoad %8 %52
+%378 = OpLoad %8 %53
+%379 = OpExtInst %8 GLSLstd450 SmoothStep %376 %377 %378
+       OpStore %151 %379
+%380 = OpLoad %28 %61
+%381 = OpLoad %28 %62
+%382 = OpLoad %28 %63
+%383 = OpExtInst %28 GLSLstd450 SmoothStep %380 %381 %382
+       OpStore %152 %383
+%384 = OpLoad %3 %48
+%385 = OpLoad %3 %49
+%386 = OpLoad %3 %50
+%387 = OpExtInst %3 GLSLstd450 SmoothStep %384 %385 %386
+       OpStore %153 %387
+%388 = OpLoad %33 %64
+%389 = OpLoad %33 %65
+%390 = OpLoad %33 %66
+%391 = OpExtInst %33 GLSLstd450 SmoothStep %388 %389 %390
+       OpStore %154 %391
+%392 = OpLoad %8 %51
+%393 = OpExtInst %8 GLSLstd450 Sqrt %392
+       OpStore %155 %393
+%394 = OpLoad %28 %61
+%395 = OpExtInst %28 GLSLstd450 Sqrt %394
+       OpStore %156 %395
+%396 = OpLoad %3 %48
+%397 = OpExtInst %3 GLSLstd450 Sqrt %396
+       OpStore %157 %397
+%398 = OpLoad %33 %64
+%399 = OpExtInst %33 GLSLstd450 Sqrt %398
+       OpStore %158 %399
+%400 = OpLoad %8 %51
+%401 = OpLoad %8 %52
+%402 = OpExtInst %8 GLSLstd450 Step %400 %401
+       OpStore %159 %402
+%403 = OpLoad %28 %61
+%404 = OpLoad %28 %62
+%405 = OpExtInst %28 GLSLstd450 Step %403 %404
+       OpStore %160 %405
+%406 = OpLoad %3 %48
+%407 = OpLoad %3 %49
+%408 = OpExtInst %3 GLSLstd450 Step %406 %407
+       OpStore %161 %408
+%409 = OpLoad %33 %64
+%410 = OpLoad %33 %65
+%411 = OpExtInst %33 GLSLstd450 Step %409 %410
+       OpStore %162 %411
+%412 = OpLoad %8 %51
+%413 = OpExtInst %8 GLSLstd450 Trunc %412
+       OpStore %163 %413
+%414 = OpLoad %28 %61
+%415 = OpExtInst %28 GLSLstd450 Trunc %414
+       OpStore %164 %415
+%416 = OpLoad %3 %48
+%417 = OpExtInst %3 GLSLstd450 Trunc %416
+       OpStore %165 %417
+%418 = OpLoad %33 %64
+%419 = OpExtInst %33 GLSLstd450 Trunc %418
+       OpStore %166 %419
        OpReturn
        OpFunctionEnd)", {}, {}, true);
 	}
