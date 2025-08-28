@@ -641,7 +641,7 @@ namespace nzsl::Ast
 		RegisterFullType("u32",  PrimitiveType::UInt32);
 
 		std::function<void(const SourceLocation& sourceLocation)> float64Check;
-		if (IsFeatureEnabled(ModuleFeature::Float64))
+		if (!IsFeatureEnabled(ModuleFeature::Float64))
 		{
 			float64Check = [](const SourceLocation& sourceLocation)
 			{
