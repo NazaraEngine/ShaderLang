@@ -732,9 +732,12 @@ namespace nzsl::Ast
 					name = fmt::format("mat{}x{}", columnCount, rowCount);
 
 				RegisterPartialType(std::move(name), PartialType{
-					{ TypeParameterCategory::PrimitiveType }, {},
+					{}, { TypeParameterCategory::PrimitiveType },
 					[=](const TypeParameter* parameters, [[maybe_unused]] std::size_t parameterCount, const SourceLocation& sourceLocation) -> ExpressionType
 					{
+						if (parameterCount == 0)
+							return ImplicitMatrixType{ columnCount, rowCount };
+
 						assert(parameterCount == 1);
 						assert(std::holds_alternative<ExpressionType>(*parameters));
 
@@ -762,18 +765,16 @@ namespace nzsl::Ast
 				{
 					if (parameterCount == 0)
 						return ImplicitVectorType{ componentCount };
-					else
-					{
-						assert(parameterCount == 1);
-						assert(std::holds_alternative<ExpressionType>(*parameters));
 
-						const ExpressionType& exprType = std::get<ExpressionType>(*parameters);
-						assert(IsPrimitiveType(exprType));
+					assert(parameterCount == 1);
+					assert(std::holds_alternative<ExpressionType>(*parameters));
 
-						return VectorType {
-							componentCount, std::get<PrimitiveType>(exprType)
-						};
-					}
+					const ExpressionType& exprType = std::get<ExpressionType>(*parameters);
+					assert(IsPrimitiveType(exprType));
+
+					return VectorType {
+						componentCount, std::get<PrimitiveType>(exprType)
+					};
 				}
 			});
 		}
@@ -2274,6 +2275,35 @@ namespace nzsl::Ast
 				targetArrayType.SetupInnerType(std::move(innerType));
 
 				targetType = std::move(targetArrayType);
+			}
+		}
+		else if (IsImplicitMatrixType(targetType))
+		{
+			std::optional<PrimitiveType> innerType;
+			for (std::size_t i = 0; i < castExpr.expressions.size(); ++i)
+			{
+				const ExpressionType* exprType = GetResolvedExpressionType(MandatoryExpr(castExpr.expressions[i], castExpr.sourceLocation), true);
+				if (!exprType)
+					break;
+
+				if (IsMatrixType(*exprType))
+					innerType = std::get<MatrixType>(*exprType).type;
+				else if (IsVectorType(*exprType))
+					innerType = std::get<VectorType>(*exprType).type;
+				else if (IsPrimitiveType(*exprType))
+					innerType = std::get<PrimitiveType>(*exprType);
+
+				if (innerType && !IsLiteralType(*innerType))
+					break; //< continue if literal type as we could encounter a non-literal type later (e.g. vec3(1, u32(2), 3))
+			}
+
+			if (innerType)
+			{
+				const ImplicitMatrixType& implicitMatrixType = std::get<ImplicitMatrixType>(targetType);
+				std::size_t columnCount = implicitMatrixType.columnCount;
+				std::size_t rowCount = implicitMatrixType.rowCount;
+
+				targetType = MatrixType{ columnCount, rowCount, *innerType };
 			}
 		}
 		else if (IsImplicitVectorType(targetType))
