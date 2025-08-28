@@ -139,7 +139,7 @@ jobs:
     - name: Setup platform config
       run: |
         PLATFORM_CONF=""
-        if [ "${{ matrix.confs.test }}" == "true" ]; then
+        if [ ${{ matrix.confs.test }} ]; then
           PLATFORM_CONF="$PLATFORM_CONF --examples=y --tests=y" >> $GITHUB_ENV
         fi
         # MinGW has some issues with unitybuild
@@ -152,7 +152,7 @@ jobs:
         fi
         echo "ADDITIONAL_CONF=${{ env.ADDITIONAL_CONF }} $PLATFORM_CONF" >> $GITHUB_ENV
         FILENAME="nzsl_${{ matrix.confs.plat }}_${{ matrix.confs.arch }}_${{ matrix.kind }}"
-        if [ ! "${{ startsWith(github.event.ref, 'refs/tags/') }}" ]; then
+        if [ ! ${{ startsWith(github.event.ref, 'refs/tags/') }} ]; then
           FILENAME="$FILENAME_${{ matrix.confs.mode }}"
         fi
         if [ "${{ matrix.confs.plat }}" == "windows" ]; then
