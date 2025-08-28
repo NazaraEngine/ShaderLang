@@ -300,9 +300,14 @@ namespace nzsl
 		throw std::runtime_error("unexpected function type");
 	}
 
-	void LangWriter::Append(const Ast::ImplicitArrayType& /*vecType*/)
+	void LangWriter::Append(const Ast::ImplicitArrayType& /*arrayType*/)
 	{
 		throw std::runtime_error("unexpected ImplicitVectorType");
+	}
+
+	void LangWriter::Append(const Ast::ImplicitMatrixType& /*matrixType*/)
+	{
+		throw std::runtime_error("unexpected ImplicitMatrixType");
 	}
 
 	void LangWriter::Append(const Ast::ImplicitVectorType& /*vecType*/)

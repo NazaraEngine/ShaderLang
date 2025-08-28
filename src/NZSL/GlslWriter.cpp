@@ -724,6 +724,11 @@ namespace nzsl
 		throw std::runtime_error("unexpected ImplicitArrayType");
 	}
 
+	void GlslWriter::Append(const Ast::ImplicitMatrixType& /*type*/)
+	{
+		throw std::runtime_error("unexpected ImplicitMatrixType");
+	}
+
 	void GlslWriter::Append(const Ast::ImplicitVectorType& /*type*/)
 	{
 		throw std::runtime_error("unexpected ImplicitVectorType");

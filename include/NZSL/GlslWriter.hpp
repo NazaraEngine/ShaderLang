@@ -80,6 +80,7 @@ namespace nzsl
 			void Append(const Ast::ExpressionValue<Ast::ExpressionType>& type);
 			void Append(const Ast::FunctionType& functionType);
 			void Append(const Ast::ImplicitArrayType& type);
+			void Append(const Ast::ImplicitMatrixType& type);
 			void Append(const Ast::ImplicitVectorType& type);
 			void Append(Ast::InterpolationQualifier interpolation);
 			void Append(const Ast::IntrinsicFunctionType& intrinsicFunctionType);

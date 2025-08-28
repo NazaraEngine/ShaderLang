@@ -111,6 +111,17 @@ namespace nzsl::Ast
 	}
 
 
+	inline bool ImplicitMatrixType::operator==(const ImplicitMatrixType& rhs) const
+	{
+		return columnCount == rhs.columnCount && rowCount && rhs.rowCount;
+	}
+
+	inline bool ImplicitMatrixType::operator!=(const ImplicitMatrixType& rhs) const
+	{
+		return !operator==(rhs);
+	}
+
+
 	inline bool ImplicitVectorType::operator==(const ImplicitVectorType& rhs) const
 	{
 		return componentCount == rhs.componentCount;
@@ -281,12 +292,17 @@ namespace nzsl::Ast
 
 	inline bool IsImplicitType(const ExpressionType& type)
 	{
-		return IsImplicitArrayType(type) || IsImplicitVectorType(type);
+		return IsImplicitArrayType(type) || IsImplicitMatrixType(type) || IsImplicitVectorType(type);
 	}
 
 	inline bool IsImplicitArrayType(const ExpressionType& type)
 	{
 		return std::holds_alternative<ImplicitArrayType>(type);
+	}
+
+	inline bool IsImplicitMatrixType(const ExpressionType& type)
+	{
+		return std::holds_alternative<ImplicitMatrixType>(type);
 	}
 
 	inline bool IsImplicitVectorType(const ExpressionType& type)
@@ -585,6 +601,15 @@ namespace std
 		std::size_t operator()(const nzsl::Ast::ImplicitArrayType& /*arrayType*/) const
 		{
 			return 1;
+		}
+	};
+
+	template<>
+	struct hash<nzsl::Ast::ImplicitMatrixType>
+	{
+		std::size_t operator()(const nzsl::Ast::ImplicitMatrixType& matrixType) const
+		{
+			return Nz::HashCombine(matrixType.columnCount, matrixType.rowCount);
 		}
 	};
 
