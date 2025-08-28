@@ -132,7 +132,7 @@ namespace nzsl::Ast
 
 	enum class IntrinsicType
 	{
-		// Next free index: 53
+		// Next free index: 55
 		Abs                               = 31,
 		ArcCos                            = 21,
 		ArcCosh                           = 22,
@@ -182,7 +182,9 @@ namespace nzsl::Ast
 		Sign                              = 32,
 		Sin                               = 13,
 		Sinh                              = 14,
+		SmoothStep                        = 53,
 		Sqrt                              = 27,
+		Step                              = 54,
 		Tan                               = 17,
 		Tanh                              = 18,
 		Trunc                             = 30,

@@ -1269,7 +1269,9 @@ namespace nzsl
 			case Ast::IntrinsicType::Sign:
 			case Ast::IntrinsicType::Sin:
 			case Ast::IntrinsicType::Sinh:
+			case Ast::IntrinsicType::SmoothStep:
 			case Ast::IntrinsicType::Sqrt:
+			case Ast::IntrinsicType::Step:
 			case Ast::IntrinsicType::Tan:
 			case Ast::IntrinsicType::Tanh:
 			case Ast::IntrinsicType::Trunc:
