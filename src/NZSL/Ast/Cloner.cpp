@@ -633,6 +633,18 @@ namespace nzsl::Ast
 		return clone;
 	}
 
+	ExpressionPtr Cloner::Clone(TypeConstantExpression& node)
+	{
+		auto clone = std::make_unique<TypeConstantExpression>();
+		clone->type = node.type;
+		clone->typeConstant = node.typeConstant;
+
+		clone->cachedExpressionType = node.cachedExpressionType;
+		clone->sourceLocation = node.sourceLocation;
+
+		return clone;
+	}
+
 	ExpressionPtr Cloner::Clone(TypeExpression& node)
 	{
 		auto clone = std::make_unique<TypeExpression>();

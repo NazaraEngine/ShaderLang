@@ -51,6 +51,18 @@ namespace nzsl
 
 		bool Compare(const ConstantScalar& lhs, const ConstantScalar& rhs) const
 		{
+			// Handle NaN
+			if (std::holds_alternative<float>(lhs.value) && std::holds_alternative<float>(rhs.value))
+			{
+				if (std::isnan(std::get<float>(lhs.value)) && std::isnan(std::get<float>(rhs.value)))
+					return true;
+			}
+			else if (std::holds_alternative<double>(lhs.value) && std::holds_alternative<double>(rhs.value))
+			{
+				if (std::isnan(std::get<double>(lhs.value)) && std::isnan(std::get<double>(rhs.value)))
+					return true;
+			}
+
 			return lhs.value == rhs.value;
 		}
 

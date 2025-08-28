@@ -314,6 +314,12 @@ namespace nzsl::Ast
 			Enum(node.components[i]);
 	}
 
+	void SerializerBase::Serialize(TypeConstantExpression& node)
+	{
+		Type(node.type);
+		Enum(node.typeConstant);
+	}
+
 	void SerializerBase::Serialize(VariableValueExpression& node)
 	{
 		SizeT(node.variableId);

@@ -266,6 +266,15 @@ namespace nzsl::Ast
 		ExpressionPtr expression;
 	};
 
+	struct NZSL_API TypeConstantExpression : Expression
+	{
+		NodeType GetType() const override;
+		void Visit(ExpressionVisitor& visitor) override;
+
+		ExpressionType type;
+		TypeConstant typeConstant;
+	};
+
 	struct NZSL_API TypeExpression : Expression
 	{
 		NodeType GetType() const override;

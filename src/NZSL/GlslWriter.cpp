@@ -626,8 +626,7 @@ namespace nzsl
 		executor.AddPass<Ast::ConstantRemovalTransformer>([](Ast::ConstantRemovalTransformer::Options& opt)
 		{
 			opt.removeConstArraySize = false;
-			opt.removeConstantDeclaration = true;
-			opt.removeOptionDeclaration = true;
+			opt.removeTypeConstant = false;
 		});
 		executor.AddPass<Ast::IdentifierTransformer>(secondIdentifierPassOptions);
 	}
@@ -2298,6 +2297,68 @@ namespace nzsl
 		const char* componentStr = "xyzw";
 		for (std::size_t i = 0; i < node.componentCount; ++i)
 			Append(componentStr[node.components[i]]);
+	}
+
+	void GlslWriter::Visit(Ast::TypeConstantExpression& node)
+	{
+		assert(IsPrimitiveType(node.type));
+		Ast::PrimitiveType primitiveType = std::get<Ast::PrimitiveType>(node.type);
+
+		auto AppendConstant = [&](auto&& type)
+		{
+			using T = std::decay_t<decltype(type)>;
+
+			if (node.typeConstant == Ast::TypeConstant::Max)
+			{
+				Append(Nz::MaxValue<T>());
+				return;
+			}
+
+			if (node.typeConstant == Ast::TypeConstant::Min)
+			{
+				Append(Nz::MinValue<T>());
+				return;
+			}
+
+			if constexpr (std::is_floating_point_v<T>)
+			{
+				if (node.typeConstant == Ast::TypeConstant::Infinity)
+				{
+					Append("(");
+					AppendValue(T{ 1 });
+					Append(" / ");
+					AppendValue(T{ 0 });
+					Append(")");
+					return;
+				}
+
+				if (node.typeConstant == Ast::TypeConstant::NaN)
+				{
+					Append("(");
+					AppendValue(T{ 0 });
+					Append(" / ");
+					AppendValue(T{ 0 });
+					Append(")");
+					return;
+				}
+			}
+
+			throw std::runtime_error("unexpected type constant with type");
+		};
+
+		switch (primitiveType)
+		{
+			case Ast::PrimitiveType::Float32: AppendConstant(float{}); break;
+			case Ast::PrimitiveType::Float64: AppendConstant(double{}); break;
+			case Ast::PrimitiveType::Int32:   AppendConstant(std::int32_t{}); break;
+			case Ast::PrimitiveType::UInt32:  AppendConstant(std::uint32_t{}); break;
+
+			case Ast::PrimitiveType::Boolean:
+			case Ast::PrimitiveType::FloatLiteral:
+			case Ast::PrimitiveType::IntLiteral:
+			case Ast::PrimitiveType::String:
+				throw std::runtime_error("unexpected primitive type");
+		}
 	}
 
 	void GlslWriter::Visit(Ast::VariableValueExpression& node)

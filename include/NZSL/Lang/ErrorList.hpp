@@ -161,6 +161,7 @@ NZSL_SHADERLANG_COMPILER_ERROR(SwizzleUnexpectedType, "expression type ({}) does
 NZSL_SHADERLANG_COMPILER_ERROR(TextureUnexpectedAccess, "texture type require readonly, readwrite or writeonly qualifier (got {})", std::string)
 NZSL_SHADERLANG_COMPILER_ERROR(TextureUnexpectedFormat, "for now only rgba8 textures are supported (got {})", std::string)
 NZSL_SHADERLANG_COMPILER_ERROR(TextureUnexpectedType, "for now only f32 textures are supported (got {})", std::string)
+NZSL_SHADERLANG_COMPILER_ERROR(TypeConstantUnsupportedType, "type {} doesn't support constant {}", std::string, Ast::TypeConstant)
 NZSL_SHADERLANG_COMPILER_ERROR(UnaryUnsupported, "type ({}) does not support this unary operation", std::string)
 NZSL_SHADERLANG_COMPILER_ERROR(UnexpectedAccessedType, "unexpected type (only struct and vectors can be indexed with identifiers)")
 NZSL_SHADERLANG_COMPILER_ERROR(UnexpectedUntyped, "unallowed usage of untyped as a type")

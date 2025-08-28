@@ -26,6 +26,7 @@ namespace nzsl::Ast
 				bool removeConstArraySize = true;
 				bool removeConstantDeclaration = true;
 				bool removeOptionDeclaration = true;
+				bool removeTypeConstant = true;
 			};
 
 		private:
@@ -33,6 +34,7 @@ namespace nzsl::Ast
 
 			ExpressionTransformation Transform(ConstantExpression&& constExpr) override;
 			ExpressionTransformation Transform(IntrinsicExpression&& intrinsicExpr) override;
+			ExpressionTransformation Transform(TypeConstantExpression&& typeConstantExpr) override;
 
 			StatementTransformation Transform(DeclareConstStatement&& declConst) override;
 			StatementTransformation Transform(DeclareOptionStatement&& declOption) override;

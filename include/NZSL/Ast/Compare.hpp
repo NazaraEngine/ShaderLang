@@ -65,6 +65,7 @@ namespace nzsl::Ast
 	inline bool Compare(const NamedExternalBlockExpression& lhs, const NamedExternalBlockExpression& rhs, const ComparisonParams& params = {});
 	inline bool Compare(const StructTypeExpression& lhs, const StructTypeExpression& rhs, const ComparisonParams& params = {});
 	inline bool Compare(const SwizzleExpression& lhs, const SwizzleExpression& rhs, const ComparisonParams& params = {});
+	inline bool Compare(const TypeConstantExpression& lhs, const TypeConstantExpression& rhs, const ComparisonParams& params = {});
 	inline bool Compare(const TypeExpression& lhs, const TypeExpression& rhs, const ComparisonParams& params = {});
 	inline bool Compare(const VariableValueExpression& lhs, const VariableValueExpression& rhs, const ComparisonParams& params = {});
 	inline bool Compare(const UnaryExpression& lhs, const UnaryExpression& rhs, const ComparisonParams& params = {});
