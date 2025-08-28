@@ -23,24 +23,10 @@ namespace nzsl::Ast
 			using Base = T;
 		};
 
-		template<typename T>
-		struct VectorInfo<Vector2<T>>
+		template<typename T, std::size_t N>
+		struct VectorInfo<Vector<T, N>>
 		{
-			static constexpr std::size_t Dimensions = 2;
-			using Base = T;
-		};
-
-		template<typename T>
-		struct VectorInfo<Vector3<T>>
-		{
-			static constexpr std::size_t Dimensions = 3;
-			using Base = T;
-		};
-
-		template<typename T>
-		struct VectorInfo<Vector4<T>>
-		{
-			static constexpr std::size_t Dimensions = 4;
+			static constexpr std::size_t Dimensions = N;
 			using Base = T;
 		};
 
@@ -665,7 +651,9 @@ namespace nzsl::Ast
 			case IntrinsicType::Sign:
 			case IntrinsicType::Sin:
 			case IntrinsicType::Sinh:
+			case IntrinsicType::SmoothStep:
 			case IntrinsicType::Sqrt:
+			case IntrinsicType::Step:
 			case IntrinsicType::Tan:
 			case IntrinsicType::Tanh:
 			case IntrinsicType::Trunc:
