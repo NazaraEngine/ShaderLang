@@ -731,7 +731,7 @@ fn main()
 {
 	let x: f64 = 0.0;
 }
-)"), "(7,9 -> 11): CUnknownIdentifier error: unknown identifier f64");
+)"), "(7,9 -> 11): CModuleFeatureNotEnabled error: using f64 requires module feature float64 to be enabled");
 
 			// Primitive externals
 			CHECK_THROWS_WITH(Compile(R"(
@@ -744,6 +744,30 @@ external
 }
 )"), "(7,15 -> 29): CExtTypeNotAllowed error: external variable data has unauthorized type (mat4[f32]): only storage buffers, samplers, push constants and uniform buffers (and primitives, vectors and matrices if primitive external feature is enabled) are allowed in external blocks");
 		}
+
+		// NZSL 1.1 features
+
+		// Implicit types
+		CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+fn main()
+{
+	let v = vec3(1, 2, 3);
+}
+)"), "(7,10 -> 22): CUnsupportedFeature error: \"implicit types\" feature requires NZSL 1.1 (current module version is 1.0)");
+
+		// Type constants
+		CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.0")]
+module;
+
+fn main()
+{
+	let x = u32.Max;
+}
+)"), "(7,10 -> 16): CUnsupportedFeature error: \"type constant\" feature requires NZSL 1.1 (current module version is 1.0)");
 
 		/************************************************************************/
 

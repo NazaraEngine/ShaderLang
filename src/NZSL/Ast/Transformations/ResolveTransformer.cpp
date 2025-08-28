@@ -614,20 +614,22 @@ namespace nzsl::Ast
 
 	void ResolveTransformer::RegisterBuiltin()
 	{
-		auto RegisterFullType = [this](std::string name, ExpressionType&& expressionType)
+		auto RegisterFullType = [this](std::string name, ExpressionType&& expressionType, std::function<void(const SourceLocation& sourceLocation)> check = nullptr)
 		{
 			TransformerContext::TypeData typeData;
 			typeData.content = std::move(expressionType);
 			typeData.name = name;
+			typeData.check = std::move(check);
 
 			RegisterType(std::move(name), std::move(typeData), std::nullopt, {});
 		};
 
-		auto RegisterPartialType = [this](std::string name, PartialType&& partialType)
+		auto RegisterPartialType = [this](std::string name, PartialType&& partialType, std::function<void(const SourceLocation& sourceLocation)> check = nullptr)
 		{
 			TransformerContext::TypeData typeData;
 			typeData.content = std::move(partialType);
 			typeData.name = name;
+			typeData.check = std::move(check);
 
 			RegisterType(std::move(name), std::move(typeData), std::nullopt, {});
 		};
@@ -638,8 +640,10 @@ namespace nzsl::Ast
 		RegisterFullType("i32",  PrimitiveType::Int32);
 		RegisterFullType("u32",  PrimitiveType::UInt32);
 
-		if (IsFeatureEnabled(ModuleFeature::Float64))
-			RegisterFullType("f64", PrimitiveType::Float64);
+		RegisterFullType("f64", PrimitiveType::Float64, IsFeatureEnabled(ModuleFeature::Float64) ? nullptr : [](const SourceLocation& sourceLocation)
+		{
+			throw CompilerModuleFeatureNotEnabledError{ sourceLocation, "f64", ModuleFeature::Float64 };
+		});
 
 		// Partial types
 
@@ -651,7 +655,12 @@ namespace nzsl::Ast
 				assert(parameterCount <= 2);
 
 				if (parameterCount == 0)
+				{
+					if (m_states->currentModule->metadata->shaderLangVersion < Version::ImplicitTypes)
+						throw CompilerUnsupportedFeatureError{ sourceLocation, "implicit types", VersionTag{ Version::ImplicitTypes }, VersionTag{ m_states->currentModule->metadata->shaderLangVersion }};
+
 					return ImplicitArrayType{};
+				}
 
 				assert(std::holds_alternative<ExpressionType>(parameters[0]));
 				const ExpressionType& exprType = std::get<ExpressionType>(parameters[0]);
@@ -733,10 +742,15 @@ namespace nzsl::Ast
 
 				RegisterPartialType(std::move(name), PartialType{
 					{}, { TypeParameterCategory::PrimitiveType },
-					[=](const TypeParameter* parameters, [[maybe_unused]] std::size_t parameterCount, const SourceLocation& sourceLocation) -> ExpressionType
+					[=](const TypeParameter* parameters, std::size_t parameterCount, const SourceLocation& sourceLocation) -> ExpressionType
 					{
 						if (parameterCount == 0)
+						{
+							if (m_states->currentModule->metadata->shaderLangVersion < Version::ImplicitTypes)
+								throw CompilerUnsupportedFeatureError{ sourceLocation, "implicit types", VersionTag{ Version::ImplicitTypes }, VersionTag{ m_states->currentModule->metadata->shaderLangVersion } };
+
 							return ImplicitMatrixType{ columnCount, rowCount };
+						}
 
 						assert(parameterCount == 1);
 						assert(std::holds_alternative<ExpressionType>(*parameters));
@@ -761,10 +775,15 @@ namespace nzsl::Ast
 		{
 			RegisterPartialType(fmt::format("vec{}", componentCount), PartialType {
 				{}, { TypeParameterCategory::PrimitiveType },
-				[=](const TypeParameter* parameters, [[maybe_unused]] std::size_t parameterCount, const SourceLocation& /*sourceLocation*/) -> ExpressionType
+				[=](const TypeParameter* parameters, std::size_t parameterCount, const SourceLocation& sourceLocation) -> ExpressionType
 				{
 					if (parameterCount == 0)
+					{
+						if (m_states->currentModule->metadata->shaderLangVersion < Version::ImplicitTypes)
+							throw CompilerUnsupportedFeatureError{ sourceLocation, "implicit types", VersionTag{ Version::ImplicitTypes }, VersionTag{ m_states->currentModule->metadata->shaderLangVersion } };
+
 						return ImplicitVectorType{ componentCount };
+					}
 
 					assert(parameterCount == 1);
 					assert(std::holds_alternative<ExpressionType>(*parameters));
@@ -1400,6 +1419,9 @@ namespace nzsl::Ast
 		std::size_t typeIndex = std::get<Type>(exprType).typeIndex;
 
 		const auto& typeData = m_context->types.Retrieve(typeIndex, sourceLocation);
+		if (typeData.check)
+			typeData.check(sourceLocation);
+
 		if (!std::holds_alternative<ExpressionType>(typeData.content))
 			throw CompilerFullTypeExpectedError{ sourceLocation, ToString(typeData, sourceLocation) };
 
@@ -1425,12 +1447,12 @@ namespace nzsl::Ast
 		if (!exprType)
 			return std::nullopt;
 
-		Transform(*expression->cachedExpressionType, sourceLocation);
+		Transform(*expression->cachedExpressionType, expression->sourceLocation);
 
 		//if (!IsTypeType(exprType))
 		//  throw AstError{ "type expected" };
 
-		return ResolveType(*exprType, resolveAlias, sourceLocation);
+		return ResolveType(*exprType, resolveAlias, expression->sourceLocation);
 	}
 
 	auto ResolveTransformer::Transform(AccessIdentifierExpression&& accessIdentifier) -> ExpressionTransformation
@@ -1728,6 +1750,9 @@ namespace nzsl::Ast
 					indexedExpr = ShaderBuilder::TypeConstant(std::move(indexedType), TypeConstant::NaN);
 				else
 					throw CompilerUnexpectedAccessedTypeError{ accessIdentifier.sourceLocation };
+
+				if (m_states->currentModule->metadata->shaderLangVersion < Version::TypeConstants)
+					throw CompilerUnsupportedFeatureError{ accessIdentifier.sourceLocation, "type constant", VersionTag{ Version::TypeConstants }, VersionTag{ m_states->currentModule->metadata->shaderLangVersion } };
 			}
 			else
 				throw CompilerUnexpectedAccessedTypeError{ accessIdentifier.sourceLocation };
@@ -1816,6 +1841,9 @@ namespace nzsl::Ast
 		{
 			std::size_t typeIndex = std::get<Type>(resolvedExprType).typeIndex;
 			const auto& typeData = m_context->types.Retrieve(typeIndex, accessIndexExpr.sourceLocation);
+
+			if (typeData.check)
+				typeData.check(accessIndexExpr.sourceLocation);
 
 			if (!std::holds_alternative<PartialType>(typeData.content))
 				throw CompilerExpectedPartialTypeError{ accessIndexExpr.sourceLocation, ToString(typeData, accessIndexExpr.sourceLocation) };
@@ -2175,6 +2203,9 @@ namespace nzsl::Ast
 		{
 			std::size_t typeIndex = std::get<Type>(resolvedType).typeIndex;
 			const auto& type = m_context->types.Retrieve(typeIndex, callFuncExpr.sourceLocation);
+
+			if (type.check)
+				type.check(callFuncExpr.sourceLocation);
 
 			return std::visit(Nz::Overloaded{
 				[&](const ExpressionType& expressionType) -> ExpressionTransformation
