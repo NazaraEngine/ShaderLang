@@ -63,6 +63,7 @@ namespace nzsl::Ast
 	NZSL_API std::optional<ExpressionType> ComputeExpressionType(const SwizzleExpression& swizzleExpr, const Stringifier& typeStringifier);
 	NZSL_API std::optional<ExpressionType> ComputeExpressionType(const UnaryExpression& unaryExpr, const Stringifier& typeStringifier);
 	NZSL_API ExpressionType ComputeSwizzleType(const ExpressionType& type, std::size_t componentCount, const SourceLocation& sourceLocation);
+	NZSL_API ConstantSingleValue ComputeTypeConstant(const ExpressionType& expressionType, TypeConstant typeConstant);
 
 	NZSL_API float LiteralToFloat32(FloatLiteral literal, const SourceLocation& sourceLocation);
 	NZSL_API double LiteralToFloat64(FloatLiteral literal, const SourceLocation& sourceLocation);

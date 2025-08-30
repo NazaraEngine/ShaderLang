@@ -49,6 +49,7 @@ namespace nzsl::Ast
 			ExpressionTransformation Transform(ConstantExpression&& node) override;
 			ExpressionTransformation Transform(IntrinsicExpression&& node) override;
 			ExpressionTransformation Transform(SwizzleExpression&& node) override;
+			ExpressionTransformation Transform(TypeConstantExpression&& node) override;
 			ExpressionTransformation Transform(UnaryExpression&& node) override;
 
 			StatementTransformation Transform(BranchStatement&& node) override;

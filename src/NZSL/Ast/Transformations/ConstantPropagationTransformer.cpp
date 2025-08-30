@@ -704,6 +704,11 @@ namespace nzsl::Ast
 		return DontVisitChildren{};
 	}
 
+	auto ConstantPropagationTransformer::Transform(TypeConstantExpression&& node) -> ExpressionTransformation
+	{
+		return ReplaceExpression{ ShaderBuilder::ConstantValue(ComputeTypeConstant(node.type, node.typeConstant)) };
+	}
+
 	auto ConstantPropagationTransformer::Transform(UnaryExpression&& node) -> ExpressionTransformation
 	{
 		HandleExpression(node.expression);
