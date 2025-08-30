@@ -61,7 +61,7 @@ namespace nzsl::Ast
 	{
 		std::shared_ptr<Environment> parentEnv;
 		std::string moduleId;
-		std::vector<TransformerContext::TransformerContext::Identifier> identifiersInScope;
+		std::vector<TransformerContext::Identifier> identifiersInScope;
 		std::vector<PendingFunction> pendingFunctions;
 		std::vector<Scope> scopes;
 	};
@@ -414,7 +414,7 @@ namespace nzsl::Ast
 		return &it->target;
 	}
 
-	ExpressionPtr ResolveTransformer::HandleIdentifier(const TransformerContext::TransformerContext::IdentifierData* identifierData, const SourceLocation& sourceLocation)
+	ExpressionPtr ResolveTransformer::HandleIdentifier(const TransformerContext::IdentifierData* identifierData, const SourceLocation& sourceLocation)
 	{
 		switch (identifierData->type)
 		{
@@ -2681,7 +2681,10 @@ namespace nzsl::Ast
 		}
 		else
 		{
-			std::optional<ConstantValue> value = ComputeConstantValue(declConst.expression);
+			// Preserve original expression
+			ExpressionPtr cloneExpr = Clone(*declConst.expression);
+
+			std::optional<ConstantValue> value = ComputeConstantValue(cloneExpr);
 			if (!value)
 			{
 				// Constant propagation failed (and we're in partial compilation)
@@ -2923,7 +2926,10 @@ namespace nzsl::Ast
 				if (!declOption.defaultValue)
 					throw CompilerMissingOptionValueError{ declOption.sourceLocation, declOption.optName };
 
-				std::optional<ConstantValue> value = ComputeConstantValue(declOption.defaultValue);
+				// Preserve original expression
+				ExpressionPtr cloneExpr = Clone(*declOption.defaultValue);
+
+				std::optional<ConstantValue> value = ComputeConstantValue(cloneExpr);
 				if (value)
 					EnsureLiteralValue(optType, *value, declOption.sourceLocation);
 
@@ -3562,7 +3568,7 @@ namespace nzsl::Ast
 
 				auto BuildConstant = [&]() -> ExpressionPtr
 				{
-					const TransformerContext::TransformerContext::ConstantData* constantData = m_context->constants.TryRetrieve(*node.constIndex, node.sourceLocation);
+					const TransformerContext::ConstantData* constantData = m_context->constants.TryRetrieve(*node.constIndex, node.sourceLocation);
 					if (!constantData || !constantData->value)
 						throw AstInvalidConstantIndexError{ node.sourceLocation, *node.constIndex };
 

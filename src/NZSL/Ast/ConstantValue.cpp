@@ -158,6 +158,21 @@ namespace nzsl::Ast
 		}, value);
 	}
 
+	// Some checks to ensure IsArrayConstant and IsSingleConstant implementation
+	static_assert(std::is_same_v<std::variant_alternative_t<0, ConstantValue>, NoValue>);
+	static_assert(std::is_same_v<std::variant_alternative_t<1, ConstantValue>, Nz::TypeListAt<ConstantSingleTypes, 0>>);
+	static_assert(std::is_same_v<std::variant_alternative_t<1 + Nz::TypeListSize<ConstantSingleTypes>, ConstantValue>, Nz::TypeListAt<ConstantArrayTypes, 0>>);
+
+	bool IsArrayConstant(const ConstantValue& value)
+	{
+		return value.index() > Nz::TypeListSize<ConstantSingleTypes>;
+	}
+
+	bool IsSingleConstant(const ConstantValue& value)
+	{
+		return value.index() > 0 && value.index() < 1 + Nz::TypeListSize<ConstantSingleTypes>;
+	}
+
 	ConstantValue ToConstantValue(ConstantSingleValue value)
 	{
 		return std::visit([&](auto&& arg) -> ConstantValue
@@ -171,6 +186,32 @@ namespace nzsl::Ast
 		return std::visit([&](auto&& arg) -> ConstantValue
 		{
 			return std::move(arg);
+		}, std::move(value));
+	}
+
+	ConstantArrayValue ToArrayConstantValue(ConstantValue value)
+	{
+		return std::visit([&](auto&& arg) -> ConstantArrayValue
+		{
+			using T = std::decay_t<decltype(arg)>;
+
+			if constexpr (std::is_convertible_v<T, ConstantArrayValue>)
+				return std::move(arg);
+			else
+				throw std::runtime_error("constant is not an array value");
+		}, std::move(value));
+	}
+
+	ConstantSingleValue ToSingleConstantValue(ConstantValue value)
+	{
+		return std::visit([&](auto&& arg) -> ConstantSingleValue
+		{
+			using T = std::decay_t<decltype(arg)>;
+
+			if constexpr (std::is_convertible_v<T, ConstantSingleValue>)
+				return std::move(arg);
+			else
+				throw std::runtime_error("constant is not an array value");
 		}, std::move(value));
 	}
 
