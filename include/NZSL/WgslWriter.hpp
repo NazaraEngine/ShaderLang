@@ -20,6 +20,7 @@ namespace nzsl
 	class NZSL_API WgslWriter : Ast::ExpressionVisitorExcept, Ast::StatementVisitorExcept
 	{
 		public:
+			using FeaturesSupportCallback = std::function<bool(std::string_view name)>;
 			struct Environment;
 			struct Output;
 
@@ -34,12 +35,16 @@ namespace nzsl
 
 			struct Environment
 			{
+				FeaturesSupportCallback featuresCallback;
 			};
 
 			struct Output
 			{
 				std::string code;
 				std::unordered_map<std::uint64_t /* set | binding */, unsigned int /*new binding*/> bindingRemap;
+				bool usesDrawParameterBaseInstanceUniform;
+				bool usesDrawParameterBaseVertexUniform;
+				bool usesDrawParameterDrawIndexUniform;
 			};
 
 			static void RegisterPasses(Ast::TransformerExecutor& executor);
@@ -117,6 +122,7 @@ namespace nzsl
 			void AppendAttribute(bool first, WorkgroupAttribute attribute);
 			void AppendComment(std::string_view section);
 			void AppendCommentSection(std::string_view section);
+			void AppendConstantHelpers(Ast::PrimitiveType type, Ast::TypeConstant constant);
 			void AppendHeader(const Ast::Module::Metadata& metadata);
 			template<typename T> void AppendIdentifier(const T& map, std::size_t id);
 			void AppendLine(std::string_view txt = {});
@@ -159,6 +165,7 @@ namespace nzsl
 			void Visit(Ast::NamedExternalBlockExpression& node) override;
 			void Visit(Ast::StructTypeExpression& node) override;
 			void Visit(Ast::SwizzleExpression& node) override;
+			void Visit(Ast::TypeConstantExpression& node) override;
 			void Visit(Ast::VariableValueExpression& node) override;
 			void Visit(Ast::UnaryExpression& node) override;
 

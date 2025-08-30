@@ -226,7 +226,8 @@ fn main(input: Input)
       OpImageWrite %56 %60 %61
       OpReturn
       OpFunctionEnd)", {}, {}, true);
-/*
+
+#ifdef FAILING_WGSL
 		ExpectWGSL(*shaderModule, R"(
 struct Data
 {
@@ -253,6 +254,6 @@ fn main(input: Input)
 	var value: vec4<f32> = textureLoad(input_tex, vec2<i32>(input.indices.xy, input.indices.xy));
 	textureStore(output_tex, vec2<i32>(input.indices.xy, input.indices.xy), value);
 })");
-*/
+#endif
 	}
 }

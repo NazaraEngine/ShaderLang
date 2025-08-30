@@ -2,7 +2,6 @@
 #include <NZSL/ShaderBuilder.hpp>
 #include <NZSL/Parser.hpp>
 #include <catch2/catch_test_macros.hpp>
-#include <cctype>
 
 TEST_CASE("Casts", "[Shader]")
 {
@@ -136,7 +135,10 @@ fn main()
       OpStore %28 %47
       OpReturn
       OpFunctionEnd)", {}, {}, true);
-/*
+
+		nzsl::WgslWriter::Environment wgslEnv;
+		wgslEnv.featuresCallback = [](std::string_view) { return true; };
+
 		ExpectWGSL(*shaderModule, R"(
 @fragment
 fn main()
@@ -149,12 +151,12 @@ fn main()
 	var x_4: f32 = f32(iVal);
 	var x_5: f64 = f64(iVal);
 	var x_6: u32 = u32(iVal);
-	var uVal: u32 = u32(42);
+	var uVal: u32 = 42u;
 	var x_7: f32 = f32(uVal);
 	var x_8: f64 = f64(uVal);
 	var x_9: i32 = i32(uVal);
+	var fToIVal: f32 = f32(42);
 }
-)");
-*/
+)", {}, wgslEnv);
 	}
 }

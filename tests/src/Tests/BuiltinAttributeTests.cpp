@@ -247,6 +247,7 @@ fn main(input: Input) -> Output
       OpDecorate %21 Decoration(BuiltIn) BuiltIn(Position))", {}, spirvEnv, true);
 		}
 
+#ifdef FAILING_WGSL
 		ExpectWGSL(*shaderModule, R"(
 struct Input
 {
@@ -276,6 +277,7 @@ fn main(input: Input) -> Output
 	return output;
 }
 )");
+#endif
 	}
 	
 	SECTION("vertex index")

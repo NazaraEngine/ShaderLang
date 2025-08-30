@@ -464,12 +464,12 @@ void ExpectSPIRV(nzsl::Ast::Module& shaderModule, std::string_view expectedOutpu
 	}
 }
 
-void ExpectWGSL(const nzsl::Ast::Module& shaderModule, std::string_view expectedOutput)
+void ExpectWGSL(const nzsl::Ast::Module& shader, std::string_view expectedOutput, const nzsl::BackendParameters& options, const nzsl::WgslWriter::Environment& env)
 {
 	NAZARA_USE_ANONYMOUS_NAMESPACE
 
 	// Clone to avoid cross-test changes
-	nzsl::Ast::ModulePtr moduleClone = nzsl::Ast::Clone(shaderModule);
+	nzsl::Ast::ModulePtr moduleClone = nzsl::Ast::Clone(shader);
 
 	std::string source = SanitizeSource(expectedOutput);
 
@@ -485,7 +485,8 @@ void ExpectWGSL(const nzsl::Ast::Module& shaderModule, std::string_view expected
 		nzsl::Ast::Module& targetModule = (sanitizedModule) ? *sanitizedModule : *moduleClone;
 
 		nzsl::WgslWriter writer;
-		nzsl::WgslWriter::Output output = writer.Generate(targetModule);
+		writer.SetEnv(env);
+		nzsl::WgslWriter::Output output = writer.Generate(targetModule, options);
 
 		SECTION("Validating expected code")
 		{

@@ -297,7 +297,8 @@ fn main()
       OpStore %23 %30
       OpReturn
       OpFunctionEnd)", {}, {}, true);
-/*
+
+#ifdef FAILING_WGSL
 		ExpectWGSL(*shaderModule, R"(
 struct Data
 {
@@ -312,7 +313,7 @@ fn main()
 {
 	var value: mat4x4<f32> = data.values[42] * data.matrices[1];
 })");
-*/
+#endif
 	}
 
 	SECTION("Storage buffers")
