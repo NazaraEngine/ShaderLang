@@ -17,6 +17,7 @@
 #include <NZSL/Ast/Utils.hpp>
 #include <NZSL/Lang/LangData.hpp>
 #include <NZSL/Ast/Transformations/BindingResolverTransformer.hpp>
+#include <NZSL/Ast/Transformations/BranchSplitterTransformer.hpp>
 #include <NZSL/Ast/Transformations/ConstantPropagationTransformer.hpp>
 #include <NZSL/Ast/Transformations/ConstantRemovalTransformer.hpp>
 #include <NZSL/Ast/Transformations/EliminateUnusedTransformer.hpp>
@@ -28,6 +29,7 @@
 #include <NZSL/Ast/Transformations/SwizzleTransformer.hpp>
 #include <NZSL/Ast/Transformations/ValidationTransformer.hpp>
 #include <fmt/format.h>
+#include <tsl/ordered_set.h>
 #include <frozen/unordered_map.h>
 #include <frozen/unordered_set.h>
 #include <cassert>
@@ -44,6 +46,41 @@
 
 namespace nzsl
 {
+	constexpr std::string_view s_wgslWriterShaderDrawParametersBaseInstanceName = "_nzslBaseInstance";
+	constexpr std::string_view s_wgslWriterShaderDrawParametersBaseVertexName = "_nzslBaseVertex";
+	constexpr std::string_view s_wgslWriterShaderDrawParametersDrawIndexName = "_nzslDrawID";
+
+	enum class WgslFeature
+	{
+		None = -1,
+
+		WgpuConservativeDepth,  // wgpu native features
+		WgpuEarlyFragmentTests, // wgpu native features
+		WgpuFloat64,            // wgpu native features
+	};
+
+	struct WgslBuiltin
+	{
+		std::string_view identifier;
+		WgslFeature requiredFeature;
+	};
+
+	constexpr auto s_wgslBuiltinMapping = frozen::make_unordered_map<Ast::BuiltinEntry, WgslBuiltin>({
+		{ Ast::BuiltinEntry::BaseInstance,            {} },
+		{ Ast::BuiltinEntry::BaseVertex,              {} },
+		{ Ast::BuiltinEntry::DrawIndex,               {} },
+		{ Ast::BuiltinEntry::FragCoord,               { "position", WgslFeature::None } },
+		{ Ast::BuiltinEntry::FragDepth,               { "frag_depth", WgslFeature::None } },
+		{ Ast::BuiltinEntry::GlocalInvocationIndices, { "global_invocation_id", WgslFeature::None } },
+		{ Ast::BuiltinEntry::InstanceIndex,           { "instance_index", WgslFeature::None } },
+		{ Ast::BuiltinEntry::LocalInvocationIndex,    { "local_invocation_index", WgslFeature::None } },
+		{ Ast::BuiltinEntry::LocalInvocationIndices,  { "local_invocation_id", WgslFeature::None } },
+		{ Ast::BuiltinEntry::VertexIndex,             { "vertex_index", WgslFeature::None } },
+		{ Ast::BuiltinEntry::VertexPosition,          { "position", WgslFeature::None } },
+		{ Ast::BuiltinEntry::WorkgroupCount,          { "num_workgroups", WgslFeature::None } },
+		{ Ast::BuiltinEntry::WorkgroupIndices,        { "workgroup_id", WgslFeature::None } }
+	});
+
 	struct WgslWriter::PreVisitor : Ast::RecursiveVisitor
 	{
 		PreVisitor(WgslWriter& writer) :
@@ -55,9 +92,52 @@ namespace nzsl
 		{
 			if (node.funcIndex)
 				m_writer.RegisterFunction(*node.funcIndex, node.name);
+
+			if (node.entryStage.HasValue())
+			{
+				ShaderStageType stage = node.entryStage.GetResultingValue();
+
+				if (stage == ShaderStageType::Fragment)
+				{
+					if (node.depthWrite.HasValue() && node.depthWrite.GetResultingValue() != Ast::DepthWriteMode::Replace)
+		
+						features.insert(WgslFeature::WgpuConservativeDepth);
+
+					if (node.earlyFragmentTests.HasValue() && node.earlyFragmentTests.GetResultingValue())
+						features.insert(WgslFeature::WgpuEarlyFragmentTests);
+				}
+			}
+
+			RecursiveVisitor::Visit(node);
 		}
 
+		void Visit(Ast::TypeConstantExpression& node) override
+		{
+			assert(IsPrimitiveType(node.type));
+			Ast::PrimitiveType primitiveType = std::get<Ast::PrimitiveType>(node.type);
+
+			if (node.typeConstant == Ast::TypeConstant::Infinity)
+			{
+				if (primitiveType == Ast::PrimitiveType::Float32)
+					hasf32Infinity = true;
+				if (primitiveType == Ast::PrimitiveType::Float64)
+					hasf64Infinity = true;
+			}
+			else if (node.typeConstant == Ast::TypeConstant::NaN)
+			{
+				if (primitiveType == Ast::PrimitiveType::Float32)
+					hasf32NaN = true;
+				if (primitiveType == Ast::PrimitiveType::Float64)
+					hasf64NaN = true;
+			}
+		}
+
+		tsl::ordered_set<WgslFeature> features;
 		WgslWriter& m_writer;
+		bool hasf32Infinity = false;
+		bool hasf32NaN = false;
+		bool hasf64Infinity = false;
+		bool hasf64NaN = false;
 	};
 
 	struct WgslWriter::AutoBindingAttribute
@@ -186,22 +266,6 @@ namespace nzsl
 		bool HasValue() const { return workgroup.HasValue(); }
 	};
 
-	constexpr auto s_wgslBuiltinMapping = frozen::make_unordered_map<Ast::BuiltinEntry, std::string_view>({
-		{ Ast::BuiltinEntry::BaseInstance,            {} },
-		{ Ast::BuiltinEntry::BaseVertex,              {} },
-		{ Ast::BuiltinEntry::DrawIndex,               {} },
-		{ Ast::BuiltinEntry::FragCoord,               "position" },
-		{ Ast::BuiltinEntry::FragDepth,               "frag_depth" },
-		{ Ast::BuiltinEntry::GlocalInvocationIndices, "global_invocation_id" },
-		{ Ast::BuiltinEntry::InstanceIndex,           "instance_index" },
-		{ Ast::BuiltinEntry::LocalInvocationIndex,    "local_invocation_index" },
-		{ Ast::BuiltinEntry::LocalInvocationIndices,  "local_invocation_id" },
-		{ Ast::BuiltinEntry::VertexIndex,             "vertex_index" },
-		{ Ast::BuiltinEntry::VertexPosition,          "position" },
-		{ Ast::BuiltinEntry::WorkgroupCount,          "num_workgroups" },
-		{ Ast::BuiltinEntry::WorkgroupIndices,        "workgroup_id" }
-	});
-
 	struct WgslWriter::State
 	{
 		State(const BackendParameters& backendParameters) :
@@ -238,6 +302,8 @@ namespace nzsl
 		int streamEmptyLine = 1;
 		unsigned int indentLevel = 0;
 		bool isTerminatedScope = false;
+		bool hasf32RatioFunction = false;
+		bool hasf64RatioFunction = false;
 	};
 
 	WgslWriter::Output WgslWriter::Generate(Ast::Module& module, const BackendParameters& parameters)
@@ -288,8 +354,6 @@ namespace nzsl
 			Ast::EliminateUnusedPass(module, dependencyConfig);
 		}
 
-		AppendHeader(*module.metadata);
-
 		// First registration pass (required to register function names)
 		PreVisitor previsitor(*this);
 		{
@@ -310,6 +374,39 @@ namespace nzsl
 			module.rootNode->Visit(previsitor);
 		}
 
+		AppendHeader(*module.metadata);
+
+		// Validate required features
+		for (WgslFeature feature : previsitor.features)
+		{
+			switch (feature)
+			{
+				case WgslFeature::None:
+					break;
+
+				case WgslFeature::WgpuConservativeDepth:
+				{
+					if (!m_environment.featuresCallback || !m_environment.featuresCallback("WgpuConservativeDepth"))
+						throw std::runtime_error("WGSL does not support conservative depth feature, wgpu does natively but you need to confirm its usage using feature callback");
+					break;
+				}
+
+				case WgslFeature::WgpuEarlyFragmentTests:
+				{
+					if (!m_environment.featuresCallback || !m_environment.featuresCallback("WgpuEarlyFragmentTests"))
+						throw std::runtime_error("WGSL does not support early fragment depth test feature, wgpu does natively but you need to confirm its usage using feature callback");
+					break;
+				}
+
+				case WgslFeature::WgpuFloat64:
+				{
+					if (!m_environment.featuresCallback || !m_environment.featuresCallback("WgpuFloat64"))
+						throw std::runtime_error("WGSL does not support float 64 feature, wgpu does natively but you need to confirm its usage using feature callback");
+					break;
+				}
+			}
+		}
+
 		// Register imported modules
 		m_currentState->currentModuleIndex = 0;
 		for (const auto& importedModule : module.importedModules)
@@ -323,6 +420,15 @@ namespace nzsl
 			m_currentState->currentModuleIndex++;
 			m_currentState->moduleNames.push_back(importedModule.identifier);
 		}
+
+		if (previsitor.hasf32Infinity)
+			AppendConstantHelpers(Ast::PrimitiveType::Float32, Ast::TypeConstant::Infinity);
+		if (previsitor.hasf32NaN)
+			AppendConstantHelpers(Ast::PrimitiveType::Float32, Ast::TypeConstant::NaN);
+		if (previsitor.hasf64Infinity)
+			AppendConstantHelpers(Ast::PrimitiveType::Float64, Ast::TypeConstant::Infinity);
+		if (previsitor.hasf64NaN)
+			AppendConstantHelpers(Ast::PrimitiveType::Float64, Ast::TypeConstant::NaN);
 
 		m_currentState->currentModuleIndex = std::numeric_limits<std::size_t>::max();
 		module.rootNode->Visit(*this);
@@ -394,13 +500,6 @@ namespace nzsl
 				nameChanged = true;
 			}
 
-			// Identifier can't start with gl_
-			if (identifier.compare(0, 3, "gl_") == 0)
-			{
-				identifier.replace(0, 3, "_gl_"sv);
-				nameChanged = true;
-			}
-
 			// Replace __ by _X_
 			std::size_t startPos = 0;
 			while ((startPos = identifier.find("__"sv, startPos)) != std::string::npos)
@@ -416,6 +515,7 @@ namespace nzsl
 		};
 
 		executor.AddPass<Ast::LiteralTransformer>();
+		//executor.AddPass<Ast::BranchSplitterTransformer>();
 		executor.AddPass<Ast::IdentifierTransformer>(firstIdentifierPassOptions);
 		executor.AddPass<Ast::ForToWhileTransformer>();
 		executor.AddPass<Ast::StructAssignmentTransformer>([](Ast::StructAssignmentTransformer::Options& opt)
@@ -612,6 +712,96 @@ namespace nzsl
 		throw std::runtime_error("unexpected type?");
 	}
 
+	void WgslWriter::Visit(Ast::TypeConstantExpression& node)
+	{
+		assert(IsPrimitiveType(node.type));
+		Ast::PrimitiveType primitiveType = std::get<Ast::PrimitiveType>(node.type);
+
+		auto AppendConstant = [&](auto&& type)
+		{
+			using T = std::decay_t<decltype(type)>;
+
+			if (node.typeConstant == Ast::TypeConstant::Max)
+			{
+				if constexpr (std::is_same_v<T, float>)
+					return Append("3.402823466e+38");
+				else if constexpr (std::is_same_v<T, double>)
+					return Append("1.7976931348623158e+308lf");
+				else
+					return AppendValue(Nz::MaxValue<T>());
+			}
+
+			if (node.typeConstant == Ast::TypeConstant::Min)
+			{
+				if constexpr (std::is_same_v<T, float>)
+					return Append("-3.402823466e+38");
+				else if constexpr (std::is_same_v<T, double>)
+					return Append("-1.7976931348623158e+308lf");
+				else
+					return AppendValue(std::numeric_limits<T>::lowest()); //< Nz::MinValue is implemented by std::numeric_limits<T>::min() which doesn't give the value we want
+			}
+
+			if constexpr (std::is_floating_point_v<T>)
+			{
+				if (node.typeConstant == Ast::TypeConstant::Epsilon)
+				{
+					if constexpr (std::is_same_v<T, float>)
+						return Append("1.192092896e-07");
+					else if constexpr (std::is_same_v<T, double>)
+						return Append("2.2204460492503131e-016lf");
+					else
+						static_assert(Nz::AlwaysFalse<T>(), "unhandled type");
+				}
+
+				if (node.typeConstant == Ast::TypeConstant::Infinity)
+				{
+					if constexpr (std::is_same_v<T, float>)
+						return Append("_nzslInfinityf32()");
+					else if constexpr (std::is_same_v<T, double>)
+						return Append("_nzslInfinityf64()");
+					else
+						static_assert(Nz::AlwaysFalse<T>(), "unhandled type");
+				}
+
+				if (node.typeConstant == Ast::TypeConstant::MinPositive)
+				{
+					if constexpr (std::is_same_v<T, float>)
+						return Append("1.175494351e-38");
+					else if constexpr (std::is_same_v<T, double>)
+						return Append("2.2250738585072014e-308lf");
+					else
+						static_assert(Nz::AlwaysFalse<T>(), "unhandled type");
+				}
+
+				if (node.typeConstant == Ast::TypeConstant::NaN)
+				{
+					if constexpr (std::is_same_v<T, float>)
+						return Append("_nzslNaNf32()");
+					else if constexpr (std::is_same_v<T, double>)
+						return Append("_nzslNaNf64()");
+					else
+						static_assert(Nz::AlwaysFalse<T>(), "unhandled type");
+				}
+			}
+
+			throw std::runtime_error("unexpected type constant with type");
+		};
+
+		switch (primitiveType)
+		{
+			case Ast::PrimitiveType::Float32: AppendConstant(float{}); break;
+			case Ast::PrimitiveType::Float64: AppendConstant(double{}); break;
+			case Ast::PrimitiveType::Int32:   AppendConstant(std::int32_t{}); break;
+			case Ast::PrimitiveType::UInt32:  AppendConstant(std::uint32_t{}); break;
+
+			case Ast::PrimitiveType::Boolean:
+			case Ast::PrimitiveType::FloatLiteral:
+			case Ast::PrimitiveType::IntLiteral:
+			case Ast::PrimitiveType::String:
+				throw std::runtime_error("unexpected primitive type");
+		}
+	}
+
 	void WgslWriter::Append(const Ast::UniformType& /*uniformType*/)
 	{
 		throw std::runtime_error("unexpected UniformType?");
@@ -688,15 +878,11 @@ namespace nzsl
 	{
 	}
 
-	void WgslWriter::AppendAttribute(bool first, AuthorAttribute attribute)
+	void WgslWriter::AppendAttribute(bool /*first*/, AuthorAttribute attribute)
 	{
 		if (!attribute.HasValue())
 			return;
-		if (!first)
-			Append(" ");
-		Append("@");
-
-		Append("author(", EscapeString(attribute.author), ")");
+		Append("// Author ", EscapeString(attribute.author));
 	}
 
 	void WgslWriter::AppendAttribute(bool first, BindingAttribute attribute)
@@ -726,9 +912,9 @@ namespace nzsl
 		Append("@");
 		auto it = s_wgslBuiltinMapping.find(attribute.builtin.GetResultingValue());
 		assert(it != s_wgslBuiltinMapping.end());
-		if (it->second.empty())
+		if (it->second.identifier.empty())
 			throw std::runtime_error("unsupported builtin attribute! (for now)");
-		Append("builtin(", it->second, ")");
+		Append("builtin(", it->second.identifier, ")");
 	}
 
 	void WgslWriter::AppendAttribute(bool first, CondAttribute attribute)
@@ -749,9 +935,19 @@ namespace nzsl
 		Append(")");
 	}
 	
-	void WgslWriter::AppendAttribute(bool /*first*/, DepthWriteAttribute /*attribute*/)
+	void WgslWriter::AppendAttribute(bool first, DepthWriteAttribute attribute)
 	{
-		return;
+		if (!attribute.HasValue() || attribute.writeMode.GetResultingValue() == Ast::DepthWriteMode::Replace)
+			return;
+		if (!first)
+			Append(" ");
+		switch (attribute.writeMode.GetResultingValue())
+		{
+			case Ast::DepthWriteMode::Greater:   Append("@early_depth_test(greater_equal)"); break;
+			case Ast::DepthWriteMode::Less:      Append("@early_depth_test(less_equal)"); break;
+			case Ast::DepthWriteMode::Replace:   break; // Should never be triggered
+			case Ast::DepthWriteMode::Unchanged: Append("@early_depth_test(unchanged)"); break;
+		}
 	}
 
 	void WgslWriter::AppendAttribute(bool first, DescriptionAttribute attribute)
@@ -765,9 +961,13 @@ namespace nzsl
 		Append("desc(", EscapeString(attribute.description), ")");
 	}
 
-	void WgslWriter::AppendAttribute(bool /*first*/, EarlyFragmentTestsAttribute /*attribute*/)
+	void WgslWriter::AppendAttribute(bool first, EarlyFragmentTestsAttribute attribute)
 	{
-		return;
+		if (!attribute.HasValue() || !attribute.earlyFragmentTests.GetResultingValue())
+			return;
+		if (!first)
+			Append(" ");
+		Append("@early_depth_test(force)");
 	}
 
 	void WgslWriter::AppendAttribute(bool first, EntryAttribute attribute)
@@ -791,9 +991,28 @@ namespace nzsl
 			attribute.stageType.GetExpression()->Visit(*this);
 	}
 
-	void WgslWriter::AppendAttribute(bool /*first*/, FeatureAttribute /*attribute*/)
+	void WgslWriter::AppendAttribute(bool /*first*/, FeatureAttribute attribute)
 	{
-		throw std::runtime_error("none of the features of NZSL are supported by WGSL");
+		if (!attribute.HasValue())
+			return;
+
+		switch (attribute.featureAttribute)
+		{
+			case Ast::ModuleFeature::Float64:
+			{
+				if (!m_environment.featuresCallback || !m_environment.featuresCallback("WgpuFloat64"))
+					throw std::runtime_error("WGSL does not support float64 feature, wgpu does natively but you need to confirm its usage using feature callback");
+				break;
+			}
+
+			case Ast::ModuleFeature::PrimitiveExternals:
+				throw std::runtime_error("primitive externals have no way to be translated in WGSL");
+				break;
+
+			case Ast::ModuleFeature::Texture1D:
+				// Supported by WGSL
+				break;
+		}
 	}
 
 	void WgslWriter::AppendAttribute(bool first, InterpAttribute attribute)
@@ -949,6 +1168,71 @@ namespace nzsl
 		std::string stars((section.size() < 33) ? (36 - section.size()) / 2 : 3, '*');
 		Append("/*", stars, ' ', section, ' ', stars, "*/");
 		AppendLine();
+	}
+
+	void WgslWriter::AppendConstantHelpers(Ast::PrimitiveType type, Ast::TypeConstant constant)
+	{
+		using namespace std::string_view_literals;
+
+		std::string_view stringType;
+		switch (type)
+		{
+			case Ast::PrimitiveType::Float32: stringType = "f32"sv; break;
+			case Ast::PrimitiveType::Float64: stringType = "f64"sv; break;
+
+			default: return;
+		}
+
+		auto setupRatioFunction = [this, type, stringType]()
+		{
+			if (type == Ast::PrimitiveType::Float32)
+			{
+				if (m_currentState->hasf32RatioFunction)
+					return;
+				m_currentState->hasf32RatioFunction = true;
+			}
+			else if (type == Ast::PrimitiveType::Float64)
+			{
+				if (m_currentState->hasf64RatioFunction)
+					return;
+				m_currentState->hasf64RatioFunction = true;
+			}
+
+			Append(fmt::format(R"(
+fn _nzslRatio{0}(n: {0}, d: {0}) -> {0}
+{{
+	return n / d;	
+}}
+)", stringType));
+		};
+
+		switch (constant)
+		{
+			case Ast::TypeConstant::NaN:
+			{
+				setupRatioFunction();
+				Append(fmt::format(R"(
+fn _nzslNaN{0}() -> {0}
+{{
+	return _nzslRatio{0}(0.0, 0.0);	
+}}
+)", stringType));
+				break;
+			}
+			case Ast::TypeConstant::Infinity:
+			{
+				setupRatioFunction();
+				Append(fmt::format(R"(
+fn _nzslInfinity{0}() -> {0}
+{{
+	return _nzslRatio{0}(1.0, 0.0);	
+}}
+)", stringType));
+				break;
+			}
+
+			default: break;
+		}
 	}
 
 	void WgslWriter::AppendLine(std::string_view txt)
@@ -2119,6 +2403,7 @@ namespace nzsl
 
 	void WgslWriter::AppendHeader(const Ast::Module::Metadata& metadata)
 	{
+		AppendComment("This file was generated by NZSL compiler (Nazara Shading Language)");
 		AppendModuleAttributes(metadata);
 		AppendLine();
 	}

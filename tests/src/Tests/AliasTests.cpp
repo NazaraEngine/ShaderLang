@@ -3,7 +3,6 @@
 #include <NZSL/Parser.hpp>
 #include <NZSL/Ast/Transformations/ConstantRemovalTransformer.hpp>
 #include <catch2/catch_test_macros.hpp>
-#include <cctype>
 
 TEST_CASE("aliases", "[Shader]")
 {
@@ -15,7 +14,7 @@ module;
 
 struct Data
 {
-	value: f32
+	value: vec4[f32]
 }
 
 alias ExtData = Data;
@@ -27,14 +26,14 @@ external
 
 struct Input
 {
-	value: f32
+	[location(0)] value: vec4[f32]
 }
 
 alias In = Input;
 
 struct Output
 {
-	[location(0)] value: f32
+	[location(0)] value: vec4[f32]
 }
 
 alias Out = Output;
@@ -56,7 +55,7 @@ fn main(input: In) -> FragOut
 void main()
 {
 	Input input_;
-	input_.value = _nzslInvalue;
+	input_.value = _nzslVarying0;
 
 	Output output_;
 	output_.value = extData.value * input_.value;
@@ -82,6 +81,8 @@ OpLabel
 OpVariable
 OpVariable
 OpAccessChain
+OpCopyMemory
+OpAccessChain
 OpLoad
 OpAccessChain
 OpLoad
@@ -94,7 +95,6 @@ OpStore
 OpReturn
 OpFunctionEnd)");
 
-#if 0
 		ExpectWGSL(*shaderModule, R"(
 @fragment
 fn main(input: Input) -> Output
@@ -104,7 +104,6 @@ fn main(input: Input) -> Output
 	return output;
 }
 )");
-#endif
 	}
 
 	SECTION("Conditional aliases")

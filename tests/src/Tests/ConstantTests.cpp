@@ -157,5 +157,31 @@ fn main()
       OpStore %44 %26
       OpReturn
       OpFunctionEnd)", {}, {}, true);
+
+		nzsl::WgslWriter::Environment wgslEnv;
+		wgslEnv.featuresCallback = [](std::string_view) { return true; };
+
+		ExpectWGSL(*shaderModule, R"(
+@fragment
+fn main()
+{
+	var foo: f32 = 1.192092896e-07;
+	var foo_2: f32 = 3.402823466e+38;
+	var foo_3: f32 = -3.402823466e+38;
+	var foo_4: f32 = 1.175494351e-38;
+	var foo_5: f32 = _nzslInfinityf32();
+	var foo_6: f32 = _nzslNaNf32();
+	var foo_7: f64 = 2.2204460492503131e-016lf;
+	var foo_8: f64 = 1.7976931348623158e+308lf;
+	var foo_9: f64 = -1.7976931348623158e+308lf;
+	var foo_10: f64 = 2.2250738585072014e-308lf;
+	var foo_11: f64 = _nzslInfinityf64();
+	var foo_12: f64 = _nzslNaNf64();
+	var foo_13: i32 = 2147483647;
+	var foo_14: i32 = -2147483648;
+	var foo_15: u32 = 4294967295u;
+	var foo_16: u32 = 0u;
+}
+)", {}, wgslEnv);
 	}
 }

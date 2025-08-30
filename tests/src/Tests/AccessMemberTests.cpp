@@ -68,7 +68,7 @@ OpStore
 OpReturn
 OpFunctionEnd)");
 
-#if 0
+#ifdef FAILING_WGSL
 			ExpectWGSL(*shaderModule, R"(
 @vertex
 fn main()
@@ -115,7 +115,7 @@ OpStore
 OpReturn
 OpFunctionEnd)");
 
-#if 0
+#ifdef FAILING_WGSL
 			ExpectWGSL(*shaderModule, R"(
 @vertex
 fn main() -> @builtin(position) vec4<f32>
