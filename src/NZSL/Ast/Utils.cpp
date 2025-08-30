@@ -413,6 +413,56 @@ namespace nzsl::Ast
 			return baseType;
 	}
 
+	ConstantSingleValue ComputeTypeConstant(const ExpressionType& expressionType, TypeConstant typeConstant)
+	{
+		NazaraAssert(IsPrimitiveType(expressionType));
+		PrimitiveType primitiveType = std::get<PrimitiveType>(expressionType);
+
+		auto ReplaceByValue = [&](auto&& type) -> ConstantSingleValue
+		{
+			using T = std::decay_t<decltype(type)>;
+
+			if (typeConstant == TypeConstant::Max)
+				return Nz::MaxValue<T>();
+
+			if (typeConstant == TypeConstant::Min)
+				return std::numeric_limits<T>::lowest(); //< Nz::MinValue is implemented by std::numeric_limits<T>::min() which doesn't give the value we want
+
+			if constexpr (std::is_floating_point_v<T>)
+			{
+				if (typeConstant == TypeConstant::Epsilon)
+					return std::numeric_limits<T>::epsilon();
+
+				if (typeConstant == TypeConstant::Infinity)
+					return Nz::Infinity<T>();
+
+				if (typeConstant == TypeConstant::MinPositive)
+					return std::numeric_limits<T>::min();
+
+				if (typeConstant == TypeConstant::NaN)
+					return Nz::NaN<T>();
+			}
+
+			throw std::runtime_error("unexpected type constant with type");
+		};
+
+		switch (primitiveType)
+		{
+			case PrimitiveType::Float32: return ReplaceByValue(float{});
+			case PrimitiveType::Float64: return ReplaceByValue(double{});
+			case PrimitiveType::Int32:   return ReplaceByValue(std::int32_t{});
+			case PrimitiveType::UInt32:  return ReplaceByValue(std::uint32_t{});
+
+			case PrimitiveType::Boolean:
+			case PrimitiveType::FloatLiteral:
+			case PrimitiveType::IntLiteral:
+			case PrimitiveType::String:
+				break;
+		}
+
+		throw std::runtime_error("unexpected primitive type");
+	}
+
 	float LiteralToFloat32(FloatLiteral literal, const SourceLocation& /*sourceLocation*/)
 	{
 		return static_cast<float>(literal);
