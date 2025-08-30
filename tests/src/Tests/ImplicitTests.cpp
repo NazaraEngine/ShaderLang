@@ -120,11 +120,7 @@ void main()
 })");
 
 		ExpectNZSL(*shaderModule, R"(
-const vertPos: array[vec2[f32], 3] = array[vec2[f32], 3](
-	vec2[f32](-1.0, 1.0),
-	vec2[f32](-1.0, -3.0),
-	vec2[f32](3.0, 1.0)
-);
+const vertPos: array[vec2[f32], 3] = array[vec2[f32], 3](vec2[f32](-1.0, 1.0), vec2[f32](-1.0, -3.0), vec2[f32](3.0, 1.0));
 
 const a: array[vec3[i32], 3] = array[vec3[i32], 3](
 	vec3[i32](1, 2, 3),
@@ -138,11 +134,7 @@ const b: array[vec2[f32], 3] = array[vec2[f32], 3](
 	vec2[f32](5.0, 6.0)
 );
 
-const c: array[bool, 3] = array[bool, 3](
-	true,
-	false,
-	false
-);
+const c: array[bool, 3] = array[bool, 3](true, false, false);
 
 [entry(frag)]
 fn foo()

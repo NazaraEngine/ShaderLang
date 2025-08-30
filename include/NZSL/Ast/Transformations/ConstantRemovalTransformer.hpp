@@ -27,6 +27,7 @@ namespace nzsl::Ast
 				bool removeConstantDeclaration = true;
 				bool removeOptionDeclaration = true;
 				bool removeTypeConstant = true;
+				bool replaceExpressionWithValue = true;
 			};
 
 		private:
