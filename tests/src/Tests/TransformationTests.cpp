@@ -3,6 +3,7 @@
 #include <NZSL/Serializer.hpp>
 #include <NZSL/ShaderBuilder.hpp>
 #include <NZSL/Parser.hpp>
+#include <NZSL/Ast/Transformations/AliasTransformer.hpp>
 #include <NZSL/Ast/Transformations/BranchSplitterTransformer.hpp>
 #include <NZSL/Ast/Transformations/CompoundAssignmentTransformer.hpp>
 #include <NZSL/Ast/Transformations/ForToWhileTransformer.hpp>
@@ -542,10 +543,8 @@ external
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
 
 		nzsl::Ast::TransformerExecutor executor;
-		executor.AddPass<nzsl::Ast::ResolveTransformer>([](nzsl::Ast::ResolveTransformer::Options& opt)
-		{ 
-			opt.removeAliases = true;
-		});
+		executor.AddPass<nzsl::Ast::ResolveTransformer>();
+		executor.AddPass<nzsl::Ast::AliasTransformer>();
 
 		REQUIRE_NOTHROW(executor.Transform(*shaderModule));
 

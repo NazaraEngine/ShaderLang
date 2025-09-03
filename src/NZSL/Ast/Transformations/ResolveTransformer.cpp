@@ -393,9 +393,6 @@ namespace nzsl::Ast
 				const TransformerContext::Identifier* targetIdentifier = ResolveAliasIdentifier(&m_context->aliases.Retrieve(identifierData->index, sourceLocation).identifier, sourceLocation);
 				ExpressionPtr targetExpr = HandleIdentifier(&targetIdentifier->target, sourceLocation);
 
-				if (m_options->removeAliases)
-					return targetExpr;
-
 				AliasType aliasType;
 				aliasType.aliasIndex = identifierData->index;
 				aliasType.SetupTargetType(*targetExpr->cachedExpressionType);
@@ -1305,7 +1302,7 @@ namespace nzsl::Ast
 	{
 		if (!IsTypeExpression(exprType))
 		{
-			if (resolveAlias || m_options->removeAliases)
+			if (resolveAlias)
 				return ResolveAlias(exprType);
 			else
 				return exprType;
@@ -2320,14 +2317,11 @@ namespace nzsl::Ast
 		{
 			case IdentifierType::Alias:
 			{
-				if (identifierValueExpression.cachedExpressionType && !m_options->removeAliases)
+				if (identifierValueExpression.cachedExpressionType)
 					return DontVisitChildren{};
 
 				const TransformerContext::Identifier* targetIdentifier = ResolveAliasIdentifier(&m_context->aliases.Retrieve(identifierValueExpression.identifierIndex, identifierValueExpression.sourceLocation).identifier, identifierValueExpression.sourceLocation);
 				ExpressionPtr targetExpr = HandleIdentifier(&targetIdentifier->target, identifierValueExpression.sourceLocation);
-
-				if (m_options->removeAliases)
-					return ReplaceExpression{ std::move(targetExpr) };
 
 				AliasType aliasType;
 				aliasType.aliasIndex = identifierValueExpression.identifierIndex;
@@ -2543,8 +2537,6 @@ namespace nzsl::Ast
 			throw CompilerAliasUnexpectedTypeError{ declAlias.sourceLocation, ToString(*exprType, declAlias.expression->sourceLocation) };
 
 		declAlias.aliasIndex = RegisterAlias(declAlias.name, std::move(aliasIdentifier), declAlias.aliasIndex, declAlias.sourceLocation);
-		if (m_options->removeAliases)
-			return RemoveStatement{};
 
 		return DontVisitChildren{};
 	}
@@ -2810,15 +2802,14 @@ namespace nzsl::Ast
 			}
 		}
 
-		ExpressionType& optType = (m_options->removeAliases) ? targetType : resolvedType;
-		ValidateConcreteType(optType, declOption.sourceLocation);
+		ValidateConcreteType(resolvedType, declOption.sourceLocation);
 
 		OptionHash optionHash = HashOption(declOption.optName.data());
 
 		if (auto optionValueIt = m_context->optionValues.find(optionHash); optionValueIt != m_context->optionValues.end())
 		{
 			ConstantValue& optionValue = optionValueIt->second;
-			EnsureLiteralValue(optType, optionValue, declOption.sourceLocation);
+			EnsureLiteralValue(resolvedType, optionValue, declOption.sourceLocation);
 
 			declOption.optIndex = RegisterConstant(declOption.optName, TransformerContext::ConstantData{ m_states->currentModuleId, optionValue }, declOption.optIndex, declOption.sourceLocation);
 		}
@@ -2839,13 +2830,13 @@ namespace nzsl::Ast
 
 				std::optional<ConstantValue> value = ComputeConstantValue(cloneExpr);
 				if (value)
-					EnsureLiteralValue(optType, *value, declOption.sourceLocation);
+					EnsureLiteralValue(resolvedType, *value, declOption.sourceLocation);
 
 				declOption.optIndex = RegisterConstant(declOption.optName, TransformerContext::ConstantData{ m_states->currentModuleId, std::move(value) }, declOption.optIndex, declOption.sourceLocation);
 			}
 		}
 
-		declOption.optType = std::move(optType);
+		declOption.optType = std::move(resolvedType);
 
 		return DontVisitChildren{};
 	}
@@ -3402,9 +3393,6 @@ namespace nzsl::Ast
 		for (auto& constPtr : constStatements)
 			HandleStatement(constPtr);
 
-		if (m_options->removeAliases)
-			return RemoveStatement{};
-
 		// Generate alias statements
 		MultiStatementPtr aliasBlock = std::make_unique<MultiStatement>();
 		for (auto& aliasPtr : aliasStatements)
@@ -3428,9 +3416,6 @@ namespace nzsl::Ast
 			resolvedType = ResolveAlias(expressionType);
 		else
 			resolvedType = expressionType;
-
-		if (m_options->removeAliases)
-			expressionType = resolvedType;
 
 		if (IsStructAddressible(resolvedType))
 		{

@@ -17,6 +17,7 @@
 #include <NZSL/SpirV/SpirvData.hpp>
 #include <NZSL/SpirV/SpirvGenData.hpp>
 #include <NZSL/SpirV/SpirvSection.hpp>
+#include <NZSL/Ast/Transformations/AliasTransformer.hpp>
 #include <NZSL/Ast/Transformations/BindingResolverTransformer.hpp>
 #include <NZSL/Ast/Transformations/BranchSplitterTransformer.hpp>
 #include <NZSL/Ast/Transformations/CompoundAssignmentTransformer.hpp>
@@ -664,7 +665,6 @@ namespace nzsl
 				executor.AddPass<Ast::ResolveTransformer>([&](Ast::ResolveTransformer::Options& opt)
 				{
 					opt.moduleResolver = parameters.shaderModuleResolver;
-					opt.removeAliases = true;
 				});
 			}
 
@@ -928,6 +928,7 @@ namespace nzsl
 			opt.removeMatrixCast = true;
 		});
 		executor.AddPass<Ast::BindingResolverTransformer>();
+		executor.AddPass<Ast::AliasTransformer>();
 	}
 
 	std::uint32_t SpirvWriter::AllocateResultId()

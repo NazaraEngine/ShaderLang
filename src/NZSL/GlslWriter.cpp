@@ -15,6 +15,7 @@
 #include <NZSL/Ast/Utils.hpp>
 #include <NZSL/Lang/LangData.hpp>
 #include <NZSL/Lang/Version.hpp>
+#include <NZSL/Ast/Transformations/AliasTransformer.hpp>
 #include <NZSL/Ast/Transformations/BindingResolverTransformer.hpp>
 #include <NZSL/Ast/Transformations/ConstantPropagationTransformer.hpp>
 #include <NZSL/Ast/Transformations/ConstantRemovalTransformer.hpp>
@@ -412,7 +413,6 @@ namespace nzsl
 				executor.AddPass<Ast::ResolveTransformer>([&](Ast::ResolveTransformer::Options& opt)
 				{
 					opt.moduleResolver = parameters.shaderModuleResolver;
-					opt.removeAliases = true;
 				});
 			}
 
@@ -628,6 +628,7 @@ namespace nzsl
 			opt.removeConstArraySize = false;
 			opt.removeTypeConstant = false;
 		});
+		executor.AddPass<Ast::AliasTransformer>();
 		executor.AddPass<Ast::IdentifierTransformer>(secondIdentifierPassOptions);
 	}
 

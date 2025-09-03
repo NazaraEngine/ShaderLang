@@ -33,7 +33,6 @@ namespace nzsl::Ast
 			{
 				// TODO: Turn all of theses into separate passes
 				std::shared_ptr<ModuleResolver> moduleResolver;
-				bool removeAliases = false;
 			};
 
 		private:
