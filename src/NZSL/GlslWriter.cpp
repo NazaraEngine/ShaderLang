@@ -1755,7 +1755,7 @@ namespace nzsl
 
 	void GlslWriter::Visit(Ast::ExpressionPtr& expr, bool encloseIfRequired)
 	{
-		bool enclose = encloseIfRequired && (GetExpressionCategory(*expr) != Ast::ExpressionCategory::LValue);
+		bool enclose = encloseIfRequired && (GetExpressionCategory(*expr) == Ast::ExpressionCategory::Temporary);
 
 		if (enclose)
 			Append("(");

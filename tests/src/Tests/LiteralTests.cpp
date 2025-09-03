@@ -35,7 +35,7 @@ fn foo()
 void main()
 {
 	float bar = -1.0;
-	float _nzsl_cachedResult = (1.0) + bar;
+	float _nzsl_cachedResult = 1.0 + bar;
 	vec3 bar_2 = vec3(_nzsl_cachedResult, _nzsl_cachedResult, _nzsl_cachedResult);
 	vec3 bar_3 = vec3(2.0, 2.0, 2.0);
 	float bar_4 = (max(1.0, 2.0)) + (min(2.0, 1.0));
@@ -48,7 +48,7 @@ void main()
 fn foo()
 {
 	let bar: f32 = -1.0;
-	let bar: vec3[f32] = ((1.0) + bar).xxx;
+	let bar: vec3[f32] = (1.0 + bar).xxx;
 	let bar: vec3[f32] = vec3[f32](2.0, 2.0, 2.0);
 	let bar: f32 = (max(1.0, 2.0)) + (min(2.0, 1.0));
 	let bar: f32 = max(min(1.0, 2.0), 3.0);

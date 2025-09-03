@@ -1695,12 +1695,7 @@ namespace nzsl
 			{
 				Consume();
 
-				Ast::ExpressionPtr expressionPtr = ParseExpression();
-				const Ast::ExpressionCategory category = Ast::GetExpressionCategory(*expressionPtr);
-				if (category != Ast::ExpressionCategory::LValue)
-					throw ParserFunctionParameterNonLValueError{ expressionPtr->sourceLocation, parameterIndex };
-
-				parameter.expr = std::move(expressionPtr);
+				parameter.expr = ParseExpression();
 				if (tokenType == TokenType::InOut)
 					parameter.semantic = Ast::FunctionParameterSemantic::InOut;
 				else if (tokenType == TokenType::Out)

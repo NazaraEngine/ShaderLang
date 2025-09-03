@@ -10,133 +10,165 @@
 
 namespace nzsl::Ast
 {
-	ExpressionCategory ValueCategory::GetExpressionCategory(Expression& expression)
+	namespace NAZARA_ANONYMOUS_NAMESPACE
 	{
-		expression.Visit(*this);
-		return m_expressionCategory;
-	}
-
-	void ValueCategory::Visit(AccessFieldExpression& node)
-	{
-		node.expr->Visit(*this);
-	}
-
-	void ValueCategory::Visit(AccessIdentifierExpression& node)
-	{
-		node.expr->Visit(*this);
-	}
-
-	void ValueCategory::Visit(AccessIndexExpression& node)
-	{
-		node.expr->Visit(*this);
-	}
-
-	void ValueCategory::Visit(AssignExpression& /*node*/)
-	{
-		m_expressionCategory = ExpressionCategory::RValue;
-	}
-
-	void ValueCategory::Visit(BinaryExpression& /*node*/)
-	{
-		m_expressionCategory = ExpressionCategory::RValue;
-	}
-
-	void ValueCategory::Visit(CallFunctionExpression& /*node*/)
-	{
-		m_expressionCategory = ExpressionCategory::RValue;
-	}
-
-	void ValueCategory::Visit(CallMethodExpression& /*node*/)
-	{
-		m_expressionCategory = ExpressionCategory::RValue;
-	}
-
-	void ValueCategory::Visit(CastExpression& /*node*/)
-	{
-		m_expressionCategory = ExpressionCategory::RValue;
-	}
-
-	void ValueCategory::Visit(ConditionalExpression& node)
-	{
-		node.truePath->Visit(*this);
-		ExpressionCategory trueExprCategory = m_expressionCategory;
-
-		node.falsePath->Visit(*this);
-		ExpressionCategory falseExprCategory = m_expressionCategory;
-
-		if (trueExprCategory == ExpressionCategory::RValue || falseExprCategory == ExpressionCategory::RValue)
-			m_expressionCategory = ExpressionCategory::RValue;
-		else
-			m_expressionCategory = ExpressionCategory::LValue;
-	}
-
-	void ValueCategory::Visit(ConstantArrayValueExpression& /*node*/)
-	{
-		m_expressionCategory = ExpressionCategory::LValue;
-	}
-
-	void ValueCategory::Visit(ConstantValueExpression& /*node*/)
-	{
-		m_expressionCategory = ExpressionCategory::RValue;
-	}
-
-	void ValueCategory::Visit(IdentifierExpression& /*node*/)
-	{
-		m_expressionCategory = ExpressionCategory::LValue;
-	}
-
-	void ValueCategory::Visit(IdentifierValueExpression& /*node*/)
-	{
-		m_expressionCategory = ExpressionCategory::LValue;
-	}
-
-	void ValueCategory::Visit(IntrinsicExpression& /*node*/)
-	{
-		m_expressionCategory = ExpressionCategory::RValue;
-	}
-
-	void ValueCategory::Visit(SwizzleExpression& node)
-	{
-		const ExpressionType* exprType = GetExpressionType(node);
-		assert(exprType);
-
-		if (IsPrimitiveType(*exprType) && node.componentCount > 1)
-			// Swizzling more than a component on a primitive produces a rvalue (a.xxxx cannot be assigned)
-			m_expressionCategory = ExpressionCategory::RValue;
-		else
+		class ValueCategory final : public ExpressionVisitor
 		{
-			bool isRVaLue = false;
+			public:
+				ValueCategory() = default;
+				ValueCategory(const ValueCategory&) = delete;
+				ValueCategory(ValueCategory&&) = delete;
+				~ValueCategory() = default;
 
-			std::array<bool, 4> used;
-			used.fill(false);
-
-			for (std::size_t i = 0; i < node.componentCount; ++i)
-			{
-				if (used[node.components[i]])
+				ExpressionCategory GetExpressionCategory(Expression& expression)
 				{
-					// Swizzling the same component multiple times produces a rvalue (a.xx cannot be assigned)
-					isRVaLue = true;
-					break;
+					expression.Visit(*this);
+					return m_expressionCategory;
 				}
 
-				used[node.components[i]] = true;
-			}
+				ValueCategory& operator=(const ValueCategory&) = delete;
+				ValueCategory& operator=(ValueCategory&&) = delete;
 
-			if (isRVaLue)
-				m_expressionCategory = ExpressionCategory::RValue;
-			else
-				node.expression->Visit(*this);
-		}
-	}
+			private:
+				using ExpressionVisitor::Visit;
 
-	void ValueCategory::Visit(TypeConstantExpression& /*node*/)
-	{
-		m_expressionCategory = ExpressionCategory::RValue;
-	}
+				void Visit(AccessFieldExpression& node) override
+				{
+					node.expr->Visit(*this);
+				}
 
-	void ValueCategory::Visit(UnaryExpression& /*node*/)
-	{
-		m_expressionCategory = ExpressionCategory::RValue;
+				void Visit(AccessIdentifierExpression& node) override
+				{
+					node.expr->Visit(*this);
+				}
+
+				void Visit(AccessIndexExpression& node) override
+				{
+					node.expr->Visit(*this);
+				}
+
+				void Visit(AssignExpression& /*node*/) override
+				{
+					m_expressionCategory = ExpressionCategory::Temporary;
+				}
+
+				void Visit(BinaryExpression& /*node*/) override
+				{
+					m_expressionCategory = ExpressionCategory::Temporary;
+				}
+
+				void Visit(CallFunctionExpression& /*node*/) override
+				{
+					m_expressionCategory = ExpressionCategory::Temporary;
+				}
+
+				void Visit(CallMethodExpression& /*node*/) override
+				{
+					m_expressionCategory = ExpressionCategory::Temporary;
+				}
+
+				void Visit(CastExpression& /*node*/) override
+				{
+					m_expressionCategory = ExpressionCategory::Temporary;
+				}
+
+				void Visit(ConditionalExpression& node) override
+				{
+					node.truePath->Visit(*this);
+					ExpressionCategory trueExprCategory = m_expressionCategory;
+
+					node.falsePath->Visit(*this);
+					ExpressionCategory falseExprCategory = m_expressionCategory;
+
+					if (trueExprCategory == ExpressionCategory::Variable && falseExprCategory == ExpressionCategory::Variable)
+						m_expressionCategory = ExpressionCategory::Variable;
+					else
+						m_expressionCategory = ExpressionCategory::Temporary; //< can't assume anything else
+				}
+
+				void Visit(ConstantArrayValueExpression& node) override
+				{
+					m_expressionCategory = ExpressionCategory::Variable;
+				}
+
+				void Visit(ConstantValueExpression& node) override
+				{
+					m_expressionCategory = ExpressionCategory::Constant;
+				}
+
+				void Visit(IdentifierExpression& node) override
+				{
+					m_expressionCategory = ExpressionCategory::Variable;
+				}
+
+				void Visit(IdentifierValueExpression& node) override
+				{
+					switch (node.identifierType)
+					{
+						case IdentifierType::Constant:
+							m_expressionCategory = ExpressionCategory::Constant;
+							break;
+
+						case IdentifierType::Variable:
+							m_expressionCategory = ExpressionCategory::Variable;
+							break;
+
+						default:
+							m_expressionCategory = ExpressionCategory::Temporary;
+					}
+				}
+
+				void Visit(IntrinsicExpression& node) override
+				{
+					m_expressionCategory = ExpressionCategory::Temporary;
+				}
+
+				void Visit(SwizzleExpression& node) override
+				{
+					const ExpressionType* exprType = GetExpressionType(node);
+					assert(exprType);
+
+					if (IsPrimitiveType(*exprType) && node.componentCount > 1)
+						// Swizzling more than a component on a primitive produces a temporary value (a.xxxx cannot be assigned)
+						m_expressionCategory = ExpressionCategory::Temporary;
+					else
+					{
+						bool isTemporary = false;
+
+						std::array<bool, 4> used;
+						used.fill(false);
+
+						for (std::size_t i = 0; i < node.componentCount; ++i)
+						{
+							if (used[node.components[i]])
+							{
+								// Swizzling the same component multiple times produces a temporary (a.xx cannot be assigned)
+								isTemporary = true;
+								break;
+							}
+
+							used[node.components[i]] = true;
+						}
+
+						if (isTemporary)
+							m_expressionCategory = ExpressionCategory::Temporary;
+						else
+							node.expression->Visit(*this);
+					}
+				}
+
+				void Visit(TypeConstantExpression& node) override
+				{
+					m_expressionCategory = ExpressionCategory::Constant;
+				}
+
+				void Visit(UnaryExpression& node) override
+				{
+					m_expressionCategory = ExpressionCategory::Temporary;
+				}
+
+				ExpressionCategory m_expressionCategory;
+		};
 	}
 
 	std::optional<ExpressionType> ComputeExpressionType(const IntrinsicExpression& intrinsicExpr, const Stringifier& /*typeStringifier*/)
@@ -457,6 +489,13 @@ namespace nzsl::Ast
 		return static_cast<std::uint32_t>(value);
 	}
 
+	ExpressionCategory GetExpressionCategory(Expression& expression)
+	{
+		NAZARA_USE_ANONYMOUS_NAMESPACE
+
+			ValueCategory visitor;
+		return visitor.GetExpressionCategory(expression);
+	}
 
 	Expression& MandatoryExpr(const ExpressionPtr& node, const SourceLocation& sourceLocation)
 	{

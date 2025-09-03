@@ -100,8 +100,9 @@ namespace nzsl::Ast
 
 	enum class ExpressionCategory
 	{
-		LValue = 0,
-		RValue = 1
+		Constant,  //< constants values or literals
+		Temporary, //< temporary result, for example the result of a function call
+		Variable   //< a variable
 	};
 
 	enum class IdentifierCategory

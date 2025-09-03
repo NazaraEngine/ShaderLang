@@ -14,43 +14,6 @@
 
 namespace nzsl::Ast
 {
-	class NZSL_API ValueCategory final : public ExpressionVisitor
-	{
-		public:
-			ValueCategory() = default;
-			ValueCategory(const ValueCategory&) = delete;
-			ValueCategory(ValueCategory&&) = delete;
-			~ValueCategory() = default;
-
-			ExpressionCategory GetExpressionCategory(Expression& expression);
-
-			ValueCategory& operator=(const ValueCategory&) = delete;
-			ValueCategory& operator=(ValueCategory&&) = delete;
-
-		private:
-			using ExpressionVisitor::Visit;
-
-			void Visit(AccessFieldExpression& node) override;
-			void Visit(AccessIdentifierExpression& node) override;
-			void Visit(AccessIndexExpression& node) override;
-			void Visit(AssignExpression& node) override;
-			void Visit(BinaryExpression& node) override;
-			void Visit(CallFunctionExpression& node) override;
-			void Visit(CallMethodExpression& node) override;
-			void Visit(CastExpression& node) override;
-			void Visit(ConditionalExpression& node) override;
-			void Visit(ConstantArrayValueExpression& node) override;
-			void Visit(ConstantValueExpression& node) override;
-			void Visit(IdentifierExpression& node) override;
-			void Visit(IdentifierValueExpression& node) override;
-			void Visit(IntrinsicExpression& node) override;
-			void Visit(SwizzleExpression& node) override;
-			void Visit(TypeConstantExpression& node) override;
-			void Visit(UnaryExpression& node) override;
-
-			ExpressionCategory m_expressionCategory;
-	};
-
 	NZSL_API std::optional<ExpressionType> ComputeExpressionType(const IntrinsicExpression& intrinsicExpr, const Stringifier& typeStringifier);
 	NZSL_API std::optional<ExpressionType> ComputeExpressionType(const SwizzleExpression& swizzleExpr, const Stringifier& typeStringifier);
 	NZSL_API std::optional<ExpressionType> ComputeExpressionType(const UnaryExpression& unaryExpr, const Stringifier& typeStringifier);
@@ -72,7 +35,7 @@ namespace nzsl::Ast
 	template<typename T> auto LiteralToInt32(const std::vector<T>& literalVec, const SourceLocation& sourceLocation);
 	template<typename T> auto LiteralToUInt32(const std::vector<T>& literalVec, const SourceLocation& sourceLocation);
 
-	inline ExpressionCategory GetExpressionCategory(Expression& expression);
+	NZSL_API ExpressionCategory GetExpressionCategory(Expression& expression);
 	inline std::optional<PrimitiveType> GetInnerPrimitiveType(const ExpressionType& expressionType);
 
 	NZSL_API Expression& MandatoryExpr(const ExpressionPtr& node, const SourceLocation& sourceLocation);

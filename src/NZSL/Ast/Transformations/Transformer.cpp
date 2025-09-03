@@ -58,8 +58,8 @@ namespace nzsl::Ast
 	{
 		assert(expression);
 
-		// No need to cache LValues (variables/constants) (TODO: Improve this, as constants don't need to be cached as well)
-		if (GetExpressionCategory(*expression) == ExpressionCategory::LValue)
+		// No need to cache variables
+		if (GetExpressionCategory(*expression) == ExpressionCategory::Variable)
 			return expression;
 
 		DeclareVariableStatement* variableDeclaration = DeclareVariable("cachedResult", std::move(expression));

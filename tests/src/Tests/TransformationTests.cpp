@@ -60,19 +60,19 @@ fn main()
 fn main()
 {
 	let value: f32;
-	if (data.value > (3.0))
+	if (data.value > 3.0)
 	{
 		value = 3.0;
 	}
 	else
 	{
-		if (data.value > (2.0))
+		if (data.value > 2.0)
 		{
 			value = 2.0;
 		}
 		else
 		{
-			if (data.value > (1.0))
+			if (data.value > 1.0)
 			{
 				value = 1.0;
 			}
@@ -188,7 +188,7 @@ fn main()
 	let x: f32 = 0.0;
 	{
 		let _nzsl_counter: u32 = 0;
-		while (_nzsl_counter < (10))
+		while (_nzsl_counter < 10)
 		{
 			let v: f32 = data.value[_nzsl_counter];
 			x += v;
@@ -236,7 +236,7 @@ fn main()
 	let x = 1;
 	let y = 2;
 	x = x + y;
-	x = x + (1);
+	x = x + 1;
 }
 )");
 

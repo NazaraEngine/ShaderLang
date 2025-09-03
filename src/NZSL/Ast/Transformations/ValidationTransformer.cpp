@@ -481,7 +481,7 @@ namespace nzsl::Ast
 		if (!leftExprType)
 			return DontVisitChildren{};
 
-		if (GetExpressionCategory(*node.left) != ExpressionCategory::LValue)
+		if (GetExpressionCategory(*node.left) != ExpressionCategory::Variable)
 			throw CompilerAssignTemporaryError{ node.sourceLocation };
 
 		const ExpressionType* rightExprType = GetExpressionType(MandatoryExpr(node.right, node.sourceLocation));
@@ -560,9 +560,18 @@ namespace nzsl::Ast
 
 		for (std::size_t i = 0; i < node.parameters.size(); ++i)
 		{
-			const ExpressionType* parameterType = GetExpressionType(*node.parameters[i].expr);
+			auto& expressionPtr = node.parameters[i].expr;
+
+			const ExpressionType* parameterType = GetExpressionType(*expressionPtr);
 			if (!parameterType)
 				continue;
+
+			if (node.parameters[i].semantic != FunctionParameterSemantic::In)
+			{
+				const Ast::ExpressionCategory category = Ast::GetExpressionCategory(*expressionPtr);
+				if (category != Ast::ExpressionCategory::Variable)
+					throw CompilerFunctionCallSemanticRequiresVariableError{ expressionPtr->sourceLocation };
+			}
 
 			const ExpressionType& expectedType = referenceDeclaration->parameters[i].type.GetResultingValue();
 
