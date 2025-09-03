@@ -51,7 +51,6 @@ namespace nzsl
 			void Visit(Ast::BreakStatement& node) override;
 			void Visit(Ast::CallFunctionExpression& node) override;
 			void Visit(Ast::CastExpression& node) override;
-			void Visit(Ast::ConstantExpression& node) override;
 			void Visit(Ast::ConstantValueExpression& node) override;
 			void Visit(Ast::ContinueStatement& node) override;
 			void Visit(Ast::DeclareConstStatement& node) override;
@@ -62,6 +61,7 @@ namespace nzsl
 			void Visit(Ast::DeclareVariableStatement& node) override;
 			void Visit(Ast::DiscardStatement& node) override;
 			void Visit(Ast::ExpressionStatement& node) override;
+			void Visit(Ast::IdentifierValueExpression& node) override;
 			void Visit(Ast::IntrinsicExpression& node) override;
 			void Visit(Ast::MultiStatement& node) override;
 			void Visit(Ast::NoOpStatement& node) override;
@@ -69,7 +69,6 @@ namespace nzsl
 			void Visit(Ast::ScopedStatement& node) override;
 			void Visit(Ast::SwizzleExpression& node) override;
 			void Visit(Ast::UnaryExpression& node) override;
-			void Visit(Ast::VariableValueExpression& node) override;
 			void Visit(Ast::WhileStatement& node) override;
 
 			SpirvAstVisitor& operator=(const SpirvAstVisitor&) = delete;

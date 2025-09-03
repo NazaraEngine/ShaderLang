@@ -33,7 +33,7 @@ namespace nzsl::Ast
 		private:
 			using Transformer::Transform;
 
-			ExpressionTransformation Transform(ConstantExpression&& constExpr) override;
+			ExpressionTransformation Transform(IdentifierValueExpression&& identifierValueExpr) override;
 			ExpressionTransformation Transform(IntrinsicExpression&& intrinsicExpr) override;
 			ExpressionTransformation Transform(TypeConstantExpression&& typeConstantExpr) override;
 

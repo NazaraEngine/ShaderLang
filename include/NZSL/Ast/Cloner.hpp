@@ -46,27 +46,19 @@ namespace nzsl::Ast
 			virtual ExpressionPtr Clone(AccessFieldExpression& node);
 			virtual ExpressionPtr Clone(AccessIdentifierExpression& node);
 			virtual ExpressionPtr Clone(AccessIndexExpression& node);
-			virtual ExpressionPtr Clone(AliasValueExpression& node);
 			virtual ExpressionPtr Clone(AssignExpression& node);
 			virtual ExpressionPtr Clone(BinaryExpression& node);
 			virtual ExpressionPtr Clone(CallFunctionExpression& node);
 			virtual ExpressionPtr Clone(CallMethodExpression& node);
 			virtual ExpressionPtr Clone(CastExpression& node);
 			virtual ExpressionPtr Clone(ConditionalExpression& node);
-			virtual ExpressionPtr Clone(ConstantExpression& node);
 			virtual ExpressionPtr Clone(ConstantArrayValueExpression& node);
 			virtual ExpressionPtr Clone(ConstantValueExpression& node);
-			virtual ExpressionPtr Clone(FunctionExpression& node);
 			virtual ExpressionPtr Clone(IdentifierExpression& node);
+			virtual ExpressionPtr Clone(IdentifierValueExpression& node);
 			virtual ExpressionPtr Clone(IntrinsicExpression& node);
-			virtual ExpressionPtr Clone(IntrinsicFunctionExpression& node);
-			virtual ExpressionPtr Clone(ModuleExpression& node);
-			virtual ExpressionPtr Clone(NamedExternalBlockExpression& node);
-			virtual ExpressionPtr Clone(StructTypeExpression& node);
 			virtual ExpressionPtr Clone(SwizzleExpression& node);
 			virtual ExpressionPtr Clone(TypeConstantExpression& node);
-			virtual ExpressionPtr Clone(TypeExpression& node);
-			virtual ExpressionPtr Clone(VariableValueExpression& node);
 			virtual ExpressionPtr Clone(UnaryExpression& node);
 
 			virtual StatementPtr Clone(BranchStatement& node);

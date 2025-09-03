@@ -46,7 +46,7 @@ namespace nzsl::Ast
 		m_scopeIndices.push_back(m_identifierInScope.size());
 	}
 
-	bool IdentifierTransformer::HandleIdentifier(std::string& identifier, IdentifierType scope)
+	bool IdentifierTransformer::HandleIdentifier(std::string& identifier, IdentifierCategory scope)
 	{
 		bool nameChanged = false;
 		if (m_options->makeVariableNameUnique)
@@ -81,13 +81,13 @@ namespace nzsl::Ast
 
 	auto IdentifierTransformer::Transform(DeclareAliasStatement&& statement) -> StatementTransformation
 	{
-		HandleIdentifier(statement.name, IdentifierType::Alias);
+		HandleIdentifier(statement.name, IdentifierCategory::Alias);
 		return VisitChildren{};
 	}
 
 	auto IdentifierTransformer::Transform(DeclareConstStatement&& statement) -> StatementTransformation
 	{
-		HandleIdentifier(statement.name, IdentifierType::Constant);
+		HandleIdentifier(statement.name, IdentifierCategory::Constant);
 		return VisitChildren{};
 	}
 
@@ -95,12 +95,12 @@ namespace nzsl::Ast
 	{
 		if (!statement.name.empty())
 		{
-			HandleIdentifier(statement.name, IdentifierType::ExternalBlock);
+			HandleIdentifier(statement.name, IdentifierCategory::ExternalBlock);
 			PushScope();
 		}
 
 		for (auto& externalVar : statement.externalVars)
-			HandleIdentifier(externalVar.name, IdentifierType::ExternalVariable);
+			HandleIdentifier(externalVar.name, IdentifierCategory::ExternalVariable);
 
 		if (!statement.name.empty())
 			PopScope();
@@ -110,13 +110,13 @@ namespace nzsl::Ast
 
 	auto IdentifierTransformer::Transform(DeclareFunctionStatement&& statement) -> StatementTransformation
 	{
-		HandleIdentifier(statement.name, IdentifierType::Function);
+		HandleIdentifier(statement.name, IdentifierCategory::Function);
 
 		PushScope();
 		NAZARA_DEFER({ PopScope(); });
 
 		for (auto& param : statement.parameters)
-			HandleIdentifier(param.name, IdentifierType::Parameter);
+			HandleIdentifier(param.name, IdentifierCategory::Parameter);
 
 		HandleChildren(statement);
 
@@ -125,18 +125,18 @@ namespace nzsl::Ast
 
 	auto IdentifierTransformer::Transform(DeclareOptionStatement&& statement) -> StatementTransformation
 	{
-		HandleIdentifier(statement.optName, IdentifierType::Parameter);
+		HandleIdentifier(statement.optName, IdentifierCategory::Parameter);
 		return VisitChildren{};
 	}
 
 	auto IdentifierTransformer::Transform(DeclareStructStatement&& statement) -> StatementTransformation
 	{
-		HandleIdentifier(statement.description.name, IdentifierType::Struct);
+		HandleIdentifier(statement.description.name, IdentifierCategory::Struct);
 
 		PushScope();
 
 		for (auto& member : statement.description.members)
-			HandleIdentifier(member.name, IdentifierType::Field);
+			HandleIdentifier(member.name, IdentifierCategory::Field);
 
 		PopScope();
 
@@ -145,19 +145,19 @@ namespace nzsl::Ast
 
 	auto IdentifierTransformer::Transform(DeclareVariableStatement&& statement) -> StatementTransformation
 	{
-		HandleIdentifier(statement.varName, IdentifierType::Variable);
+		HandleIdentifier(statement.varName, IdentifierCategory::Variable);
 		return VisitChildren{};
 	}
 
 	auto IdentifierTransformer::Transform(ForEachStatement&& statement) -> StatementTransformation
 	{
-		HandleIdentifier(statement.varName, IdentifierType::Variable);
+		HandleIdentifier(statement.varName, IdentifierCategory::Variable);
 		return VisitChildren{};
 	}
 
 	auto IdentifierTransformer::Transform(ForStatement&& statement) -> StatementTransformation
 	{
-		HandleIdentifier(statement.varName, IdentifierType::Variable);
+		HandleIdentifier(statement.varName, IdentifierCategory::Variable);
 		return VisitChildren{};
 	}
 }

@@ -20,8 +20,8 @@ namespace nzsl::Ast
 
 			inline bool Transform(Module& module, TransformerContext& context, std::string* error = nullptr);
 			bool Transform(Module& module, TransformerContext& context, const Options& options, std::string* error = nullptr);
-			bool TransformExpression(Module& module, ExpressionPtr& expression, TransformerContext& context, const Options& options, std::string* error = nullptr);
-			bool TransformStatement(Module& module, StatementPtr& statement, TransformerContext& context, const Options& options, std::string* error = nullptr);
+			bool TransformExpression(ExpressionPtr& expression, TransformerContext& context, const Options& options, std::string* error = nullptr);
+			bool TransformStatement(StatementPtr& statement, TransformerContext& context, const Options& options, std::string* error = nullptr);
 
 			struct Options
 			{
@@ -61,28 +61,20 @@ namespace nzsl::Ast
 			ExpressionTransformation Transform(AccessFieldExpression&& node) override;
 			ExpressionTransformation Transform(AccessIdentifierExpression&& node) override;
 			ExpressionTransformation Transform(AccessIndexExpression&& node) override;
-			ExpressionTransformation Transform(AliasValueExpression&& node) override;
 			ExpressionTransformation Transform(AssignExpression&& node) override;
 			ExpressionTransformation Transform(BinaryExpression&& node) override;
 			ExpressionTransformation Transform(CallFunctionExpression&& node) override;
 			ExpressionTransformation Transform(CallMethodExpression&& node) override;
 			ExpressionTransformation Transform(CastExpression&& node) override;
 			ExpressionTransformation Transform(ConditionalExpression&& node) override;
-			ExpressionTransformation Transform(ConstantExpression&& node) override;
 			ExpressionTransformation Transform(ConstantArrayValueExpression&& node) override;
 			ExpressionTransformation Transform(ConstantValueExpression&& node) override;
-			ExpressionTransformation Transform(FunctionExpression&& node) override;
 			ExpressionTransformation Transform(IdentifierExpression&& node) override;
+			ExpressionTransformation Transform(IdentifierValueExpression&& node) override;
 			ExpressionTransformation Transform(IntrinsicExpression&& node) override;
-			ExpressionTransformation Transform(IntrinsicFunctionExpression&& node) override;
-			ExpressionTransformation Transform(ModuleExpression&& node) override;
-			ExpressionTransformation Transform(NamedExternalBlockExpression&& node) override;
-			ExpressionTransformation Transform(StructTypeExpression&& node) override;
 			ExpressionTransformation Transform(SwizzleExpression&& node) override;
 			ExpressionTransformation Transform(TypeConstantExpression&& node) override;
-			ExpressionTransformation Transform(TypeExpression&& node) override;
 			ExpressionTransformation Transform(UnaryExpression&& node) override;
-			ExpressionTransformation Transform(VariableValueExpression&& node) override;
 
 			StatementTransformation Transform(BranchStatement&& node) override;
 			StatementTransformation Transform(BreakStatement&& node) override;

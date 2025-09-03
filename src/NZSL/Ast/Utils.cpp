@@ -31,11 +31,6 @@ namespace nzsl::Ast
 		node.expr->Visit(*this);
 	}
 
-	void ValueCategory::Visit(AliasValueExpression& /*node*/)
-	{
-		m_expressionCategory = ExpressionCategory::LValue;
-	}
-
 	void ValueCategory::Visit(AssignExpression& /*node*/)
 	{
 		m_expressionCategory = ExpressionCategory::RValue;
@@ -75,11 +70,6 @@ namespace nzsl::Ast
 			m_expressionCategory = ExpressionCategory::LValue;
 	}
 
-	void ValueCategory::Visit(ConstantExpression& /*node*/)
-	{
-		m_expressionCategory = ExpressionCategory::LValue;
-	}
-
 	void ValueCategory::Visit(ConstantArrayValueExpression& /*node*/)
 	{
 		m_expressionCategory = ExpressionCategory::LValue;
@@ -90,12 +80,12 @@ namespace nzsl::Ast
 		m_expressionCategory = ExpressionCategory::RValue;
 	}
 
-	void ValueCategory::Visit(FunctionExpression& /*node*/)
+	void ValueCategory::Visit(IdentifierExpression& /*node*/)
 	{
 		m_expressionCategory = ExpressionCategory::LValue;
 	}
 
-	void ValueCategory::Visit(IdentifierExpression& /*node*/)
+	void ValueCategory::Visit(IdentifierValueExpression& /*node*/)
 	{
 		m_expressionCategory = ExpressionCategory::LValue;
 	}
@@ -103,26 +93,6 @@ namespace nzsl::Ast
 	void ValueCategory::Visit(IntrinsicExpression& /*node*/)
 	{
 		m_expressionCategory = ExpressionCategory::RValue;
-	}
-
-	void ValueCategory::Visit(IntrinsicFunctionExpression& /*node*/)
-	{
-		m_expressionCategory = ExpressionCategory::LValue;
-	}
-
-	void ValueCategory::Visit(ModuleExpression& /*node*/)
-	{
-		m_expressionCategory = ExpressionCategory::LValue;
-	}
-
-	void ValueCategory::Visit(NamedExternalBlockExpression& /*node*/)
-	{
-		m_expressionCategory = ExpressionCategory::LValue;
-	}
-
-	void ValueCategory::Visit(StructTypeExpression& /*node*/)
-	{
-		m_expressionCategory = ExpressionCategory::LValue;
 	}
 
 	void ValueCategory::Visit(SwizzleExpression& node)
@@ -162,16 +132,6 @@ namespace nzsl::Ast
 	void ValueCategory::Visit(TypeConstantExpression& /*node*/)
 	{
 		m_expressionCategory = ExpressionCategory::RValue;
-	}
-
-	void ValueCategory::Visit(TypeExpression& /*node*/)
-	{
-		m_expressionCategory = ExpressionCategory::LValue;
-	}
-
-	void ValueCategory::Visit(VariableValueExpression& /*node*/)
-	{
-		m_expressionCategory = ExpressionCategory::LValue;
 	}
 
 	void ValueCategory::Visit(UnaryExpression& /*node*/)

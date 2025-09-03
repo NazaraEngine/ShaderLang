@@ -23,14 +23,14 @@ namespace nzsl::Ast
 
 			struct Options
 			{
-				std::function<bool(std::string& identifier, IdentifierType identifierScope)> identifierSanitizer;
+				std::function<bool(std::string& identifier, IdentifierCategory identifierScope)> identifierSanitizer;
 				bool makeVariableNameUnique = true;
 			};
 
 		private:
 			using Transformer::Transform;
 
-			bool HandleIdentifier(std::string& identifier, IdentifierType scope);
+			bool HandleIdentifier(std::string& identifier, IdentifierCategory scope);
 
 			bool HasIdentifier(std::string_view identifierName) const;
 			void RegisterIdentifier(std::string identifier);

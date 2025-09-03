@@ -104,7 +104,7 @@ namespace nzsl::Ast
 		RValue = 1
 	};
 
-	enum class IdentifierType
+	enum class IdentifierCategory
 	{
 		Alias,
 		Constant,
@@ -121,6 +121,21 @@ namespace nzsl::Ast
 		Type,
 		Unresolved,
 		Variable
+	};
+
+	enum class IdentifierType
+	{
+		// Next free index: 10
+		Alias            = 0,
+		Constant         = 1,
+		ExternalBlock    = 2,
+		Function         = 3,
+		Intrinsic        = 4,
+		Module           = 5,
+		Struct           = 6,
+		Type             = 7,
+		Unresolved       = 8,
+		Variable         = 9
 	};
 
 	enum class InterpolationQualifier
@@ -213,34 +228,35 @@ namespace nzsl::Ast
 
 	enum class NodeType
 	{
-		// Remember to update Max value at the end of the enum when adding an entry
+		// Remember to update Max value at the end of the enum when adding an entry (next free id: 47)
 		None = -1,
 
 		// Expressions
 		AccessFieldExpression        = 44,
 		AccessIdentifierExpression   = 0,
 		AccessIndexExpression        = 1,
-		AliasValueExpression         = 2,
+		AliasValueExpression         = 2, //< note: replaced by IdentifierValueExpression
 		AssignExpression             = 3,
 		BinaryExpression             = 4,
 		CallFunctionExpression       = 5,
 		CallMethodExpression         = 6,
 		CastExpression               = 7,
 		ConditionalExpression        = 8,
-		ConstantExpression           = 9,
+		ConstantExpression           = 9,  //< note: replaced by IdentifierValueExpression
 		ConstantArrayValueExpression = 10,
 		ConstantValueExpression      = 11,
 		FunctionExpression           = 12,
 		IdentifierExpression         = 13,
+		IdentifierValueExpression    = 46,
 		IntrinsicExpression          = 14,
-		IntrinsicFunctionExpression  = 15,
-		ModuleExpression             = 42,
-		NamedExternalBlockExpression = 43,
-		StructTypeExpression         = 16,
+		IntrinsicFunctionExpression  = 15, //< note: replaced by IdentifierValueExpression
+		ModuleExpression             = 42, //< note: replaced by IdentifierValueExpression
+		NamedExternalBlockExpression = 43, //< note: replaced by IdentifierValueExpression
+		StructTypeExpression         = 16, //< note: replaced by IdentifierValueExpression
 		SwizzleExpression            = 17,
 		TypeConstantExpression       = 45,
-		TypeExpression               = 18,
-		VariableValueExpression      = 19,
+		TypeExpression               = 18, //< note: replaced by IdentifierValueExpression
+		VariableValueExpression      = 19, //< note: replaced by IdentifierValueExpression
 		UnaryExpression              = 20,
 
 		// Statements
@@ -266,7 +282,7 @@ namespace nzsl::Ast
 		ScopedStatement          = 38,
 		WhileStatement           = 39,
 
-		Max = TypeConstantExpression
+		Max = IdentifierValueExpression
 	};
 
 	enum class PrimitiveType

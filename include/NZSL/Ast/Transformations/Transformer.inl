@@ -9,6 +9,11 @@ namespace nzsl::Ast
 	{
 	}
 
+	inline void Transformer::ClearFlags(TransformerFlags flags)
+	{
+		m_flags &= ~flags;
+	}
+
 	inline void Transformer::HandleExpressionValue(ExpressionValue<ExpressionType>& expressionValue, const SourceLocation& sourceLocation)
 	{
 		Transform(expressionValue, sourceLocation);
@@ -40,5 +45,10 @@ namespace nzsl::Ast
 
 		m_currentStatementList = previousStatementList;
 		m_currentStatementListIndex = previousListIndex;
+	}
+
+	inline void Transformer::SetFlags(TransformerFlags flags)
+	{
+		m_flags |= flags;
 	}
 }

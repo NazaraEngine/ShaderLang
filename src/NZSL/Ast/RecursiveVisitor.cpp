@@ -23,11 +23,6 @@ namespace nzsl::Ast
 			index->Visit(*this);
 	}
 
-	void RecursiveVisitor::Visit(AliasValueExpression& /*node*/)
-	{
-		/* nothing to do */
-	}
-
 	void RecursiveVisitor::Visit(AssignExpression& node)
 	{
 		node.left->Visit(*this);
@@ -68,11 +63,6 @@ namespace nzsl::Ast
 		node.falsePath->Visit(*this);
 	}
 
-	void RecursiveVisitor::Visit(ConstantExpression& /*node*/)
-	{
-		/* Nothing to do */
-	}
-
 	void RecursiveVisitor::Visit(ConstantArrayValueExpression& /*node*/)
 	{
 		/* Nothing to do */
@@ -83,12 +73,12 @@ namespace nzsl::Ast
 		/* Nothing to do */
 	}
 
-	void RecursiveVisitor::Visit(FunctionExpression& /*node*/)
+	void RecursiveVisitor::Visit(IdentifierExpression& /*node*/)
 	{
 		/* Nothing to do */
 	}
 
-	void RecursiveVisitor::Visit(IdentifierExpression& /*node*/)
+	void RecursiveVisitor::Visit(IdentifierValueExpression& /*node*/)
 	{
 		/* Nothing to do */
 	}
@@ -99,26 +89,6 @@ namespace nzsl::Ast
 			param->Visit(*this);
 	}
 
-	void RecursiveVisitor::Visit(IntrinsicFunctionExpression& /*node*/)
-	{
-		/* Nothing to do */
-	}
-
-	void RecursiveVisitor::Visit(ModuleExpression& /*node*/)
-	{
-		/* Nothing to do */
-	}
-
-	void RecursiveVisitor::Visit(NamedExternalBlockExpression& /*node*/)
-	{
-		/* Nothing to do */
-	}
-
-	void RecursiveVisitor::Visit(StructTypeExpression& /*node*/)
-	{
-		/* Nothing to do */
-	}
-
 	void RecursiveVisitor::Visit(SwizzleExpression& node)
 	{
 		if (node.expression)
@@ -126,16 +96,6 @@ namespace nzsl::Ast
 	}
 
 	void RecursiveVisitor::Visit(TypeConstantExpression& /*node*/)
-	{
-		/* Nothing to do */
-	}
-
-	void RecursiveVisitor::Visit(TypeExpression& /*node*/)
-	{
-		/* Nothing to do */
-	}
-
-	void RecursiveVisitor::Visit(VariableValueExpression& /*node*/)
 	{
 		/* Nothing to do */
 	}
