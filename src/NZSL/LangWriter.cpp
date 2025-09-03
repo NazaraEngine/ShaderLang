@@ -1074,11 +1074,6 @@ namespace nzsl
 		Append("]");
 	}
 
-	void LangWriter::Visit(Ast::AliasValueExpression& node)
-	{
-		AppendIdentifier(m_currentState->aliases, node.aliasId);
-	}
-
 	void LangWriter::Visit(Ast::AssignExpression& node)
 	{
 		node.left->Visit(*this);
@@ -1219,19 +1214,47 @@ namespace nzsl
 		}, node.value);
 	}
 
-	void LangWriter::Visit(Ast::ConstantExpression& node)
-	{
-		AppendIdentifier(m_currentState->constants, node.constantId);
-	}
-
-	void LangWriter::Visit(Ast::FunctionExpression& node)
-	{
-		AppendIdentifier(m_currentState->functions, node.funcId);
-	}
-
 	void LangWriter::Visit(Ast::IdentifierExpression& node)
 	{
 		Append(node.identifier);
+	}
+
+	void LangWriter::Visit(Ast::IdentifierValueExpression& node)
+	{
+		switch (node.identifierType)
+		{
+			case Ast::IdentifierType::Intrinsic:        throw std::runtime_error("unexpected Intrinsic identifier");
+			case Ast::IdentifierType::Type:             throw std::runtime_error("unexpected Type identifier");
+			case Ast::IdentifierType::Unresolved:       throw std::runtime_error("unexpected Unresolved identifier");
+
+			case Ast::IdentifierType::Alias:
+				AppendIdentifier(m_currentState->aliases, node.identifierIndex);
+				break;
+
+			case Ast::IdentifierType::Constant:
+				AppendIdentifier(m_currentState->constants, node.identifierIndex);
+				break;
+
+			case Ast::IdentifierType::ExternalBlock:
+				Append(m_currentState->externalBlockNames[node.identifierIndex]);
+				break;
+
+			case Ast::IdentifierType::Function:
+				AppendIdentifier(m_currentState->functions, node.identifierIndex);
+				break;
+
+			case Ast::IdentifierType::Module:
+				AppendIdentifier(m_currentState->modules, node.identifierIndex);
+				break;
+
+			case Ast::IdentifierType::Struct:
+				AppendIdentifier(m_currentState->structs, node.identifierIndex);
+				break;
+
+			case Ast::IdentifierType::Variable:
+				AppendIdentifier(m_currentState->variables, node.identifierIndex);
+				break;
+		}
 	}
 
 	void LangWriter::Visit(Ast::IntrinsicExpression& node)
@@ -1356,21 +1379,6 @@ namespace nzsl
 		m_currentState->enforceNonDefaultTypes = prevShouldEnforceTypes;
 	}
 
-	void LangWriter::Visit(Ast::ModuleExpression& node)
-	{
-		AppendIdentifier(m_currentState->modules, node.moduleId);
-	}
-
-	void LangWriter::Visit(Ast::NamedExternalBlockExpression& node)
-	{
-		Append(m_currentState->externalBlockNames[node.externalBlockId]);
-	}
-
-	void LangWriter::Visit(Ast::StructTypeExpression& node)
-	{
-		AppendIdentifier(m_currentState->structs, node.structTypeId);
-	}
-
 	void LangWriter::Visit(Ast::SwizzleExpression& node)
 	{
 		Visit(node.expression, true);
@@ -1384,11 +1392,6 @@ namespace nzsl
 	void LangWriter::Visit(Ast::TypeConstantExpression& node)
 	{
 		Append(node.type, ".", Parser::ToString(node.typeConstant));
-	}
-
-	void LangWriter::Visit(Ast::VariableValueExpression& node)
-	{
-		AppendIdentifier(m_currentState->variables, node.variableId);
 	}
 
 	void LangWriter::Visit(Ast::UnaryExpression& node)
@@ -1472,10 +1475,10 @@ namespace nzsl
 		node.expression->Visit(*this);
 
 		// Special case, if that alias points to a module, use it instead to try to keep source code readable
-		if (node.expression->GetType() == Ast::NodeType::ModuleExpression)
+		if (node.expression->GetType() == Ast::NodeType::IdentifierValueExpression && static_cast<Ast::IdentifierValueExpression&>(*node.expression).identifierType == Ast::IdentifierType::Module)
 		{
-			auto& moduleExpr = Nz::SafeCast<Ast::ModuleExpression&>(*node.expression);
-			m_currentState->moduleNames[moduleExpr.moduleId] = node.name;
+			auto& moduleExpr = Nz::SafeCast<Ast::IdentifierValueExpression&>(*node.expression);
+			m_currentState->moduleNames[moduleExpr.identifierIndex] = node.name;
 		}
 
 		AppendLine(";");

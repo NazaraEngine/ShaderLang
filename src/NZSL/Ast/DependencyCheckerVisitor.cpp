@@ -99,6 +99,50 @@ namespace nzsl::Ast
 		}
 	}
 
+	void DependencyCheckerVisitor::Visit(IdentifierValueExpression& node)
+	{
+		switch (node.identifierType)
+		{
+			case IdentifierType::Alias:
+			{
+				UsageSet& usageSet = GetContextUsageSet();
+				usageSet.usedAliases.UnboundedSet(node.identifierIndex);
+				break;
+			}
+
+			case IdentifierType::Constant:
+			{
+				UsageSet& usageSet = GetContextUsageSet();
+				usageSet.usedConstants.UnboundedSet(node.identifierIndex);
+				break;
+			}
+
+			case IdentifierType::Function:
+			{
+				UsageSet& usageSet = GetContextUsageSet();
+				usageSet.usedFunctions.UnboundedSet(node.identifierIndex);
+				break;
+			}
+
+			case IdentifierType::Struct:
+			{
+				UsageSet& usageSet = GetContextUsageSet();
+				usageSet.usedStructs.UnboundedSet(node.identifierIndex);
+				break;
+			}
+
+			case IdentifierType::Variable:
+			{
+				UsageSet& usageSet = GetContextUsageSet();
+				usageSet.usedVariables.UnboundedSet(node.identifierIndex);
+				break;
+			}
+
+			default:
+				break;
+		}
+	}
+
 	void DependencyCheckerVisitor::Visit(DeclareAliasStatement& node)
 	{
 		assert(node.aliasIndex);
@@ -213,35 +257,5 @@ namespace nzsl::Ast
 		m_currentVariableDeclIndex = node.varIndex;
 		RecursiveVisitor::Visit(node);
 		m_currentVariableDeclIndex = {};
-	}
-
-	void DependencyCheckerVisitor::Visit(AliasValueExpression& node)
-	{
-		UsageSet& usageSet = GetContextUsageSet();
-		usageSet.usedAliases.UnboundedSet(node.aliasId);
-	}
-
-	void DependencyCheckerVisitor::Visit(ConstantExpression& node)
-	{
-		UsageSet& usageSet = GetContextUsageSet();
-		usageSet.usedConstants.UnboundedSet(node.constantId);
-	}
-
-	void DependencyCheckerVisitor::Visit(FunctionExpression& node)
-	{
-		UsageSet& usageSet = GetContextUsageSet();
-		usageSet.usedFunctions.UnboundedSet(node.funcId);
-	}
-
-	void DependencyCheckerVisitor::Visit(StructTypeExpression& node)
-	{
-		UsageSet& usageSet = GetContextUsageSet();
-		usageSet.usedStructs.UnboundedSet(node.structTypeId);
-	}
-
-	void DependencyCheckerVisitor::Visit(VariableValueExpression& node)
-	{
-		UsageSet& usageSet = GetContextUsageSet();
-		usageSet.usedVariables.UnboundedSet(node.variableId);
 	}
 }

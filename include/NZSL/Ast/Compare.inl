@@ -333,7 +333,7 @@ namespace nzsl::Ast
 		return true;
 	}
 
-	bool Compare(const AccessFieldExpression& lhs, const AccessFieldExpression& rhs, const ComparisonParams& params)
+	inline bool Compare(const AccessFieldExpression& lhs, const AccessFieldExpression& rhs, const ComparisonParams& params)
 	{
 		if (!Compare(*lhs.expr, *rhs.expr, params))
 			return false;
@@ -361,14 +361,6 @@ namespace nzsl::Ast
 			return false;
 
 		if (!Compare(lhs.indices, rhs.indices, params))
-			return false;
-
-		return true;
-	}
-
-	bool Compare(const AliasValueExpression& lhs, const AliasValueExpression& rhs, const ComparisonParams& params)
-	{
-		if (!Compare(lhs.aliasId, rhs.aliasId, params))
 			return false;
 
 		return true;
@@ -452,15 +444,7 @@ namespace nzsl::Ast
 		return true;
 	}
 
-	inline bool Compare(const ConstantExpression& lhs, const ConstantExpression& rhs, const ComparisonParams& params)
-	{
-		if (!Compare(lhs.constantId, rhs.constantId, params))
-			return false;
-
-		return true;
-	}
-
-	bool Compare(const ConstantArrayValueExpression& lhs, const ConstantArrayValueExpression& rhs, const ComparisonParams& params)
+	inline bool Compare(const ConstantArrayValueExpression& lhs, const ConstantArrayValueExpression& rhs, const ComparisonParams& params)
 	{
 		if (!Compare(lhs.values, rhs.values, params))
 			return false;
@@ -476,17 +460,20 @@ namespace nzsl::Ast
 		return true;
 	}
 
-	inline bool Compare(const FunctionExpression& lhs, const FunctionExpression& rhs, const ComparisonParams& params)
+	inline bool Compare(const IdentifierExpression& lhs, const IdentifierExpression& rhs, const ComparisonParams& params)
 	{
-		if (!Compare(lhs.funcId, rhs.funcId, params))
+		if (!Compare(lhs.identifier, rhs.identifier, params))
 			return false;
 
 		return true;
 	}
 
-	inline bool Compare(const IdentifierExpression& lhs, const IdentifierExpression& rhs, const ComparisonParams& params)
+	inline bool Compare(const IdentifierValueExpression& lhs, const IdentifierValueExpression& rhs, const ComparisonParams& params)
 	{
-		if (!Compare(lhs.identifier, rhs.identifier, params))
+		if (!Compare(lhs.identifierType, rhs.identifierType, params))
+			return false;
+
+		if (!Compare(lhs.identifierIndex, rhs.identifierIndex, params))
 			return false;
 
 		return true;
@@ -498,38 +485,6 @@ namespace nzsl::Ast
 			return false;
 
 		if (!Compare(lhs.parameters, rhs.parameters, params))
-			return false;
-
-		return true;
-	}
-
-	inline bool Compare(const IntrinsicFunctionExpression& lhs, const IntrinsicFunctionExpression& rhs, const ComparisonParams& params)
-	{
-		if (!Compare(lhs.intrinsicId, rhs.intrinsicId, params))
-			return false;
-
-		return true;
-	}
-
-	inline bool Compare(const ModuleExpression& lhs, const ModuleExpression& rhs, const ComparisonParams& params)
-	{
-		if (!Compare(lhs.moduleId, rhs.moduleId, params))
-			return false;
-
-		return true;
-	}
-
-	inline bool Compare(const NamedExternalBlockExpression& lhs, const NamedExternalBlockExpression& rhs, const ComparisonParams& params)
-	{
-		if (!Compare(lhs.externalBlockId, rhs.externalBlockId, params))
-			return false;
-
-		return true;
-	}
-
-	inline bool Compare(const StructTypeExpression& lhs, const StructTypeExpression& rhs, const ComparisonParams& params)
-	{
-		if (!Compare(lhs.structTypeId, rhs.structTypeId, params))
 			return false;
 
 		return true;
@@ -555,22 +510,6 @@ namespace nzsl::Ast
 			return false;
 
 		if (!Compare(lhs.type, rhs.type, params))
-			return false;
-
-		return true;
-	}
-
-	bool Compare(const TypeExpression& lhs, const TypeExpression& rhs, const ComparisonParams& params)
-	{
-		if (!Compare(lhs.typeId, rhs.typeId, params))
-			return false;
-
-		return true;
-	}
-
-	inline bool Compare(const VariableValueExpression& lhs, const VariableValueExpression& rhs, const ComparisonParams& params)
-	{
-		if (!Compare(lhs.variableId, rhs.variableId, params))
 			return false;
 
 		return true;

@@ -4,8 +4,8 @@
 
 #include <NZSL/Ast/Transformations/ConstantRemovalTransformer.hpp>
 #include <NZSL/Ast/ConstantValue.hpp>
-#include <NZSL/Lang/Errors.hpp>
 #include <NZSL/Ast/Utils.hpp>
+#include <NZSL/Lang/Errors.hpp>
 #include <NZSL/Ast/Transformations/TransformerContext.hpp>
 
 namespace nzsl::Ast
@@ -41,18 +41,21 @@ namespace nzsl::Ast
 		return TransformModule(module, context, error);
 	}
 
-	auto ConstantRemovalTransformer::Transform(ConstantExpression&& constExpr) -> ExpressionTransformation
+	auto ConstantRemovalTransformer::Transform(IdentifierValueExpression&& identifierValueExpr) -> ExpressionTransformation
 	{
 		NAZARA_USE_ANONYMOUS_NAMESPACE
 
-		if (auto constIt = m_constantSingleValues.find(constExpr.constantId); constIt != m_constantSingleValues.end())
+		if (identifierValueExpr.identifierType != IdentifierType::Constant)
+			return VisitChildren{};
+
+		if (auto constIt = m_constantSingleValues.find(identifierValueExpr.identifierIndex); constIt != m_constantSingleValues.end())
 		{
 			return std::visit([&](auto&& arg) -> ExpressionTransformation
 			{
-				return ReplaceExpression{ ShaderBuilder::ConstantValue(arg, constExpr.sourceLocation) };
+				return ReplaceExpression{ ShaderBuilder::ConstantValue(arg, identifierValueExpr.sourceLocation) };
 			}, constIt->second);
 		}
-		else if (auto optIt = m_optionValues.find(constExpr.constantId); optIt != m_optionValues.end())
+		else if (auto optIt = m_optionValues.find(identifierValueExpr.identifierIndex); optIt != m_optionValues.end())
 		{
 			return std::visit([&](auto&& arg) -> ExpressionTransformation
 			{
@@ -63,7 +66,7 @@ namespace nzsl::Ast
 				if constexpr (VectorInner::IsVector)
 					return DontVisitChildren{};
 				else
-					return ReplaceExpression{ ShaderBuilder::ConstantValue(arg, constExpr.sourceLocation) };
+					return ReplaceExpression{ ShaderBuilder::ConstantValue(arg, identifierValueExpr.sourceLocation) };
 			}, optIt->second);
 		}
 
@@ -118,7 +121,7 @@ namespace nzsl::Ast
 		{
 			if (m_options->replaceExpressionWithValue && declConst.expression->GetType() != NodeType::ConstantArrayValueExpression)
 				declConst.expression = ShaderBuilder::ConstantArrayValue(ToArrayConstantValue(*constantData.value));
-		
+
 			return DontVisitChildren{}; //< keep const arrays
 		}
 		else

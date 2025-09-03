@@ -7,6 +7,7 @@
 #include <NZSL/Lang/Errors.hpp>
 #include <NZSL/Ast/Transformations/ConstantPropagationTransformer.hpp>
 #include <NZSL/Ast/Transformations/TransformerContext.hpp>
+#include <NZSL/Ast/Transformations/ValidationTransformer.hpp>
 #include <fmt/format.h>
 
 namespace nzsl::Ast
@@ -62,14 +63,36 @@ namespace nzsl::Ast
 			return expression;
 
 		DeclareVariableStatement* variableDeclaration = DeclareVariable("cachedResult", std::move(expression));
+		return ShaderBuilder::Variable(*variableDeclaration->varIndex, variableDeclaration->varType.GetResultingValue(), variableDeclaration->sourceLocation);
+	}
 
-		auto varExpr = std::make_unique<VariableValueExpression>();
-		varExpr->sourceLocation = variableDeclaration->sourceLocation;
-		varExpr->variableId = *variableDeclaration->varIndex;
-		//if (variableDeclaration->varType.IsResultingValue())
-			varExpr->cachedExpressionType = variableDeclaration->varType.GetResultingValue();
+	std::optional<ConstantValue> Transformer::ComputeConstantValue(ExpressionPtr& expr) const
+	{
+		// Run optimizer on constant value to hopefully retrieve a single constant value
+		PropagateConstants(expr);
 
-		return varExpr;
+		if (expr->GetType() == NodeType::ConstantValueExpression)
+			return ToConstantValue(static_cast<ConstantValueExpression&>(*expr).value);
+		else if (expr->GetType() == NodeType::ConstantArrayValueExpression)
+			return ToConstantValue(static_cast<ConstantArrayValueExpression&>(*expr).values);
+		else
+		{
+			if (!m_context->partialCompilation)
+			{
+				// Propagation failure may be because of misuse, try to run ValidationTransformer to produce a better error message before throwing ConstantExpressionRequired
+
+				ValidationTransformer::Options validationOpts;
+				validationOpts.checkIndices = false;
+
+				ValidationTransformer validation;
+				validation.TransformExpression(expr, *m_context, validationOpts);
+
+				// No exception, validation passed, fallback to more generic error
+				throw CompilerConstantExpressionRequiredError{ expr->sourceLocation };
+			}
+
+			return std::nullopt;
+		}
 	}
 
 	DeclareVariableStatement* Transformer::DeclareVariable(std::string_view name, ExpressionPtr initialExpr)
@@ -89,8 +112,7 @@ namespace nzsl::Ast
 		auto variableDeclaration = ShaderBuilder::DeclareVariable(fmt::format("_nzsl_{}", name), nullptr);
 		variableDeclaration->sourceLocation = std::move(sourceLocation);
 		variableDeclaration->varIndex = m_context->variables.RegisterNewIndex();
-		//if (!IsLiteralType(type))
-			variableDeclaration->varType = std::move(type);
+		variableDeclaration->varType = std::move(type);
 
 		DeclareVariableStatement* varPtr = variableDeclaration.get();
 		AppendStatement(std::move(variableDeclaration));
@@ -191,12 +213,6 @@ namespace nzsl::Ast
 			Transform(*node.cachedExpressionType, node.sourceLocation);
 	}
 
-	void Transformer::HandleChildren(AliasValueExpression& node)
-	{
-		if (node.cachedExpressionType)
-			Transform(*node.cachedExpressionType, node.sourceLocation);
-	}
-
 	void Transformer::HandleChildren(AssignExpression& node)
 	{
 		HandleExpression(node.left);
@@ -259,12 +275,6 @@ namespace nzsl::Ast
 			Transform(*node.cachedExpressionType, node.sourceLocation);
 	}
 
-	void Transformer::HandleChildren(ConstantExpression& node)
-	{
-		if (node.cachedExpressionType)
-			Transform(*node.cachedExpressionType, node.sourceLocation);
-	}
-
 	void Transformer::HandleChildren(ConstantArrayValueExpression& node)
 	{
 		if (node.cachedExpressionType)
@@ -277,13 +287,13 @@ namespace nzsl::Ast
 			Transform(*node.cachedExpressionType, node.sourceLocation);
 	}
 
-	void Transformer::HandleChildren(FunctionExpression& node)
+	void Transformer::HandleChildren(IdentifierExpression& node)
 	{
 		if (node.cachedExpressionType)
 			Transform(*node.cachedExpressionType, node.sourceLocation);
 	}
 
-	void Transformer::HandleChildren(IdentifierExpression& node)
+	void Transformer::HandleChildren(IdentifierValueExpression& node)
 	{
 		if (node.cachedExpressionType)
 			Transform(*node.cachedExpressionType, node.sourceLocation);
@@ -294,30 +304,6 @@ namespace nzsl::Ast
 		for (auto& param : node.parameters)
 			HandleExpression(param);
 
-		if (node.cachedExpressionType)
-			Transform(*node.cachedExpressionType, node.sourceLocation);
-	}
-
-	void Transformer::HandleChildren(IntrinsicFunctionExpression& node)
-	{
-		if (node.cachedExpressionType)
-			Transform(*node.cachedExpressionType, node.sourceLocation);
-	}
-
-	void Transformer::HandleChildren(ModuleExpression& node)
-	{
-		if (node.cachedExpressionType)
-			Transform(*node.cachedExpressionType, node.sourceLocation);
-	}
-
-	void Transformer::HandleChildren(NamedExternalBlockExpression& node)
-	{
-		if (node.cachedExpressionType)
-			Transform(*node.cachedExpressionType, node.sourceLocation);
-	}
-
-	void Transformer::HandleChildren(StructTypeExpression& node)
-	{
 		if (node.cachedExpressionType)
 			Transform(*node.cachedExpressionType, node.sourceLocation);
 	}
@@ -339,23 +325,11 @@ namespace nzsl::Ast
 			Transform(*node.cachedExpressionType, node.sourceLocation);
 	}
 
-	void Transformer::HandleChildren(TypeExpression& node)
-	{
-		if (node.cachedExpressionType)
-			Transform(*node.cachedExpressionType, node.sourceLocation);
-	}
-
 	void Transformer::HandleChildren(UnaryExpression& node)
 	{
 		if (node.expression)
 			HandleExpression(node.expression);
 
-		if (node.cachedExpressionType)
-			Transform(*node.cachedExpressionType, node.sourceLocation);
-	}
-
-	void Transformer::HandleChildren(VariableValueExpression& node)
-	{
 		if (node.cachedExpressionType)
 			Transform(*node.cachedExpressionType, node.sourceLocation);
 	}
@@ -681,8 +655,14 @@ namespace nzsl::Ast
 
 #include <NZSL/Ast/NodeList.hpp>
 
-	void Transformer::Transform(ExpressionType& /*expressionType*/, const SourceLocation& /*sourceLocation*/)
+	void Transformer::Transform(ExpressionType& expressionType, const SourceLocation& sourceLocation)
 	{
+		if (IsAliasType(expressionType))
+			Transform(std::get<AliasType>(expressionType).TargetType(), sourceLocation);
+		else if (IsArrayType(expressionType))
+			Transform(std::get<ArrayType>(expressionType).InnerType(), sourceLocation);
+		else if (IsDynArrayType(expressionType))
+			Transform(std::get<DynArrayType>(expressionType).InnerType(), sourceLocation);
 	}
 
 	void Transformer::Transform(ExpressionValue<ExpressionType>& expressionValue, const SourceLocation& sourceLocation)

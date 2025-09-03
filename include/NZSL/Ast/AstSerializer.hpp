@@ -26,27 +26,19 @@ namespace nzsl::Ast
 			void Serialize(AccessFieldExpression& node);
 			void Serialize(AccessIdentifierExpression& node);
 			void Serialize(AccessIndexExpression& node);
-			void Serialize(AliasValueExpression& node);
 			void Serialize(AssignExpression& node);
 			void Serialize(BinaryExpression& node);
 			void Serialize(CallFunctionExpression& node);
 			void Serialize(CallMethodExpression& node);
 			void Serialize(CastExpression& node);
 			void Serialize(ConditionalExpression& node);
-			void Serialize(ConstantExpression& node);
 			void Serialize(ConstantArrayValueExpression& node);
 			void Serialize(ConstantValueExpression& node);
-			void Serialize(FunctionExpression& node);
 			void Serialize(IdentifierExpression& node);
+			void Serialize(IdentifierValueExpression& node);
 			void Serialize(IntrinsicExpression& node);
-			void Serialize(IntrinsicFunctionExpression& node);
-			void Serialize(ModuleExpression& node);
-			void Serialize(NamedExternalBlockExpression& node);
-			void Serialize(StructTypeExpression& node);
 			void Serialize(SwizzleExpression& node);
 			void Serialize(TypeConstantExpression& node);
-			void Serialize(TypeExpression& node);
-			void Serialize(VariableValueExpression& node);
 			void Serialize(UnaryExpression& node);
 
 			void Serialize(BranchStatement& node);

@@ -198,9 +198,19 @@ namespace nzsl
 		}, m_value);
 	}
 
-	void SpirvExpressionStore::Visit(Ast::VariableValueExpression& node)
+	void SpirvExpressionStore::Visit(Ast::IdentifierValueExpression& node)
 	{
-		const auto& var = m_visitor.GetVariable(node.variableId);
-		m_value = Pointer{ var.typePtr, var.storageClass, var.pointerId };
+		switch (node.identifierType)
+		{
+			case Ast::IdentifierType::Variable:
+			{
+				const auto& var = m_visitor.GetVariable(node.identifierIndex);
+				m_value = Pointer{ var.typePtr, var.storageClass, var.pointerId };
+				break;
+			}
+
+			default:
+				throw std::runtime_error("unexpected identifier");
+		}
 	}
 }

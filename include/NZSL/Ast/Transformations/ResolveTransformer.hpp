@@ -47,7 +47,6 @@ namespace nzsl::Ast
 
 			using Transformer::Transform;
 
-			std::optional<ConstantValue> ComputeConstantValue(ExpressionPtr& expr) const;
 			template<typename T> bool ComputeExprValue(ExpressionValue<T>& attribute, const SourceLocation& sourceLocation);
 
 			void EnsureLiteralType(ExpressionType& expressionType, const SourceLocation& sourceLocation);
@@ -74,7 +73,6 @@ namespace nzsl::Ast
 			std::size_t RegisterFunction(std::string name, std::optional<TransformerContext::FunctionData>&& funcData, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
 			std::size_t RegisterIntrinsic(std::string name, TransformerContext::IntrinsicData&& intrinsicData, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
 			std::size_t RegisterModule(std::string moduleIdentifier, TransformerContext::ModuleData&& moduleData, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
-			void RegisterReservedName(std::string name);
 			std::size_t RegisterStruct(std::string name, std::optional<TransformerContext::StructData>&& description, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
 			std::size_t RegisterType(std::string name, std::optional<TransformerContext::TypeData>&& expressionType, std::optional<std::size_t> index, const SourceLocation& sourceLocation);
 			void RegisterUnresolved(std::string name);
@@ -91,21 +89,19 @@ namespace nzsl::Ast
 			ExpressionTransformation Transform(AccessFieldExpression&& accessFieldExpr) override;
 			ExpressionTransformation Transform(AccessIdentifierExpression&& accessIdentifierExpr) override;
 			ExpressionTransformation Transform(AccessIndexExpression&& accessIndexExpr) override;
-			ExpressionTransformation Transform(AliasValueExpression&& accessIndexExpr) override;
 			ExpressionTransformation Transform(AssignExpression&& assignExpr) override;
 			ExpressionTransformation Transform(BinaryExpression&& binaryExpression) override;
 			ExpressionTransformation Transform(CallFunctionExpression&& callFuncExpression) override;
 			ExpressionTransformation Transform(CastExpression&& castExpression) override;
 			ExpressionTransformation Transform(ConditionalExpression&& conditionalExpression) override;
 			ExpressionTransformation Transform(ConstantArrayValueExpression&& constantExpression) override;
-			ExpressionTransformation Transform(ConstantExpression&& constantExpression) override;
 			ExpressionTransformation Transform(ConstantValueExpression&& constantExpression) override;
 			ExpressionTransformation Transform(IdentifierExpression&& identifierExpr) override;
+			ExpressionTransformation Transform(IdentifierValueExpression&& identifierValueExpression) override;
 			ExpressionTransformation Transform(IntrinsicExpression&& intrinsicExpr) override;
 			ExpressionTransformation Transform(SwizzleExpression&& swizzleExpr) override;
 			ExpressionTransformation Transform(TypeConstantExpression&& typeConstantExpr) override;
 			ExpressionTransformation Transform(UnaryExpression&& unaryExpr) override;
-			ExpressionTransformation Transform(VariableValueExpression&& variableValExpr) override;
 
 			StatementTransformation Transform(BranchStatement&& branchStatement) override;
 			StatementTransformation Transform(ConditionalStatement&& statement) override;
