@@ -3027,81 +3027,18 @@ namespace nzsl::Ast
 		else
 			throw CompilerForEachUnsupportedTypeError{ forEachStatement.sourceLocation, ToString(*exprType, forEachStatement.sourceLocation) };
 
-		auto ProcessFor = [&]
-		{
-			PushScope();
-			{
-				forEachStatement.varIndex = RegisterVariable(forEachStatement.varName, TransformerContext::VariableData{ innerType }, forEachStatement.varIndex, forEachStatement.sourceLocation);
-
-				HandleStatement(forEachStatement.statement);
-			}
-			PopScope();
-
-			return DontVisitChildren{};
-		};
-
-		if (forEachStatement.unroll.HasValue() && m_options->unrollForEachLoops)
-		{
+		if (forEachStatement.unroll.HasValue())
 			ComputeExprValue(forEachStatement.unroll, forEachStatement.sourceLocation);
-			if (forEachStatement.unroll.GetResultingValue() == LoopUnroll::Always)
-			{
-				PushScope();
 
-				// Repeat code
-				auto multi = std::make_unique<MultiStatement>();
-				multi->sourceLocation = forEachStatement.sourceLocation;
+		PushScope();
+		{
+			forEachStatement.varIndex = RegisterVariable(forEachStatement.varName, TransformerContext::VariableData{ innerType }, forEachStatement.varIndex, forEachStatement.sourceLocation);
 
-				if (IsArrayType(resolvedExprType))
-				{
-					const ArrayType& arrayType = std::get<ArrayType>(resolvedExprType);
-
-					for (std::uint32_t i = 0; i < arrayType.length; ++i)
-					{
-						PushScope();
-
-						auto innerMulti = std::make_unique<MultiStatement>();
-						innerMulti->sourceLocation = forEachStatement.sourceLocation;
-
-						ExpressionPtr accessIndex = ShaderBuilder::AccessIndex(Ast::Clone(*forEachStatement.expression), ShaderBuilder::ConstantValue(i));
-						accessIndex->sourceLocation = forEachStatement.sourceLocation;
-
-						HandleExpression(accessIndex);
-
-						StatementPtr elementVariable = ShaderBuilder::DeclareVariable(forEachStatement.varName, std::move(accessIndex));
-						elementVariable->sourceLocation = forEachStatement.sourceLocation;
-
-						HandleStatement(elementVariable);
-
-						innerMulti->statements.emplace_back(std::move(elementVariable));
-
-						// Remap indices (as unrolling the loop will reuse them) 
-						IndexRemapperVisitor::Options indexCallbacks;
-						indexCallbacks.aliasIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_context->aliases.RegisterNewIndex(true); };
-						indexCallbacks.constIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_context->constants.RegisterNewIndex(true); };
-						indexCallbacks.funcIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_context->functions.RegisterNewIndex(true); };
-						indexCallbacks.structIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_context->structs.RegisterNewIndex(true); };
-						indexCallbacks.varIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_context->variables.RegisterNewIndex(true); };
-
-						StatementPtr bodyStatement = Ast::Clone(*forEachStatement.statement);
-						RemapIndices(*bodyStatement, indexCallbacks);
-						HandleStatement(bodyStatement);
-
-						innerMulti->statements.emplace_back(Unscope(std::move(bodyStatement)));
-
-						multi->statements.emplace_back(ShaderBuilder::Scoped(std::move(innerMulti)));
-
-						PopScope();
-					}
-				}
-
-				PopScope();
-
-				return ReplaceStatement{ std::move(multi) };
-			}
-
+			HandleStatement(forEachStatement.statement);
 		}
+		PopScope();
 
-		return ProcessFor();
+		return DontVisitChildren{};
 	}
 
 	auto ResolveTransformer::Transform(ForStatement&& forStatement) -> StatementTransformation
@@ -3117,166 +3054,37 @@ namespace nzsl::Ast
 		if (forStatement.unroll.HasValue())
 			ComputeExprValue(forStatement.unroll, forStatement.sourceLocation);
 
-		auto ProcessFor = [&]
+		const ExpressionType* fromExprType = GetExpressionType(*forStatement.fromExpr);
+
+		PushScope();
 		{
-			bool wontUnroll = !forStatement.unroll.HasValue() || (forStatement.unroll.IsResultingValue() && forStatement.unroll.GetResultingValue() != LoopUnroll::Always);
-
-			const ExpressionType* fromExprType = GetExpressionType(*forStatement.fromExpr);
-
-			PushScope();
+			if (fromExprType)
 			{
-				// We can't register the counter as a variable if we need to unroll the loop later (because the counter will become const)
-				if (fromExprType && wontUnroll)
+				ExpressionType varType = *fromExprType;
+				if (IsLiteralType(ResolveAlias(varType)))
 				{
-					ExpressionType varType = *fromExprType;
-					if (IsLiteralType(ResolveAlias(varType)))
+					const ExpressionType* toExprType = GetExpressionType(*forStatement.toExpr);
+					if (toExprType && !IsLiteralType(ResolveAlias(*toExprType)))
+						varType = *toExprType;
+					else if (forStatement.stepExpr)
 					{
-						const ExpressionType* toExprType = GetExpressionType(*forStatement.toExpr);
-						if (toExprType && !IsLiteralType(ResolveAlias(*toExprType)))
-							varType = *toExprType;
-						else if (forStatement.stepExpr)
-						{
-							const ExpressionType* stepExprType = GetExpressionType(*forStatement.stepExpr);
-							if (stepExprType)
-								varType = *stepExprType;
-						}
+						const ExpressionType* stepExprType = GetExpressionType(*forStatement.stepExpr);
+						if (stepExprType)
+							varType = *stepExprType;
 					}
-					EnsureLiteralType(varType, forStatement.sourceLocation);
-
-					forStatement.varIndex = RegisterVariable(forStatement.varName, TransformerContext::VariableData{ std::move(varType) }, forStatement.varIndex, forStatement.sourceLocation);
 				}
-				else
-					RegisterUnresolved(forStatement.varName);
+				EnsureLiteralType(varType, forStatement.sourceLocation);
 
-				HandleStatement(forStatement.statement);
+				forStatement.varIndex = RegisterVariable(forStatement.varName, TransformerContext::VariableData{ std::move(varType) }, forStatement.varIndex, forStatement.sourceLocation);
 			}
-			PopScope();
+			else
+				RegisterUnresolved(forStatement.varName);
 
-			return DontVisitChildren{};
-		};
-
-		if (forStatement.unroll.HasValue() && m_options->unrollForLoops)
-		{
-			assert(forStatement.unroll.IsResultingValue());
-			if (forStatement.unroll.GetResultingValue() == LoopUnroll::Always)
-			{
-				std::optional<ConstantValue> fromValue = ComputeConstantValue(forStatement.fromExpr);
-				std::optional<ConstantValue> toValue = ComputeConstantValue(forStatement.toExpr);
-				if (!fromValue.has_value() || !toValue.has_value())
-					return ProcessFor(); //< can't resolve from/to values
-
-				std::optional<ConstantValue> stepValue;
-				if (forStatement.stepExpr)
-				{
-					stepValue = ComputeConstantValue(forStatement.stepExpr);
-					if (!stepValue.has_value())
-						return ProcessFor(); //< can't resolve step value
-				}
-
-				auto multi = std::make_unique<MultiStatement>();
-				multi->sourceLocation = forStatement.sourceLocation;
-
-				auto Unroll = [&](auto dummy)
-				{
-					using T = std::decay_t<decltype(dummy)>;
-
-					auto GetValue = [](const ConstantValue& constantValue, const SourceLocation& sourceLocation) -> T
-					{
-						if (const IntLiteral* literal = std::get_if<IntLiteral>(&constantValue))
-						{
-							if constexpr (std::is_same_v<T, std::int32_t>)
-								return LiteralToInt32(*literal, sourceLocation);
-							else if constexpr (std::is_same_v<T, std::uint32_t>)
-								return LiteralToUInt32(*literal, sourceLocation);
-						}
-
-						return std::get<T>(constantValue);
-					};
-
-					T counter = GetValue(*fromValue, forStatement.fromExpr->sourceLocation);
-					T to = GetValue(*toValue, forStatement.toExpr->sourceLocation);
-					T step = (forStatement.stepExpr) ? GetValue(*stepValue, forStatement.stepExpr->sourceLocation) : T{ 1 };
-
-					for (; counter < to; counter += step)
-					{
-						PushScope();
-
-						auto innerMulti = std::make_unique<MultiStatement>();
-						innerMulti->sourceLocation = forStatement.sourceLocation;
-
-						auto constant = ShaderBuilder::ConstantValue(counter, forStatement.sourceLocation);
-
-						StatementPtr constDecl = ShaderBuilder::DeclareConst(forStatement.varName, std::move(constant));
-						constDecl->sourceLocation = forStatement.sourceLocation;
-
-						HandleStatement(constDecl); //< register const
-
-						innerMulti->statements.emplace_back(std::move(constDecl));
-
-						// Remap indices (as unrolling the loop will reuse them) 
-						IndexRemapperVisitor::Options indexCallbacks;
-						indexCallbacks.aliasIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_context->aliases.RegisterNewIndex(true); };
-						indexCallbacks.constIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_context->constants.RegisterNewIndex(true); };
-						indexCallbacks.funcIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_context->functions.RegisterNewIndex(true); };
-						indexCallbacks.structIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_context->structs.RegisterNewIndex(true); };
-						indexCallbacks.varIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_context->variables.RegisterNewIndex(true); };
-
-						StatementPtr bodyStatement = Ast::Clone(*forStatement.statement);
-						RemapIndices(*bodyStatement, indexCallbacks);
-						HandleStatement(bodyStatement);
-
-						innerMulti->statements.emplace_back(Unscope(std::move(bodyStatement)));
-
-						multi->statements.emplace_back(ShaderBuilder::Scoped(std::move(innerMulti)));
-
-						PopScope();
-					}
-				};
-
-				ExpressionType fromExprType = GetConstantType(*fromValue);
-				if (!IsPrimitiveType(fromExprType))
-					throw CompilerForFromTypeExpectIntegerTypeError{ forStatement.fromExpr->sourceLocation, ToString(fromExprType, forStatement.fromExpr->sourceLocation) };
-
-				PrimitiveType counterType = std::get<PrimitiveType>(fromExprType);
-				if (counterType != PrimitiveType::Int32 && counterType != PrimitiveType::UInt32 && counterType != PrimitiveType::IntLiteral)
-					throw CompilerForFromTypeExpectIntegerTypeError{ forStatement.fromExpr->sourceLocation, ToString(fromExprType, forStatement.fromExpr->sourceLocation) };
-
-				if (counterType == PrimitiveType::IntLiteral)
-				{
-					// Fallback to "to" type
-					ExpressionType toExprType = GetConstantType(*toValue);
-					if (!IsPrimitiveType(toExprType))
-						throw CompilerForToUnmatchingTypeError{ forStatement.toExpr->sourceLocation, ToString(fromExprType, forStatement.fromExpr->sourceLocation), ToString(toExprType, forStatement.toExpr->sourceLocation) };
-
-					PrimitiveType toCounterType = std::get<PrimitiveType>(toExprType);
-					if (toCounterType != PrimitiveType::Int32 && toCounterType != PrimitiveType::UInt32 && toCounterType != PrimitiveType::IntLiteral)
-						throw CompilerForToUnmatchingTypeError{ forStatement.toExpr->sourceLocation, ToString(fromExprType, forStatement.fromExpr->sourceLocation), ToString(toExprType, forStatement.toExpr->sourceLocation) };
-
-					counterType = toCounterType;
-				}
-
-				if (counterType == PrimitiveType::IntLiteral)
-					counterType = PrimitiveType::Int32;
-
-				switch (counterType)
-				{
-					case PrimitiveType::Int32:
-						Unroll(std::int32_t{});
-						break;
-
-					case PrimitiveType::UInt32:
-						Unroll(std::uint32_t{});
-						break;
-
-					default:
-						throw AstInternalError{ forStatement.sourceLocation, "unexpected counter type " + ToString(counterType, forStatement.fromExpr->sourceLocation) };
-				}
-
-				return ReplaceStatement{ std::move(multi) };
-			}
+			HandleStatement(forStatement.statement);
 		}
+		PopScope();
 
-		return ProcessFor();
+		return DontVisitChildren{};
 	}
 
 	auto ResolveTransformer::Transform(ImportStatement&& importStatement) -> StatementTransformation
