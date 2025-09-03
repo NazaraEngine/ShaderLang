@@ -80,8 +80,8 @@ namespace nzsl::Ast
 					node.falsePath->Visit(*this);
 					ExpressionCategory falseExprCategory = m_expressionCategory;
 
-					if (trueExprCategory == ExpressionCategory::Variable && falseExprCategory == ExpressionCategory::Variable)
-						m_expressionCategory = ExpressionCategory::Variable;
+					if (trueExprCategory == falseExprCategory)
+						m_expressionCategory = trueExprCategory;
 					else
 						m_expressionCategory = ExpressionCategory::Temporary; //< can't assume anything else
 				}
