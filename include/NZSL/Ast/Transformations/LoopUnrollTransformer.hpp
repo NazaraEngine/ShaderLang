@@ -7,8 +7,8 @@
 #ifndef NZSL_AST_TRANSFORMATIONS_LOOPUNROLLTRANSFORMER_HPP
 #define NZSL_AST_TRANSFORMATIONS_LOOPUNROLLTRANSFORMER_HPP
 
-#include <NZSL/Ast/Transformations/Transformer.hpp>
 #include <NazaraUtils/FixedVector.hpp>
+#include <NZSL/Ast/Transformations/Transformer.hpp>
 
 namespace nzsl::Ast
 {

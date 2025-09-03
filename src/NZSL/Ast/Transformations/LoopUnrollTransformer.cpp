@@ -4,10 +4,10 @@
 
 #include <NZSL/Ast/Transformations/LoopUnrollTransformer.hpp>
 #include <NZSL/Ast/Cloner.hpp>
+#include <NZSL/Ast/IndexRemapperVisitor.hpp>
 #include <NZSL/Ast/Utils.hpp>
 #include <NZSL/Lang/Errors.hpp>
 #include <NZSL/Ast/Transformations/TransformerContext.hpp>
-#include <NZSL/Ast/IndexRemapperVisitor.hpp>
 
 namespace nzsl::Ast
 {
