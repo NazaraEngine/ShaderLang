@@ -164,7 +164,7 @@ void main()
 	Data_SimpleModule data;
 	data.value = ExtData_block.data.value;
 	OutputData_SimpleModule output_;
-	output_.value = ((GetDataValue_SimpleModule(data)) * input_.value) * (3.141592);
+	output_.value = ((GetDataValue_SimpleModule(data)) * input_.value) * 3.141592;
 
 	_nzslOutvalue = output_.value;
 	return;
@@ -612,7 +612,7 @@ ivec2 SumLightIntensities_Modules_Func(Lights_Modules_Data lightData)
 	ivec2 intensities = ivec2(0, 0);
 	{
 		uint _nzsl_counter = 0u;
-		while (_nzsl_counter < (3u))
+		while (_nzsl_counter < 3u)
 		{
 			Light_Modules_Data light = lightData.lights[_nzsl_counter];
 			intensities += light.intensities;
@@ -1256,7 +1256,7 @@ void main()
 	Data_Simple_Module data;
 	data.value = ExtData_block.data.value;
 	OutputData_Simple_Module output_;
-	output_.value = ((GetDataValue_Simple_Module(data)) * input_.value) * (3.141592);
+	output_.value = ((GetDataValue_Simple_Module(data)) * input_.value) * 3.141592;
 
 	_nzslOutvalue = output_.value;
 	return;
@@ -1489,7 +1489,7 @@ void main()
 	Data_Simple_Module data;
 	data.value = ExtData_block.data.value;
 	OutputData_Simple_Module output_;
-	output_.value = ((GetDataValue_Simple_Module(data)) * input_.value) * (3.141592);
+	output_.value = ((GetDataValue_Simple_Module(data)) * input_.value) * 3.141592;
 
 	_nzslOutvalue = output_.value;
 	return;

@@ -1005,7 +1005,7 @@ namespace nzsl
 
 	void LangWriter::Visit(Ast::ExpressionPtr& expr, bool encloseIfRequired)
 	{
-		bool enclose = encloseIfRequired && (GetExpressionCategory(*expr) != Ast::ExpressionCategory::LValue);
+		bool enclose = encloseIfRequired && (GetExpressionCategory(*expr) == Ast::ExpressionCategory::Temporary);
 
 		if (enclose)
 			Append("(");
@@ -1381,7 +1381,16 @@ namespace nzsl
 
 	void LangWriter::Visit(Ast::SwizzleExpression& node)
 	{
-		Visit(node.expression, true);
+		// Force enclose literals (like 1.0.xxx)
+		bool forceEnclose = node.expression->GetType() == Ast::NodeType::ConstantValueExpression && IsPrimitiveType(EnsureExpressionType(*node.expression));
+		if (forceEnclose)
+			Append("(");
+
+		Visit(node.expression, !forceEnclose);
+
+		if (forceEnclose)
+			Append(")");
+
 		Append(".");
 
 		const char* componentStr = "xyzw";

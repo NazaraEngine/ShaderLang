@@ -117,6 +117,23 @@ option enable: bool;
 
 		/************************************************************************/
 
+		SECTION("Assigns")
+		{
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.1")]
+module;
+
+const Pi = 3.14;
+
+fn Indiana()
+{
+	Pi = 3.2;
+}
+)"), "(9,2 -> 9): CAssignTemporary error: constant and temporary values cannot be assigned");
+		}
+
+		/************************************************************************/
+
 		SECTION("Arrays")
 		{
 			// unsized arrays can only be used on declaration (for implicit size)
@@ -834,7 +851,7 @@ fn main()
 {
 	Test(inout 2.0);
 }
-)"), "(12,13 -> 15): PFunctionParameterNonLValue error: non-L-value cannot be passed for parameter #0");
+)"), "(12,13 -> 15): CFunctionCallSemanticRequiresVariable error: this semantic requires a variable");
 		}
 
 		/************************************************************************/

@@ -6,12 +6,6 @@
 
 namespace nzsl::Ast
 {
-	inline ExpressionCategory GetExpressionCategory(Expression& expression)
-	{
-		ValueCategory visitor;
-		return visitor.GetExpressionCategory(expression);
-	}
-
 	inline std::optional<PrimitiveType> GetInnerPrimitiveType(const ExpressionType& expressionType)
 	{
 		if (IsPrimitiveType(expressionType))
