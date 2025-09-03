@@ -491,6 +491,9 @@ void ResolveModule(nzsl::Ast::Module& module, const ResolveOptions& resolveOptio
 		nzsl::Ast::TransformerExecutor executor;
 		if (resolveOptions.identifierResolverOptions)
 			executor.AddPass<nzsl::Ast::ResolveTransformer>(*resolveOptions.identifierResolverOptions);
+			
+		if (resolveOptions.loopUnrollOptions)
+			executor.AddPass<nzsl::Ast::LoopUnrollTransformer>(*resolveOptions.loopUnrollOptions);
 
 		if (resolveOptions.literalOptions)
 			executor.AddPass<nzsl::Ast::LiteralTransformer>(*resolveOptions.literalOptions);
@@ -571,3 +574,4 @@ void ResolveModule(nzsl::Ast::Module& module, const ResolveOptions& resolveOptio
 const nzsl::Ast::BindingResolverTransformer::Options ResolveOptions::defaultBindingResolverOptions;
 const nzsl::Ast::ResolveTransformer::Options ResolveOptions::defaultIdentifierResolveOptions;
 const nzsl::Ast::LiteralTransformer::Options ResolveOptions::defaultLiteralOptions;
+const nzsl::Ast::LoopUnrollTransformer::Options ResolveOptions::defaultLoopUnrollOptions;
