@@ -932,7 +932,6 @@ namespace nzsl
 
 		PopResultId();
 	}
-	
 
 	void SpirvAstVisitor::Visit(Ast::IdentifierValueExpression& node)
 	{

@@ -435,7 +435,7 @@ namespace nzsl::ShaderBuilder
 		identifierValue->identifierType = type;
 		identifierValue->identifierIndex = id;
 		identifierValue->sourceLocation = sourceLocation;
-		
+
 		switch (type)
 		{
 			case Ast::IdentifierType::ExternalBlock: identifierValue->cachedExpressionType = Ast::NamedExternalBlockType{ id }; break;
@@ -476,7 +476,7 @@ namespace nzsl::ShaderBuilder
 		auto identifierValue = std::make_unique<Ast::IdentifierValueExpression>();
 		identifierValue->identifierType = Type;
 		identifierValue->identifierIndex = id;
-		
+
 		switch (Type)
 		{
 			case Ast::IdentifierType::ExternalBlock: identifierValue->cachedExpressionType = Ast::NamedExternalBlockType{ id }; break;
@@ -497,7 +497,7 @@ namespace nzsl::ShaderBuilder
 		identifierValue->identifierType = Type;
 		identifierValue->identifierIndex = id;
 		identifierValue->sourceLocation = sourceLocation;
-		
+
 		switch (Type)
 		{
 			case Ast::IdentifierType::ExternalBlock: identifierValue->cachedExpressionType = Ast::NamedExternalBlockType{ id }; break;
