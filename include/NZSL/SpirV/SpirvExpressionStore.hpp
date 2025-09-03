@@ -32,8 +32,8 @@ namespace nzsl
 			using ExpressionVisitorExcept::Visit;
 			void Visit(Ast::AccessFieldExpression& node) override;
 			void Visit(Ast::AccessIndexExpression& node) override;
+			void Visit(Ast::IdentifierValueExpression& node) override;
 			void Visit(Ast::SwizzleExpression& node) override;
-			void Visit(Ast::VariableValueExpression& node) override;
 
 			SpirvExpressionStore& operator=(const SpirvExpressionStore&) = delete;
 			SpirvExpressionStore& operator=(SpirvExpressionStore&&) = delete;

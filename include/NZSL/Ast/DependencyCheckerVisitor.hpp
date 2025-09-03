@@ -60,11 +60,7 @@ namespace nzsl::Ast
 
 			using RecursiveVisitor::Visit;
 
-			void Visit(AliasValueExpression& node) override;
-			void Visit(ConstantExpression& node) override;
-			void Visit(FunctionExpression& node) override;
-			void Visit(StructTypeExpression& node) override;
-			void Visit(VariableValueExpression& node) override;
+			void Visit(IdentifierValueExpression& node) override;
 
 			void Visit(DeclareAliasStatement& node) override;
 			void Visit(DeclareConstStatement& node) override;

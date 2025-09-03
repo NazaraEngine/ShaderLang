@@ -4,7 +4,7 @@
 
 namespace nzsl::Ast
 {
-	inline void RemapIndices(Statement& statement, const IndexRemapperVisitor::Options& options)
+	inline void RemapIndices(StatementPtr& statement, const IndexRemapperVisitor::Options& options)
 	{
 		IndexRemapperVisitor visitor;
 		return visitor.Remap(statement, options);

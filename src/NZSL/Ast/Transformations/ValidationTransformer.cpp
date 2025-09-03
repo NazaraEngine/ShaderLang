@@ -52,7 +52,6 @@ namespace nzsl::Ast
 		tsl::ordered_map<std::size_t, FunctionData> functions;
 		SourceLocation pushConstantLocation;
 		FunctionData* currentFunction = nullptr;
-		Module* rootModule;
 		unsigned int loopCounter = 0;
 	};
 
@@ -61,7 +60,6 @@ namespace nzsl::Ast
 		m_options = &options;
 
 		States states;
-		states.rootModule = &module;
 		m_states = &states;
 
 		PushScope();
@@ -73,23 +71,21 @@ namespace nzsl::Ast
 		return TransformModule(module, context, error);
 	}
 
-	bool ValidationTransformer::TransformExpression(Module& module, ExpressionPtr& expression, TransformerContext& context, const Options& options, std::string* error)
+	bool ValidationTransformer::TransformExpression(ExpressionPtr& expression, TransformerContext& context, const Options& options, std::string* error)
 	{
 		m_options = &options;
 
 		States states;
-		states.rootModule = &module;
 		m_states = &states;
 
 		return Transformer::TransformExpression(expression, context, error);
 	}
 
-	bool ValidationTransformer::TransformStatement(Module& module, StatementPtr& statement, TransformerContext& context, const Options& options, std::string* error)
+	bool ValidationTransformer::TransformStatement(StatementPtr& statement, TransformerContext& context, const Options& options, std::string* error)
 	{
 		m_options = &options;
 
 		States states;
-		states.rootModule = &module;
 		m_states = &states;
 
 		return Transformer::TransformStatement(statement, context, error);
@@ -473,16 +469,6 @@ namespace nzsl::Ast
 	auto ValidationTransformer::Transform(AccessIndexExpression&& node) -> ExpressionTransformation
 	{
 		HandleChildren(node);
-
-		return DontVisitChildren{};
-	}
-
-	auto ValidationTransformer::Transform(AliasValueExpression&& node) -> ExpressionTransformation
-	{
-		HandleChildren(node);
-
-		if (m_options->checkIndices)
-			CheckAliasIndex(node.aliasId, node.sourceLocation);
 
 		return DontVisitChildren{};
 	}
@@ -900,16 +886,6 @@ namespace nzsl::Ast
 		return DontVisitChildren{};
 	}
 
-	auto ValidationTransformer::Transform(ConstantExpression&& node) -> ExpressionTransformation
-	{
-		HandleChildren(node);
-
-		if (m_options->checkIndices)
-			CheckConstIndex(node.constantId, node.sourceLocation);
-
-		return DontVisitChildren{};
-	}
-
 	auto ValidationTransformer::Transform(ConstantArrayValueExpression&& node) -> ExpressionTransformation
 	{
 		HandleChildren(node);
@@ -924,19 +900,61 @@ namespace nzsl::Ast
 		return DontVisitChildren{};
 	}
 
-	auto ValidationTransformer::Transform(FunctionExpression&& node) -> ExpressionTransformation
+	auto ValidationTransformer::Transform(IdentifierExpression&& node) -> ExpressionTransformation
 	{
 		HandleChildren(node);
-
-		if (m_options->checkIndices)
-			CheckFuncIndex(node.funcId, node.sourceLocation);
 
 		return DontVisitChildren{};
 	}
 
-	auto ValidationTransformer::Transform(IdentifierExpression&& node) -> ExpressionTransformation
+	auto ValidationTransformer::Transform(IdentifierValueExpression&& node) -> ExpressionTransformation
 	{
 		HandleChildren(node);
+
+		if (m_options->checkIndices)
+		{
+			switch (node.identifierType)
+			{
+				case IdentifierType::Alias:
+					CheckAliasIndex(node.identifierIndex, node.sourceLocation);
+					break;
+
+				case IdentifierType::Constant:
+					CheckConstIndex(node.identifierIndex, node.sourceLocation);
+					break;
+
+				case IdentifierType::ExternalBlock:
+					CheckExternalIndex(node.identifierIndex, node.sourceLocation);
+					break;
+
+				case IdentifierType::Function:
+					CheckFuncIndex(node.identifierIndex, node.sourceLocation);
+					break;
+
+				case IdentifierType::Intrinsic:
+					break;
+
+				case IdentifierType::Module:
+					if (m_context->modules.TryRetrieve(node.identifierIndex, node.sourceLocation) == nullptr)
+						throw AstIndexOutOfBoundsError{ node.sourceLocation, "module", static_cast<std::int32_t>(node.identifierIndex) };
+
+					break;
+
+				case IdentifierType::Struct:
+					CheckStructIndex(node.identifierIndex, node.sourceLocation);
+					break;
+
+				case IdentifierType::Type:
+					break;
+
+				case IdentifierType::Unresolved:
+					break;
+
+				case IdentifierType::Variable:
+					CheckVariableIndex(node.identifierIndex, node.sourceLocation);
+					break;
+			}
+		}
 
 		return DontVisitChildren{};
 	}
@@ -947,46 +965,6 @@ namespace nzsl::Ast
 
 		// Parameter validation
 		ValidateIntrinsicParameters(node);
-
-		return DontVisitChildren{};
-	}
-
-	auto ValidationTransformer::Transform(IntrinsicFunctionExpression&& node) -> ExpressionTransformation
-	{
-		HandleChildren(node);
-
-		return DontVisitChildren{};
-	}
-
-	auto ValidationTransformer::Transform(ModuleExpression&& node) -> ExpressionTransformation
-	{
-		HandleChildren(node);
-
-		if (m_options->checkIndices)
-		{
-			if (node.moduleId >= m_states->rootModule->importedModules.size())
-				throw AstIndexOutOfBoundsError{ node.sourceLocation, "module", static_cast<std::int32_t>(node.moduleId) };
-		}
-
-		return DontVisitChildren{};
-	}
-
-	auto ValidationTransformer::Transform(NamedExternalBlockExpression&& node) -> ExpressionTransformation
-	{
-		HandleChildren(node);
-
-		if (m_options->checkIndices)
-			CheckExternalIndex(node.externalBlockId, node.sourceLocation);
-
-		return DontVisitChildren{};
-	}
-
-	auto ValidationTransformer::Transform(StructTypeExpression&& node) -> ExpressionTransformation
-	{
-		HandleChildren(node);
-
-		if (m_options->checkIndices)
-			CheckStructIndex(node.structTypeId, node.sourceLocation);
 
 		return DontVisitChildren{};
 	}
@@ -1033,13 +1011,6 @@ namespace nzsl::Ast
 		return DontVisitChildren{};
 	}
 
-	auto ValidationTransformer::Transform(TypeExpression&& node) -> ExpressionTransformation
-	{
-		HandleChildren(node);
-
-		return DontVisitChildren{};
-	}
-
 	auto ValidationTransformer::Transform(UnaryExpression&& node) -> ExpressionTransformation
 	{
 		HandleChildren(node);
@@ -1049,16 +1020,6 @@ namespace nzsl::Ast
 			return DontVisitChildren{};
 
 		ValidateUnaryOp(node.op, *exprType, node.sourceLocation, BuildStringifier(node.sourceLocation));
-		return DontVisitChildren{};
-	}
-
-	auto ValidationTransformer::Transform(VariableValueExpression&& node) -> ExpressionTransformation
-	{
-		HandleChildren(node);
-
-		if (m_options->checkIndices)
-			CheckVariableIndex(node.variableId, node.sourceLocation);
-
 		return DontVisitChildren{};
 	}
 
@@ -1133,7 +1094,7 @@ namespace nzsl::Ast
 
 			if (m_options->checkIndices)
 			{
-				if (module.moduleIndex >= m_states->rootModule->importedModules.size())
+				if (m_context->modules.TryRetrieve(module.moduleIndex, node.sourceLocation) == nullptr)
 					throw AstIndexOutOfBoundsError{ node.sourceLocation, "module", static_cast<std::int32_t>(module.moduleIndex) };
 			}
 		}
@@ -1485,6 +1446,8 @@ namespace nzsl::Ast
 
 	void ValidationTransformer::Transform(ExpressionType& expressionType, const SourceLocation& sourceLocation)
 	{
+		Transformer::Transform(expressionType, sourceLocation);
+
 		if (!m_options->allowUntyped && IsLiteralType(expressionType))
 			throw AstUnresolvedLiteralError{ sourceLocation };
 	}

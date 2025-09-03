@@ -33,7 +33,7 @@ namespace nzsl::Ast
 
 	using TransformerFlags = Nz::Flags<TransformerFlag>;
 
-	class NZSL_API Transformer : public ExpressionVisitor, public StatementVisitor
+	class NZSL_API Transformer : ExpressionVisitor, StatementVisitor
 	{
 		protected:
 			struct DontVisitChildren {};
@@ -52,6 +52,10 @@ namespace nzsl::Ast
 			Stringifier BuildStringifier(const SourceLocation& sourceLocation) const;
 
 			ExpressionPtr CacheExpression(ExpressionPtr expression);
+
+			inline void ClearFlags(TransformerFlags flags);
+
+			std::optional<ConstantValue> ComputeConstantValue(ExpressionPtr& expr) const;
 
 			DeclareVariableStatement* DeclareVariable(std::string_view name, ExpressionPtr initialExpr);
 			DeclareVariableStatement* DeclareVariable(std::string_view name, Ast::ExpressionType type, SourceLocation sourceLocation);
@@ -76,28 +80,20 @@ namespace nzsl::Ast
 			void HandleChildren(AccessFieldExpression& node);
 			void HandleChildren(AccessIdentifierExpression& node);
 			void HandleChildren(AccessIndexExpression& node);
-			void HandleChildren(AliasValueExpression& node);
 			void HandleChildren(AssignExpression& node);
 			void HandleChildren(BinaryExpression& node);
 			void HandleChildren(CallFunctionExpression& node);
 			void HandleChildren(CallMethodExpression& node);
 			void HandleChildren(CastExpression& node);
 			void HandleChildren(ConditionalExpression& node);
-			void HandleChildren(ConstantExpression& node);
 			void HandleChildren(ConstantArrayValueExpression& node);
 			void HandleChildren(ConstantValueExpression& node);
-			void HandleChildren(FunctionExpression& node);
 			void HandleChildren(IdentifierExpression& node);
+			void HandleChildren(IdentifierValueExpression& node);
 			void HandleChildren(IntrinsicExpression& node);
-			void HandleChildren(IntrinsicFunctionExpression& node);
-			void HandleChildren(ModuleExpression& node);
-			void HandleChildren(NamedExternalBlockExpression& node);
-			void HandleChildren(StructTypeExpression& node);
 			void HandleChildren(SwizzleExpression& node);
 			void HandleChildren(TypeConstantExpression& node);
-			void HandleChildren(TypeExpression& node);
 			void HandleChildren(UnaryExpression& node);
-			void HandleChildren(VariableValueExpression& node);
 
 			void HandleChildren(BranchStatement& node);
 			void HandleChildren(BreakStatement& node);
@@ -125,6 +121,8 @@ namespace nzsl::Ast
 			virtual void PushScope();
 
 			void PropagateConstants(ExpressionPtr& expr) const;
+
+			inline void SetFlags(TransformerFlags flags);
 
 			std::string ToString(const ExpressionType& exprType, const SourceLocation& sourceLocation) const;
 

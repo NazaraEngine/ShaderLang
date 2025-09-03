@@ -551,14 +551,17 @@ namespace nzsl::Ast
 		}
 	}
 
-	auto ConstantPropagationTransformer::Transform(ConstantExpression&& node) -> ExpressionTransformation
+	auto ConstantPropagationTransformer::Transform(IdentifierValueExpression&& node) -> ExpressionTransformation
 	{
 		NAZARA_USE_ANONYMOUS_NAMESPACE
+
+		if (node.identifierType != IdentifierType::Constant)
+			return VisitChildren{};
 
 		if (!m_options->constantQueryCallback)
 			return VisitChildren{};
 
-		const ConstantValue* constantValue = m_options->constantQueryCallback(node.constantId);
+		const ConstantValue* constantValue = m_options->constantQueryCallback(node.identifierIndex);
 		if (!constantValue)
 			return VisitChildren{};
 

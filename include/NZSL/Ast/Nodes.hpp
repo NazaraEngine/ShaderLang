@@ -103,14 +103,6 @@ namespace nzsl::Ast
 		ExpressionPtr expr;
 	};
 
-	struct NZSL_API AliasValueExpression : Expression
-	{
-		NodeType GetType() const override;
-		void Visit(ExpressionVisitor& visitor) override;
-
-		std::size_t aliasId;
-	};
-
 	struct NZSL_API AssignExpression : Expression
 	{
 		NodeType GetType() const override;
@@ -175,14 +167,6 @@ namespace nzsl::Ast
 		ExpressionPtr truePath;
 	};
 
-	struct NZSL_API ConstantExpression : Expression
-	{
-		NodeType GetType() const override;
-		void Visit(ExpressionVisitor& visitor) override;
-
-		std::size_t constantId;
-	};
-
 	struct NZSL_API ConstantArrayValueExpression : Expression
 	{
 		NodeType GetType() const override;
@@ -199,20 +183,21 @@ namespace nzsl::Ast
 		ConstantSingleValue value;
 	};
 
-	struct NZSL_API FunctionExpression : Expression
-	{
-		NodeType GetType() const override;
-		void Visit(ExpressionVisitor& visitor) override;
-
-		std::size_t funcId;
-	};
-
 	struct NZSL_API IdentifierExpression : Expression
 	{
 		NodeType GetType() const override;
 		void Visit(ExpressionVisitor& visitor) override;
 
 		std::string identifier;
+	};
+
+	struct NZSL_API IdentifierValueExpression : Expression
+	{
+		NodeType GetType() const override;
+		void Visit(ExpressionVisitor& visitor) override;
+
+		std::size_t identifierIndex;
+		IdentifierType identifierType;
 	};
 
 	struct NZSL_API IntrinsicExpression : Expression
@@ -222,38 +207,6 @@ namespace nzsl::Ast
 
 		std::vector<ExpressionPtr> parameters;
 		IntrinsicType intrinsic;
-	};
-
-	struct NZSL_API IntrinsicFunctionExpression : Expression
-	{
-		NodeType GetType() const override;
-		void Visit(ExpressionVisitor& visitor) override;
-
-		std::size_t intrinsicId;
-	};
-
-	struct NZSL_API ModuleExpression : Expression
-	{
-		NodeType GetType() const override;
-		void Visit(ExpressionVisitor& visitor) override;
-
-		std::size_t moduleId;
-	};
-
-	struct NZSL_API NamedExternalBlockExpression : Expression
-	{
-		NodeType GetType() const override;
-		void Visit(ExpressionVisitor& visitor) override;
-
-		std::size_t externalBlockId;
-	};
-
-	struct NZSL_API StructTypeExpression : Expression
-	{
-		NodeType GetType() const override;
-		void Visit(ExpressionVisitor& visitor) override;
-
-		std::size_t structTypeId;
 	};
 
 	struct NZSL_API SwizzleExpression : Expression
@@ -273,22 +226,6 @@ namespace nzsl::Ast
 
 		ExpressionType type;
 		TypeConstant typeConstant;
-	};
-
-	struct NZSL_API TypeExpression : Expression
-	{
-		NodeType GetType() const override;
-		void Visit(ExpressionVisitor& visitor) override;
-
-		std::size_t typeId;
-	};
-
-	struct NZSL_API VariableValueExpression : Expression
-	{
-		NodeType GetType() const override;
-		void Visit(ExpressionVisitor& visitor) override;
-
-		std::size_t variableId;
 	};
 
 	struct NZSL_API UnaryExpression : Expression

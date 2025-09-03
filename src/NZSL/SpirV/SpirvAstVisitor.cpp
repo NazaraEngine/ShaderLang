@@ -789,14 +789,6 @@ namespace nzsl
 		}
 	}
 
-	void SpirvAstVisitor::Visit(Ast::ConstantExpression& node)
-	{
-		HandleSourceLocation(node.sourceLocation);
-
-		SpirvExpressionLoad accessMemberVisitor(m_writer, *this, *m_currentBlock);
-		PushResultId((m_isEvaluatingPointer) ? accessMemberVisitor.EvaluatePointer(node) : accessMemberVisitor.EvaluateValue(node));
-	}
-
 	void SpirvAstVisitor::Visit(Ast::ConstantValueExpression& node)
 	{
 		PushResultId(m_writer.GetSingleConstantId(node.value));
@@ -939,6 +931,38 @@ namespace nzsl
 		node.expression->Visit(*this);
 
 		PopResultId();
+	}
+	
+
+	void SpirvAstVisitor::Visit(Ast::IdentifierValueExpression& node)
+	{
+		HandleSourceLocation(node.sourceLocation);
+
+		switch (node.identifierType)
+		{
+			case Ast::IdentifierType::Alias:            throw std::runtime_error("unexpected Alias identifier, shader is not properly resolved");
+			case Ast::IdentifierType::ExternalBlock:    throw std::runtime_error("unexpected ExternalBlock identifier, shader is not properly resolved");
+			case Ast::IdentifierType::Function:         throw std::runtime_error("unexpected Function identifier, shader is not properly resolved");
+			case Ast::IdentifierType::Intrinsic:        throw std::runtime_error("unexpected Intrinsic identifier, shader is not properly resolved");
+			case Ast::IdentifierType::Module:           throw std::runtime_error("unexpected Module identifier, shader is not properly resolved");
+			case Ast::IdentifierType::Struct:           throw std::runtime_error("unexpected Struct identifier, shader is not properly resolved");
+			case Ast::IdentifierType::Type:             throw std::runtime_error("unexpected Type identifier, shader is not properly resolved");
+			case Ast::IdentifierType::Unresolved:       throw std::runtime_error("unexpected Unresolved identifier, shader is not properly resolved");
+
+			case Ast::IdentifierType::Constant:
+			{
+				SpirvExpressionLoad accessMemberVisitor(m_writer, *this, *m_currentBlock);
+				PushResultId((m_isEvaluatingPointer) ? accessMemberVisitor.EvaluatePointer(node) : accessMemberVisitor.EvaluateValue(node));
+				break;
+			}
+
+			case Ast::IdentifierType::Variable:
+			{
+				SpirvExpressionLoad loadVisitor(m_writer, *this, *m_currentBlock);
+				PushResultId((m_isEvaluatingPointer) ? loadVisitor.EvaluatePointer(node) : loadVisitor.EvaluateValue(node));
+				break;
+			}
+		}
 	}
 
 	void SpirvAstVisitor::Visit(Ast::IntrinsicExpression& node)
@@ -1216,14 +1240,6 @@ namespace nzsl
 		PushResultId(resultId);
 	}
 
-	void SpirvAstVisitor::Visit(Ast::VariableValueExpression& node)
-	{
-		HandleSourceLocation(node.sourceLocation);
-
-		SpirvExpressionLoad loadVisitor(m_writer, *this, *m_currentBlock);
-		PushResultId((m_isEvaluatingPointer) ? loadVisitor.EvaluatePointer(node) : loadVisitor.EvaluateValue(node));
-	}
-
 	void SpirvAstVisitor::Visit(Ast::WhileStatement& node)
 	{
 		assert(node.condition);
@@ -1306,12 +1322,14 @@ namespace nzsl
 			throw std::runtime_error("ArraySize intrinsic: parameter is not an AccessFieldExpression");
 
 		const Ast::AccessFieldExpression& accessField = Nz::SafeCast<const Ast::AccessFieldExpression&>(*firstParameter);
-		if (accessField.expr->GetType() != Ast::NodeType::VariableValueExpression)
-			throw std::runtime_error("ArraySize intrinsic: AccessFieldExpression target expression is not a VariableValueExpression");
+		if (accessField.expr->GetType() != Ast::NodeType::IdentifierValueExpression)
+			throw std::runtime_error("ArraySize intrinsic: AccessFieldExpression target expression is not a IdentifierValueExpression");
 
-		const Ast::VariableValueExpression& structVar = Nz::SafeCast<const Ast::VariableValueExpression&>(*accessField.expr);
+		const Ast::IdentifierValueExpression& structIdentifier = Nz::SafeCast<const Ast::IdentifierValueExpression&>(*accessField.expr);
+		if (structIdentifier.identifierType != Ast::IdentifierType::Variable)
+			throw std::runtime_error("ArraySize intrinsic: AccessFieldExpression target expression identifier is not a variable");
 
-		std::uint32_t structId = m_writer.GetExtVar(structVar.variableId).pointerId;
+		std::uint32_t structId = m_writer.GetExtVar(structIdentifier.identifierIndex).pointerId;
 
 		HandleSourceLocation(node.sourceLocation);
 

@@ -22,27 +22,19 @@ namespace nzsl::Ast
 			void Visit(AccessFieldExpression& node) override;
 			void Visit(AccessIdentifierExpression& node) override;
 			void Visit(AccessIndexExpression& node) override;
-			void Visit(AliasValueExpression& node) override;
 			void Visit(AssignExpression& node) override;
 			void Visit(BinaryExpression& node) override;
 			void Visit(CallFunctionExpression& node) override;
 			void Visit(CallMethodExpression& node) override;
 			void Visit(CastExpression& node) override;
 			void Visit(ConditionalExpression& node) override;
-			void Visit(ConstantExpression& node) override;
 			void Visit(ConstantArrayValueExpression& node) override;
 			void Visit(ConstantValueExpression& node) override;
-			void Visit(FunctionExpression& node) override;
 			void Visit(IdentifierExpression& node) override;
+			void Visit(IdentifierValueExpression& node) override;
 			void Visit(IntrinsicExpression& node) override;
-			void Visit(IntrinsicFunctionExpression& node) override;
-			void Visit(ModuleExpression& node) override;
-			void Visit(NamedExternalBlockExpression& node) override;
-			void Visit(StructTypeExpression& node) override;
 			void Visit(SwizzleExpression& node) override;
 			void Visit(TypeConstantExpression& node) override;
-			void Visit(TypeExpression& node) override;
-			void Visit(VariableValueExpression& node) override;
 			void Visit(UnaryExpression& node) override;
 
 			void Visit(BranchStatement& node) override;
