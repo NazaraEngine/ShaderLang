@@ -873,7 +873,6 @@ namespace nzsl::Ast
 			case NodeType::VariableValueExpression:
 			{
 				auto identifierValueNode = std::make_unique<IdentifierValueExpression>();
-				SizeT(identifierValueNode->identifierIndex);
 
 				switch (nodeType)
 				{
@@ -888,8 +887,12 @@ namespace nzsl::Ast
 					default: NAZARA_UNREACHABLE();
 				}
 
+				SizeT(identifierValueNode->identifierIndex);
+				SerializeNodeCommon(*identifierValueNode);
+				SerializeExpressionCommon(*identifierValueNode);
+
 				node = std::move(identifierValueNode);
-				break;
+				return;
 			}
 
 			default: throw std::runtime_error("unexpected node type");
