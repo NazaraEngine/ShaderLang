@@ -6,7 +6,6 @@
 #include <NazaraUtils/Bitset.hpp>
 #include <NazaraUtils/CallOnExit.hpp>
 #include <NazaraUtils/StackVector.hpp>
-#include <NazaraUtils/TypeTag.hpp>
 #include <NZSL/ModuleResolver.hpp>
 #include <NZSL/Ast/Cloner.hpp>
 #include <NZSL/Ast/DependencyCheckerVisitor.hpp>

@@ -86,17 +86,17 @@ namespace nzsl::Ast
 						m_expressionCategory = ExpressionCategory::Temporary; //< can't assume anything else
 				}
 
-				void Visit(ConstantArrayValueExpression& node) override
+				void Visit(ConstantArrayValueExpression& /*node*/) override
 				{
 					m_expressionCategory = ExpressionCategory::Variable;
 				}
 
-				void Visit(ConstantValueExpression& node) override
+				void Visit(ConstantValueExpression& /*node*/) override
 				{
 					m_expressionCategory = ExpressionCategory::Constant;
 				}
 
-				void Visit(IdentifierExpression& node) override
+				void Visit(IdentifierExpression& /*node*/) override
 				{
 					m_expressionCategory = ExpressionCategory::Variable;
 				}
@@ -118,7 +118,7 @@ namespace nzsl::Ast
 					}
 				}
 
-				void Visit(IntrinsicExpression& node) override
+				void Visit(IntrinsicExpression& /*node*/) override
 				{
 					m_expressionCategory = ExpressionCategory::Temporary;
 				}
@@ -157,12 +157,12 @@ namespace nzsl::Ast
 					}
 				}
 
-				void Visit(TypeConstantExpression& node) override
+				void Visit(TypeConstantExpression& /*node*/) override
 				{
 					m_expressionCategory = ExpressionCategory::Constant;
 				}
 
-				void Visit(UnaryExpression& node) override
+				void Visit(UnaryExpression& /*node*/) override
 				{
 					m_expressionCategory = ExpressionCategory::Temporary;
 				}
