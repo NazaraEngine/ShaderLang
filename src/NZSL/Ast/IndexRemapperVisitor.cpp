@@ -185,7 +185,10 @@ namespace nzsl::Ast
 			{
 				std::size_t newVarIndex = m_context->options->indexGenerator(IdentifierType::Variable, *parameter.varIndex);
 				UniqueInsert(m_context->newIndices, { IdentifierType::Variable, *parameter.varIndex }, newVarIndex);
+				parameter.varIndex = newVarIndex;
 			}
+			else
+				parameter.varIndex = m_context->options->indexGenerator(IdentifierType::Variable, std::numeric_limits<std::size_t>::max());
 		}
 
 		if (node.funcIndex)
