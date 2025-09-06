@@ -26,6 +26,7 @@
 #include <NZSL/Ast/Transformations/EliminateUnusedTransformer.hpp>
 #include <NZSL/Ast/Transformations/ForToWhileTransformer.hpp>
 #include <NZSL/Ast/Transformations/LiteralTransformer.hpp>
+#include <NZSL/Ast/Transformations/LoopUnrollTransformer.hpp>
 #include <NZSL/Ast/Transformations/MatrixTransformer.hpp>
 #include <NZSL/Ast/Transformations/ResolveTransformer.hpp>
 #include <NZSL/Ast/Transformations/StructAssignmentTransformer.hpp>
@@ -909,6 +910,7 @@ namespace nzsl
 
 	void SpirvWriter::RegisterPasses(Ast::TransformerExecutor& executor)
 	{
+		executor.AddPass<Ast::LoopUnrollTransformer>();
 		executor.AddPass<Ast::ConstantRemovalTransformer>();
 		executor.AddPass<Ast::LiteralTransformer>();
 		executor.AddPass<Ast::BranchSplitterTransformer>();

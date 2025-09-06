@@ -8,8 +8,6 @@
 #include <NazaraUtils/CallOnExit.hpp>
 #include <NazaraUtils/PathUtils.hpp>
 #include <NZSL/Enums.hpp>
-#include <NZSL/ShaderBuilder.hpp>
-#include <NZSL/Ast/Cloner.hpp>
 #include <NZSL/Ast/ConstantValue.hpp>
 #include <NZSL/Ast/RecursiveVisitor.hpp>
 #include <NZSL/Ast/Utils.hpp>
@@ -23,6 +21,7 @@
 #include <NZSL/Ast/Transformations/ForToWhileTransformer.hpp>
 #include <NZSL/Ast/Transformations/IdentifierTransformer.hpp>
 #include <NZSL/Ast/Transformations/LiteralTransformer.hpp>
+#include <NZSL/Ast/Transformations/LoopUnrollTransformer.hpp>
 #include <NZSL/Ast/Transformations/ResolveTransformer.hpp>
 #include <NZSL/Ast/Transformations/StructAssignmentTransformer.hpp>
 #include <NZSL/Ast/Transformations/SwizzleTransformer.hpp>
@@ -610,6 +609,7 @@ namespace nzsl
 			return nameChanged;
 		};
 
+		executor.AddPass<Ast::LoopUnrollTransformer>();
 		executor.AddPass<Ast::LiteralTransformer>();
 		executor.AddPass<Ast::IdentifierTransformer>(firstIdentifierPassOptions);
 		executor.AddPass<Ast::ForToWhileTransformer>();
