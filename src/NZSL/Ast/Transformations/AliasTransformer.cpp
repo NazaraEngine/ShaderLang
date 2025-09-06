@@ -20,7 +20,7 @@ namespace nzsl::Ast
 	void AliasTransformer::Transform(ExpressionType& expressionType, const SourceLocation& /*sourceLocation*/)
 	{
 		if (IsAliasType(expressionType))
-			expressionType = ResolveAlias(expressionType);
+			expressionType = ResolveAlias(std::move(expressionType));
 	}
 
 	auto AliasTransformer::Transform(IdentifierValueExpression&& identifierValue) -> ExpressionTransformation
