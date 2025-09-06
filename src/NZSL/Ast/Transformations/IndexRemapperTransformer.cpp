@@ -2,7 +2,7 @@
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
-#include <NZSL/Ast/IndexRemapperVisitor.hpp>
+#include <NZSL/Ast/Transformations/IndexRemapperTransformer.hpp>
 #include <NazaraUtils/Algorithm.hpp>
 #include <unordered_map>
 
@@ -27,13 +27,13 @@ namespace nzsl::Ast
 		}
 	}
 
-	struct IndexRemapperVisitor::Context
+	struct IndexRemapperTransformer::Context
 	{
-		const IndexRemapperVisitor::Options* options;
+		const IndexRemapperTransformer::Options* options;
 		std::unordered_map<std::pair<IdentifierType, std::size_t>, std::size_t, NAZARA_ANONYMOUS_NAMESPACE_PREFIX(PairHasher)> newIndices;
 	};
 
-	void IndexRemapperVisitor::Remap(StatementPtr& statement, const Options& options)
+	void IndexRemapperTransformer::Remap(StatementPtr& statement, const Options& options)
 	{
 		assert(options.indexGenerator);
 
@@ -44,7 +44,7 @@ namespace nzsl::Ast
 		HandleStatement(statement);
 	}
 
-	void IndexRemapperVisitor::Transform(ExpressionType& expressionType, const SourceLocation& sourceLocation)
+	void IndexRemapperTransformer::Transform(ExpressionType& expressionType, const SourceLocation& sourceLocation)
 	{
 		Transformer::Transform(expressionType, sourceLocation);
 
@@ -105,7 +105,7 @@ namespace nzsl::Ast
 		}
 	}
 
-	auto IndexRemapperVisitor::Transform(IdentifierValueExpression&& node) -> ExpressionTransformation
+	auto IndexRemapperTransformer::Transform(IdentifierValueExpression&& node) -> ExpressionTransformation
 	{
 		auto it = m_context->newIndices.find({ node.identifierType, node.identifierIndex });
 		if (it != m_context->newIndices.end())
@@ -114,7 +114,7 @@ namespace nzsl::Ast
 		return VisitChildren{};
 	}
 
-	auto IndexRemapperVisitor::Transform(DeclareAliasStatement&& node) -> StatementTransformation
+	auto IndexRemapperTransformer::Transform(DeclareAliasStatement&& node) -> StatementTransformation
 	{
 		NAZARA_USE_ANONYMOUS_NAMESPACE
 
@@ -130,7 +130,7 @@ namespace nzsl::Ast
 		return VisitChildren{};
 	}
 
-	auto IndexRemapperVisitor::Transform(DeclareConstStatement&& node) -> StatementTransformation
+	auto IndexRemapperTransformer::Transform(DeclareConstStatement&& node) -> StatementTransformation
 	{
 		NAZARA_USE_ANONYMOUS_NAMESPACE
 
@@ -146,7 +146,7 @@ namespace nzsl::Ast
 		return VisitChildren{};
 	}
 
-	auto IndexRemapperVisitor::Transform(DeclareExternalStatement&& node) -> StatementTransformation
+	auto IndexRemapperTransformer::Transform(DeclareExternalStatement&& node) -> StatementTransformation
 	{
 		NAZARA_USE_ANONYMOUS_NAMESPACE
 
@@ -174,7 +174,7 @@ namespace nzsl::Ast
 		return VisitChildren{};
 	}
 
-	auto IndexRemapperVisitor::Transform(DeclareFunctionStatement&& node) -> StatementTransformation
+	auto IndexRemapperTransformer::Transform(DeclareFunctionStatement&& node) -> StatementTransformation
 	{
 		NAZARA_USE_ANONYMOUS_NAMESPACE
 
@@ -203,7 +203,7 @@ namespace nzsl::Ast
 		return VisitChildren{};
 	}
 
-	auto IndexRemapperVisitor::Transform(DeclareOptionStatement&& node) -> StatementTransformation
+	auto IndexRemapperTransformer::Transform(DeclareOptionStatement&& node) -> StatementTransformation
 	{
 		NAZARA_USE_ANONYMOUS_NAMESPACE
 
@@ -219,7 +219,7 @@ namespace nzsl::Ast
 		return VisitChildren{};
 	}
 
-	auto IndexRemapperVisitor::Transform(DeclareStructStatement&& node) -> StatementTransformation
+	auto IndexRemapperTransformer::Transform(DeclareStructStatement&& node) -> StatementTransformation
 	{
 		NAZARA_USE_ANONYMOUS_NAMESPACE
 
@@ -235,7 +235,7 @@ namespace nzsl::Ast
 		return VisitChildren{};
 	}
 
-	auto IndexRemapperVisitor::Transform(DeclareVariableStatement&& node) -> StatementTransformation
+	auto IndexRemapperTransformer::Transform(DeclareVariableStatement&& node) -> StatementTransformation
 	{
 		NAZARA_USE_ANONYMOUS_NAMESPACE
 
@@ -251,7 +251,7 @@ namespace nzsl::Ast
 		return VisitChildren{};
 	}
 
-	auto IndexRemapperVisitor::Transform(ForStatement&& node) -> StatementTransformation
+	auto IndexRemapperTransformer::Transform(ForStatement&& node) -> StatementTransformation
 	{
 		NAZARA_USE_ANONYMOUS_NAMESPACE
 
@@ -271,7 +271,7 @@ namespace nzsl::Ast
 		return VisitChildren{};
 	}
 
-	auto IndexRemapperVisitor::Transform(ForEachStatement&& node) -> StatementTransformation
+	auto IndexRemapperTransformer::Transform(ForEachStatement&& node) -> StatementTransformation
 	{
 		NAZARA_USE_ANONYMOUS_NAMESPACE
 

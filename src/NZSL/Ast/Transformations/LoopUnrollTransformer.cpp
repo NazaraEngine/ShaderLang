@@ -4,9 +4,9 @@
 
 #include <NZSL/Ast/Transformations/LoopUnrollTransformer.hpp>
 #include <NZSL/Ast/Cloner.hpp>
-#include <NZSL/Ast/IndexRemapperVisitor.hpp>
 #include <NZSL/Ast/Utils.hpp>
 #include <NZSL/Lang/Errors.hpp>
+#include <NZSL/Ast/Transformations/IndexRemapperTransformer.hpp>
 #include <NZSL/Ast/Transformations/TransformerContext.hpp>
 
 namespace nzsl::Ast
@@ -109,7 +109,7 @@ namespace nzsl::Ast
 				innerMulti->statements.emplace_back(std::move(elementVariable));
 
 				// Remap indices (as unrolling the loop will reuse them)
-				IndexRemapperVisitor::Options indexCallbacks;
+				IndexRemapperTransformer::Options indexCallbacks;
 				indexCallbacks.indexGenerator = [this](IdentifierType identifierType, std::size_t /*previousIndex*/)
 				{
 					switch (identifierType)
@@ -230,7 +230,7 @@ namespace nzsl::Ast
 				innerMulti->statements.emplace_back(std::move(constDecl));
 
 				// Remap indices (as unrolling the loop will reuse them) 
-				IndexRemapperVisitor::Options indexCallbacks;
+				IndexRemapperTransformer::Options indexCallbacks;
 				indexCallbacks.indexGenerator = [this](IdentifierType identifierType, std::size_t /*previousIndex*/)
 				{
 					switch (identifierType)
