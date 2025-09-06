@@ -12,7 +12,6 @@
 #include <NZSL/Ast/DependencyCheckerVisitor.hpp>
 #include <NZSL/Ast/ExportVisitor.hpp>
 #include <NZSL/Ast/ExpressionType.hpp>
-#include <NZSL/Ast/IndexRemapperVisitor.hpp>
 #include <NZSL/Ast/Nodes.hpp>
 #include <NZSL/Ast/Option.hpp>
 #include <NZSL/Ast/ReflectVisitor.hpp>
@@ -22,6 +21,7 @@
 #include <NZSL/Lang/Errors.hpp>
 #include <NZSL/Lang/LangData.hpp>
 #include <NZSL/Ast/Transformations/EliminateUnusedTransformer.hpp>
+#include <NZSL/Ast/Transformations/IndexRemapperTransformer.hpp>
 #include <NZSL/Ast/Transformations/TransformerContext.hpp>
 #include <fmt/format.h>
 #include <tsl/ordered_map.h>
@@ -3186,7 +3186,7 @@ namespace nzsl::Ast
 			moduleClone->rootNode = Nz::StaticUniquePointerCast<MultiStatement>(Ast::Clone(*targetModule->rootNode));
 
 			// Remap already used indices
-			IndexRemapperVisitor::Options indexCallbacks;
+			IndexRemapperTransformer::Options indexCallbacks;
 			indexCallbacks.indexGenerator = [this](IdentifierType identifierType, std::size_t /*previousIndex*/)
 			{
 				switch (identifierType)

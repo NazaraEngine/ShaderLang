@@ -4,8 +4,8 @@
 
 #pragma once
 
-#ifndef NZSL_AST_INDEXREMAPPERVISITOR_HPP
-#define NZSL_AST_INDEXREMAPPERVISITOR_HPP
+#ifndef NZSL_AST_TRANSFORMATIONS_INDEXREMAPPERTRANSFORMER_HPP
+#define NZSL_AST_TRANSFORMATIONS_INDEXREMAPPERTRANSFORMER_HPP
 
 #include <NZSL/Config.hpp>
 #include <NZSL/Ast/Transformations/Transformer.hpp>
@@ -13,20 +13,20 @@
 
 namespace nzsl::Ast
 {
-	class NZSL_API IndexRemapperVisitor : public Transformer
+	class NZSL_API IndexRemapperTransformer : public Transformer
 	{
 		public:
 			struct Options;
 
-			IndexRemapperVisitor() = default;
-			IndexRemapperVisitor(const IndexRemapperVisitor&) = delete;
-			IndexRemapperVisitor(IndexRemapperVisitor&&) = delete;
-			~IndexRemapperVisitor() = default;
+			IndexRemapperTransformer() = default;
+			IndexRemapperTransformer(const IndexRemapperTransformer&) = delete;
+			IndexRemapperTransformer(IndexRemapperTransformer&&) = delete;
+			~IndexRemapperTransformer() = default;
 
 			void Remap(StatementPtr& statement, const Options& options);
 
-			IndexRemapperVisitor& operator=(const IndexRemapperVisitor&) = delete;
-			IndexRemapperVisitor& operator=(IndexRemapperVisitor&&) = delete;
+			IndexRemapperTransformer& operator=(const IndexRemapperTransformer&) = delete;
+			IndexRemapperTransformer& operator=(IndexRemapperTransformer&&) = delete;
 
 			struct Options
 			{
@@ -53,9 +53,9 @@ namespace nzsl::Ast
 			Context* m_context;
 	};
 
-	inline void RemapIndices(StatementPtr& statement, const IndexRemapperVisitor::Options& options);
+	inline void RemapIndices(StatementPtr& statement, const IndexRemapperTransformer::Options& options);
 }
 
-#include <NZSL/Ast/IndexRemapperVisitor.inl>
+#include <NZSL/Ast/Transformations/IndexRemapperTransformer.inl>
 
-#endif // NZSL_AST_INDEXREMAPPERVISITOR_HPP
+#endif // NZSL_AST_TRANSFORMATIONS_INDEXREMAPPERTRANSFORMER_HPP
