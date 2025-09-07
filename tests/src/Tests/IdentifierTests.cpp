@@ -25,10 +25,10 @@ fn int() -> i32
 
 struct output
 {
-	active: vec3[f32],
-	active_: vec2[i32],
-	_nzsl: i32,
-	_: f32
+	[location(0)] active: vec3[f32],
+	[location(1)] active_: vec2[i32],
+	[location(2)] _nzsl: i32,
+	[location(3)] _: f32
 }
 
 [entry(frag)]
@@ -66,10 +66,10 @@ struct output_
 };
 
 /*************** Outputs ***************/
-out vec3 _nzslOutactive_;
-out ivec2 _nzslOutactive2_2;
-out int _nzslOut_;
-out float _nzslOut_2_2;
+layout(location = 0) out vec3 _nzslOutactive_;
+layout(location = 1) out ivec2 _nzslOutactive2_2;
+layout(location = 2) out int _nzslOut_;
+layout(location = 3) out float _nzslOut_2_2;
 
 void main()
 {
@@ -104,10 +104,10 @@ fn int() -> i32
 
 struct output
 {
-	active: vec3[f32],
-	active_: vec2[i32],
-	_nzsl: i32,
-	_: f32
+	[location(0)] active: vec3[f32],
+	[location(1)] active_: vec2[i32],
+	[location(2)] _nzsl: i32,
+	[location(3)] _: f32
 }
 
 [entry(frag)]
@@ -145,7 +145,45 @@ OpCompositeConstruct
 OpAccessChain
 OpStore
 OpLoad
+OpCompositeExtract
+OpStore
+OpCompositeExtract
+OpStore
+OpCompositeExtract
+OpStore
+OpCompositeExtract
+OpStore
 OpReturn
 OpFunctionEnd)");
+
+		ExpectWGSL(*shaderModule, R"(
+@group(0) @binding(0) var texture: texture_2d<f32>;
+@group(0) @binding(1) var textureSampler: sampler;
+
+fn int() -> i32
+{
+	return 42;
+}
+
+struct output
+{
+	@location(0) active_: vec3<f32>,
+	@location(1) active2_2: vec2<i32>,
+	@location(2) _2_2: i32,
+	@location(3) _2_2_2: f32
+}
+
+@fragment
+fn main() -> output
+{
+	var input: i32 = int();
+	var input_: i32 = 0;
+	var fl2_oa8_t: f32 = 42.0;
+	var outValue: output;
+	var _nzsl_cachedResult: f32 = (f32(input)) + fl2_oa8_t;
+	outValue.active_ = vec3<f32>(_nzsl_cachedResult, _nzsl_cachedResult, _nzsl_cachedResult);
+	return outValue;
+}
+)");
 	}
 }

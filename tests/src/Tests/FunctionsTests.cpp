@@ -14,12 +14,12 @@ module;
 
 struct FragOut
 {
-	[location(0)] value: f32
+	[location(0)] value: vec4[f32]
 }
 
-fn GetValue() -> f32
+fn GetValue() -> vec4[f32]
 {
-	return 42.0;
+	return vec4[f32](42.0, 42.0, 42.0, 1.0);
 }
 
 [entry(frag)]
@@ -36,13 +36,13 @@ fn main() -> FragOut
 		ResolveModule(*shaderModule);
 
 		ExpectGLSL(*shaderModule, R"(
-float GetValue()
+vec4 GetValue()
 {
-	return 42.0;
+	return vec4(42.0, 42.0, 42.0, 1.0);
 }
 
 /*************** Outputs ***************/
-layout(location = 0) out float _nzslOutvalue;
+layout(location = 0) out vec4 _nzslOutvalue;
 
 void main()
 {
@@ -55,9 +55,9 @@ void main()
 )");
 
 		ExpectNZSL(*shaderModule, R"(
-fn GetValue() -> f32
+fn GetValue() -> vec4[f32]
 {
-	return 42.0;
+	return vec4[f32](42.0, 42.0, 42.0, 1.0);
 }
 
 [entry(frag)]
@@ -72,10 +72,6 @@ fn main() -> FragOut
 		ExpectSPIRV(*shaderModule, R"(
 OpFunction
 OpLabel
-OpReturnValue
-OpFunctionEnd
-OpFunction
-OpLabel
 OpVariable
 OpFunctionCall
 OpFNegate
@@ -86,6 +82,25 @@ OpCompositeExtract
 OpStore
 OpReturn
 OpFunctionEnd)");
+
+		ExpectWGSL(*shaderModule, R"(
+struct FragOut
+{
+	@location(0) value: vec4<f32>
+}
+
+fn GetValue() -> vec4<f32>
+{
+	return vec4<f32>(42.0, 42.0, 42.0, 1.0);
+}
+
+@fragment
+fn main() -> FragOut
+{
+	var output: FragOut;
+	output.value = -GetValue();
+	return output;
+})");
 	}
 
 	SECTION("Unordered functions")
@@ -96,12 +111,12 @@ module;
 
 struct FragOut
 {
-	[location(0)] value: f32
+	[location(0)] value: vec4[f32]
 }
 
-fn bar() -> f32
+fn bar() -> vec4[f32]
 {
-	return 42.0;
+	return vec4[f32](42.0, 42.0, 42.0, 1.0);
 }
 
 [entry(frag)]
@@ -113,12 +128,12 @@ fn main() -> FragOut
 	return output;
 }
 
-fn baz() -> f32
+fn baz() -> vec4[f32]
 {
 	return foo();
 }
 
-fn foo() -> f32
+fn foo() -> vec4[f32]
 {
 	return bar();
 }
@@ -128,15 +143,15 @@ fn foo() -> f32
 		ResolveModule(*shaderModule);
 
 		ExpectGLSL(*shaderModule, R"(
-float bar()
+vec4 bar()
 {
-	return 42.0;
+	return vec4(42.0, 42.0, 42.0, 1.0);
 }
 
-float baz();
+vec4 baz();
 
 /*************** Outputs ***************/
-layout(location = 0) out float _nzslOutvalue;
+layout(location = 0) out vec4 _nzslOutvalue;
 
 void main()
 {
@@ -147,23 +162,23 @@ void main()
 	return;
 }
 
-float foo();
+vec4 foo();
 
-float baz()
+vec4 baz()
 {
 	return foo();
 }
 
-float foo()
+vec4 foo()
 {
 	return bar();
 }
 )");
 
 		ExpectNZSL(*shaderModule, R"(
-fn bar() -> f32
+fn bar() -> vec4[f32]
 {
-	return 42.0;
+	return vec4[f32](42.0, 42.0, 42.0, 1.0);
 }
 
 [entry(frag)]
@@ -174,22 +189,18 @@ fn main() -> FragOut
 	return output;
 }
 
-fn baz() -> f32
+fn baz() -> vec4[f32]
 {
 	return foo();
 }
 
-fn foo() -> f32
+fn foo() -> vec4[f32]
 {
 	return bar();
 }
 )");
 
 		ExpectSPIRV(*shaderModule, R"(
-OpFunction
-OpLabel
-OpReturnValue
-OpFunctionEnd
 OpFunction
 OpLabel
 OpVariable
@@ -211,6 +222,31 @@ OpLabel
 OpFunctionCall
 OpReturnValue
 OpFunctionEnd)");
+
+		ExpectWGSL(*shaderModule, R"(
+fn bar() -> vec4<f32>
+{
+	return vec4<f32>(42.0, 42.0, 42.0, 1.0);
+}
+
+@fragment
+fn main() -> FragOut
+{
+	var output: FragOut;
+	output.value = baz();
+	return output;
+}
+
+fn baz() -> vec4<f32>
+{
+	return foo();
+}
+
+fn foo() -> vec4<f32>
+{
+	return bar();
+}
+)");
 	}
 
 	SECTION("inout function call")

@@ -87,7 +87,7 @@ fn main()
       OpFunctionEnd)", {}, {}, true);
 
 		ExpectWGSL(*shaderModule, R"(
-// external var tag: Color map
+// Tag: Color map
 @group(0) @binding(0) var tex: texture_2d<f32>;
 @group(0) @binding(1) var texSampler: sampler;
 
@@ -182,6 +182,17 @@ fn main()
       OpStore %19 %24
       OpReturn
       OpFunctionEnd)", {}, {}, true);
+
+#ifdef FAILING_WGSL
+		ExpectWGSL(*shaderModule, R"(
+@group(0) @binding(0) var;
+
+@fragment
+fn main()
+{
+	var value: vec4<f32> = textureSample(tex[2], tex[2]Sampler, vec3<f32>(0.0, 0.0, 0.0));
+})");
+#endif
 	}
 
 	SECTION("Uniform buffers")

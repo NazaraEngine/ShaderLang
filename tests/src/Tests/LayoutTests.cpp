@@ -119,6 +119,23 @@ fn main()
       OpReturn
       OpFunctionEnd
 )", {}, {}, true);
+
+		ExpectWGSL(*shaderModule, R"(
+struct Foo
+{
+	v0: vec3<f32>,
+	v1: vec3<f32>,
+	v2: f32
+}
+
+@group(0) @binding(0) var<uniform> foo: Foo;
+
+@fragment
+fn main()
+{
+	var value: f32 = 0.0;
+}
+)");
 	}
 
 	SECTION("std430")
@@ -282,6 +299,32 @@ fn main()
       OpReturn
       OpFunctionEnd
 )", {}, {}, true);
+
+		ExpectWGSL(*shaderModule, R"(
+struct Bar
+{
+	v0: vec2<f32>
+}
+
+struct Foo
+{
+	v0: f32,
+	v1: vec3<f32>,
+	v2: array<f32, 4>,
+	v3: vec2<f32>,
+	v4: Bar,
+	v5: vec3<f32>,
+	v6: f32
+}
+
+@group(0) @binding(0) var<storage, read_write> foo: Foo;
+
+@fragment
+fn main()
+{
+	var value: f32 = 0.0;
+}
+)");
 	}
 
 		SECTION("scalar")
@@ -415,6 +458,21 @@ fn main()
       OpFunctionEnd
 )", {}, spirvEnv, true, spvValidatorOptions);
 		}
-	}
 
+		ExpectWGSL(*shaderModule, R"(
+struct Foo
+{
+	v0: vec3<f32>,
+	v1: vec3<f32>
+}
+
+@group(0) @binding(0) var<storage, read_write> foo: Foo;
+
+@fragment
+fn main()
+{
+	var value: f32 = 0.0;
+}
+)");
+	}
 }
