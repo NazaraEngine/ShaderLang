@@ -123,6 +123,7 @@ namespace nzsl
 			void AppendComment(std::string_view section);
 			void AppendCommentSection(std::string_view section);
 			void AppendConstantHelpers(Ast::PrimitiveType type, Ast::TypeConstant constant);
+			//void AppendInverseMatHelpers(Ast::MatrixType type);
 			void AppendHeader(const Ast::Module::Metadata& metadata);
 			template<typename T> void AppendIdentifier(const T& map, std::size_t id);
 			void AppendLine(std::string_view txt = {});

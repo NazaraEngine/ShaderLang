@@ -42,7 +42,6 @@
 #include <algorithm>
 
 #include <iostream>
-#include <typeinfo>
 
 namespace nzsl
 {
@@ -54,9 +53,14 @@ namespace nzsl
 	{
 		None = -1,
 
-		WgpuConservativeDepth,  // wgpu native features
-		WgpuEarlyFragmentTests, // wgpu native features
-		WgpuFloat64,            // wgpu native features
+		// wgpu native features
+		WgpuBufferBindingArray,
+		WgpuConservativeDepth, 
+		WgpuEarlyFragmentTests,
+		WgpuFloat64,
+		WgpuPushConstants,
+		WgpuStorageBindingArray,
+		WgpuTextureBindingArray,
 	};
 
 	struct WgslBuiltin
@@ -100,7 +104,6 @@ namespace nzsl
 				if (stage == ShaderStageType::Fragment)
 				{
 					if (node.depthWrite.HasValue() && node.depthWrite.GetResultingValue() != Ast::DepthWriteMode::Replace)
-		
 						features.insert(WgslFeature::WgpuConservativeDepth);
 
 					if (node.earlyFragmentTests.HasValue() && node.earlyFragmentTests.GetResultingValue())
@@ -109,6 +112,48 @@ namespace nzsl
 			}
 
 			RecursiveVisitor::Visit(node);
+		}
+
+		void Visit(Ast::DeclareExternalStatement& node) override
+		{
+			for (const auto& extVar : node.externalVars)
+			{
+				const Ast::ExpressionType& type = extVar.type.GetResultingValue();
+				if (IsPushConstantType(type))
+					features.insert(WgslFeature::WgpuPushConstants);
+				else if (IsArrayType(type))
+				{
+					const Ast::ArrayType& array = std::get<Ast::ArrayType>(type);
+					if (IsStorageType(array.InnerType()))
+						features.insert(WgslFeature::WgpuStorageBindingArray);
+					else if (IsTextureType(array.InnerType()))
+						features.insert(WgslFeature::WgpuTextureBindingArray);
+					else if (IsStructType(array.InnerType()))
+						features.insert(WgslFeature::WgpuBufferBindingArray);
+				}
+			}
+
+			RecursiveVisitor::Visit(node);
+		}
+
+		void Visit(Ast::IntrinsicExpression& node) override
+		{
+			RecursiveVisitor::Visit(node);
+
+			const Ast::ExpressionType& paramType = ResolveAlias(EnsureExpressionType(*node.parameters[0]));
+
+			if (node.intrinsic == Ast::IntrinsicType::IsInf)
+			{
+				assert((IsVectorType(paramType) || IsPrimitiveType(paramType)) && "invalid type found");
+				const Ast::PrimitiveType& type = IsVectorType(paramType) ? std::get<Ast::VectorType>(paramType).type : std::get<Ast::PrimitiveType>(paramType);
+
+				if (type == Ast::PrimitiveType::Float32)
+					hasf32Infinity = true;
+				else if (type == Ast::PrimitiveType::Float64)
+					hasf64Infinity = true;
+				else
+					assert(false && "isinf can only be used on floating types");
+			}
 		}
 
 		void Visit(Ast::TypeConstantExpression& node) override
@@ -360,12 +405,12 @@ namespace nzsl
 			m_currentState->currentModuleIndex = 0;
 			for (const auto& importedModule : module.importedModules)
 			{
-				importedModule.module->rootNode->Visit(previsitor);
 				m_currentState->currentModuleIndex++;
+				importedModule.module->rootNode->Visit(previsitor);
 				m_currentState->moduleNames.push_back(importedModule.identifier);
 			}
 
-			m_currentState->currentModuleIndex = std::numeric_limits<std::size_t>::max();
+			m_currentState->currentModuleIndex = 0;
 
 			std::size_t moduleIndex = 0;
 			for (const auto& importedModule : module.importedModules)
@@ -377,33 +422,25 @@ namespace nzsl
 		AppendHeader(*module.metadata);
 
 		// Validate required features
+		auto validateFeature = [&](std::string_view featureName, std::string_view featurePrettyName)
+		{
+			if (!m_environment.featuresCallback || !m_environment.featuresCallback(featureName))
+				throw std::runtime_error(fmt::format("WGSL does not support {} feature, wgpu does natively but you need to confirm its usage using feature callback", featurePrettyName));
+		};
+
 		for (WgslFeature feature : previsitor.features)
 		{
 			switch (feature)
 			{
-				case WgslFeature::None:
-					break;
+				case WgslFeature::None: break;
 
-				case WgslFeature::WgpuConservativeDepth:
-				{
-					if (!m_environment.featuresCallback || !m_environment.featuresCallback("WgpuConservativeDepth"))
-						throw std::runtime_error("WGSL does not support conservative depth feature, wgpu does natively but you need to confirm its usage using feature callback");
-					break;
-				}
-
-				case WgslFeature::WgpuEarlyFragmentTests:
-				{
-					if (!m_environment.featuresCallback || !m_environment.featuresCallback("WgpuEarlyFragmentTests"))
-						throw std::runtime_error("WGSL does not support early fragment depth test feature, wgpu does natively but you need to confirm its usage using feature callback");
-					break;
-				}
-
-				case WgslFeature::WgpuFloat64:
-				{
-					if (!m_environment.featuresCallback || !m_environment.featuresCallback("WgpuFloat64"))
-						throw std::runtime_error("WGSL does not support float 64 feature, wgpu does natively but you need to confirm its usage using feature callback");
-					break;
-				}
+				case WgslFeature::WgpuBufferBindingArray:  validateFeature("WgpuBufferBindingArray", "buffer binding array"); break;
+				case WgslFeature::WgpuConservativeDepth:   validateFeature("WgpuConservativeDepth", "conservative depth"); break;
+				case WgslFeature::WgpuEarlyFragmentTests:  validateFeature("WgpuEarlyFragmentTests", "early fragment depth test"); break;
+				case WgslFeature::WgpuFloat64:             validateFeature("WgpuFloat64", "float 64"); break;
+				case WgslFeature::WgpuPushConstants:       validateFeature("WgpuPushConstants", "push constants"); break;
+				case WgslFeature::WgpuStorageBindingArray: validateFeature("WgpuStorageBindingArray", "storage resource binding array"); break;
+				case WgslFeature::WgpuTextureBindingArray: validateFeature("WgpuTextureBindingArray", "texture binding array"); break;
 			}
 		}
 
@@ -412,12 +449,10 @@ namespace nzsl
 		for (const auto& importedModule : module.importedModules)
 		{
 			AppendModuleAttributes(*importedModule.module->metadata);
-			AppendLine("module ", importedModule.identifier);
-			EnterScope();
-			importedModule.module->rootNode->Visit(*this);
-			LeaveScope(true);
+			AppendComment("Module " + importedModule.module->metadata->moduleName);
 
 			m_currentState->currentModuleIndex++;
+			importedModule.module->rootNode->Visit(*this);
 			m_currentState->moduleNames.push_back(importedModule.identifier);
 		}
 
@@ -430,7 +465,7 @@ namespace nzsl
 		if (previsitor.hasf64NaN)
 			AppendConstantHelpers(Ast::PrimitiveType::Float64, Ast::TypeConstant::NaN);
 
-		m_currentState->currentModuleIndex = std::numeric_limits<std::size_t>::max();
+		m_currentState->currentModuleIndex = 0;
 		module.rootNode->Visit(*this);
 
 		Output output;
@@ -477,14 +512,23 @@ namespace nzsl
 		{
 			using namespace std::string_view_literals;
 
+			bool nameChanged = false;
+
 			// Identifier can't start with _nzsl
 			if (identifier.compare(0, 5, "_nzsl") == 0)
 			{
 				identifier.replace(0, 5, "_"sv);
-				return true;
+				nameChanged = true;
 			}
 
-			return false;
+			// Identifier can't be only _
+			if (identifier == "_")
+			{
+				identifier = "_2_2";
+				nameChanged = true;
+			}
+
+			return nameChanged;
 		};
 
 		Ast::IdentifierTransformer::Options secondIdentifierPassOptions;
@@ -521,7 +565,7 @@ namespace nzsl
 		executor.AddPass<Ast::StructAssignmentTransformer>([](Ast::StructAssignmentTransformer::Options& opt)
 		{
 			opt.splitWrappedArrayAssignation = false;
-			opt.splitWrappedStructAssignation = true; //< TODO: Only split for base uniforms/storage
+			opt.splitWrappedStructAssignation = true;
 		});
 		executor.AddPass<Ast::SwizzleTransformer>([](Ast::SwizzleTransformer::Options& opt)
 		{
@@ -551,7 +595,7 @@ namespace nzsl
 
 	void WgslWriter::Append(const Ast::DynArrayType& type)
 	{
-		Append("dyn_array<", type.containedType->type, ">");
+		Append("array<", type.containedType->type, ">");
 	}
 
 	void WgslWriter::Append(const Ast::ExpressionType& type)
@@ -617,7 +661,7 @@ namespace nzsl
 
 	void WgslWriter::Append(const Ast::NamedExternalBlockType& namedExternalBlockType)
 	{
-		Append(m_currentState->externalBlockNames[namedExternalBlockType.namedExternalBlockIndex]);
+		AppendComment(m_currentState->externalBlockNames[namedExternalBlockType.namedExternalBlockIndex]);
 	}
 
 	void WgslWriter::Append(Ast::PrimitiveType type)
@@ -637,39 +681,68 @@ namespace nzsl
 
 	void WgslWriter::Append(const Ast::PushConstantType& pushConstantType)
 	{
-		Append("push_constant[", pushConstantType.containedType, "]");
+		Append(pushConstantType.containedType);
 	}
 
 	void WgslWriter::Append(const Ast::SamplerType& samplerType)
 	{
-		if (samplerType.depth)
-			Append("depth_");
-
-		Append("sampler");
-
+		std::string dimension;
+		std::string type;
 		switch (samplerType.dim)
 		{
-			case ImageType::E1D:       Append("1D");      break;
-			case ImageType::E1D_Array: Append("1D_array"); break;
-			case ImageType::E2D:       Append("2D");      break;
-			case ImageType::E2D_Array: Append("2D_array"); break;
-			case ImageType::E3D:       Append("3D");      break;
-			case ImageType::Cubemap:   Append("_cube");    break;
+			case ImageType::E1D:
+			{
+				if (samplerType.depth)
+					throw std::runtime_error("depth texture sampler 1D are not supported by WGSL");
+				dimension = "1d";
+				break;
+			}
+			case ImageType::E1D_Array:
+			{
+				if (samplerType.depth)
+					throw std::runtime_error("depth texture sampler 1D array are not supported by WGSL");
+				dimension = "1d_array";
+				break;
+			}
+			case ImageType::E2D:       dimension = "2d";       break;
+			case ImageType::E2D_Array: dimension = "2d_array"; break;
+			case ImageType::E3D:
+			{
+				if (samplerType.depth)
+					throw std::runtime_error("depth texture sampler 3D are not supported by WGSL");
+				dimension = "3d";
+				break;
+			}
+			case ImageType::Cubemap:   dimension = "cube";     break;
 		}
+		switch (samplerType.sampledType)
+		{
+			case Ast::PrimitiveType::Boolean:
+				throw std::runtime_error("unexpected bool type for tture");
+			case Ast::PrimitiveType::Float64:
+				throw std::runtime_error("unexpected f64 type for teure");
 
-		Append("[", samplerType.sampledType, "]");
+			case Ast::PrimitiveType::Float32: type = "<f32>"; break;
+			case Ast::PrimitiveType::Int32:   type = "<i32>"; break;
+			case Ast::PrimitiveType::UInt32:  type = "<u32>"; break;
+
+			case Ast::PrimitiveType::String:
+				throw std::runtime_error("unexpected string type forexture");
+
+			case Ast::PrimitiveType::FloatLiteral:
+			case Ast::PrimitiveType::IntLiteral:
+				throw std::runtime_error("unexpected litteral type for sampler");
+		}
+		Append("texture_");
+		if (samplerType.depth)
+			Append("depth_", dimension);
+		else
+			Append(dimension, type);
 	}
 
 	void WgslWriter::Append(const Ast::StorageType& storageType)
 	{
-		Append("storage[", storageType.containedType);
-		switch (storageType.accessPolicy)
-		{
-			case AccessPolicy::ReadOnly:  Append(", readonly"); break;
-			case AccessPolicy::ReadWrite: break;
-			case AccessPolicy::WriteOnly: Append(", writeonly"); break;
-		}
-		Append("]");
+		Append(storageType.containedType);
 	}
 
 	void WgslWriter::Append(const Ast::StructType& structType)
@@ -679,37 +752,57 @@ namespace nzsl
 
 	void WgslWriter::Append(const Ast::TextureType& textureType)
 	{
-		Append("texture");
-
+		Append("texture_storage_");
 		switch (textureType.dim)
 		{
-			case ImageType::E1D:       Append("1D");       break;
-			case ImageType::E1D_Array: Append("1D_array"); break;
-			case ImageType::E2D:       Append("2D");       break;
-			case ImageType::E2D_Array: Append("2D_array"); break;
-			case ImageType::E3D:       Append("3D");       break;
-			case ImageType::Cubemap:   Append("_cube");    break;
-		}
+			case ImageType::E1D:       Append("1d");       break;
+			case ImageType::E2D:       Append("2d");       break;
+			case ImageType::E2D_Array: Append("2d_array"); break;
+			case ImageType::E3D:       Append("3d");       break;
 
-		Append("[", textureType.baseType, ", ");
+			default:
+				throw std::runtime_error("unexpected storage texture type");
+		}
+		Append("<");
+		switch (textureType.format)
+		{
+			case ImageFormat::RGBA8:       Append("rgba8unorm");  break;
+			case ImageFormat::RGBA8i:      Append("rgba8sint");   break;
+			case ImageFormat::RGBA8Snorm:  Append("rgba8snorm");  break;
+			case ImageFormat::RGBA8ui:     Append("rgba8uint");   break;
+
+			case ImageFormat::RGBA16f:     Append("rgba16float"); break;
+			case ImageFormat::RGBA16i:     Append("rgba16sint");  break;
+			case ImageFormat::RGBA16ui:    Append("rgba16uint");  break;
+
+			case ImageFormat::R32f:        Append("r32float");    break;
+			case ImageFormat::R32i:        Append("r32sint");     break;
+			case ImageFormat::R32ui:       Append("r32uint");     break;
+
+			case ImageFormat::RG32f:       Append("rg32float");   break;
+			case ImageFormat::RG32i:       Append("rg32sint");    break;
+			case ImageFormat::RG32ui:      Append("rg32uint");    break;
+
+			case ImageFormat::RGBA32f:     Append("rgba32float"); break;
+			case ImageFormat::RGBA32i:     Append("rgba32sint");  break;
+			case ImageFormat::RGBA32ui:    Append("rgba32uint");  break;
+
+			default:
+				throw std::runtime_error("unexpected format type for texture");
+		}
+		Append(", ");
 		switch (textureType.accessPolicy)
 		{
 			case AccessPolicy::ReadOnly:  Append("read"); break;
 			case AccessPolicy::ReadWrite: Append("read_write"); break;
 			case AccessPolicy::WriteOnly: Append("write"); break;
 		}
-
-		if (textureType.format != ImageFormat::Unknown)
-		{
-			assert(textureType.format == ImageFormat::RGBA8); //< TODO
-			Append(", rgba8");
-		}
-		Append("]");
+		Append(">");
 	}
 
 	void WgslWriter::Append(const Ast::Type& /*type*/)
 	{
-		throw std::runtime_error("unexpected type?");
+		throw std::runtime_error("unexpected type");
 	}
 
 	void WgslWriter::Visit(Ast::TypeConstantExpression& node)
@@ -802,9 +895,9 @@ namespace nzsl
 		}
 	}
 
-	void WgslWriter::Append(const Ast::UniformType& /*uniformType*/)
+	void WgslWriter::Append(const Ast::UniformType& uniformType)
 	{
-		throw std::runtime_error("unexpected UniformType?");
+		Append(uniformType.containedType);
 	}
 
 	void WgslWriter::Append(const Ast::VectorType& vecType)
@@ -950,15 +1043,11 @@ namespace nzsl
 		}
 	}
 
-	void WgslWriter::AppendAttribute(bool first, DescriptionAttribute attribute)
+	void WgslWriter::AppendAttribute(bool /*first*/, DescriptionAttribute attribute)
 	{
 		if (!attribute.HasValue())
 			return;
-		if (!first)
-			Append(" ");
-		Append("@");
-
-		Append("desc(", EscapeString(attribute.description), ")");
+		AppendComment("Description: " + EscapeString(attribute.description));
 	}
 
 	void WgslWriter::AppendAttribute(bool first, EarlyFragmentTestsAttribute attribute)
@@ -1079,9 +1168,11 @@ namespace nzsl
 		Append(")");
 	}
 
-	void WgslWriter::AppendAttribute(bool /*first*/, TagAttribute /*attribute*/)
+	void WgslWriter::AppendAttribute(bool /*first*/, TagAttribute attribute)
 	{
-		// TODO
+		if (!attribute.HasValue())
+			return;
+		AppendComment("Tag: " + attribute.tag);
 	}
 
 	void WgslWriter::AppendAttribute(bool first, UnrollAttribute attribute)
@@ -1198,11 +1289,11 @@ namespace nzsl
 				m_currentState->hasf64RatioFunction = true;
 			}
 
-			Append(fmt::format(R"(
-fn _nzslRatio{0}(n: {0}, d: {0}) -> {0}
+			Append(fmt::format(R"(fn _nzslRatio{0}(n: {0}, d: {0}) -> {0}
 {{
 	return n / d;	
 }}
+
 )", stringType));
 		};
 
@@ -1211,22 +1302,22 @@ fn _nzslRatio{0}(n: {0}, d: {0}) -> {0}
 			case Ast::TypeConstant::NaN:
 			{
 				setupRatioFunction();
-				Append(fmt::format(R"(
-fn _nzslNaN{0}() -> {0}
+				Append(fmt::format(R"(fn _nzslNaN{0}() -> {0}
 {{
 	return _nzslRatio{0}(0.0, 0.0);	
 }}
+
 )", stringType));
 				break;
 			}
 			case Ast::TypeConstant::Infinity:
 			{
 				setupRatioFunction();
-				Append(fmt::format(R"(
-fn _nzslInfinity{0}() -> {0}
+				Append(fmt::format(R"(fn _nzslInfinity{0}() -> {0}
 {{
 	return _nzslRatio{0}(1.0, 0.0);	
 }}
+
 )", stringType));
 				break;
 			}
@@ -1250,11 +1341,11 @@ fn _nzslInfinity{0}() -> {0}
 	void WgslWriter::AppendIdentifier(const T& map, std::size_t id)
 	{
 		const auto& identifier = Nz::Retrieve(map, id);
-		if (identifier.moduleIndex != m_currentState->currentModuleIndex)
-			Append(m_currentState->moduleNames[identifier.moduleIndex], '.');
+		if (identifier.moduleIndex != 0)
+			Append(m_currentState->moduleNames[identifier.moduleIndex - 1], '_');
 
 		if (identifier.externalBlockIndex && identifier.externalBlockIndex != m_currentState->currentExternalBlockIndex)
-			Append(m_currentState->externalBlockNames[*identifier.externalBlockIndex], '.');
+			Append(m_currentState->externalBlockNames[*identifier.externalBlockIndex], '_');
 
 		Append(identifier.name);
 	}
@@ -1573,12 +1664,6 @@ fn _nzslInfinity{0}() -> {0}
 		{
 			if (i != 0)
 				Append(", ");
-
-			if (node.parameters[i].semantic == Ast::FunctionParameterSemantic::InOut)
-				Append("inout ");
-			else if (node.parameters[i].semantic == Ast::FunctionParameterSemantic::Out)
-				Append("out ");
-
 			node.parameters[i].expr->Visit(*this);
 		}
 		Append(")");
@@ -1626,25 +1711,7 @@ fn _nzslInfinity{0}() -> {0}
 				{
 					nbParams = 1;
 				},
-				[&](const Ast::UniformType&) { throw std::runtime_error("unexpected UniformType?"); },
-				[&](const Ast::StorageType&) { throw std::runtime_error("unexpected StorageType?"); },
-				[&](const Ast::SamplerType&) { throw std::runtime_error("unexpected SamplerType?"); },
-				[&](const Ast::PushConstantType&) { throw std::runtime_error("unexpected PushConstantType?"); },
-				[&](const Ast::TextureType&) { throw std::runtime_error("unexpected TextureType?"); },
-				[&](const Ast::NoType&) { throw std::runtime_error("unexpected NoType?"); },
-				[&](const Ast::AliasType&) { throw std::runtime_error("unexpected AliasType?"); },
-				[&](const Ast::ArrayType&) { throw std::runtime_error("unexpected ArrayType?"); },
-				[&](const Ast::DynArrayType&) { throw std::runtime_error("unexpected DynArrayType?"); },
-				[&](const Ast::FunctionType&) { throw std::runtime_error("unexpected FunctionType?"); },
-				[&](const Ast::IntrinsicFunctionType&) { throw std::runtime_error("unexpected IntrinsicFunctionType?"); },
-				[&](const Ast::MethodType&) { throw std::runtime_error("unexpected MethodType?"); },
-				[&](const Ast::ModuleType&) { throw std::runtime_error("unexpected ModuleType?"); },
-				[&](const Ast::StructType&) { throw std::runtime_error("unexpected StructType?"); },
-				[&](const Ast::Type&) { throw std::runtime_error("unexpected Type?"); },
-				[&](const Ast::NamedExternalBlockType&) { throw std::runtime_error("unexpected NamedExternalBlockType?"); },
-				[&](const Ast::ImplicitArrayType&) { throw std::runtime_error("unexpected ImplicitArrayType?"); },
-				[&](const Ast::ImplicitMatrixType&) { throw std::runtime_error("unexpected ImplicitMatrixType?"); },
-				[&](const Ast::ImplicitVectorType&) { throw std::runtime_error("unexpected ImplicitVectorType?"); },
+				[&](const auto&) { throw std::runtime_error("unexpected Type?"); },
 			}, node.targetType.GetResultingValue());
 
 			for (std::size_t i = 0; i < nbParams; i++)
@@ -1742,18 +1809,13 @@ fn _nzslInfinity{0}() -> {0}
 			case Ast::IntrinsicType::Cos:
 			case Ast::IntrinsicType::Cosh:
 			case Ast::IntrinsicType::CrossProduct:
-			case Ast::IntrinsicType::DegToRad:
 			case Ast::IntrinsicType::Distance:
 			case Ast::IntrinsicType::DotProduct:
 			case Ast::IntrinsicType::Exp:
 			case Ast::IntrinsicType::Exp2:
 			case Ast::IntrinsicType::Floor:
 			case Ast::IntrinsicType::Fract:
-			case Ast::IntrinsicType::IsInf:
-			case Ast::IntrinsicType::IsNaN:
-			case Ast::IntrinsicType::InverseSqrt:
 			case Ast::IntrinsicType::Length:
-			case Ast::IntrinsicType::Lerp:
 			case Ast::IntrinsicType::Log:
 			case Ast::IntrinsicType::Log2:
 			case Ast::IntrinsicType::MatrixInverse:
@@ -1761,13 +1823,9 @@ fn _nzslInfinity{0}() -> {0}
 			case Ast::IntrinsicType::Max:
 			case Ast::IntrinsicType::Min:
 			case Ast::IntrinsicType::Normalize:
-			case Ast::IntrinsicType::Not:
 			case Ast::IntrinsicType::Pow:
-			case Ast::IntrinsicType::RadToDeg:
 			case Ast::IntrinsicType::Reflect:
 			case Ast::IntrinsicType::Round:
-			case Ast::IntrinsicType::RoundEven:
-			case Ast::IntrinsicType::Select:
 			case Ast::IntrinsicType::Sign:
 			case Ast::IntrinsicType::Sin:
 			case Ast::IntrinsicType::Sinh:
@@ -1786,6 +1844,82 @@ fn _nzslInfinity{0}() -> {0}
 				break;
 			}
 
+			case Ast::IntrinsicType::DegToRad: Append("radians"); break;
+			case Ast::IntrinsicType::InverseSqrt: Append("inverseSqrt"); break;
+
+			case Ast::IntrinsicType::IsInf:
+			case Ast::IntrinsicType::IsNaN:
+			{
+				const Ast::ExpressionType& paramType = ResolveAlias(EnsureExpressionType(*node.parameters[0]));
+				const Ast::PrimitiveType& innerType = IsVectorType(paramType) ? std::get<Ast::VectorType>(paramType).type : std::get<Ast::PrimitiveType>(paramType);
+				std::size_t componentCount = 1;
+				if (node.intrinsic == Ast::IntrinsicType::IsInf && IsVectorType(paramType))
+				{
+					componentCount = std::get<Ast::VectorType>(paramType).componentCount;
+					Append("vec", componentCount, "<bool>(");
+				}
+				for(std::size_t i = 0; i < componentCount; i++)
+				{
+					if (i != 0)
+						Append(", ");
+					if (node.intrinsic == Ast::IntrinsicType::IsInf)
+					{
+						if (IsVectorType(paramType))
+						{
+							const char* componentStr = "xyzw";
+							node.parameters[0]->Visit(*this);
+							Append('.', componentStr[i]);
+						}
+						Append(" == _nzslInfinity", (innerType == Ast::PrimitiveType::Float32 ? "f32" : "f64"), "()");
+					}
+					else
+					{
+						node.parameters[0]->Visit(*this);
+						Append(" != ");
+						node.parameters[0]->Visit(*this);
+						return;
+					}
+				}
+				if (IsVectorType(paramType))
+					Append(")");
+				return;
+			}
+
+			case Ast::IntrinsicType::Lerp: Append("mix"); break;
+			case Ast::IntrinsicType::Not: Append("!"); break;
+			case Ast::IntrinsicType::RadToDeg: Append("degrees"); break;
+			case Ast::IntrinsicType::RoundEven: Append("round"); break;
+
+			case Ast::IntrinsicType::Select:
+			{
+				const Ast::ExpressionType& condParamType = ResolveAlias(EnsureExpressionType(*node.parameters[0]));
+				const Ast::ExpressionType& firstParamType = ResolveAlias(EnsureExpressionType(*node.parameters[1]));
+
+				Append("select(");
+				node.parameters[2]->Visit(*this);
+				Append(", ");
+				node.parameters[1]->Visit(*this);
+				Append(", ");
+
+				// WGSL requires boolean vectors when selecting vectors
+				if (IsVectorType(firstParamType) && !IsVectorType(condParamType))
+				{
+					std::size_t componentCount = std::get<Ast::VectorType>(firstParamType).componentCount;
+
+					Append("vec", componentCount, "<bool>(");
+					node.parameters[0]->Visit(*this);
+					Append(")");
+				}
+				else
+					node.parameters[0]->Visit(*this);
+
+				Append(")");
+				return;
+			}
+
+			case Ast::IntrinsicType::TextureRead: Append("textureLoad"); break;
+			case Ast::IntrinsicType::TextureWrite: Append("textureStore"); break;
+
 			// Method intrinsics
 			case Ast::IntrinsicType::ArraySize:
 				assert(!node.parameters.empty());
@@ -1799,13 +1933,9 @@ fn _nzslInfinity{0}() -> {0}
 						return;
 					}
 				}
-				Append("arrayLength(");
+				Append("arrayLength(&");
 				node.parameters[0]->Visit(*this);
 				method = true;
-				break;
-
-			case Ast::IntrinsicType::TextureRead:
-				Append("textureLoad");
 				break;
 
 			case Ast::IntrinsicType::TextureSampleImplicitLod:
@@ -1819,14 +1949,13 @@ fn _nzslInfinity{0}() -> {0}
 				break;
 
 			case Ast::IntrinsicType::TextureSampleImplicitLodDepthComp:
-				assert(!node.parameters.empty());
-				Visit(node.parameters.front(), true);
-				Append(".SampleDepthComp");
+				firstParam = false;
+				Append("textureSampleCompare(");
+				node.parameters[0]->Visit(*this);
+				Append(", ");
+				node.parameters[0]->Visit(*this);
+				Append("Sampler, ");
 				method = true;
-				break;
-
-			case Ast::IntrinsicType::TextureWrite:
-				Append("textureStore");
 				break;
 		}
 
@@ -1984,12 +2113,10 @@ fn _nzslInfinity{0}() -> {0}
 
 	void WgslWriter::Visit(Ast::DeclareExternalStatement& node)
 	{
-		AppendAttributes(true, SetAttribute{ node.bindingSet }, AutoBindingAttribute{ node.autoBinding }, TagAttribute{ node.tag });
+		AppendAttributes(true, TagAttribute{ node.tag });
 
 		if (!node.name.empty())
 		{
-			Append(" ", node.name);
-
 			m_currentState->currentExternalBlockIndex = m_currentState->externalBlockNames.size();
 			m_currentState->externalBlockNames.push_back(node.name);
 		}
@@ -2001,153 +2128,70 @@ fn _nzslInfinity{0}() -> {0}
 		for (const auto& externalVar : node.externalVars)
 		{
 			if (!externalVar.tag.empty() && m_currentState->backendParameters.debugLevel >= DebugLevel::Minimal)
-				AppendComment("external var tag: " + externalVar.tag);
+				AppendAttribute(false, TagAttribute{ externalVar.tag });
+
+			const Ast::ExpressionType& exprType = externalVar.type.GetResultingValue();
 
 			std::uint32_t binding = 0;
-			std::uint64_t bindingSet;
-			if (externalVar.bindingSet.HasValue())
-				bindingSet = externalVar.bindingSet.GetResultingValue();
-			else
-				bindingSet = 0;
-			if (!externalVar.type.IsResultingValue() || !IsPushConstantType(externalVar.type.GetResultingValue())) // push constants don't have set or binding'
+			std::uint64_t bindingSet = (externalVar.bindingSet.HasValue()) ? externalVar.bindingSet.GetResultingValue() : 0;
+
+			// Binding group declaration in WGSL in built like this
+			// @group(G) @binding(B) var<ADDRESS_SPACE[, ACCESS?]> name : TYPE;
+
+			// Binding group handling
+			if (!IsPushConstantType(exprType)) // Push constants don't have set or binding
 			{
 				binding = externalVar.bindingIndex.GetResultingValue();
 				for (; reservedBindings.count(bindingSet << 32 | binding); binding++);
 				reservedBindings.emplace(bindingSet << 32 | binding);
 				m_currentState->bindingRemap[bindingSet << 32 | externalVar.bindingIndex.GetResultingValue()] = binding;
+
 				AppendAttributes(false, SetAttribute{ externalVar.bindingSet }, BindingAttribute{ Ast::ExpressionValue{ binding } });
 			}
 
 			Append("var");
 
-			std::visit(Nz::Overloaded
+			// Address space handling
+			if (IsUniformType(exprType))
+				Append("<uniform>");
+			else if (IsPushConstantType(exprType))
+				Append("<push_constant>");
+			else if (IsStorageType(exprType))
 			{
-				[&](const Ast::UniformType& uniformType)
+				const Ast::StorageType& storageType = std::get<Ast::StorageType>(exprType);
+
+				Append("<storage, ");
+				switch (storageType.accessPolicy)
 				{
-					Append("<uniform> ", externalVar.name, ": ", uniformType.containedType);
-				},
-				[&](const Ast::StorageType& storageType)
-				{
-					Append("<storage, ");
-					switch (storageType.accessPolicy)
-					{
-						case AccessPolicy::ReadOnly:  Append("read"); break;
-						case AccessPolicy::WriteOnly:
-						case AccessPolicy::ReadWrite: Append("read_write"); break;
-					}
-					Append("> ", externalVar.name, ": ", storageType.containedType);
-				},
-				[&](const Ast::SamplerType& samplerType)
-				{
-					std::string dimension;
-					std::string type;
-					switch (samplerType.dim)
-					{
-						case ImageType::E1D:       dimension = "1d";       break;
-						case ImageType::E1D_Array: dimension = "1d_array"; break;
-						case ImageType::E2D:       dimension = "2d";       break;
-						case ImageType::E2D_Array: dimension = "2d_array"; break;
-						case ImageType::E3D:       dimension = "3d";       break;
-						case ImageType::Cubemap:   dimension = "cube";     break;
-					}
-					switch (samplerType.sampledType)
-					{
-						case Ast::PrimitiveType::Boolean:
-							throw std::runtime_error("unexpected bool type for texture");
-						case Ast::PrimitiveType::Float64:
-							throw std::runtime_error("unexpected f64 type for texture");
+					case AccessPolicy::ReadOnly:  Append("read"); break;
 
-						case Ast::PrimitiveType::Float32: type = "<f32>"; break;
-						case Ast::PrimitiveType::Int32:   type = "<i32>"; break;
-						case Ast::PrimitiveType::UInt32:  type = "<u32>"; break;
+					case AccessPolicy::WriteOnly: // WGSL does not support write only storage bindings so readwrite will do just fine
+					case AccessPolicy::ReadWrite: Append("read_write"); break;
+				}
+				Append(">");
+			}
 
-						case Ast::PrimitiveType::String:
-							throw std::runtime_error("unexpected string type for texture");
+			Append(' ');
 
-						case Ast::PrimitiveType::FloatLiteral:
-						case Ast::PrimitiveType::IntLiteral:
-							throw std::runtime_error("unexpected untyped for sampler");
-					}
-					AppendLine(" ", externalVar.name, ": texture_", dimension, type, ";");
-					AppendAttributes(false, SetAttribute{ externalVar.bindingSet }, BindingAttribute{ Ast::ExpressionValue{ binding + 1 } });
-					reservedBindings.emplace(bindingSet << 32 | binding + 1);
-					Append("var ", externalVar.name, "Sampler: sampler");
-				},
-				[&](const Ast::PushConstantType& /*pushConstantType*/)
-				{
-					throw std::runtime_error("push constant are not supported yet");
-				},
-				[&](const Ast::TextureType& textureType)
-				{
-					Append(" ", externalVar.name, ": texture_storage_");
-					switch (textureType.dim)
-					{
-						case ImageType::E1D:       Append("1d");       break;
-						case ImageType::E2D:       Append("2d");       break;
-						case ImageType::E2D_Array: Append("2d_array"); break;
-						case ImageType::E3D:       Append("3d");       break;
+			std::string variableName;
 
-						default:
-							throw std::runtime_error("unexpected texture type");
-					}
-					Append("<");
-					switch (textureType.format)
-					{
-						case ImageFormat::RGBA8:       Append("rgba8unorm");  break;
-						case ImageFormat::RGBA8i:      Append("rgba8sint");   break;
-						case ImageFormat::RGBA8Snorm:  Append("rgba8snorm");  break;
-						case ImageFormat::RGBA8ui:     Append("rgba8uint");   break;
+			if (m_currentState->currentModuleIndex != 0)
+				variableName += m_currentState->moduleNames[m_currentState->currentModuleIndex - 1] + '_';
+			if (!node.name.empty())
+				variableName += node.name + '_';
+			variableName += externalVar.name;
+			Append(variableName, ": ", exprType);
 
-						case ImageFormat::RGBA16f:     Append("rgba16float"); break;
-						case ImageFormat::RGBA16i:     Append("rgba16sint");  break;
-						case ImageFormat::RGBA16ui:    Append("rgba16uint");  break;
+			if (IsSamplerType(exprType))
+			{
+				// WGSL has not (yet?) combined image samplers so we need to split textures and samplers
+				AppendLine(';'); // Closing last line
+				AppendAttributes(false, SetAttribute{ externalVar.bindingSet }, BindingAttribute{ Ast::ExpressionValue{ binding + 1 } });
+				reservedBindings.emplace(bindingSet << 32 | binding + 1);
+				Append("var ", variableName, "Sampler: sampler");
+			}
 
-						case ImageFormat::R32f:        Append("r32float");    break;
-						case ImageFormat::R32i:        Append("r32sint");     break;
-						case ImageFormat::R32ui:       Append("r32uint");     break;
-
-						case ImageFormat::RG32f:       Append("rg32float");   break;
-						case ImageFormat::RG32i:       Append("rg32sint");    break;
-						case ImageFormat::RG32ui:      Append("rg32uint");    break;
-
-						case ImageFormat::RGBA32f:     Append("rgba32float"); break;
-						case ImageFormat::RGBA32i:     Append("rgba32sint");  break;
-						case ImageFormat::RGBA32ui:    Append("rgba32uint");  break;
-
-						default:
-							throw std::runtime_error("unexpected format type for texture");
-					}
-					Append(", ");
-					switch (textureType.accessPolicy)
-					{
-						case AccessPolicy::ReadOnly:  Append("read"); break;
-						case AccessPolicy::ReadWrite: Append("read_write"); break;
-						case AccessPolicy::WriteOnly: Append("write"); break;
-					}
-					Append(">");
-				},
-				[&](const Ast::ArrayType& arrayType)
-				{
-				},
-				[&](const Ast::NoType&) { throw std::runtime_error("unexpected Type?"); },
-				[&](const Ast::AliasType&) { throw std::runtime_error("unexpected Type?"); },
-				[&](const Ast::DynArrayType&) { throw std::runtime_error("unexpected Type?"); },
-				[&](const Ast::FunctionType&) { throw std::runtime_error("unexpected Type?"); },
-				[&](const Ast::IntrinsicFunctionType&) { throw std::runtime_error("unexpected Type?"); },
-				[&](const Ast::MatrixType&) { throw std::runtime_error("unexpected Type?"); },
-				[&](const Ast::MethodType&) { throw std::runtime_error("unexpected Type?"); },
-				[&](const Ast::ModuleType&) { throw std::runtime_error("unexpected Type?"); },
-				[&](const Ast::PrimitiveType&) { throw std::runtime_error("unexpected Type?"); },
-				[&](const Ast::StructType&) { throw std::runtime_error("unexpected Type?"); },
-				[&](const Ast::Type&) { throw std::runtime_error("unexpected Type?"); },
-				[&](const Ast::VectorType&) { throw std::runtime_error("unexpected Type?"); },
-				[&](const Ast::NamedExternalBlockType&) { throw std::runtime_error("unexpected Type?"); },
-				[&](const Ast::ImplicitArrayType&) { throw std::runtime_error("unexpected Type?"); },
-				[&](const Ast::ImplicitMatrixType&) { throw std::runtime_error("unexpected Type?"); },
-				[&](const Ast::ImplicitVectorType&) { throw std::runtime_error("unexpected Type?"); },
-			}, externalVar.type.GetResultingValue());
-
-			AppendLine(";");
+			AppendLine(';');
 
 			if (externalVar.varIndex)
 				RegisterVariable(*externalVar.varIndex, externalVar.name);
@@ -2167,7 +2211,14 @@ fn _nzslInfinity{0}() -> {0}
 			DepthWriteAttribute{ node.depthWrite }
 		);
 
-		Append("fn ", node.name, "(");
+		Append("fn ");
+
+		assert(node.funcIndex);
+		const auto& identifier = Nz::Retrieve(m_currentState->functions, *node.funcIndex);
+		if (identifier.moduleIndex != 0)
+			Append(m_currentState->moduleNames[identifier.moduleIndex - 1], '_', node.name, '(');
+		else
+			Append(node.name, '(');
 		for (std::size_t i = 0; i < node.parameters.size(); ++i)
 		{
 			const auto& parameter = node.parameters[i];
@@ -2176,22 +2227,21 @@ fn _nzslInfinity{0}() -> {0}
 				Append(", ");
 
 			if (parameter.semantic == Ast::FunctionParameterSemantic::InOut)
-			{
 				Append("inout ");
-			}
 			else if (parameter.semantic == Ast::FunctionParameterSemantic::Out)
-			{
 				Append("out ");
-			}
 
-			Append(parameter.name);
-			Append(": ");
-			Append(parameter.type);
+			// Ugly but simple
+			if (identifier.moduleIndex != 0)
+				Append(m_currentState->moduleNames[identifier.moduleIndex - 1], '_', parameter.name);
+			else
+				Append(parameter.name);
+			Append(": ", parameter.type);
 
 			if (parameter.varIndex)
 				RegisterVariable(*parameter.varIndex, parameter.name);
 		}
-		Append(")");
+		Append(')');
 		if (node.returnType.HasValue())
 		{
 			if (!node.returnType.IsResultingValue() || !IsNoType(node.returnType.GetResultingValue()))
@@ -2206,22 +2256,10 @@ fn _nzslInfinity{0}() -> {0}
 		LeaveScope();
 	}
 
-	void WgslWriter::Visit(Ast::DeclareOptionStatement& node)
+	void WgslWriter::Visit(Ast::DeclareOptionStatement& /*node*/)
 	{
-		if (node.optIndex)
-			RegisterConstant(*node.optIndex, node.optName);
-
-		Append("option ", node.optName);
-		if (node.optType.HasValue())
-			Append(": ", node.optType);
-
-		if (node.defaultValue)
-		{
-			Append(" = ");
-			node.defaultValue->Visit(*this);
-		}
-
-		Append(";");
+		// all options should have been handled by sanitizer
+		throw std::runtime_error("unexpected option declaration, is shader sanitized?");
 	}
 
 	void WgslWriter::Visit(Ast::DeclareStructStatement& node)
@@ -2231,7 +2269,13 @@ fn _nzslInfinity{0}() -> {0}
 
 		AppendAttributes(true, LayoutAttribute{ node.description.layout }, TagAttribute{ node.description.tag });
 		Append("struct ");
-		AppendLine(node.description.name);
+
+		assert(node.structIndex);
+		const auto& identifier = Nz::Retrieve(m_currentState->structs, *node.structIndex);
+		if (identifier.moduleIndex != 0)
+			AppendLine(m_currentState->moduleNames[identifier.moduleIndex - 1], '_', node.description.name);
+		else
+			AppendLine(node.description.name);
 		EnterScope();
 		{
 			bool first = true;
