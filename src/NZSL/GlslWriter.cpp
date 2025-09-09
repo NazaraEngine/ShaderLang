@@ -1465,7 +1465,7 @@ namespace nzsl
 		{
 			const SourceLocation& rootLocation = module.rootNode->sourceLocation;
 
-			AppendComment("NZSL version: " + Version::ToString(metadata.shaderLangVersion));
+			AppendComment("NZSL version: " + Version::ToString(metadata.langVersion));
 			if (rootLocation.file)
 			{
 				AppendComment("from " + *rootLocation.file);

@@ -865,7 +865,7 @@ namespace nzsl
 		}
 		else if constexpr (std::is_same_v<T, double> || std::is_same_v<T, std::uint32_t>)
 		{
-			bool hasUntypedLiterals = m_currentState->currentModule->metadata->shaderLangVersion >= Version::UntypedLiterals;
+			bool hasUntypedLiterals = m_currentState->currentModule->metadata->langVersion >= Version::UntypedLiterals;
 			Append(Ast::ToString(value, !hasUntypedLiterals || m_currentState->enforceNonDefaultTypes));
 		}
 		else
@@ -883,7 +883,7 @@ namespace nzsl
 	}
 	void LangWriter::AppendModuleAttributes(const Ast::Module::Metadata& metadata)
 	{
-		AppendAttributes(true, LangVersionAttribute{ metadata.shaderLangVersion });
+		AppendAttributes(true, LangVersionAttribute{ metadata.langVersion });
 		for (Ast::ModuleFeature feature : metadata.enabledFeatures)
 			AppendAttributes(true, FeatureAttribute{ feature });
 

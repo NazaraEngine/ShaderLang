@@ -26,7 +26,7 @@ namespace nzsl::Ast
 			struct Metadata;
 
 			Module() = default;
-			inline Module(std::uint32_t shaderLangVersion, std::string moduleName = std::string());
+			inline Module(std::uint32_t langVersion, std::string moduleName = std::string());
 			inline Module(std::shared_ptr<const Metadata> metadata, std::vector<ImportedModule> importedModules = {});
 			inline Module(std::shared_ptr<const Metadata> metadata, MultiStatementPtr rootNode, std::vector<ImportedModule> importedModules = {});
 			Module(const Module&) = delete;
@@ -48,8 +48,8 @@ namespace nzsl::Ast
 				std::string description;
 				std::string license;
 				std::string moduleName;
-				std::uint32_t shaderLangVersion;
 				std::vector<ModuleFeature> enabledFeatures;
+				std::uint32_t langVersion;
 			};
 
 			std::shared_ptr<const Metadata> metadata;
