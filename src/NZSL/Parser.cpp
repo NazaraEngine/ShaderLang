@@ -2060,14 +2060,9 @@ namespace nzsl
 		if (!inputFile)
 			throw std::runtime_error("failed to open " + Nz::PathToString(sourcePath));
 
-		inputFile.seekg(0, std::ios::end);
-
-		std::streamsize length = inputFile.tellg();
-
-		inputFile.seekg(0, std::ios::beg);
-
-		std::vector<char> content(Nz::SafeCast<std::size_t>(length));
-		if (length > 0 && !inputFile.read(&content[0], length))
+		std::size_t fileSize = Nz::SafeCaster(std::filesystem::file_size(sourcePath));
+		std::vector<char> content(fileSize);
+		if (fileSize > 0 && !inputFile.read(&content[0], fileSize))
 			throw std::runtime_error("failed to read " + Nz::PathToString(sourcePath));
 
 		return Parse(std::string_view(content.data(), content.size()), Nz::PathToString(sourcePath));

@@ -41,7 +41,7 @@ TEST_CASE("Standalone compiler", "[NZSLC]")
 		ExecuteCommand("./nzslc ../resources/modules/Data/DataStruct.nzslb"); //< validation
 
 		// Try to generate a full shader based on partial compilation result
-		ExecuteCommand("./nzslc --compile=glsl,glsl-header,nzsl,nzsl-header,nzslb,nzslb-header,spv,spv-header,spv-txt --gl-bindingmap --debug-level=regular -o test_files -m ../resources/modules/Color.nzslb  -m ../resources/modules/Data/OutputStruct.nzslb -m ../resources/modules/Data/DataStruct.nzslb ../resources/Shader.nzslb");
+		ExecuteCommand("./nzslc --skip-unchanged --verbose --compile=glsl,glsl-header,nzsl,nzsl-header,nzslb,nzslb-header,spv,spv-header,spv-dis --gl-bindingmap --debug-level=regular -o test_files -m ../resources/modules/Color.nzslb  -m ../resources/modules/Data/OutputStruct.nzslb -m ../resources/modules/Data/DataStruct.nzslb ../resources/Shader.nzslb");
 		
 		// Validate generated files
 		ExecuteCommand("./nzslc test_files/Shader.nzsl");
@@ -55,5 +55,8 @@ TEST_CASE("Standalone compiler", "[NZSLC]")
 		CheckHeaderMatch("test_files/Shader.nzsl");
 		CheckHeaderMatch("test_files/Shader.nzslb");
 		CheckHeaderMatch("test_files/Shader.spv");
+
+		// Generate the same shader a second time with --skip-unchanged and ensure file wasn't modified
+		ExecuteCommand("./nzslc --skip-unchanged --verbose --compile=spv --debug-level=regular -o test_files -m ../resources/modules/Color.nzslb  -m ../resources/modules/Data/OutputStruct.nzslb -m ../resources/modules/Data/DataStruct.nzslb ../resources/Shader.nzslb", "Skipped file .+Shader.spv");
 	}
 }
