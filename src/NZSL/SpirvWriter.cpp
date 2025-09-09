@@ -788,7 +788,7 @@ namespace nzsl
 				if (!module.metadata->license.empty())
 					m_currentState->constantTypeCache.RegisterSourceExtension("License: " + module.metadata->license);
 
-				if (!module.metadata->enabledFeatures.empty())
+				if (module.metadata->enabledFeatures.size() != 0)
 				{
 					std::string features;
 					for (Ast::ModuleFeature feature : module.metadata->enabledFeatures)

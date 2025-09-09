@@ -49,7 +49,7 @@ namespace nzsl::Ast
 	namespace
 	{
 		constexpr std::uint32_t s_shaderAstMagicNumber = 0x4E534852;
-		constexpr std::uint32_t s_shaderAstCurrentVersion = 15;
+		constexpr std::uint32_t s_shaderAstCurrentVersion = 16;
 
 		class ShaderSerializerVisitor : public ExpressionVisitor, public StatementVisitor
 		{
@@ -550,9 +550,31 @@ namespace nzsl::Ast
 			Value(metadata.description);
 			Value(metadata.license);
 
-			Container(metadata.enabledFeatures);
-			for (ModuleFeature& feature : metadata.enabledFeatures)
-				Enum(feature);
+			if (IsVersionGreaterOrEqual(16))
+			{
+				std::uint32_t featureMask;
+				if (IsWriting())
+					featureMask = static_cast<std::uint32_t>(metadata.enabledFeatures);
+
+				Value(featureMask);
+				if (!IsWriting())
+					metadata.enabledFeatures = Nz::SafeCast<Ast::ModuleFeatureFlags::BitField>(featureMask);
+			}
+			else
+			{
+				assert(!IsWriting());
+
+				std::uint32_t featureCount;
+				Value(featureCount);
+
+				for (std::uint32_t i = 0; i < featureCount; ++i)
+				{
+					ModuleFeature feature;
+					Enum(feature);
+
+					metadata.enabledFeatures |= feature;
+				}
+			}
 		}
 	}
 
