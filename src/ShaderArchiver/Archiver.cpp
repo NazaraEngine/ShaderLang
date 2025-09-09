@@ -17,7 +17,8 @@ namespace nzsla
 	m_isArchiving(false),
 	m_isShowing(false),
 	m_isVerbose(false),
-	m_outputToStdout(false)
+	m_outputToStdout(false),
+	m_skipUnchangedOutput(false)
 	{
 	}
 
@@ -26,6 +27,7 @@ namespace nzsla
 		m_isArchiving = m_options.count("archive") > 0;
 		m_isShowing = m_options.count("show") > 0;
 		m_isVerbose = m_options.count("verbose") > 0;
+		m_skipUnchangedOutput = m_options.count("skip-unchanged") > 0;
 
 		if (m_options.count("input") == 0)
 			throw cxxopts::exceptions::specification("no input file");
@@ -84,7 +86,8 @@ namespace nzsla
 
 		options.add_options("archive")
 			("a,archive", "Archives the input shaders to an archive.")
-			("header", "Generates an includable header file.");
+			("header", "Generates an includable header file.")
+			("skip-unchanged", "After compilation, compare the output with the current output file and skip writing if the content is the same", cxxopts::value<bool>()->default_value("false"));
 
 		options.add_options("compression")
 			("c,compress", "Compression algorithm", cxxopts::value<std::string>()->implicit_value("lz4hc"), "[none|lz4hc]");
@@ -156,13 +159,23 @@ namespace nzsla
 			assert(outputHeader);
 			fmt::print("{}", ToHeader(archiveData.data(), archiveData.size()));
 		}
-		else if (outputHeader)
-		{
-			std::string headerFile = ToHeader(archiveData.data(), archiveData.size());
-			WriteFileContent(outputFilePath, headerFile.data(), headerFile.size());
-		}
 		else
-			WriteFileContent(outputFilePath, archiveData.data(), archiveData.size());
+		{
+			const void* data = archiveData.data();
+			std::size_t size = archiveData.size();
+
+			std::string headerFile;
+			if (outputHeader)
+			{
+				headerFile = ToHeader(archiveData.data(), archiveData.size());
+				data = headerFile.data();
+				size = headerFile.size();
+			}
+
+			bool written = WriteFileContent(outputFilePath, data, size);
+			if (m_isVerbose)
+				fmt::print("{} file {}\n", (written) ? "Generated" : "Skipped", Nz::PathToString(std::filesystem::absolute(outputFilePath)));
+		}
 	}
 
 	void Archiver::DoShow()
@@ -238,13 +251,34 @@ namespace nzsla
 		return std::move(ss).str();
 	}
 
-	void Archiver::WriteFileContent(const std::filesystem::path& filePath, const void* data, std::size_t size)
+	bool Archiver::WriteFileContent(const std::filesystem::path& filePath, const void* data, std::size_t size)
 	{
+		if (m_skipUnchangedOutput)
+		{
+			std::ifstream inputFile(filePath, std::ios::in | std::ios::binary);
+			if (inputFile)
+			{
+				std::size_t fileSize = Nz::SafeCaster(std::filesystem::file_size(filePath));
+				if (fileSize == size)
+				{
+					if (size == 0)
+						return false;
+
+					// Compare file content
+					std::vector<char> content(fileSize);
+					if (inputFile.read(&content[0], fileSize) && std::memcmp(&content[0], data, size) == 0)
+						return false;
+				}
+			}
+		}
+
 		std::ofstream outputFile(filePath, std::ios::out | std::ios::binary | std::ios::trunc);
 		if (!outputFile)
 			throw std::runtime_error(fmt::format("failed to open {}, reason: {}", Nz::PathToString(filePath), std::strerror(errno)));
 
 		if (!outputFile.write(static_cast<const char*>(data), size))
 			throw std::runtime_error(fmt::format("failed to write {}, reason: {}", Nz::PathToString(filePath), std::strerror(errno)));
+
+		return true;
 	}
 }

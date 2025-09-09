@@ -58,6 +58,7 @@ namespace nzslc
 			void CompileToNZSL(std::filesystem::path outputPath, const nzsl::Ast::Module& module);
 			void CompileToNZSLB(std::filesystem::path outputPath, const nzsl::Ast::Module& module);
 			void CompileToSPV(std::filesystem::path outputPath, nzsl::Ast::Module& module, bool textual);
+			nzsl::Ast::ModulePtr Deserialize(const std::uint8_t* data, std::size_t size);
 			void PrintTime();
 			void OutputFile(std::filesystem::path filePath, const void* data, std::size_t size, bool disallowHeader = false);
 			void OutputToStdout(std::string_view str);
@@ -66,13 +67,12 @@ namespace nzslc
 			template<typename F, typename... Args> auto Step(std::enable_if_t<!std::is_member_function_pointer_v<F>, std::string_view> stepName, F&& func, Args&&... args) -> decltype(std::invoke(func, std::forward<Args>(args)...));
 			template<typename F, typename... Args> auto Step(std::enable_if_t<std::is_member_function_pointer_v<F>, std::string_view> stepName, F&& func, Args&&... args) -> decltype(std::invoke(func, this, std::forward<Args>(args)...));
 			template<typename F> auto StepInternal(std::string_view stepName, F&& func) -> decltype(func());
-			nzsl::Ast::ModulePtr Deserialize(const std::uint8_t* data, std::size_t size);
+			bool WriteFileContent(const std::filesystem::path& filePath, const void* data, std::size_t size);
 
 			static nzsl::Ast::ModulePtr Parse(std::string_view sourceContent, const std::string& filePath);
 			static std::vector<std::uint8_t> ReadFileContent(const std::filesystem::path& filePath);
 			static std::string ReadSourceFileContent(const std::filesystem::path& filePath);
 			static std::string ToHeader(const void* data, std::size_t size);
-			static void WriteFileContent(const std::filesystem::path& filePath, const void* data, std::size_t size);
 
 			struct StepTime
 			{
@@ -91,6 +91,7 @@ namespace nzslc
 			bool m_outputHeader;
 			bool m_outputToStdout;
 			bool m_skipOutput;
+			bool m_skipUnchangedOutput;
 			bool m_verbose;
 			unsigned int m_iterationCount;
 	};
