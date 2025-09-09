@@ -444,8 +444,7 @@ namespace nzsl::Ast
 
 	bool ResolveTransformer::IsFeatureEnabled(ModuleFeature feature) const
 	{
-		const std::vector<ModuleFeature>& enabledFeatures = m_states->currentModule->metadata->enabledFeatures;
-		return std::find(enabledFeatures.begin(), enabledFeatures.end(), feature) != enabledFeatures.end();
+		return m_states->currentModule->metadata->enabledFeatures.Test(feature);
 	}
 
 	bool ResolveTransformer::IsIdentifierAvailable(std::string_view identifier, bool allowReserved) const

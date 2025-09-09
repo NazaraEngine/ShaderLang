@@ -44,11 +44,11 @@ namespace nzsl::Ast
 
 			struct Metadata
 			{
+				ModuleFeatureFlags enabledFeatures;
 				std::string author;
 				std::string description;
 				std::string license;
 				std::string moduleName;
-				std::vector<ModuleFeature> enabledFeatures;
 				std::uint32_t langVersion;
 			};
 

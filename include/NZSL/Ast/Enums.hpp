@@ -225,7 +225,13 @@ namespace nzsl::Ast
 		Float64            = 1,
 		PrimitiveExternals = 0,
 		Texture1D          = 2,
+
+		Max = Texture1D
 	};
+
+	constexpr bool EnableEnumAsNzFlags(ModuleFeature) { return true; }
+
+	using ModuleFeatureFlags = Nz::Flags<ModuleFeature>;
 
 	enum class NodeType
 	{

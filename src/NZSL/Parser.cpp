@@ -326,7 +326,7 @@ namespace nzsl
 		std::string description;
 		std::string license;
 		std::optional<std::uint32_t> moduleVersion;
-		std::vector<Ast::ModuleFeature> moduleFeatures;
+		Ast::ModuleFeatureFlags moduleFeatures;
 
 		for (auto&& attribute : attributes)
 		{
@@ -356,11 +356,10 @@ namespace nzsl
 					HandleUniqueStringAttributeKey(featureExpr, std::move(attribute), s_moduleFeatureMapping);
 
 					Ast::ModuleFeature feature = featureExpr.GetResultingValue();
-
-					if (std::find(moduleFeatures.begin(), moduleFeatures.end(), feature) != moduleFeatures.end())
+					if (moduleFeatures.Test(feature))
 						throw ParserModuleFeatureMultipleUniqueError{ attribute.sourceLocation, feature };
 
-					moduleFeatures.push_back(feature);
+					moduleFeatures |= feature;
 					break;
 				}
 
