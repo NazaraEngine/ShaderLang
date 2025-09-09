@@ -57,7 +57,7 @@ namespace nzsl::Ast
 		if (params.compareModuleName && !Compare(lhs.moduleName, rhs.moduleName, params))
 			return false;
 
-		if (!Compare(lhs.shaderLangVersion, rhs.shaderLangVersion, params))
+		if (!Compare(lhs.langVersion, rhs.langVersion, params))
 			return false;
 
 		if (!Compare(lhs.enabledFeatures, rhs.enabledFeatures, params))

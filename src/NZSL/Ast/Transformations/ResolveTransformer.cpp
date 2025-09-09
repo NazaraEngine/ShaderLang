@@ -238,7 +238,7 @@ namespace nzsl::Ast
 						attribute = LiteralToUInt32(std::get<IntLiteral>(*value), sourceLocation);
 						return true;
 					}
-					else if (m_states->currentModule->metadata->shaderLangVersion < Version::UntypedLiterals)
+					else if (m_states->currentModule->metadata->langVersion < Version::UntypedLiterals)
 					{
 						if (std::holds_alternative<std::int32_t>(*value))
 						{
@@ -559,8 +559,8 @@ namespace nzsl::Ast
 
 				if (parameterCount == 0)
 				{
-					if (m_states->currentModule->metadata->shaderLangVersion < Version::ImplicitTypes)
-						throw CompilerUnsupportedFeatureError{ sourceLocation, "implicit types", VersionTag{ Version::ImplicitTypes }, VersionTag{ m_states->currentModule->metadata->shaderLangVersion }};
+					if (m_states->currentModule->metadata->langVersion < Version::ImplicitTypes)
+						throw CompilerUnsupportedFeatureError{ sourceLocation, "implicit types", VersionTag{ Version::ImplicitTypes }, VersionTag{ m_states->currentModule->metadata->langVersion }};
 
 					return ImplicitArrayType{};
 				}
@@ -649,8 +649,8 @@ namespace nzsl::Ast
 					{
 						if (parameterCount == 0)
 						{
-							if (m_states->currentModule->metadata->shaderLangVersion < Version::ImplicitTypes)
-								throw CompilerUnsupportedFeatureError{ sourceLocation, "implicit types", VersionTag{ Version::ImplicitTypes }, VersionTag{ m_states->currentModule->metadata->shaderLangVersion } };
+							if (m_states->currentModule->metadata->langVersion < Version::ImplicitTypes)
+								throw CompilerUnsupportedFeatureError{ sourceLocation, "implicit types", VersionTag{ Version::ImplicitTypes }, VersionTag{ m_states->currentModule->metadata->langVersion } };
 
 							return ImplicitMatrixType{ columnCount, rowCount };
 						}
@@ -682,8 +682,8 @@ namespace nzsl::Ast
 				{
 					if (parameterCount == 0)
 					{
-						if (m_states->currentModule->metadata->shaderLangVersion < Version::ImplicitTypes)
-							throw CompilerUnsupportedFeatureError{ sourceLocation, "implicit types", VersionTag{ Version::ImplicitTypes }, VersionTag{ m_states->currentModule->metadata->shaderLangVersion } };
+						if (m_states->currentModule->metadata->langVersion < Version::ImplicitTypes)
+							throw CompilerUnsupportedFeatureError{ sourceLocation, "implicit types", VersionTag{ Version::ImplicitTypes }, VersionTag{ m_states->currentModule->metadata->langVersion } };
 
 						return ImplicitVectorType{ componentCount };
 					}
@@ -1642,8 +1642,8 @@ namespace nzsl::Ast
 				else
 					throw CompilerUnexpectedAccessedTypeError{ accessIdentifier.sourceLocation };
 
-				if (m_states->currentModule->metadata->shaderLangVersion < Version::TypeConstants)
-					throw CompilerUnsupportedFeatureError{ accessIdentifier.sourceLocation, "type constant", VersionTag{ Version::TypeConstants }, VersionTag{ m_states->currentModule->metadata->shaderLangVersion } };
+				if (m_states->currentModule->metadata->langVersion < Version::TypeConstants)
+					throw CompilerUnsupportedFeatureError{ accessIdentifier.sourceLocation, "type constant", VersionTag{ Version::TypeConstants }, VersionTag{ m_states->currentModule->metadata->langVersion } };
 			}
 			else
 				throw CompilerUnexpectedAccessedTypeError{ accessIdentifier.sourceLocation };

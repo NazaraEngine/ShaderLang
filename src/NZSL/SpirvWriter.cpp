@@ -773,8 +773,8 @@ namespace nzsl
 					}
 				}
 
-				m_currentState->constantTypeCache.RegisterSource(SpirvSourceLanguage::NZSL, module.metadata->shaderLangVersion, fileId, source);
-				m_currentState->constantTypeCache.RegisterSourceExtension("Version: " + Version::ToString(module.metadata->shaderLangVersion));
+				m_currentState->constantTypeCache.RegisterSource(SpirvSourceLanguage::NZSL, module.metadata->langVersion, fileId, source);
+				m_currentState->constantTypeCache.RegisterSourceExtension("Version: " + Version::ToString(module.metadata->langVersion));
 
 				if (!module.metadata->moduleName.empty())
 					m_currentState->constantTypeCache.RegisterSourceExtension("ModuleName: " + module.metadata->moduleName);
@@ -810,8 +810,8 @@ namespace nzsl
 		}
 		else if (parameters.debugLevel >= DebugLevel::Minimal)
 		{
-			m_currentState->constantTypeCache.RegisterSource(SpirvSourceLanguage::NZSL, module.metadata->shaderLangVersion);
-			m_currentState->constantTypeCache.RegisterSourceExtension("Version: " + Version::ToString(module.metadata->shaderLangVersion));
+			m_currentState->constantTypeCache.RegisterSource(SpirvSourceLanguage::NZSL, module.metadata->langVersion);
+			m_currentState->constantTypeCache.RegisterSourceExtension("Version: " + Version::ToString(module.metadata->langVersion));
 		}
 
 		auto funcDataRetriever = [&](std::size_t funcIndex) -> SpirvAstVisitor::FuncData&

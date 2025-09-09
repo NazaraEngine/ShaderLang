@@ -534,14 +534,14 @@ namespace nzsl::Ast
 	void SerializerBase::Metadata(Module::Metadata& metadata)
 	{
 		Value(metadata.moduleName);
-		Value(metadata.shaderLangVersion);
+		Value(metadata.langVersion);
 		if (!IsVersionGreaterOrEqual(14) && !IsWriting())
 		{
 			// Version binary representation changed in binary version 14
-			std::uint32_t majorVersion = metadata.shaderLangVersion / 100;
-			std::uint32_t minorVersion = (metadata.shaderLangVersion - majorVersion * 100) / 10;
-			std::uint32_t patchVersion = metadata.shaderLangVersion % 10;
-			metadata.shaderLangVersion = Version::Build(majorVersion, minorVersion, patchVersion);
+			std::uint32_t majorVersion = metadata.langVersion / 100;
+			std::uint32_t minorVersion = (metadata.langVersion - majorVersion * 100) / 10;
+			std::uint32_t patchVersion = metadata.langVersion % 10;
+			metadata.langVersion = Version::Build(majorVersion, minorVersion, patchVersion);
 		}
 
 		if (IsVersionGreaterOrEqual(2))

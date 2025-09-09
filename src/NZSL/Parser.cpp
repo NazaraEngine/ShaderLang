@@ -429,7 +429,7 @@ namespace nzsl
 		moduleMetadata->author = std::move(author);
 		moduleMetadata->description = std::move(description);
 		moduleMetadata->license = std::move(license);
-		moduleMetadata->shaderLangVersion = *moduleVersion;
+		moduleMetadata->langVersion = *moduleVersion;
 		moduleMetadata->enabledFeatures = std::move(moduleFeatures);
 
 		if (m_context->module)
@@ -1762,7 +1762,7 @@ namespace nzsl
 		const Token& floatingPointToken = Expect(Advance(), TokenType::FloatingPointValue);
 
 		Ast::ConstantValueExpressionPtr constantExpr;
-		if (m_context->module->metadata->shaderLangVersion >= Version::UntypedLiterals)
+		if (m_context->module->metadata->langVersion >= Version::UntypedLiterals)
 			constantExpr = ShaderBuilder::ConstantValue(Ast::FloatLiteral{ std::get<double>(floatingPointToken.data) });
 		else
 			constantExpr = ShaderBuilder::ConstantValue(float(std::get<double>(floatingPointToken.data)));
@@ -1787,7 +1787,7 @@ namespace nzsl
 		const Token& integerToken = Expect(Advance(), TokenType::IntegerValue);
 
 		Ast::ConstantValueExpressionPtr constantExpr;
-		if (m_context->module->metadata->shaderLangVersion >= Version::UntypedLiterals)
+		if (m_context->module->metadata->langVersion >= Version::UntypedLiterals)
 			constantExpr = ShaderBuilder::ConstantValue(Ast::IntLiteral{ std::get<std::int64_t>(integerToken.data) });
 		else
 			constantExpr = ShaderBuilder::ConstantValue(Nz::SafeCast<std::int32_t>(std::get<std::int64_t>(integerToken.data)));
