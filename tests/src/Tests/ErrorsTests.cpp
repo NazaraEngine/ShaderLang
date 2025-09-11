@@ -1109,6 +1109,14 @@ alias baz = bar;
 option WrongType: array[baz, 3];
 
 )"), "(9,1 -> 32): CExpectedConstantType error: const and option types can only be scalars/vectors (or arrays of scalars/vectors), got array[alias baz -> struct foo, 3]");
+
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.1")]
+module;
+
+option test = 42;
+
+)"), "(5,1 -> 17): COptionMissingType error: options must have a type");
 		}
 
 		/************************************************************************/

@@ -1161,9 +1161,13 @@ namespace nzsl
 
 		std::string optionName = ParseIdentifierAsName(nullptr);
 
-		Expect(Advance(), TokenType::Colon);
+		Ast::ExpressionValue<Ast::ExpressionType> optionType;
+		if (Peek().type == TokenType::Colon)
+		{
+			Expect(Advance(), TokenType::Colon);
 
-		Ast::ExpressionPtr optionType = ParseType();
+			optionType = ParseType();
+		}
 
 		Ast::ExpressionPtr initialValue;
 		if (Peek().type == TokenType::Assign)
