@@ -338,7 +338,7 @@ alias bar = foo;
 
 const WrongType: bar = 42;
 
-)"), "(8,1 -> 26): CExpectedConstantType error: const and options type can only be scalars/vectors (or arrays of scalars/vectors), got alias bar -> struct foo");
+)"), "(8,1 -> 26): CExpectedConstantType error: const and option types can only be scalars/vectors (or arrays of scalars/vectors), got alias bar -> struct foo");
 		}
 
 		/************************************************************************/
@@ -1106,9 +1106,9 @@ struct foo {}
 alias bar = foo;
 alias baz = bar;
 
-option WrongType: array[baz];
+option WrongType: array[baz, 3];
 
-)"), "(9,1 -> 29): CExpectedConstantType error: const and options type can only be scalars/vectors (or arrays of scalars/vectors), got array[alias baz -> struct foo]");
+)"), "(9,1 -> 32): CExpectedConstantType error: const and option types can only be scalars/vectors (or arrays of scalars/vectors), got array[alias baz -> struct foo, 3]");
 		}
 
 		/************************************************************************/
