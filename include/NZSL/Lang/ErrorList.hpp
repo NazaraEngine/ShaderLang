@@ -146,6 +146,7 @@ NZSL_SHADERLANG_COMPILER_ERROR(MultiplePushConstant, "there can be only one push
 NZSL_SHADERLANG_COMPILER_ERROR(NoModuleResolver, "import statement found but no module resolver has been set (and partial compilation is not enabled)")
 NZSL_SHADERLANG_COMPILER_ERROR(OptionHashCollision, "option {} has the same hash as option {}", std::string, std::string)
 NZSL_SHADERLANG_COMPILER_ERROR(OptionDeclarationInsideFunction, "options must be declared outside of functions")
+NZSL_SHADERLANG_COMPILER_ERROR(OptionMissingType, "options must have a type")
 NZSL_SHADERLANG_COMPILER_ERROR(PartialTypeExpect, "expected a {} type at #{}", std::string, std::uint32_t)
 NZSL_SHADERLANG_COMPILER_ERROR(PartialTypeTooFewParameters, "parameter count mismatch (expected at least {}, got {})", std::uint32_t, std::uint32_t)
 NZSL_SHADERLANG_COMPILER_ERROR(PartialTypeTooManyParameters, "parameter count mismatch (expected at most {}, got {})", std::uint32_t, std::uint32_t)

@@ -2773,6 +2773,9 @@ namespace nzsl::Ast
 
 	auto ResolveTransformer::Transform(DeclareOptionStatement&& declOption) -> StatementTransformation
 	{
+		if (!declOption.optType.HasValue())
+			throw CompilerOptionMissingTypeError{ declOption.sourceLocation };
+
 		std::optional<ExpressionType> resolvedOptionType = ResolveTypeExpr(declOption.optType, false, declOption.sourceLocation);
 		if (!resolvedOptionType)
 		{
