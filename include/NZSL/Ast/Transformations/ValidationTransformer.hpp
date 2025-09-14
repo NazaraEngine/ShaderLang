@@ -31,6 +31,7 @@ namespace nzsl::Ast
 
 		private:
 			enum class ValidationResult;
+			struct FunctionData;
 
 			using Transformer::Transform;
 
@@ -44,6 +45,9 @@ namespace nzsl::Ast
 			const ExpressionType* GetExpressionType(const Expression& expr) const;
 
 			void PopScope() override;
+			
+			void PropagateFunctionStages(FunctionData& callingFuncData, Nz::HybridBitset<Nz::UInt32, 32>& seen);
+
 			void PushScope() override;
 
 			void RegisterAlias(std::size_t aliasIndex, const SourceLocation& sourceLocation);
