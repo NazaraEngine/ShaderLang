@@ -1516,11 +1516,26 @@ struct FragOut
 	[location(0)] color: vec4[f32]
 }
 
+fn GetBaseColor() -> vec4[f32]
+{
+	return materialData.color;
+}
+
+fn GetWorldMatrix() -> mat4[f32]
+{
+	return Intermediate();
+}
+
+fn Intermediate() -> mat4[f32]
+{
+	return instanceData.worldViewProjMat;
+}
+
 [entry(frag)]
 fn main(input: VertOut) -> FragOut
 {
 	let output: FragOut;
-	output.color = materialData.color * tex.Sample(input.uv);
+	output.color = GetBaseColor() * tex.Sample(input.uv);
 
 	return output;
 }
@@ -1529,7 +1544,7 @@ fn main(input: VertOut) -> FragOut
 fn main(input: VertIn) -> VertOut
 {
 	let output: VertOut;
-	output.pos = instanceData.worldViewProjMat * vec4[f32](input.pos, 1.0);
+	output.pos = GetWorldMatrix() * vec4[f32](input.pos, 1.0);
 	output.uv = input.uv;
 
 	return output;
@@ -1572,6 +1587,23 @@ struct FragOut
 	vec4 color;
 };
 
+vec4 GetBaseColor()
+{
+	return materialData.color;
+}
+
+mat4 Intermediate();
+
+mat4 GetWorldMatrix()
+{
+	return Intermediate();
+}
+
+mat4 Intermediate()
+{
+	return instanceData.worldViewProjMat;
+}
+
 /**************** Inputs ****************/
 in vec2 _nzslVarying0; // _nzslInuv
 
@@ -1584,7 +1616,7 @@ void main()
 	input_.uv = _nzslVarying0;
 
 	FragOut output_;
-	output_.color = materialData.color * (texture(tex, input_.uv));
+	output_.color = (GetBaseColor()) * (texture(tex, input_.uv));
 
 	_nzslOutcolor = output_.color;
 	return;
@@ -1624,6 +1656,23 @@ struct FragOut
 	vec4 color;
 };
 
+vec4 GetBaseColor()
+{
+	return materialData.color;
+}
+
+mat4 Intermediate();
+
+mat4 GetWorldMatrix()
+{
+	return Intermediate();
+}
+
+mat4 Intermediate()
+{
+	return instanceData.worldViewProjMat;
+}
+
 /**************** Inputs ****************/
 layout(location = 0) in vec3 _nzslInpos;
 layout(location = 1) in vec2 _nzslInuv;
@@ -1638,7 +1687,7 @@ void main()
 	input_.uv = _nzslInuv;
 
 	VertOut output_;
-	output_.pos = instanceData.worldViewProjMat * (vec4(input_.pos, 1.0));
+	output_.pos = (GetWorldMatrix()) * (vec4(input_.pos, 1.0));
 	output_.uv = input_.uv;
 
 	gl_Position = output_.pos;
@@ -1687,11 +1736,26 @@ struct FragOut
 	[location(0)] color: vec4[f32]
 }
 
+fn GetBaseColor() -> vec4[f32]
+{
+	return materialData.color;
+}
+
+fn GetWorldMatrix() -> mat4[f32]
+{
+	return Intermediate();
+}
+
+fn Intermediate() -> mat4[f32]
+{
+	return instanceData.worldViewProjMat;
+}
+
 [entry(frag)]
 fn main(input: VertOut) -> FragOut
 {
 	let output: FragOut;
-	output.color = materialData.color * (tex.Sample(input.uv));
+	output.color = (GetBaseColor()) * (tex.Sample(input.uv));
 	return output;
 }
 
@@ -1699,7 +1763,7 @@ fn main(input: VertOut) -> FragOut
 fn main(input: VertIn) -> VertOut
 {
 	let output: VertOut;
-	output.pos = instanceData.worldViewProjMat * (vec4[f32](input.pos, 1.0));
+	output.pos = (GetWorldMatrix()) * (vec4[f32](input.pos, 1.0));
 	output.uv = input.uv;
 	return output;
 })");
@@ -1711,57 +1775,60 @@ fn main(input: VertIn) -> VertOut
 		ExpectSPIRV(*shaderModule, R"(
       OpCapability Capability(Shader)
       OpMemoryModel AddressingModel(Logical) MemoryModel(GLSL450)
-      OpEntryPoint ExecutionModel(Fragment) %40 "main" %18 %25
-      OpEntryPoint ExecutionModel(Vertex) %41 "main" %31 %33 %36 %38
-      OpExecutionMode %40 ExecutionMode(OriginUpperLeft)
+      OpEntryPoint ExecutionModel(Fragment) %45 "main" %22 %28 %5 %13
+      OpEntryPoint ExecutionModel(Vertex) %46 "main" %33 %35 %38 %40 %10
+      OpExecutionMode %45 ExecutionMode(OriginUpperLeft)
       OpSource SourceLanguage(NZSL) 4198400
       OpSourceExtension "Version: 1.1"
       OpName %8 "InstanceData"
       OpMemberName %8 0 "worldViewProjMat"
       OpName %11 "MaterialData"
       OpMemberName %11 0 "color"
-      OpName %22 "VertOut"
-      OpMemberName %22 0 "pos"
-      OpMemberName %22 1 "uv"
-      OpName %26 "FragOut"
-      OpMemberName %26 0 "color"
-      OpName %34 "VertIn"
-      OpMemberName %34 0 "pos"
-      OpMemberName %34 1 "uv"
+      OpName %25 "VertOut"
+      OpMemberName %25 0 "pos"
+      OpMemberName %25 1 "uv"
+      OpName %29 "FragOut"
+      OpMemberName %29 0 "color"
+      OpName %36 "VertIn"
+      OpMemberName %36 0 "pos"
+      OpMemberName %36 1 "uv"
       OpName %5 "tex"
       OpName %10 "instanceData"
       OpName %13 "materialData"
-      OpName %18 "uv"
-      OpName %25 "color"
-      OpName %31 "pos"
-      OpName %33 "uv"
-      OpName %36 "position"
-      OpName %38 "uv"
-      OpName %40 "main"
-      OpName %41 "main"
+      OpName %22 "uv"
+      OpName %28 "color"
+      OpName %33 "pos"
+      OpName %35 "uv"
+      OpName %38 "position"
+      OpName %40 "uv"
+      OpName %42 "GetBaseColor"
+      OpName %43 "GetWorldMatrix"
+      OpName %44 "Intermediate"
+      OpName %45 "main"
+      OpName %46 "main"
       OpDecorate %5 Decoration(Binding) 0
       OpDecorate %5 Decoration(DescriptorSet) 0
       OpDecorate %10 Decoration(Binding) 1
       OpDecorate %10 Decoration(DescriptorSet) 0
       OpDecorate %13 Decoration(Binding) 2
       OpDecorate %13 Decoration(DescriptorSet) 0
-      OpDecorate %36 Decoration(BuiltIn) BuiltIn(Position)
-      OpDecorate %18 Decoration(Location) 0
-      OpDecorate %25 Decoration(Location) 0
-      OpDecorate %31 Decoration(Location) 0
-      OpDecorate %33 Decoration(Location) 1
-      OpDecorate %38 Decoration(Location) 0
+      OpDecorate %38 Decoration(BuiltIn) BuiltIn(Position)
+      OpDecorate %22 Decoration(Location) 0
+      OpDecorate %28 Decoration(Location) 0
+      OpDecorate %33 Decoration(Location) 0
+      OpDecorate %35 Decoration(Location) 1
+      OpDecorate %40 Decoration(Location) 0
       OpDecorate %8 Decoration(Block)
       OpMemberDecorate %8 0 Decoration(ColMajor)
       OpMemberDecorate %8 0 Decoration(MatrixStride) 16
       OpMemberDecorate %8 0 Decoration(Offset) 0
       OpDecorate %11 Decoration(Block)
       OpMemberDecorate %11 0 Decoration(Offset) 0
-      OpMemberDecorate %22 0 Decoration(Offset) 0
-      OpMemberDecorate %22 1 Decoration(Offset) 16
-      OpMemberDecorate %26 0 Decoration(Offset) 0
-      OpMemberDecorate %34 0 Decoration(Offset) 0
-      OpMemberDecorate %34 1 Decoration(Offset) 16
+      OpMemberDecorate %25 0 Decoration(Offset) 0
+      OpMemberDecorate %25 1 Decoration(Offset) 16
+      OpMemberDecorate %29 0 Decoration(Offset) 0
+      OpMemberDecorate %36 0 Decoration(Offset) 0
+      OpMemberDecorate %36 1 Decoration(Offset) 16
  %1 = OpTypeFloat 32
  %2 = OpTypeImage %1 Dim(Dim2D) 0 0 0 1 ImageFormat(Unknown)
  %3 = OpTypeSampledImage %2
@@ -1772,83 +1839,100 @@ fn main(input: VertIn) -> VertOut
  %9 = OpTypePointer StorageClass(Uniform) %8
 %11 = OpTypeStruct %6
 %12 = OpTypePointer StorageClass(Uniform) %11
-%14 = OpTypeVoid
-%15 = OpTypeFunction %14
-%16 = OpTypeVector %1 2
-%17 = OpTypePointer StorageClass(Input) %16
-%19 = OpTypeInt 32 1
-%20 = OpConstant %19 i32(1)
-%21 = OpTypePointer StorageClass(Function) %16
-%22 = OpTypeStruct %6 %16
-%23 = OpTypePointer StorageClass(Function) %22
-%24 = OpTypePointer StorageClass(Output) %6
-%26 = OpTypeStruct %6
-%27 = OpTypePointer StorageClass(Function) %26
-%28 = OpConstant %19 i32(0)
-%29 = OpTypeVector %1 3
-%30 = OpTypePointer StorageClass(Input) %29
-%32 = OpTypePointer StorageClass(Function) %29
-%34 = OpTypeStruct %29 %16
-%35 = OpTypePointer StorageClass(Function) %34
-%37 = OpTypePointer StorageClass(Output) %16
-%39 = OpConstant %1 f32(1)
-%46 = OpTypePointer StorageClass(Uniform) %6
-%55 = OpTypePointer StorageClass(Function) %6
-%63 = OpTypePointer StorageClass(Uniform) %7
+%14 = OpTypeFunction %6
+%15 = OpTypeInt 32 1
+%16 = OpConstant %15 i32(0)
+%17 = OpTypeFunction %7
+%18 = OpTypeVoid
+%19 = OpTypeFunction %18
+%20 = OpTypeVector %1 2
+%21 = OpTypePointer StorageClass(Input) %20
+%23 = OpConstant %15 i32(1)
+%24 = OpTypePointer StorageClass(Function) %20
+%25 = OpTypeStruct %6 %20
+%26 = OpTypePointer StorageClass(Function) %25
+%27 = OpTypePointer StorageClass(Output) %6
+%29 = OpTypeStruct %6
+%30 = OpTypePointer StorageClass(Function) %29
+%31 = OpTypeVector %1 3
+%32 = OpTypePointer StorageClass(Input) %31
+%34 = OpTypePointer StorageClass(Function) %31
+%36 = OpTypeStruct %31 %20
+%37 = OpTypePointer StorageClass(Function) %36
+%39 = OpTypePointer StorageClass(Output) %20
+%41 = OpConstant %1 f32(1)
+%48 = OpTypePointer StorageClass(Uniform) %6
+%54 = OpTypePointer StorageClass(Uniform) %7
+%68 = OpTypePointer StorageClass(Function) %6
  %5 = OpVariable %4 StorageClass(UniformConstant)
 %10 = OpVariable %9 StorageClass(Uniform)
 %13 = OpVariable %12 StorageClass(Uniform)
-%18 = OpVariable %17 StorageClass(Input)
-%25 = OpVariable %24 StorageClass(Output)
-%31 = OpVariable %30 StorageClass(Input)
-%33 = OpVariable %17 StorageClass(Input)
-%36 = OpVariable %24 StorageClass(Output)
-%38 = OpVariable %37 StorageClass(Output)
-%40 = OpFunction %14 FunctionControl(0) %15
-%42 = OpLabel
-%43 = OpVariable %27 StorageClass(Function)
-%44 = OpVariable %23 StorageClass(Function)
-%45 = OpAccessChain %21 %44 %20
-      OpCopyMemory %45 %18
-%47 = OpAccessChain %46 %13 %28
-%48 = OpLoad %6 %47
-%49 = OpLoad %3 %5
-%50 = OpAccessChain %21 %44 %20
-%51 = OpLoad %16 %50
-%52 = OpImageSampleImplicitLod %6 %49 %51
-%53 = OpFMul %6 %48 %52
-%54 = OpAccessChain %55 %43 %28
-      OpStore %54 %53
-%56 = OpLoad %26 %43
-%57 = OpCompositeExtract %6 %56 0
-      OpStore %25 %57
+%22 = OpVariable %21 StorageClass(Input)
+%28 = OpVariable %27 StorageClass(Output)
+%33 = OpVariable %32 StorageClass(Input)
+%35 = OpVariable %21 StorageClass(Input)
+%38 = OpVariable %27 StorageClass(Output)
+%40 = OpVariable %39 StorageClass(Output)
+%42 = OpFunction %6 FunctionControl(0) %14
+%47 = OpLabel
+%49 = OpAccessChain %48 %13 %16
+%50 = OpLoad %6 %49
+      OpReturnValue %50
+      OpFunctionEnd
+%43 = OpFunction %7 FunctionControl(0) %17
+%51 = OpLabel
+%52 = OpFunctionCall %7 %44
+      OpReturnValue %52
+      OpFunctionEnd
+%44 = OpFunction %7 FunctionControl(0) %17
+%53 = OpLabel
+%55 = OpAccessChain %54 %10 %16
+%56 = OpLoad %7 %55
+      OpReturnValue %56
+      OpFunctionEnd
+%45 = OpFunction %18 FunctionControl(0) %19
+%57 = OpLabel
+%58 = OpVariable %30 StorageClass(Function)
+%59 = OpVariable %26 StorageClass(Function)
+%60 = OpAccessChain %24 %59 %23
+      OpCopyMemory %60 %22
+%61 = OpFunctionCall %6 %42
+%62 = OpLoad %3 %5
+%63 = OpAccessChain %24 %59 %23
+%64 = OpLoad %20 %63
+%65 = OpImageSampleImplicitLod %6 %62 %64
+%66 = OpFMul %6 %61 %65
+%67 = OpAccessChain %68 %58 %16
+      OpStore %67 %66
+%69 = OpLoad %29 %58
+%70 = OpCompositeExtract %6 %69 0
+      OpStore %28 %70
       OpReturn
       OpFunctionEnd
-%41 = OpFunction %14 FunctionControl(0) %15
-%58 = OpLabel
-%59 = OpVariable %23 StorageClass(Function)
-%60 = OpVariable %35 StorageClass(Function)
-%61 = OpAccessChain %32 %60 %28
-      OpCopyMemory %61 %31
-%62 = OpAccessChain %21 %60 %20
-      OpCopyMemory %62 %33
-%64 = OpAccessChain %63 %10 %28
-%65 = OpLoad %7 %64
-%66 = OpAccessChain %32 %60 %28
-%67 = OpLoad %29 %66
-%68 = OpCompositeConstruct %6 %67 %39
-%69 = OpMatrixTimesVector %6 %65 %68
-%70 = OpAccessChain %55 %59 %28
-      OpStore %70 %69
-%71 = OpAccessChain %21 %60 %20
-%72 = OpLoad %16 %71
-%73 = OpAccessChain %21 %59 %20
-      OpStore %73 %72
-%74 = OpLoad %22 %59
-%75 = OpCompositeExtract %6 %74 0
-      OpStore %36 %75
-%76 = OpCompositeExtract %16 %74 1
-      OpStore %38 %76
+%46 = OpFunction %18 FunctionControl(0) %19
+%71 = OpLabel
+%72 = OpVariable %26 StorageClass(Function)
+%73 = OpVariable %37 StorageClass(Function)
+%74 = OpAccessChain %34 %73 %16
+      OpCopyMemory %74 %33
+%75 = OpAccessChain %24 %73 %23
+      OpCopyMemory %75 %35
+%76 = OpFunctionCall %7 %43
+%77 = OpAccessChain %34 %73 %16
+%78 = OpLoad %31 %77
+%79 = OpCompositeConstruct %6 %78 %41
+%80 = OpMatrixTimesVector %6 %76 %79
+%81 = OpAccessChain %68 %72 %16
+      OpStore %81 %80
+%82 = OpAccessChain %24 %73 %23
+%83 = OpLoad %20 %82
+%84 = OpAccessChain %24 %72 %23
+      OpStore %84 %83
+%85 = OpLoad %25 %72
+%86 = OpCompositeExtract %6 %85 0
+      OpStore %38 %86
+%87 = OpCompositeExtract %20 %85 1
+      OpStore %40 %87
       OpReturn
       OpFunctionEnd)", {}, env, true);
 	}

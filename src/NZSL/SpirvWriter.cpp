@@ -3,6 +3,7 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <NZSL/SpirvWriter.hpp>
+#include <NazaraUtils/Algorithm.hpp>
 #include <NazaraUtils/CallOnExit.hpp>
 #include <NazaraUtils/FixedVector.hpp>
 #include <NazaraUtils/PathUtils.hpp>
@@ -91,6 +92,32 @@ namespace nzsl
 				spirvCapabilities.insert(SpirvCapability::Shader);
 			}
 
+			void PropagateFunctionDependencies(SpirvAstVisitor::FuncData& callingFuncData, Nz::HybridBitset<Nz::UInt32, 32>& seen)
+			{
+				seen.UnboundedSet(callingFuncData.funcIndex);
+				for (std::size_t calledFuncIndex : callingFuncData.calledFunctions.IterBits())
+				{
+					auto calledFuncIt = funcs.find(calledFuncIndex);
+					assert(calledFuncIt != funcs.end());
+
+					auto& calledFuncData = calledFuncIt.value();
+					if (!seen.UnboundedTest(calledFuncIndex))
+						PropagateFunctionDependencies(calledFuncData, seen);
+
+					callingFuncData.globalInterfaces |= calledFuncData.globalInterfaces;
+				}
+			}
+
+			void ResolveFunctions()
+			{
+				Nz::HybridBitset<Nz::UInt32, 32> seen;
+				for (auto it = funcs.begin(); it != funcs.end(); ++it)
+				{
+					if (!seen.UnboundedTest(it.key()))
+						PropagateFunctionDependencies(it.value(), seen);
+				}
+			}
+
 			void Visit(Ast::AccessFieldExpression& node) override
 			{
 				RecursiveVisitor::Visit(node);
@@ -122,6 +149,9 @@ namespace nzsl
 				assert(it != funcs.end());
 				auto& func = it.value();
 
+				std::size_t functionIndex = std::get<Ast::FunctionType>(*GetExpressionType(*node.targetFunction)).funcIndex;
+				func.calledFunctions.UnboundedSet(functionIndex);
+
 				auto& funcCall = func.funcCalls.emplace_back();
 				funcCall.firstVarIndex = func.variables.size();
 
@@ -142,12 +172,12 @@ namespace nzsl
 
 			void Visit(Ast::ConditionalExpression& /*node*/) override
 			{
-				throw std::runtime_error("unexpected conditional expression, did you forget to sanitize the shader?");
+				throw std::runtime_error("unexpected ConditionalExpression, is the shader resolved?");
 			}
 
 			void Visit(Ast::ConditionalStatement& /*node*/) override
 			{
-				throw std::runtime_error("unexpected conditional expression, did you forget to sanitize the shader?");
+				throw std::runtime_error("unexpected ConditionalStatement, is the shader resolved?");
 			}
 
 			void Visit(Ast::ConstantArrayValueExpression& node) override
@@ -169,9 +199,9 @@ namespace nzsl
 				assert(node.constIndex);
 				assert(constantVariables.find(*node.constIndex) == constantVariables.end());
 
-				SpirvStorageClass storageClass = SpirvStorageClass::Private;
-
 				SpirvConstantCache::TypePtr typePtr = m_constantCache.BuildType(*GetExpressionType(*node.expression));
+
+				SpirvStorageClass storageClass = SpirvStorageClass::Private;
 
 				SpirvConstantCache::Variable constantVariable;
 				constantVariable.debugName = node.name;
@@ -484,11 +514,36 @@ namespace nzsl
 				var.typeId = m_constantCache.Register(*m_constantCache.BuildPointerType(node.varType.GetResultingValue(), SpirvStorageClass::Function));
 			}
 
-			void Visit(Ast::IdentifierExpression& node) override
+			void Visit(Ast::IdentifierExpression& /*node*/) override
 			{
-				m_constantCache.Register(*m_constantCache.BuildType(node.cachedExpressionType.value()));
-
-				RecursiveVisitor::Visit(node);
+				throw std::runtime_error("unexpected IdentifierExpression, is the shader resolved?");
+			}
+			
+			void Visit(Ast::IdentifierValueExpression& node) override
+			{
+				assert(m_funcIndex);
+				if (node.identifierType == Ast::IdentifierType::Constant)
+				{
+					auto constIt = constantVariables.find(node.identifierIndex);
+					if (constIt != constantVariables.end())
+					{
+						auto it = funcs.find(*m_funcIndex);
+						assert(it != funcs.end());
+						auto& func = it.value();
+						func.globalInterfaces.UnboundedSet(constIt->second.pointerId);
+					}
+				}
+				else if (node.identifierType == Ast::IdentifierType::Variable)
+				{
+					auto extVarIt = extVars.find(node.identifierIndex);
+					if (extVarIt != extVars.end())
+					{
+						auto it = funcs.find(*m_funcIndex);
+						assert(it != funcs.end());
+						auto& func = it.value();
+						func.globalInterfaces.UnboundedSet(extVarIt.value().varData.pointerId);
+					}
+				}
 			}
 
 			void Visit(Ast::IntrinsicExpression& node) override
@@ -730,6 +785,8 @@ namespace nzsl
 			importedModule.module->rootNode->Visit(previsitor);
 
 		module.rootNode->Visit(previsitor);
+
+		previsitor.ResolveFunctions();
 
 		m_currentState->previsitor = &previsitor;
 
@@ -998,6 +1055,12 @@ namespace nzsl
 
 					for (const auto& output : entryPointData.outputs)
 						appender(output.varId);
+
+					if (IsVersionGreaterOrEqual(1, 4))
+					{
+						for (std::size_t varId : funcData.globalInterfaces.IterBits())
+							appender(Nz::SafeCast<std::uint32_t>(varId));
+					}
 				});
 			}
 		}
