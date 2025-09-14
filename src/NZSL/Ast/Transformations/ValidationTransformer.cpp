@@ -15,19 +15,20 @@
 
 namespace nzsl::Ast
 {
+	struct ValidationTransformer::FunctionData
+	{
+		std::unordered_multimap<BuiltinEntry, SourceLocation> usedBuiltins;
+		std::unordered_multimap<ShaderStageType, SourceLocation> requiredShaderStage;
+		Nz::HybridBitset<Nz::UInt32, 32> calledFunctions;
+		Nz::HybridBitset<Nz::UInt32, 32> calledByFunctions;
+		ShaderStageTypeFlags calledByStages;
+		const DeclareFunctionStatement* node;
+		std::optional<ShaderStageType> entryStage;
+		std::size_t funcIndex;
+	};
+
 	struct ValidationTransformer::States
 	{
-		struct FunctionData
-		{
-			std::unordered_multimap<BuiltinEntry, SourceLocation> usedBuiltins;
-			std::unordered_multimap<ShaderStageType, SourceLocation> requiredShaderStage;
-			Nz::HybridBitset<Nz::UInt32, 32> calledFunctions;
-			Nz::HybridBitset<Nz::UInt32, 32> calledByFunctions;
-			ShaderStageTypeFlags calledByStages;
-			const DeclareFunctionStatement* node;
-			std::optional<ShaderStageType> entryStage;
-		};
-
 		struct Scope
 		{
 			Nz::HybridVector<std::size_t, 8> aliases;
@@ -219,6 +220,22 @@ namespace nzsl::Ast
 
 		m_states->scopes.pop_back();
 	}
+	
+	void ValidationTransformer::PropagateFunctionStages(FunctionData& calledFuncData, Nz::HybridBitset<Nz::UInt32, 32>& seen)
+	{
+		seen.UnboundedSet(calledFuncData.funcIndex);
+		for (std::size_t calledByFuncIndex : calledFuncData.calledByFunctions.IterBits())
+		{
+			auto callingFuncIt = m_states->functions.find(calledByFuncIndex);
+			assert(callingFuncIt != m_states->functions.end());
+
+			auto& callingFuncData = callingFuncIt.value();
+			if (!seen.UnboundedTest(calledByFuncIndex))
+				PropagateFunctionStages(callingFuncData, seen);
+
+			calledFuncData.calledByStages |= callingFuncData.calledByStages;
+		}
+	}
 
 	void ValidationTransformer::PushScope()
 	{
@@ -344,38 +361,16 @@ namespace nzsl::Ast
 			PopScope();
 		}
 
-		Nz::HybridBitset<Nz::UInt32, 32> calledByFunctions;
 		Nz::HybridBitset<Nz::UInt32, 32> seen;
-		Nz::HybridBitset<Nz::UInt32, 32> temp;
 		for (auto it = m_states->functions.begin(); it != m_states->functions.end(); ++it)
 		{
-			std::size_t funcIndex = it.key();
+			if (!seen.UnboundedTest(it.key()))
+				PropagateFunctionStages(it.value(), seen);
+		}
+
+		for (auto it = m_states->functions.begin(); it != m_states->functions.end(); ++it)
+		{
 			auto& funcData = it.value();
-
-			seen.Clear();
-			seen.UnboundedSet(funcIndex);
-
-			calledByFunctions.Clear();
-			calledByFunctions |= funcData.calledByFunctions;
-
-			std::size_t callingFuncIndex;
-			while ((callingFuncIndex = calledByFunctions.FindFirst()) != calledByFunctions.npos)
-			{
-				auto callingFuncIt = m_states->functions.find(callingFuncIndex);
-				assert(callingFuncIt != m_states->functions.end());
-
-				auto& callingFunctionData = callingFuncIt.value();
-				funcData.calledByStages |= callingFunctionData.calledByStages;
-
-				calledByFunctions |= callingFunctionData.calledByFunctions;
-
-				// Prevent infinite recursion
-				// calledByFunctions &= ~seen;
-				temp.PerformsNOT(seen);
-				calledByFunctions &= temp;
-
-				seen.UnboundedSet(callingFuncIndex);
-			}
 
 			for (std::size_t flagIndex = 0; flagIndex <= static_cast<std::size_t>(ShaderStageType::Max); ++flagIndex)
 			{
@@ -1178,7 +1173,8 @@ namespace nzsl::Ast
 		if (m_options->checkIndices)
 			RegisterFunc(*node.funcIndex, node.sourceLocation);
 
-		States::FunctionData& functionData = m_states->functions[*node.funcIndex];
+		FunctionData& functionData = m_states->functions[*node.funcIndex];
+		functionData.funcIndex = *node.funcIndex;
 		functionData.node = &node;
 
 		if (node.entryStage.IsResultingValue())
