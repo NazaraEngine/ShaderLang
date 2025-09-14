@@ -573,7 +573,7 @@ namespace nzsl
 
 		for (std::size_t i = 0; i < node.parameters.size(); ++i)
 		{
-			//Don't generate OpLoad and OpStore for in arguments
+			// Don't generate OpLoad and OpStore for in arguments
 			if (node.parameters[i].semantic == Ast::FunctionParameterSemantic::In)
 				continue;
 
