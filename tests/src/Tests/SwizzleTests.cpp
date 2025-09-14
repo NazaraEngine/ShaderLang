@@ -54,6 +54,15 @@ OpVectorShuffle
 OpStore
 OpReturn
 OpFunctionEnd)");
+
+			ExpectWGSL(*shaderModule, R"(
+@fragment
+fn main()
+{
+	var vec: vec4<f32> = vec4<f32>(0.0, 1.0, 2.0, 3.0);
+	var value: vec3<f32> = vec.xyz;
+}
+)");
 		}
 
 		WHEN("writing")
@@ -102,6 +111,16 @@ OpVectorShuffle
 OpStore
 OpReturn
 OpFunctionEnd)");
+
+			ExpectWGSL(*shaderModule, R"(
+@fragment
+fn main()
+{
+	var vec: vec4<f32> = vec4<f32>(0.0, 0.0, 0.0, 0.0);
+	var _nzsl_cachedResult: vec3<f32> = vec3<f32>(1.0, 2.0, 3.0);
+	vec = vec4<f32>(vec.x, _nzsl_cachedResult);
+}
+)");
 		}
 	}
 	
@@ -152,6 +171,15 @@ OpCompositeConstruct
 OpStore
 OpReturn
 OpFunctionEnd)");
+
+			ExpectWGSL(*shaderModule, R"(
+@fragment
+fn main()
+{
+	var value: f32 = 42.0;
+	var vec: vec3<f32> = vec3<f32>(value, value, value);
+}
+)");
 		}
 
 		GIVEN("a function value")
@@ -203,6 +231,17 @@ OpCompositeConstruct
 OpStore
 OpReturn
 OpFunctionEnd)");
+
+			ExpectWGSL(*shaderModule, R"(
+@fragment
+fn main()
+{
+	var _nzsl_cachedResult: f32 = max(2.0, 1.0);
+	var v: vec3<f32> = vec3<f32>(_nzsl_cachedResult, _nzsl_cachedResult, _nzsl_cachedResult);
+	var _nzsl_cachedResult_2: f32 = min(2.0, 1.0);
+	var v2: vec3<f32> = vec3<f32>(_nzsl_cachedResult_2, _nzsl_cachedResult_2, _nzsl_cachedResult_2);
+}
+)");
 		}
 	}
 
@@ -257,6 +296,15 @@ OpCompositeConstruct
 OpStore
 OpReturn
 OpFunctionEnd)");
+
+			ExpectWGSL(*shaderModule, R"(
+@fragment
+fn main()
+{
+	var vec: vec4<f32> = vec4<f32>(0.0, 1.0, 2.0, 3.0);
+	var value: vec4<f32> = vec4<f32>(vec.xyz.yz.y, vec.xyz.yz.y, vec.xyz.yz.y, vec.xyz.yz.y);
+}
+)");
 		}
 
 		WHEN("writing")
@@ -310,6 +358,18 @@ OpVectorShuffle
 OpStore
 OpReturn
 OpFunctionEnd)");
+
+			ExpectWGSL(*shaderModule, R"(
+@fragment
+fn main()
+{
+	var vec: vec4<f32> = vec4<f32>(0.0, 1.0, 2.0, 3.0);
+	var _nzsl_cachedResult: f32 = 0.0;
+	vec = vec4<f32>(vec.x, vec.y, vec.z, _nzsl_cachedResult);
+	var _nzsl_cachedResult_2: vec2<f32> = vec2<f32>(1.0, 0.0);
+	vec = vec4<f32>(vec.x, vec.y, _nzsl_cachedResult_2);
+}
+)");
 		}
 	}
 }

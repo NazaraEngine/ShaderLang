@@ -125,7 +125,7 @@ namespace nzsl
 			void AppendConstantHelpers(Ast::PrimitiveType type, Ast::TypeConstant constant);
 			//void AppendInverseMatHelpers(Ast::MatrixType type);
 			void AppendHeader(const Ast::Module::Metadata& metadata);
-			template<typename T> void AppendIdentifier(const T& map, std::size_t id);
+			template<typename T> void AppendIdentifier(const T& map, std::size_t id, bool append_module_prefix = false);
 			void AppendLine(std::string_view txt = {});
 			template<typename... Args> void AppendLine(Args&&... params);
 			void AppendModuleAttributes(const Ast::Module::Metadata& metadata);
