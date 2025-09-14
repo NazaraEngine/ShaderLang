@@ -1234,9 +1234,9 @@ namespace nzsl::Ast
 
 	void ResolveTransformer::PreregisterIndices(const Module& module)
 	{
-		// If AST has been sanitized before and is sanitized again but with different options that may introduce new variables (for example reduceLoopsToWhile)
+		// If AST has been transformed/resolved before and is transformed again but with new passes that may introduce new variables (for example ForToWhileTransformer)
 		// we have to make sure we won't override variable indices. This is done by visiting the AST a first time and preregistering all indices.
-		// TODO: Only do this is the AST has been already sanitized, maybe using a flag stored in the module?
+		// TODO: Only do this is the AST has been already resolved, maybe using a flag stored in the module?
 
 		ReflectVisitor::Callbacks registerCallbacks;
 		registerCallbacks.onAliasIndex = [this](const std::string& /*name*/, std::size_t index, const SourceLocation& sourceLocation) { m_context->aliases.PreregisterIndex(index, sourceLocation); };
