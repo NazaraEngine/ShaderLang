@@ -299,9 +299,9 @@ struct _SimpleModule_Block
 	data: _SimpleModule_Data
 }
 
-fn _SimpleModule_GetDataValue(_SimpleModule_data: _SimpleModule_Data) -> f32
+fn _SimpleModule_GetDataValue(data: _SimpleModule_Data) -> f32
 {
-	return _SimpleModule_data.value;
+	return data.value;
 }
 
 struct _SimpleModule_InputData
@@ -958,38 +958,38 @@ struct _Modules_Data_Lights
 }
 // Module Modules.Func
 
-fn _Modules_Func_SumLightColor(_Modules_Func_lightData: _Modules_Data_Lights) -> vec4<f32>
+fn _Modules_Func_SumLightColor(lightData: _Modules_Data_Lights) -> vec4<f32>
 {
 	var color: vec4<f32> = vec4<f32>(0.0, 0.0, 0.0, 0.0);
 	{
 		var index: u32 = 0u;
 		var _nzsl_to: u32 = 3;
-		while (_Modules_Func_index < _Modules_Func__nzsl_to)
+		while (index < _nzsl_to)
 		{
-			_Modules_Func_color += _Modules_Func_lightData.lights[_Modules_Func_index].color;
-			_Modules_Func_index += 1u;
+			color += lightData.lights[index].color;
+			index += 1u;
 		}
 
 	}
 
-	return _Modules_Func_color;
+	return color;
 }
 
-fn _Modules_Func_SumLightIntensities(_Modules_Func_lightData: _Modules_Data_Lights) -> vec2<i32>
+fn _Modules_Func_SumLightIntensities(lightData: _Modules_Data_Lights) -> vec2<i32>
 {
 	var intensities: vec2<i32> = vec2<i32>(0, 0);
 	{
 		var _nzsl_counter: u32 = 0u;
-		while (_Modules_Func__nzsl_counter < (3u))
+		while (_nzsl_counter < (3u))
 		{
-			var light: _Modules_Data_Light = _Modules_Func_lightData.lights[_Modules_Func__nzsl_counter];
-			_Modules_Func_intensities += _Modules_Func_light.intensities;
-			_Modules_Func__nzsl_counter += 1u;
+			var light: _Modules_Data_Light = lightData.lights[_nzsl_counter];
+			intensities += light.intensities;
+			_nzsl_counter += 1u;
 		}
 
 	}
 
-	return _Modules_Func_intensities;
+	return intensities;
 }
 
 @group(0) @binding(0) var<uniform> lightData: _Modules_Data_Lights;
@@ -1327,13 +1327,13 @@ struct Unused {}
 [export]
 struct InputData
 {
-	value: f32
+	[location(0)] value: f32
 }
 
 [export]
 struct OutputData
 {
-	value: f32
+	[location(0)] value: vec4[f32]
 }
 )";
 
@@ -1355,9 +1355,10 @@ external ExtData
 fn main(input: Module.InputData) -> Module.OutputData
 {
 	let data = ExtData.block.data;
+	let value = Module.GetDataValue(data) * input.value * Module.Pi;
 
 	let output: Module.OutputData;
-	output.value = Module.GetDataValue(data) * input.value * Module.Pi;
+	output.value = vec4[f32](value, value, value, value);
 	return output;
 }
 )";
@@ -1400,7 +1401,7 @@ struct InputData_Simple_Module
 
 struct OutputData_Simple_Module
 {
-	float value;
+	vec4 value;
 };
 
 // Main module
@@ -1414,20 +1415,21 @@ layout(std140) uniform _nzslBindingExtData_block
 } ExtData_block;
 
 /**************** Inputs ****************/
-in float _nzslInvalue;
+in float _nzslVarying0; // _nzslInvalue
 
 /*************** Outputs ***************/
-out float _nzslOutvalue;
+layout(location = 0) out vec4 _nzslOutvalue;
 
 void main()
 {
 	InputData_Simple_Module input_;
-	input_.value = _nzslInvalue;
+	input_.value = _nzslVarying0;
 
 	Data_Simple_Module data;
 	data.value = ExtData_block.data.value;
+	float value = ((GetDataValue_Simple_Module(data)) * input_.value) * (3.141592);
 	OutputData_Simple_Module output_;
-	output_.value = ((GetDataValue_Simple_Module(data)) * input_.value) * (3.141592);
+	output_.value = vec4(value, value, value, value);
 
 	_nzslOutvalue = output_.value;
 	return;
@@ -1466,12 +1468,12 @@ module _Simple_Module
 
 	struct InputData
 	{
-		value: f32
+		[location(0)] value: f32
 	}
 
 	struct OutputData
 	{
-		value: f32
+		[location(0)] value: vec4[f32]
 	}
 
 }
@@ -1486,8 +1488,9 @@ external ExtData
 fn main(input: Module.InputData) -> Module.OutputData
 {
 	let data: Module.Data = ExtData.block.data;
+	let value: f32 = ((Module.GetDataValue(data)) * input.value) * Module.Pi;
 	let output: Module.OutputData;
-	output.value = ((Module.GetDataValue(data)) * input.value) * Module.Pi;
+	output.value = vec4[f32](value, value, value, value);
 	return output;
 }
 )");
@@ -1506,6 +1509,9 @@ OpVariable
 OpVariable
 OpVariable
 OpVariable
+OpVariable
+OpAccessChain
+OpCopyMemory
 OpAccessChain
 OpLoad
 OpAccessChain
@@ -1517,11 +1523,61 @@ OpAccessChain
 OpLoad
 OpFMul
 OpFMul
+OpStore
+OpLoad
+OpLoad
+OpLoad
+OpLoad
+OpCompositeConstruct
 OpAccessChain
 OpStore
 OpLoad
+OpCompositeExtract
+OpStore
 OpReturn
 OpFunctionEnd)");
+
+		ExpectWGSL(*shaderModule, R"(
+// Module Simple.Module
+
+struct _Simple_Module_Data
+{
+	value: f32
+}
+
+struct _Simple_Module_Block
+{
+	data: _Simple_Module_Data
+}
+
+fn _Simple_Module_GetDataValue(data: _Simple_Module_Data) -> f32
+{
+	return data.value;
+}
+
+struct _Simple_Module_InputData
+{
+	@location(0) value: f32
+}
+
+struct _Simple_Module_OutputData
+{
+	@location(0) value: vec4<f32>
+}
+
+@group(0) @binding(0) var<uniform> ExtData_block: _Simple_Module_Block;
+
+@fragment
+fn main(input: _Simple_Module_InputData) -> _Simple_Module_OutputData
+{
+	var data: _Simple_Module_Data;
+	data.value = ExtData_block.data.value;
+	var value: f32 = ((_Simple_Module_GetDataValue(data)) * input.value) * (3.141592);
+	var output: _Simple_Module_OutputData;
+	output.value = vec4<f32>(value, value, value, value);
+	return output;
+}
+)");
 	}
 
 	WHEN("Importing a simple module by name with renaming")
@@ -1560,13 +1616,13 @@ struct Unused {}
 [export]
 struct InputData
 {
-	value: f32
+	[location(0)] value: f32
 }
 
 [export]
 struct OutputData
 {
-	value: f32
+	[location(0)] value: vec4[f32]
 }
 )";
 
@@ -1588,9 +1644,10 @@ external ExtData
 fn main(input: SimpleModule.InputData) -> SimpleModule.OutputData
 {
 	let data = ExtData.block.data;
+	let value = SimpleModule.GetDataValue(data) * input.value * SimpleModule.Pi;
 
 	let output: SimpleModule.OutputData;
-	output.value = SimpleModule.GetDataValue(data) * input.value * SimpleModule.Pi;
+	output.value = vec4[f32](value, value, value, value);
 	return output;
 }
 )";
@@ -1633,7 +1690,7 @@ struct InputData_Simple_Module
 
 struct OutputData_Simple_Module
 {
-	float value;
+	vec4 value;
 };
 
 // Main module
@@ -1647,20 +1704,21 @@ layout(std140) uniform _nzslBindingExtData_block
 } ExtData_block;
 
 /**************** Inputs ****************/
-in float _nzslInvalue;
+in float _nzslVarying0; // _nzslInvalue
 
 /*************** Outputs ***************/
-out float _nzslOutvalue;
+layout(location = 0) out vec4 _nzslOutvalue;
 
 void main()
 {
 	InputData_Simple_Module input_;
-	input_.value = _nzslInvalue;
+	input_.value = _nzslVarying0;
 
 	Data_Simple_Module data;
 	data.value = ExtData_block.data.value;
+	float value = ((GetDataValue_Simple_Module(data)) * input_.value) * (3.141592);
 	OutputData_Simple_Module output_;
-	output_.value = ((GetDataValue_Simple_Module(data)) * input_.value) * (3.141592);
+	output_.value = vec4(value, value, value, value);
 
 	_nzslOutvalue = output_.value;
 	return;
@@ -1699,12 +1757,12 @@ module _Simple_Module
 
 	struct InputData
 	{
-		value: f32
+		[location(0)] value: f32
 	}
 
 	struct OutputData
 	{
-		value: f32
+		[location(0)] value: vec4[f32]
 	}
 
 }
@@ -1719,8 +1777,9 @@ external ExtData
 fn main(input: SimpleModule.InputData) -> SimpleModule.OutputData
 {
 	let data: SimpleModule.Data = ExtData.block.data;
+	let value: f32 = ((SimpleModule.GetDataValue(data)) * input.value) * SimpleModule.Pi;
 	let output: SimpleModule.OutputData;
-	output.value = ((SimpleModule.GetDataValue(data)) * input.value) * SimpleModule.Pi;
+	output.value = vec4[f32](value, value, value, value);
 	return output;
 }
 )");
@@ -1739,6 +1798,9 @@ OpVariable
 OpVariable
 OpVariable
 OpVariable
+OpVariable
+OpAccessChain
+OpCopyMemory
 OpAccessChain
 OpLoad
 OpAccessChain
@@ -1750,10 +1812,60 @@ OpAccessChain
 OpLoad
 OpFMul
 OpFMul
+OpStore
+OpLoad
+OpLoad
+OpLoad
+OpLoad
+OpCompositeConstruct
 OpAccessChain
 OpStore
 OpLoad
+OpCompositeExtract
+OpStore
 OpReturn
 OpFunctionEnd)");
+
+		ExpectWGSL(*shaderModule, R"(
+// Module Simple.Module
+
+struct _Simple_Module_Data
+{
+	value: f32
+}
+
+struct _Simple_Module_Block
+{
+	data: _Simple_Module_Data
+}
+
+fn _Simple_Module_GetDataValue(data: _Simple_Module_Data) -> f32
+{
+	return data.value;
+}
+
+struct _Simple_Module_InputData
+{
+	@location(0) value: f32
+}
+
+struct _Simple_Module_OutputData
+{
+	@location(0) value: vec4<f32>
+}
+
+@group(0) @binding(0) var<uniform> ExtData_block: _Simple_Module_Block;
+
+@fragment
+fn main(input: _Simple_Module_InputData) -> _Simple_Module_OutputData
+{
+	var data: _Simple_Module_Data;
+	data.value = ExtData_block.data.value;
+	var value: f32 = ((_Simple_Module_GetDataValue(data)) * input.value) * (3.141592);
+	var output: _Simple_Module_OutputData;
+	output.value = vec4<f32>(value, value, value, value);
+	return output;
+}
+)");
 	}
 }

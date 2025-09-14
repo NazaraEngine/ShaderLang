@@ -812,10 +812,28 @@ fn main()
 @fragment
 fn main()
 {
-	var x: mat3x3<f32> = mat3x3<f32>(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
-	var y: mat3x3<f32> = mat3x3<f32>(1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0);
-	var r: mat3x3<f32> = x + y;
-	var r_2: mat3x3<f32> = x - y;
+	var _nzsl_matrix: mat3x3<f32>;
+	var _nzsl_cachedResult: f32 = 0.0;
+	_nzsl_matrix[0u] = vec3<f32>(_nzsl_cachedResult, 0.0, 0.0);
+	_nzsl_matrix[1u] = vec3<f32>(0.0, _nzsl_cachedResult, 0.0);
+	_nzsl_matrix[2u] = vec3<f32>(0.0, 0.0, _nzsl_cachedResult);
+	var x: mat3x3<f32> = _nzsl_matrix;
+	var _nzsl_matrix_2: mat3x3<f32>;
+	var _nzsl_cachedResult_2: f32 = 1.0;
+	_nzsl_matrix_2[0u] = vec3<f32>(_nzsl_cachedResult_2, 0.0, 0.0);
+	_nzsl_matrix_2[1u] = vec3<f32>(0.0, _nzsl_cachedResult_2, 0.0);
+	_nzsl_matrix_2[2u] = vec3<f32>(0.0, 0.0, _nzsl_cachedResult_2);
+	var y: mat3x3<f32> = _nzsl_matrix_2;
+	var _nzsl_matrix_3: mat3x3<f32>;
+	_nzsl_matrix_3[0u] = x[0u] + y[0u];
+	_nzsl_matrix_3[1u] = x[1u] + y[1u];
+	_nzsl_matrix_3[2u] = x[2u] + y[2u];
+	var r: mat3x3<f32> = _nzsl_matrix_3;
+	var _nzsl_matrix_4: mat3x3<f32>;
+	_nzsl_matrix_4[0u] = x[0u] - y[0u];
+	_nzsl_matrix_4[1u] = x[1u] - y[1u];
+	_nzsl_matrix_4[2u] = x[2u] - y[2u];
+	var r_2: mat3x3<f32> = _nzsl_matrix_4;
 	var r_3: mat3x3<f32> = x * y;
 	x += y;
 	x -= y;
@@ -905,7 +923,12 @@ fn main()
 @fragment
 fn main()
 {
-	var mat: mat3x3<f32> = mat3x3<f32>(1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0);
+	var _nzsl_matrix: mat3x3<f32>;
+	var _nzsl_cachedResult: f32 = 1.0;
+	_nzsl_matrix[0u] = vec3<f32>(_nzsl_cachedResult, 0.0, 0.0);
+	_nzsl_matrix[1u] = vec3<f32>(0.0, _nzsl_cachedResult, 0.0);
+	_nzsl_matrix[2u] = vec3<f32>(0.0, 0.0, _nzsl_cachedResult);
+	var mat: mat3x3<f32> = _nzsl_matrix;
 	var val: f32 = 42.0;
 	var r: mat3x3<f32> = mat * val;
 	var r_2: mat3x3<f32> = val * mat;

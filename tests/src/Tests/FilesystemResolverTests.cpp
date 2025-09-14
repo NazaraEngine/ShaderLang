@@ -250,9 +250,9 @@ struct _DataStruct_Data
 }
 // Module OutputStruct
 
-fn _OutputStruct_GetColorFromData(_OutputStruct_data: _DataStruct_Data) -> vec4<f32>
+fn _OutputStruct_GetColorFromData(data: _DataStruct_Data) -> vec4<f32>
 {
-	return _OutputStruct_data.color * (vec4<f32>(0.5, 0.5, 0.5, 1.0));
+	return data.color * (vec4<f32>(0.5, 0.5, 0.5, 1.0));
 }
 
 struct _OutputStruct_Output

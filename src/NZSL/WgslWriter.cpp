@@ -24,6 +24,7 @@
 #include <NZSL/Ast/Transformations/ForToWhileTransformer.hpp>
 #include <NZSL/Ast/Transformations/IdentifierTransformer.hpp>
 #include <NZSL/Ast/Transformations/LiteralTransformer.hpp>
+#include <NZSL/Ast/Transformations/MatrixTransformer.hpp>
 #include <NZSL/Ast/Transformations/ResolveTransformer.hpp>
 #include <NZSL/Ast/Transformations/StructAssignmentTransformer.hpp>
 #include <NZSL/Ast/Transformations/SwizzleTransformer.hpp>
@@ -570,6 +571,12 @@ namespace nzsl
 		executor.AddPass<Ast::SwizzleTransformer>([](Ast::SwizzleTransformer::Options& opt)
 		{
 			opt.removeScalarSwizzling = true;
+			opt.removeSwizzleAssigment = true;
+		});
+		executor.AddPass<Ast::MatrixTransformer>([](Ast::MatrixTransformer::Options& opt)
+		{
+			opt.removeMatrixBinaryAddSub = true;
+			opt.removeMatrixCast = true;
 		});
 		executor.AddPass<Ast::BindingResolverTransformer>();
 		executor.AddPass<Ast::ConstantRemovalTransformer>([](Ast::ConstantRemovalTransformer::Options& opt)
@@ -580,9 +587,9 @@ namespace nzsl
 		executor.AddPass<Ast::IdentifierTransformer>(secondIdentifierPassOptions);
 	}
 
-	void WgslWriter::Append(const Ast::AliasType& type)
+	void WgslWriter::Append(const Ast::AliasType& /*type*/)
 	{
-		AppendIdentifier(m_currentState->aliases, type.aliasIndex);
+		throw std::runtime_error("unexpected AliasType");
 	}
 
 	void WgslWriter::Append(const Ast::ArrayType& type)
@@ -654,9 +661,9 @@ namespace nzsl
 		throw std::runtime_error("unexpected method type");
 	}
 
-	void WgslWriter::Append(const Ast::ModuleType& moduleType)
+	void WgslWriter::Append(const Ast::ModuleType& /*moduleType*/)
 	{
-		AppendIdentifier(m_currentState->modules, moduleType.moduleIndex);
+		throw std::runtime_error("unexpected module type");
 	}
 
 	void WgslWriter::Append(const Ast::NamedExternalBlockType& namedExternalBlockType)
@@ -747,7 +754,7 @@ namespace nzsl
 
 	void WgslWriter::Append(const Ast::StructType& structType)
 	{
-		AppendIdentifier(m_currentState->structs, structType.structIndex);
+		AppendIdentifier(m_currentState->structs, structType.structIndex, true);
 	}
 
 	void WgslWriter::Append(const Ast::TextureType& textureType)
@@ -1338,14 +1345,11 @@ namespace nzsl
 	}
 
 	template<typename T>
-	void WgslWriter::AppendIdentifier(const T& map, std::size_t id)
+	void WgslWriter::AppendIdentifier(const T& map, std::size_t id, bool append_module_prefix)
 	{
 		const auto& identifier = Nz::Retrieve(map, id);
-		if (identifier.moduleIndex != 0)
+		if (append_module_prefix && identifier.moduleIndex != 0)
 			Append(m_currentState->moduleNames[identifier.moduleIndex - 1], '_');
-
-		if (identifier.externalBlockIndex && identifier.externalBlockIndex != m_currentState->currentExternalBlockIndex)
-			Append(m_currentState->externalBlockNames[*identifier.externalBlockIndex], '_');
 
 		Append(identifier.name);
 	}
@@ -1574,9 +1578,9 @@ namespace nzsl
 		Append("]");
 	}
 
-	void WgslWriter::Visit(Ast::AliasValueExpression& node)
+	void WgslWriter::Visit(Ast::AliasValueExpression& /*node*/)
 	{
-		AppendIdentifier(m_currentState->aliases, node.aliasId);
+		throw std::runtime_error("unexpected alias value, is shader sanitized?");
 	}
 
 	void WgslWriter::Visit(Ast::AssignExpression& node)
@@ -1674,68 +1678,25 @@ namespace nzsl
 		Append(node.targetType);
 		Append("(");
 
-		if (node.expressions.size() > 1 || !node.targetType.IsResultingValue())
+		bool first = true;
+		for (const auto& exprPtr : node.expressions)
 		{
-			bool first = true;
-			for (const auto& exprPtr : node.expressions)
-			{
-				if (!first)
-					Append(", ");
+			if (!first)
+				Append(", ");
 
-				first = false;
+			first = false;
 
-				exprPtr->Visit(*this);
-			}
-		}
-		else
-		{
-			/**
-			 * In WGSL, code like this is invalid:
-			 * `var m: mat3x3<f32> = mat3x3<f32>(1.0);`
-			 *
-			 * Instead we fill the declaration with the number of components:
-			 * `var m: mat3x3<f32> = mat3x3<f32>(1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0);`
-			 */
-			std::size_t nbParams;
-			std::visit(Nz::Overloaded
-			{
-				[&](const Ast::VectorType& vec)
-				{
-					nbParams = vec.componentCount;
-				},
-				[&](const Ast::MatrixType& mat)
-				{
-					nbParams = mat.columnCount * mat.rowCount;
-				},
-				[&](const Ast::PrimitiveType&)
-				{
-					nbParams = 1;
-				},
-				[&](const auto&) { throw std::runtime_error("unexpected Type?"); },
-			}, node.targetType.GetResultingValue());
-
-			for (std::size_t i = 0; i < nbParams; i++)
-			{
-				if (i != 0)
-					Append(", ");
-				node.expressions.at(0)->Visit(*this);
-			}
+			exprPtr->Visit(*this);
 		}
 
 		Append(")");
 	}
 
-	void WgslWriter::Visit(Ast::ConditionalExpression& node)
+	void WgslWriter::Visit(Ast::ConditionalExpression& /*node*/)
 	{
-		Append("const_select(");
-		node.condition->Visit(*this);
-		Append(", ");
-		node.truePath->Visit(*this);
-		Append(", ");
-		node.falsePath->Visit(*this);
-		Append(")");
+		throw std::runtime_error("unexpected conditional expression, is shader sanitized?");
 	}
-	
+
 	void WgslWriter::Visit(Ast::ConstantArrayValueExpression& node)
 	{
 		Append(*node.cachedExpressionType);
@@ -1771,7 +1732,6 @@ namespace nzsl
 		}, node.value);
 	}
 
-
 	void WgslWriter::Visit(Ast::ConstantExpression& node)
 	{
 		AppendIdentifier(m_currentState->constants, node.constantId);
@@ -1779,7 +1739,7 @@ namespace nzsl
 
 	void WgslWriter::Visit(Ast::FunctionExpression& node)
 	{
-		AppendIdentifier(m_currentState->functions, node.funcId);
+		AppendIdentifier(m_currentState->functions, node.funcId, true);
 	}
 
 	void WgslWriter::Visit(Ast::IdentifierExpression& node)
@@ -1986,7 +1946,7 @@ namespace nzsl
 
 	void WgslWriter::Visit(Ast::StructTypeExpression& node)
 	{
-		AppendIdentifier(m_currentState->structs, node.structTypeId);
+		AppendIdentifier(m_currentState->structs, node.structTypeId, true);
 	}
 
 	void WgslWriter::Visit(Ast::SwizzleExpression& node)
@@ -2074,23 +2034,10 @@ namespace nzsl
 		Append("continue;");
 	}
 
-	void WgslWriter::Visit(Ast::DeclareAliasStatement& node)
+	void WgslWriter::Visit(Ast::DeclareAliasStatement& /*node*/)
 	{
-		if (node.aliasIndex)
-			RegisterAlias(*node.aliasIndex, node.name);
-
-		Append("alias ", node.name, " = ");
-		assert(node.expression);
-		node.expression->Visit(*this);
-
-		// Special case, if that alias points to a module, use it instead to try to keep source code readable
-		if (node.expression->GetType() == Ast::NodeType::ModuleExpression)
-		{
-			auto& moduleExpr = Nz::SafeCast<Ast::ModuleExpression&>(*node.expression);
-			m_currentState->moduleNames[moduleExpr.moduleId] = node.name;
-		}
-
-		AppendLine(";");
+		// all aliases should have been handled by sanitizer
+		throw std::runtime_error("unexpected alias declaration, is shader sanitized?");
 	}
 
 	void WgslWriter::Visit(Ast::DeclareConstStatement& node)
@@ -2194,7 +2141,7 @@ namespace nzsl
 			AppendLine(';');
 
 			if (externalVar.varIndex)
-				RegisterVariable(*externalVar.varIndex, externalVar.name);
+				RegisterVariable(*externalVar.varIndex, variableName);
 		}
 
 		m_currentState->currentExternalBlockIndex = {};
@@ -2231,12 +2178,7 @@ namespace nzsl
 			else if (parameter.semantic == Ast::FunctionParameterSemantic::Out)
 				Append("out ");
 
-			// Ugly but simple
-			if (identifier.moduleIndex != 0)
-				Append(m_currentState->moduleNames[identifier.moduleIndex - 1], '_', parameter.name);
-			else
-				Append(parameter.name);
-			Append(": ", parameter.type);
+			Append(parameter.name, ": ", parameter.type);
 
 			if (parameter.varIndex)
 				RegisterVariable(*parameter.varIndex, parameter.name);
@@ -2327,26 +2269,10 @@ namespace nzsl
 		Append(";");
 	}
 
-	void WgslWriter::Visit(Ast::ForStatement& node)
+	void WgslWriter::Visit(Ast::ForStatement& /*node*/)
 	{
-		if (node.varIndex)
-			RegisterVariable(*node.varIndex, node.varName);
-
-		AppendAttributes(true, UnrollAttribute{ node.unroll });
-		Append("for ", node.varName, " in ");
-		node.fromExpr->Visit(*this);
-		Append(" -> ");
-		node.toExpr->Visit(*this);
-
-		if (node.stepExpr)
-		{
-			Append(" : ");
-			node.stepExpr->Visit(*this);
-		}
-
-		AppendLine();
-
-		ScopeVisit(*node.statement);
+		// For loops must have been converted to while loop in prepasses
+		throw std::runtime_error("unexpected for statement, is the shader sanitized?");
 	}
 
 	void WgslWriter::Visit(Ast::ForEachStatement& node)
