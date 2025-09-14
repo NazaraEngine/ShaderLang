@@ -122,8 +122,6 @@ namespace nzsl
 
 			struct FuncData
 			{
-				std::optional<EntryPoint> entryPointData;
-
 				struct FuncCall
 				{
 					std::size_t firstVarIndex;
@@ -144,6 +142,7 @@ namespace nzsl
 					SourceLocation sourceLocation;
 				};
 
+				std::optional<EntryPoint> entryPointData;
 				std::size_t funcIndex;
 				std::string name;
 				std::unordered_map<std::size_t, std::size_t> varIndexToVarId;
@@ -153,6 +152,8 @@ namespace nzsl
 				std::uint32_t funcId;
 				std::uint32_t funcTypeId;
 				std::uint32_t returnTypeId;
+				Nz::HybridBitset<Nz::UInt32, 32> calledFunctions;
+				Nz::HybridBitset<Nz::UInt32, 64> globalInterfaces;
 			};
 
 		private:
