@@ -145,18 +145,18 @@ namespace nzsl::Ast
 			auto isContiguousSuffix = [&]() -> std::optional<std::size_t>
 			{
 				// Find first written index
-				std::size_t min_written = vecSize;
+				std::size_t minWritten = vecSize;
 				for (std::size_t k = 0; k < flatCount; ++k)
-					min_written = std::min<std::size_t>(min_written, flatComponents[k]);
-				if (min_written + flatCount != vecSize)
+					minWritten = std::min<std::size_t>(minWritten, flatComponents[k]);
+				if (minWritten + flatCount != vecSize)
 					return std::nullopt; // Not a suffix length
 				// Check order: {min,...,vec_size-1}
 				for (std::size_t k = 0; k < flatCount; ++k)
 				{
-					if (flatComponents[k] != min_written + k)
+					if (flatComponents[k] != minWritten + k)
 						return std::nullopt;
 				}
-				return min_written; // Suffix starts here
+				return minWritten; // Suffix starts here
 			};
 
 			if (auto suffixStart = isContiguousSuffix())
@@ -168,7 +168,7 @@ namespace nzsl::Ast
 					keepSwz->sourceLocation = swizzle.sourceLocation;
 					keepSwz->expression = Clone(*baseVec);
 					keepSwz->componentCount = 1;
-					keepSwz->components[0] = static_cast<unsigned int>(dst);
+					keepSwz->components[0] = static_cast<std::uint32_t>(dst);
 					keepSwz->cachedExpressionType = ExpressionType{ baseType };
 					ctor->expressions.push_back(std::move(keepSwz));
 					HandleExpression(ctor->expressions.back());
@@ -185,19 +185,19 @@ namespace nzsl::Ast
 				{
 					if (auto rhsComp = mapDstToRhsIndex(dst))
 					{
-						ExpressionPtr from_rhs = makeRhsComponentExpr(*rhsComp);
-						HandleExpression(from_rhs);
-						ctor->expressions.push_back(std::move(from_rhs));
+						ExpressionPtr fromRhs = makeRhsComponentExpr(*rhsComp);
+						HandleExpression(fromRhs);
+						ctor->expressions.push_back(std::move(fromRhs));
 					}
 					else
 					{
-						auto keep_swz = std::make_unique<SwizzleExpression>();
-						keep_swz->sourceLocation = swizzle.sourceLocation;
-						keep_swz->expression = Clone(*baseVec);
-						keep_swz->componentCount = 1;
-						keep_swz->components[0] = static_cast<unsigned int>(dst);
-						keep_swz->cachedExpressionType = ExpressionType{ baseType };
-						ctor->expressions.push_back(std::move(keep_swz));
+						auto keepSwz = std::make_unique<SwizzleExpression>();
+						keepSwz->sourceLocation = swizzle.sourceLocation;
+						keepSwz->expression = Clone(*baseVec);
+						keepSwz->componentCount = 1;
+						keepSwz->components[0] = static_cast<std::uint32_t>(dst);
+						keepSwz->cachedExpressionType = ExpressionType{ baseType };
+						ctor->expressions.push_back(std::move(keepSwz));
 						HandleExpression(ctor->expressions.back());
 					}
 				}
