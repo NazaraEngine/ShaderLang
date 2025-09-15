@@ -247,6 +247,7 @@ fn main(input: Input) -> Output
       OpDecorate %21 Decoration(BuiltIn) BuiltIn(Position))", {}, spirvEnv, true);
 		}
 
+// Needs to emulate draw_index, base_instance and base_vertex
 #ifdef FAILING_WGSL
 		ExpectWGSL(*shaderModule, R"(
 struct Input

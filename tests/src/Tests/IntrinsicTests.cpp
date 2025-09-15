@@ -390,6 +390,7 @@ fn main()
       OpReturn
       OpFunctionEnd)", {}, {}, true);
 
+// See comment inside the test
 #ifdef FAILING_WGSL
 		ExpectWGSL(*shaderModule, R"(
 @group(0) @binding(0) var tex1D: texture_1d<f32>;
@@ -1490,21 +1491,39 @@ fn main()
        OpReturn
        OpFunctionEnd)", {}, {}, true);
 
+// Needs to implement an inverse function in WGSL
 #ifdef FAILING_WGSL
 		nzsl::WgslWriter::Environment wgslEnv;
 		wgslEnv.featuresCallback = [](std::string_view) { return true; };
 
 		ExpectWGSL(*shaderModule, R"(
+@fragment
 fn main()
 {
-	let m1: mat4[f32] = mat4[f32](0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0);
-	let m2: mat2x3[f32] = mat2x3[f32](0.0, 1.0, 2.0, 3.0, 4.0, 5.0);
-	let m3: mat3[f64] = mat3[f64](0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0);
-	let m4: mat3x2[f64] = mat3x2[f64](0.0, 1.0, 2.0, 3.0, 4.0, 5.0);
-	let inverseResult1: mat4[f32] = inverse(m1);
-	let inverseResult2: mat3[f64] = inverse(m3);
-	let transposeResult1: mat3x2[f32] = transpose(m2);
-	let transposeResult2: mat2x3[f64] = transpose(m4);
+	var _nzsl_matrix: mat4x4<f32>;
+	_nzsl_matrix[0u] = vec4<f32>(0.0, 1.0, 2.0, 3.0);
+	_nzsl_matrix[1u] = vec4<f32>(4.0, 5.0, 6.0, 7.0);
+	_nzsl_matrix[2u] = vec4<f32>(8.0, 9.0, 10.0, 11.0);
+	_nzsl_matrix[3u] = vec4<f32>(12.0, 13.0, 14.0, 15.0);
+	var m1: mat4x4<f32> = _nzsl_matrix;
+	var _nzsl_matrix_2: mat2x3<f32>;
+	_nzsl_matrix_2[0u] = vec3<f32>(0.0, 1.0, 2.0);
+	_nzsl_matrix_2[1u] = vec3<f32>(3.0, 4.0, 5.0);
+	var m2: mat2x3<f32> = _nzsl_matrix_2;
+	var _nzsl_matrix_3: mat3x3<f64>;
+	_nzsl_matrix_3[0u] = vec3<f64>(0.0, 1.0, 2.0);
+	_nzsl_matrix_3[1u] = vec3<f64>(3.0, 4.0, 5.0);
+	_nzsl_matrix_3[2u] = vec3<f64>(6.0, 7.0, 8.0);
+	var m3: mat3x3<f64> = _nzsl_matrix_3;
+	var _nzsl_matrix_4: mat3x2<f64>;
+	_nzsl_matrix_4[0u] = vec2<f64>(0.0, 1.0);
+	_nzsl_matrix_4[1u] = vec2<f64>(2.0, 3.0);
+	_nzsl_matrix_4[2u] = vec2<f64>(4.0, 5.0);
+	var m4: mat3x2<f64> = _nzsl_matrix_4;
+	var inverseResult1: mat4x4<f32> = inverse(m1);
+	var inverseResult2: mat3x3<f64> = inverse(m3);
+	var transposeResult1: mat3x2<f32> = transpose(m2);
+	var transposeResult2: mat2x3<f64> = transpose(m4);
 }
 )", {}, wgslEnv);
 #endif

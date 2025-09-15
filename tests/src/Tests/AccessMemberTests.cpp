@@ -4,6 +4,11 @@
 #include <catch2/catch_test_macros.hpp>
 #include <cctype>
 
+/**
+ * Here WGSL tests fail because vertex entrypoints need to return
+ * at least a builtin position attribute.
+ */
+
 TEST_CASE("structure member access", "[Shader]")
 {
 	SECTION("Nested member loading")
@@ -27,7 +32,6 @@ external
 	[set(0), binding(0)] ubo: uniform[outerStruct]
 }
 )";
-
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
 		ResolveModule(*shaderModule);
 
@@ -68,6 +72,7 @@ OpStore
 OpReturn
 OpFunctionEnd)");
 
+// See top file comment
 #ifdef FAILING_WGSL
 			ExpectWGSL(*shaderModule, R"(
 @vertex
@@ -115,6 +120,7 @@ OpStore
 OpReturn
 OpFunctionEnd)");
 
+// See top file comment
 #ifdef FAILING_WGSL
 			ExpectWGSL(*shaderModule, R"(
 @vertex
