@@ -100,7 +100,7 @@ fn main()
 {
 	var value: f32 = 0.0;
 	var i: i32 = 0;
-	while (i < (10))
+	while (i < 10)
 	{
 		value += 0.1;
 		i += 1;
@@ -260,16 +260,16 @@ fn main()
 	var value: f32 = 0.0;
 	var value2: f32 = 0.0;
 	var i: i32 = 0;
-	while (i < (10))
+	while (i < 10)
 	{
-		if (i >= (8))
+		if (i >= 8)
 		{
 			break;
 		}
 
 		value += 0.1;
 		i += 1;
-		if (i == (4))
+		if (i == 4)
 		{
 			continue;
 		}
@@ -628,13 +628,13 @@ fn main()
 		var _nzsl_to: i32 = 10;
 		while (v < _nzsl_to)
 		{
-			if (v == (4))
+			if (v == 4)
 			{
 				continue;
 			}
 
 			x += v;
-			if (v >= (8))
+			if (v >= 8)
 			{
 				break;
 			}

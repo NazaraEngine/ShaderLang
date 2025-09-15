@@ -181,8 +181,9 @@ OpFunctionEnd)");
 @fragment
 fn main()
 {
-	var value: f32 = 42.0;
-	var vec: vec3<f32> = vec3<f32>(value, value, value);
+	var value: i32 = 42;
+	var vec: vec3<i32> = vec3<i32>(value, value, value);
+	var vec_2: vec3<f32> = vec3<f32>(47.0, 47.0, 47.0);
 }
 )");
 		}

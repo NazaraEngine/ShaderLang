@@ -164,7 +164,7 @@ void main()
 
 	Data_SimpleModule data;
 	data.value = ExtData_block.data.value;
-	float value = ((GetDataValue_SimpleModule(data)) * input_.value) * (3.141592);
+	float value = ((GetDataValue_SimpleModule(data)) * input_.value) * 3.141592;
 	OutputData_SimpleModule output_;
 	output_.value = vec4(value, value, value, value);
 
@@ -321,7 +321,7 @@ fn main(input: _SimpleModule_InputData) -> _SimpleModule_OutputData
 {
 	var data: _SimpleModule_Data;
 	data.value = ExtData_block.data.value;
-	var value: f32 = ((_SimpleModule_GetDataValue(data)) * input.value) * (3.141592);
+	var value: f32 = ((_SimpleModule_GetDataValue(data)) * input.value) * 3.141592;
 	var output: _SimpleModule_OutputData;
 	output.value = vec4<f32>(value, value, value, value);
 	return output;
@@ -980,7 +980,7 @@ fn _Modules_Func_SumLightIntensities(lightData: _Modules_Data_Lights) -> vec2<i3
 	var intensities: vec2<i32> = vec2<i32>(0, 0);
 	{
 		var _nzsl_counter: u32 = 0u;
-		while (_nzsl_counter < (3u))
+		while (_nzsl_counter < 3u)
 		{
 			var light: _Modules_Data_Light = lightData.lights[_nzsl_counter];
 			intensities += light.intensities;
@@ -1427,7 +1427,7 @@ void main()
 
 	Data_Simple_Module data;
 	data.value = ExtData_block.data.value;
-	float value = ((GetDataValue_Simple_Module(data)) * input_.value) * (3.141592);
+	float value = ((GetDataValue_Simple_Module(data)) * input_.value) * 3.141592;
 	OutputData_Simple_Module output_;
 	output_.value = vec4(value, value, value, value);
 
@@ -1572,7 +1572,7 @@ fn main(input: _Simple_Module_InputData) -> _Simple_Module_OutputData
 {
 	var data: _Simple_Module_Data;
 	data.value = ExtData_block.data.value;
-	var value: f32 = ((_Simple_Module_GetDataValue(data)) * input.value) * (3.141592);
+	var value: f32 = ((_Simple_Module_GetDataValue(data)) * input.value) * 3.141592;
 	var output: _Simple_Module_OutputData;
 	output.value = vec4<f32>(value, value, value, value);
 	return output;
@@ -1716,7 +1716,7 @@ void main()
 
 	Data_Simple_Module data;
 	data.value = ExtData_block.data.value;
-	float value = ((GetDataValue_Simple_Module(data)) * input_.value) * (3.141592);
+	float value = ((GetDataValue_Simple_Module(data)) * input_.value) * 3.141592;
 	OutputData_Simple_Module output_;
 	output_.value = vec4(value, value, value, value);
 
@@ -1861,7 +1861,7 @@ fn main(input: _Simple_Module_InputData) -> _Simple_Module_OutputData
 {
 	var data: _Simple_Module_Data;
 	data.value = ExtData_block.data.value;
-	var value: f32 = ((_Simple_Module_GetDataValue(data)) * input.value) * (3.141592);
+	var value: f32 = ((_Simple_Module_GetDataValue(data)) * input.value) * 3.141592;
 	var output: _Simple_Module_OutputData;
 	output.value = vec4<f32>(value, value, value, value);
 	return output;
