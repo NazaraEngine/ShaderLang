@@ -4,6 +4,7 @@
 
 #include <NZSL/Ast/Transformations/ConstantRemovalTransformer.hpp>
 #include <NZSL/Ast/ConstantValue.hpp>
+#include <NZSL/Ast/Utils.hpp>
 #include <NZSL/Lang/Errors.hpp>
 #include <NZSL/Ast/Transformations/TransformerContext.hpp>
 
@@ -40,18 +41,21 @@ namespace nzsl::Ast
 		return TransformModule(module, context, error);
 	}
 
-	auto ConstantRemovalTransformer::Transform(ConstantExpression&& constExpr) -> ExpressionTransformation
+	auto ConstantRemovalTransformer::Transform(IdentifierValueExpression&& identifierValueExpr) -> ExpressionTransformation
 	{
 		NAZARA_USE_ANONYMOUS_NAMESPACE
 
-		if (auto constIt = m_constantSingleValues.find(constExpr.constantId); constIt != m_constantSingleValues.end())
+		if (identifierValueExpr.identifierType != IdentifierType::Constant)
+			return VisitChildren{};
+
+		if (auto constIt = m_constantSingleValues.find(identifierValueExpr.identifierIndex); constIt != m_constantSingleValues.end())
 		{
 			return std::visit([&](auto&& arg) -> ExpressionTransformation
 			{
-				return ReplaceExpression{ ShaderBuilder::ConstantValue(arg, constExpr.sourceLocation) };
+				return ReplaceExpression{ ShaderBuilder::ConstantValue(arg, identifierValueExpr.sourceLocation) };
 			}, constIt->second);
 		}
-		else if (auto optIt = m_optionValues.find(constExpr.constantId); optIt != m_optionValues.end())
+		else if (auto optIt = m_optionValues.find(identifierValueExpr.identifierIndex); optIt != m_optionValues.end())
 		{
 			return std::visit([&](auto&& arg) -> ExpressionTransformation
 			{
@@ -62,7 +66,7 @@ namespace nzsl::Ast
 				if constexpr (VectorInner::IsVector)
 					return DontVisitChildren{};
 				else
-					return ReplaceExpression{ ShaderBuilder::ConstantValue(arg, constExpr.sourceLocation) };
+					return ReplaceExpression{ ShaderBuilder::ConstantValue(arg, identifierValueExpr.sourceLocation) };
 			}, optIt->second);
 		}
 
@@ -99,53 +103,7 @@ namespace nzsl::Ast
 			return VisitChildren{};
 
 		HandleChildren(typeConstantExpr);
-
-		assert(IsPrimitiveType(typeConstantExpr.type));
-		PrimitiveType primitiveType = std::get<PrimitiveType>(typeConstantExpr.type);
-
-		auto ReplaceByValue = [&](auto&& type)
-		{
-			using T = std::decay_t<decltype(type)>;
-
-			if (typeConstantExpr.typeConstant == TypeConstant::Max)
-				return ShaderBuilder::ConstantValue(Nz::MaxValue<T>());
-
-			if (typeConstantExpr.typeConstant == TypeConstant::Min)
-				return ShaderBuilder::ConstantValue(std::numeric_limits<T>::lowest()); //< Nz::MinValue is implemented by std::numeric_limits<T>::min() which doesn't give the value we want
-
-			if constexpr (std::is_floating_point_v<T>)
-			{
-				if (typeConstantExpr.typeConstant == TypeConstant::Epsilon)
-					return ShaderBuilder::ConstantValue(std::numeric_limits<T>::epsilon());
-
-				if (typeConstantExpr.typeConstant == TypeConstant::Infinity)
-					return ShaderBuilder::ConstantValue(Nz::Infinity<T>());
-
-				if (typeConstantExpr.typeConstant == TypeConstant::MinPositive)
-					return ShaderBuilder::ConstantValue(std::numeric_limits<T>::min());
-
-				if (typeConstantExpr.typeConstant == TypeConstant::NaN)
-					return ShaderBuilder::ConstantValue(Nz::NaN<T>());
-			}
-
-			throw std::runtime_error("unexpected type constant with type");
-		};
-
-		switch (primitiveType)
-		{
-			case PrimitiveType::Float32: return ReplaceExpression{ ReplaceByValue(float{}) };
-			case PrimitiveType::Float64: return ReplaceExpression{ ReplaceByValue(double{}) };
-			case PrimitiveType::Int32:   return ReplaceExpression{ ReplaceByValue(std::int32_t{}) };
-			case PrimitiveType::UInt32:  return ReplaceExpression{ ReplaceByValue(std::uint32_t{}) };
-
-			case PrimitiveType::Boolean:
-			case PrimitiveType::FloatLiteral:
-			case PrimitiveType::IntLiteral:
-			case PrimitiveType::String:
-				throw std::runtime_error("unexpected primitive type");
-		}
-
-		return DontVisitChildren{};
+		return ReplaceExpression{ ShaderBuilder::ConstantValue(ComputeTypeConstant(typeConstantExpr.type, typeConstantExpr.typeConstant)) };
 	}
 
 	auto ConstantRemovalTransformer::Transform(DeclareConstStatement&& declConst) -> StatementTransformation
@@ -155,22 +113,24 @@ namespace nzsl::Ast
 
 		HandleChildren(declConst);
 
-		NodeType constantType = declConst.expression->GetType();
-		if (constantType != NodeType::ConstantValueExpression && constantType != NodeType::ConstantArrayValueExpression && constantType != NodeType::ConstantExpression)
-		{
-			// Constant propagation failed
-			if (!m_context->partialCompilation)
-				throw CompilerConstantExpressionRequiredError{ declConst.expression->sourceLocation };
-		}
+		const auto& constantData = m_context->constants.Retrieve(*declConst.constIndex, declConst.sourceLocation);
+		if (!constantData.value)
+			return DontVisitChildren{};
 
-		if (constantType == NodeType::ConstantArrayValueExpression)
+		if (IsArrayConstant(*constantData.value))
+		{
+			if (m_options->replaceExpressionWithValue && declConst.expression->GetType() != NodeType::ConstantArrayValueExpression)
+				declConst.expression = ShaderBuilder::ConstantArrayValue(ToArrayConstantValue(*constantData.value));
+
 			return DontVisitChildren{}; //< keep const arrays
-
-		if (constantType == NodeType::ConstantValueExpression)
-		{
-			const auto& constant = static_cast<ConstantValueExpression&>(*declConst.expression);
-			m_constantSingleValues.emplace(*declConst.constIndex, constant.value);
 		}
+		else
+		{
+			if (m_options->replaceExpressionWithValue && declConst.expression->GetType() != NodeType::ConstantValueExpression)
+				declConst.expression = ShaderBuilder::ConstantValue(ToSingleConstantValue(*constantData.value));
+		}
+
+		m_constantSingleValues.emplace(*declConst.constIndex, ToSingleConstantValue(*constantData.value));
 
 		if (m_options->removeConstantDeclaration)
 			return RemoveStatement{};
@@ -197,11 +157,9 @@ namespace nzsl::Ast
 			if (!declOption.defaultValue)
 				throw CompilerMissingOptionValueError{ declOption.sourceLocation, declOption.optName };
 
-			if (declOption.defaultValue->GetType() == NodeType::ConstantValueExpression)
-			{
-				const auto& constant = static_cast<ConstantValueExpression&>(*declOption.defaultValue);
-				m_constantSingleValues.emplace(*declOption.optIndex, constant.value);
-			}
+			const auto& constantData = m_context->constants.Retrieve(*declOption.optIndex, declOption.sourceLocation);
+			if (IsSingleConstant(*constantData.value))
+				m_constantSingleValues.emplace(*declOption.optIndex, ToSingleConstantValue(*constantData.value));
 		}
 
 		if (m_options->removeOptionDeclaration)

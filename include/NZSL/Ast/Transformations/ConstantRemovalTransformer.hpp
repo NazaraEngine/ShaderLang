@@ -27,12 +27,13 @@ namespace nzsl::Ast
 				bool removeConstantDeclaration = true;
 				bool removeOptionDeclaration = true;
 				bool removeTypeConstant = true;
+				bool replaceExpressionWithValue = true;
 			};
 
 		private:
 			using Transformer::Transform;
 
-			ExpressionTransformation Transform(ConstantExpression&& constExpr) override;
+			ExpressionTransformation Transform(IdentifierValueExpression&& identifierValueExpr) override;
 			ExpressionTransformation Transform(IntrinsicExpression&& intrinsicExpr) override;
 			ExpressionTransformation Transform(TypeConstantExpression&& typeConstantExpr) override;
 

@@ -722,7 +722,7 @@ ivec2 SumLightIntensities_Modules_Func(Lights_Modules_Data lightData)
 	ivec2 intensities = ivec2(0, 0);
 	{
 		uint _nzsl_counter = 0u;
-		while (_nzsl_counter < (3u))
+		while (_nzsl_counter < 3u)
 		{
 			Light_Modules_Data light = lightData.lights[_nzsl_counter];
 			intensities += light.intensities;

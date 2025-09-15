@@ -86,11 +86,7 @@ void main()
 })");
 
 		ExpectNZSL(*shaderModule, R"(
-const vertices: array[vec3[f32], 3] = array[vec3[f32], 3](
-	vec3[f32](1.0, 2.0, 3.0),
-	vec3[f32](4.0, 5.0, 6.0),
-	vec3[f32](7.0, 8.0, 9.0)
-);
+const vertices: array[vec3[f32], 3] = array[vec3[f32], 3](vec3[f32](1.0, 2.0, 3.0), vec3[f32](4.0, 5.0, 6.0), vec3[f32](7.0, 8.0, 9.0));
 
 struct VertIn
 {

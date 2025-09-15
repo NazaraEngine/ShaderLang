@@ -49,7 +49,7 @@ namespace nzsl::Ast
 	namespace
 	{
 		constexpr std::uint32_t s_shaderAstMagicNumber = 0x4E534852;
-		constexpr std::uint32_t s_shaderAstCurrentVersion = 14;
+		constexpr std::uint32_t s_shaderAstCurrentVersion = 16;
 
 		class ShaderSerializerVisitor : public ExpressionVisitor, public StatementVisitor
 		{
@@ -98,11 +98,6 @@ namespace nzsl::Ast
 		Container(node.indices);
 		for (auto& identifier : node.indices)
 			Node(identifier);
-	}
-
-	void SerializerBase::Serialize(AliasValueExpression& node)
-	{
-		SizeT(node.aliasId);
 	}
 
 	void SerializerBase::Serialize(AssignExpression& node)
@@ -157,11 +152,6 @@ namespace nzsl::Ast
 		Node(node.condition);
 		Node(node.truePath);
 		Node(node.falsePath);
-	}
-
-	void SerializerBase::Serialize(ConstantExpression& node)
-	{
-		SizeT(node.constantId);
 	}
 
 	void SerializerBase::Serialize(ConstantArrayValueExpression& node)
@@ -267,42 +257,18 @@ namespace nzsl::Ast
 		Value(node.identifier);
 	}
 
+	void SerializerBase::Serialize(IdentifierValueExpression& node)
+	{
+		Enum(node.identifierType);
+		SizeT(node.identifierIndex);
+	}
+
 	void SerializerBase::Serialize(IntrinsicExpression& node)
 	{
 		Enum(node.intrinsic);
 		Container(node.parameters);
 		for (auto& param : node.parameters)
 			Node(param);
-	}
-
-	void SerializerBase::Serialize(IntrinsicFunctionExpression& node)
-	{
-		SizeT(node.intrinsicId);
-	}
-
-	void SerializerBase::Serialize(ModuleExpression& node)
-	{
-		SizeT(node.moduleId);
-	}
-
-	void SerializerBase::Serialize(NamedExternalBlockExpression& node)
-	{
-		SizeT(node.externalBlockId);
-	}
-
-	void SerializerBase::Serialize(StructTypeExpression& node)
-	{
-		SizeT(node.structTypeId);
-	}
-
-	void SerializerBase::Serialize(TypeExpression& node)
-	{
-		SizeT(node.typeId);
-	}
-
-	void SerializerBase::Serialize(FunctionExpression& node)
-	{
-		SizeT(node.funcId);
 	}
 
 	void SerializerBase::Serialize(SwizzleExpression& node)
@@ -318,11 +284,6 @@ namespace nzsl::Ast
 	{
 		Type(node.type);
 		Enum(node.typeConstant);
-	}
-
-	void SerializerBase::Serialize(VariableValueExpression& node)
-	{
-		SizeT(node.variableId);
 	}
 
 	void SerializerBase::Serialize(UnaryExpression& node)
@@ -573,14 +534,14 @@ namespace nzsl::Ast
 	void SerializerBase::Metadata(Module::Metadata& metadata)
 	{
 		Value(metadata.moduleName);
-		Value(metadata.shaderLangVersion);
+		Value(metadata.langVersion);
 		if (!IsVersionGreaterOrEqual(14) && !IsWriting())
 		{
 			// Version binary representation changed in binary version 14
-			std::uint32_t majorVersion = metadata.shaderLangVersion / 100;
-			std::uint32_t minorVersion = (metadata.shaderLangVersion - majorVersion * 100) / 10;
-			std::uint32_t patchVersion = metadata.shaderLangVersion % 10;
-			metadata.shaderLangVersion = Version::Build(majorVersion, minorVersion, patchVersion);
+			std::uint32_t majorVersion = metadata.langVersion / 100;
+			std::uint32_t minorVersion = (metadata.langVersion - majorVersion * 100) / 10;
+			std::uint32_t patchVersion = metadata.langVersion % 10;
+			metadata.langVersion = Version::Build(majorVersion, minorVersion, patchVersion);
 		}
 
 		if (IsVersionGreaterOrEqual(2))
@@ -589,9 +550,31 @@ namespace nzsl::Ast
 			Value(metadata.description);
 			Value(metadata.license);
 
-			Container(metadata.enabledFeatures);
-			for (ModuleFeature& feature : metadata.enabledFeatures)
-				Enum(feature);
+			if (IsVersionGreaterOrEqual(16))
+			{
+				std::uint32_t featureMask;
+				if (IsWriting())
+					featureMask = static_cast<std::uint32_t>(metadata.enabledFeatures);
+
+				Value(featureMask);
+				if (!IsWriting())
+					metadata.enabledFeatures = Nz::SafeCast<Ast::ModuleFeatureFlags::BitField>(featureMask);
+			}
+			else
+			{
+				assert(!IsWriting());
+
+				std::uint32_t featureCount;
+				Value(featureCount);
+
+				for (std::uint32_t i = 0; i < featureCount; ++i)
+				{
+					ModuleFeature feature;
+					Enum(feature);
+
+					metadata.enabledFeatures |= feature;
+				}
+			}
 		}
 	}
 
@@ -900,6 +883,39 @@ namespace nzsl::Ast
 
 #define NZSL_SHADERAST_EXPRESSION(Node) case NodeType:: Node##Expression : node = std::make_unique<Node##Expression>(); break;
 #include <NZSL/Ast/NodeList.hpp>
+
+			// Removed in b15 and replaced by Id
+			case NodeType::AliasValueExpression:
+			case NodeType::ConstantExpression:
+			case NodeType::FunctionExpression:
+			case NodeType::IntrinsicFunctionExpression:
+			case NodeType::NamedExternalBlockExpression:
+			case NodeType::StructTypeExpression:
+			case NodeType::TypeExpression:
+			case NodeType::VariableValueExpression:
+			{
+				auto identifierValueNode = std::make_unique<IdentifierValueExpression>();
+
+				switch (nodeType)
+				{
+					case NodeType::AliasValueExpression:         identifierValueNode->identifierType = IdentifierType::Alias; break;
+					case NodeType::ConstantExpression:           identifierValueNode->identifierType = IdentifierType::Constant; break;
+					case NodeType::FunctionExpression:           identifierValueNode->identifierType = IdentifierType::Function; break;
+					case NodeType::IntrinsicFunctionExpression:  identifierValueNode->identifierType = IdentifierType::Intrinsic; break;
+					case NodeType::NamedExternalBlockExpression: identifierValueNode->identifierType = IdentifierType::ExternalBlock; break;
+					case NodeType::StructTypeExpression:         identifierValueNode->identifierType = IdentifierType::Struct; break;
+					case NodeType::TypeExpression:               identifierValueNode->identifierType = IdentifierType::Type; break;
+					case NodeType::VariableValueExpression:      identifierValueNode->identifierType = IdentifierType::Variable; break;
+					default: NAZARA_UNREACHABLE();
+				}
+
+				SizeT(identifierValueNode->identifierIndex);
+				SerializeNodeCommon(*identifierValueNode);
+				SerializeExpressionCommon(*identifierValueNode);
+
+				node = std::move(identifierValueNode);
+				return;
+			}
 
 			default: throw std::runtime_error("unexpected node type");
 		}

@@ -72,13 +72,8 @@ if is_plat("mingw") then
 		set_optimize("smallest")
 	end
 elseif is_plat("wasm") then
-	add_rules("wasm_files")
 	add_cxflags("-s DISABLE_EXCEPTION_CATCHING=0")
 	add_ldflags("-s DISABLE_EXCEPTION_CATCHING=0")
-	if is_mode("debug") then
-		-- See https://github.com/xmake-io/xmake/issues/2646
-		add_ldflags("-gsource-map")
-	end
 end
 
 if is_mode("debug") then

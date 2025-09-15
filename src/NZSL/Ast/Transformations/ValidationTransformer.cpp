@@ -15,19 +15,20 @@
 
 namespace nzsl::Ast
 {
+	struct ValidationTransformer::FunctionData
+	{
+		std::unordered_multimap<BuiltinEntry, SourceLocation> usedBuiltins;
+		std::unordered_multimap<ShaderStageType, SourceLocation> requiredShaderStage;
+		Nz::HybridBitset<Nz::UInt32, 32> calledFunctions;
+		Nz::HybridBitset<Nz::UInt32, 32> calledByFunctions;
+		ShaderStageTypeFlags calledByStages;
+		const DeclareFunctionStatement* node;
+		std::optional<ShaderStageType> entryStage;
+		std::size_t funcIndex;
+	};
+
 	struct ValidationTransformer::States
 	{
-		struct FunctionData
-		{
-			std::unordered_multimap<BuiltinEntry, SourceLocation> usedBuiltins;
-			std::unordered_multimap<ShaderStageType, SourceLocation> requiredShaderStage;
-			Nz::HybridBitset<Nz::UInt32, 32> calledFunctions;
-			Nz::HybridBitset<Nz::UInt32, 32> calledByFunctions;
-			ShaderStageTypeFlags calledByStages;
-			const DeclareFunctionStatement* node;
-			std::optional<ShaderStageType> entryStage;
-		};
-
 		struct Scope
 		{
 			Nz::HybridVector<std::size_t, 8> aliases;
@@ -52,7 +53,6 @@ namespace nzsl::Ast
 		tsl::ordered_map<std::size_t, FunctionData> functions;
 		SourceLocation pushConstantLocation;
 		FunctionData* currentFunction = nullptr;
-		Module* rootModule;
 		unsigned int loopCounter = 0;
 	};
 
@@ -61,7 +61,6 @@ namespace nzsl::Ast
 		m_options = &options;
 
 		States states;
-		states.rootModule = &module;
 		m_states = &states;
 
 		PushScope();
@@ -73,23 +72,21 @@ namespace nzsl::Ast
 		return TransformModule(module, context, error);
 	}
 
-	bool ValidationTransformer::TransformExpression(Module& module, ExpressionPtr& expression, TransformerContext& context, const Options& options, std::string* error)
+	bool ValidationTransformer::TransformExpression(ExpressionPtr& expression, TransformerContext& context, const Options& options, std::string* error)
 	{
 		m_options = &options;
 
 		States states;
-		states.rootModule = &module;
 		m_states = &states;
 
 		return Transformer::TransformExpression(expression, context, error);
 	}
 
-	bool ValidationTransformer::TransformStatement(Module& module, StatementPtr& statement, TransformerContext& context, const Options& options, std::string* error)
+	bool ValidationTransformer::TransformStatement(StatementPtr& statement, TransformerContext& context, const Options& options, std::string* error)
 	{
 		m_options = &options;
 
 		States states;
-		states.rootModule = &module;
 		m_states = &states;
 
 		return Transformer::TransformStatement(statement, context, error);
@@ -223,6 +220,22 @@ namespace nzsl::Ast
 
 		m_states->scopes.pop_back();
 	}
+	
+	void ValidationTransformer::PropagateFunctionStages(FunctionData& calledFuncData, Nz::HybridBitset<Nz::UInt32, 32>& seen)
+	{
+		seen.UnboundedSet(calledFuncData.funcIndex);
+		for (std::size_t calledByFuncIndex : calledFuncData.calledByFunctions.IterBits())
+		{
+			auto callingFuncIt = m_states->functions.find(calledByFuncIndex);
+			assert(callingFuncIt != m_states->functions.end());
+
+			auto& callingFuncData = callingFuncIt.value();
+			if (!seen.UnboundedTest(calledByFuncIndex))
+				PropagateFunctionStages(callingFuncData, seen);
+
+			calledFuncData.calledByStages |= callingFuncData.calledByStages;
+		}
+	}
 
 	void ValidationTransformer::PushScope()
 	{
@@ -348,38 +361,16 @@ namespace nzsl::Ast
 			PopScope();
 		}
 
-		Nz::HybridBitset<Nz::UInt32, 32> calledByFunctions;
 		Nz::HybridBitset<Nz::UInt32, 32> seen;
-		Nz::HybridBitset<Nz::UInt32, 32> temp;
 		for (auto it = m_states->functions.begin(); it != m_states->functions.end(); ++it)
 		{
-			std::size_t funcIndex = it.key();
+			if (!seen.UnboundedTest(it.key()))
+				PropagateFunctionStages(it.value(), seen);
+		}
+
+		for (auto it = m_states->functions.begin(); it != m_states->functions.end(); ++it)
+		{
 			auto& funcData = it.value();
-
-			seen.Clear();
-			seen.UnboundedSet(funcIndex);
-
-			calledByFunctions.Clear();
-			calledByFunctions |= funcData.calledByFunctions;
-
-			std::size_t callingFuncIndex;
-			while ((callingFuncIndex = calledByFunctions.FindFirst()) != calledByFunctions.npos)
-			{
-				auto callingFuncIt = m_states->functions.find(callingFuncIndex);
-				assert(callingFuncIt != m_states->functions.end());
-
-				auto& callingFunctionData = callingFuncIt.value();
-				funcData.calledByStages |= callingFunctionData.calledByStages;
-
-				calledByFunctions |= callingFunctionData.calledByFunctions;
-
-				// Prevent infinite recursion
-				// calledByFunctions &= ~seen;
-				temp.PerformsNOT(seen);
-				calledByFunctions &= temp;
-
-				seen.UnboundedSet(callingFuncIndex);
-			}
 
 			for (std::size_t flagIndex = 0; flagIndex <= static_cast<std::size_t>(ShaderStageType::Max); ++flagIndex)
 			{
@@ -477,16 +468,6 @@ namespace nzsl::Ast
 		return DontVisitChildren{};
 	}
 
-	auto ValidationTransformer::Transform(AliasValueExpression&& node) -> ExpressionTransformation
-	{
-		HandleChildren(node);
-
-		if (m_options->checkIndices)
-			CheckAliasIndex(node.aliasId, node.sourceLocation);
-
-		return DontVisitChildren{};
-	}
-
 	auto ValidationTransformer::Transform(AssignExpression&& node) -> ExpressionTransformation
 	{
 		HandleChildren(node);
@@ -495,7 +476,7 @@ namespace nzsl::Ast
 		if (!leftExprType)
 			return DontVisitChildren{};
 
-		if (GetExpressionCategory(*node.left) != ExpressionCategory::LValue)
+		if (GetExpressionCategory(*node.left) != ExpressionCategory::Variable)
 			throw CompilerAssignTemporaryError{ node.sourceLocation };
 
 		const ExpressionType* rightExprType = GetExpressionType(MandatoryExpr(node.right, node.sourceLocation));
@@ -574,9 +555,18 @@ namespace nzsl::Ast
 
 		for (std::size_t i = 0; i < node.parameters.size(); ++i)
 		{
-			const ExpressionType* parameterType = GetExpressionType(*node.parameters[i].expr);
+			auto& expressionPtr = node.parameters[i].expr;
+
+			const ExpressionType* parameterType = GetExpressionType(*expressionPtr);
 			if (!parameterType)
 				continue;
+
+			if (node.parameters[i].semantic != FunctionParameterSemantic::In)
+			{
+				const Ast::ExpressionCategory category = Ast::GetExpressionCategory(*expressionPtr);
+				if (category != Ast::ExpressionCategory::Variable)
+					throw CompilerFunctionCallSemanticRequiresVariableError{ expressionPtr->sourceLocation };
+			}
 
 			const ExpressionType& expectedType = referenceDeclaration->parameters[i].type.GetResultingValue();
 
@@ -900,16 +890,6 @@ namespace nzsl::Ast
 		return DontVisitChildren{};
 	}
 
-	auto ValidationTransformer::Transform(ConstantExpression&& node) -> ExpressionTransformation
-	{
-		HandleChildren(node);
-
-		if (m_options->checkIndices)
-			CheckConstIndex(node.constantId, node.sourceLocation);
-
-		return DontVisitChildren{};
-	}
-
 	auto ValidationTransformer::Transform(ConstantArrayValueExpression&& node) -> ExpressionTransformation
 	{
 		HandleChildren(node);
@@ -924,19 +904,61 @@ namespace nzsl::Ast
 		return DontVisitChildren{};
 	}
 
-	auto ValidationTransformer::Transform(FunctionExpression&& node) -> ExpressionTransformation
+	auto ValidationTransformer::Transform(IdentifierExpression&& node) -> ExpressionTransformation
 	{
 		HandleChildren(node);
-
-		if (m_options->checkIndices)
-			CheckFuncIndex(node.funcId, node.sourceLocation);
 
 		return DontVisitChildren{};
 	}
 
-	auto ValidationTransformer::Transform(IdentifierExpression&& node) -> ExpressionTransformation
+	auto ValidationTransformer::Transform(IdentifierValueExpression&& node) -> ExpressionTransformation
 	{
 		HandleChildren(node);
+
+		if (m_options->checkIndices)
+		{
+			switch (node.identifierType)
+			{
+				case IdentifierType::Alias:
+					CheckAliasIndex(node.identifierIndex, node.sourceLocation);
+					break;
+
+				case IdentifierType::Constant:
+					CheckConstIndex(node.identifierIndex, node.sourceLocation);
+					break;
+
+				case IdentifierType::ExternalBlock:
+					CheckExternalIndex(node.identifierIndex, node.sourceLocation);
+					break;
+
+				case IdentifierType::Function:
+					CheckFuncIndex(node.identifierIndex, node.sourceLocation);
+					break;
+
+				case IdentifierType::Intrinsic:
+					break;
+
+				case IdentifierType::Module:
+					if (m_context->modules.TryRetrieve(node.identifierIndex, node.sourceLocation) == nullptr)
+						throw AstIndexOutOfBoundsError{ node.sourceLocation, "module", static_cast<std::int32_t>(node.identifierIndex) };
+
+					break;
+
+				case IdentifierType::Struct:
+					CheckStructIndex(node.identifierIndex, node.sourceLocation);
+					break;
+
+				case IdentifierType::Type:
+					break;
+
+				case IdentifierType::Unresolved:
+					break;
+
+				case IdentifierType::Variable:
+					CheckVariableIndex(node.identifierIndex, node.sourceLocation);
+					break;
+			}
+		}
 
 		return DontVisitChildren{};
 	}
@@ -947,46 +969,6 @@ namespace nzsl::Ast
 
 		// Parameter validation
 		ValidateIntrinsicParameters(node);
-
-		return DontVisitChildren{};
-	}
-
-	auto ValidationTransformer::Transform(IntrinsicFunctionExpression&& node) -> ExpressionTransformation
-	{
-		HandleChildren(node);
-
-		return DontVisitChildren{};
-	}
-
-	auto ValidationTransformer::Transform(ModuleExpression&& node) -> ExpressionTransformation
-	{
-		HandleChildren(node);
-
-		if (m_options->checkIndices)
-		{
-			if (node.moduleId >= m_states->rootModule->importedModules.size())
-				throw AstIndexOutOfBoundsError{ node.sourceLocation, "module", static_cast<std::int32_t>(node.moduleId) };
-		}
-
-		return DontVisitChildren{};
-	}
-
-	auto ValidationTransformer::Transform(NamedExternalBlockExpression&& node) -> ExpressionTransformation
-	{
-		HandleChildren(node);
-
-		if (m_options->checkIndices)
-			CheckExternalIndex(node.externalBlockId, node.sourceLocation);
-
-		return DontVisitChildren{};
-	}
-
-	auto ValidationTransformer::Transform(StructTypeExpression&& node) -> ExpressionTransformation
-	{
-		HandleChildren(node);
-
-		if (m_options->checkIndices)
-			CheckStructIndex(node.structTypeId, node.sourceLocation);
 
 		return DontVisitChildren{};
 	}
@@ -1033,13 +1015,6 @@ namespace nzsl::Ast
 		return DontVisitChildren{};
 	}
 
-	auto ValidationTransformer::Transform(TypeExpression&& node) -> ExpressionTransformation
-	{
-		HandleChildren(node);
-
-		return DontVisitChildren{};
-	}
-
 	auto ValidationTransformer::Transform(UnaryExpression&& node) -> ExpressionTransformation
 	{
 		HandleChildren(node);
@@ -1049,16 +1024,6 @@ namespace nzsl::Ast
 			return DontVisitChildren{};
 
 		ValidateUnaryOp(node.op, *exprType, node.sourceLocation, BuildStringifier(node.sourceLocation));
-		return DontVisitChildren{};
-	}
-
-	auto ValidationTransformer::Transform(VariableValueExpression&& node) -> ExpressionTransformation
-	{
-		HandleChildren(node);
-
-		if (m_options->checkIndices)
-			CheckVariableIndex(node.variableId, node.sourceLocation);
-
 		return DontVisitChildren{};
 	}
 
@@ -1133,7 +1098,7 @@ namespace nzsl::Ast
 
 			if (m_options->checkIndices)
 			{
-				if (module.moduleIndex >= m_states->rootModule->importedModules.size())
+				if (m_context->modules.TryRetrieve(module.moduleIndex, node.sourceLocation) == nullptr)
 					throw AstIndexOutOfBoundsError{ node.sourceLocation, "module", static_cast<std::int32_t>(module.moduleIndex) };
 			}
 		}
@@ -1208,7 +1173,8 @@ namespace nzsl::Ast
 		if (m_options->checkIndices)
 			RegisterFunc(*node.funcIndex, node.sourceLocation);
 
-		States::FunctionData& functionData = m_states->functions[*node.funcIndex];
+		FunctionData& functionData = m_states->functions[*node.funcIndex];
+		functionData.funcIndex = *node.funcIndex;
 		functionData.node = &node;
 
 		if (node.entryStage.IsResultingValue())
@@ -1485,6 +1451,8 @@ namespace nzsl::Ast
 
 	void ValidationTransformer::Transform(ExpressionType& expressionType, const SourceLocation& sourceLocation)
 	{
+		Transformer::Transform(expressionType, sourceLocation);
+
 		if (!m_options->allowUntyped && IsLiteralType(expressionType))
 			throw AstUnresolvedLiteralError{ sourceLocation };
 	}

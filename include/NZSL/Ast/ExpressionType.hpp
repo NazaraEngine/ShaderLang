@@ -338,6 +338,7 @@ namespace nzsl::Ast
 	NZSL_API std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const VectorType& vectorType, std::size_t arraySize, const StructFinder& structFinder = {});
 
 	inline const ExpressionType& ResolveAlias(const ExpressionType& exprType);
+	inline ExpressionType ResolveAlias(ExpressionType&& exprType);
 
 	NZSL_API std::size_t ResolveStructIndex(const AliasType& aliasType);
 	NZSL_API std::size_t ResolveStructIndex(const ExpressionType& exprType);

@@ -135,8 +135,9 @@ module;
 [entry(frag)]
 fn main()
 {
-	let value = 42.0;
+	let value = 42;
 	let vec = value.xxx;
+	let vec = 47.0.xxx;
 }
 )";
 
@@ -146,8 +147,9 @@ fn main()
 			ExpectGLSL(*shaderModule, R"(
 void main()
 {
-	float value = 42.0;
-	vec3 vec = vec3(value, value, value);
+	int value = 42;
+	ivec3 vec = ivec3(value, value, value);
+	vec3 vec_2 = vec3(47.0, 47.0, 47.0);
 }
 )");
 
@@ -155,8 +157,9 @@ void main()
 [entry(frag)]
 fn main()
 {
-	let value: f32 = 42.0;
-	let vec: vec3[f32] = value.xxx;
+	let value: i32 = 42;
+	let vec: vec3[i32] = value.xxx;
+	let vec: vec3[f32] = (47.0).xxx;
 }
 )");
 
@@ -165,9 +168,11 @@ OpFunction
 OpLabel
 OpVariable
 OpVariable
+OpVariable
 OpStore
 OpLoad
 OpCompositeConstruct
+OpStore
 OpStore
 OpReturn
 OpFunctionEnd)");

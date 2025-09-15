@@ -137,8 +137,14 @@ namespace nzsl::Ast
 	NZSL_API std::string ConstantToString(const ConstantArrayValue& value);
 	NZSL_API std::string ConstantToString(const ConstantSingleValue& value);
 
+	NZSL_API bool IsArrayConstant(const ConstantValue& value);
+	NZSL_API bool IsSingleConstant(const ConstantValue& value);
+
 	NZSL_API ConstantValue ToConstantValue(ConstantSingleValue value);
 	NZSL_API ConstantValue ToConstantValue(ConstantArrayValue value);
+
+	NZSL_API ConstantArrayValue ToArrayConstantValue(ConstantValue value);
+	NZSL_API ConstantSingleValue ToSingleConstantValue(ConstantValue value);
 
 	NZSL_API std::string ToString(bool value);
 	NZSL_API std::string ToString(double value, bool enforceType = false);

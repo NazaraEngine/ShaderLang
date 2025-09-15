@@ -57,6 +57,7 @@ namespace nzslc
 	m_profiling(false),
 	m_outputToStdout(false),
 	m_skipOutput(false),
+	m_skipUnchangedOutput(false),
 	m_verbose(false),
 	m_iterationCount(1)
 	{
@@ -108,6 +109,7 @@ namespace nzslc
 		if (m_options.count("measure") > 0)
 			m_profiling = m_options["measure"].as<bool>();
 
+		m_skipUnchangedOutput = m_options.count("skip-unchanged") > 0;
 		m_verbose = m_options.count("verbose") > 0;
 	}
 
@@ -231,7 +233,8 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 			("d,debug-level", "Debug level to generate", cxxopts::value<std::string>(), "[none|minimal|regular|full]")
 			("m,module", "Module file or directory", cxxopts::value<std::vector<std::string>>())
 			("optimize", "Optimize shader code")
-			("p,partial", "Allow partial compilation");
+			("p,partial", "Allow partial compilation")
+			("skip-unchanged", "After compilation, compare the output with the current output file and skip writing if the content is the same", cxxopts::value<bool>()->default_value("false"));
 
 		options.add_options("glsl output")
 			("gl-es", "Generate GLSL ES instead of GLSL", cxxopts::value<bool>()->default_value("false"))
@@ -568,6 +571,12 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 		}
 	}
 
+	nzsl::Ast::ModulePtr Compiler::Deserialize(const std::uint8_t* data, std::size_t size)
+	{
+		nzsl::Deserializer deserializer(data, size);
+		return nzsl::Ast::DeserializeShader(deserializer);
+	}
+
 	void Compiler::PrintTime()
 	{
 		long long fullTime = std::max(m_steps[0].time, 1LL); //< prevent a divison by zero
@@ -620,18 +629,18 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 
 	void Compiler::OutputFile(std::filesystem::path filePath, const void* data, std::size_t size, bool disallowHeader)
 	{
+		std::string headerFile;
 		if (m_outputHeader && !disallowHeader)
 		{
-			std::string headerFile = ToHeader(data, size);
-
+			headerFile = ToHeader(data, size);
 			filePath.replace_extension(Nz::PathToString(filePath.extension()) + ".h");
-			WriteFileContent(filePath, headerFile.data(), headerFile.size());
+			data = headerFile.data();
+			size = headerFile.size();
 		}
-		else
-			WriteFileContent(filePath, data, size);
 
+		bool written = WriteFileContent(filePath, data, size);
 		if (m_verbose)
-			fmt::print("Generated file {}\n", Nz::PathToString(std::filesystem::absolute(filePath)));
+			fmt::print("{} file {}\n", (written) ? "Generated" : "Skipped", Nz::PathToString(std::filesystem::absolute(filePath)));
 	}
 
 	void Compiler::OutputToStdout(std::string_view str)
@@ -752,12 +761,6 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 		return func();
 	}
 
-	nzsl::Ast::ModulePtr Compiler::Deserialize(const std::uint8_t* data, std::size_t size)
-	{
-		nzsl::Deserializer deserializer(data, size);
-		return nzsl::Ast::DeserializeShader(deserializer);
-	}
-
 	nzsl::Ast::ModulePtr Compiler::Parse(std::string_view sourceContent, const std::string& filePath)
 	{
 		std::vector<nzsl::Token> tokens = nzsl::Tokenize(sourceContent, filePath);
@@ -811,13 +814,34 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 		return std::move(ss).str();
 	}
 
-	void Compiler::WriteFileContent(const std::filesystem::path& filePath, const void* data, std::size_t size)
+	bool Compiler::WriteFileContent(const std::filesystem::path& filePath, const void* data, std::size_t size)
 	{
+		if (m_skipUnchangedOutput)
+		{
+			std::ifstream inputFile(filePath, std::ios::in | std::ios::binary);
+			if (inputFile)
+			{
+				std::size_t fileSize = Nz::SafeCaster(std::filesystem::file_size(filePath));
+				if (fileSize == size)
+				{
+					if (size == 0)
+						return false;
+
+					// Compare file content
+					std::vector<char> content(fileSize);
+					if (inputFile.read(&content[0], fileSize) && std::memcmp(&content[0], data, size) == 0)
+						return false;
+				}
+			}
+		}
+
 		std::ofstream outputFile(filePath, std::ios::out | std::ios::binary | std::ios::trunc);
 		if (!outputFile)
 			throw std::runtime_error(fmt::format("failed to open {}, reason: {}", Nz::PathToString(filePath), std::strerror(errno)));
 
 		if (!outputFile.write(static_cast<const char*>(data), size))
 			throw std::runtime_error(fmt::format("failed to write {}, reason: {}", Nz::PathToString(filePath), std::strerror(errno)));
+
+		return true;
 	}
 }

@@ -75,11 +75,6 @@ namespace nzsl::ShaderBuilder
 			inline Ast::ConditionalStatementPtr operator()(Ast::ExpressionPtr condition, Ast::StatementPtr statement) const;
 		};
 
-		struct Constant
-		{
-			inline Ast::ConstantExpressionPtr operator()(std::size_t constantIndex, Ast::ExpressionType expressionType) const;
-		};
-
 		struct ConstantValue
 		{
 			inline Ast::ConstantValueExpressionPtr operator()(Ast::ConstantSingleValue value) const;
@@ -144,14 +139,26 @@ namespace nzsl::ShaderBuilder
 			inline Ast::ForEachStatementPtr operator()(std::string varName, Ast::ExpressionPtr expression, Ast::StatementPtr statement) const;
 		};
 
-		struct Function
-		{
-			inline Ast::FunctionExpressionPtr operator()(std::size_t funcId) const;
-		};
-
 		struct Identifier
 		{
 			inline Ast::IdentifierExpressionPtr operator()(std::string name) const;
+		};
+
+		struct IdentifierValue
+		{
+			inline Ast::IdentifierValueExpressionPtr operator()(Ast::IdentifierType type, std::size_t id) const;
+			inline Ast::IdentifierValueExpressionPtr operator()(Ast::IdentifierType type, std::size_t id, const SourceLocation& sourceLocation) const;
+			inline Ast::IdentifierValueExpressionPtr operator()(Ast::IdentifierType type, std::size_t id, Ast::ExpressionType expressionType) const;
+			inline Ast::IdentifierValueExpressionPtr operator()(Ast::IdentifierType type, std::size_t id, Ast::ExpressionType expressionType, const SourceLocation& sourceLocation) const;
+		};
+
+		template<Ast::IdentifierType Type>
+		struct IdentifierValueWithType
+		{
+			inline Ast::IdentifierValueExpressionPtr operator()(std::size_t id) const;
+			inline Ast::IdentifierValueExpressionPtr operator()(std::size_t id, const SourceLocation& sourceLocation) const;
+			inline Ast::IdentifierValueExpressionPtr operator()(std::size_t id, Ast::ExpressionType expressionType) const;
+			inline Ast::IdentifierValueExpressionPtr operator()(std::size_t id, Ast::ExpressionType expressionType, const SourceLocation& sourceLocation) const;
 		};
 
 		struct Import
@@ -163,16 +170,6 @@ namespace nzsl::ShaderBuilder
 		struct Intrinsic
 		{
 			inline Ast::IntrinsicExpressionPtr operator()(Ast::IntrinsicType intrinsicType, std::vector<Ast::ExpressionPtr> parameters) const;
-		};
-
-		struct IntrinsicFunction
-		{
-			inline Ast::IntrinsicFunctionExpressionPtr operator()(std::size_t intrinsicFunctionId, Ast::IntrinsicType intrinsicType) const;
-		};
-
-		struct ModuleExpr
-		{
-			inline Ast::ModuleExpressionPtr operator()(std::size_t moduleTypeId) const;
 		};
 
 		struct Multi
@@ -196,11 +193,6 @@ namespace nzsl::ShaderBuilder
 			inline Ast::ScopedStatementPtr operator()(Ast::StatementPtr statement) const;
 		};
 
-		struct StructType
-		{
-			inline Ast::StructTypeExpressionPtr operator()(std::size_t structTypeId) const;
-		};
-
 		struct Swizzle
 		{
 			inline Ast::SwizzleExpressionPtr operator()(Ast::ExpressionPtr expression, std::array<std::uint32_t, 4> swizzleComponents, std::size_t componentCount) const;
@@ -217,12 +209,6 @@ namespace nzsl::ShaderBuilder
 			inline Ast::UnaryExpressionPtr operator()(Ast::UnaryType op, Ast::ExpressionPtr expression) const;
 		};
 
-		struct Variable
-		{
-			inline Ast::VariableValueExpressionPtr operator()(std::size_t variableId, Ast::ExpressionType expressionType) const;
-			inline Ast::VariableValueExpressionPtr operator()(std::size_t variableId, Ast::ExpressionType expressionType, const SourceLocation& sourceLocation) const;
-		};
-
 		struct While
 		{
 			inline Ast::WhileStatementPtr operator()(Ast::ExpressionPtr condition, Ast::StatementPtr body) const;
@@ -232,6 +218,7 @@ namespace nzsl::ShaderBuilder
 	constexpr Impl::AccessField AccessField;
 	constexpr Impl::AccessIndex AccessIndex;
 	constexpr Impl::AccessMember AccessMember;
+	constexpr Impl::IdentifierValueWithType<Ast::IdentifierType::Alias> Alias;
 	constexpr Impl::Assign Assign;
 	constexpr Impl::Binary Binary;
 	constexpr Impl::Branch<false> Branch;
@@ -240,7 +227,7 @@ namespace nzsl::ShaderBuilder
 	constexpr Impl::Cast Cast;
 	constexpr Impl::ConditionalExpression ConditionalExpression;
 	constexpr Impl::ConditionalStatement ConditionalStatement;
-	constexpr Impl::Constant Constant;
+	constexpr Impl::IdentifierValueWithType<Ast::IdentifierType::Constant> Constant;
 	constexpr Impl::ConstantValue ConstantValue;
 	constexpr Impl::ConstantArrayValue ConstantArrayValue;
 	constexpr Impl::Branch<true> ConstBranch;
@@ -255,21 +242,24 @@ namespace nzsl::ShaderBuilder
 	constexpr Impl::NoParam<Ast::DiscardStatement> Discard;
 	constexpr Impl::For For;
 	constexpr Impl::ForEach ForEach;
-	constexpr Impl::Function Function;
+	constexpr Impl::IdentifierValueWithType<Ast::IdentifierType::Function> Function;
 	constexpr Impl::Identifier Identifier;
-	constexpr Impl::IntrinsicFunction IntrinsicFunction;
+	constexpr Impl::IdentifierValue IdentifierValue;
+	constexpr Impl::IdentifierValueWithType<Ast::IdentifierType::Intrinsic> IntrinsicFunction;
 	constexpr Impl::Import Import;
 	constexpr Impl::Intrinsic Intrinsic;
-	constexpr Impl::ModuleExpr ModuleExpr;
+	constexpr Impl::IdentifierValueWithType<Ast::IdentifierType::Module> ModuleExpr;
+	constexpr Impl::IdentifierValueWithType<Ast::IdentifierType::ExternalBlock> NamedExternalBlock;
 	constexpr Impl::Multi MultiStatement;
 	constexpr Impl::NoParam<Ast::NoOpStatement> NoOp;
 	constexpr Impl::Return Return;
 	constexpr Impl::Scoped Scoped;
-	constexpr Impl::StructType StructType;
+	constexpr Impl::IdentifierValueWithType<Ast::IdentifierType::Struct> StructType;
 	constexpr Impl::Swizzle Swizzle;
+	constexpr Impl::IdentifierValueWithType<Ast::IdentifierType::Type> Type;
 	constexpr Impl::TypeConstant TypeConstant;
 	constexpr Impl::Unary Unary;
-	constexpr Impl::Variable Variable;
+	constexpr Impl::IdentifierValueWithType<Ast::IdentifierType::Variable> Variable;
 	constexpr Impl::While While;
 }
 

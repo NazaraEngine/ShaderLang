@@ -54,7 +54,7 @@ struct Data_DataStruct
 
 vec4 GetColorFromData_OutputStruct(Data_DataStruct data)
 {
-	return data.color * (vec4(0.5, 0.5, 0.5, 1.0));
+	return data.color * vec4(0.5, 0.5, 0.5, 1.0);
 }
 
 struct Output_OutputStruct

@@ -3,6 +3,7 @@
 #include <NZSL/Serializer.hpp>
 #include <NZSL/ShaderBuilder.hpp>
 #include <NZSL/Parser.hpp>
+#include <NZSL/Ast/Transformations/AliasTransformer.hpp>
 #include <NZSL/Ast/Transformations/BranchSplitterTransformer.hpp>
 #include <NZSL/Ast/Transformations/CompoundAssignmentTransformer.hpp>
 #include <NZSL/Ast/Transformations/ForToWhileTransformer.hpp>
@@ -59,19 +60,19 @@ fn main()
 fn main()
 {
 	let value: f32;
-	if (data.value > (3.0))
+	if (data.value > 3.0)
 	{
 		value = 3.0;
 	}
 	else
 	{
-		if (data.value > (2.0))
+		if (data.value > 2.0)
 		{
 			value = 2.0;
 		}
 		else
 		{
-			if (data.value > (1.0))
+			if (data.value > 1.0)
 			{
 				value = 1.0;
 			}
@@ -187,7 +188,7 @@ fn main()
 	let x: f32 = 0.0;
 	{
 		let _nzsl_counter: u32 = 0;
-		while (_nzsl_counter < (10))
+		while (_nzsl_counter < 10)
 		{
 			let v: f32 = data.value[_nzsl_counter];
 			x += v;
@@ -235,7 +236,7 @@ fn main()
 	let x = 1;
 	let y = 2;
 	x = x + y;
-	x = x + (1);
+	x = x + 1;
 }
 )");
 
@@ -542,10 +543,8 @@ external
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
 
 		nzsl::Ast::TransformerExecutor executor;
-		executor.AddPass<nzsl::Ast::ResolveTransformer>([](nzsl::Ast::ResolveTransformer::Options& opt)
-		{ 
-			opt.removeAliases = true;
-		});
+		executor.AddPass<nzsl::Ast::ResolveTransformer>();
+		executor.AddPass<nzsl::Ast::AliasTransformer>();
 
 		REQUIRE_NOTHROW(executor.Transform(*shaderModule));
 

@@ -6,13 +6,11 @@
 #include <NazaraUtils/Bitset.hpp>
 #include <NazaraUtils/CallOnExit.hpp>
 #include <NazaraUtils/StackVector.hpp>
-#include <NazaraUtils/TypeTag.hpp>
 #include <NZSL/ModuleResolver.hpp>
 #include <NZSL/Ast/Cloner.hpp>
 #include <NZSL/Ast/DependencyCheckerVisitor.hpp>
 #include <NZSL/Ast/ExportVisitor.hpp>
 #include <NZSL/Ast/ExpressionType.hpp>
-#include <NZSL/Ast/IndexRemapperVisitor.hpp>
 #include <NZSL/Ast/Nodes.hpp>
 #include <NZSL/Ast/Option.hpp>
 #include <NZSL/Ast/ReflectVisitor.hpp>
@@ -22,8 +20,8 @@
 #include <NZSL/Lang/Errors.hpp>
 #include <NZSL/Lang/LangData.hpp>
 #include <NZSL/Ast/Transformations/EliminateUnusedTransformer.hpp>
+#include <NZSL/Ast/Transformations/IndexRemapperTransformer.hpp>
 #include <NZSL/Ast/Transformations/TransformerContext.hpp>
-#include <NZSL/Ast/Transformations/ValidationTransformer.hpp>
 #include <fmt/format.h>
 #include <tsl/ordered_map.h>
 #include <unordered_map>
@@ -61,7 +59,7 @@ namespace nzsl::Ast
 	{
 		std::shared_ptr<Environment> parentEnv;
 		std::string moduleId;
-		std::vector<TransformerContext::TransformerContext::Identifier> identifiersInScope;
+		std::vector<TransformerContext::Identifier> identifiersInScope;
 		std::vector<PendingFunction> pendingFunctions;
 		std::vector<Scope> scopes;
 	};
@@ -184,35 +182,6 @@ namespace nzsl::Ast
 		});
 	}
 
-	std::optional<ConstantValue> ResolveTransformer::ComputeConstantValue(ExpressionPtr& expr) const
-	{
-		// Run optimizer on constant value to hopefully retrieve a single constant value
-		PropagateConstants(expr);
-
-		if (expr->GetType() == NodeType::ConstantValueExpression)
-			return ToConstantValue(static_cast<ConstantValueExpression&>(*expr).value);
-		else if (expr->GetType() == NodeType::ConstantArrayValueExpression)
-			return ToConstantValue(static_cast<ConstantArrayValueExpression&>(*expr).values);
-		else
-		{
-			if (!m_context->partialCompilation)
-			{
-				// Propagation failure may be because of misuse, try to run ValidationTransformer to produce a better error message before throwing ConstantExpressionRequired
-
-				ValidationTransformer::Options validationOpts;
-				validationOpts.checkIndices = false;
-
-				ValidationTransformer validation;
-				validation.TransformExpression(*m_states->currentModule, expr, *m_context, validationOpts);
-
-				// No exception, validation passed, fallback to more generic error
-				throw CompilerConstantExpressionRequiredError{ expr->sourceLocation };
-			}
-
-			return std::nullopt;
-		}
-	}
-
 	template<typename T>
 	bool ResolveTransformer::ComputeExprValue(ExpressionValue<T>& attribute, const SourceLocation& sourceLocation)
 	{
@@ -269,7 +238,7 @@ namespace nzsl::Ast
 						attribute = LiteralToUInt32(std::get<IntLiteral>(*value), sourceLocation);
 						return true;
 					}
-					else if (m_states->currentModule->metadata->shaderLangVersion < Version::UntypedLiterals)
+					else if (m_states->currentModule->metadata->langVersion < Version::UntypedLiterals)
 					{
 						if (std::holds_alternative<std::int32_t>(*value))
 						{
@@ -386,7 +355,7 @@ namespace nzsl::Ast
 
 	auto ResolveTransformer::FindIdentifier(const Environment& environment, std::string_view identifierName) const -> const TransformerContext::IdentifierData*
 	{
-		return FindIdentifier(environment, identifierName, [](const TransformerContext::IdentifierData& identifierData) { return identifierData.type != IdentifierType::ReservedName; });
+		return FindIdentifier(environment, identifierName, [](const TransformerContext::IdentifierData& /*identifierData*/) { return true; });
 	}
 
 	template<typename F>
@@ -414,7 +383,7 @@ namespace nzsl::Ast
 		return &it->target;
 	}
 
-	ExpressionPtr ResolveTransformer::HandleIdentifier(const TransformerContext::TransformerContext::IdentifierData* identifierData, const SourceLocation& sourceLocation)
+	ExpressionPtr ResolveTransformer::HandleIdentifier(const TransformerContext::IdentifierData* identifierData, const SourceLocation& sourceLocation)
 	{
 		switch (identifierData->type)
 		{
@@ -423,120 +392,48 @@ namespace nzsl::Ast
 				const TransformerContext::Identifier* targetIdentifier = ResolveAliasIdentifier(&m_context->aliases.Retrieve(identifierData->index, sourceLocation).identifier, sourceLocation);
 				ExpressionPtr targetExpr = HandleIdentifier(&targetIdentifier->target, sourceLocation);
 
-				if (m_options->removeAliases)
-					return targetExpr;
-
 				AliasType aliasType;
 				aliasType.aliasIndex = identifierData->index;
 				aliasType.SetupTargetType(*targetExpr->cachedExpressionType);
 
-				auto aliasValue = std::make_unique<AliasValueExpression>();
-				aliasValue->aliasId = identifierData->index;
-				aliasValue->cachedExpressionType = std::move(aliasType);
-				aliasValue->sourceLocation = sourceLocation;
-
-				return aliasValue;
+				return ShaderBuilder::Alias(identifierData->index, std::move(aliasType), sourceLocation);
 			}
 
 			case IdentifierType::Constant:
-			case IdentifierType::Option:
 			{
 				// Replace IdentifierExpression by Constant(Value)Expression
-				auto constantExpr = std::make_unique<ConstantExpression>();
-				constantExpr->constantId = identifierData->index;
-				constantExpr->sourceLocation = sourceLocation;
-
-				ExpressionPtr expr = std::move(constantExpr);
+				ExpressionPtr expr = ShaderBuilder::Constant(identifierData->index, sourceLocation);
 				HandleExpression(expr);
 
 				return expr;
 			}
 
 			case IdentifierType::ExternalBlock:
-			{
-				// Replace IdentifierExpression by NamedExternalBlockExpression
-				auto moduleExpr = std::make_unique<NamedExternalBlockExpression>();
-				moduleExpr->cachedExpressionType = NamedExternalBlockType{ identifierData->index };
-				moduleExpr->sourceLocation = sourceLocation;
-				moduleExpr->externalBlockId = identifierData->index;
-
-				return moduleExpr;
-			}
+				return ShaderBuilder::NamedExternalBlock(identifierData->index, sourceLocation);
 
 			case IdentifierType::Function:
-			{
-				// Replace IdentifierExpression by FunctionExpression
-				auto funcExpr = std::make_unique<FunctionExpression>();
-				funcExpr->cachedExpressionType = FunctionType{ identifierData->index }; //< FIXME: Functions (and intrinsic) should be typed by their parameters/return type
-				funcExpr->funcId = identifierData->index;
-				funcExpr->sourceLocation = sourceLocation;
-
-				return funcExpr;
-			}
-
-			case IdentifierType::Field:
-				throw AstUnexpectedIdentifierError{ sourceLocation, "field" };
+				return ShaderBuilder::Function(identifierData->index, sourceLocation);
 
 			case IdentifierType::Intrinsic:
 			{
 				IntrinsicType intrinsicType = m_context->intrinsics.Retrieve(identifierData->index, sourceLocation).type;
-
-				// Replace IdentifierExpression by IntrinsicFunctionExpression
-				auto intrinsicExpr = std::make_unique<IntrinsicFunctionExpression>();
-				intrinsicExpr->cachedExpressionType = IntrinsicFunctionType{ intrinsicType }; //< FIXME: Functions (and intrinsic) should be typed by their parameters/return type
-				intrinsicExpr->intrinsicId = identifierData->index;
-				intrinsicExpr->sourceLocation = sourceLocation;
-
-				return intrinsicExpr;
+				return ShaderBuilder::IntrinsicFunction(identifierData->index, IntrinsicFunctionType{ intrinsicType }, sourceLocation);
 			}
 
 			case IdentifierType::Module:
-			{
-				// Replace IdentifierExpression by ModuleExpression
-				auto moduleExpr = std::make_unique<ModuleExpression>();
-				moduleExpr->cachedExpressionType = ModuleType{ identifierData->index };
-				moduleExpr->sourceLocation = sourceLocation;
-				moduleExpr->moduleId = identifierData->index;
-
-				return moduleExpr;
-			}
-
-			case IdentifierType::ExternalVariable:
-			case IdentifierType::Parameter:
-			case IdentifierType::Variable:
-			{
-				// Replace IdentifierExpression by VariableExpression
-				auto varExpr = std::make_unique<VariableValueExpression>();
-				varExpr->cachedExpressionType = m_context->variables.Retrieve(identifierData->index, sourceLocation).type;
-				varExpr->sourceLocation = sourceLocation;
-				varExpr->variableId = identifierData->index;
-
-				return varExpr;
-			}
+				return ShaderBuilder::ModuleExpr(identifierData->index, sourceLocation);
 
 			case IdentifierType::Struct:
-			{
-				// Replace IdentifierExpression by StructTypeExpression
-				auto structExpr = std::make_unique<StructTypeExpression>();
-				structExpr->cachedExpressionType = StructType{ identifierData->index };
-				structExpr->sourceLocation = sourceLocation;
-				structExpr->structTypeId = identifierData->index;
-
-				return structExpr;
-			}
+				return ShaderBuilder::StructType(identifierData->index, sourceLocation);
 
 			case IdentifierType::Type:
+				return ShaderBuilder::Type(identifierData->index, sourceLocation);
+
+			case IdentifierType::Variable:
 			{
-				auto typeExpr = std::make_unique<TypeExpression>();
-				typeExpr->cachedExpressionType = Type{ identifierData->index };
-				typeExpr->sourceLocation = sourceLocation;
-				typeExpr->typeId = identifierData->index;
-
-				return typeExpr;
+				const ExpressionType& variableExprType = m_context->variables.Retrieve(identifierData->index, sourceLocation).type;
+				return ShaderBuilder::Variable(identifierData->index, variableExprType, sourceLocation);
 			}
-
-			case IdentifierType::ReservedName:
-				throw AstUnexpectedIdentifierError{ sourceLocation, "reserved" };
 
 			case IdentifierType::Unresolved:
 				throw AstUnexpectedIdentifierError{ sourceLocation, "unresolved" };
@@ -547,8 +444,7 @@ namespace nzsl::Ast
 
 	bool ResolveTransformer::IsFeatureEnabled(ModuleFeature feature) const
 	{
-		const std::vector<ModuleFeature>& enabledFeatures = m_states->currentModule->metadata->enabledFeatures;
-		return std::find(enabledFeatures.begin(), enabledFeatures.end(), feature) != enabledFeatures.end();
+		return m_states->currentModule->metadata->enabledFeatures.Test(feature);
 	}
 
 	bool ResolveTransformer::IsIdentifierAvailable(std::string_view identifier, bool allowReserved) const
@@ -662,8 +558,8 @@ namespace nzsl::Ast
 
 				if (parameterCount == 0)
 				{
-					if (m_states->currentModule->metadata->shaderLangVersion < Version::ImplicitTypes)
-						throw CompilerUnsupportedFeatureError{ sourceLocation, "implicit types", VersionTag{ Version::ImplicitTypes }, VersionTag{ m_states->currentModule->metadata->shaderLangVersion }};
+					if (m_states->currentModule->metadata->langVersion < Version::ImplicitTypes)
+						throw CompilerUnsupportedFeatureError{ sourceLocation, "implicit types", VersionTag{ Version::ImplicitTypes }, VersionTag{ m_states->currentModule->metadata->langVersion }};
 
 					return ImplicitArrayType{};
 				}
@@ -752,8 +648,8 @@ namespace nzsl::Ast
 					{
 						if (parameterCount == 0)
 						{
-							if (m_states->currentModule->metadata->shaderLangVersion < Version::ImplicitTypes)
-								throw CompilerUnsupportedFeatureError{ sourceLocation, "implicit types", VersionTag{ Version::ImplicitTypes }, VersionTag{ m_states->currentModule->metadata->shaderLangVersion } };
+							if (m_states->currentModule->metadata->langVersion < Version::ImplicitTypes)
+								throw CompilerUnsupportedFeatureError{ sourceLocation, "implicit types", VersionTag{ Version::ImplicitTypes }, VersionTag{ m_states->currentModule->metadata->langVersion } };
 
 							return ImplicitMatrixType{ columnCount, rowCount };
 						}
@@ -785,8 +681,8 @@ namespace nzsl::Ast
 				{
 					if (parameterCount == 0)
 					{
-						if (m_states->currentModule->metadata->shaderLangVersion < Version::ImplicitTypes)
-							throw CompilerUnsupportedFeatureError{ sourceLocation, "implicit types", VersionTag{ Version::ImplicitTypes }, VersionTag{ m_states->currentModule->metadata->shaderLangVersion } };
+						if (m_states->currentModule->metadata->langVersion < Version::ImplicitTypes)
+							throw CompilerUnsupportedFeatureError{ sourceLocation, "implicit types", VersionTag{ Version::ImplicitTypes }, VersionTag{ m_states->currentModule->metadata->langVersion } };
 
 						return ImplicitVectorType{ componentCount };
 					}
@@ -1216,18 +1112,6 @@ namespace nzsl::Ast
 		return moduleIndex;
 	}
 
-	void ResolveTransformer::RegisterReservedName(std::string name)
-	{
-		m_states->currentEnv->identifiersInScope.push_back({
-			std::move(name),
-			{
-				std::numeric_limits<std::size_t>::max(),
-				IdentifierType::ReservedName,
-				m_states->currentConditionalIndex
-			}
-		});
-	}
-
 	std::size_t ResolveTransformer::RegisterStruct(std::string name, std::optional<TransformerContext::StructData>&& description, std::optional<std::size_t> index, const SourceLocation& sourceLocation)
 	{
 		bool unresolved = false;
@@ -1350,9 +1234,9 @@ namespace nzsl::Ast
 
 	void ResolveTransformer::PreregisterIndices(const Module& module)
 	{
-		// If AST has been sanitized before and is sanitized again but with different options that may introduce new variables (for example reduceLoopsToWhile)
+		// If AST has been transformed/resolved before and is transformed again but with new passes that may introduce new variables (for example ForToWhileTransformer)
 		// we have to make sure we won't override variable indices. This is done by visiting the AST a first time and preregistering all indices.
-		// TODO: Only do this is the AST has been already sanitized, maybe using a flag stored in the module?
+		// TODO: Only do this is the AST has been already resolved, maybe using a flag stored in the module?
 
 		ReflectVisitor::Callbacks registerCallbacks;
 		registerCallbacks.onAliasIndex = [this](const std::string& /*name*/, std::size_t index, const SourceLocation& sourceLocation) { m_context->aliases.PreregisterIndex(index, sourceLocation); };
@@ -1416,7 +1300,7 @@ namespace nzsl::Ast
 	{
 		if (!IsTypeExpression(exprType))
 		{
-			if (resolveAlias || m_options->removeAliases)
+			if (resolveAlias)
 				return ResolveAlias(exprType);
 			else
 				return exprType;
@@ -1757,8 +1641,8 @@ namespace nzsl::Ast
 				else
 					throw CompilerUnexpectedAccessedTypeError{ accessIdentifier.sourceLocation };
 
-				if (m_states->currentModule->metadata->shaderLangVersion < Version::TypeConstants)
-					throw CompilerUnsupportedFeatureError{ accessIdentifier.sourceLocation, "type constant", VersionTag{ Version::TypeConstants }, VersionTag{ m_states->currentModule->metadata->shaderLangVersion } };
+				if (m_states->currentModule->metadata->langVersion < Version::TypeConstants)
+					throw CompilerUnsupportedFeatureError{ accessIdentifier.sourceLocation, "type constant", VersionTag{ Version::TypeConstants }, VersionTag{ m_states->currentModule->metadata->langVersion } };
 			}
 			else
 				throw CompilerUnexpectedAccessedTypeError{ accessIdentifier.sourceLocation };
@@ -2041,25 +1925,6 @@ namespace nzsl::Ast
 		return DontVisitChildren{};
 	}
 
-	auto ResolveTransformer::Transform(AliasValueExpression&& accessIndexExpr) -> ExpressionTransformation
-	{
-		if (accessIndexExpr.cachedExpressionType && !m_options->removeAliases)
-			return DontVisitChildren{};
-
-		const TransformerContext::Identifier* targetIdentifier = ResolveAliasIdentifier(&m_context->aliases.Retrieve(accessIndexExpr.aliasId, accessIndexExpr.sourceLocation).identifier, accessIndexExpr.sourceLocation);
-		ExpressionPtr targetExpr = HandleIdentifier(&targetIdentifier->target, accessIndexExpr.sourceLocation);
-
-		if (m_options->removeAliases)
-			return ReplaceExpression{ std::move(targetExpr) };
-
-		AliasType aliasType;
-		aliasType.aliasIndex = accessIndexExpr.aliasId;
-		aliasType.SetupTargetType( *targetExpr->cachedExpressionType);
-
-		accessIndexExpr.cachedExpressionType = std::move(aliasType);
-		return DontVisitChildren{};
-	}
-
 	auto ResolveTransformer::Transform(AssignExpression&& assignExpr) -> ExpressionTransformation
 	{
 		HandleChildren(assignExpr);
@@ -2102,17 +1967,21 @@ namespace nzsl::Ast
 		if (IsFunctionType(resolvedType))
 		{
 			std::size_t targetFuncIndex;
-			if (callFuncExpr.targetFunction->GetType() == NodeType::FunctionExpression)
-				targetFuncIndex = static_cast<FunctionExpression&>(*callFuncExpr.targetFunction).funcId;
-			else if (callFuncExpr.targetFunction->GetType() == NodeType::AliasValueExpression)
+			if (callFuncExpr.targetFunction->GetType() == NodeType::IdentifierValueExpression)
 			{
-				const auto& alias = static_cast<AliasValueExpression&>(*callFuncExpr.targetFunction);
+				IdentifierValueExpression& identifierValExpr = static_cast<IdentifierValueExpression&>(*callFuncExpr.targetFunction);
+				if (identifierValExpr.identifierType == IdentifierType::Function)
+					targetFuncIndex = identifierValExpr.identifierIndex;
+				else if (identifierValExpr.identifierType == IdentifierType::Alias)
+				{
+					const TransformerContext::Identifier* aliasIdentifier = ResolveAliasIdentifier(&m_context->aliases.Retrieve(identifierValExpr.identifierIndex, callFuncExpr.sourceLocation).identifier, callFuncExpr.sourceLocation);
+					if (aliasIdentifier->target.type != IdentifierType::Function)
+						throw CompilerFunctionCallExpectedFunctionError{ callFuncExpr.sourceLocation };
 
-				const TransformerContext::Identifier* aliasIdentifier = ResolveAliasIdentifier(&m_context->aliases.Retrieve(alias.aliasId, callFuncExpr.sourceLocation).identifier, callFuncExpr.sourceLocation);
-				if (aliasIdentifier->target.type != IdentifierType::Function)
+					targetFuncIndex = aliasIdentifier->target.index;
+				}
+				else
 					throw CompilerFunctionCallExpectedFunctionError{ callFuncExpr.sourceLocation };
-
-				targetFuncIndex = aliasIdentifier->target.index;
 			}
 			else
 				throw CompilerFunctionCallExpectedFunctionError{ callFuncExpr.sourceLocation };
@@ -2125,10 +1994,14 @@ namespace nzsl::Ast
 		}
 		else if (IsIntrinsicFunctionType(resolvedType))
 		{
-			if (callFuncExpr.targetFunction->GetType() != NodeType::IntrinsicFunctionExpression)
+			if (callFuncExpr.targetFunction->GetType() != NodeType::IdentifierValueExpression)
 				throw CompilerExpectedIntrinsicFunctionError{ callFuncExpr.targetFunction->sourceLocation };
 
-			std::size_t targetIntrinsicId = static_cast<IntrinsicFunctionExpression&>(*callFuncExpr.targetFunction).intrinsicId;
+			IdentifierValueExpression& identifierValExpr = static_cast<IdentifierValueExpression&>(*callFuncExpr.targetFunction);
+			if (identifierValExpr.identifierType != IdentifierType::Intrinsic)
+				throw CompilerExpectedIntrinsicFunctionError{ callFuncExpr.targetFunction->sourceLocation };
+
+			std::size_t targetIntrinsicId = identifierValExpr.identifierIndex;
 
 			std::vector<ExpressionPtr> parameters;
 			parameters.reserve(callFuncExpr.parameters.size());
@@ -2406,27 +2279,6 @@ namespace nzsl::Ast
 		return VisitChildren{};
 	}
 
-	auto ResolveTransformer::Transform(ConstantExpression&& constantExpression) -> ExpressionTransformation
-	{
-		const TransformerContext::ConstantData* constantData = m_context->constants.TryRetrieve(constantExpression.constantId, constantExpression.sourceLocation);
-		if (!constantData || !constantData->value)
-		{
-			if (!m_context->partialCompilation)
-				throw AstInvalidConstantIndexError{ constantExpression.sourceLocation, constantExpression.constantId };
-
-			return VisitChildren{}; //< unresolved
-		}
-
-		if (constantData->moduleIndex != m_states->currentModuleId)
-		{
-			assert(constantData->moduleIndex < m_states->modules.size());
-			m_states->modules[constantData->moduleIndex].dependenciesVisitor->MarkConstantAsUsed(constantExpression.constantId);
-		}
-
-		constantExpression.cachedExpressionType = GetConstantType(*constantData->value);
-		return VisitChildren{};
-	}
-
 	auto ResolveTransformer::Transform(ConstantValueExpression&& constantExpression) -> ExpressionTransformation
 	{
 		if (!constantExpression.cachedExpressionType)
@@ -2455,6 +2307,60 @@ namespace nzsl::Ast
 			return DontVisitChildren{};
 
 		return ReplaceExpression{ HandleIdentifier(identifierData, identifierExpr.sourceLocation) };
+	}
+
+	auto ResolveTransformer::Transform(IdentifierValueExpression&& identifierValueExpression) -> ExpressionTransformation
+	{
+		switch (identifierValueExpression.identifierType)
+		{
+			case IdentifierType::Alias:
+			{
+				if (identifierValueExpression.cachedExpressionType)
+					return DontVisitChildren{};
+
+				const TransformerContext::Identifier* targetIdentifier = ResolveAliasIdentifier(&m_context->aliases.Retrieve(identifierValueExpression.identifierIndex, identifierValueExpression.sourceLocation).identifier, identifierValueExpression.sourceLocation);
+				ExpressionPtr targetExpr = HandleIdentifier(&targetIdentifier->target, identifierValueExpression.sourceLocation);
+
+				AliasType aliasType;
+				aliasType.aliasIndex = identifierValueExpression.identifierIndex;
+				aliasType.SetupTargetType(*targetExpr->cachedExpressionType);
+
+				identifierValueExpression.cachedExpressionType = std::move(aliasType);
+				break;
+			}
+
+			case IdentifierType::Constant:
+			{
+				const TransformerContext::ConstantData* constantData = m_context->constants.TryRetrieve(identifierValueExpression.identifierIndex, identifierValueExpression.sourceLocation);
+				if (!constantData || !constantData->value)
+				{
+					if (!m_context->partialCompilation)
+						throw AstInvalidConstantIndexError{ identifierValueExpression.sourceLocation, identifierValueExpression.identifierIndex };
+
+					return VisitChildren{}; //< unresolved
+				}
+
+				if (constantData->moduleIndex != m_states->currentModuleId)
+				{
+					assert(constantData->moduleIndex < m_states->modules.size());
+					m_states->modules[constantData->moduleIndex].dependenciesVisitor->MarkConstantAsUsed(identifierValueExpression.identifierIndex);
+				}
+
+				identifierValueExpression.cachedExpressionType = GetConstantType(*constantData->value);
+				break;
+			}
+
+			case IdentifierType::Variable:
+			{
+				identifierValueExpression.cachedExpressionType = m_context->variables.Retrieve(identifierValueExpression.identifierIndex, identifierValueExpression.sourceLocation).type;
+				break;
+			}
+
+			default:
+				break;
+		}
+
+		return VisitChildren{};
 	}
 
 	auto ResolveTransformer::Transform(IntrinsicExpression&& intrinsicExpr) -> ExpressionTransformation
@@ -2493,12 +2399,6 @@ namespace nzsl::Ast
 
 		node.cachedExpressionType = *exprType;
 		return DontVisitChildren{};
-	}
-
-	auto ResolveTransformer::Transform(VariableValueExpression&& node) -> ExpressionTransformation
-	{
-		node.cachedExpressionType = m_context->variables.Retrieve(node.variableId, node.sourceLocation).type;
-		return VisitChildren{};
 	}
 
 	auto ResolveTransformer::Transform(BranchStatement&& branchStatement) -> StatementTransformation
@@ -2635,8 +2535,6 @@ namespace nzsl::Ast
 			throw CompilerAliasUnexpectedTypeError{ declAlias.sourceLocation, ToString(*exprType, declAlias.expression->sourceLocation) };
 
 		declAlias.aliasIndex = RegisterAlias(declAlias.name, std::move(aliasIdentifier), declAlias.aliasIndex, declAlias.sourceLocation);
-		if (m_options->removeAliases)
-			return RemoveStatement{};
 
 		return DontVisitChildren{};
 	}
@@ -2660,11 +2558,11 @@ namespace nzsl::Ast
 
 		// Handle const alias
 		ExpressionType expressionType;
-		if (declConst.expression->GetType() == NodeType::ConstantExpression)
+		if (declConst.expression->GetType() == NodeType::IdentifierValueExpression && static_cast<IdentifierValueExpression&>(*declConst.expression).identifierType == IdentifierType::Alias)
 		{
-			const auto& constantExpr = static_cast<ConstantExpression&>(*declConst.expression);
+			const auto& constantExpr = static_cast<IdentifierValueExpression&>(*declConst.expression);
 
-			std::size_t constantId = constantExpr.constantId;
+			std::size_t constantId = constantExpr.identifierIndex;
 			auto& constantData = m_context->constants.Retrieve(constantId, declConst.sourceLocation);
 			if (constantData.moduleIndex != m_states->currentModuleId)
 			{
@@ -2681,7 +2579,10 @@ namespace nzsl::Ast
 		}
 		else
 		{
-			std::optional<ConstantValue> value = ComputeConstantValue(declConst.expression);
+			// Preserve original expression
+			ExpressionPtr cloneExpr = Clone(*declConst.expression);
+
+			std::optional<ConstantValue> value = ComputeConstantValue(cloneExpr);
 			if (!value)
 			{
 				// Constant propagation failed (and we're in partial compilation)
@@ -2872,6 +2773,9 @@ namespace nzsl::Ast
 
 	auto ResolveTransformer::Transform(DeclareOptionStatement&& declOption) -> StatementTransformation
 	{
+		if (!declOption.optType.HasValue())
+			throw CompilerOptionMissingTypeError{ declOption.sourceLocation };
+
 		std::optional<ExpressionType> resolvedOptionType = ResolveTypeExpr(declOption.optType, false, declOption.sourceLocation);
 		if (!resolvedOptionType)
 		{
@@ -2899,15 +2803,14 @@ namespace nzsl::Ast
 			}
 		}
 
-		ExpressionType& optType = (m_options->removeAliases) ? targetType : resolvedType;
-		ValidateConcreteType(optType, declOption.sourceLocation);
+		ValidateConcreteType(resolvedType, declOption.sourceLocation);
 
 		OptionHash optionHash = HashOption(declOption.optName.data());
 
 		if (auto optionValueIt = m_context->optionValues.find(optionHash); optionValueIt != m_context->optionValues.end())
 		{
 			ConstantValue& optionValue = optionValueIt->second;
-			EnsureLiteralValue(optType, optionValue, declOption.sourceLocation);
+			EnsureLiteralValue(resolvedType, optionValue, declOption.sourceLocation);
 
 			declOption.optIndex = RegisterConstant(declOption.optName, TransformerContext::ConstantData{ m_states->currentModuleId, optionValue }, declOption.optIndex, declOption.sourceLocation);
 		}
@@ -2923,15 +2826,18 @@ namespace nzsl::Ast
 				if (!declOption.defaultValue)
 					throw CompilerMissingOptionValueError{ declOption.sourceLocation, declOption.optName };
 
-				std::optional<ConstantValue> value = ComputeConstantValue(declOption.defaultValue);
+				// Preserve original expression
+				ExpressionPtr cloneExpr = Clone(*declOption.defaultValue);
+
+				std::optional<ConstantValue> value = ComputeConstantValue(cloneExpr);
 				if (value)
-					EnsureLiteralValue(optType, *value, declOption.sourceLocation);
+					EnsureLiteralValue(resolvedType, *value, declOption.sourceLocation);
 
 				declOption.optIndex = RegisterConstant(declOption.optName, TransformerContext::ConstantData{ m_states->currentModuleId, std::move(value) }, declOption.optIndex, declOption.sourceLocation);
 			}
 		}
 
-		declOption.optType = std::move(optType);
+		declOption.optType = std::move(resolvedType);
 
 		return DontVisitChildren{};
 	}
@@ -3113,81 +3019,18 @@ namespace nzsl::Ast
 		else
 			throw CompilerForEachUnsupportedTypeError{ forEachStatement.sourceLocation, ToString(*exprType, forEachStatement.sourceLocation) };
 
-		auto ProcessFor = [&]
-		{
-			PushScope();
-			{
-				forEachStatement.varIndex = RegisterVariable(forEachStatement.varName, TransformerContext::VariableData{ innerType }, forEachStatement.varIndex, forEachStatement.sourceLocation);
-
-				HandleStatement(forEachStatement.statement);
-			}
-			PopScope();
-
-			return DontVisitChildren{};
-		};
-
-		if (forEachStatement.unroll.HasValue() && m_options->unrollForEachLoops)
-		{
+		if (forEachStatement.unroll.HasValue())
 			ComputeExprValue(forEachStatement.unroll, forEachStatement.sourceLocation);
-			if (forEachStatement.unroll.GetResultingValue() == LoopUnroll::Always)
-			{
-				PushScope();
 
-				// Repeat code
-				auto multi = std::make_unique<MultiStatement>();
-				multi->sourceLocation = forEachStatement.sourceLocation;
+		PushScope();
+		{
+			forEachStatement.varIndex = RegisterVariable(forEachStatement.varName, TransformerContext::VariableData{ innerType }, forEachStatement.varIndex, forEachStatement.sourceLocation);
 
-				if (IsArrayType(resolvedExprType))
-				{
-					const ArrayType& arrayType = std::get<ArrayType>(resolvedExprType);
-
-					for (std::uint32_t i = 0; i < arrayType.length; ++i)
-					{
-						PushScope();
-
-						auto innerMulti = std::make_unique<MultiStatement>();
-						innerMulti->sourceLocation = forEachStatement.sourceLocation;
-
-						ExpressionPtr accessIndex = ShaderBuilder::AccessIndex(Ast::Clone(*forEachStatement.expression), ShaderBuilder::ConstantValue(i));
-						accessIndex->sourceLocation = forEachStatement.sourceLocation;
-
-						HandleExpression(accessIndex);
-
-						StatementPtr elementVariable = ShaderBuilder::DeclareVariable(forEachStatement.varName, std::move(accessIndex));
-						elementVariable->sourceLocation = forEachStatement.sourceLocation;
-
-						HandleStatement(elementVariable);
-
-						innerMulti->statements.emplace_back(std::move(elementVariable));
-
-						// Remap indices (as unrolling the loop will reuse them) 
-						IndexRemapperVisitor::Options indexCallbacks;
-						indexCallbacks.aliasIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_context->aliases.RegisterNewIndex(true); };
-						indexCallbacks.constIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_context->constants.RegisterNewIndex(true); };
-						indexCallbacks.funcIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_context->functions.RegisterNewIndex(true); };
-						indexCallbacks.structIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_context->structs.RegisterNewIndex(true); };
-						indexCallbacks.varIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_context->variables.RegisterNewIndex(true); };
-
-						StatementPtr bodyStatement = Ast::Clone(*forEachStatement.statement);
-						RemapIndices(*bodyStatement, indexCallbacks);
-						HandleStatement(bodyStatement);
-
-						innerMulti->statements.emplace_back(Unscope(std::move(bodyStatement)));
-
-						multi->statements.emplace_back(ShaderBuilder::Scoped(std::move(innerMulti)));
-
-						PopScope();
-					}
-				}
-
-				PopScope();
-
-				return ReplaceStatement{ std::move(multi) };
-			}
-
+			HandleStatement(forEachStatement.statement);
 		}
+		PopScope();
 
-		return ProcessFor();
+		return DontVisitChildren{};
 	}
 
 	auto ResolveTransformer::Transform(ForStatement&& forStatement) -> StatementTransformation
@@ -3203,166 +3046,37 @@ namespace nzsl::Ast
 		if (forStatement.unroll.HasValue())
 			ComputeExprValue(forStatement.unroll, forStatement.sourceLocation);
 
-		auto ProcessFor = [&]
+		const ExpressionType* fromExprType = GetExpressionType(*forStatement.fromExpr);
+
+		PushScope();
 		{
-			bool wontUnroll = !forStatement.unroll.HasValue() || (forStatement.unroll.IsResultingValue() && forStatement.unroll.GetResultingValue() != LoopUnroll::Always);
-
-			const ExpressionType* fromExprType = GetExpressionType(*forStatement.fromExpr);
-
-			PushScope();
+			if (fromExprType)
 			{
-				// We can't register the counter as a variable if we need to unroll the loop later (because the counter will become const)
-				if (fromExprType && wontUnroll)
+				ExpressionType varType = *fromExprType;
+				if (IsLiteralType(ResolveAlias(varType)))
 				{
-					ExpressionType varType = *fromExprType;
-					if (IsLiteralType(ResolveAlias(varType)))
+					const ExpressionType* toExprType = GetExpressionType(*forStatement.toExpr);
+					if (toExprType && !IsLiteralType(ResolveAlias(*toExprType)))
+						varType = *toExprType;
+					else if (forStatement.stepExpr)
 					{
-						const ExpressionType* toExprType = GetExpressionType(*forStatement.toExpr);
-						if (toExprType && !IsLiteralType(ResolveAlias(*toExprType)))
-							varType = *toExprType;
-						else if (forStatement.stepExpr)
-						{
-							const ExpressionType* stepExprType = GetExpressionType(*forStatement.stepExpr);
-							if (stepExprType)
-								varType = *stepExprType;
-						}
+						const ExpressionType* stepExprType = GetExpressionType(*forStatement.stepExpr);
+						if (stepExprType)
+							varType = *stepExprType;
 					}
-					EnsureLiteralType(varType, forStatement.sourceLocation);
-
-					forStatement.varIndex = RegisterVariable(forStatement.varName, TransformerContext::VariableData{ std::move(varType) }, forStatement.varIndex, forStatement.sourceLocation);
 				}
-				else
-					RegisterUnresolved(forStatement.varName);
+				EnsureLiteralType(varType, forStatement.sourceLocation);
 
-				HandleStatement(forStatement.statement);
+				forStatement.varIndex = RegisterVariable(forStatement.varName, TransformerContext::VariableData{ std::move(varType) }, forStatement.varIndex, forStatement.sourceLocation);
 			}
-			PopScope();
+			else
+				RegisterUnresolved(forStatement.varName);
 
-			return DontVisitChildren{};
-		};
-
-		if (forStatement.unroll.HasValue() && m_options->unrollForLoops)
-		{
-			assert(forStatement.unroll.IsResultingValue());
-			if (forStatement.unroll.GetResultingValue() == LoopUnroll::Always)
-			{
-				std::optional<ConstantValue> fromValue = ComputeConstantValue(forStatement.fromExpr);
-				std::optional<ConstantValue> toValue = ComputeConstantValue(forStatement.toExpr);
-				if (!fromValue.has_value() || !toValue.has_value())
-					return ProcessFor(); //< can't resolve from/to values
-
-				std::optional<ConstantValue> stepValue;
-				if (forStatement.stepExpr)
-				{
-					stepValue = ComputeConstantValue(forStatement.stepExpr);
-					if (!stepValue.has_value())
-						return ProcessFor(); //< can't resolve step value
-				}
-
-				auto multi = std::make_unique<MultiStatement>();
-				multi->sourceLocation = forStatement.sourceLocation;
-
-				auto Unroll = [&](auto dummy)
-				{
-					using T = std::decay_t<decltype(dummy)>;
-
-					auto GetValue = [](const ConstantValue& constantValue, const SourceLocation& sourceLocation) -> T
-					{
-						if (const IntLiteral* literal = std::get_if<IntLiteral>(&constantValue))
-						{
-							if constexpr (std::is_same_v<T, std::int32_t>)
-								return LiteralToInt32(*literal, sourceLocation);
-							else if constexpr (std::is_same_v<T, std::uint32_t>)
-								return LiteralToUInt32(*literal, sourceLocation);
-						}
-
-						return std::get<T>(constantValue);
-					};
-
-					T counter = GetValue(*fromValue, forStatement.fromExpr->sourceLocation);
-					T to = GetValue(*toValue, forStatement.toExpr->sourceLocation);
-					T step = (forStatement.stepExpr) ? GetValue(*stepValue, forStatement.stepExpr->sourceLocation) : T{ 1 };
-
-					for (; counter < to; counter += step)
-					{
-						PushScope();
-
-						auto innerMulti = std::make_unique<MultiStatement>();
-						innerMulti->sourceLocation = forStatement.sourceLocation;
-
-						auto constant = ShaderBuilder::ConstantValue(counter, forStatement.sourceLocation);
-
-						StatementPtr constDecl = ShaderBuilder::DeclareConst(forStatement.varName, std::move(constant));
-						constDecl->sourceLocation = forStatement.sourceLocation;
-
-						HandleStatement(constDecl); //< register const
-
-						innerMulti->statements.emplace_back(std::move(constDecl));
-
-						// Remap indices (as unrolling the loop will reuse them) 
-						IndexRemapperVisitor::Options indexCallbacks;
-						indexCallbacks.aliasIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_context->aliases.RegisterNewIndex(true); };
-						indexCallbacks.constIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_context->constants.RegisterNewIndex(true); };
-						indexCallbacks.funcIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_context->functions.RegisterNewIndex(true); };
-						indexCallbacks.structIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_context->structs.RegisterNewIndex(true); };
-						indexCallbacks.varIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_context->variables.RegisterNewIndex(true); };
-
-						StatementPtr bodyStatement = Ast::Clone(*forStatement.statement);
-						RemapIndices(*bodyStatement, indexCallbacks);
-						HandleStatement(bodyStatement);
-
-						innerMulti->statements.emplace_back(Unscope(std::move(bodyStatement)));
-
-						multi->statements.emplace_back(ShaderBuilder::Scoped(std::move(innerMulti)));
-
-						PopScope();
-					}
-				};
-
-				ExpressionType fromExprType = GetConstantType(*fromValue);
-				if (!IsPrimitiveType(fromExprType))
-					throw CompilerForFromTypeExpectIntegerTypeError{ forStatement.fromExpr->sourceLocation, ToString(fromExprType, forStatement.fromExpr->sourceLocation) };
-
-				PrimitiveType counterType = std::get<PrimitiveType>(fromExprType);
-				if (counterType != PrimitiveType::Int32 && counterType != PrimitiveType::UInt32 && counterType != PrimitiveType::IntLiteral)
-					throw CompilerForFromTypeExpectIntegerTypeError{ forStatement.fromExpr->sourceLocation, ToString(fromExprType, forStatement.fromExpr->sourceLocation) };
-
-				if (counterType == PrimitiveType::IntLiteral)
-				{
-					// Fallback to "to" type
-					ExpressionType toExprType = GetConstantType(*toValue);
-					if (!IsPrimitiveType(toExprType))
-						throw CompilerForToUnmatchingTypeError{ forStatement.toExpr->sourceLocation, ToString(fromExprType, forStatement.fromExpr->sourceLocation), ToString(toExprType, forStatement.toExpr->sourceLocation) };
-
-					PrimitiveType toCounterType = std::get<PrimitiveType>(toExprType);
-					if (toCounterType != PrimitiveType::Int32 && toCounterType != PrimitiveType::UInt32 && toCounterType != PrimitiveType::IntLiteral)
-						throw CompilerForToUnmatchingTypeError{ forStatement.toExpr->sourceLocation, ToString(fromExprType, forStatement.fromExpr->sourceLocation), ToString(toExprType, forStatement.toExpr->sourceLocation) };
-
-					counterType = toCounterType;
-				}
-
-				if (counterType == PrimitiveType::IntLiteral)
-					counterType = PrimitiveType::Int32;
-
-				switch (counterType)
-				{
-					case PrimitiveType::Int32:
-						Unroll(std::int32_t{});
-						break;
-
-					case PrimitiveType::UInt32:
-						Unroll(std::uint32_t{});
-						break;
-
-					default:
-						throw AstInternalError{ forStatement.sourceLocation, "unexpected counter type " + ToString(counterType, forStatement.fromExpr->sourceLocation) };
-				}
-
-				return ReplaceStatement{ std::move(multi) };
-			}
+			HandleStatement(forStatement.statement);
 		}
+		PopScope();
 
-		return ProcessFor();
+		return DontVisitChildren{};
 	}
 
 	auto ResolveTransformer::Transform(ImportStatement&& importStatement) -> StatementTransformation
@@ -3473,14 +3187,25 @@ namespace nzsl::Ast
 			moduleClone->rootNode = Nz::StaticUniquePointerCast<MultiStatement>(Ast::Clone(*targetModule->rootNode));
 
 			// Remap already used indices
-			IndexRemapperVisitor::Options indexCallbacks;
-			indexCallbacks.aliasIndexGenerator  = [this](std::size_t /*previousIndex*/) { return m_context->aliases.RegisterNewIndex(true); };
-			indexCallbacks.constIndexGenerator  = [this](std::size_t /*previousIndex*/) { return m_context->constants.RegisterNewIndex(true); };
-			indexCallbacks.funcIndexGenerator   = [this](std::size_t /*previousIndex*/) { return m_context->functions.RegisterNewIndex(true); };
-			indexCallbacks.structIndexGenerator = [this](std::size_t /*previousIndex*/) { return m_context->structs.RegisterNewIndex(true); };
-			indexCallbacks.varIndexGenerator    = [this](std::size_t /*previousIndex*/) { return m_context->variables.RegisterNewIndex(true); };
+			IndexRemapperTransformer::Options indexCallbacks;
+			indexCallbacks.indexGenerator = [this](IdentifierType identifierType, std::size_t /*previousIndex*/)
+			{
+				switch (identifierType)
+				{
+					case IdentifierType::Alias:    return m_context->aliases.RegisterNewIndex(true);
+					case IdentifierType::Constant: return m_context->constants.RegisterNewIndex(true);
+					case IdentifierType::Function: return m_context->functions.RegisterNewIndex(true);
+					case IdentifierType::Struct:   return m_context->structs.RegisterNewIndex(true);
+					case IdentifierType::Variable: return m_context->variables.RegisterNewIndex(true);
 
-			RemapIndices(*moduleClone->rootNode, indexCallbacks);
+					default:
+						throw std::runtime_error("unexpected identifier type");
+				}
+			};
+
+			StatementPtr rootNode = std::move(moduleClone->rootNode);
+			RemapIndices(rootNode, indexCallbacks);
+			moduleClone->rootNode = Nz::StaticUniquePointerCast<MultiStatement>(std::move(rootNode));
 
 			std::string error;
 			if (!TransformModule(*moduleClone, *m_context, &error, [&] { ResolveFunctions(); }))
@@ -3562,7 +3287,7 @@ namespace nzsl::Ast
 
 				auto BuildConstant = [&]() -> ExpressionPtr
 				{
-					const TransformerContext::TransformerContext::ConstantData* constantData = m_context->constants.TryRetrieve(*node.constIndex, node.sourceLocation);
+					const TransformerContext::ConstantData* constantData = m_context->constants.TryRetrieve(*node.constIndex, node.sourceLocation);
 					if (!constantData || !constantData->value)
 						throw AstInvalidConstantIndexError{ node.sourceLocation, *node.constIndex };
 
@@ -3669,9 +3394,6 @@ namespace nzsl::Ast
 		for (auto& constPtr : constStatements)
 			HandleStatement(constPtr);
 
-		if (m_options->removeAliases)
-			return RemoveStatement{};
-
 		// Generate alias statements
 		MultiStatementPtr aliasBlock = std::make_unique<MultiStatement>();
 		for (auto& aliasPtr : aliasStatements)
@@ -3688,14 +3410,13 @@ namespace nzsl::Ast
 
 	void ResolveTransformer::Transform(ExpressionType& expressionType, const SourceLocation& sourceLocation)
 	{
+		Transformer::Transform(expressionType, sourceLocation);
+
 		ExpressionType resolvedType;
 		if (IsAliasType(expressionType))
 			resolvedType = ResolveAlias(expressionType);
 		else
 			resolvedType = expressionType;
-
-		if (m_options->removeAliases)
-			expressionType = resolvedType;
 
 		if (IsStructAddressible(resolvedType))
 		{

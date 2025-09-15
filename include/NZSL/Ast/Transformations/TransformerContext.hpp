@@ -88,8 +88,14 @@ namespace nzsl::Ast
 		};
 
 		TransformerContext();
+		TransformerContext(const TransformerContext&) = delete;
+		TransformerContext(TransformerContext&&) noexcept = default;
+		~TransformerContext() = default;
 
 		void Reset();
+
+		TransformerContext& operator=(const TransformerContext&) = delete;
+		TransformerContext& operator=(TransformerContext&&) noexcept = default;
 
 		std::unordered_map<OptionHash, ConstantValue> optionValues;
 		IdentifierListWithValues<AliasData> aliases;
