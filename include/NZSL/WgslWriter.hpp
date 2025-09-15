@@ -150,7 +150,7 @@ namespace nzsl
 			void Visit(Ast::AccessFieldExpression& node) override;
 			void Visit(Ast::AccessIdentifierExpression& node) override;
 			void Visit(Ast::AccessIndexExpression& node) override;
-			void Visit(Ast::AliasValueExpression& node) override;
+			void Visit(Ast::IdentifierValueExpression& node) override;
 			void Visit(Ast::AssignExpression& node) override;
 			void Visit(Ast::BinaryExpression& node) override;
 			void Visit(Ast::CallFunctionExpression& node) override;
@@ -158,16 +158,10 @@ namespace nzsl
 			void Visit(Ast::ConditionalExpression& node) override;
 			void Visit(Ast::ConstantArrayValueExpression& node) override;
 			void Visit(Ast::ConstantValueExpression& node) override;
-			void Visit(Ast::ConstantExpression& node) override;
-			void Visit(Ast::FunctionExpression& node) override;
 			void Visit(Ast::IdentifierExpression& node) override;
 			void Visit(Ast::IntrinsicExpression& node) override;
-			void Visit(Ast::ModuleExpression& node) override;
-			void Visit(Ast::NamedExternalBlockExpression& node) override;
-			void Visit(Ast::StructTypeExpression& node) override;
 			void Visit(Ast::SwizzleExpression& node) override;
 			void Visit(Ast::TypeConstantExpression& node) override;
-			void Visit(Ast::VariableValueExpression& node) override;
 			void Visit(Ast::UnaryExpression& node) override;
 
 			using StatementVisitorExcept::Visit;

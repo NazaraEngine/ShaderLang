@@ -367,7 +367,6 @@ namespace nzsl
 				executor.AddPass<Ast::ResolveTransformer>([&](Ast::ResolveTransformer::Options& opt)
 				{
 					opt.moduleResolver = parameters.shaderModuleResolver;
-					opt.removeAliases = true;
 				});
 			}
 
@@ -509,7 +508,7 @@ namespace nzsl
 		// We can't do this at once at the end because transformations passes will introduce variables prefixed by _nzsl which is forbidden in user code
 		Ast::IdentifierTransformer::Options firstIdentifierPassOptions;
 		firstIdentifierPassOptions.makeVariableNameUnique = false;
-		firstIdentifierPassOptions.identifierSanitizer = [](std::string& identifier, Ast::IdentifierType /*scope*/)
+		firstIdentifierPassOptions.identifierSanitizer = [](std::string& identifier, Ast::IdentifierCategory /*scope*/)
 		{
 			using namespace std::string_view_literals;
 
@@ -534,7 +533,7 @@ namespace nzsl
 
 		Ast::IdentifierTransformer::Options secondIdentifierPassOptions;
 		secondIdentifierPassOptions.makeVariableNameUnique = true;
-		secondIdentifierPassOptions.identifierSanitizer = [](std::string& identifier, Ast::IdentifierType /*scope*/)
+		secondIdentifierPassOptions.identifierSanitizer = [](std::string& identifier, Ast::IdentifierCategory /*scope*/)
 		{
 			using namespace std::string_view_literals;
 
@@ -1509,7 +1508,7 @@ namespace nzsl
 
 	void WgslWriter::Visit(Ast::ExpressionPtr& expr, bool encloseIfRequired)
 	{
-		bool enclose = encloseIfRequired && (GetExpressionCategory(*expr) != Ast::ExpressionCategory::LValue);
+		bool enclose = encloseIfRequired && (GetExpressionCategory(*expr) != Ast::ExpressionCategory::Variable);
 
 		if (enclose)
 			Append("(");
@@ -1578,9 +1577,51 @@ namespace nzsl
 		Append("]");
 	}
 
-	void WgslWriter::Visit(Ast::AliasValueExpression& /*node*/)
+	void WgslWriter::Visit(Ast::IdentifierValueExpression& node)
 	{
-		throw std::runtime_error("unexpected alias value, is shader sanitized?");
+		switch (node.identifierType)
+		{
+			case Ast::IdentifierType::Alias:         throw std::runtime_error("unexpected Alias identifier, shader is not properly resolved");
+			case Ast::IdentifierType::Intrinsic:     throw std::runtime_error("unexpected Intrinsic identifier, shader is not properly resolved");
+			case Ast::IdentifierType::Type:          throw std::runtime_error("unexpected Type identifier, shader is not properly resolved");
+			case Ast::IdentifierType::Unresolved:    throw std::runtime_error("unexpected Unresolved identifier, shader is not properly resolved");
+
+			case Ast::IdentifierType::ExternalBlock:
+			{
+				Append(m_currentState->externalBlockNames[node.identifierIndex]);
+				break;
+			}
+
+			case Ast::IdentifierType::Module:
+			{
+				AppendIdentifier(m_currentState->modules, node.identifierIndex);
+				break;
+			}
+
+			case Ast::IdentifierType::Struct:
+			{
+				AppendIdentifier(m_currentState->structs, node.identifierIndex, true);
+				break;
+			}
+
+			case Ast::IdentifierType::Constant:
+			{
+				AppendIdentifier(m_currentState->constants, node.identifierIndex);
+				break;
+			}
+
+			case Ast::IdentifierType::Function:
+			{
+				AppendIdentifier(m_currentState->functions, node.identifierIndex, true);
+				break;
+			}
+
+			case Ast::IdentifierType::Variable:
+			{
+				AppendIdentifier(m_currentState->variables, node.identifierIndex);
+				break;
+			}
+		}
 	}
 
 	void WgslWriter::Visit(Ast::AssignExpression& node)
@@ -1730,16 +1771,6 @@ namespace nzsl
 		{
 			AppendValue(arg);
 		}, node.value);
-	}
-
-	void WgslWriter::Visit(Ast::ConstantExpression& node)
-	{
-		AppendIdentifier(m_currentState->constants, node.constantId);
-	}
-
-	void WgslWriter::Visit(Ast::FunctionExpression& node)
-	{
-		AppendIdentifier(m_currentState->functions, node.funcId, true);
 	}
 
 	void WgslWriter::Visit(Ast::IdentifierExpression& node)
@@ -1934,21 +1965,6 @@ namespace nzsl
 		Append(")");
 	}
 
-	void WgslWriter::Visit(Ast::ModuleExpression& node)
-	{
-		AppendIdentifier(m_currentState->modules, node.moduleId);
-	}
-
-	void WgslWriter::Visit(Ast::NamedExternalBlockExpression& node)
-	{
-		Append(m_currentState->externalBlockNames[node.externalBlockId]);
-	}
-
-	void WgslWriter::Visit(Ast::StructTypeExpression& node)
-	{
-		AppendIdentifier(m_currentState->structs, node.structTypeId, true);
-	}
-
 	void WgslWriter::Visit(Ast::SwizzleExpression& node)
 	{
 		Visit(node.expression, true);
@@ -1957,11 +1973,6 @@ namespace nzsl
 		const char* componentStr = "xyzw";
 		for (std::size_t i = 0; i < node.componentCount; ++i)
 			Append(componentStr[node.components[i]]);
-	}
-
-	void WgslWriter::Visit(Ast::VariableValueExpression& node)
-	{
-		AppendIdentifier(m_currentState->variables, node.variableId);
 	}
 
 	void WgslWriter::Visit(Ast::UnaryExpression& node)
