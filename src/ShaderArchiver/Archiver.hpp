@@ -40,7 +40,7 @@ namespace nzsla
 			void DoShow();
 			std::vector<std::uint8_t> ReadFileContent(const std::filesystem::path& filePath);
 			std::string ToHeader(const void* data, std::size_t size);
-			void WriteFileContent(const std::filesystem::path& filePath, const void* data, std::size_t size);
+			bool WriteFileContent(const std::filesystem::path& filePath, const void* data, std::size_t size);
 
 			std::vector<std::filesystem::path> m_inputFiles;
 			std::filesystem::path m_outputPath;
@@ -49,6 +49,7 @@ namespace nzsla
 			bool m_isShowing;
 			bool m_isVerbose;
 			bool m_outputToStdout;
+			bool m_skipUnchangedOutput;
 	};
 }
 

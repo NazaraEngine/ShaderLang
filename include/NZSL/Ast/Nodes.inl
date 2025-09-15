@@ -45,6 +45,16 @@ namespace nzsl::Ast
 		{
 			case NodeType::None: return "None";
 
+			case NodeType::AliasValueExpression:         return "AliasValueExpression";
+			case NodeType::ConstantExpression:           return "ConstantExpression";
+			case NodeType::FunctionExpression:           return "FunctionExpression";
+			case NodeType::IntrinsicFunctionExpression:  return "IntrinsicFunctionExpression";
+			case NodeType::ModuleExpression:             return "ModuleExpression";
+			case NodeType::NamedExternalBlockExpression: return "NamedExternalBlockExpression";
+			case NodeType::StructTypeExpression:         return "StructTypeExpression";
+			case NodeType::TypeExpression:               return "TypeExpression";
+			case NodeType::VariableValueExpression:      return "VariableValueExpression";
+
 #define NZSL_SHADERAST_NODE(Node, Type) case NodeType::Node##Type: return #Node #Type;
 #include <NZSL/Ast/NodeList.hpp>
 		}

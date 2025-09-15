@@ -326,7 +326,7 @@ namespace nzsl
 		std::string description;
 		std::string license;
 		std::optional<std::uint32_t> moduleVersion;
-		std::vector<Ast::ModuleFeature> moduleFeatures;
+		Ast::ModuleFeatureFlags moduleFeatures;
 
 		for (auto&& attribute : attributes)
 		{
@@ -356,11 +356,10 @@ namespace nzsl
 					HandleUniqueStringAttributeKey(featureExpr, std::move(attribute), s_moduleFeatureMapping);
 
 					Ast::ModuleFeature feature = featureExpr.GetResultingValue();
-
-					if (std::find(moduleFeatures.begin(), moduleFeatures.end(), feature) != moduleFeatures.end())
+					if (moduleFeatures.Test(feature))
 						throw ParserModuleFeatureMultipleUniqueError{ attribute.sourceLocation, feature };
 
-					moduleFeatures.push_back(feature);
+					moduleFeatures |= feature;
 					break;
 				}
 
@@ -429,7 +428,7 @@ namespace nzsl
 		moduleMetadata->author = std::move(author);
 		moduleMetadata->description = std::move(description);
 		moduleMetadata->license = std::move(license);
-		moduleMetadata->shaderLangVersion = *moduleVersion;
+		moduleMetadata->langVersion = *moduleVersion;
 		moduleMetadata->enabledFeatures = std::move(moduleFeatures);
 
 		if (m_context->module)
@@ -1162,9 +1161,13 @@ namespace nzsl
 
 		std::string optionName = ParseIdentifierAsName(nullptr);
 
-		Expect(Advance(), TokenType::Colon);
+		Ast::ExpressionValue<Ast::ExpressionType> optionType;
+		if (Peek().type == TokenType::Colon)
+		{
+			Expect(Advance(), TokenType::Colon);
 
-		Ast::ExpressionPtr optionType = ParseType();
+			optionType = ParseType();
+		}
 
 		Ast::ExpressionPtr initialValue;
 		if (Peek().type == TokenType::Assign)
@@ -1695,12 +1698,7 @@ namespace nzsl
 			{
 				Consume();
 
-				Ast::ExpressionPtr expressionPtr = ParseExpression();
-				const Ast::ExpressionCategory category = Ast::GetExpressionCategory(*expressionPtr);
-				if (category != Ast::ExpressionCategory::LValue)
-					throw ParserFunctionParameterNonLValueError{ expressionPtr->sourceLocation, parameterIndex };
-
-				parameter.expr = std::move(expressionPtr);
+				parameter.expr = ParseExpression();
 				if (tokenType == TokenType::InOut)
 					parameter.semantic = Ast::FunctionParameterSemantic::InOut;
 				else if (tokenType == TokenType::Out)
@@ -1767,7 +1765,7 @@ namespace nzsl
 		const Token& floatingPointToken = Expect(Advance(), TokenType::FloatingPointValue);
 
 		Ast::ConstantValueExpressionPtr constantExpr;
-		if (m_context->module->metadata->shaderLangVersion >= Version::UntypedLiterals)
+		if (m_context->module->metadata->langVersion >= Version::UntypedLiterals)
 			constantExpr = ShaderBuilder::ConstantValue(Ast::FloatLiteral{ std::get<double>(floatingPointToken.data) });
 		else
 			constantExpr = ShaderBuilder::ConstantValue(float(std::get<double>(floatingPointToken.data)));
@@ -1792,7 +1790,7 @@ namespace nzsl
 		const Token& integerToken = Expect(Advance(), TokenType::IntegerValue);
 
 		Ast::ConstantValueExpressionPtr constantExpr;
-		if (m_context->module->metadata->shaderLangVersion >= Version::UntypedLiterals)
+		if (m_context->module->metadata->langVersion >= Version::UntypedLiterals)
 			constantExpr = ShaderBuilder::ConstantValue(Ast::IntLiteral{ std::get<std::int64_t>(integerToken.data) });
 		else
 			constantExpr = ShaderBuilder::ConstantValue(Nz::SafeCast<std::int32_t>(std::get<std::int64_t>(integerToken.data)));
@@ -2066,14 +2064,9 @@ namespace nzsl
 		if (!inputFile)
 			throw std::runtime_error("failed to open " + Nz::PathToString(sourcePath));
 
-		inputFile.seekg(0, std::ios::end);
-
-		std::streamsize length = inputFile.tellg();
-
-		inputFile.seekg(0, std::ios::beg);
-
-		std::vector<char> content(Nz::SafeCast<std::size_t>(length));
-		if (length > 0 && !inputFile.read(&content[0], length))
+		std::size_t fileSize = Nz::SafeCaster(std::filesystem::file_size(sourcePath));
+		std::vector<char> content(fileSize);
+		if (fileSize > 0 && !inputFile.read(&content[0], fileSize))
 			throw std::runtime_error("failed to read " + Nz::PathToString(sourcePath));
 
 		return Parse(std::string_view(content.data(), content.size()), Nz::PathToString(sourcePath));

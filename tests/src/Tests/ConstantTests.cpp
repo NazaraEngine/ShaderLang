@@ -14,6 +14,26 @@ TEST_CASE("constant", "[Shader]")
 [feature(float64)]
 module;
 
+const f32Eps = f32.Epsilon;
+const f32Max = f32.Max;
+const f32Min = f32.Min;
+const f32MinPos = f32.MinPositive;
+const f32Inf = f32.Infinity;
+const f32NaN = f32.NaN;
+
+const f64Eps = f64.Epsilon;
+const f64Max = f64.Max;
+const f64Min = f64.Min;
+const f64MinPos = f64.MinPositive;
+const f64Inf = f64.Infinity;
+const f64NaN = f64.NaN;
+
+const i32Max = i32.Max;
+const i32Min = i32.Min;
+
+const u32Max = u32.Max;
+const u32Min = u32.Min;
+
 [entry(frag)]
 fn main()
 {
@@ -72,6 +92,38 @@ void main()
 )", {}, glslEnv);
 
 		ExpectNZSL(*shaderModule, R"(
+const f32Eps: f32 = f32.Epsilon;
+
+const f32Max: f32 = f32.Max;
+
+const f32Min: f32 = f32.Min;
+
+const f32MinPos: f32 = f32.MinPositive;
+
+const f32Inf: f32 = f32.Infinity;
+
+const f32NaN: f32 = f32.NaN;
+
+const f64Eps: f64 = f64.Epsilon;
+
+const f64Max: f64 = f64.Max;
+
+const f64Min: f64 = f64.Min;
+
+const f64MinPos: f64 = f64.MinPositive;
+
+const f64Inf: f64 = f64.Infinity;
+
+const f64NaN: f64 = f64.NaN;
+
+const i32Max: i32 = i32.Max;
+
+const i32Min: i32 = i32.Min;
+
+const u32Max: u32 = u32.Max;
+
+const u32Min: u32 = u32.Min;
+
 [entry(frag)]
 fn main()
 {

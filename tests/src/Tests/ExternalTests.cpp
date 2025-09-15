@@ -1539,4 +1539,468 @@ fn main()
       OpReturn
       OpFunctionEnd)", {}, {}, true);
 	}
+
+	SECTION("Proper SPIR-V 1.4 generation")
+	{
+		// Starting with SPIR-V 1.4, an entry point has to list all external resources used
+		std::string_view nzslSource = R"(
+[nzsl_version("1.1")]
+module;
+
+[layout(std140)]
+struct MaterialData
+{
+	color: vec4[f32]
+}
+
+[layout(std140)]
+struct InstanceData
+{
+	worldViewProjMat: mat4[f32]
+}
+
+external
+{
+	[binding(0)] tex: sampler2D[f32],
+	[binding(1)] instanceData: uniform[InstanceData],
+	[binding(2)] materialData: uniform[MaterialData]
+}
+
+struct VertIn
+{
+	[location(0)] pos: vec3[f32],
+	[location(1)] uv: vec2[f32]
+}
+
+struct VertOut
+{
+	[builtin(position)] pos: vec4[f32],
+	[location(0)] uv: vec2[f32]
+}
+
+struct FragOut
+{
+	[location(0)] color: vec4[f32]
+}
+
+fn GetBaseColor() -> vec4[f32]
+{
+	return materialData.color;
+}
+
+fn GetWorldMatrix() -> mat4[f32]
+{
+	return Intermediate();
+}
+
+fn Intermediate() -> mat4[f32]
+{
+	return instanceData.worldViewProjMat;
+}
+
+[entry(frag)]
+fn main(input: VertOut) -> FragOut
+{
+	let output: FragOut;
+	output.color = GetBaseColor() * tex.Sample(input.uv);
+
+	return output;
+}
+
+[entry(vert)]
+fn main(input: VertIn) -> VertOut
+{
+	let output: VertOut;
+	output.pos = GetWorldMatrix() * vec4[f32](input.pos, 1.0);
+	output.uv = input.uv;
+
+	return output;
+}
+)";
+
+		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
+		ResolveModule(*shaderModule);
+
+		ExpectGLSL(nzsl::ShaderStageType::Fragment, *shaderModule, R"(
+// struct MaterialData omitted (used as UBO/SSBO)
+
+// struct InstanceData omitted (used as UBO/SSBO)
+
+uniform sampler2D tex;
+layout(std140) uniform _nzslBindinginstanceData
+{
+	mat4 worldViewProjMat;
+} instanceData;
+
+layout(std140) uniform _nzslBindingmaterialData
+{
+	vec4 color;
+} materialData;
+
+struct VertIn
+{
+	vec3 pos;
+	vec2 uv;
+};
+
+struct VertOut
+{
+	vec4 pos;
+	vec2 uv;
+};
+
+struct FragOut
+{
+	vec4 color;
+};
+
+vec4 GetBaseColor()
+{
+	return materialData.color;
+}
+
+mat4 Intermediate();
+
+mat4 GetWorldMatrix()
+{
+	return Intermediate();
+}
+
+mat4 Intermediate()
+{
+	return instanceData.worldViewProjMat;
+}
+
+/**************** Inputs ****************/
+in vec2 _nzslVarying0; // _nzslInuv
+
+/*************** Outputs ***************/
+layout(location = 0) out vec4 _nzslOutcolor;
+
+void main()
+{
+	VertOut input_;
+	input_.uv = _nzslVarying0;
+
+	FragOut output_;
+	output_.color = (GetBaseColor()) * (texture(tex, input_.uv));
+
+	_nzslOutcolor = output_.color;
+	return;
+}
+)");
+
+		ExpectGLSL(nzsl::ShaderStageType::Vertex, *shaderModule, R"(
+// struct MaterialData omitted (used as UBO/SSBO)
+
+// struct InstanceData omitted (used as UBO/SSBO)
+
+uniform sampler2D tex;
+layout(std140) uniform _nzslBindinginstanceData
+{
+	mat4 worldViewProjMat;
+} instanceData;
+
+layout(std140) uniform _nzslBindingmaterialData
+{
+	vec4 color;
+} materialData;
+
+struct VertIn
+{
+	vec3 pos;
+	vec2 uv;
+};
+
+struct VertOut
+{
+	vec4 pos;
+	vec2 uv;
+};
+
+struct FragOut
+{
+	vec4 color;
+};
+
+vec4 GetBaseColor()
+{
+	return materialData.color;
+}
+
+mat4 Intermediate();
+
+mat4 GetWorldMatrix()
+{
+	return Intermediate();
+}
+
+mat4 Intermediate()
+{
+	return instanceData.worldViewProjMat;
+}
+
+/**************** Inputs ****************/
+layout(location = 0) in vec3 _nzslInpos;
+layout(location = 1) in vec2 _nzslInuv;
+
+/*************** Outputs ***************/
+out vec2 _nzslVarying0; // _nzslOutuv
+
+void main()
+{
+	VertIn input_;
+	input_.pos = _nzslInpos;
+	input_.uv = _nzslInuv;
+
+	VertOut output_;
+	output_.pos = (GetWorldMatrix()) * (vec4(input_.pos, 1.0));
+	output_.uv = input_.uv;
+
+	gl_Position = output_.pos;
+	_nzslVarying0 = output_.uv;
+	return;
+}
+)");
+
+		ExpectNZSL(*shaderModule, R"(
+[nzsl_version("1.1")]
+module;
+
+[layout(std140)]
+struct MaterialData
+{
+	color: vec4[f32]
+}
+
+[layout(std140)]
+struct InstanceData
+{
+	worldViewProjMat: mat4[f32]
+}
+
+external
+{
+	[set(0), binding(0)] tex: sampler2D[f32],
+	[set(0), binding(1)] instanceData: uniform[InstanceData],
+	[set(0), binding(2)] materialData: uniform[MaterialData]
+}
+
+struct VertIn
+{
+	[location(0)] pos: vec3[f32],
+	[location(1)] uv: vec2[f32]
+}
+
+struct VertOut
+{
+	[builtin(position)] pos: vec4[f32],
+	[location(0)] uv: vec2[f32]
+}
+
+struct FragOut
+{
+	[location(0)] color: vec4[f32]
+}
+
+fn GetBaseColor() -> vec4[f32]
+{
+	return materialData.color;
+}
+
+fn GetWorldMatrix() -> mat4[f32]
+{
+	return Intermediate();
+}
+
+fn Intermediate() -> mat4[f32]
+{
+	return instanceData.worldViewProjMat;
+}
+
+[entry(frag)]
+fn main(input: VertOut) -> FragOut
+{
+	let output: FragOut;
+	output.color = (GetBaseColor()) * (tex.Sample(input.uv));
+	return output;
+}
+
+[entry(vert)]
+fn main(input: VertIn) -> VertOut
+{
+	let output: VertOut;
+	output.pos = (GetWorldMatrix()) * (vec4[f32](input.pos, 1.0));
+	output.uv = input.uv;
+	return output;
+})");
+
+		nzsl::SpirvWriter::Environment env;
+		env.spvMajorVersion = 1;
+		env.spvMinorVersion = 4;
+
+		ExpectSPIRV(*shaderModule, R"(
+      OpCapability Capability(Shader)
+      OpMemoryModel AddressingModel(Logical) MemoryModel(GLSL450)
+      OpEntryPoint ExecutionModel(Fragment) %45 "main" %22 %28 %5 %13
+      OpEntryPoint ExecutionModel(Vertex) %46 "main" %33 %35 %38 %40 %10
+      OpExecutionMode %45 ExecutionMode(OriginUpperLeft)
+      OpSource SourceLanguage(NZSL) 4198400
+      OpSourceExtension "Version: 1.1"
+      OpName %8 "InstanceData"
+      OpMemberName %8 0 "worldViewProjMat"
+      OpName %11 "MaterialData"
+      OpMemberName %11 0 "color"
+      OpName %25 "VertOut"
+      OpMemberName %25 0 "pos"
+      OpMemberName %25 1 "uv"
+      OpName %29 "FragOut"
+      OpMemberName %29 0 "color"
+      OpName %36 "VertIn"
+      OpMemberName %36 0 "pos"
+      OpMemberName %36 1 "uv"
+      OpName %5 "tex"
+      OpName %10 "instanceData"
+      OpName %13 "materialData"
+      OpName %22 "uv"
+      OpName %28 "color"
+      OpName %33 "pos"
+      OpName %35 "uv"
+      OpName %38 "position"
+      OpName %40 "uv"
+      OpName %42 "GetBaseColor"
+      OpName %43 "GetWorldMatrix"
+      OpName %44 "Intermediate"
+      OpName %45 "main"
+      OpName %46 "main"
+      OpDecorate %5 Decoration(Binding) 0
+      OpDecorate %5 Decoration(DescriptorSet) 0
+      OpDecorate %10 Decoration(Binding) 1
+      OpDecorate %10 Decoration(DescriptorSet) 0
+      OpDecorate %13 Decoration(Binding) 2
+      OpDecorate %13 Decoration(DescriptorSet) 0
+      OpDecorate %38 Decoration(BuiltIn) BuiltIn(Position)
+      OpDecorate %22 Decoration(Location) 0
+      OpDecorate %28 Decoration(Location) 0
+      OpDecorate %33 Decoration(Location) 0
+      OpDecorate %35 Decoration(Location) 1
+      OpDecorate %40 Decoration(Location) 0
+      OpDecorate %8 Decoration(Block)
+      OpMemberDecorate %8 0 Decoration(ColMajor)
+      OpMemberDecorate %8 0 Decoration(MatrixStride) 16
+      OpMemberDecorate %8 0 Decoration(Offset) 0
+      OpDecorate %11 Decoration(Block)
+      OpMemberDecorate %11 0 Decoration(Offset) 0
+      OpMemberDecorate %25 0 Decoration(Offset) 0
+      OpMemberDecorate %25 1 Decoration(Offset) 16
+      OpMemberDecorate %29 0 Decoration(Offset) 0
+      OpMemberDecorate %36 0 Decoration(Offset) 0
+      OpMemberDecorate %36 1 Decoration(Offset) 16
+ %1 = OpTypeFloat 32
+ %2 = OpTypeImage %1 Dim(Dim2D) 0 0 0 1 ImageFormat(Unknown)
+ %3 = OpTypeSampledImage %2
+ %4 = OpTypePointer StorageClass(UniformConstant) %3
+ %6 = OpTypeVector %1 4
+ %7 = OpTypeMatrix %6 4
+ %8 = OpTypeStruct %7
+ %9 = OpTypePointer StorageClass(Uniform) %8
+%11 = OpTypeStruct %6
+%12 = OpTypePointer StorageClass(Uniform) %11
+%14 = OpTypeFunction %6
+%15 = OpTypeInt 32 1
+%16 = OpConstant %15 i32(0)
+%17 = OpTypeFunction %7
+%18 = OpTypeVoid
+%19 = OpTypeFunction %18
+%20 = OpTypeVector %1 2
+%21 = OpTypePointer StorageClass(Input) %20
+%23 = OpConstant %15 i32(1)
+%24 = OpTypePointer StorageClass(Function) %20
+%25 = OpTypeStruct %6 %20
+%26 = OpTypePointer StorageClass(Function) %25
+%27 = OpTypePointer StorageClass(Output) %6
+%29 = OpTypeStruct %6
+%30 = OpTypePointer StorageClass(Function) %29
+%31 = OpTypeVector %1 3
+%32 = OpTypePointer StorageClass(Input) %31
+%34 = OpTypePointer StorageClass(Function) %31
+%36 = OpTypeStruct %31 %20
+%37 = OpTypePointer StorageClass(Function) %36
+%39 = OpTypePointer StorageClass(Output) %20
+%41 = OpConstant %1 f32(1)
+%48 = OpTypePointer StorageClass(Uniform) %6
+%54 = OpTypePointer StorageClass(Uniform) %7
+%68 = OpTypePointer StorageClass(Function) %6
+ %5 = OpVariable %4 StorageClass(UniformConstant)
+%10 = OpVariable %9 StorageClass(Uniform)
+%13 = OpVariable %12 StorageClass(Uniform)
+%22 = OpVariable %21 StorageClass(Input)
+%28 = OpVariable %27 StorageClass(Output)
+%33 = OpVariable %32 StorageClass(Input)
+%35 = OpVariable %21 StorageClass(Input)
+%38 = OpVariable %27 StorageClass(Output)
+%40 = OpVariable %39 StorageClass(Output)
+%42 = OpFunction %6 FunctionControl(0) %14
+%47 = OpLabel
+%49 = OpAccessChain %48 %13 %16
+%50 = OpLoad %6 %49
+      OpReturnValue %50
+      OpFunctionEnd
+%43 = OpFunction %7 FunctionControl(0) %17
+%51 = OpLabel
+%52 = OpFunctionCall %7 %44
+      OpReturnValue %52
+      OpFunctionEnd
+%44 = OpFunction %7 FunctionControl(0) %17
+%53 = OpLabel
+%55 = OpAccessChain %54 %10 %16
+%56 = OpLoad %7 %55
+      OpReturnValue %56
+      OpFunctionEnd
+%45 = OpFunction %18 FunctionControl(0) %19
+%57 = OpLabel
+%58 = OpVariable %30 StorageClass(Function)
+%59 = OpVariable %26 StorageClass(Function)
+%60 = OpAccessChain %24 %59 %23
+      OpCopyMemory %60 %22
+%61 = OpFunctionCall %6 %42
+%62 = OpLoad %3 %5
+%63 = OpAccessChain %24 %59 %23
+%64 = OpLoad %20 %63
+%65 = OpImageSampleImplicitLod %6 %62 %64
+%66 = OpFMul %6 %61 %65
+%67 = OpAccessChain %68 %58 %16
+      OpStore %67 %66
+%69 = OpLoad %29 %58
+%70 = OpCompositeExtract %6 %69 0
+      OpStore %28 %70
+      OpReturn
+      OpFunctionEnd
+%46 = OpFunction %18 FunctionControl(0) %19
+%71 = OpLabel
+%72 = OpVariable %26 StorageClass(Function)
+%73 = OpVariable %37 StorageClass(Function)
+%74 = OpAccessChain %34 %73 %16
+      OpCopyMemory %74 %33
+%75 = OpAccessChain %24 %73 %23
+      OpCopyMemory %75 %35
+%76 = OpFunctionCall %7 %43
+%77 = OpAccessChain %34 %73 %16
+%78 = OpLoad %31 %77
+%79 = OpCompositeConstruct %6 %78 %41
+%80 = OpMatrixTimesVector %6 %76 %79
+%81 = OpAccessChain %68 %72 %16
+      OpStore %81 %80
+%82 = OpAccessChain %24 %73 %23
+%83 = OpLoad %20 %82
+%84 = OpAccessChain %24 %72 %23
+      OpStore %84 %83
+%85 = OpLoad %25 %72
+%86 = OpCompositeExtract %6 %85 0
+      OpStore %38 %86
+%87 = OpCompositeExtract %20 %85 1
+      OpStore %40 %87
+      OpReturn
+      OpFunctionEnd)", {}, env, true);
+	}
 }

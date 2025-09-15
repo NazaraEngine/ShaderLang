@@ -454,10 +454,21 @@ namespace nzsl::Ast
 		if (IsAliasType(exprType))
 		{
 			const AliasType& alias = std::get<AliasType>(exprType);
-			return alias.targetType->type;
+			return alias.TargetType();
 		}
 		else
 			return exprType;
+	}
+
+	ExpressionType ResolveAlias(ExpressionType&& exprType)
+	{
+		if (IsAliasType(exprType))
+		{
+			AliasType& alias = std::get<AliasType>(exprType);
+			return std::move(alias.TargetType());
+		}
+		else
+			return std::move(exprType);
 	}
 
 	inline ExpressionType UnwrapExternalType(const ExpressionType& exprType)

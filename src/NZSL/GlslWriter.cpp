@@ -8,13 +8,12 @@
 #include <NazaraUtils/CallOnExit.hpp>
 #include <NazaraUtils/PathUtils.hpp>
 #include <NZSL/Enums.hpp>
-#include <NZSL/ShaderBuilder.hpp>
-#include <NZSL/Ast/Cloner.hpp>
 #include <NZSL/Ast/ConstantValue.hpp>
 #include <NZSL/Ast/RecursiveVisitor.hpp>
 #include <NZSL/Ast/Utils.hpp>
 #include <NZSL/Lang/LangData.hpp>
 #include <NZSL/Lang/Version.hpp>
+#include <NZSL/Ast/Transformations/AliasTransformer.hpp>
 #include <NZSL/Ast/Transformations/BindingResolverTransformer.hpp>
 #include <NZSL/Ast/Transformations/ConstantPropagationTransformer.hpp>
 #include <NZSL/Ast/Transformations/ConstantRemovalTransformer.hpp>
@@ -22,6 +21,7 @@
 #include <NZSL/Ast/Transformations/ForToWhileTransformer.hpp>
 #include <NZSL/Ast/Transformations/IdentifierTransformer.hpp>
 #include <NZSL/Ast/Transformations/LiteralTransformer.hpp>
+#include <NZSL/Ast/Transformations/LoopUnrollTransformer.hpp>
 #include <NZSL/Ast/Transformations/ResolveTransformer.hpp>
 #include <NZSL/Ast/Transformations/StructAssignmentTransformer.hpp>
 #include <NZSL/Ast/Transformations/SwizzleTransformer.hpp>
@@ -411,7 +411,6 @@ namespace nzsl
 				executor.AddPass<Ast::ResolveTransformer>([&](Ast::ResolveTransformer::Options& opt)
 				{
 					opt.moduleResolver = parameters.shaderModuleResolver;
-					opt.removeAliases = true;
 				});
 			}
 
@@ -561,7 +560,7 @@ namespace nzsl
 		// We can't do this at once at the end because transformations passes will introduce variables prefixed by _nzsl which is forbidden in user code
 		Ast::IdentifierTransformer::Options firstIdentifierPassOptions;
 		firstIdentifierPassOptions.makeVariableNameUnique = false;
-		firstIdentifierPassOptions.identifierSanitizer = [](std::string& identifier, Ast::IdentifierType /*scope*/)
+		firstIdentifierPassOptions.identifierSanitizer = [](std::string& identifier, Ast::IdentifierCategory /*category*/)
 		{
 			using namespace std::string_view_literals;
 
@@ -577,7 +576,7 @@ namespace nzsl
 
 		Ast::IdentifierTransformer::Options secondIdentifierPassOptions;
 		secondIdentifierPassOptions.makeVariableNameUnique = true;
-		secondIdentifierPassOptions.identifierSanitizer = [](std::string& identifier, Ast::IdentifierType /*scope*/)
+		secondIdentifierPassOptions.identifierSanitizer = [](std::string& identifier, Ast::IdentifierCategory /*category*/)
 		{
 			using namespace std::string_view_literals;
 
@@ -609,6 +608,7 @@ namespace nzsl
 			return nameChanged;
 		};
 
+		executor.AddPass<Ast::LoopUnrollTransformer>();
 		executor.AddPass<Ast::LiteralTransformer>();
 		executor.AddPass<Ast::IdentifierTransformer>(firstIdentifierPassOptions);
 		executor.AddPass<Ast::ForToWhileTransformer>();
@@ -627,6 +627,7 @@ namespace nzsl
 			opt.removeConstArraySize = false;
 			opt.removeTypeConstant = false;
 		});
+		executor.AddPass<Ast::AliasTransformer>();
 		executor.AddPass<Ast::IdentifierTransformer>(secondIdentifierPassOptions);
 	}
 
@@ -1463,7 +1464,7 @@ namespace nzsl
 		{
 			const SourceLocation& rootLocation = module.rootNode->sourceLocation;
 
-			AppendComment("NZSL version: " + Version::ToString(metadata.shaderLangVersion));
+			AppendComment("NZSL version: " + Version::ToString(metadata.langVersion));
 			if (rootLocation.file)
 			{
 				AppendComment("from " + *rootLocation.file);
@@ -1753,7 +1754,7 @@ namespace nzsl
 
 	void GlslWriter::Visit(Ast::ExpressionPtr& expr, bool encloseIfRequired)
 	{
-		bool enclose = encloseIfRequired && (GetExpressionCategory(*expr) != Ast::ExpressionCategory::LValue);
+		bool enclose = encloseIfRequired && (GetExpressionCategory(*expr) == Ast::ExpressionCategory::Temporary);
 
 		if (enclose)
 			Append("(");
@@ -1822,12 +1823,6 @@ namespace nzsl
 		Append("[");
 		Visit(node.indices.front());
 		Append("]");
-	}
-
-	void GlslWriter::Visit(Ast::AliasValueExpression& /*node*/)
-	{
-		// all aliases should have been handled by sanitizer
-		throw std::runtime_error("unexpected alias value, is shader sanitized?");
 	}
 
 	void GlslWriter::Visit(Ast::AssignExpression& node)
@@ -2030,12 +2025,6 @@ namespace nzsl
 		Append(")");
 	}
 
-	void GlslWriter::Visit(Ast::ConstantExpression& node)
-	{
-		const std::string& constName = Nz::Retrieve(m_currentState->constantNames, node.constantId);
-		Append(constName);
-	}
-
 	void GlslWriter::Visit(Ast::ConstantArrayValueExpression& node)
 	{
 		AppendArray(*node.cachedExpressionType);
@@ -2071,10 +2060,38 @@ namespace nzsl
 		}, node.value);
 	}
 
-	void GlslWriter::Visit(Ast::FunctionExpression& node)
+	void GlslWriter::Visit(Ast::IdentifierValueExpression& node)
 	{
-		const auto& funcData = Nz::Retrieve(m_currentState->previsitor.functions, node.funcId);
-		Append(funcData.name);
+		switch (node.identifierType)
+		{
+			case Ast::IdentifierType::Alias:            throw std::runtime_error("unexpected Alias identifier, shader is not properly resolved");
+			case Ast::IdentifierType::ExternalBlock:    throw std::runtime_error("unexpected ExternalBlock identifier, shader is not properly resolved");
+			case Ast::IdentifierType::Intrinsic:        throw std::runtime_error("unexpected Intrinsic identifier, shader is not properly resolved");
+			case Ast::IdentifierType::Module:           throw std::runtime_error("unexpected Module identifier, shader is not properly resolved");
+			case Ast::IdentifierType::Struct:           throw std::runtime_error("unexpected Struct identifier, shader is not properly resolved");
+			case Ast::IdentifierType::Type:             throw std::runtime_error("unexpected Type identifier, shader is not properly resolved");
+			case Ast::IdentifierType::Unresolved:       throw std::runtime_error("unexpected Unresolved identifier, shader is not properly resolved");
+
+			case Ast::IdentifierType::Constant:
+			{
+				Append(Nz::Retrieve(m_currentState->constantNames, node.identifierIndex));
+				break;
+			}
+
+			case Ast::IdentifierType::Function:
+			{
+				const auto& funcData = Nz::Retrieve(m_currentState->previsitor.functions, node.identifierIndex);
+				Append(funcData.name);
+				break;
+			}
+
+			case Ast::IdentifierType::Variable:
+			{
+				const std::string& varName = Nz::Retrieve(m_currentState->variableNames, node.identifierIndex);
+				Append(varName);
+				break;
+			}
+		}
 	}
 
 	void GlslWriter::Visit(Ast::IntrinsicExpression& node)
@@ -2396,12 +2413,6 @@ namespace nzsl
 			case Ast::PrimitiveType::String:
 				throw std::runtime_error("unexpected primitive type");
 		}
-	}
-
-	void GlslWriter::Visit(Ast::VariableValueExpression& node)
-	{
-		const std::string& varName = Nz::Retrieve(m_currentState->variableNames, node.variableId);
-		Append(varName);
 	}
 
 	void GlslWriter::Visit(Ast::UnaryExpression& node)
@@ -2879,8 +2890,8 @@ namespace nzsl
 			const auto& structData = Nz::Retrieve(m_currentState->structs, structIndex);
 
 			std::string outputStructVarName;
-			if (node.returnExpr->GetType() == Ast::NodeType::VariableValueExpression)
-				outputStructVarName = Nz::Retrieve(m_currentState->variableNames, static_cast<Ast::VariableValueExpression&>(*node.returnExpr).variableId);
+			if (node.returnExpr->GetType() == Ast::NodeType::IdentifierValueExpression && static_cast<Ast::IdentifierValueExpression&>(*node.returnExpr).identifierType == Ast::IdentifierType::Variable)
+				outputStructVarName = Nz::Retrieve(m_currentState->variableNames, static_cast<Ast::IdentifierValueExpression&>(*node.returnExpr).identifierIndex);
 			else
 			{
 				AppendLine();

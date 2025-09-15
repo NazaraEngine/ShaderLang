@@ -6,11 +6,11 @@
 
 namespace nzsl::Ast
 {
-	inline Module::Module(std::uint32_t shaderLangVersion, std::string moduleName)
+	inline Module::Module(std::uint32_t langVersion, std::string moduleName)
 	{
 		auto mutMetadata = std::make_shared<Metadata>();
 		mutMetadata->moduleName = std::move(moduleName);
-		mutMetadata->shaderLangVersion = shaderLangVersion;
+		mutMetadata->langVersion = langVersion;
 
 		metadata = std::move(mutMetadata);
 		rootNode = ShaderBuilder::MultiStatement();

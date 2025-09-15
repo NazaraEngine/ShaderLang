@@ -3,6 +3,7 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <NZSL/SpirvWriter.hpp>
+#include <NazaraUtils/Algorithm.hpp>
 #include <NazaraUtils/CallOnExit.hpp>
 #include <NazaraUtils/FixedVector.hpp>
 #include <NazaraUtils/PathUtils.hpp>
@@ -17,6 +18,7 @@
 #include <NZSL/SpirV/SpirvData.hpp>
 #include <NZSL/SpirV/SpirvGenData.hpp>
 #include <NZSL/SpirV/SpirvSection.hpp>
+#include <NZSL/Ast/Transformations/AliasTransformer.hpp>
 #include <NZSL/Ast/Transformations/BindingResolverTransformer.hpp>
 #include <NZSL/Ast/Transformations/BranchSplitterTransformer.hpp>
 #include <NZSL/Ast/Transformations/CompoundAssignmentTransformer.hpp>
@@ -25,6 +27,7 @@
 #include <NZSL/Ast/Transformations/EliminateUnusedTransformer.hpp>
 #include <NZSL/Ast/Transformations/ForToWhileTransformer.hpp>
 #include <NZSL/Ast/Transformations/LiteralTransformer.hpp>
+#include <NZSL/Ast/Transformations/LoopUnrollTransformer.hpp>
 #include <NZSL/Ast/Transformations/MatrixTransformer.hpp>
 #include <NZSL/Ast/Transformations/ResolveTransformer.hpp>
 #include <NZSL/Ast/Transformations/StructAssignmentTransformer.hpp>
@@ -89,6 +92,32 @@ namespace nzsl
 				spirvCapabilities.insert(SpirvCapability::Shader);
 			}
 
+			void PropagateFunctionDependencies(SpirvAstVisitor::FuncData& callingFuncData, Nz::HybridBitset<Nz::UInt32, 32>& seen)
+			{
+				seen.UnboundedSet(callingFuncData.funcIndex);
+				for (std::size_t calledFuncIndex : callingFuncData.calledFunctions.IterBits())
+				{
+					auto calledFuncIt = funcs.find(calledFuncIndex);
+					assert(calledFuncIt != funcs.end());
+
+					auto& calledFuncData = calledFuncIt.value();
+					if (!seen.UnboundedTest(calledFuncIndex))
+						PropagateFunctionDependencies(calledFuncData, seen);
+
+					callingFuncData.globalInterfaces |= calledFuncData.globalInterfaces;
+				}
+			}
+
+			void ResolveFunctions()
+			{
+				Nz::HybridBitset<Nz::UInt32, 32> seen;
+				for (auto it = funcs.begin(); it != funcs.end(); ++it)
+				{
+					if (!seen.UnboundedTest(it.key()))
+						PropagateFunctionDependencies(it.value(), seen);
+				}
+			}
+
 			void Visit(Ast::AccessFieldExpression& node) override
 			{
 				RecursiveVisitor::Visit(node);
@@ -120,6 +149,9 @@ namespace nzsl
 				assert(it != funcs.end());
 				auto& func = it.value();
 
+				std::size_t functionIndex = std::get<Ast::FunctionType>(*GetExpressionType(*node.targetFunction)).funcIndex;
+				func.calledFunctions.UnboundedSet(functionIndex);
+
 				auto& funcCall = func.funcCalls.emplace_back();
 				funcCall.firstVarIndex = func.variables.size();
 
@@ -140,12 +172,12 @@ namespace nzsl
 
 			void Visit(Ast::ConditionalExpression& /*node*/) override
 			{
-				throw std::runtime_error("unexpected conditional expression, did you forget to sanitize the shader?");
+				throw std::runtime_error("unexpected ConditionalExpression, is the shader resolved?");
 			}
 
 			void Visit(Ast::ConditionalStatement& /*node*/) override
 			{
-				throw std::runtime_error("unexpected conditional expression, did you forget to sanitize the shader?");
+				throw std::runtime_error("unexpected ConditionalStatement, is the shader resolved?");
 			}
 
 			void Visit(Ast::ConstantArrayValueExpression& node) override
@@ -167,9 +199,9 @@ namespace nzsl
 				assert(node.constIndex);
 				assert(constantVariables.find(*node.constIndex) == constantVariables.end());
 
-				SpirvStorageClass storageClass = SpirvStorageClass::Private;
-
 				SpirvConstantCache::TypePtr typePtr = m_constantCache.BuildType(*GetExpressionType(*node.expression));
+
+				SpirvStorageClass storageClass = SpirvStorageClass::Private;
 
 				SpirvConstantCache::Variable constantVariable;
 				constantVariable.debugName = node.name;
@@ -482,11 +514,36 @@ namespace nzsl
 				var.typeId = m_constantCache.Register(*m_constantCache.BuildPointerType(node.varType.GetResultingValue(), SpirvStorageClass::Function));
 			}
 
-			void Visit(Ast::IdentifierExpression& node) override
+			void Visit(Ast::IdentifierExpression& /*node*/) override
 			{
-				m_constantCache.Register(*m_constantCache.BuildType(node.cachedExpressionType.value()));
-
-				RecursiveVisitor::Visit(node);
+				throw std::runtime_error("unexpected IdentifierExpression, is the shader resolved?");
+			}
+			
+			void Visit(Ast::IdentifierValueExpression& node) override
+			{
+				assert(m_funcIndex);
+				if (node.identifierType == Ast::IdentifierType::Constant)
+				{
+					auto constIt = constantVariables.find(node.identifierIndex);
+					if (constIt != constantVariables.end())
+					{
+						auto it = funcs.find(*m_funcIndex);
+						assert(it != funcs.end());
+						auto& func = it.value();
+						func.globalInterfaces.UnboundedSet(constIt->second.pointerId);
+					}
+				}
+				else if (node.identifierType == Ast::IdentifierType::Variable)
+				{
+					auto extVarIt = extVars.find(node.identifierIndex);
+					if (extVarIt != extVars.end())
+					{
+						auto it = funcs.find(*m_funcIndex);
+						assert(it != funcs.end());
+						auto& func = it.value();
+						func.globalInterfaces.UnboundedSet(extVarIt.value().varData.pointerId);
+					}
+				}
 			}
 
 			void Visit(Ast::IntrinsicExpression& node) override
@@ -664,7 +721,6 @@ namespace nzsl
 				executor.AddPass<Ast::ResolveTransformer>([&](Ast::ResolveTransformer::Options& opt)
 				{
 					opt.moduleResolver = parameters.shaderModuleResolver;
-					opt.removeAliases = true;
 				});
 			}
 
@@ -730,6 +786,8 @@ namespace nzsl
 
 		module.rootNode->Visit(previsitor);
 
+		previsitor.ResolveFunctions();
+
 		m_currentState->previsitor = &previsitor;
 
 		for (const std::string& extInst : previsitor.extInsts)
@@ -772,8 +830,8 @@ namespace nzsl
 					}
 				}
 
-				m_currentState->constantTypeCache.RegisterSource(SpirvSourceLanguage::NZSL, module.metadata->shaderLangVersion, fileId, source);
-				m_currentState->constantTypeCache.RegisterSourceExtension("Version: " + Version::ToString(module.metadata->shaderLangVersion));
+				m_currentState->constantTypeCache.RegisterSource(SpirvSourceLanguage::NZSL, module.metadata->langVersion, fileId, source);
+				m_currentState->constantTypeCache.RegisterSourceExtension("Version: " + Version::ToString(module.metadata->langVersion));
 
 				if (!module.metadata->moduleName.empty())
 					m_currentState->constantTypeCache.RegisterSourceExtension("ModuleName: " + module.metadata->moduleName);
@@ -787,7 +845,7 @@ namespace nzsl
 				if (!module.metadata->license.empty())
 					m_currentState->constantTypeCache.RegisterSourceExtension("License: " + module.metadata->license);
 
-				if (!module.metadata->enabledFeatures.empty())
+				if (module.metadata->enabledFeatures.size() != 0)
 				{
 					std::string features;
 					for (Ast::ModuleFeature feature : module.metadata->enabledFeatures)
@@ -809,8 +867,8 @@ namespace nzsl
 		}
 		else if (parameters.debugLevel >= DebugLevel::Minimal)
 		{
-			m_currentState->constantTypeCache.RegisterSource(SpirvSourceLanguage::NZSL, module.metadata->shaderLangVersion);
-			m_currentState->constantTypeCache.RegisterSourceExtension("Version: " + Version::ToString(module.metadata->shaderLangVersion));
+			m_currentState->constantTypeCache.RegisterSource(SpirvSourceLanguage::NZSL, module.metadata->langVersion);
+			m_currentState->constantTypeCache.RegisterSourceExtension("Version: " + Version::ToString(module.metadata->langVersion));
 		}
 
 		auto funcDataRetriever = [&](std::size_t funcIndex) -> SpirvAstVisitor::FuncData&
@@ -909,6 +967,7 @@ namespace nzsl
 
 	void SpirvWriter::RegisterPasses(Ast::TransformerExecutor& executor)
 	{
+		executor.AddPass<Ast::LoopUnrollTransformer>();
 		executor.AddPass<Ast::ConstantRemovalTransformer>();
 		executor.AddPass<Ast::LiteralTransformer>();
 		executor.AddPass<Ast::BranchSplitterTransformer>();
@@ -928,6 +987,7 @@ namespace nzsl
 			opt.removeMatrixCast = true;
 		});
 		executor.AddPass<Ast::BindingResolverTransformer>();
+		executor.AddPass<Ast::AliasTransformer>();
 	}
 
 	std::uint32_t SpirvWriter::AllocateResultId()
@@ -995,6 +1055,12 @@ namespace nzsl
 
 					for (const auto& output : entryPointData.outputs)
 						appender(output.varId);
+
+					if (IsVersionGreaterOrEqual(1, 4))
+					{
+						for (std::size_t varId : funcData.globalInterfaces.IterBits())
+							appender(Nz::SafeCast<std::uint32_t>(varId));
+					}
 				});
 			}
 		}

@@ -158,7 +158,7 @@ fn main()
 )");
 		}
 	}
-	
+
 	WHEN("using [unroll] attribute on numerical for")
 	{
 		std::string_view sourceCode = R"(

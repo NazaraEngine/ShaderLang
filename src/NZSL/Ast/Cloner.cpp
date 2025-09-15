@@ -405,17 +405,6 @@ namespace nzsl::Ast
 		return clone;
 	}
 
-	ExpressionPtr Cloner::Clone(AliasValueExpression& node)
-	{
-		auto clone = std::make_unique<AliasValueExpression>();
-		clone->aliasId = node.aliasId;
-
-		clone->cachedExpressionType = node.cachedExpressionType;
-		clone->sourceLocation = node.sourceLocation;
-
-		return clone;
-	}
-
 	ExpressionPtr Cloner::Clone(AssignExpression& node)
 	{
 		auto clone = std::make_unique<AssignExpression>();
@@ -506,17 +495,6 @@ namespace nzsl::Ast
 		return clone;
 	}
 
-	ExpressionPtr Cloner::Clone(ConstantExpression& node)
-	{
-		auto clone = std::make_unique<ConstantExpression>();
-		clone->constantId = node.constantId;
-
-		clone->cachedExpressionType = node.cachedExpressionType;
-		clone->sourceLocation = node.sourceLocation;
-
-		return clone;
-	}
-
 	ExpressionPtr Cloner::Clone(ConstantArrayValueExpression& node)
 	{
 		auto clone = std::make_unique<ConstantArrayValueExpression>();
@@ -539,10 +517,10 @@ namespace nzsl::Ast
 		return clone;
 	}
 
-	ExpressionPtr Cloner::Clone(FunctionExpression& node)
+	ExpressionPtr Cloner::Clone(IdentifierExpression& node)
 	{
-		auto clone = std::make_unique<FunctionExpression>();
-		clone->funcId = node.funcId;
+		auto clone = std::make_unique<IdentifierExpression>();
+		clone->identifier = node.identifier;
 
 		clone->cachedExpressionType = node.cachedExpressionType;
 		clone->sourceLocation = node.sourceLocation;
@@ -550,10 +528,11 @@ namespace nzsl::Ast
 		return clone;
 	}
 
-	ExpressionPtr Cloner::Clone(IdentifierExpression& node)
+	ExpressionPtr Cloner::Clone(IdentifierValueExpression& node)
 	{
-		auto clone = std::make_unique<IdentifierExpression>();
-		clone->identifier = node.identifier;
+		auto clone = std::make_unique<IdentifierValueExpression>();
+		clone->identifierIndex = node.identifierIndex;
+		clone->identifierType = node.identifierType;
 
 		clone->cachedExpressionType = node.cachedExpressionType;
 		clone->sourceLocation = node.sourceLocation;
@@ -569,50 +548,6 @@ namespace nzsl::Ast
 		clone->parameters.reserve(node.parameters.size());
 		for (auto& parameter : node.parameters)
 			clone->parameters.push_back(CloneExpression(parameter));
-
-		clone->cachedExpressionType = node.cachedExpressionType;
-		clone->sourceLocation = node.sourceLocation;
-
-		return clone;
-	}
-
-	ExpressionPtr Cloner::Clone(IntrinsicFunctionExpression& node)
-	{
-		auto clone = std::make_unique<IntrinsicFunctionExpression>();
-		clone->intrinsicId = node.intrinsicId;
-
-		clone->cachedExpressionType = node.cachedExpressionType;
-		clone->sourceLocation = node.sourceLocation;
-
-		return clone;
-	}
-
-	ExpressionPtr Cloner::Clone(ModuleExpression& node)
-	{
-		auto clone = std::make_unique<ModuleExpression>();
-		clone->moduleId = node.moduleId;
-
-		clone->cachedExpressionType = node.cachedExpressionType;
-		clone->sourceLocation = node.sourceLocation;
-
-		return clone;
-	}
-
-	ExpressionPtr Cloner::Clone(NamedExternalBlockExpression& node)
-	{
-		auto clone = std::make_unique<NamedExternalBlockExpression>();
-		clone->externalBlockId = node.externalBlockId;
-
-		clone->cachedExpressionType = node.cachedExpressionType;
-		clone->sourceLocation = node.sourceLocation;
-
-		return clone;
-	}
-
-	ExpressionPtr Cloner::Clone(StructTypeExpression& node)
-	{
-		auto clone = std::make_unique<StructTypeExpression>();
-		clone->structTypeId = node.structTypeId;
 
 		clone->cachedExpressionType = node.cachedExpressionType;
 		clone->sourceLocation = node.sourceLocation;
@@ -638,28 +573,6 @@ namespace nzsl::Ast
 		auto clone = std::make_unique<TypeConstantExpression>();
 		clone->type = node.type;
 		clone->typeConstant = node.typeConstant;
-
-		clone->cachedExpressionType = node.cachedExpressionType;
-		clone->sourceLocation = node.sourceLocation;
-
-		return clone;
-	}
-
-	ExpressionPtr Cloner::Clone(TypeExpression& node)
-	{
-		auto clone = std::make_unique<TypeExpression>();
-		clone->typeId = node.typeId;
-
-		clone->cachedExpressionType = node.cachedExpressionType;
-		clone->sourceLocation = node.sourceLocation;
-
-		return clone;
-	}
-
-	ExpressionPtr Cloner::Clone(VariableValueExpression& node)
-	{
-		auto clone = std::make_unique<VariableValueExpression>();
-		clone->variableId = node.variableId;
 
 		clone->cachedExpressionType = node.cachedExpressionType;
 		clone->sourceLocation = node.sourceLocation;

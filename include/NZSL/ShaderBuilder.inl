@@ -6,7 +6,7 @@
 
 namespace nzsl::ShaderBuilder
 {
-	inline Ast::AccessFieldExpressionPtr nzsl::ShaderBuilder::Impl::AccessField::operator()(Ast::ExpressionPtr expr, std::uint32_t fieldIndex) const
+	inline Ast::AccessFieldExpressionPtr Impl::AccessField::operator()(Ast::ExpressionPtr expr, std::uint32_t fieldIndex) const
 	{
 		auto accessFieldNode = std::make_unique<Ast::AccessFieldExpression>();
 		accessFieldNode->expr = std::move(expr);
@@ -178,15 +178,6 @@ namespace nzsl::ShaderBuilder
 		condStatementNode->statement = std::move(statement);
 
 		return condStatementNode;
-	}
-
-	inline Ast::ConstantExpressionPtr Impl::Constant::operator()(std::size_t constantIndex, Ast::ExpressionType expressionType) const
-	{
-		auto constantExpr = std::make_unique<Ast::ConstantExpression>();
-		constantExpr->constantId = constantIndex;
-		constantExpr->cachedExpressionType = std::move(expressionType);
-
-		return constantExpr;
 	}
 
 	inline Ast::ConstantValueExpressionPtr Impl::ConstantValue::operator()(Ast::ConstantSingleValue value) const
@@ -411,21 +402,136 @@ namespace nzsl::ShaderBuilder
 		return forEachNode;
 	}
 
-	inline Ast::FunctionExpressionPtr Impl::Function::operator()(std::size_t funcId) const
-	{
-		auto intrinsicTypeExpr = std::make_unique<Ast::FunctionExpression>();
-		intrinsicTypeExpr->cachedExpressionType = Ast::FunctionType{ funcId };
-		intrinsicTypeExpr->funcId = funcId;
-
-		return intrinsicTypeExpr;
-	}
-
 	inline Ast::IdentifierExpressionPtr Impl::Identifier::operator()(std::string name) const
 	{
 		auto identifierNode = std::make_unique<Ast::IdentifierExpression>();
 		identifierNode->identifier = std::move(name);
 
 		return identifierNode;
+	}
+
+	inline Ast::IdentifierValueExpressionPtr Impl::IdentifierValue::operator()(Ast::IdentifierType type, std::size_t id) const
+	{
+		auto identifierValue = std::make_unique<Ast::IdentifierValueExpression>();
+		identifierValue->identifierType = type;
+		identifierValue->identifierIndex = id;
+
+		switch (type)
+		{
+			case Ast::IdentifierType::ExternalBlock: identifierValue->cachedExpressionType = Ast::NamedExternalBlockType{ id }; break;
+			case Ast::IdentifierType::Function: identifierValue->cachedExpressionType = Ast::FunctionType{ id }; break;
+			case Ast::IdentifierType::Module: identifierValue->cachedExpressionType = Ast::ModuleType{ id }; break;
+			case Ast::IdentifierType::Struct: identifierValue->cachedExpressionType = Ast::StructType{ id }; break;
+			case Ast::IdentifierType::Type: identifierValue->cachedExpressionType = Ast::Type{ id }; break;
+			default: break;
+		}
+
+		return identifierValue;
+	}
+
+	inline Ast::IdentifierValueExpressionPtr Impl::IdentifierValue::operator()(Ast::IdentifierType type, std::size_t id, const SourceLocation& sourceLocation) const
+	{
+		auto identifierValue = std::make_unique<Ast::IdentifierValueExpression>();
+		identifierValue->identifierType = type;
+		identifierValue->identifierIndex = id;
+		identifierValue->sourceLocation = sourceLocation;
+
+		switch (type)
+		{
+			case Ast::IdentifierType::ExternalBlock: identifierValue->cachedExpressionType = Ast::NamedExternalBlockType{ id }; break;
+			case Ast::IdentifierType::Function: identifierValue->cachedExpressionType = Ast::FunctionType{ id }; break;
+			case Ast::IdentifierType::Module: identifierValue->cachedExpressionType = Ast::ModuleType{ id }; break;
+			case Ast::IdentifierType::Struct: identifierValue->cachedExpressionType = Ast::StructType{ id }; break;
+			case Ast::IdentifierType::Type: identifierValue->cachedExpressionType = Ast::Type{ id }; break;
+			default: break;
+		}
+
+		return identifierValue;
+	}
+
+	inline Ast::IdentifierValueExpressionPtr Impl::IdentifierValue::operator()(Ast::IdentifierType type, std::size_t id, Ast::ExpressionType expressionType) const
+	{
+		auto identifierValue = std::make_unique<Ast::IdentifierValueExpression>();
+		identifierValue->identifierType = type;
+		identifierValue->identifierIndex = id;
+		identifierValue->cachedExpressionType = std::move(expressionType);
+
+		return identifierValue;
+	}
+
+	inline Ast::IdentifierValueExpressionPtr Impl::IdentifierValue::operator()(Ast::IdentifierType type, std::size_t id, Ast::ExpressionType expressionType, const SourceLocation& sourceLocation) const
+	{
+		auto identifierValue = std::make_unique<Ast::IdentifierValueExpression>();
+		identifierValue->identifierType = type;
+		identifierValue->identifierIndex = id;
+		identifierValue->cachedExpressionType = std::move(expressionType);
+		identifierValue->sourceLocation = sourceLocation;
+
+		return identifierValue;
+	}
+
+	template<Ast::IdentifierType Type>
+	Ast::IdentifierValueExpressionPtr Impl::IdentifierValueWithType<Type>::operator()(std::size_t id) const
+	{
+		auto identifierValue = std::make_unique<Ast::IdentifierValueExpression>();
+		identifierValue->identifierType = Type;
+		identifierValue->identifierIndex = id;
+
+		switch (Type)
+		{
+			case Ast::IdentifierType::ExternalBlock: identifierValue->cachedExpressionType = Ast::NamedExternalBlockType{ id }; break;
+			case Ast::IdentifierType::Function: identifierValue->cachedExpressionType = Ast::FunctionType{ id }; break;
+			case Ast::IdentifierType::Module: identifierValue->cachedExpressionType = Ast::ModuleType{ id }; break;
+			case Ast::IdentifierType::Struct: identifierValue->cachedExpressionType = Ast::StructType{ id }; break;
+			case Ast::IdentifierType::Type: identifierValue->cachedExpressionType = Ast::Type{ id }; break;
+			default: break;
+		}
+
+		return identifierValue;
+	}
+
+	template<Ast::IdentifierType Type>
+	Ast::IdentifierValueExpressionPtr Impl::IdentifierValueWithType<Type>::operator()(std::size_t id, const SourceLocation& sourceLocation) const
+	{
+		auto identifierValue = std::make_unique<Ast::IdentifierValueExpression>();
+		identifierValue->identifierType = Type;
+		identifierValue->identifierIndex = id;
+		identifierValue->sourceLocation = sourceLocation;
+
+		switch (Type)
+		{
+			case Ast::IdentifierType::ExternalBlock: identifierValue->cachedExpressionType = Ast::NamedExternalBlockType{ id }; break;
+			case Ast::IdentifierType::Function: identifierValue->cachedExpressionType = Ast::FunctionType{ id }; break;
+			case Ast::IdentifierType::Module: identifierValue->cachedExpressionType = Ast::ModuleType{ id }; break;
+			case Ast::IdentifierType::Struct: identifierValue->cachedExpressionType = Ast::StructType{ id }; break;
+			case Ast::IdentifierType::Type: identifierValue->cachedExpressionType = Ast::Type{ id }; break;
+			default: break;
+		}
+
+		return identifierValue;
+	}
+
+	template<Ast::IdentifierType Type>
+	Ast::IdentifierValueExpressionPtr Impl::IdentifierValueWithType<Type>::operator()(std::size_t id, Ast::ExpressionType expressionType) const
+	{
+		auto identifierValue = std::make_unique<Ast::IdentifierValueExpression>();
+		identifierValue->identifierType = Type;
+		identifierValue->identifierIndex = id;
+		identifierValue->cachedExpressionType = std::move(expressionType);
+
+		return identifierValue;
+	}
+
+	template<Ast::IdentifierType Type>
+	Ast::IdentifierValueExpressionPtr Impl::IdentifierValueWithType<Type>::operator()(std::size_t id, Ast::ExpressionType expressionType, const SourceLocation& sourceLocation) const
+	{
+		auto identifierValue = std::make_unique<Ast::IdentifierValueExpression>();
+		identifierValue->identifierType = Type;
+		identifierValue->identifierIndex = id;
+		identifierValue->cachedExpressionType = std::move(expressionType);
+		identifierValue->sourceLocation = sourceLocation;
+
+		return identifierValue;
 	}
 
 	inline Ast::ImportStatementPtr Impl::Import::operator()(std::string modulePath, std::string moduleIdentifier) const
@@ -453,24 +559,6 @@ namespace nzsl::ShaderBuilder
 		intrinsicExpression->parameters = std::move(parameters);
 
 		return intrinsicExpression;
-	}
-
-	inline Ast::IntrinsicFunctionExpressionPtr Impl::IntrinsicFunction::operator()(std::size_t intrinsicFunctionId, Ast::IntrinsicType intrinsicType) const
-	{
-		auto intrinsicTypeExpr = std::make_unique<Ast::IntrinsicFunctionExpression>();
-		intrinsicTypeExpr->cachedExpressionType = Ast::IntrinsicFunctionType{ intrinsicType };
-		intrinsicTypeExpr->intrinsicId = intrinsicFunctionId;
-
-		return intrinsicTypeExpr;
-	}
-
-	inline Ast::ModuleExpressionPtr Impl::ModuleExpr::operator()(std::size_t moduleTypeId) const
-	{
-		auto moduleTypeExpr = std::make_unique<Ast::ModuleExpression>();
-		moduleTypeExpr->cachedExpressionType = Ast::ModuleType{ moduleTypeId };
-		moduleTypeExpr->moduleId = moduleTypeId;
-
-		return moduleTypeExpr;
 	}
 
 	inline Ast::MultiStatementPtr Impl::Multi::operator()(std::vector<Ast::StatementPtr> statements) const
@@ -502,15 +590,6 @@ namespace nzsl::ShaderBuilder
 		scopedNode->statement = std::move(statement);
 
 		return scopedNode;
-	}
-
-	inline Ast::StructTypeExpressionPtr Impl::StructType::operator()(std::size_t structTypeId) const
-	{
-		auto structTypeExpr = std::make_unique<Ast::StructTypeExpression>();
-		structTypeExpr->cachedExpressionType = Ast::StructType{ structTypeId };
-		structTypeExpr->structTypeId = structTypeId;
-
-		return structTypeExpr;
 	}
 
 	inline Ast::SwizzleExpressionPtr Impl::Swizzle::operator()(Ast::ExpressionPtr expression, std::array<std::uint32_t, 4> swizzleComponents, std::size_t componentCount) const
@@ -560,25 +639,6 @@ namespace nzsl::ShaderBuilder
 		unaryNode->op = op;
 
 		return unaryNode;
-	}
-
-	inline Ast::VariableValueExpressionPtr Impl::Variable::operator()(std::size_t variableId, Ast::ExpressionType expressionType) const
-	{
-		auto varNode = std::make_unique<Ast::VariableValueExpression>();
-		varNode->variableId = variableId;
-		varNode->cachedExpressionType = std::move(expressionType);
-
-		return varNode;
-	}
-
-	inline Ast::VariableValueExpressionPtr Impl::Variable::operator()(std::size_t variableId, Ast::ExpressionType expressionType, const SourceLocation& sourceLocation) const
-	{
-		auto varNode = std::make_unique<Ast::VariableValueExpression>();
-		varNode->variableId = variableId;
-		varNode->cachedExpressionType = std::move(expressionType);
-		varNode->sourceLocation = sourceLocation;
-
-		return varNode;
 	}
 
 	inline Ast::WhileStatementPtr Impl::While::operator()(Ast::ExpressionPtr condition, Ast::StatementPtr body) const

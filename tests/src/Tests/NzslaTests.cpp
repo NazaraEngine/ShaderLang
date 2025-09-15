@@ -35,6 +35,10 @@ TEST_CASE("Standalone archiver", "[NZSLA]")
 
 		// Archive each modules
 		ExecuteCommand("./nzsla --archive -o test_files/test_archive.nzsla ../resources/modules/Archive/InstanceData.nzslb ../resources/modules/Archive/LightData.nzslb ../resources/modules/Archive/SkeletalData.nzslb ../resources/modules/Archive/SkinningData.nzslb ../resources/modules/Archive/ViewerData.nzslb");
+
+		// Archive again with --skip-unchanged and ensure file wasn't modified
+		ExecuteCommand("./nzsla --skip-unchanged --verbose --archive -o test_files/test_archive.nzsla ../resources/modules/Archive/InstanceData.nzslb ../resources/modules/Archive/LightData.nzslb ../resources/modules/Archive/SkeletalData.nzslb ../resources/modules/Archive/SkinningData.nzslb ../resources/modules/Archive/ViewerData.nzslb", "Skipped file .+test_archive.nzsla");
+
 		ExecuteCommand("./nzsla test_files/test_archive.nzsla", {}, R"(archive info for test_files/test_archive.nzsla
 
 5 module(s) are stored in this archive:

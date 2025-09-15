@@ -58,7 +58,7 @@ struct Data_DataStruct
 
 vec4 GetColorFromData_OutputStruct(Data_DataStruct data)
 {
-	return data.color * (vec4(0.5, 0.5, 0.5, 1.0));
+	return data.color * vec4(0.5, 0.5, 0.5, 1.0);
 }
 
 struct Output_OutputStruct
@@ -221,7 +221,7 @@ struct Data_DataStruct
 
 vec4 GetColorFromData_OutputStruct(Data_DataStruct data)
 {
-	return data.color * (vec4(0.5, 0.5, 0.5, 1.0));
+	return data.color * vec4(0.5, 0.5, 0.5, 1.0);
 }
 
 struct Output_OutputStruct
@@ -415,7 +415,7 @@ struct Data_DataStruct
 // @../resources/modules/Data/OutputStruct.nzsl:9:1
 vec4 GetColorFromData_OutputStruct(Data_DataStruct data)
 {
-	return data.color * (vec4(0.5, 0.5, 0.5, 1.0));
+	return data.color * vec4(0.5, 0.5, 0.5, 1.0);
 }
 
 // @../resources/modules/Data/OutputStruct.nzsl:15:1
@@ -729,7 +729,7 @@ struct Output
 // @../resources/modules/Data/OutputStruct.nzsl:9:1
 vec4 GetColorFromData_OutputStruct(Data_DataStruct data)
 {
-	return data.color * (vec4(0.5, 0.5, 0.5, 1.0));
+	return data.color * vec4(0.5, 0.5, 0.5, 1.0);
 }
 
 // @../resources/modules/Data/OutputStruct.nzsl:15:1

@@ -43,7 +43,7 @@ void main()
 {
 	float value = 0.0;
 	int i = 0;
-	while (i < (10))
+	while (i < 10)
 	{
 		value += 0.1;
 		i += 1;
@@ -58,7 +58,7 @@ fn main()
 {
 	let value: f32 = 0.0;
 	let i: i32 = 0;
-	while (i < (10))
+	while (i < 10)
 	{
 		value += 0.1;
 		i += 1;
@@ -155,16 +155,16 @@ void main()
 	float value = 0.0;
 	float value2 = 0.0;
 	int i = 0;
-	while (i < (10))
+	while (i < 10)
 	{
-		if (i >= (8))
+		if (i >= 8)
 		{
 			break;
 		}
 
 		value += 0.1;
 		i += 1;
-		if (i == (4))
+		if (i == 4)
 		{
 			continue;
 		}
@@ -182,16 +182,16 @@ fn main()
 	let value: f32 = 0.0;
 	let value2: f32 = 0.0;
 	let i: i32 = 0;
-	while (i < (10))
+	while (i < 10)
 	{
-		if (i >= (8))
+		if (i >= 8)
 		{
 			break;
 		}
 
 		value += 0.1;
 		i += 1;
-		if (i == (4))
+		if (i == 4)
 		{
 			continue;
 		}
@@ -527,13 +527,13 @@ void main()
 		int _nzsl_to = 10;
 		while (v < _nzsl_to)
 		{
-			if (v == (4))
+			if (v == 4)
 			{
 				continue;
 			}
 
 			x += v;
-			if (v >= (8))
+			if (v >= 8)
 			{
 				break;
 			}
@@ -553,13 +553,13 @@ fn main()
 	let x: i32 = 0;
 	for v in 0 -> 10
 	{
-		if (v == (4))
+		if (v == 4)
 		{
 			continue;
 		}
 
 		x += v;
-		if (v >= (8))
+		if (v >= 8)
 		{
 			break;
 		}
@@ -792,7 +792,7 @@ void main()
 	float x = 0.0;
 	{
 		uint _nzsl_counter = 0u;
-		while (_nzsl_counter < (10u))
+		while (_nzsl_counter < 10u)
 		{
 			float v = data.value[_nzsl_counter];
 			x += v;
@@ -913,16 +913,16 @@ void main()
 	float x = 0.0;
 	{
 		uint _nzsl_counter = 0u;
-		while (_nzsl_counter < (10u))
+		while (_nzsl_counter < 10u)
 		{
 			float v = data.value[_nzsl_counter];
-			if (v < (0.0))
+			if (v < 0.0)
 			{
 				continue;
 			}
 
 			x += v;
-			if (x >= (10.0))
+			if (x >= 10.0)
 			{
 				break;
 			}
@@ -942,13 +942,13 @@ fn main()
 	let x: f32 = 0.0;
 	for v in data.value
 	{
-		if (v < (0.0))
+		if (v < 0.0)
 		{
 			continue;
 		}
 
 		x += v;
-		if (x >= (10.0))
+		if (x >= 10.0)
 		{
 			break;
 		}

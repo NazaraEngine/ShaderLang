@@ -1,6 +1,7 @@
 #include <Tests/ShaderUtils.hpp>
 #include <NZSL/FilesystemModuleResolver.hpp>
 #include <NZSL/Parser.hpp>
+#include <NZSL/Ast/Transformations/LoopUnrollTransformer.hpp>
 #include <NZSL/Ast/Transformations/ValidationTransformer.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers.hpp>
@@ -107,11 +108,29 @@ option enable: bool;
 		{
 			nzsl::Ast::TransformerExecutor executor;
 			executor.AddPass<nzsl::Ast::ResolveTransformer>();
+			executor.AddPass<nzsl::Ast::LoopUnrollTransformer>();
 			executor.AddPass<nzsl::Ast::ValidationTransformer>();
 			executor.AddPass<nzsl::Ast::BindingResolverTransformer>();
 
 			executor.Transform(*nzsl::Parse(sourceCode));
 		};
+
+		/************************************************************************/
+
+		SECTION("Assigns")
+		{
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.1")]
+module;
+
+const Pi = 3.14;
+
+fn Indiana()
+{
+	Pi = 3.2;
+}
+)"), "(9,2 -> 9): CAssignTemporary error: constant and temporary values cannot be assigned");
+		}
 
 		/************************************************************************/
 
@@ -319,7 +338,7 @@ alias bar = foo;
 
 const WrongType: bar = 42;
 
-)"), "(8,1 -> 26): CExpectedConstantType error: const and options type can only be scalars/vectors (or arrays of scalars/vectors), got alias bar -> struct foo");
+)"), "(8,1 -> 26): CExpectedConstantType error: const and option types can only be scalars/vectors (or arrays of scalars/vectors), got alias bar -> struct foo");
 		}
 
 		/************************************************************************/
@@ -832,7 +851,7 @@ fn main()
 {
 	Test(inout 2.0);
 }
-)"), "(12,13 -> 15): PFunctionParameterNonLValue error: non-L-value cannot be passed for parameter #0");
+)"), "(12,13 -> 15): CFunctionCallSemanticRequiresVariable error: this semantic requires a variable");
 		}
 
 		/************************************************************************/
@@ -1087,9 +1106,17 @@ struct foo {}
 alias bar = foo;
 alias baz = bar;
 
-option WrongType: array[baz];
+option WrongType: array[baz, 3];
 
-)"), "(9,1 -> 29): CExpectedConstantType error: const and options type can only be scalars/vectors (or arrays of scalars/vectors), got array[alias baz -> struct foo]");
+)"), "(9,1 -> 32): CExpectedConstantType error: const and option types can only be scalars/vectors (or arrays of scalars/vectors), got array[alias baz -> struct foo, 3]");
+
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.1")]
+module;
+
+option test = 42;
+
+)"), "(5,1 -> 17): COptionMissingType error: options must have a type");
 		}
 
 		/************************************************************************/
