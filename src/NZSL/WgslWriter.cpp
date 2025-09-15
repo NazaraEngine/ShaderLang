@@ -16,6 +16,7 @@
 #include <NZSL/Ast/RecursiveVisitor.hpp>
 #include <NZSL/Ast/Utils.hpp>
 #include <NZSL/Lang/LangData.hpp>
+#include <NZSL/Ast/Transformations/AliasTransformer.hpp>
 #include <NZSL/Ast/Transformations/BindingResolverTransformer.hpp>
 #include <NZSL/Ast/Transformations/BranchSplitterTransformer.hpp>
 #include <NZSL/Ast/Transformations/ConstantPropagationTransformer.hpp>
@@ -583,6 +584,7 @@ namespace nzsl
 			opt.removeConstArraySize = false;
 			opt.removeTypeConstant = false;
 		});
+		executor.AddPass<Ast::AliasTransformer>();
 		executor.AddPass<Ast::IdentifierTransformer>(secondIdentifierPassOptions);
 	}
 
@@ -1508,7 +1510,7 @@ namespace nzsl
 
 	void WgslWriter::Visit(Ast::ExpressionPtr& expr, bool encloseIfRequired)
 	{
-		bool enclose = encloseIfRequired && (GetExpressionCategory(*expr) != Ast::ExpressionCategory::Variable);
+		bool enclose = encloseIfRequired && (GetExpressionCategory(*expr) == Ast::ExpressionCategory::Temporary);
 
 		if (enclose)
 			Append("(");

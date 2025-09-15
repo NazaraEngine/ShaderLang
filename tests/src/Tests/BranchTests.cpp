@@ -93,7 +93,7 @@ OpFunctionEnd)");
 fn main()
 {
 	var value: f32;
-	if (data.value > (0.0))
+	if (data.value > 0.0)
 	{
 		value = 1.0;
 	}
@@ -201,7 +201,7 @@ OpFunctionEnd)");
 fn main()
 {
 	var value: f32;
-	if ((data.value > (42.0)) || ((data.value <= (50.0)) && (data.value < (0.0))))
+	if ((data.value > 42.0) || ((data.value <= 50.0) && (data.value < 0.0)))
 	{
 		value = 1.0;
 	}
@@ -308,7 +308,7 @@ OpFunctionEnd)");
 @fragment
 fn main() -> Output
 {
-	if (data.value > (0.0))
+	if (data.value > 0.0)
 	{
 		discard;
 	}
@@ -531,15 +531,15 @@ OpFunctionEnd)");
 fn main()
 {
 	var value: f32;
-	if (data.value >= (3.0))
+	if (data.value >= 3.0)
 	{
 		value = 3.0;
 	}
-	else if (data.value > (2.0))
+	else if (data.value > 2.0)
 	{
 		value = 2.0;
 	}
-	else if (data.value > (1.0))
+	else if (data.value > 1.0)
 	{
 		value = 1.0;
 	}

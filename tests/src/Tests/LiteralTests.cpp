@@ -91,7 +91,7 @@ fn foo()
 fn foo()
 {
 	var bar: f32 = -1.0;
-	var _nzsl_cachedResult: f32 = (1.0) + bar;
+	var _nzsl_cachedResult: f32 = 1.0 + bar;
 	var bar_2: vec3<f32> = vec3<f32>(_nzsl_cachedResult, _nzsl_cachedResult, _nzsl_cachedResult);
 	var bar_3: vec3<f32> = vec3<f32>(2.0, 2.0, 2.0);
 	var bar_4: f32 = (max(1.0, 2.0)) + (min(2.0, 1.0));
