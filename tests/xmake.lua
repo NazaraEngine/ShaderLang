@@ -1,7 +1,5 @@
 option("tests", { description = "Build unit tests", default = false })
 
-add_repositories("nazara-engine-repo https://github.com/NazaraEngine/xmake-repo")
-
 if has_config("tests") then
 	if has_config("asan") then
 		add_defines("CATCH_CONFIG_NO_WINDOWS_SEH")
