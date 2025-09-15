@@ -183,9 +183,10 @@ fn main()
       OpReturn
       OpFunctionEnd)", {}, {}, true);
 
+// Sampler missing ??
 #ifdef FAILING_WGSL
 		ExpectWGSL(*shaderModule, R"(
-@group(0) @binding(0) var;
+@group(0) @binding(0) var tex: array<texture_cube<f32>, 5>;
 
 @fragment
 fn main()
@@ -309,11 +310,12 @@ fn main()
       OpReturn
       OpFunctionEnd)", {}, {}, true);
 
+// Uniform buffer have and invalid memory layout
 #ifdef FAILING_WGSL
 		ExpectWGSL(*shaderModule, R"(
 struct Data
 {
-	 values: array<f32, 47>,
+	values: array<f32, 47>,
 	matrices: array<mat4x4<f32>, 3>
 }
 

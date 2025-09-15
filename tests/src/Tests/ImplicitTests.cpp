@@ -439,7 +439,6 @@ fn foo()
       OpReturn
       OpFunctionEnd)", {}, {}, true);
 
-#ifdef FAILING_WGSL
 		nzsl::WgslWriter::Environment wgslEnv;
 		wgslEnv.featuresCallback = [](std::string_view) { return true; };
 
@@ -449,12 +448,27 @@ fn foo()
 {
 	var x: f32 = 1.0;
 	var v: vec3<f64> = vec3<f64>(-2.0, -1.0, 0.0);
-	var m1: mat4x4<f32> = mat4x4<f32>(x, x, x, x, x, x, x, x, x, x, x, x, x, x, x, x);
-	var m2: mat3x3<f32> = mat3x3<f32>(m1, m1, m1, m1, m1, m1, m1, m1, m1);
-	var m3: mat2x2<f32> = mat2x2<f32>(x, x, x, x);
-	var m4: mat3x3<f64> = mat3x3<f64>(v, vec3<f64>(1.0, 2.0, 3.0), vec3<f64>(4.0, 5.0, 6.0));
+	var _nzsl_matrix: mat4x4<f32>;
+	_nzsl_matrix[0u] = vec4<f32>(x, 0.0, 0.0, 0.0);
+	_nzsl_matrix[1u] = vec4<f32>(0.0, x, 0.0, 0.0);
+	_nzsl_matrix[2u] = vec4<f32>(0.0, 0.0, x, 0.0);
+	_nzsl_matrix[3u] = vec4<f32>(0.0, 0.0, 0.0, x);
+	var m1: mat4x4<f32> = _nzsl_matrix;
+	var _nzsl_matrix_2: mat3x3<f32>;
+	_nzsl_matrix_2[0u] = m1[0u].xyz;
+	_nzsl_matrix_2[1u] = m1[1u].xyz;
+	_nzsl_matrix_2[2u] = m1[2u].xyz;
+	var m2: mat3x3<f32> = _nzsl_matrix_2;
+	var _nzsl_matrix_3: mat2x2<f32>;
+	_nzsl_matrix_3[0u] = vec2<f32>(x, x);
+	_nzsl_matrix_3[1u] = vec2<f32>(x, x);
+	var m3: mat2x2<f32> = _nzsl_matrix_3;
+	var _nzsl_matrix_4: mat3x3<f64>;
+	_nzsl_matrix_4[0u] = v;
+	_nzsl_matrix_4[1u] = vec3<f64>(1.0, 2.0, 3.0);
+	_nzsl_matrix_4[2u] = vec3<f64>(4.0, 5.0, 6.0);
+	var m4: mat3x3<f64> = _nzsl_matrix_4;
 }
 )", {}, wgslEnv);
-#endif
 	}
 }
