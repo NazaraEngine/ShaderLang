@@ -183,17 +183,15 @@ fn main()
       OpReturn
       OpFunctionEnd)", {}, {}, true);
 
-// Sampler missing ??
-#ifdef FAILING_WGSL
 		ExpectWGSL(*shaderModule, R"(
-@group(0) @binding(0) var tex: array<texture_cube<f32>, 5>;
+@group(0) @binding(0) var tex: binding_array<texture_cube<f32>, 5>;
+@group(0) @binding(1) var texSampler: sampler;
 
 @fragment
 fn main()
 {
-	var value: vec4<f32> = textureSample(tex[2], tex[2]Sampler, vec3<f32>(0.0, 0.0, 0.0));
+	var value: vec4<f32> = textureSample(tex[2], texSampler, vec3<f32>(0.0, 0.0, 0.0));
 })");
-#endif
 	}
 
 	SECTION("Uniform buffers")
