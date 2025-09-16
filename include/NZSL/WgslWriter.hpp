@@ -140,7 +140,7 @@ namespace nzsl
 			void RegisterFunction(std::size_t funcIndex, std::string functionName);
 			void RegisterModule(std::size_t moduleIndex, std::string moduleName);
 			void RegisterStruct(std::size_t structIndex, const Ast::StructDescription& structDescription);
-			void RegisterVariable(std::size_t varIndex, std::string varName);
+			void RegisterVariable(std::size_t varIndex, std::string varName, bool isInout = false);
 
 			void ScopeVisit(Ast::Statement& node);
 

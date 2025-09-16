@@ -325,6 +325,7 @@ namespace nzsl
 			std::optional<std::size_t> externalBlockIndex;
 			std::size_t moduleIndex;
 			std::string name;
+			bool isDereferenceable;
 		};
 
 		struct StructData : Identifier
@@ -1485,12 +1486,13 @@ namespace nzsl
 		m_currentState->structs.emplace(structIndex, std::move(structData));
 	}
 
-	void WgslWriter::RegisterVariable(std::size_t varIndex, std::string varName)
+	void WgslWriter::RegisterVariable(std::size_t varIndex, std::string varName, bool isInout)
 	{
 		State::Identifier identifier;
 		identifier.externalBlockIndex = m_currentState->currentExternalBlockIndex;
 		identifier.moduleIndex = m_currentState->currentModuleIndex;
 		identifier.name = std::move(varName);
+		identifier.isDereferenceable = isInout;
 
 		assert(m_currentState->variables.find(varIndex) == m_currentState->variables.end());
 		m_currentState->variables.emplace(varIndex, std::move(identifier));
@@ -1620,6 +1622,8 @@ namespace nzsl
 
 			case Ast::IdentifierType::Variable:
 			{
+				if (m_currentState->variables[node.identifierIndex].isDereferenceable)
+					Append('*');
 				AppendIdentifier(m_currentState->variables, node.identifierIndex);
 				break;
 			}
@@ -1711,6 +1715,8 @@ namespace nzsl
 		{
 			if (i != 0)
 				Append(", ");
+			if (node.parameters[i].semantic != Ast::FunctionParameterSemantic::In)
+				Append('&');
 			node.parameters[i].expr->Visit(*this);
 		}
 		Append(")");
@@ -2194,7 +2200,7 @@ namespace nzsl
 				Append(parameter.type);
 
 			if (parameter.varIndex)
-				RegisterVariable(*parameter.varIndex, parameter.name);
+				RegisterVariable(*parameter.varIndex, parameter.name, parameter.semantic != Ast::FunctionParameterSemantic::In);
 		}
 		Append(')');
 		if (node.returnType.HasValue())
