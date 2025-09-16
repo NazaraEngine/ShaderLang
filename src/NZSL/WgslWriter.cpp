@@ -505,7 +505,7 @@ namespace nzsl
 			"continue", "continuing", "default", "diagnostic", "discard", "else", "enable", "false", "fn", "for",
 			"if", "let", "loop", "override", "requires", "return", "struct", "switch", "true", "var", "while"
 		});
-		
+
 		// We need two identifiers passes, the first one to rename reserved/forbidden variable names and the second one to ensure all variables name are uniques (which isn't guaranteed by the transformation passes)
 		// We can't do this at once at the end because transformations passes will introduce variables prefixed by _nzsl which is forbidden in user code
 		Ast::IdentifierTransformer::Options firstIdentifierPassOptions;
@@ -1718,6 +1718,13 @@ namespace nzsl
 			if (node.parameters[i].semantic != Ast::FunctionParameterSemantic::In)
 				Append('&');
 			node.parameters[i].expr->Visit(*this);
+			const auto& varType = *GetExpressionType(*node.parameters[i].expr);
+			if (IsSamplerType(varType))
+			{
+				Append(", ");
+				node.parameters[i].expr->Visit(*this);
+				Append("Sampler");
+			}
 		}
 		Append(")");
 	}
@@ -2201,6 +2208,10 @@ namespace nzsl
 
 			if (parameter.varIndex)
 				RegisterVariable(*parameter.varIndex, parameter.name, parameter.semantic != Ast::FunctionParameterSemantic::In);
+
+			// Should sampler be inout if texture is inout ?
+			if (parameter.type.IsResultingValue() && IsSamplerType(parameter.type.GetResultingValue()))
+				Append(", ", parameter.name, "Sampler: sampler");
 		}
 		Append(')');
 		if (node.returnType.HasValue())

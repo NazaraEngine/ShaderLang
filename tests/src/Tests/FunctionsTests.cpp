@@ -546,10 +546,8 @@ fn main() -> FragOut
       OpReturn
       OpFunctionEnd)", {}, {}, true);
 
-// Should add sampler argument to function
-#ifdef FAILING_WGSL
 		ExpectWGSL(*shaderModule, R"(
-fn sample_center(tex: texture_2d<f32>) -> vec4<f32>
+fn sample_center(tex: texture_2d<f32>, texSampler: sampler) -> vec4<f32>
 {
 	return textureSample(tex, texSampler, vec2<f32>(0.5, 0.5));
 }
@@ -566,11 +564,10 @@ struct FragOut
 fn main() -> FragOut
 {
 	var output: FragOut;
-	output.value = sample_center(ExtData_texture);
+	output.value = sample_center(ExtData_texture, ExtData_textureSampler);
 	return output;
 }
 )");
-#endif
 	}
 
 	SECTION("passing sampler array to function")
