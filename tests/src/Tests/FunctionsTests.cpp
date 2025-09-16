@@ -398,6 +398,29 @@ fn main() -> FragOut
       OpStore %12 %50
       OpReturn
       OpFunctionEnd)", {}, {}, true);
+
+// Should keep track of pointers in functions to add dereferencment and pass address to function calls
+#ifdef FAILING_WGSL
+		ExpectWGSL(*shaderModule, R"(
+fn Half(color: ptr<function, vec3<f32>>, value: ptr<function, f32>, inValue: f32, inValue2: f32)
+{
+	*color *= 2.0;
+	*value = 10.0;
+}
+
+@fragment
+fn main() -> FragOut
+{
+	var output: FragOut;
+	var mainColor: vec3<f32> = vec3<f32>(1.0, 1.0, 1.0);
+	var inValue: f32 = 2.0;
+	var inValue2: f32 = 1.0;
+	Half(&mainColor, &output.value2, inValue, inValue2);
+	output.value = mainColor.x;
+	return output;
+}
+)");
+#endif
 	}
 
 	SECTION("passing sampler to function")
@@ -525,6 +548,32 @@ fn main() -> FragOut
       OpStore %14 %33
       OpReturn
       OpFunctionEnd)", {}, {}, true);
+
+// Should add sampler argument to function
+#ifdef FAILING_WGSL
+		ExpectWGSL(*shaderModule, R"(
+fn sample_center(tex: texture_2d<f32>) -> vec4<f32>
+{
+	return textureSample(tex, texSampler, vec2<f32>(0.5, 0.5));
+}
+
+@group(0) @binding(0) var ExtData_texture: texture_2d<f32>;
+@group(0) @binding(1) var ExtData_textureSampler: sampler;
+
+struct FragOut
+{
+	@location(0) value: vec4<f32>
+}
+
+@fragment
+fn main() -> FragOut
+{
+	var output: FragOut;
+	output.value = sample_center(ExtData_texture);
+	return output;
+}
+)");
+#endif
 	}
 
 	SECTION("passing sampler array to function")
@@ -658,5 +707,31 @@ fn main() -> FragOut
       OpStore %19 %39
       OpReturn
       OpFunctionEnd)", {}, {}, true);
+
+// No sampler generated ?
+// No sampler passed to function
+#ifdef FAILING_WGSL
+		ExpectWGSL(*shaderModule, R"(
+fn sample_center(tex: array<texture_2d<f32>, 3>, texSampler: Sampler) -> vec4<f32>
+{
+	return textureSample(tex[1], texSampler, vec2<f32>(0.5, 0.5));
+}
+
+@group(0) @binding(0) var ExtData_texture: array<texture_2d<f32>, 3>;
+
+struct FragOut
+{
+	@location(0) value: vec4<f32>
+}
+
+@fragment
+fn main() -> FragOut
+{
+	var output: FragOut;
+	output.value = sample_center(ExtData_texture);
+	return output;
+}
+)");
+#endif
 	}
 }

@@ -2186,12 +2186,12 @@ namespace nzsl
 			if (i != 0)
 				Append(", ");
 
-			if (parameter.semantic == Ast::FunctionParameterSemantic::InOut)
-				Append("inout ");
-			else if (parameter.semantic == Ast::FunctionParameterSemantic::Out)
-				Append("out ");
+			Append(parameter.name, ": ");
 
-			Append(parameter.name, ": ", parameter.type);
+			if (parameter.semantic != Ast::FunctionParameterSemantic::In)
+				Append("ptr<function, ", parameter.type, ">");
+			else
+				Append(parameter.type);
 
 			if (parameter.varIndex)
 				RegisterVariable(*parameter.varIndex, parameter.name);
