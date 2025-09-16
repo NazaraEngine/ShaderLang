@@ -406,11 +406,11 @@ fn main()
 @group(0) @binding(10) var texCube: texture_cube<f32>;
 @group(0) @binding(11) var texCubeSampler: sampler;
 @group(0) @binding(12) var tex2DDepth: texture_depth_2d;
-@group(0) @binding(13) var tex2DDepthSampler: sampler;
+@group(0) @binding(13) var tex2DDepthSampler: sampler_comparison;
 @group(0) @binding(14) var tex2DArrayDepth: texture_depth_2d_array;
-@group(0) @binding(15) var tex2DArrayDepthSampler: sampler;
+@group(0) @binding(15) var tex2DArrayDepthSampler: sampler_comparison;
 @group(0) @binding(16) var texCubeDepth: texture_depth_cube;
-@group(0) @binding(17) var texCubeDepthSampler: sampler;
+@group(0) @binding(17) var texCubeDepthSampler: sampler_comparison;
 
 @fragment
 fn main()

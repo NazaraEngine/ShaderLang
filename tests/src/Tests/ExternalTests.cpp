@@ -310,7 +310,7 @@ fn main()
       OpReturn
       OpFunctionEnd)", {}, {}, true);
 
-// Uniform buffer have and invalid memory layout
+// Uniform buffer have an invalid memory layout
 #ifdef FAILING_WGSL
 		ExpectWGSL(*shaderModule, R"(
 struct Data
@@ -745,6 +745,23 @@ fn main()
       OpReturn
       OpFunctionEnd)", {}, spirvEnv, true);
 			}
+
+			ExpectWGSL(*shaderModule, R"(
+struct Data
+{
+	data: u32,
+	values: array<f32>
+}
+
+@group(0) @binding(0) var<storage, read_write> data: Data;
+
+@fragment
+fn main()
+{
+	var value: f32 = data.values[42];
+	var size: u32 = arrayLength(&data.values);
+}
+)");
 		}
 	}
 
@@ -851,6 +868,12 @@ fn main()
 		{
 			nzsl::SpirvWriter spirvWriter;
 			CHECK_THROWS_WITH(spirvWriter.Generate(*shaderModule), "unsupported type used in external block (SPIR-V doesn't allow primitive types as uniforms)");
+		}
+
+		WHEN("Generating WGSL (which doesn't support primitive externals)")
+		{
+			nzsl::WgslWriter wgslWriter;
+			CHECK_THROWS_WITH(wgslWriter.Generate(*shaderModule), "primitive externals have no way to be translated in WGSL");
 		}
 	}
 
@@ -1101,6 +1124,24 @@ fn main()
 %8 = OpLabel
      OpReturn
      OpFunctionEnd)", {}, {}, true);
+
+		nzsl::WgslWriter::Environment wgslEnv;
+		wgslEnv.featuresCallback = [](std::string_view) { return true; };
+
+		ExpectWGSL(*shaderModule, R"(
+struct Data
+{
+	index: i32
+}
+
+var<push_constant> data: Data;
+
+@fragment
+fn main()
+{
+
+}
+)", {}, wgslEnv);
 	}
 
 
@@ -1351,6 +1392,56 @@ fn main()
  %48 = OpLabel
        OpReturn
        OpFunctionEnd)", {}, {}, true);
+
+// Uniform buffer have an invalid memory layout
+#ifdef FAILING_WGSL
+		ExpectWGSL(*shaderModule, R"(
+struct DirectionalLight
+{
+	color: vec3<f32>,
+	direction: vec3<f32>,
+	invShadowMapSize: vec2<f32>,
+	ambientFactor: f32,
+	diffuseFactor: f32,
+	cascadeCount: u32,
+	cascadeDistances: array<f32, 4>,
+	viewProjMatrices: array<mat4x4<f32>, 4>
+}
+
+struct LightData
+{
+	directionalLights: array<DirectionalLight, 3>,
+	directionalLightCount: u32
+}
+
+@group(0) @binding(0) var<uniform> lightData: LightData;
+
+@fragment
+fn main()
+{
+	{
+		var lightIndex: u32 = 0u;
+		var _nzsl_to: u32 = lightData.directionalLightCount;
+		while (lightIndex < _nzsl_to)
+		{
+			var light: DirectionalLight;
+			light.color = lightData.directionalLights[lightIndex].color;
+			light.direction = lightData.directionalLights[lightIndex].direction;
+			light.invShadowMapSize = lightData.directionalLights[lightIndex].invShadowMapSize;
+			light.ambientFactor = lightData.directionalLights[lightIndex].ambientFactor;
+			light.diffuseFactor = lightData.directionalLights[lightIndex].diffuseFactor;
+			light.cascadeCount = lightData.directionalLights[lightIndex].cascadeCount;
+			light.cascadeDistances = lightData.directionalLights[lightIndex].cascadeDistances;
+			light.viewProjMatrices = lightData.directionalLights[lightIndex].viewProjMatrices;
+			var lightCopy: DirectionalLight = light;
+			lightIndex += 1u;
+		}
+
+	}
+
+}
+)");
+#endif
 	}
 
 	SECTION("named external")
@@ -1447,6 +1538,24 @@ fn main()
       OpStore %19 %26
       OpReturn
       OpFunctionEnd)", {}, {}, true);
+
+		ExpectWGSL(*shaderModule, R"(
+struct Data
+{
+	color: vec4<f32>
+}
+
+// Tag: Color map
+@group(0) @binding(0) var Instance_tex: texture_2d<f32>;
+@group(0) @binding(1) var Instance_texSampler: sampler;
+@group(0) @binding(2) var<uniform> Instance_data: Data;
+
+@fragment
+fn main()
+{
+	var value: vec4<f32> = (textureSample(Instance_tex, Instance_texSampler, vec2<f32>(0.0, 0.0))) * Instance_data.color;
+}
+)");
 	}
 
 	SECTION("named external shadowing")
@@ -1538,6 +1647,19 @@ fn main()
       OpStore %13 %14
       OpReturn
       OpFunctionEnd)", {}, {}, true);
+
+		ExpectWGSL(*shaderModule, R"(
+// Tag: Color map
+@group(0) @binding(0) var Viewer_tex: texture_2d<f32>;
+@group(0) @binding(1) var Viewer_texSampler: sampler;
+
+@fragment
+fn main()
+{
+	var Viewer_tex: f32 = 0.0;
+	var value: f32 = Viewer_tex;
+}
+)");
 	}
 
 	SECTION("Proper SPIR-V 1.4 generation")
@@ -2002,5 +2124,71 @@ fn main(input: VertIn) -> VertOut
       OpStore %40 %87
       OpReturn
       OpFunctionEnd)", {}, env, true);
+
+		ExpectWGSL(*shaderModule, R"(
+struct MaterialData
+{
+	color: vec4<f32>
+}
+
+struct InstanceData
+{
+	worldViewProjMat: mat4x4<f32>
+}
+
+@group(0) @binding(0) var tex: texture_2d<f32>;
+@group(0) @binding(1) var texSampler: sampler;
+@group(0) @binding(2) var<uniform> instanceData: InstanceData;
+@group(0) @binding(3) var<uniform> materialData: MaterialData;
+
+struct VertIn
+{
+	@location(0) pos: vec3<f32>,
+	@location(1) uv: vec2<f32>
+}
+
+struct VertOut
+{
+	@builtin(position) pos: vec4<f32>,
+	@location(0) uv: vec2<f32>
+}
+
+struct FragOut
+{
+	@location(0) color: vec4<f32>
+}
+
+fn GetBaseColor() -> vec4<f32>
+{
+	return materialData.color;
+}
+
+fn GetWorldMatrix() -> mat4x4<f32>
+{
+	return Intermediate();
+}
+
+fn Intermediate() -> mat4x4<f32>
+{
+	return instanceData.worldViewProjMat;
+}
+
+@fragment
+fn main(input: VertOut) -> FragOut
+{
+	var output: FragOut;
+	output.color = (GetBaseColor()) * (textureSample(tex, texSampler, input.uv));
+	return output;
+}
+
+@vertex
+fn main_2(input: VertIn) -> VertOut
+{
+	var output: VertOut;
+	output.pos = (GetWorldMatrix()) * (vec4<f32>(input.pos, 1.0));
+	output.uv = input.uv;
+	return output;
+}
+)");
 	}
 }

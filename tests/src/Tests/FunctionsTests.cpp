@@ -2,6 +2,7 @@
 #include <NZSL/ShaderBuilder.hpp>
 #include <NZSL/Parser.hpp>
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers.hpp>
 #include <cctype>
 
 TEST_CASE("functions", "[Shader]")
@@ -702,30 +703,7 @@ fn main() -> FragOut
       OpReturn
       OpFunctionEnd)", {}, {}, true);
 
-// No sampler generated ?
-// No sampler passed to function
-#ifdef FAILING_WGSL
-		ExpectWGSL(*shaderModule, R"(
-fn sample_center(tex: array<texture_2d<f32>, 3>, texSampler: Sampler) -> vec4<f32>
-{
-	return textureSample(tex[1], texSampler, vec2<f32>(0.5, 0.5));
-}
-
-@group(0) @binding(0) var ExtData_texture: array<texture_2d<f32>, 3>;
-
-struct FragOut
-{
-	@location(0) value: vec4<f32>
-}
-
-@fragment
-fn main() -> FragOut
-{
-	var output: FragOut;
-	output.value = sample_center(ExtData_texture);
-	return output;
-}
-)");
-#endif
+		nzsl::WgslWriter wgslWriter;
+		CHECK_THROWS_WITH(wgslWriter.Generate(*shaderModule), "WGSL does not support sampled texture array as funtion parameter");
 	}
 }

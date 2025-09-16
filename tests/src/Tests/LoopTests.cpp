@@ -850,7 +850,7 @@ OpLabel
 OpReturn
 OpFunctionEnd)");
 
-// Uniform buffer have and invalid memory layout
+// Uniform buffer have an invalid memory layout
 #ifdef FAILING_WGSL
 		ExpectWGSL(*shaderModule, R"(
 @fragment
@@ -1009,7 +1009,7 @@ fn main()
       OpReturn
       OpFunctionEnd)", {}, {}, true);
 
-// Uniform buffer have and invalid memory layout
+// Uniform buffer have an invalid memory layout
 #ifdef FAILING_WGSL
 			ExpectWGSL(*shaderModule2, R"(
 @fragment
