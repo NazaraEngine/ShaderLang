@@ -399,8 +399,6 @@ fn main() -> FragOut
       OpReturn
       OpFunctionEnd)", {}, {}, true);
 
-// Should keep track of pointers in functions to add dereferencment and pass address to function calls
-#ifdef FAILING_WGSL
 		ExpectWGSL(*shaderModule, R"(
 fn Half(color: ptr<function, vec3<f32>>, value: ptr<function, f32>, inValue: f32, inValue2: f32)
 {
@@ -420,7 +418,6 @@ fn main() -> FragOut
 	return output;
 }
 )");
-#endif
 	}
 
 	SECTION("passing sampler to function")
