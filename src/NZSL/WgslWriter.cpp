@@ -711,12 +711,7 @@ namespace nzsl
 				break;
 			}
 			case ImageType::E1D_Array:
-			{
-				if (samplerType.depth)
-					throw std::runtime_error("depth texture sampler 1D array are not supported by WGSL");
-				dimension = "1d_array";
-				break;
-			}
+				throw std::runtime_error("texture 1D array are not supported by WGSL");
 			case ImageType::E2D:       dimension = "2d";       break;
 			case ImageType::E2D_Array: dimension = "2d_array"; break;
 			case ImageType::E3D:
@@ -1972,6 +1967,16 @@ namespace nzsl
 					node.parameters[0]->Visit(*this);
 				Append("Sampler, ");
 				method = true;
+
+				const Ast::ExpressionType& textureType = EnsureExpressionType(*node.parameters[0]);
+				if (IsSamplerType(textureType) && std::get<Ast::SamplerType>(textureType).dim == ImageType::E2D_Array)
+				{
+					node.parameters[1]->Visit(*this);
+					Append(".xy, u32(");
+					node.parameters[1]->Visit(*this);
+					Append(".z))");
+					return;
+				}
 				break;
 			}
 
@@ -1991,6 +1996,18 @@ namespace nzsl
 					node.parameters[0]->Visit(*this);
 				Append("Sampler, ");
 				method = true;
+
+				const Ast::ExpressionType& textureType = EnsureExpressionType(*node.parameters[0]);
+				if (IsSamplerType(textureType) && std::get<Ast::SamplerType>(textureType).dim == ImageType::E2D_Array)
+				{
+					node.parameters[1]->Visit(*this);
+					Append(".xy, u32(");
+					node.parameters[1]->Visit(*this);
+					Append(".z), ");
+					node.parameters[2]->Visit(*this);
+					Append(')');
+					return;
+				}
 				break;
 			}
 		}
