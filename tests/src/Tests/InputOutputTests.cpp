@@ -383,5 +383,61 @@ fn main(input: VertIn) -> VertOut
       OpStore %36 %80
       OpReturn
       OpFunctionEnd)", {}, spirvEnv, true);
+
+// Need emulation of unsupported builtin attribute
+#ifdef FAILING_WGSL
+		ExpectWGSL(*shaderModule, R"(
+[nzsl_version("1.1")]
+module;
+
+[layout(std430)]
+struct ColorData
+{
+	colors: dyn_array[vec4[f32]]
+}
+
+external
+{
+	[set(0), binding(0)] data: storage[ColorData]
+}
+
+struct VertIn
+{
+	[builtin(instance_index)] instance_index: i32,
+	[builtin(draw_index)] draw_index: i32,
+	[builtin(vertex_index)] vertex_index: i32
+}
+
+struct VertOut
+{
+	[location(0), interp(flat)] instance_index: i32,
+	[location(1), interp(no_perspective)] x: f32,
+	[location(2), interp(smooth)] y: f32
+}
+
+struct FragOut
+{
+	[location(0)] color: vec4[f32]
+}
+
+[entry(frag)]
+fn main(input: VertOut) -> FragOut
+{
+	let output: FragOut;
+	output.color = (data.colors[input.instance_index] * input.x) * input.y;
+	return output;
+}
+
+[entry(vert)]
+fn main(input: VertIn) -> VertOut
+{
+	let output: VertOut;
+	output.instance_index = input.instance_index;
+	output.x = f32(input.draw_index);
+	output.y = f32(input.vertex_index);
+	return output;
+}
+)");
+#endif
 	}
 }

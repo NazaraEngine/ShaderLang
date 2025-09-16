@@ -596,6 +596,8 @@ namespace nzsl
 
 	void WgslWriter::Append(const Ast::ArrayType& type)
 	{
+		if (IsSamplerType(type.containedType->type))
+			Append("binding_");
 		if (type.length > 0)
 			Append("array<", type.containedType->type, ", ", type.length, ">");
 		else
@@ -604,6 +606,8 @@ namespace nzsl
 
 	void WgslWriter::Append(const Ast::DynArrayType& type)
 	{
+		if (IsSamplerType(type.containedType->type))
+			Append("binding_");
 		Append("array<", type.containedType->type, ">");
 	}
 
@@ -727,20 +731,20 @@ namespace nzsl
 		switch (samplerType.sampledType)
 		{
 			case Ast::PrimitiveType::Boolean:
-				throw std::runtime_error("unexpected bool type for tture");
+				throw std::runtime_error("unexpected bool type for sampled texture");
 			case Ast::PrimitiveType::Float64:
-				throw std::runtime_error("unexpected f64 type for teure");
+				throw std::runtime_error("unexpected f64 type for sampled texture");
 
 			case Ast::PrimitiveType::Float32: type = "<f32>"; break;
 			case Ast::PrimitiveType::Int32:   type = "<i32>"; break;
 			case Ast::PrimitiveType::UInt32:  type = "<u32>"; break;
 
 			case Ast::PrimitiveType::String:
-				throw std::runtime_error("unexpected string type forexture");
+				throw std::runtime_error("unexpected string type for sampled texture");
 
 			case Ast::PrimitiveType::FloatLiteral:
 			case Ast::PrimitiveType::IntLiteral:
-				throw std::runtime_error("unexpected litteral type for sampler");
+				throw std::runtime_error("unexpected litteral type for sampled texture");
 		}
 		Append("texture_");
 		if (samplerType.depth)
@@ -1718,8 +1722,16 @@ namespace nzsl
 			if (node.parameters[i].semantic != Ast::FunctionParameterSemantic::In)
 				Append('&');
 			node.parameters[i].expr->Visit(*this);
+
 			const auto& varType = *GetExpressionType(*node.parameters[i].expr);
-			if (IsSamplerType(varType))
+			Ast::ExpressionType rawOrContainedType;
+			if (IsArrayType(varType))
+				rawOrContainedType = std::get<Ast::ArrayType>(varType).containedType->type;
+			else if (IsDynArrayType(varType))
+				rawOrContainedType = std::get<Ast::DynArrayType>(varType).containedType->type;
+			else
+				rawOrContainedType = varType;
+			if (IsSamplerType(rawOrContainedType))
 			{
 				Append(", ");
 				node.parameters[i].expr->Visit(*this);
@@ -1945,24 +1957,42 @@ namespace nzsl
 				break;
 
 			case Ast::IntrinsicType::TextureSampleImplicitLod:
+			{
 				firstParam = false;
 				Append("textureSample(");
 				node.parameters[0]->Visit(*this);
 				Append(", ");
-				node.parameters[0]->Visit(*this);
+
+				if (node.parameters[0]->GetType() == Ast::NodeType::AccessIndexExpression)
+				{
+					Ast::AccessIndexExpression* accessExpr = static_cast<Ast::AccessIndexExpression*>(node.parameters[0].get());
+					accessExpr->expr->Visit(*this);
+				}
+				else
+					node.parameters[0]->Visit(*this);
 				Append("Sampler, ");
 				method = true;
 				break;
+			}
 
 			case Ast::IntrinsicType::TextureSampleImplicitLodDepthComp:
+			{
 				firstParam = false;
 				Append("textureSampleCompare(");
 				node.parameters[0]->Visit(*this);
 				Append(", ");
-				node.parameters[0]->Visit(*this);
+
+				if (node.parameters[0]->GetType() == Ast::NodeType::AccessIndexExpression)
+				{
+					Ast::AccessIndexExpression* accessExpr = static_cast<Ast::AccessIndexExpression*>(node.parameters[0].get());
+					accessExpr->expr->Visit(*this);
+				}
+				else
+					node.parameters[0]->Visit(*this);
 				Append("Sampler, ");
 				method = true;
 				break;
+			}
 		}
 
 		if (firstParam)
@@ -2155,13 +2185,26 @@ namespace nzsl
 			variableName += externalVar.name;
 			Append(variableName, ": ", exprType);
 
-			if (IsSamplerType(exprType))
+			// Apply combined image sampler splitting
 			{
-				// WGSL has not (yet?) combined image samplers so we need to split textures and samplers
-				AppendLine(';'); // Closing last line
-				AppendAttributes(false, SetAttribute{ externalVar.bindingSet }, BindingAttribute{ Ast::ExpressionValue{ binding + 1 } });
-				reservedBindings.emplace(bindingSet << 32 | binding + 1);
-				Append("var ", variableName, "Sampler: sampler");
+				Ast::ExpressionType rawOrContainedType;
+				if (IsArrayType(exprType))
+					rawOrContainedType = std::get<Ast::ArrayType>(exprType).containedType->type;
+				else if (IsDynArrayType(exprType))
+					rawOrContainedType = std::get<Ast::DynArrayType>(exprType).containedType->type;
+				else
+					rawOrContainedType = exprType;
+
+				if (IsSamplerType(rawOrContainedType))
+				{
+					// WGSL has not (yet?) combined image samplers so we need to split textures and samplers
+					AppendLine(';'); // Closing last line
+					AppendAttributes(false, SetAttribute{ externalVar.bindingSet }, BindingAttribute{ Ast::ExpressionValue{ binding + 1 } });
+					reservedBindings.emplace(bindingSet << 32 | binding + 1);
+					Append("var ", variableName, "Sampler: sampler");
+					if (std::get<Ast::SamplerType>(rawOrContainedType).depth)
+						Append("_comparison");
+				}
 			}
 
 			AppendLine(';');
@@ -2210,8 +2253,26 @@ namespace nzsl
 				RegisterVariable(*parameter.varIndex, parameter.name, parameter.semantic != Ast::FunctionParameterSemantic::In);
 
 			// Should sampler be inout if texture is inout ?
-			if (parameter.type.IsResultingValue() && IsSamplerType(parameter.type.GetResultingValue()))
-				Append(", ", parameter.name, "Sampler: sampler");
+			if (parameter.type.IsResultingValue())
+			{
+				Ast::ExpressionType exprType = parameter.type.GetResultingValue();
+				Ast::ExpressionType rawOrContainedType;
+				if (IsArrayType(exprType))
+					rawOrContainedType = std::get<Ast::ArrayType>(exprType).containedType->type;
+				else if (IsDynArrayType(exprType))
+					rawOrContainedType = std::get<Ast::DynArrayType>(exprType).containedType->type;
+				else
+					rawOrContainedType = exprType;
+
+				if (IsSamplerType(rawOrContainedType))
+				{
+					if (IsArrayType(exprType) || IsDynArrayType(exprType))
+						throw std::runtime_error("WGSL does not support sampled texture array as funtion parameter");
+					Append(", ", parameter.name, "Sampler: sampler");
+					if (std::get<Ast::SamplerType>(rawOrContainedType).depth)
+						Append("_comparison");
+				}
+			}
 		}
 		Append(')');
 		if (node.returnType.HasValue())
