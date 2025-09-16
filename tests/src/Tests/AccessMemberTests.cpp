@@ -4,11 +4,6 @@
 #include <catch2/catch_test_macros.hpp>
 #include <cctype>
 
-/**
- * Here WGSL tests fail because vertex entrypoints need to return
- * at least a builtin position attribute.
- */
-
 TEST_CASE("structure member access", "[Shader]")
 {
 	SECTION("Nested member loading")
@@ -44,7 +39,7 @@ external
 			auto swizzle = nzsl::ShaderBuilder::Swizzle(std::move(secondAccess), { 2u });
 			auto varDecl = nzsl::ShaderBuilder::DeclareVariable("result", nzsl::Ast::ExpressionType{ nzsl::Ast::PrimitiveType::Float32 }, std::move(swizzle));
 
-			shaderModule->rootNode->statements.push_back(nzsl::ShaderBuilder::DeclareFunction(nzsl::ShaderStageType::Vertex, "main", std::move(varDecl)));
+			shaderModule->rootNode->statements.push_back(nzsl::ShaderBuilder::DeclareFunction(nzsl::ShaderStageType::Fragment, "main", std::move(varDecl)));
 
 			ExpectGLSL(*shaderModule, R"(
 void main()
@@ -54,7 +49,7 @@ void main()
 )");
 
 			ExpectNZSL(*shaderModule, R"(
-[entry(vert)]
+[entry(frag)]
 fn main()
 {
 	let result: f32 = ubo.s.field.z;
@@ -72,16 +67,13 @@ OpStore
 OpReturn
 OpFunctionEnd)");
 
-// See top file comment
-#ifdef FAILING_WGSL
 			ExpectWGSL(*shaderModule, R"(
-@vertex
+@fragment
 fn main()
 {
 	var result: f32 = ubo.s.field.z;
 }
 )");
-#endif
 		}
 
 		SECTION("AccessMember with multiples fields")
@@ -92,7 +84,7 @@ fn main()
 			auto swizzle = nzsl::ShaderBuilder::Swizzle(std::move(access), { 2u });
 			auto varDecl = nzsl::ShaderBuilder::DeclareVariable("result", nzsl::Ast::ExpressionType{ nzsl::Ast::PrimitiveType::Float32 }, std::move(swizzle));
 
-			shaderModule->rootNode->statements.push_back(nzsl::ShaderBuilder::DeclareFunction(nzsl::ShaderStageType::Vertex, "main", std::move(varDecl)));
+			shaderModule->rootNode->statements.push_back(nzsl::ShaderBuilder::DeclareFunction(nzsl::ShaderStageType::Fragment, "main", std::move(varDecl)));
 
 			ExpectGLSL(*shaderModule, R"(
 void main()
@@ -102,7 +94,7 @@ void main()
 )");
 
 			ExpectNZSL(*shaderModule, R"(
-[entry(vert)]
+[entry(frag)]
 fn main()
 {
 	let result: f32 = ubo.s.field.z;
@@ -120,16 +112,13 @@ OpStore
 OpReturn
 OpFunctionEnd)");
 
-// See top file comment
-#ifdef FAILING_WGSL
 			ExpectWGSL(*shaderModule, R"(
-@vertex
-fn main() -> @builtin(position) vec4<f32>
+@fragment
+fn main()
 {
 	var result: f32 = ubo.s.field.z;
 }
 )");
-#endif
 		}
 	}
 }
