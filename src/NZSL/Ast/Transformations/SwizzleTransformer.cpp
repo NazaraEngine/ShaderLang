@@ -2,8 +2,6 @@
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
-#include "NZSL/Ast/Enums.hpp"
-#include "NZSL/Ast/Nodes.hpp"
 #include <NZSL/Ast/Transformations/SwizzleTransformer.hpp>
 #include <NZSL/Ast/Cloner.hpp>
 #include <NZSL/Lang/Errors.hpp>
@@ -97,7 +95,7 @@ namespace nzsl::Ast
 			}
 
 			const ExpressionType* baseVecEt = GetResolvedExpressionType(*baseExpr);
-			if (!baseVecEt || !std::holds_alternative<VectorType>(*baseVecEt))
+			if (!baseVecEt || !IsVectorType(*baseVecEt))
 				return VisitChildren{};
 
 			const VectorType& vecType = std::get<VectorType>(*baseVecEt);
