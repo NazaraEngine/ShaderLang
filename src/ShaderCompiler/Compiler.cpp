@@ -10,6 +10,7 @@
 #include <NZSL/FilesystemModuleResolver.hpp>
 #include <NZSL/GlslWriter.hpp>
 #include <NZSL/LangWriter.hpp>
+#include <NZSL/WgslWriter.hpp>
 #include <NZSL/Lang/Errors.hpp>
 #include <NZSL/Lexer.hpp>
 #include <NZSL/Parser.hpp>
@@ -226,6 +227,7 @@ namespace nzslc
 - nzslb : binary NZSL
 - spv : binary SPIR-V
 - spv-dis : textual SPIR-V
+- wgsl : WGSL
 
 Multiple values can be specified using commas (ex: --compile=glsl,nzslb).
 You can also specify -header as a suffix (ex: --compile=glsl-header) to generate an includable header file.
@@ -318,6 +320,8 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 				Step("Compile to textual SPIR-V", &Compiler::CompileToSPV, outputFilePath, *targetModule, true);
 			else if (outputType == "glsl")
 				Step("Compile to GLSL", &Compiler::CompileToGLSL, outputFilePath, *targetModule);
+			else if (outputType == "wgsl")
+				Step("Compile to WGSL", &Compiler::CompileToWGSL, outputFilePath, *targetModule);
 			else
 			{
 				fmt::print("Unknown format {}, ignoring\n", outputType);
@@ -569,6 +573,29 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 			outputPath.replace_extension("spv");
 			OutputFile(std::move(outputPath), spirv.data(), size);
 		}
+	}
+
+	void Compiler::CompileToWGSL(std::filesystem::path outputPath, nzsl::Ast::Module& module)
+	{
+		// TODO : add a way to validate Wgsl feature usage
+		nzsl::WgslWriter::Environment env;
+
+		nzsl::WgslWriter wgslWriter;
+		wgslWriter.SetEnv(env);
+
+		nzsl::BackendParameters states = BuildWriterOptions();
+		nzsl::WgslWriter::Output output = wgslWriter.Generate(module, states);
+		if (m_skipOutput)
+			return;
+
+		if (m_outputToStdout)
+		{
+			OutputToStdout(output.code);
+			return;
+		}
+
+		outputPath.replace_extension("wgsl");
+		OutputFile(std::move(outputPath), output.code.data(), output.code.size());
 	}
 
 	nzsl::Ast::ModulePtr Compiler::Deserialize(const std::uint8_t* data, std::size_t size)
