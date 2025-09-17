@@ -58,7 +58,7 @@ You can use it to generate GLSL, GLSL ES, WGSL and SPIR-V in two non-exclusive w
 ### Offline compilation
 
 There are two binary tools you can use:
-- **nzslc**: shader compiler, for compiling nzsl files to binary nzsl or directly to GLSL/SPIR-V.
+- **nzslc**: shader compiler, for compiling nzsl files to binary nzsl or directly to GLSL/WGSL/SPIR-V.
 - **nzsla**: shader archiver, store and compress all your compiled shaders in a single file.
 
 **nzslc example usage:**
@@ -67,7 +67,7 @@ There are two binary tools you can use:
 - Compile a shader to GLSL: `nzsl --compile=glsl file.nzsl`
 - Compile a shader to WGSL: `nzsl --compile=wgsl file.nzsl`
 - Compile a shader to SPIR-V: `nzsl --compile=spv file.nzsl`
-- Compile a shader using modules to both GLSL and SPIR-V header includable version: `nzsl --module module_file.nzsl --module module_folder/ --compile=glsl-header,spv-header file.nzsl`
+- Compile a shader using modules to GLSL, WGSL and SPIR-V header includable version: `nzsl --module module_file.nzsl --module module_folder/ --compile=glsl-header,wgsl-header,spv-header file.nzsl`
 
 Run `nzslc -h` to see all supported options.
 
