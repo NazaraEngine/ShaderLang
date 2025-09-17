@@ -3,7 +3,7 @@
 
 # Nazara Shading Language (NZSL)
 
-NZSL is a shader language inspired by Rust and C++ which compiles to GLSL or SPIR-V (without depending on SPIRV-Cross).
+NZSL is a shader language inspired by Rust and C++ which compiles to GLSL, WGSL or SPIR-V (without depending on SPIRV-Cross).
 
 ### Why a new shader language?
 
@@ -48,9 +48,9 @@ fn main(input: VertOut) -> FragOut
 
 You can find precompiled binaries in the [releases](https://github.com/NazaraEngine/ShaderLang/releases).
 
-NZSL is designed to be embedded in a game engine / game / graphics application that uses GLSL / SPIR-V for its shaders.
+NZSL is designed to be embedded in a game engine / game / graphics application that uses GLSL / WGSL / SPIR-V for its shaders.
 
-You can use it to generate GLSL, GLSL ES and SPIR-V in two non-exclusive ways:
+You can use it to generate GLSL, GLSL ES, WGSL and SPIR-V in two non-exclusive ways:
 
 1) Using the offline NZSL compiler (nzslc) ahead of time, in a way similar to glslang or glslc today.
 2) Use NZSL as a library in your application to compile shaders in a dynamic way, just as they're needed (which can be used to benefit from supported extensions to improve generation).
@@ -65,6 +65,7 @@ There are two binary tools you can use:
 
 - Validating shader: `nzslc file.nzsl`
 - Compile a shader to GLSL: `nzsl --compile=glsl file.nzsl`
+- Compile a shader to WGSL: `nzsl --compile=wgsl file.nzsl`
 - Compile a shader to SPIR-V: `nzsl --compile=spv file.nzsl`
 - Compile a shader using modules to both GLSL and SPIR-V header includable version: `nzsl --module module_file.nzsl --module module_folder/ --compile=glsl-header,spv-header file.nzsl`
 
@@ -86,6 +87,7 @@ Run `nzsla -h` to see all supported options.
 #include <NZSL/Parser.hpp>
 #include <NZSL/GlslWriter.hpp>
 #include <NZSL/SpirvWriter.hpp>
+#include <NZSL/WgslWriter.hpp>
 
 int main()
 {
@@ -98,10 +100,14 @@ int main()
     nzsl::GlslWriter glslWriter;
     nzsl::GlslWriter::Output output = glslWriter.Generate(shaderAst);
     // output.code contains GLSL that can directly be used by OpenGL
+
+    nzsl::WgslWriter wgslWriter;
+    nzsl::WgslWriter::Output output = wgslWriter.Generate(shaderAst);
+    // output.code contains WGSL that can directly be used by WebGPU (or any native implementation)
 }
 ```
 
-The library contains a lot of options to customize the generation process (target SPIR-V/GLSL version, GLSL ES, gl_Position.y flipping, gl_Position.z remapping to match Vulkan semantics, supported OpenGL extensions, etc.).
+The library contains a lot of options to customize the generation process (target SPIR-V/GLSL version, GLSL ES, gl_Position.y flipping, gl_Position.z remapping to match Vulkan semantics, supported OpenGL extensions, supported WebGPU features, etc.).
 
 ## Integration
 
@@ -136,13 +142,11 @@ At one of my previous working place we were using huge HLSL-derived shaders with
 
 NZSL is designed to be small, fast and easy to debug, for example NZSL to GLSL retains a lot of the source code information which could be lost during SSA (SPIR-V) translation, even with debug symbols enabled.
 
-## Is there a DXIL/WGSL backend?
+## Is there a DXIL backend?
 
-Not yet, as I don't target Direct3D or WebGPU yet.
-
-DXIL is not very different from SPIR-V and WGSL looks a lot like NZSL so it should be quite easy to add, though.
-
-See [this issue](https://github.com/NazaraEngine/ShaderLang/issues/13) for WGSL.
+Not yet, as I don't target Direct3D yet.\
+DXIL is not very different from SPIR-V so it should be quite easy to add, though.\
+Note that [Shader Model 7 will accept SPIR-V](https://devblogs.microsoft.com/directx/directx-adopting-spir-v/) so NZSL will be usable with Direct3D.
 
 ## Are there limitations?
 
