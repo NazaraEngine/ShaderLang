@@ -24,6 +24,7 @@
 #include <NZSL/Ast/Transformations/EliminateUnusedTransformer.hpp>
 #include <NZSL/Ast/Transformations/ForToWhileTransformer.hpp>
 #include <NZSL/Ast/Transformations/IdentifierTransformer.hpp>
+#include <NZSL/Ast/Transformations/LoopUnrollTransformer.hpp>
 #include <NZSL/Ast/Transformations/LiteralTransformer.hpp>
 #include <NZSL/Ast/Transformations/MatrixTransformer.hpp>
 #include <NZSL/Ast/Transformations/ResolveTransformer.hpp>
@@ -69,22 +70,23 @@ namespace nzsl
 	{
 		std::string_view identifier;
 		WgslFeature requiredFeature;
+		Ast::ExpressionType type;
 	};
 
-	constexpr auto s_wgslBuiltinMapping = frozen::make_unordered_map<Ast::BuiltinEntry, WgslBuiltin>({
+	const auto s_wgslBuiltinMapping = std::unordered_map<Ast::BuiltinEntry, WgslBuiltin>({
 		{ Ast::BuiltinEntry::BaseInstance,            {} },
 		{ Ast::BuiltinEntry::BaseVertex,              {} },
 		{ Ast::BuiltinEntry::DrawIndex,               {} },
-		{ Ast::BuiltinEntry::FragCoord,               { "position", WgslFeature::None } },
-		{ Ast::BuiltinEntry::FragDepth,               { "frag_depth", WgslFeature::None } },
-		{ Ast::BuiltinEntry::GlocalInvocationIndices, { "global_invocation_id", WgslFeature::None } },
-		{ Ast::BuiltinEntry::InstanceIndex,           { "instance_index", WgslFeature::None } },
-		{ Ast::BuiltinEntry::LocalInvocationIndex,    { "local_invocation_index", WgslFeature::None } },
-		{ Ast::BuiltinEntry::LocalInvocationIndices,  { "local_invocation_id", WgslFeature::None } },
-		{ Ast::BuiltinEntry::VertexIndex,             { "vertex_index", WgslFeature::None } },
-		{ Ast::BuiltinEntry::VertexPosition,          { "position", WgslFeature::None } },
-		{ Ast::BuiltinEntry::WorkgroupCount,          { "num_workgroups", WgslFeature::None } },
-		{ Ast::BuiltinEntry::WorkgroupIndices,        { "workgroup_id", WgslFeature::None } }
+		{ Ast::BuiltinEntry::FragCoord,               { "position", WgslFeature::None, Ast::VectorType{ .componentCount = 4, .type = Ast::PrimitiveType::Float32 } } },
+		{ Ast::BuiltinEntry::FragDepth,               { "frag_depth", WgslFeature::None, Ast::PrimitiveType::Float32 } },
+		{ Ast::BuiltinEntry::GlocalInvocationIndices, { "global_invocation_id", WgslFeature::None, Ast::VectorType{ .componentCount = 3, .type = Ast::PrimitiveType::UInt32 } } },
+		{ Ast::BuiltinEntry::InstanceIndex,           { "instance_index", WgslFeature::None, Ast::PrimitiveType::UInt32 } },
+		{ Ast::BuiltinEntry::LocalInvocationIndex,    { "local_invocation_index", WgslFeature::None, Ast::PrimitiveType::UInt32 } },
+		{ Ast::BuiltinEntry::LocalInvocationIndices,  { "local_invocation_id", WgslFeature::None, Ast::VectorType{ .componentCount = 3, .type = Ast::PrimitiveType::UInt32 } } },
+		{ Ast::BuiltinEntry::VertexIndex,             { "vertex_index", WgslFeature::None, Ast::PrimitiveType::UInt32 } },
+		{ Ast::BuiltinEntry::VertexPosition,          { "position", WgslFeature::None, Ast::VectorType{ .componentCount = 4, .type = Ast::PrimitiveType::Float32 } } },
+		{ Ast::BuiltinEntry::WorkgroupCount,          { "num_workgroups", WgslFeature::None, Ast::VectorType{ .componentCount = 3, .type = Ast::PrimitiveType::UInt32 } } },
+		{ Ast::BuiltinEntry::WorkgroupIndices,        { "workgroup_id", WgslFeature::None, Ast::VectorType{ .componentCount = 3, .type = Ast::PrimitiveType::UInt32 } } }
 	});
 
 	struct WgslWriter::PreVisitor : Ast::RecursiveVisitor
@@ -541,6 +543,7 @@ namespace nzsl
 			return nameChanged;
 		};
 
+		executor.AddPass<Ast::LoopUnrollTransformer>();
 		executor.AddPass<Ast::LiteralTransformer>();
 		//executor.AddPass<Ast::BranchSplitterTransformer>();
 		executor.AddPass<Ast::IdentifierTransformer>(firstIdentifierPassOptions);
@@ -958,6 +961,7 @@ namespace nzsl
 
 	void WgslWriter::AppendAttribute(bool /*first*/, AutoBindingAttribute /*attribute*/)
 	{
+		// Nothing to do
 	}
 
 	void WgslWriter::AppendAttribute(bool /*first*/, AuthorAttribute attribute)
@@ -999,22 +1003,9 @@ namespace nzsl
 		Append("builtin(", it->second.identifier, ")");
 	}
 
-	void WgslWriter::AppendAttribute(bool first, CondAttribute attribute)
+	void WgslWriter::AppendAttribute(bool /*first*/, CondAttribute /*attribute*/)
 	{
-		if (!attribute.HasValue())
-			return;
-		if (!first)
-			Append(" ");
-		Append("@");
-
-		Append("cond(");
-
-		if (attribute.cond.IsResultingValue())
-			Append(Ast::ToString(attribute.cond.GetResultingValue()));
-		else
-			attribute.cond.GetExpression()->Visit(*this);
-
-		Append(")");
+		// Nothing to do
 	}
 	
 	void WgslWriter::AppendAttribute(bool first, DepthWriteAttribute attribute)
@@ -1099,9 +1090,7 @@ namespace nzsl
 			return;
 		if (!first)
 			Append(" ");
-		Append("@");
-
-		Append("interp(");
+		Append("@interpolate(");
 
 		if (attribute.interpQualifier.IsResultingValue())
 			Append(Parser::ToString(attribute.interpQualifier.GetResultingValue()));
@@ -1166,22 +1155,9 @@ namespace nzsl
 		AppendComment("Tag: " + attribute.tag);
 	}
 
-	void WgslWriter::AppendAttribute(bool first, UnrollAttribute attribute)
+	void WgslWriter::AppendAttribute(bool /*first*/, UnrollAttribute /*attribute*/)
 	{
-		if (!attribute.HasValue())
-			return;
-		if (!first)
-			Append(" ");
-		Append("@");
-
-		Append("unroll(");
-
-		if (attribute.unroll.IsResultingValue())
-			Append(Parser::ToString(attribute.unroll.GetResultingValue()));
-		else
-			attribute.unroll.GetExpression()->Visit(*this);
-
-		Append(")");
+		throw std::runtime_error("unexpected unroll attribute, is the shader sanitized?");
 	}
 
 	void WgslWriter::AppendAttribute(bool first, WorkgroupAttribute attribute)
@@ -1477,10 +1453,8 @@ namespace nzsl
 	void WgslWriter::AppendModuleAttributes(const Ast::Module::Metadata& metadata)
 	{
 		for (Ast::ModuleFeature feature : metadata.enabledFeatures)
-			AppendAttributes(true, FeatureAttribute{ feature });
-
-		AppendAttributes(true, AuthorAttribute{ metadata.author }, DescriptionAttribute{ metadata.description });
-		AppendAttributes(true, LicenseAttribute{ metadata.license });
+			AppendAttributes(true, FeatureAttribute{ feature }); // Not a real append, it just checks the feature support
+		AppendAttributes(true, AuthorAttribute{ metadata.author }, DescriptionAttribute{ metadata.description }, LicenseAttribute{ metadata.license });
 	}
 
 	void WgslWriter::AppendStatementList(std::vector<Ast::StatementPtr>& statements)
@@ -2165,12 +2139,7 @@ namespace nzsl
 		bool first = true;
 		for (const auto& statement : node.condStatements)
 		{
-			if (first)
-			{
-				if (node.isConst)
-					Append("const ");
-			}
-			else
+			if (!first)
 				Append("else ");
 
 			Append("if (");
@@ -2195,12 +2164,9 @@ namespace nzsl
 		Append("break;");
 	}
 
-	void WgslWriter::Visit(Ast::ConditionalStatement& node)
+	void WgslWriter::Visit(Ast::ConditionalStatement& /*node*/)
 	{
-		Append("[cond(");
-		node.condition->Visit(*this);
-		AppendLine(")]");
-		node.statement->Visit(*this);
+		throw std::runtime_error("unexpected conditional statement, is shader sanitized?");
 	}
 
 	void WgslWriter::Visit(Ast::ContinueStatement& /*node*/)
@@ -2439,8 +2405,8 @@ namespace nzsl
 
 				AppendAttributes(false, CondAttribute{ member.cond }, LocationAttribute{ member.locationIndex }, InterpAttribute{ member.interp }, BuiltinAttribute{ member.builtin }, TagAttribute{ member.tag });
 				Append(member.name, ": ");
-				if (member.builtin.HasValue() && member.builtin.GetResultingValue() == Ast::BuiltinEntry::VertexIndex)
-					Append("u32");
+				if (member.builtin.HasValue())
+					Append(s_wgslBuiltinMapping.at(member.builtin.GetResultingValue()).type);
 				else
 					Append(member.type);
 			}
@@ -2484,62 +2450,14 @@ namespace nzsl
 		throw std::runtime_error("unexpected for statement, is the shader sanitized?");
 	}
 
-	void WgslWriter::Visit(Ast::ForEachStatement& node)
+	void WgslWriter::Visit(Ast::ForEachStatement& /*node*/)
 	{
-		if (node.varIndex)
-			RegisterVariable(*node.varIndex, node.varName);
-
-		AppendAttributes(true, UnrollAttribute{ node.unroll });
-		Append("for ", node.varName, " in ");
-		node.expression->Visit(*this);
-		AppendLine();
-
-		ScopeVisit(*node.statement);
+		throw std::runtime_error("unexpected for each statement, is the shader sanitized?");
 	}
 
-	void WgslWriter::Visit(Ast::ImportStatement& node)
+	void WgslWriter::Visit(Ast::ImportStatement& /*node*/)
 	{
-		Append("import ");
-		
-		if (node.identifiers.empty())
-		{
-			// Whole module import
-			Append(node.moduleName);
-
-			std::string_view defaultIdentifierName;
-			std::size_t lastSep = node.moduleName.find_last_of('.');
-			if (lastSep != std::string::npos)
-				defaultIdentifierName = std::string_view(node.moduleName).substr(lastSep + 1);
-			else
-				defaultIdentifierName = node.moduleName;
-
-			if (node.moduleIdentifier != node.moduleName)
-				Append(" as ", node.moduleIdentifier);
-
-			AppendLine(";");
-		}
-		else
-		{
-			// Module identifier import
-			bool first = true;
-			for (const auto& entry : node.identifiers)
-			{
-				if (!first)
-					Append(", ");
-
-				first = false;
-
-				if (!entry.identifier.empty())
-				{
-					Append(entry.identifier);
-					if (!entry.renamedIdentifier.empty())
-						Append(" as ", entry.renamedIdentifier);
-				}
-				else
-					Append("*");
-			}
-			AppendLine(" from ", node.moduleName, ";");
-		}
+		throw std::runtime_error("unexpected import statement, is the shader sanitized?");
 	}
 
 	void WgslWriter::Visit(Ast::MultiStatement& node)
