@@ -964,7 +964,7 @@ namespace nzsl
 	{
 		if (!attribute.HasValue())
 			return;
-		Append("// Author ", EscapeString(attribute.author));
+		AppendComment("Author " + EscapeString(attribute.author));
 	}
 
 	void WgslWriter::AppendAttribute(bool first, BindingAttribute attribute)
@@ -1116,9 +1116,11 @@ namespace nzsl
 		// WGSL does not have memory layout management syntax
 	}
 
-	void WgslWriter::AppendAttribute(bool /*first*/, LicenseAttribute /*attribute*/)
+	void WgslWriter::AppendAttribute(bool /*first*/, LicenseAttribute attribute)
 	{
-		// TODO
+		if (!attribute.HasValue())
+			return;
+		AppendComment("License: " + EscapeString(attribute.license));
 	}
 
 	void WgslWriter::AppendAttribute(bool first, LocationAttribute attribute)

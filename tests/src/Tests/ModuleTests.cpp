@@ -283,9 +283,15 @@ OpReturn
 OpFunctionEnd)");
 
 		ExpectWGSL(*shaderModule, R"(
-// Author "Sir Lynix"// Description: "Main file"
+// Author "Sir Lynix"
+// Description: "Main file"
 
-// Author "Lynix"// Description: "Simple \"module\" for testing"
+// License: "MIT"
+
+// Author "Lynix"
+// Description: "Simple \"module\" for testing"
+
+// License: "Public domain"
 
 // Module SimpleModule
 

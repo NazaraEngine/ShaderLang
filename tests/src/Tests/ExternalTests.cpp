@@ -98,7 +98,7 @@ fn main()
 }
 )");
 	}
-	
+
 	SECTION("Arrays of texture")
 	{
 		std::string_view nzslSource = R"(
