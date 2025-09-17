@@ -1556,12 +1556,76 @@ fn main()
        OpReturn
        OpFunctionEnd)", {}, {}, true);
 
-// Needs to implement an inverse function in WGSL
-#ifdef FAILING_WGSL
 		nzsl::WgslWriter::Environment wgslEnv;
 		wgslEnv.featuresCallback = [](std::string_view) { return true; };
 
 		ExpectWGSL(*shaderModule, R"(
+fn _nzslMatrixInverse3x3f64(m: mat3x3<f64>) -> mat3x3<f64>
+{
+	var adj: mat3x3<f64>;
+
+	adj[0][0] =   (m[1][1] * m[2][2] - m[2][1] * m[1][2]);
+	adj[1][0] = - (m[1][0] * m[2][2] - m[2][0] * m[1][2]);
+	adj[2][0] =   (m[1][0] * m[2][1] - m[2][0] * m[1][1]);
+	adj[0][1] = - (m[0][1] * m[2][2] - m[2][1] * m[0][2]);
+	adj[1][1] =   (m[0][0] * m[2][2] - m[2][0] * m[0][2]);
+	adj[2][1] = - (m[0][0] * m[2][1] - m[2][0] * m[0][1]);
+	adj[0][2] =   (m[0][1] * m[1][2] - m[1][1] * m[0][2]);
+	adj[1][2] = - (m[0][0] * m[1][2] - m[1][0] * m[0][2]);
+	adj[2][2] =   (m[0][0] * m[1][1] - m[1][0] * m[0][1]);
+
+	let det: f64 = (m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1])
+			- m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0])
+			+ m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0]));
+
+	return adj * (1 / det);
+}
+
+fn _nzslMatrixInverse4x4f32(m: mat4x4<f32>) -> mat4x4<f32>
+{
+	let sub_factor00: f32 = m[2][2] * m[3][3] - m[3][2] * m[2][3];
+	let sub_factor01: f32 = m[2][1] * m[3][3] - m[3][1] * m[2][3];
+	let sub_factor02: f32 = m[2][1] * m[3][2] - m[3][1] * m[2][2];
+	let sub_factor03: f32 = m[2][0] * m[3][3] - m[3][0] * m[2][3];
+	let sub_factor04: f32 = m[2][0] * m[3][2] - m[3][0] * m[2][2];
+	let sub_factor05: f32 = m[2][0] * m[3][1] - m[3][0] * m[2][1];
+	let sub_factor06: f32 = m[1][2] * m[3][3] - m[3][2] * m[1][3];
+	let sub_factor07: f32 = m[1][1] * m[3][3] - m[3][1] * m[1][3];
+	let sub_factor08: f32 = m[1][1] * m[3][2] - m[3][1] * m[1][2];
+	let sub_factor09: f32 = m[1][0] * m[3][3] - m[3][0] * m[1][3];
+	let sub_factor10: f32 = m[1][0] * m[3][2] - m[3][0] * m[1][2];
+	let sub_factor11: f32 = m[1][1] * m[3][3] - m[3][1] * m[1][3];
+	let sub_factor12: f32 = m[1][0] * m[3][1] - m[3][0] * m[1][1];
+	let sub_factor13: f32 = m[1][2] * m[2][3] - m[2][2] * m[1][3];
+	let sub_factor14: f32 = m[1][1] * m[2][3] - m[2][1] * m[1][3];
+	let sub_factor15: f32 = m[1][1] * m[2][2] - m[2][1] * m[1][2];
+	let sub_factor16: f32 = m[1][0] * m[2][3] - m[2][0] * m[1][3];
+	let sub_factor17: f32 = m[1][0] * m[2][2] - m[2][0] * m[1][2];
+	let sub_factor18: f32 = m[1][0] * m[2][1] - m[2][0] * m[1][1];
+
+	var adj: mat4x4<f32>;
+	adj[0][0] =   (m[1][1] * sub_factor00 - m[1][2] * sub_factor01 + m[1][3] * sub_factor02);
+	adj[1][0] = - (m[1][0] * sub_factor00 - m[1][2] * sub_factor03 + m[1][3] * sub_factor04);
+	adj[2][0] =   (m[1][0] * sub_factor01 - m[1][1] * sub_factor03 + m[1][3] * sub_factor05);
+	adj[3][0] = - (m[1][0] * sub_factor02 - m[1][1] * sub_factor04 + m[1][2] * sub_factor05);
+	adj[0][1] = - (m[0][1] * sub_factor00 - m[0][2] * sub_factor01 + m[0][3] * sub_factor02);
+	adj[1][1] =   (m[0][0] * sub_factor00 - m[0][2] * sub_factor03 + m[0][3] * sub_factor04);
+	adj[2][1] = - (m[0][0] * sub_factor01 - m[0][1] * sub_factor03 + m[0][3] * sub_factor05);
+	adj[3][1] =   (m[0][0] * sub_factor02 - m[0][1] * sub_factor04 + m[0][2] * sub_factor05);
+	adj[0][2] =   (m[0][1] * sub_factor06 - m[0][2] * sub_factor07 + m[0][3] * sub_factor08);
+	adj[1][2] = - (m[0][0] * sub_factor06 - m[0][2] * sub_factor09 + m[0][3] * sub_factor10);
+	adj[2][2] =   (m[0][0] * sub_factor11 - m[0][1] * sub_factor09 + m[0][3] * sub_factor12);
+	adj[3][2] = - (m[0][0] * sub_factor08 - m[0][1] * sub_factor10 + m[0][2] * sub_factor12);
+	adj[0][3] = - (m[0][1] * sub_factor13 - m[0][2] * sub_factor14 + m[0][3] * sub_factor15);
+	adj[1][3] =   (m[0][0] * sub_factor13 - m[0][2] * sub_factor16 + m[0][3] * sub_factor17);
+	adj[2][3] = - (m[0][0] * sub_factor14 - m[0][1] * sub_factor16 + m[0][3] * sub_factor18);
+	adj[3][3] =   (m[0][0] * sub_factor15 - m[0][1] * sub_factor17 + m[0][2] * sub_factor18);
+
+	let det = (m[0][0] * adj[0][0] + m[0][1] * adj[1][0] + m[0][2] * adj[2][0] + m[0][3] * adj[3][0]);
+
+	return adj * (1 / det);
+}
+
 @fragment
 fn main()
 {
@@ -1585,13 +1649,12 @@ fn main()
 	_nzsl_matrix_4[1u] = vec2<f64>(2.0, 3.0);
 	_nzsl_matrix_4[2u] = vec2<f64>(4.0, 5.0);
 	var m4: mat3x2<f64> = _nzsl_matrix_4;
-	var inverseResult1: mat4x4<f32> = inverse(m1);
-	var inverseResult2: mat3x3<f64> = inverse(m3);
+	var inverseResult1: mat4x4<f32> = _nzslMatrixInverse4x4f32(m1);
+	var inverseResult2: mat3x3<f64> = _nzslMatrixInverse3x3f64(m3);
 	var transposeResult1: mat3x2<f32> = transpose(m2);
 	var transposeResult2: mat2x3<f64> = transpose(m4);
 }
 )", {}, wgslEnv);
-#endif
 	}
 
 	WHEN("testing trigonometry intrinsics")
