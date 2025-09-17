@@ -146,45 +146,29 @@ namespace nzsl
 
 			if (node.intrinsic == Ast::IntrinsicType::IsInf)
 			{
-				assert((IsVectorType(paramType) || IsPrimitiveType(paramType)) && "invalid type found");
+				assert((IsVectorType(paramType) || IsPrimitiveType(paramType)) && "expected a vector type or a primitive type");
 				const Ast::PrimitiveType& type = IsVectorType(paramType) ? std::get<Ast::VectorType>(paramType).type : std::get<Ast::PrimitiveType>(paramType);
-
-				if (type == Ast::PrimitiveType::Float32)
-					hasf32Infinity = true;
-				else if (type == Ast::PrimitiveType::Float64)
-					hasf64Infinity = true;
-				else
-					assert(false && "isinf can only be used on floating types");
+				intrinsicHelpers[IntrinsicHelper::Infinity].emplace(type);
+			}
+			else if (node.intrinsic == Ast::IntrinsicType::MatrixInverse)
+			{
+				assert(IsMatrixType(paramType) && "expected a matrix");
+				intrinsicHelpers[IntrinsicHelper::MatrixInverse].emplace(paramType);
 			}
 		}
 
 		void Visit(Ast::TypeConstantExpression& node) override
 		{
-			assert(IsPrimitiveType(node.type));
-			Ast::PrimitiveType primitiveType = std::get<Ast::PrimitiveType>(node.type);
-
+			assert(IsPrimitiveType(node.type) && "expected a primitive type");
 			if (node.typeConstant == Ast::TypeConstant::Infinity)
-			{
-				if (primitiveType == Ast::PrimitiveType::Float32)
-					hasf32Infinity = true;
-				if (primitiveType == Ast::PrimitiveType::Float64)
-					hasf64Infinity = true;
-			}
+				intrinsicHelpers[IntrinsicHelper::Infinity].emplace(node.type);
 			else if (node.typeConstant == Ast::TypeConstant::NaN)
-			{
-				if (primitiveType == Ast::PrimitiveType::Float32)
-					hasf32NaN = true;
-				if (primitiveType == Ast::PrimitiveType::Float64)
-					hasf64NaN = true;
-			}
+				intrinsicHelpers[IntrinsicHelper::NaN].emplace(node.type);
 		}
 
 		tsl::ordered_set<WgslFeature> features;
+		std::unordered_map<IntrinsicHelper, std::unordered_set<Ast::ExpressionType>> intrinsicHelpers;
 		WgslWriter& m_writer;
-		bool hasf32Infinity = false;
-		bool hasf32NaN = false;
-		bool hasf64Infinity = false;
-		bool hasf64NaN = false;
 	};
 
 	struct WgslWriter::AutoBindingAttribute
@@ -458,14 +442,11 @@ namespace nzsl
 			m_currentState->moduleNames.push_back(importedModule.identifier);
 		}
 
-		if (previsitor.hasf32Infinity)
-			AppendConstantHelpers(Ast::PrimitiveType::Float32, Ast::TypeConstant::Infinity);
-		if (previsitor.hasf32NaN)
-			AppendConstantHelpers(Ast::PrimitiveType::Float32, Ast::TypeConstant::NaN);
-		if (previsitor.hasf64Infinity)
-			AppendConstantHelpers(Ast::PrimitiveType::Float64, Ast::TypeConstant::Infinity);
-		if (previsitor.hasf64NaN)
-			AppendConstantHelpers(Ast::PrimitiveType::Float64, Ast::TypeConstant::NaN);
+		for (const auto& [helper, exprTypeSet] : previsitor.intrinsicHelpers)
+		{
+			for (const auto& exprType : exprTypeSet)
+				AppendIntrinsicHelpers(helper, exprType);
+		}
 
 		m_currentState->currentModuleIndex = 0;
 		module.rootNode->Visit(*this);
@@ -1269,28 +1250,37 @@ namespace nzsl
 		AppendLine();
 	}
 
-	void WgslWriter::AppendConstantHelpers(Ast::PrimitiveType type, Ast::TypeConstant constant)
+	void WgslWriter::AppendIntrinsicHelpers(IntrinsicHelper helper, const Ast::ExpressionType& type)
 	{
 		using namespace std::string_view_literals;
 
-		std::string_view stringType;
-		switch (type)
-		{
-			case Ast::PrimitiveType::Float32: stringType = "f32"sv; break;
-			case Ast::PrimitiveType::Float64: stringType = "f64"sv; break;
+		Ast::PrimitiveType primitiveType;
+		if (IsMatrixType(type))
+			primitiveType = std::get<Ast::MatrixType>(type).type;
+		else if (IsPrimitiveType(type))
+			primitiveType = std::get<Ast::PrimitiveType>(type);
+		else
+			throw std::runtime_error("expected a matrix type or a primitive type");
 
-			default: return;
+		std::string_view stringPrimitiveType;
+		switch (primitiveType)
+		{
+			case Ast::PrimitiveType::Float32: stringPrimitiveType = "f32"sv; break;
+			case Ast::PrimitiveType::Float64: stringPrimitiveType = "f64"sv; break;
+
+			default:
+				throw std::runtime_error(fmt::format("expected primitive type f32 or f64, got {}", ToString(primitiveType)));
 		}
 
-		auto setupRatioFunction = [this, type, stringType]()
+		auto setupRatioFunction = [this, primitiveType, stringPrimitiveType]()
 		{
-			if (type == Ast::PrimitiveType::Float32)
+			if (primitiveType == Ast::PrimitiveType::Float32)
 			{
 				if (m_currentState->hasf32RatioFunction)
 					return;
 				m_currentState->hasf32RatioFunction = true;
 			}
-			else if (type == Ast::PrimitiveType::Float64)
+			else if (primitiveType == Ast::PrimitiveType::Float64)
 			{
 				if (m_currentState->hasf64RatioFunction)
 					return;
@@ -1302,12 +1292,12 @@ namespace nzsl
 	return n / d;	
 }}
 
-)", stringType));
+)", stringPrimitiveType));
 		};
 
-		switch (constant)
+		switch (helper)
 		{
-			case Ast::TypeConstant::NaN:
+			case IntrinsicHelper::NaN:
 			{
 				setupRatioFunction();
 				Append(fmt::format(R"(fn _nzslNaN{0}() -> {0}
@@ -1315,10 +1305,10 @@ namespace nzsl
 	return _nzslRatio{0}(0.0, 0.0);	
 }}
 
-)", stringType));
+)", stringPrimitiveType));
 				break;
 			}
-			case Ast::TypeConstant::Infinity:
+			case IntrinsicHelper::Infinity:
 			{
 				setupRatioFunction();
 				Append(fmt::format(R"(fn _nzslInfinity{0}() -> {0}
@@ -1326,11 +1316,106 @@ namespace nzsl
 	return _nzslRatio{0}(1.0, 0.0);	
 }}
 
-)", stringType));
+)", stringPrimitiveType));
 				break;
 			}
 
-			default: break;
+			case IntrinsicHelper::MatrixInverse:
+			{
+				const Ast::MatrixType& matrixType = std::get<Ast::MatrixType>(type);
+				assert(matrixType.rowCount == matrixType.columnCount); // Should have been catched before WgslWriter
+				if (matrixType.columnCount == 2) // mat2x2
+				{
+					Append(fmt::format(R"(fn _nzslMatrixInverse2x2{0}(m: mat2x2<{0}>) -> mat2x2<{0}>
+{{
+	var adj: mat2x2<{0}>;
+	adj[0][0] = m[1][1];
+	adj[0][1] = -m[0][1];
+	adj[1][0] = -m[1][0];
+	adj[1][1] = m[0][0];
+
+	let det: {0} = m[0][0] * m[1][1] - m[1][0] * m[0][1];
+	return adj * (1 / det);
+}}
+
+)", stringPrimitiveType));
+				}
+				else if (matrixType.columnCount == 3) // mat3x3
+				{
+					Append(fmt::format(R"(fn _nzslMatrixInverse3x3{0}(m: mat3x3<{0}>) -> mat3x3<{0}>
+{{
+	var adj: mat3x3<{0}>;
+
+	adj[0][0] =   (m[1][1] * m[2][2] - m[2][1] * m[1][2]);
+	adj[1][0] = - (m[1][0] * m[2][2] - m[2][0] * m[1][2]);
+	adj[2][0] =   (m[1][0] * m[2][1] - m[2][0] * m[1][1]);
+	adj[0][1] = - (m[0][1] * m[2][2] - m[2][1] * m[0][2]);
+	adj[1][1] =   (m[0][0] * m[2][2] - m[2][0] * m[0][2]);
+	adj[2][1] = - (m[0][0] * m[2][1] - m[2][0] * m[0][1]);
+	adj[0][2] =   (m[0][1] * m[1][2] - m[1][1] * m[0][2]);
+	adj[1][2] = - (m[0][0] * m[1][2] - m[1][0] * m[0][2]);
+	adj[2][2] =   (m[0][0] * m[1][1] - m[1][0] * m[0][1]);
+
+	let det: {0} = (m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1])
+			- m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0])
+			+ m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0]));
+
+	return adj * (1 / det);
+}}
+
+)", stringPrimitiveType));
+				}
+				else if (matrixType.columnCount == 4) // mat4x4
+				{
+					Append(fmt::format(R"(fn _nzslMatrixInverse4x4{0}(m: mat4x4<{0}>) -> mat4x4<{0}>
+{{
+	let sub_factor00: {0} = m[2][2] * m[3][3] - m[3][2] * m[2][3];
+	let sub_factor01: {0} = m[2][1] * m[3][3] - m[3][1] * m[2][3];
+	let sub_factor02: {0} = m[2][1] * m[3][2] - m[3][1] * m[2][2];
+	let sub_factor03: {0} = m[2][0] * m[3][3] - m[3][0] * m[2][3];
+	let sub_factor04: {0} = m[2][0] * m[3][2] - m[3][0] * m[2][2];
+	let sub_factor05: {0} = m[2][0] * m[3][1] - m[3][0] * m[2][1];
+	let sub_factor06: {0} = m[1][2] * m[3][3] - m[3][2] * m[1][3];
+	let sub_factor07: {0} = m[1][1] * m[3][3] - m[3][1] * m[1][3];
+	let sub_factor08: {0} = m[1][1] * m[3][2] - m[3][1] * m[1][2];
+	let sub_factor09: {0} = m[1][0] * m[3][3] - m[3][0] * m[1][3];
+	let sub_factor10: {0} = m[1][0] * m[3][2] - m[3][0] * m[1][2];
+	let sub_factor11: {0} = m[1][1] * m[3][3] - m[3][1] * m[1][3];
+	let sub_factor12: {0} = m[1][0] * m[3][1] - m[3][0] * m[1][1];
+	let sub_factor13: {0} = m[1][2] * m[2][3] - m[2][2] * m[1][3];
+	let sub_factor14: {0} = m[1][1] * m[2][3] - m[2][1] * m[1][3];
+	let sub_factor15: {0} = m[1][1] * m[2][2] - m[2][1] * m[1][2];
+	let sub_factor16: {0} = m[1][0] * m[2][3] - m[2][0] * m[1][3];
+	let sub_factor17: {0} = m[1][0] * m[2][2] - m[2][0] * m[1][2];
+	let sub_factor18: {0} = m[1][0] * m[2][1] - m[2][0] * m[1][1];
+
+	var adj: mat4x4<{0}>;
+	adj[0][0] =   (m[1][1] * sub_factor00 - m[1][2] * sub_factor01 + m[1][3] * sub_factor02);
+	adj[1][0] = - (m[1][0] * sub_factor00 - m[1][2] * sub_factor03 + m[1][3] * sub_factor04);
+	adj[2][0] =   (m[1][0] * sub_factor01 - m[1][1] * sub_factor03 + m[1][3] * sub_factor05);
+	adj[3][0] = - (m[1][0] * sub_factor02 - m[1][1] * sub_factor04 + m[1][2] * sub_factor05);
+	adj[0][1] = - (m[0][1] * sub_factor00 - m[0][2] * sub_factor01 + m[0][3] * sub_factor02);
+	adj[1][1] =   (m[0][0] * sub_factor00 - m[0][2] * sub_factor03 + m[0][3] * sub_factor04);
+	adj[2][1] = - (m[0][0] * sub_factor01 - m[0][1] * sub_factor03 + m[0][3] * sub_factor05);
+	adj[3][1] =   (m[0][0] * sub_factor02 - m[0][1] * sub_factor04 + m[0][2] * sub_factor05);
+	adj[0][2] =   (m[0][1] * sub_factor06 - m[0][2] * sub_factor07 + m[0][3] * sub_factor08);
+	adj[1][2] = - (m[0][0] * sub_factor06 - m[0][2] * sub_factor09 + m[0][3] * sub_factor10);
+	adj[2][2] =   (m[0][0] * sub_factor11 - m[0][1] * sub_factor09 + m[0][3] * sub_factor12);
+	adj[3][2] = - (m[0][0] * sub_factor08 - m[0][1] * sub_factor10 + m[0][2] * sub_factor12);
+	adj[0][3] = - (m[0][1] * sub_factor13 - m[0][2] * sub_factor14 + m[0][3] * sub_factor15);
+	adj[1][3] =   (m[0][0] * sub_factor13 - m[0][2] * sub_factor16 + m[0][3] * sub_factor17);
+	adj[2][3] = - (m[0][0] * sub_factor14 - m[0][1] * sub_factor16 + m[0][3] * sub_factor18);
+	adj[3][3] =   (m[0][0] * sub_factor15 - m[0][1] * sub_factor17 + m[0][2] * sub_factor18);
+
+	let det = (m[0][0] * adj[0][0] + m[0][1] * adj[1][0] + m[0][2] * adj[2][0] + m[0][3] * adj[3][0]);
+
+	return adj * (1 / det);
+}}
+
+)", stringPrimitiveType));
+				}
+				break;
+			}
 		}
 	}
 
@@ -1831,7 +1916,6 @@ namespace nzsl
 			case Ast::IntrinsicType::Length:
 			case Ast::IntrinsicType::Log:
 			case Ast::IntrinsicType::Log2:
-			case Ast::IntrinsicType::MatrixInverse:
 			case Ast::IntrinsicType::MatrixTranspose:
 			case Ast::IntrinsicType::Max:
 			case Ast::IntrinsicType::Min:
@@ -1899,6 +1983,21 @@ namespace nzsl
 			}
 
 			case Ast::IntrinsicType::Lerp: Append("mix"); break;
+
+			case Ast::IntrinsicType::MatrixInverse:
+			{
+				assert(IsMatrixType(EnsureExpressionType(*node.parameters[0])));
+				const Ast::MatrixType& matrixType = std::get<Ast::MatrixType>(EnsureExpressionType(*node.parameters[0]));
+				std::string_view stringPrimitiveType = (matrixType.type == Ast::PrimitiveType::Float32) ? "f32" : "f64";
+				if (matrixType.columnCount == 2)
+					Append("_nzslMatrixInverse2x2", stringPrimitiveType);
+				else if (matrixType.columnCount == 3)
+					Append("_nzslMatrixInverse3x3", stringPrimitiveType);
+				else if (matrixType.columnCount == 4)
+					Append("_nzslMatrixInverse4x4", stringPrimitiveType);
+				break;
+			}
+
 			case Ast::IntrinsicType::Not: Append("!"); break;
 			case Ast::IntrinsicType::RadToDeg: Append("degrees"); break;
 			case Ast::IntrinsicType::RoundEven: Append("round"); break;

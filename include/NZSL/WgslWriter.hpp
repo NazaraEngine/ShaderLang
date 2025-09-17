@@ -53,6 +53,13 @@ namespace nzsl
 			struct PreVisitor;
 			friend PreVisitor;
 
+			enum class IntrinsicHelper
+			{
+				Infinity,
+				MatrixInverse,
+				NaN,
+			};
+
 			// Attributes
 			struct AutoBindingAttribute;
 			struct AuthorAttribute;
@@ -122,8 +129,7 @@ namespace nzsl
 			void AppendAttribute(bool first, WorkgroupAttribute attribute);
 			void AppendComment(std::string_view section);
 			void AppendCommentSection(std::string_view section);
-			void AppendConstantHelpers(Ast::PrimitiveType type, Ast::TypeConstant constant);
-			//void AppendInverseMatHelpers(Ast::MatrixType type);
+			void AppendIntrinsicHelpers(IntrinsicHelper helper, const Ast::ExpressionType& type);
 			void AppendHeader(const Ast::Module::Metadata& metadata);
 			template<typename T> void AppendIdentifier(const T& map, std::size_t id, bool append_module_prefix = false);
 			void AppendLine(std::string_view txt = {});
