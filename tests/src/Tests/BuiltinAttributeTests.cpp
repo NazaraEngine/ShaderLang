@@ -248,7 +248,7 @@ fn main(input: Input) -> Output
 		}
 
 // Needs to emulate draw_index, base_instance and base_vertex
-#ifdef FAILING_WGSL
+#ifndef FAILING_WGSL
 		ExpectWGSL(*shaderModule, R"(
 struct Input
 {
