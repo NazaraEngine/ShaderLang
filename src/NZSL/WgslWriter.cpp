@@ -44,8 +44,6 @@
 #include <variant>
 #include <algorithm>
 
-#include <iostream>
-
 namespace nzsl
 {
 	constexpr std::string_view s_wgslWriterShaderDrawParametersBaseInstanceName = "_nzslBaseInstance";
@@ -55,6 +53,11 @@ namespace nzsl
 	enum class WgslFeature
 	{
 		None = -1,
+
+
+		ShaderDrawParametersBaseInstance, // Emulation
+		ShaderDrawParametersBaseVertex,   // Emulation
+		ShaderDrawParametersDrawIndex,    // Emulation
 
 		// wgpu native features
 		WgpuBufferBindingArray,
@@ -73,10 +76,11 @@ namespace nzsl
 		Ast::ExpressionType type;
 	};
 
+	// TODO: find a way to use frozen::make_unordered_map
 	const auto s_wgslBuiltinMapping = std::unordered_map<Ast::BuiltinEntry, WgslBuiltin>({
-		{ Ast::BuiltinEntry::BaseInstance,            {} },
-		{ Ast::BuiltinEntry::BaseVertex,              {} },
-		{ Ast::BuiltinEntry::DrawIndex,               {} },
+		{ Ast::BuiltinEntry::BaseInstance,            { s_wgslWriterShaderDrawParametersBaseInstanceName, WgslFeature::ShaderDrawParametersBaseInstance, Ast::PrimitiveType::Int32 } },
+		{ Ast::BuiltinEntry::BaseVertex,              { s_wgslWriterShaderDrawParametersBaseVertexName, WgslFeature::ShaderDrawParametersBaseVertex, Ast::PrimitiveType::Int32 } },
+		{ Ast::BuiltinEntry::DrawIndex,               { s_wgslWriterShaderDrawParametersDrawIndexName, WgslFeature::ShaderDrawParametersDrawIndex, Ast::PrimitiveType::Int32 } },
 		{ Ast::BuiltinEntry::FragCoord,               { "position", WgslFeature::None, Ast::VectorType{ .componentCount = 4, .type = Ast::PrimitiveType::Float32 } } },
 		{ Ast::BuiltinEntry::FragDepth,               { "frag_depth", WgslFeature::None, Ast::PrimitiveType::Float32 } },
 		{ Ast::BuiltinEntry::GlocalInvocationIndices, { "global_invocation_id", WgslFeature::None, Ast::VectorType{ .componentCount = 3, .type = Ast::PrimitiveType::UInt32 } } },
@@ -338,6 +342,9 @@ namespace nzsl
 		bool isTerminatedScope = false;
 		bool hasf32RatioFunction = false;
 		bool hasf64RatioFunction = false;
+		bool hasDrawParametersBaseInstanceUniform = false;
+		bool hasDrawParametersBaseVertexUniform = false;
+		bool hasDrawParametersDrawIndexUniform = false;
 	};
 
 	WgslWriter::Output WgslWriter::Generate(Ast::Module& module, const BackendParameters& parameters)
@@ -413,7 +420,7 @@ namespace nzsl
 		auto validateFeature = [&](std::string_view featureName, std::string_view featurePrettyName)
 		{
 			if (!m_environment.featuresCallback || !m_environment.featuresCallback(featureName))
-				throw std::runtime_error(fmt::format("WGSL does not support {} feature, wgpu does natively but you need to confirm its usage using feature callback", featurePrettyName));
+				throw std::runtime_error(fmt::format("WGSL does not support {} feature, some implementations do natively but you need to confirm its usage using feature callback", featurePrettyName));
 		};
 
 		for (WgslFeature feature : previsitor.features)
@@ -422,13 +429,17 @@ namespace nzsl
 			{
 				case WgslFeature::None: break;
 
-				case WgslFeature::WgpuBufferBindingArray:  validateFeature("WgpuBufferBindingArray", "buffer binding array"); break;
-				case WgslFeature::WgpuConservativeDepth:   validateFeature("WgpuConservativeDepth", "conservative depth"); break;
-				case WgslFeature::WgpuEarlyFragmentTests:  validateFeature("WgpuEarlyFragmentTests", "early fragment depth test"); break;
-				case WgslFeature::WgpuFloat64:             validateFeature("WgpuFloat64", "float 64"); break;
-				case WgslFeature::WgpuPushConstants:       validateFeature("WgpuPushConstants", "push constants"); break;
-				case WgslFeature::WgpuStorageBindingArray: validateFeature("WgpuStorageBindingArray", "storage resource binding array"); break;
-				case WgslFeature::WgpuTextureBindingArray: validateFeature("WgpuTextureBindingArray", "texture binding array"); break;
+				case WgslFeature::ShaderDrawParametersBaseInstance: validateFeature("ShaderDrawParametersBaseInstance", "base instance attribute"); break;
+				case WgslFeature::ShaderDrawParametersBaseVertex:   validateFeature("ShaderDrawParametersBaseVertex", "base vertex attribute"); break;
+				case WgslFeature::ShaderDrawParametersDrawIndex:    validateFeature("ShaderDrawParametersDrawIndex", "draw index attribute"); break;
+
+				case WgslFeature::WgpuBufferBindingArray:           validateFeature("WgpuBufferBindingArray", "buffer binding array"); break;
+				case WgslFeature::WgpuConservativeDepth:            validateFeature("WgpuConservativeDepth", "conservative depth"); break;
+				case WgslFeature::WgpuEarlyFragmentTests:           validateFeature("WgpuEarlyFragmentTests", "early fragment depth test"); break;
+				case WgslFeature::WgpuFloat64:                      validateFeature("WgpuFloat64", "float 64"); break;
+				case WgslFeature::WgpuPushConstants:                validateFeature("WgpuPushConstants", "push constants"); break;
+				case WgslFeature::WgpuStorageBindingArray:          validateFeature("WgpuStorageBindingArray", "storage resource binding array"); break;
+				case WgslFeature::WgpuTextureBindingArray:          validateFeature("WgpuTextureBindingArray", "texture binding array"); break;
 			}
 		}
 
