@@ -46,18 +46,16 @@
 
 namespace nzsl
 {
-	constexpr std::string_view s_wgslWriterShaderDrawParametersBaseInstanceName = "_nzslBaseInstance";
-	constexpr std::string_view s_wgslWriterShaderDrawParametersBaseVertexName = "_nzslBaseVertex";
-	constexpr std::string_view s_wgslWriterShaderDrawParametersDrawIndexName = "_nzslDrawID";
+	constexpr std::string_view s_wgslWriterBuiltinEmulationStructName = "_nzslBuiltinEmulation";
 
 	enum class WgslFeature
 	{
 		None = -1,
-
-
-		ShaderDrawParametersBaseInstance, // Emulation
-		ShaderDrawParametersBaseVertex,   // Emulation
-		ShaderDrawParametersDrawIndex,    // Emulation
+ 
+		// Emulation
+		EmulateBaseInstance,
+		EmulateBaseVertex,
+		EmulateDrawIndex,
 
 		// wgpu native features
 		WgpuBufferBindingArray,
@@ -73,32 +71,33 @@ namespace nzsl
 	{
 		std::string_view identifier;
 		WgslFeature requiredFeature;
-		Ast::ExpressionType type;
 	};
 
-	// TODO: find a way to use frozen::make_unordered_map
-	const auto s_wgslBuiltinMapping = std::unordered_map<Ast::BuiltinEntry, WgslBuiltin>({
-		{ Ast::BuiltinEntry::BaseInstance,            { s_wgslWriterShaderDrawParametersBaseInstanceName, WgslFeature::ShaderDrawParametersBaseInstance, Ast::PrimitiveType::Int32 } },
-		{ Ast::BuiltinEntry::BaseVertex,              { s_wgslWriterShaderDrawParametersBaseVertexName, WgslFeature::ShaderDrawParametersBaseVertex, Ast::PrimitiveType::Int32 } },
-		{ Ast::BuiltinEntry::DrawIndex,               { s_wgslWriterShaderDrawParametersDrawIndexName, WgslFeature::ShaderDrawParametersDrawIndex, Ast::PrimitiveType::Int32 } },
-		{ Ast::BuiltinEntry::FragCoord,               { "position", WgslFeature::None, Ast::VectorType{ .componentCount = 4, .type = Ast::PrimitiveType::Float32 } } },
-		{ Ast::BuiltinEntry::FragDepth,               { "frag_depth", WgslFeature::None, Ast::PrimitiveType::Float32 } },
-		{ Ast::BuiltinEntry::GlocalInvocationIndices, { "global_invocation_id", WgslFeature::None, Ast::VectorType{ .componentCount = 3, .type = Ast::PrimitiveType::UInt32 } } },
-		{ Ast::BuiltinEntry::InstanceIndex,           { "instance_index", WgslFeature::None, Ast::PrimitiveType::UInt32 } },
-		{ Ast::BuiltinEntry::LocalInvocationIndex,    { "local_invocation_index", WgslFeature::None, Ast::PrimitiveType::UInt32 } },
-		{ Ast::BuiltinEntry::LocalInvocationIndices,  { "local_invocation_id", WgslFeature::None, Ast::VectorType{ .componentCount = 3, .type = Ast::PrimitiveType::UInt32 } } },
-		{ Ast::BuiltinEntry::VertexIndex,             { "vertex_index", WgslFeature::None, Ast::PrimitiveType::UInt32 } },
-		{ Ast::BuiltinEntry::VertexPosition,          { "position", WgslFeature::None, Ast::VectorType{ .componentCount = 4, .type = Ast::PrimitiveType::Float32 } } },
-		{ Ast::BuiltinEntry::WorkgroupCount,          { "num_workgroups", WgslFeature::None, Ast::VectorType{ .componentCount = 3, .type = Ast::PrimitiveType::UInt32 } } },
-		{ Ast::BuiltinEntry::WorkgroupIndices,        { "workgroup_id", WgslFeature::None, Ast::VectorType{ .componentCount = 3, .type = Ast::PrimitiveType::UInt32 } } }
+	const auto s_wgslBuiltinMapping = frozen::make_unordered_map<Ast::BuiltinEntry, WgslBuiltin>({
+		{ Ast::BuiltinEntry::BaseInstance,            { "base_instance",          WgslFeature::EmulateBaseInstance } },
+		{ Ast::BuiltinEntry::BaseVertex,              { "base_vertex",            WgslFeature::EmulateBaseVertex   } },
+		{ Ast::BuiltinEntry::DrawIndex,               { "draw_index",             WgslFeature::EmulateDrawIndex    } },
+		{ Ast::BuiltinEntry::FragCoord,               { "position",               WgslFeature::None                } },
+		{ Ast::BuiltinEntry::FragDepth,               { "frag_depth",             WgslFeature::None                } },
+		{ Ast::BuiltinEntry::GlocalInvocationIndices, { "global_invocation_id",   WgslFeature::None                } },
+		{ Ast::BuiltinEntry::InstanceIndex,           { "instance_index",         WgslFeature::None                } },
+		{ Ast::BuiltinEntry::LocalInvocationIndex,    { "local_invocation_index", WgslFeature::None                } },
+		{ Ast::BuiltinEntry::LocalInvocationIndices,  { "local_invocation_id",    WgslFeature::None                } },
+		{ Ast::BuiltinEntry::VertexIndex,             { "vertex_index",           WgslFeature::None                } },
+		{ Ast::BuiltinEntry::VertexPosition,          { "position",               WgslFeature::None                } },
+		{ Ast::BuiltinEntry::WorkgroupCount,          { "num_workgroups",         WgslFeature::None                } },
+		{ Ast::BuiltinEntry::WorkgroupIndices,        { "workgroup_id",           WgslFeature::None                } },
 	});
+
+	const std::array s_wgslBuiltinsToEmulate {
+		Ast::BuiltinEntry::BaseInstance,
+		Ast::BuiltinEntry::BaseVertex,
+		Ast::BuiltinEntry::DrawIndex,
+	};
 
 	struct WgslWriter::PreVisitor : Ast::RecursiveVisitor
 	{
-		PreVisitor(WgslWriter& writer) :
-		m_writer(writer)
-		{
-		}
+		PreVisitor(WgslWriter& writer) : m_writer(writer) {}
 
 		void Visit(Ast::DeclareFunctionStatement& node) override
 		{
@@ -116,6 +115,33 @@ namespace nzsl
 
 					if (node.earlyFragmentTests.HasValue() && node.earlyFragmentTests.GetResultingValue())
 						features.insert(WgslFeature::WgpuEarlyFragmentTests);
+				}
+
+				if (!node.parameters.empty())
+				{
+					assert(node.parameters.size() == 1);
+					auto& parameter = node.parameters.front();
+					const auto& parameterType = parameter.type.GetResultingValue();
+
+					assert(std::holds_alternative<Ast::StructType>(parameterType));
+
+					std::size_t structIndex = std::get<Ast::StructType>(parameterType).structIndex;
+					const Ast::StructDescription* structDesc = Nz::Retrieve(structs, structIndex);
+
+					for (const auto& member : structDesc->members)
+					{
+						if (member.cond.HasValue() && !member.cond.GetResultingValue())
+							continue;
+
+						if (member.builtin.HasValue())
+						{
+							auto it = s_wgslBuiltinMapping.find(member.builtin.GetResultingValue());
+							assert(it != s_wgslBuiltinMapping.end());
+
+							if (it->second.requiredFeature != WgslFeature::None)
+								features.insert(it->second.requiredFeature);
+						}
+					}
 				}
 			}
 
@@ -172,8 +198,15 @@ namespace nzsl
 				intrinsicHelpers[IntrinsicHelper::NaN].emplace(node.type);
 		}
 
-		tsl::ordered_set<WgslFeature> features;
+		void Visit(Ast::DeclareStructStatement& node) override
+		{
+			structs[node.structIndex.value()] = &node.description;
+			RecursiveVisitor::Visit(node);
+		}
+
+		std::unordered_map<std::size_t, Ast::StructDescription*> structs;
 		std::unordered_map<IntrinsicHelper, std::unordered_set<Ast::ExpressionType>> intrinsicHelpers;
+		tsl::ordered_set<WgslFeature> features;
 		WgslWriter& m_writer;
 	};
 
@@ -333,6 +366,7 @@ namespace nzsl
 		std::unordered_map<std::size_t, StructData> structs;
 		std::unordered_map<std::size_t, Identifier> variables;
 		std::unordered_map<std::uint64_t, unsigned int> bindingRemap;
+		std::unordered_set<std::uint64_t> reservedBindings;
 		std::vector<std::string> externalBlockNames;
 		std::vector<std::string> moduleNames;
 		const BackendParameters& backendParameters;
@@ -420,7 +454,7 @@ namespace nzsl
 		auto validateFeature = [&](std::string_view featureName, std::string_view featurePrettyName)
 		{
 			if (!m_environment.featuresCallback || !m_environment.featuresCallback(featureName))
-				throw std::runtime_error(fmt::format("WGSL does not support {} feature, some implementations do natively but you need to confirm its usage using feature callback", featurePrettyName));
+				throw std::runtime_error(fmt::format("WGSL does not support {} feature, {}you need to confirm its usage using feature callback", featurePrettyName, (featureName.find("Wgpu") != std::string::npos ? "some implementations do natively but " : "")));
 		};
 
 		for (WgslFeature feature : previsitor.features)
@@ -429,18 +463,56 @@ namespace nzsl
 			{
 				case WgslFeature::None: break;
 
-				case WgslFeature::ShaderDrawParametersBaseInstance: validateFeature("ShaderDrawParametersBaseInstance", "base instance attribute"); break;
-				case WgslFeature::ShaderDrawParametersBaseVertex:   validateFeature("ShaderDrawParametersBaseVertex", "base vertex attribute"); break;
-				case WgslFeature::ShaderDrawParametersDrawIndex:    validateFeature("ShaderDrawParametersDrawIndex", "draw index attribute"); break;
+				case WgslFeature::EmulateBaseInstance:
+				{
+					validateFeature("EmulateBaseInstance", "base instance attribute");
+					m_currentState->hasDrawParametersBaseInstanceUniform = true;
+					break;
+				}
+				case WgslFeature::EmulateBaseVertex:
+				{
+					validateFeature("EmulateBaseVertex", "base vertex attribute");
+					m_currentState->hasDrawParametersBaseVertexUniform = true;
+					break;
+				}
+				case WgslFeature::EmulateDrawIndex:
+				{
+					validateFeature("EmulateDrawIndex", "draw index attribute");
+					m_currentState->hasDrawParametersDrawIndexUniform = true;
+					break;
+				}		
 
-				case WgslFeature::WgpuBufferBindingArray:           validateFeature("WgpuBufferBindingArray", "buffer binding array"); break;
-				case WgslFeature::WgpuConservativeDepth:            validateFeature("WgpuConservativeDepth", "conservative depth"); break;
-				case WgslFeature::WgpuEarlyFragmentTests:           validateFeature("WgpuEarlyFragmentTests", "early fragment depth test"); break;
-				case WgslFeature::WgpuFloat64:                      validateFeature("WgpuFloat64", "float 64"); break;
-				case WgslFeature::WgpuPushConstants:                validateFeature("WgpuPushConstants", "push constants"); break;
-				case WgslFeature::WgpuStorageBindingArray:          validateFeature("WgpuStorageBindingArray", "storage resource binding array"); break;
-				case WgslFeature::WgpuTextureBindingArray:          validateFeature("WgpuTextureBindingArray", "texture binding array"); break;
+				case WgslFeature::WgpuBufferBindingArray:  validateFeature("WgpuBufferBindingArray", "buffer binding array"); break;
+				case WgslFeature::WgpuConservativeDepth:   validateFeature("WgpuConservativeDepth", "conservative depth"); break;
+				case WgslFeature::WgpuEarlyFragmentTests:  validateFeature("WgpuEarlyFragmentTests", "early fragment depth test"); break;
+				case WgslFeature::WgpuFloat64:             validateFeature("WgpuFloat64", "float 64"); break;
+				case WgslFeature::WgpuPushConstants:       validateFeature("WgpuPushConstants", "push constants"); break;
+				case WgslFeature::WgpuStorageBindingArray: validateFeature("WgpuStorageBindingArray", "storage resource binding array"); break;
+				case WgslFeature::WgpuTextureBindingArray: validateFeature("WgpuTextureBindingArray", "texture binding array"); break;
 			}
+		}
+
+		if (m_currentState->hasDrawParametersBaseInstanceUniform || m_currentState->hasDrawParametersBaseVertexUniform || m_currentState->hasDrawParametersDrawIndexUniform)
+		{
+			AppendLine("struct ", s_wgslWriterBuiltinEmulationStructName, "Struct");
+			EnterScope();
+			{
+				if (m_currentState->hasDrawParametersBaseInstanceUniform)
+					AppendLine(s_wgslBuiltinMapping.at(Ast::BuiltinEntry::BaseInstance).identifier, ": u32,");
+				if (m_currentState->hasDrawParametersBaseVertexUniform)
+					AppendLine(s_wgslBuiltinMapping.at(Ast::BuiltinEntry::BaseVertex).identifier, ": u32,");
+				if (m_currentState->hasDrawParametersDrawIndexUniform)
+					AppendLine(s_wgslBuiltinMapping.at(Ast::BuiltinEntry::DrawIndex).identifier, ": u32,");
+			}
+			LeaveScope();
+
+			const std::uint64_t emulationBindingGroup = 0;
+			std::uint32_t binding = 0;
+			for (; m_currentState->reservedBindings.count(emulationBindingGroup << 32 | binding); binding++);
+			m_currentState->reservedBindings.emplace(emulationBindingGroup << 32 | binding);
+			AppendLine("@group(", emulationBindingGroup, ") @binding(", binding, ") var<uniform> ", s_wgslWriterBuiltinEmulationStructName, ": ", s_wgslWriterBuiltinEmulationStructName, "Struct;");
+
+			AppendLine();
 		}
 
 		// Register imported modules
@@ -467,6 +539,9 @@ namespace nzsl
 		Output output;
 		output.code = std::move(state.stream).str();
 		output.bindingRemap = std::move(state.bindingRemap);
+		output.usesDrawParameterBaseInstanceUniform = m_currentState->hasDrawParametersBaseInstanceUniform;
+		output.usesDrawParameterBaseVertexUniform = m_currentState->hasDrawParametersBaseVertexUniform;
+		output.usesDrawParameterDrawIndexUniform = m_currentState->hasDrawParametersDrawIndexUniform;
 
 		return output;
 	}
@@ -1004,13 +1079,15 @@ namespace nzsl
 	{
 		if (!attribute.HasValue())
 			return;
-		if (!first)
-			Append(" ");
-		Append("@");
 		auto it = s_wgslBuiltinMapping.find(attribute.builtin.GetResultingValue());
 		assert(it != s_wgslBuiltinMapping.end());
 		if (it->second.identifier.empty())
-			throw std::runtime_error("unsupported builtin attribute! (for now)");
+			throw std::runtime_error("unsupported builtin attribute!");
+		else if (std::find(s_wgslBuiltinsToEmulate.begin(), s_wgslBuiltinsToEmulate.end(), it->first) != s_wgslBuiltinsToEmulate.end())
+			return;
+		if (!first)
+			Append(" ");
+		Append("@");
 		Append("builtin(", it->second.identifier, ")");
 	}
 
@@ -1103,8 +1180,14 @@ namespace nzsl
 			Append(" ");
 		Append("@interpolate(");
 
+		const auto interpQualifierNames = frozen::make_unordered_map<Ast::InterpolationQualifier, std::string_view>({
+			{ Ast::InterpolationQualifier::Flat, "flat" },
+			{ Ast::InterpolationQualifier::NoPerspective, "perspective" },
+			{ Ast::InterpolationQualifier::Smooth, "linear" },
+		});
+
 		if (attribute.interpQualifier.IsResultingValue())
-			Append(Parser::ToString(attribute.interpQualifier.GetResultingValue()));
+			Append(interpQualifierNames.at(attribute.interpQualifier.GetResultingValue()));
 		else
 			attribute.interpQualifier.GetExpression()->Visit(*this);
 
@@ -1596,7 +1679,12 @@ namespace nzsl
 
 	void WgslWriter::Visit(Ast::AccessFieldExpression& node)
 	{
-		Visit(node.expr, true);
+		// In this implementation we do not visit struct identifier first
+		// as if we access an emulated builtin we do not want struct's name
+		// in front.
+		// Instead we search for member to access, if it is an emulated builtin
+		// we append it's uniform name. If not we store the access statement
+		// in a string, visit struct's name and then append the statement.
 
 		const Ast::ExpressionType* exprType = GetExpressionType(*node.expr);
 		NazaraUnused(exprType);
@@ -1608,6 +1696,8 @@ namespace nzsl
 
 		const auto& structData = Nz::Retrieve(m_currentState->structs, structIndex);
 
+		std::string_view memberName;
+
 		std::uint32_t remainingIndices = node.fieldIndex;
 		for (const auto& member : structData.desc->members)
 		{
@@ -1616,12 +1706,25 @@ namespace nzsl
 
 			if (remainingIndices == 0)
 			{
-				Append(".", member.name);
+				if (member.builtin.HasValue())
+				{
+					if (std::find(s_wgslBuiltinsToEmulate.begin(), s_wgslBuiltinsToEmulate.end(), member.builtin.GetResultingValue()) != s_wgslBuiltinsToEmulate.end())
+					{
+						auto it = s_wgslBuiltinMapping.find(member.builtin.GetResultingValue());
+						assert(it != s_wgslBuiltinMapping.end());
+						Append(s_wgslWriterBuiltinEmulationStructName, '.', it->second.identifier);
+						return;
+					}
+				}
+				memberName = member.name;
 				break;
 			}
 
 			remainingIndices--;
 		}
+
+		Visit(node.expr, true);
+		Append('.', memberName);
 	}
 
 	void WgslWriter::Visit(Ast::AccessIdentifierExpression& node)
@@ -2221,8 +2324,6 @@ namespace nzsl
 
 		AppendLine();
 
-		std::unordered_set<std::uint64_t> reservedBindings;
-
 		for (const auto& externalVar : node.externalVars)
 		{
 			if (!externalVar.tag.empty() && m_currentState->backendParameters.debugLevel >= DebugLevel::Minimal)
@@ -2233,15 +2334,15 @@ namespace nzsl
 			std::uint32_t binding = 0;
 			std::uint64_t bindingSet = (externalVar.bindingSet.HasValue()) ? externalVar.bindingSet.GetResultingValue() : 0;
 
-			// Binding group declaration in WGSL in built like this
+			// Binding group declaration in WGSL are built like this
 			// @group(G) @binding(B) var<ADDRESS_SPACE[, ACCESS?]> name : TYPE;
 
 			// Binding group handling
 			if (!IsPushConstantType(exprType)) // Push constants don't have set or binding
 			{
 				binding = externalVar.bindingIndex.GetResultingValue();
-				for (; reservedBindings.count(bindingSet << 32 | binding); binding++);
-				reservedBindings.emplace(bindingSet << 32 | binding);
+				for (; m_currentState->reservedBindings.count(bindingSet << 32 | binding); binding++);
+				m_currentState->reservedBindings.emplace(bindingSet << 32 | binding);
 				m_currentState->bindingRemap[bindingSet << 32 | externalVar.bindingIndex.GetResultingValue()] = binding;
 
 				AppendAttributes(false, SetAttribute{ externalVar.bindingSet }, BindingAttribute{ Ast::ExpressionValue{ binding } });
@@ -2295,7 +2396,7 @@ namespace nzsl
 					// WGSL has not (yet?) combined image samplers so we need to split textures and samplers
 					AppendLine(';'); // Closing last line
 					AppendAttributes(false, SetAttribute{ externalVar.bindingSet }, BindingAttribute{ Ast::ExpressionValue{ binding + 1 } });
-					reservedBindings.emplace(bindingSet << 32 | binding + 1);
+					m_currentState->reservedBindings.emplace(bindingSet << 32 | binding + 1);
 					Append("var ", variableName, "Sampler: sampler");
 					if (std::get<Ast::SamplerType>(rawOrContainedType).depth)
 						Append("_comparison");
@@ -2409,17 +2510,19 @@ namespace nzsl
 			bool first = true;
 			for (const auto& member : node.description.members)
 			{
+				// If builtin needs emulation, skip struct declaration as all shader
+				// input struct members need builtin or location attributes
+				if (member.builtin.HasValue())
+				{
+					if (std::find(s_wgslBuiltinsToEmulate.begin(), s_wgslBuiltinsToEmulate.end(), member.builtin.GetResultingValue()) != s_wgslBuiltinsToEmulate.end())
+						continue;
+				}
 				if (!first)
 					AppendLine(",");
-
 				first = false;
 
 				AppendAttributes(false, CondAttribute{ member.cond }, LocationAttribute{ member.locationIndex }, InterpAttribute{ member.interp }, BuiltinAttribute{ member.builtin }, TagAttribute{ member.tag });
-				Append(member.name, ": ");
-				if (member.builtin.HasValue())
-					Append(s_wgslBuiltinMapping.at(member.builtin.GetResultingValue()).type);
-				else
-					Append(member.type);
+				Append(member.name, ": ", member.type);
 			}
 		}
 		LeaveScope();

@@ -54,16 +54,16 @@ namespace nzsl::LangData
 	};
 
 	constexpr auto s_builtinData = frozen::make_unordered_map<Ast::BuiltinEntry, BuiltinData>({
-		{ Ast::BuiltinEntry::BaseInstance,              { "base_instance",             ShaderStageType::Vertex,   Ast::PrimitiveType::Int32 } },
-		{ Ast::BuiltinEntry::BaseVertex,                { "base_vertex",               ShaderStageType::Vertex,   Ast::PrimitiveType::Int32 } },
-		{ Ast::BuiltinEntry::DrawIndex,                 { "draw_index",                ShaderStageType::Vertex,   Ast::PrimitiveType::Int32 } },
+		{ Ast::BuiltinEntry::BaseInstance,              { "base_instance",             ShaderStageType::Vertex,   Ast::PrimitiveType::UInt32 } },
+		{ Ast::BuiltinEntry::BaseVertex,                { "base_vertex",               ShaderStageType::Vertex,   Ast::PrimitiveType::UInt32 } },
+		{ Ast::BuiltinEntry::DrawIndex,                 { "draw_index",                ShaderStageType::Vertex,   Ast::PrimitiveType::UInt32 } },
 		{ Ast::BuiltinEntry::FragCoord,                 { "frag_coord",                ShaderStageType::Fragment, Ast::VectorType { 4, Ast::PrimitiveType::Float32 } } },
 		{ Ast::BuiltinEntry::FragDepth,                 { "frag_depth",                ShaderStageType::Fragment, Ast::PrimitiveType::Float32 } },
 		{ Ast::BuiltinEntry::GlocalInvocationIndices,   { "global_invocation_indices", ShaderStageType::Compute,  Ast::VectorType { 3, Ast::PrimitiveType::UInt32 } } },
-		{ Ast::BuiltinEntry::InstanceIndex,             { "instance_index",            ShaderStageType::Vertex,   Ast::PrimitiveType::Int32 } },
+		{ Ast::BuiltinEntry::InstanceIndex,             { "instance_index",            ShaderStageType::Vertex,   Ast::PrimitiveType::UInt32 } },
 		{ Ast::BuiltinEntry::LocalInvocationIndex,      { "local_invocation_index",    ShaderStageType::Compute,  Ast::PrimitiveType::UInt32 } },
 		{ Ast::BuiltinEntry::LocalInvocationIndices,    { "local_invocation_indices",  ShaderStageType::Compute,  Ast::VectorType { 3, Ast::PrimitiveType::UInt32 } } },
-		{ Ast::BuiltinEntry::VertexIndex,               { "vertex_index",              ShaderStageType::Vertex,   Ast::PrimitiveType::Int32 } },
+		{ Ast::BuiltinEntry::VertexIndex,               { "vertex_index",              ShaderStageType::Vertex,   Ast::PrimitiveType::UInt32 } },
 		{ Ast::BuiltinEntry::VertexPosition,            { "position",                  ShaderStageType::Vertex,   Ast::VectorType { 4, Ast::PrimitiveType::Float32 } } },
 		{ Ast::BuiltinEntry::WorkgroupCount,            { "workgroup_count",           ShaderStageType::Compute,  Ast::VectorType { 3, Ast::PrimitiveType::UInt32 } } },
 		{ Ast::BuiltinEntry::WorkgroupIndices,          { "workgroup_indices",         ShaderStageType::Compute,  Ast::VectorType { 3, Ast::PrimitiveType::UInt32 } } }
