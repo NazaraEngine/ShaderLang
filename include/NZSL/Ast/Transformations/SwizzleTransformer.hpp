@@ -24,14 +24,21 @@ namespace nzsl::Ast
 			struct Options
 			{
 				bool removeScalarSwizzling = false;
+				bool removeSwizzleAssigment = false;
 			};
 
 		private:
 			using Transformer::Transform;
 
 			ExpressionTransformation Transform(SwizzleExpression&& swizzle) override;
+			ExpressionTransformation Transform(AssignExpression&& assign) override;
 
+			void PushAssignment(AssignExpression* assign) noexcept;
+			void PopAssignment() noexcept;
+
+			std::vector<AssignExpression*> m_assignmentStack;
 			const Options* m_options;
+			bool m_inAssignmentLhs = false;
 	};
 }
 

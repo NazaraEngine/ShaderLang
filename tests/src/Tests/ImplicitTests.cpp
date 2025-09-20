@@ -60,6 +60,15 @@ fn foo()
       OpStore %10 %14
       OpReturn
       OpFunctionEnd)", {}, {}, true);
+
+		ExpectWGSL(*shaderModule, R"(
+@fragment
+fn foo()
+{
+	var x: f32;
+	var v: vec3<f32> = vec3<f32>(x, x, x);
+}
+)");
 	}
 
 	SECTION("Implicit arrays")
@@ -213,6 +222,39 @@ fn foo()
       OpStore %61 %64
       OpReturn
       OpFunctionEnd)", {}, {}, true);
+
+		ExpectWGSL(*shaderModule, R"(
+const vertPos: array<vec2<f32>, 3> = array<vec2<f32>, 3>(
+	vec2<f32>(-1.0, 1.0),
+	vec2<f32>(-1.0, -3.0),
+	vec2<f32>(3.0, 1.0)
+);
+
+const a: array<vec3<i32>, 3> = array<vec3<i32>, 3>(
+	vec3<i32>(1, 2, 3),
+	vec3<i32>(4, 5, 6),
+	vec3<i32>(7, 8, 9)
+);
+
+const b: array<vec2<f32>, 3> = array<vec2<f32>, 3>(
+	vec2<f32>(1.0, 2.0),
+	vec2<f32>(3.0, 4.0),
+	vec2<f32>(5.0, 6.0)
+);
+
+const c: array<bool, 3> = array<bool, 3>(
+	true,
+	false,
+	false
+);
+
+@fragment
+fn foo()
+{
+	var value: vec3<i32> = vec3<i32>(-1, -3, 42);
+	var runtimeArray: array<vec3<i32>, 3> = array<vec3<i32>, 3>(value, value, vec3<i32>(1, 2, 3));
+}
+)");
 	}
 
 	SECTION("Implicit matrices")
@@ -388,5 +430,37 @@ fn foo()
       OpStore %52 %96
       OpReturn
       OpFunctionEnd)", {}, {}, true);
+
+		nzsl::WgslWriter::Environment wgslEnv;
+		wgslEnv.featuresCallback = [](std::string_view) { return true; };
+
+		ExpectWGSL(*shaderModule, R"(
+@fragment
+fn foo()
+{
+	var x: f32 = 1.0;
+	var v: vec3<f64> = vec3<f64>(-2.0, -1.0, 0.0);
+	var _nzsl_matrix: mat4x4<f32>;
+	_nzsl_matrix[0u] = vec4<f32>(x, 0.0, 0.0, 0.0);
+	_nzsl_matrix[1u] = vec4<f32>(0.0, x, 0.0, 0.0);
+	_nzsl_matrix[2u] = vec4<f32>(0.0, 0.0, x, 0.0);
+	_nzsl_matrix[3u] = vec4<f32>(0.0, 0.0, 0.0, x);
+	var m1: mat4x4<f32> = _nzsl_matrix;
+	var _nzsl_matrix_2: mat3x3<f32>;
+	_nzsl_matrix_2[0u] = m1[0u].xyz;
+	_nzsl_matrix_2[1u] = m1[1u].xyz;
+	_nzsl_matrix_2[2u] = m1[2u].xyz;
+	var m2: mat3x3<f32> = _nzsl_matrix_2;
+	var _nzsl_matrix_3: mat2x2<f32>;
+	_nzsl_matrix_3[0u] = vec2<f32>(x, x);
+	_nzsl_matrix_3[1u] = vec2<f32>(x, x);
+	var m3: mat2x2<f32> = _nzsl_matrix_3;
+	var _nzsl_matrix_4: mat3x3<f64>;
+	_nzsl_matrix_4[0u] = v;
+	_nzsl_matrix_4[1u] = vec3<f64>(1.0, 2.0, 3.0);
+	_nzsl_matrix_4[2u] = vec3<f64>(4.0, 5.0, 6.0);
+	var m4: mat3x3<f64> = _nzsl_matrix_4;
+}
+)", {}, wgslEnv);
 	}
 }

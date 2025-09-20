@@ -37,10 +37,10 @@ namespace nzsl::Ast
 
 	void RecursiveVisitor::Visit(CallFunctionExpression& node)
 	{
+		node.targetFunction->Visit(*this);
+
 		for (auto& param : node.parameters)
 			param.expr->Visit(*this);
-
-		node.targetFunction->Visit(*this);
 	}
 
 	void RecursiveVisitor::Visit(CallMethodExpression& node)
@@ -59,6 +59,7 @@ namespace nzsl::Ast
 
 	void RecursiveVisitor::Visit(ConditionalExpression& node)
 	{
+		node.condition->Visit(*this);
 		node.truePath->Visit(*this);
 		node.falsePath->Visit(*this);
 	}
@@ -124,6 +125,7 @@ namespace nzsl::Ast
 
 	void RecursiveVisitor::Visit(ConditionalStatement& node)
 	{
+		node.condition->Visit(*this);
 		node.statement->Visit(*this);
 	}
 

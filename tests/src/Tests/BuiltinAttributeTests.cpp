@@ -15,11 +15,11 @@ module;
 
 struct Input
 {
-	[builtin(base_instance)] base_instance: i32,
-	[builtin(base_vertex)] base_vertex: i32,
-	[builtin(draw_index)] draw_index: i32,
-	[builtin(instance_index)] instance_index: i32,
-	[builtin(vertex_index)] vertex_index: i32,
+	[builtin(base_instance)] base_instance: u32,
+	[builtin(base_vertex)] base_vertex: u32,
+	[builtin(draw_index)] draw_index: u32,
+	[builtin(instance_index)] instance_index: u32,
+	[builtin(vertex_index)] vertex_index: u32,
 }
 
 struct Output
@@ -67,11 +67,11 @@ fn main(input: Input) -> Output
 
 struct Input
 {
-	int base_instance;
-	int base_vertex;
-	int draw_index;
-	int instance_index;
-	int vertex_index;
+	uint base_instance;
+	uint base_vertex;
+	uint draw_index;
+	uint instance_index;
+	uint vertex_index;
 };
 
 struct Output
@@ -82,17 +82,17 @@ struct Output
 void main()
 {
 	Input input_;
-	input_.base_instance = gl_BaseInstanceARB;
-	input_.base_vertex = gl_BaseVertexARB;
-	input_.draw_index = gl_DrawIDARB;
-	input_.instance_index = (gl_BaseInstanceARB + gl_InstanceID);
-	input_.vertex_index = gl_VertexID;
+	input_.base_instance = uint(gl_BaseInstanceARB);
+	input_.base_vertex = uint(gl_BaseVertexARB);
+	input_.draw_index = uint(gl_DrawIDARB);
+	input_.instance_index = uint(gl_BaseInstanceARB) + uint(gl_InstanceID);
+	input_.vertex_index = uint(gl_VertexID);
 
-	int bi = input_.base_instance;
-	int bv = input_.base_vertex;
-	int di = input_.draw_index;
-	int ii = input_.instance_index;
-	int vi = input_.vertex_index;
+	uint bi = input_.base_instance;
+	uint bv = input_.base_vertex;
+	uint di = input_.draw_index;
+	uint ii = input_.instance_index;
+	uint vi = input_.vertex_index;
 	float color = float((((bi + bv) + di) + ii) + vi);
 	Output output_;
 	output_.position = vec4(color, color, color, color);
@@ -112,11 +112,11 @@ void main()
 			ExpectGLSL(*shaderModule, R"(
 struct Input
 {
-	int base_instance;
-	int base_vertex;
-	int draw_index;
-	int instance_index;
-	int vertex_index;
+	uint base_instance;
+	uint base_vertex;
+	uint draw_index;
+	uint instance_index;
+	uint vertex_index;
 };
 
 struct Output
@@ -127,17 +127,17 @@ struct Output
 void main()
 {
 	Input input_;
-	input_.base_instance = gl_BaseInstance;
-	input_.base_vertex = gl_BaseVertex;
-	input_.draw_index = gl_DrawID;
-	input_.instance_index = (gl_BaseInstance + gl_InstanceID);
-	input_.vertex_index = gl_VertexID;
+	input_.base_instance = uint(gl_BaseInstance);
+	input_.base_vertex = uint(gl_BaseVertex);
+	input_.draw_index = uint(gl_DrawID);
+	input_.instance_index = uint(gl_BaseInstance) + uint(gl_InstanceID);
+	input_.vertex_index = uint(gl_VertexID);
 
-	int bi = input_.base_instance;
-	int bv = input_.base_vertex;
-	int di = input_.draw_index;
-	int ii = input_.instance_index;
-	int vi = input_.vertex_index;
+	uint bi = input_.base_instance;
+	uint bv = input_.base_vertex;
+	uint di = input_.draw_index;
+	uint ii = input_.instance_index;
+	uint vi = input_.vertex_index;
 	float color = float((((bi + bv) + di) + ii) + vi);
 	Output output_;
 	output_.position = vec4(color, color, color, color);
@@ -153,19 +153,19 @@ void main()
 			glslEnv.allowDrawParametersUniformsFallback = true;
 
 			ExpectGLSL(*shaderModule, R"(
-uniform int _nzslBaseInstance;
-uniform int _nzslBaseVertex;
-uniform int _nzslDrawID;
+uniform uint _nzslBaseInstance;
+uniform uint _nzslBaseVertex;
+uniform uint _nzslDrawID;
 
 // header end
 
 struct Input
 {
-	int base_instance;
-	int base_vertex;
-	int draw_index;
-	int instance_index;
-	int vertex_index;
+	uint base_instance;
+	uint base_vertex;
+	uint draw_index;
+	uint instance_index;
+	uint vertex_index;
 };
 
 struct Output
@@ -179,14 +179,14 @@ void main()
 	input_.base_instance = _nzslBaseInstance;
 	input_.base_vertex = _nzslBaseVertex;
 	input_.draw_index = _nzslDrawID;
-	input_.instance_index = (_nzslBaseInstance + gl_InstanceID);
-	input_.vertex_index = gl_VertexID;
+	input_.instance_index = _nzslBaseInstance + uint(gl_InstanceID);
+	input_.vertex_index = uint(gl_VertexID);
 
-	int bi = input_.base_instance;
-	int bv = input_.base_vertex;
-	int di = input_.draw_index;
-	int ii = input_.instance_index;
-	int vi = input_.vertex_index;
+	uint bi = input_.base_instance;
+	uint bv = input_.base_vertex;
+	uint di = input_.draw_index;
+	uint ii = input_.instance_index;
+	uint vi = input_.vertex_index;
 	float color = float((((bi + bv) + di) + ii) + vi);
 	Output output_;
 	output_.position = vec4(color, color, color, color);
@@ -200,11 +200,11 @@ void main()
 		ExpectNZSL(*shaderModule, R"(
 struct Input
 {
-	[builtin(base_instance)] base_instance: i32,
-	[builtin(base_vertex)] base_vertex: i32,
-	[builtin(draw_index)] draw_index: i32,
-	[builtin(instance_index)] instance_index: i32,
-	[builtin(vertex_index)] vertex_index: i32
+	[builtin(base_instance)] base_instance: u32,
+	[builtin(base_vertex)] base_vertex: u32,
+	[builtin(draw_index)] draw_index: u32,
+	[builtin(instance_index)] instance_index: u32,
+	[builtin(vertex_index)] vertex_index: u32
 }
 
 struct Output
@@ -215,11 +215,11 @@ struct Output
 [entry(vert)]
 fn main(input: Input) -> Output
 {
-	let bi: i32 = input.base_instance;
-	let bv: i32 = input.base_vertex;
-	let di: i32 = input.draw_index;
-	let ii: i32 = input.instance_index;
-	let vi: i32 = input.vertex_index;
+	let bi: u32 = input.base_instance;
+	let bv: u32 = input.base_vertex;
+	let di: u32 = input.draw_index;
+	let ii: u32 = input.instance_index;
+	let vi: u32 = input.vertex_index;
 	let color: f32 = f32((((bi + bv) + di) + ii) + vi);
 	let output: Output;
 	output.position = color.xxxx;
@@ -240,12 +240,51 @@ fn main(input: Input) -> Output
 
 			ExpectSPIRV(*shaderModule, R"(
       OpDecorate %5 Decoration(BuiltIn) BuiltIn(BaseInstance)
-      OpDecorate %8 Decoration(BuiltIn) BuiltIn(BaseVertex)
-      OpDecorate %10 Decoration(BuiltIn) BuiltIn(DrawIndex)
-      OpDecorate %12 Decoration(BuiltIn) BuiltIn(InstanceIndex)
-      OpDecorate %14 Decoration(BuiltIn) BuiltIn(VertexIndex)
-      OpDecorate %21 Decoration(BuiltIn) BuiltIn(Position))", {}, spirvEnv, true);
+      OpDecorate %9 Decoration(BuiltIn) BuiltIn(BaseVertex)
+      OpDecorate %11 Decoration(BuiltIn) BuiltIn(DrawIndex)
+      OpDecorate %13 Decoration(BuiltIn) BuiltIn(InstanceIndex)
+      OpDecorate %15 Decoration(BuiltIn) BuiltIn(VertexIndex)
+      OpDecorate %22 Decoration(BuiltIn) BuiltIn(Position))", {}, spirvEnv, true);
 		}
+
+		nzsl::WgslWriter::Environment wgslEnv;
+		wgslEnv.featuresCallback = [](std::string_view) { return true; };
+
+		ExpectWGSL(*shaderModule, R"(
+struct _nzslBuiltinEmulationStruct
+{
+	base_instance: u32,
+	base_vertex: u32,
+	draw_index: u32,
+
+}
+@group(0) @binding(0) var<uniform> _nzslBuiltinEmulation: _nzslBuiltinEmulationStruct;
+
+struct Input
+{
+	@builtin(instance_index) instance_index: u32,
+	@builtin(vertex_index) vertex_index: u32
+}
+
+struct Output
+{
+	@builtin(position) position: vec4<f32>
+}
+
+@vertex
+fn main(input: Input) -> Output
+{
+	var bi: u32 = _nzslBuiltinEmulation.base_instance;
+	var bv: u32 = _nzslBuiltinEmulation.base_vertex;
+	var di: u32 = _nzslBuiltinEmulation.draw_index;
+	var ii: u32 = input.instance_index;
+	var vi: u32 = input.vertex_index;
+	var color: f32 = f32((((bi + bv) + di) + ii) + vi);
+	var output: Output;
+	output.position = vec4<f32>(color, color, color, color);
+	return output;
+}
+)", {}, wgslEnv);
 	}
 	
 	SECTION("vertex index")
@@ -256,7 +295,7 @@ module;
 
 struct Input
 {
-	[builtin(vertex_index)] vert_index: i32
+	[builtin(vertex_index)] vert_index: u32
 }
 
 struct Output
@@ -281,7 +320,7 @@ fn main(input: Input) -> Output
 		ExpectGLSL(*shaderModule, R"(
 struct Input
 {
-	int vert_index;
+	uint vert_index;
 };
 
 struct Output
@@ -292,7 +331,7 @@ struct Output
 void main()
 {
 	Input input_;
-	input_.vert_index = gl_VertexID;
+	input_.vert_index = uint(gl_VertexID);
 
 	float color = float(input_.vert_index);
 	Output output_;
@@ -306,7 +345,7 @@ void main()
 		ExpectNZSL(*shaderModule, R"(
 struct Input
 {
-	[builtin(vertex_index)] vert_index: i32
+	[builtin(vertex_index)] vert_index: u32
 }
 
 struct Output
@@ -325,6 +364,27 @@ fn main(input: Input) -> Output
 )");
 
 		ExpectSPIRV(*shaderModule, R"(OpDecorate %5 Decoration(BuiltIn) BuiltIn(VertexIndex))", {}, {}, true);
+
+		ExpectWGSL(*shaderModule, R"(
+struct Input
+{
+	@builtin(vertex_index) vert_index: u32
+}
+
+struct Output
+{
+	@builtin(position) position: vec4<f32>
+}
+
+@vertex
+fn main(input: Input) -> Output
+{
+	var color: f32 = f32(input.vert_index);
+	var output: Output;
+	output.position = vec4<f32>(color, color, color, color);
+	return output;
+}
+)");
 	}
 
 	SECTION("vertex position")
@@ -428,5 +488,15 @@ fn main() -> Output
 )");
 
 		ExpectSPIRV(*shaderModule, R"(OpDecorate %6 Decoration(BuiltIn) BuiltIn(Position))", {}, {}, true);
+
+		ExpectWGSL(*shaderModule, R"(
+@vertex
+fn main() -> Output
+{
+	var output: Output;
+	output.position = vec4<f32>(0.0, 0.5, 1.0, 1.0);
+	return output;
+}
+)");
 	}
 }
