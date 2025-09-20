@@ -20,7 +20,7 @@ const vertices = array[vec3[f32]](
 
 struct VertIn
 {
-	[builtin(vertex_index)] vert_index: i32
+	[builtin(vertex_index)] vert_index: u32
 }
 
 struct VertOut
@@ -32,7 +32,7 @@ struct VertOut
 fn main(input: VertIn) -> VertOut
 {
 	let output: VertOut;
-	if (u32(input.vert_index) < vertices.Size())
+	if (input.vert_index < vertices.Size())
 		output.pos = vec4[f32](vertices[input.vert_index], 1.0);
 	else
 		output.pos = vec4[f32](0.0, 0.0, 0.0, 0.0);
@@ -56,7 +56,7 @@ vec3 vertices[3] = vec3[3](
 );
 struct VertIn
 {
-	int vert_index;
+	uint vert_index;
 };
 
 struct VertOut
@@ -67,10 +67,10 @@ struct VertOut
 void main()
 {
 	VertIn input_;
-	input_.vert_index = gl_VertexID;
+	input_.vert_index = uint(gl_VertexID);
 
 	VertOut output_;
-	if ((uint(input_.vert_index)) < (uint(vertices.length())))
+	if (input_.vert_index < (uint(vertices.length())))
 	{
 		output_.pos = vec4(vertices[input_.vert_index], 1.0);
 	}
@@ -90,7 +90,7 @@ const vertices: array[vec3[f32], 3] = array[vec3[f32], 3](vec3[f32](1.0, 2.0, 3.
 
 struct VertIn
 {
-	[builtin(vertex_index)] vert_index: i32
+	[builtin(vertex_index)] vert_index: u32
 }
 
 struct VertOut
@@ -102,7 +102,7 @@ struct VertOut
 fn main(input: VertIn) -> VertOut
 {
 	let output: VertOut;
-	if ((u32(input.vert_index)) < (vertices.Size()))
+	if (input.vert_index < (vertices.Size()))
 	{
 		output.pos = vec4[f32](vertices[input.vert_index], 1.0);
 	}
@@ -137,11 +137,11 @@ fn main(input: VertIn) -> VertOut
 %19 = OpConstantComposite %5 %10 %14 %18
 %21 = OpTypeVoid
 %22 = OpTypeFunction %21
-%23 = OpTypeInt 32 1
-%24 = OpTypePointer StorageClass(Input) %23
-%26 = OpConstant %23 i32(0)
-%27 = OpTypePointer StorageClass(Function) %23
-%28 = OpTypeStruct %23
+%23 = OpTypePointer StorageClass(Input) %3
+%25 = OpTypeInt 32 1
+%26 = OpConstant %25 i32(0)
+%27 = OpTypePointer StorageClass(Function) %3
+%28 = OpTypeStruct %3
 %29 = OpTypePointer StorageClass(Function) %28
 %30 = OpTypeVector %1 4
 %31 = OpTypePointer StorageClass(Output) %30
@@ -149,18 +149,18 @@ fn main(input: VertIn) -> VertOut
 %34 = OpTypePointer StorageClass(Function) %33
 %35 = OpTypeBool
 %36 = OpConstant %1 f32(0)
-%37 = OpConstant %23 i32(1)
-%38 = OpConstant %23 i32(2)
-%39 = OpConstant %23 i32(3)
-%40 = OpConstant %23 i32(4)
-%41 = OpConstant %23 i32(5)
+%37 = OpConstant %25 i32(1)
+%38 = OpConstant %25 i32(2)
+%39 = OpConstant %25 i32(3)
+%40 = OpConstant %25 i32(4)
+%41 = OpConstant %25 i32(5)
 %42 = OpConstant %3 u32(5)
-%43 = OpTypeArray %23 %42
+%43 = OpTypeArray %25 %42
 %44 = OpTypePointer StorageClass(Function) %43
-%60 = OpTypePointer StorageClass(Private) %2
-%65 = OpTypePointer StorageClass(Function) %30
+%59 = OpTypePointer StorageClass(Private) %2
+%64 = OpTypePointer StorageClass(Function) %30
 %20 = OpVariable %6 StorageClass(Private) %19
-%25 = OpVariable %24 StorageClass(Input)
+%24 = OpVariable %23 StorageClass(Input)
 %32 = OpVariable %31 StorageClass(Output)
 %45 = OpFunction %21 FunctionControl(0) %22
 %46 = OpLabel
@@ -168,33 +168,32 @@ fn main(input: VertIn) -> VertOut
 %48 = OpVariable %44 StorageClass(Function)
 %49 = OpVariable %29 StorageClass(Function)
 %50 = OpAccessChain %27 %49 %26
-      OpCopyMemory %50 %25
+      OpCopyMemory %50 %24
 %54 = OpAccessChain %27 %49 %26
-%55 = OpLoad %23 %54
-%56 = OpBitcast %3 %55
-%57 = OpULessThan %35 %56 %4
+%55 = OpLoad %3 %54
+%56 = OpULessThan %35 %55 %4
       OpSelectionMerge %51 SelectionControl(0)
-      OpBranchConditional %57 %52 %53
+      OpBranchConditional %56 %52 %53
 %52 = OpLabel
-%58 = OpAccessChain %27 %49 %26
-%59 = OpLoad %23 %58
-%61 = OpAccessChain %60 %20 %59
-%62 = OpLoad %2 %61
-%63 = OpCompositeConstruct %30 %62 %7
-%64 = OpAccessChain %65 %47 %26
-      OpStore %64 %63
+%57 = OpAccessChain %27 %49 %26
+%58 = OpLoad %3 %57
+%60 = OpAccessChain %59 %20 %58
+%61 = OpLoad %2 %60
+%62 = OpCompositeConstruct %30 %61 %7
+%63 = OpAccessChain %64 %47 %26
+      OpStore %63 %62
       OpBranch %51
 %53 = OpLabel
-%66 = OpCompositeConstruct %30 %36 %36 %36 %36
-%67 = OpAccessChain %65 %47 %26
-      OpStore %67 %66
+%65 = OpCompositeConstruct %30 %36 %36 %36 %36
+%66 = OpAccessChain %64 %47 %26
+      OpStore %66 %65
       OpBranch %51
 %51 = OpLabel
-%68 = OpCompositeConstruct %43 %37 %38 %39 %40 %41
-      OpStore %48 %68
-%69 = OpLoad %33 %47
-%70 = OpCompositeExtract %30 %69 0
-      OpStore %32 %70
+%67 = OpCompositeConstruct %43 %37 %38 %39 %40 %41
+      OpStore %48 %67
+%68 = OpLoad %33 %47
+%69 = OpCompositeExtract %30 %68 0
+      OpStore %32 %69
       OpReturn
       OpFunctionEnd)", {}, {}, true);
 
@@ -219,7 +218,7 @@ struct VertOut
 fn main(input: VertIn) -> VertOut
 {
 	var output: VertOut;
-	if ((u32(input.vert_index)) < (3))
+	if (input.vert_index < (3))
 	{
 		output.pos = vec4<f32>(vertices[input.vert_index], 1.0);
 	}
