@@ -158,7 +158,7 @@ namespace nzsl
 
 			struct Constant
 			{
-				Constant(AnyConstant c) :
+				explicit Constant(AnyConstant c) :
 				constant(std::move(c))
 				{
 				}
@@ -168,7 +168,7 @@ namespace nzsl
 
 			struct Type
 			{
-				Type(AnyType c) :
+				explicit Type(AnyType c) :
 				type(std::move(c))
 				{
 				}
@@ -240,6 +240,7 @@ namespace nzsl
 			struct DepRegisterer;
 			struct LayoutVisitor;
 			struct Eq;
+			struct Hash;
 			struct Internal;
 			template<typename T, typename Enable = void> struct TypeBuilder;
 
