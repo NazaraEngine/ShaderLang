@@ -50,8 +50,6 @@ jobs:
         - { name: iOS,               runner: macos-latest,   shell: bash,        plat: iphoneos, arch: arm64,       mode: releasedbg, package: true,  test: false,                               }
         - { name: Emscripten,        runner: ubuntu-latest,  shell: bash,        plat: wasm,     arch: wasm32,      mode: debug,      package: true,  test: false,                               }
         - { name: Emscripten,        runner: ubuntu-latest,  shell: bash,        plat: wasm,     arch: wasm32,      mode: releasedbg, package: true,  test: false,                               }
-        - { name: Emscripten,        runner: ubuntu-latest,  shell: bash,        plat: wasm,     arch: wasm64,      mode: debug,      package: true,  test: false,                               }
-        - { name: Emscripten,        runner: ubuntu-latest,  shell: bash,        plat: wasm,     arch: wasm64,      mode: releasedbg, package: true,  test: false,                               }
         kind: [shared, static]
         exclude:
           - confs: { name: Emscripten }
