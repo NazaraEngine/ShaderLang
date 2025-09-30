@@ -13,6 +13,7 @@
 #include <cxxopts.hpp>
 #include <filesystem>
 #include <type_traits>
+#include <unordered_map>
 #include <vector>
 
 namespace nzsl
@@ -64,9 +65,9 @@ namespace nzslc
 			void OutputToStdout(std::string_view str);
 			void ReadInput();
 			void Resolve();
-			template<typename F, typename... Args> auto Step(std::enable_if_t<!std::is_member_function_pointer_v<F>, std::string_view> stepName, F&& func, Args&&... args) -> decltype(std::invoke(func, std::forward<Args>(args)...));
-			template<typename F, typename... Args> auto Step(std::enable_if_t<std::is_member_function_pointer_v<F>, std::string_view> stepName, F&& func, Args&&... args) -> decltype(std::invoke(func, this, std::forward<Args>(args)...));
-			template<typename F> auto StepInternal(std::string_view stepName, F&& func) -> decltype(func());
+			template<typename F, typename... Args> auto Step(std::enable_if_t<!std::is_member_function_pointer_v<F>, std::string_view> stepName, std::size_t uniqueIndex, F&& func, Args&&... args) -> decltype(std::invoke(func, std::forward<Args>(args)...));
+			template<typename F, typename... Args> auto Step(std::enable_if_t<std::is_member_function_pointer_v<F>, std::string_view> stepName, std::size_t uniqueIndex, F&& func, Args&&... args) -> decltype(std::invoke(func, this, std::forward<Args>(args)...));
+			template<typename F> auto StepInternal(std::string_view stepName, std::size_t uniqueIndex, F&& func) -> decltype(func());
 			bool WriteFileContent(const std::filesystem::path& filePath, const void* data, std::size_t size);
 
 			static nzsl::Ast::ModulePtr Parse(std::string_view sourceContent, const std::string& filePath);
@@ -83,11 +84,13 @@ namespace nzslc
 
 			std::filesystem::path m_inputFilePath;
 			std::filesystem::path m_outputPath;
+			std::size_t m_parentStep;
+			std::unordered_map<std::size_t, std::size_t> m_stepIndices;
 			std::vector<StepTime> m_steps;
 			LogFormat m_logFormat;
 			nzsl::Ast::ModulePtr m_shaderModule;
 			cxxopts::ParseResult& m_options;
-			bool m_profiling;
+			bool m_isProfiling;
 			bool m_outputHeader;
 			bool m_outputToStdout;
 			bool m_skipOutput;
