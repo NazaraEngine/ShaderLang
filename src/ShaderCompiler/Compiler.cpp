@@ -52,9 +52,10 @@ namespace nzslc
 	}
 
 	Compiler::Compiler(cxxopts::ParseResult& options) :
+	m_parentStep(Nz::MaxValue()),
 	m_logFormat(LogFormat::Classic),
 	m_options(options),
-	m_profiling(false),
+	m_isProfiling(false),
 	m_outputToStdout(false),
 	m_skipOutput(false),
 	m_skipUnchangedOutput(false),
@@ -100,14 +101,14 @@ namespace nzslc
 
 		if (m_options.count("benchmark-iteration") > 0)
 		{
-			m_profiling = true;
+			m_isProfiling = true;
 			m_iterationCount = m_options["benchmark-iteration"].as<unsigned int>();
 			if (m_iterationCount == 0)
 				throw cxxopts::exceptions::specification("iteration count must be over zero");
 		}
 
 		if (m_options.count("measure") > 0)
-			m_profiling = m_options["measure"].as<bool>();
+			m_isProfiling = m_options["measure"].as<bool>();
 
 		m_skipUnchangedOutput = m_options.count("skip-unchanged") > 0;
 		m_verbose = m_options.count("verbose") > 0;
@@ -191,16 +192,19 @@ namespace nzslc
 	{
 		using namespace std::literals;
 
-		Step("Full processing"sv, [&]
+		for (unsigned int i = 0; i < m_iterationCount; ++i)
 		{
-			Step("Read input file"sv, &Compiler::ReadInput);
-			Step("Processing"sv, &Compiler::Resolve);
+			Step("Full processing"sv, __LINE__, [&]
+			{
+				Step("Read input file"sv, __LINE__, &Compiler::ReadInput);
+				Step("Processing"sv, __LINE__, &Compiler::Resolve);
 
-			if (m_options.count("compile") > 0)
-				Step("Compiling"sv, &Compiler::Compile);
-		});
+				if (m_options.count("compile") > 0)
+					Step("Compiling"sv, __LINE__, &Compiler::Compile);
+			});
+		}
 
-		if (m_profiling)
+		if (m_isProfiling)
 			PrintTime();
 	}
 
@@ -257,7 +261,7 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 		nzsl::BackendParameters parameters;
 
 		if (m_options.count("optimize"))
-			parameters.backendPasses |= nzsl::BackendPass::Optimize;
+			parameters.backendPasses |= nzsl::BackendPass::Optimize | nzsl::BackendPass::RemoveDeadCode;
 
 		if (m_options.count("debug-level"))
 		{
@@ -309,15 +313,15 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 				targetModule = m_shaderModule.get();
 
 			if (outputType == "nzsl")
-				Step("Compile to NZSL", &Compiler::CompileToNZSL, outputFilePath, *targetModule);
+				Step("Compile to NZSL", __LINE__, &Compiler::CompileToNZSL, outputFilePath, *targetModule);
 			else if (outputType == "nzslb")
-				Step("Compile to NZSLB", &Compiler::CompileToNZSLB, outputFilePath, *targetModule);
+				Step("Compile to NZSLB", __LINE__, &Compiler::CompileToNZSLB, outputFilePath, *targetModule);
 			else if (outputType == "spv")
-				Step("Compile to SPIR-V", &Compiler::CompileToSPV, outputFilePath, *targetModule, false);
+				Step("Compile to SPIR-V", __LINE__, &Compiler::CompileToSPV, outputFilePath, *targetModule, false);
 			else if (outputType == "spv-dis")
-				Step("Compile to textual SPIR-V", &Compiler::CompileToSPV, outputFilePath, *targetModule, true);
+				Step("Compile to textual SPIR-V", __LINE__, &Compiler::CompileToSPV, outputFilePath, *targetModule, true);
 			else if (outputType == "glsl")
-				Step("Compile to GLSL", &Compiler::CompileToGLSL, outputFilePath, *targetModule);
+				Step("Compile to GLSL", __LINE__, &Compiler::CompileToGLSL, outputFilePath, *targetModule);
 			else
 			{
 				fmt::print("Unknown format {}, ignoring\n", outputType);
@@ -438,10 +442,23 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 
 		nzsl::BackendParameters backendParameters = BuildWriterOptions();
 
+		std::size_t remainingEntryType = entryTypes.size();
+		nzsl::Ast::ModulePtr clonedModule;
+		nzsl::Ast::Module* targetModule = &module;
+
 		bool first = true;
 		for (nzsl::ShaderStageType entryType : entryTypes)
 		{
-			nzsl::GlslWriter::Output output = writer.Generate(entryType, module, backendParameters, parameters);
+			remainingEntryType--;
+
+			// If dead code removal is enabled, we have to clone AST before generation if we have more than one entry type
+			if (backendParameters.backendPasses.Test(nzsl::BackendPass::RemoveDeadCode) && remainingEntryType > 0)
+			{
+				clonedModule = nzsl::Ast::Clone(module);
+				targetModule = clonedModule.get();
+			}
+
+			nzsl::GlslWriter::Output output = writer.Generate(entryType, *targetModule, backendParameters, parameters);
 			if (m_skipOutput)
 				continue;
 
@@ -659,13 +676,13 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 
 		if (extension == ".nzsl")
 		{
-			std::string sourceContent = Step("File reading"sv, &Compiler::ReadSourceFileContent, m_inputFilePath);
-			m_shaderModule = Step("Parse input"sv, &Compiler::Parse, sourceContent, Nz::PathToString(m_inputFilePath));
+			std::string sourceContent = Step("File reading"sv, __LINE__, &Compiler::ReadSourceFileContent, m_inputFilePath);
+			m_shaderModule = Step("Parse input"sv, __LINE__, &Compiler::Parse, sourceContent, Nz::PathToString(m_inputFilePath));
 		}
 		else if (extension == ".nzslb")
 		{
-			std::vector<std::uint8_t> sourceContent = Step("File reading"sv, &Compiler::ReadFileContent, m_inputFilePath);
-			m_shaderModule = Step("Deserialize input"sv, &Compiler::Deserialize, sourceContent.data(), sourceContent.size());
+			std::vector<std::uint8_t> sourceContent = Step("File reading"sv, __LINE__, &Compiler::ReadFileContent, m_inputFilePath);
+			m_shaderModule = Step("Deserialize input"sv, __LINE__, &Compiler::Deserialize, sourceContent.data(), sourceContent.size());
 		}
 		else
 			throw std::runtime_error(fmt::format("{} has unknown extension \"{}\"", Nz::PathToString(m_inputFilePath.filename()), Nz::PathToString(extension)));
@@ -690,12 +707,12 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 				if (std::filesystem::is_regular_file(path))
 				{
 					std::string stepName = "Register module " + Nz::PathToString(path);
-					Step(stepName, [&] { resolver->RegisterFile(path); });
+					Step(stepName, __LINE__, [&] { resolver->RegisterFile(path); });
 				}
 				else if (std::filesystem::is_directory(path))
 				{
 					std::string stepName = "Register module directory " + Nz::PathToString(path);
-					Step(stepName, [&] { resolver->RegisterDirectory(path); });
+					Step(stepName, __LINE__, [&] { resolver->RegisterDirectory(path); });
 				}
 				else
 					throw std::runtime_error(modulePath + " is not a path nor a directory");
@@ -707,55 +724,60 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 		nzsl::Ast::ResolveTransformer resolver;
 		nzsl::Ast::ValidationTransformer validation;
 
-		Step("AST processing"sv, [&] { resolver.Transform(*m_shaderModule, context, resolverOpt); });
-		Step("AST validation"sv, [&] { validation.Transform(*m_shaderModule, context); });
+		Step("AST processing"sv, __LINE__, [&] { resolver.Transform(*m_shaderModule, context, resolverOpt); });
+		Step("AST validation"sv, __LINE__, [&] { validation.Transform(*m_shaderModule, context); });
 	}
 
 	template<typename F, typename... Args>
-	auto Compiler::Step(std::enable_if_t<!std::is_member_function_pointer_v<F>, std::string_view> stepName, F&& func, Args&&... args) -> decltype(std::invoke(func, std::forward<Args>(args)...))
+	auto Compiler::Step(std::enable_if_t<!std::is_member_function_pointer_v<F>, std::string_view> stepName, std::size_t uniqueIndex, F&& func, Args&&... args) -> decltype(std::invoke(func, std::forward<Args>(args)...))
 	{
-		return StepInternal(stepName, [&] { return std::invoke(func, std::forward<Args>(args)...); });
+		return StepInternal(stepName, uniqueIndex, [&] { return std::invoke(func, std::forward<Args>(args)...); });
 	}
 
 	template<typename F, typename... Args>
-	auto Compiler::Step(std::enable_if_t<std::is_member_function_pointer_v<F>, std::string_view> stepName, F&& func, Args&&... args) -> decltype(std::invoke(func, this, std::forward<Args>(args)...))
+	auto Compiler::Step(std::enable_if_t<std::is_member_function_pointer_v<F>, std::string_view> stepName, std::size_t uniqueIndex, F&& func, Args&&... args) -> decltype(std::invoke(func, this, std::forward<Args>(args)...))
 	{
-		return StepInternal(stepName, [&] { return std::invoke(func, this, std::forward<Args>(args)...); });
+		return StepInternal(stepName, uniqueIndex, [&] { return std::invoke(func, this, std::forward<Args>(args)...); });
 	}
 
 	template<typename F>
-	auto Compiler::StepInternal(std::string_view stepName, F&& func) -> decltype(func())
+	auto Compiler::StepInternal(std::string_view stepName, std::size_t uniqueIndex, F&& func) -> decltype(func())
 	{
-		if (!m_profiling)
+		if (!m_isProfiling)
 			return func();
 
-		std::size_t stepIndex = m_steps.size();
-
-		bool wasVerbose = m_verbose;
-
-		// Disable substeps benchmarking (and verbose messages) when benchmarking a step
-		m_profiling = false;
-		m_verbose = false;
+		std::size_t stepIndex;
+		if (auto it = m_stepIndices.find(uniqueIndex); it == m_stepIndices.end())
 		{
+			stepIndex = m_steps.size();
 			auto& step = m_steps.emplace_back();
 			step.name = stepName;
+			step.time = 0;
 
-			auto start = std::chrono::steady_clock::now();
+			if (m_parentStep != Nz::MaxValue<std::size_t>())
+				m_steps[m_parentStep].childrenCount++;
 
-			for (unsigned int i = 0; i < m_iterationCount; ++i)
-				func();
+			m_stepIndices.emplace(uniqueIndex, stepIndex);
+		}
+		else
+			stepIndex = it->second;
 
+		std::size_t prevParentStep = m_parentStep;
+		bool wasVerbose = m_verbose;
+
+		// Disable verbose messages when benchmarking a step
+		m_parentStep = stepIndex;
+		m_verbose = false;
+
+		auto start = std::chrono::steady_clock::now();
+
+		NAZARA_DEFER({
 			auto end = std::chrono::steady_clock::now();
 
-			step.time = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
-		}
-		m_profiling = true;
-		m_verbose = wasVerbose;
+			m_steps[stepIndex].time += std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
 
-		NAZARA_DEFER(
-		{
-			auto& step = m_steps[stepIndex];
-			step.childrenCount = m_steps.size() - stepIndex - 1;
+			m_parentStep = prevParentStep;
+			m_verbose = wasVerbose;
 		});
 
 		return func();
