@@ -50,6 +50,8 @@ jobs:
         - { name: iOS,               runner: macos-latest,   shell: bash,        plat: iphoneos, arch: arm64,       mode: releasedbg, package: true,  test: false,                               }
         - { name: Emscripten,        runner: ubuntu-latest,  shell: bash,        plat: wasm,     arch: wasm32,      mode: debug,      package: true,  test: false,                               }
         - { name: Emscripten,        runner: ubuntu-latest,  shell: bash,        plat: wasm,     arch: wasm32,      mode: releasedbg, package: true,  test: false,                               }
+        - { name: Emscripten,        runner: ubuntu-latest,  shell: bash,        plat: wasm,     arch: wasm64,      mode: debug,      package: true,  test: false,                               }
+        - { name: Emscripten,        runner: ubuntu-latest,  shell: bash,        plat: wasm,     arch: wasm64,      mode: releasedbg, package: true,  test: false,                               }
         kind: [shared, static]
         exclude:
           - confs: { name: Emscripten }
@@ -79,7 +81,7 @@ jobs:
       if: ${{ matrix.confs.plat == 'wasm' }}
       uses: mymindstorm/setup-emsdk@v14
       with:
-        version: 3.1.31
+        version: 4.0.15
         actions-cache-folder: emsdk-cache-${{ matrix.confs.mode }}
 
     # Setup MSYS2
