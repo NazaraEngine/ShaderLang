@@ -1,8 +1,6 @@
-/*
-	Copyright (C) 2024 REMqb (remqb at remqb dot fr)
-	This file is part of the "Nazara Shading Language - C Binding" project
-	For conditions of distribution and use, see copyright notice in Config.hpp
-*/
+// Copyright (C) 2024 REMqb (remqb at remqb dot fr)
+// This file is part of the "Nazara Shading Language - C Binding" project
+// For conditions of distribution and use, see copyright notice in Config.hpp
 
 #pragma once
 
@@ -16,5 +14,6 @@
 #include <CNZSL/Parser.h>
 #include <CNZSL/Serializer.h>
 #include <CNZSL/SpirvWriter.h>
+#include <CNZSL/WgslWriter.h>
 
 #endif /* CNZSL_CNZSL_H */
