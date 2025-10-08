@@ -851,7 +851,7 @@ OpReturn
 OpFunctionEnd)");
 
 // Uniform buffer have an invalid memory layout
-#ifdef FAILING_WGSL
+#ifndef FAILING_WGSL
 		ExpectWGSL(*shaderModule, R"(
 @fragment
 fn main()
@@ -859,7 +859,7 @@ fn main()
 	var x: f32 = 0.0;
 	{
 		var _nzsl_counter: u32 = 0u;
-		while (_nzsl_counter < (10u))
+		while (_nzsl_counter < 10u)
 		{
 			var v: f32 = data.value[_nzsl_counter];
 			x += v;
