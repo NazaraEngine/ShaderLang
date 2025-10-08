@@ -308,23 +308,21 @@ fn main()
       OpReturn
       OpFunctionEnd)", {}, {}, true);
 
-// Uniform buffer have an invalid memory layout
-#ifdef FAILING_WGSL
 		ExpectWGSL(*shaderModule, R"(
-struct Data
+struct Data_std140
 {
-	values: array<f32, 47>,
+	// Tag: Values
+	 values: array<vec4<f32>, 47>,
 	matrices: array<mat4x4<f32>, 3>
 }
 
-@group(0) @binding(0) var<uniform> data: Data;
+@group(0) @binding(0) var<uniform> data: Data_std140;
 
 @fragment
 fn main()
 {
-	var value: mat4x4<f32> = data.values[42] * data.matrices[1];
+	var value: mat4x4<f32> = data.values[42].x * data.matrices[1];
 })");
-#endif
 	}
 
 	SECTION("Storage buffers")
@@ -1391,10 +1389,8 @@ fn main()
        OpReturn
        OpFunctionEnd)", {}, {}, true);
 
-// Uniform buffer have an invalid memory layout
-#ifdef FAILING_WGSL
 		ExpectWGSL(*shaderModule, R"(
-struct DirectionalLight
+struct DirectionalLight_std140
 {
 	color: vec3<f32>,
 	direction: vec3<f32>,
@@ -1402,17 +1398,17 @@ struct DirectionalLight
 	ambientFactor: f32,
 	diffuseFactor: f32,
 	cascadeCount: u32,
-	cascadeDistances: array<f32, 4>,
+	cascadeDistances: array<vec4<f32>, 4>,
 	viewProjMatrices: array<mat4x4<f32>, 4>
 }
 
-struct LightData
+struct LightData_std140
 {
-	directionalLights: array<DirectionalLight, 3>,
+	directionalLights: array<DirectionalLight_std140, 3>,
 	directionalLightCount: u32
 }
 
-@group(0) @binding(0) var<uniform> lightData: LightData;
+@group(0) @binding(0) var<uniform> lightData: LightData_std140;
 
 @fragment
 fn main()
@@ -1422,7 +1418,7 @@ fn main()
 		var _nzsl_to: u32 = lightData.directionalLightCount;
 		while (lightIndex < _nzsl_to)
 		{
-			var light: DirectionalLight;
+			var light: DirectionalLight_std140;
 			light.color = lightData.directionalLights[lightIndex].color;
 			light.direction = lightData.directionalLights[lightIndex].direction;
 			light.invShadowMapSize = lightData.directionalLights[lightIndex].invShadowMapSize;
@@ -1431,7 +1427,7 @@ fn main()
 			light.cascadeCount = lightData.directionalLights[lightIndex].cascadeCount;
 			light.cascadeDistances = lightData.directionalLights[lightIndex].cascadeDistances;
 			light.viewProjMatrices = lightData.directionalLights[lightIndex].viewProjMatrices;
-			var lightCopy: DirectionalLight = light;
+			var lightCopy: DirectionalLight_std140 = light;
 			lightIndex += 1u;
 		}
 
@@ -1439,7 +1435,6 @@ fn main()
 
 }
 )");
-#endif
 	}
 
 	SECTION("named external")
@@ -1538,7 +1533,7 @@ fn main()
       OpFunctionEnd)", {}, {}, true);
 
 		ExpectWGSL(*shaderModule, R"(
-struct Data
+struct Data_std140
 {
 	color: vec4<f32>
 }
@@ -1546,7 +1541,7 @@ struct Data
 // Tag: Color map
 @group(0) @binding(0) var Instance_tex: texture_2d<f32>;
 @group(0) @binding(1) var Instance_texSampler: sampler;
-@group(0) @binding(2) var<uniform> Instance_data: Data;
+@group(0) @binding(2) var<uniform> Instance_data: Data_std140;
 
 @fragment
 fn main()
@@ -2124,20 +2119,20 @@ fn main(input: VertIn) -> VertOut
       OpFunctionEnd)", {}, env, true);
 
 		ExpectWGSL(*shaderModule, R"(
-struct MaterialData
+struct MaterialData_std140
 {
 	color: vec4<f32>
 }
 
-struct InstanceData
+struct InstanceData_std140
 {
 	worldViewProjMat: mat4x4<f32>
 }
 
 @group(0) @binding(0) var tex: texture_2d<f32>;
 @group(0) @binding(1) var texSampler: sampler;
-@group(0) @binding(2) var<uniform> instanceData: InstanceData;
-@group(0) @binding(3) var<uniform> materialData: MaterialData;
+@group(0) @binding(2) var<uniform> instanceData: InstanceData_std140;
+@group(0) @binding(3) var<uniform> materialData: MaterialData_std140;
 
 struct VertIn
 {

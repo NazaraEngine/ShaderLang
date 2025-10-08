@@ -850,9 +850,14 @@ OpLabel
 OpReturn
 OpFunctionEnd)");
 
-// Uniform buffer have an invalid memory layout
-#ifndef FAILING_WGSL
 		ExpectWGSL(*shaderModule, R"(
+struct inputStruct_std140
+{
+	value: array<vec4<f32>, 10>
+}
+
+@group(0) @binding(0) var<uniform> data: inputStruct_std140;
+
 @fragment
 fn main()
 {
@@ -861,7 +866,7 @@ fn main()
 		var _nzsl_counter: u32 = 0u;
 		while (_nzsl_counter < 10u)
 		{
-			var v: f32 = data.value[_nzsl_counter];
+			var v: f32 = data.value[_nzsl_counter].x;
 			x += v;
 			_nzsl_counter += 1u;
 		}
@@ -870,7 +875,6 @@ fn main()
 
 }
 )");
-#endif
 
 		WHEN("using break and continue")
 		{
@@ -1009,25 +1013,30 @@ fn main()
       OpReturn
       OpFunctionEnd)", {}, {}, true);
 
-// Uniform buffer have an invalid memory layout
-#ifdef FAILING_WGSL
 			ExpectWGSL(*shaderModule2, R"(
+struct inputStruct_std140
+{
+	value: array<vec4<f32>, 10>
+}
+
+@group(0) @binding(0) var<uniform> data: inputStruct_std140;
+
 @fragment
 fn main()
 {
 	var x: f32 = 0.0;
 	{
 		var _nzsl_counter: u32 = 0u;
-		while (_nzsl_counter < (10u))
+		while (_nzsl_counter < 10u)
 		{
-			var v: f32 = data.value[_nzsl_counter];
-			if (v < (0.0))
+			var v: f32 = data.value[_nzsl_counter].x;
+			if (v < 0.0)
 			{
 				continue;
 			}
 
 			x += v;
-			if (x >= (10.0))
+			if (x >= 10.0)
 			{
 				break;
 			}
@@ -1039,7 +1048,6 @@ fn main()
 
 }
 )");
-#endif
 		}
 	}
 

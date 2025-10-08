@@ -228,14 +228,14 @@ fn main(input: Input)
       OpFunctionEnd)", {}, {}, true);
 
 		ExpectWGSL(*shaderModule, R"(
-struct Data
+struct Data_std140
 {
 	tex_size: vec2<u32>
 }
 
 @group(0) @binding(0) var input_tex: texture_storage_2d<rgba8unorm, read>;
 @group(0) @binding(1) var output_tex: texture_storage_2d<rgba8unorm, write>;
-@group(0) @binding(2) var<uniform> data: Data;
+@group(0) @binding(2) var<uniform> data: Data_std140;
 
 struct Input
 {

@@ -4,6 +4,7 @@
 
 #include "NZSL/Ast/Enums.hpp"
 #include "NZSL/Ast/ExpressionType.hpp"
+#include "NZSL/Ast/Nodes.hpp"
 #include <NZSL/WgslWriter.hpp>
 #include <NazaraUtils/Algorithm.hpp>
 #include <NazaraUtils/CallOnExit.hpp>
@@ -30,6 +31,7 @@
 #include <NZSL/Ast/Transformations/ResolveTransformer.hpp>
 #include <NZSL/Ast/Transformations/StructAssignmentTransformer.hpp>
 #include <NZSL/Ast/Transformations/SwizzleTransformer.hpp>
+#include <NZSL/Ast/Transformations/UniformStructToStd140.hpp>
 #include <NZSL/Ast/Transformations/ValidationTransformer.hpp>
 #include <fmt/format.h>
 #include <tsl/ordered_set.h>
@@ -42,8 +44,8 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <variant>
-#include <iostream>
 #include <algorithm>
+#include <iostream>
 
 namespace nzsl
 {
@@ -146,6 +148,9 @@ namespace nzsl
 				}
 			}
 
+			for (const auto& param : node.parameters)
+				RegisterStructType(param.type.GetResultingValue());
+
 			RecursiveVisitor::Visit(node);
 		}
 
@@ -153,8 +158,8 @@ namespace nzsl
 		{
 			if (IsStorageType(type))
 				usedStructs.UnboundedSet(std::get<Ast::StorageType>(type).containedType.structIndex);
-			else if (IsUniformType(type))
-				usedStructs.UnboundedSet(std::get<Ast::UniformType>(type).containedType.structIndex);
+			else if (IsPushConstantType(type))
+				usedStructs.UnboundedSet(std::get<Ast::PushConstantType>(type).containedType.structIndex);
 			else if (IsStructType(type))
 				usedStructs.UnboundedSet(std::get<Ast::StructType>(type).structIndex);
 			else if (IsArrayType(type))
@@ -180,8 +185,10 @@ namespace nzsl
 					else if (IsStructType(array.InnerType()))
 						features.insert(WgslFeature::WgpuBufferBindingArray);
 				}
-				else if (IsUniformType(type))
+				if (IsUniformType(type))
 					bufferStructs.UnboundedSet(std::get<Ast::UniformType>(type).containedType.structIndex);
+				else
+					RegisterStructType(type);
 			}
 
 			RecursiveVisitor::Visit(node);
@@ -377,6 +384,7 @@ namespace nzsl
 			std::size_t moduleIndex;
 			std::string name;
 			bool isDereferenceable;
+			bool isUniformBuffer;
 		};
 
 		struct StructData : Identifier
@@ -409,6 +417,7 @@ namespace nzsl
 		bool hasDrawParametersBaseInstanceUniform = false;
 		bool hasDrawParametersBaseVertexUniform = false;
 		bool hasDrawParametersDrawIndexUniform = false;
+		bool std140EmulationState = false;
 	};
 
 	WgslWriter::Output WgslWriter::Generate(Ast::Module& module, const BackendParameters& parameters)
@@ -689,6 +698,7 @@ namespace nzsl
 			opt.removeTypeConstant = false;
 		});
 		executor.AddPass<Ast::AliasTransformer>();
+		executor.AddPass<Ast::UniformStructToStd140Transformer>();
 		executor.AddPass<Ast::IdentifierTransformer>(secondIdentifierPassOptions);
 	}
 
@@ -701,10 +711,16 @@ namespace nzsl
 	{
 		if (IsSamplerType(type.containedType->type))
 			Append("binding_");
-		if (type.length > 0)
-			Append("array<", type.containedType->type, ", ", type.length, ">");
+		Append("array<");
+
+		if (m_currentState->std140EmulationState && IsPrimitiveType(type.containedType->type))
+			Append(Ast::VectorType{ .componentCount = 4, .type = std::get<Ast::PrimitiveType>(type.containedType->type) });
 		else
-			Append("array<", type.containedType->type, ">");
+			Append(type.containedType->type);
+		
+		if (type.length > 0)
+			Append(", ", type.length);
+		Append('>');
 	}
 
 	void WgslWriter::Append(const Ast::DynArrayType& type)
@@ -859,6 +875,9 @@ namespace nzsl
 	void WgslWriter::Append(const Ast::StructType& structType)
 	{
 		AppendIdentifier(m_currentState->structs, structType.structIndex, true);
+		const auto& structure = m_currentState->structs[structType.structIndex];
+		if (structure.desc->layout.HasValue() && structure.desc->layout.GetResultingValue() == Ast::MemoryLayout::Std140)
+			Append("_std140");
 	}
 
 	void WgslWriter::Append(const Ast::TextureType& textureType)
@@ -1673,13 +1692,14 @@ namespace nzsl
 		m_currentState->structs.emplace(structIndex, std::move(structData));
 	}
 
-	void WgslWriter::RegisterVariable(std::size_t varIndex, std::string varName, bool isInout)
+	void WgslWriter::RegisterVariable(std::size_t varIndex, std::string varName, bool isInout, bool isUniformBuffer)
 	{
 		State::Identifier identifier;
 		identifier.externalBlockIndex = m_currentState->currentExternalBlockIndex;
 		identifier.moduleIndex = m_currentState->currentModuleIndex;
 		identifier.name = std::move(varName);
 		identifier.isDereferenceable = isInout;
+		identifier.isUniformBuffer = isUniformBuffer;
 
 		assert(m_currentState->variables.find(varIndex) == m_currentState->variables.end());
 		m_currentState->variables.emplace(varIndex, std::move(identifier));
@@ -1720,7 +1740,6 @@ namespace nzsl
 		// in a string, visit struct's name and then append the statement.
 
 		const Ast::ExpressionType* exprType = GetExpressionType(*node.expr);
-		NazaraUnused(exprType);
 		assert(exprType);
 		assert(IsStructAddressible(*exprType));
 
@@ -1729,7 +1748,7 @@ namespace nzsl
 
 		const auto& structData = Nz::Retrieve(m_currentState->structs, structIndex);
 
-		std::string_view memberName;
+		const Ast::StructDescription::StructMember* foundMember;
 
 		std::uint32_t remainingIndices = node.fieldIndex;
 		for (const auto& member : structData.desc->members)
@@ -1749,15 +1768,22 @@ namespace nzsl
 						return;
 					}
 				}
-				memberName = member.name;
+				foundMember = &member;
 				break;
 			}
 
 			remainingIndices--;
 		}
 
+		assert(foundMember);
+		if (m_currentState->std140EmulationState && foundMember->type.HasValue())
+		{
+			const auto& memberType = foundMember->type.GetResultingValue();
+			if (!IsArrayType(memberType) || !IsPrimitiveType(std::get<Ast::ArrayType>(memberType).containedType->type))
+				m_currentState->std140EmulationState = false;
+		}
 		Visit(node.expr, true);
-		Append('.', memberName);
+		Append('.', foundMember->name);
 	}
 
 	void WgslWriter::Visit(Ast::AccessIdentifierExpression& node)
@@ -1770,22 +1796,20 @@ namespace nzsl
 
 	void WgslWriter::Visit(Ast::AccessIndexExpression& node)
 	{
+		m_currentState->std140EmulationState = true;
 		Visit(node.expr, true);
+		bool appendStd140Emulation = m_currentState->std140EmulationState;
+		m_currentState->std140EmulationState = false;
 
-		// Array access
-		Append("[");
-
-		bool first = true;
 		for (Ast::ExpressionPtr& expr : node.indices)
 		{
-			if (!first)
-				Append(", ");
-
+			Append('[');
 			expr->Visit(*this);
-			first = false;
+			Append(']');
 		}
 
-		Append("]");
+		if (appendStd140Emulation)
+			Append(".x");
 	}
 
 	void WgslWriter::Visit(Ast::IdentifierValueExpression& node)
@@ -1812,12 +1836,16 @@ namespace nzsl
 			case Ast::IdentifierType::Struct:
 			{
 				AppendIdentifier(m_currentState->structs, node.identifierIndex, true);
+				const auto& structure = m_currentState->structs[node.identifierIndex];
+				if (structure.desc->layout.HasValue() && structure.desc->layout.GetResultingValue() == Ast::MemoryLayout::Std140)
+					Append("_std140");
 				break;
 			}
 
 			case Ast::IdentifierType::Constant:
 			{
 				AppendIdentifier(m_currentState->constants, node.identifierIndex);
+				m_currentState->std140EmulationState = false;
 				break;
 			}
 
@@ -1832,6 +1860,8 @@ namespace nzsl
 				if (m_currentState->variables[node.identifierIndex].isDereferenceable)
 					Append('*');
 				AppendIdentifier(m_currentState->variables, node.identifierIndex);
+				if (!m_currentState->variables[node.identifierIndex].isUniformBuffer)
+					m_currentState->std140EmulationState = false;
 				break;
 			}
 		}
@@ -2439,7 +2469,7 @@ namespace nzsl
 			AppendLine(';');
 
 			if (externalVar.varIndex)
-				RegisterVariable(*externalVar.varIndex, variableName);
+				RegisterVariable(*externalVar.varIndex, variableName, false, IsUniformType(exprType));
 		}
 
 		m_currentState->currentExternalBlockIndex = {};
@@ -2531,43 +2561,53 @@ namespace nzsl
 
 		bool isUsedInUniformBuffer = m_currentState->bufferStructs.UnboundedTest(*node.structIndex);
 		bool isUsedInPlainCode = m_currentState->usedStructs.UnboundedTest(*node.structIndex);
+		bool isDeclaredAsStd140 = (node.description.layout.HasValue() && node.description.layout.GetResultingValue() == Ast::MemoryLayout::Std140);
 
-		AppendAttributes(true, LayoutAttribute{ node.description.layout }, TagAttribute{ node.description.tag });
-		Append("struct ");
-
-		assert(node.structIndex);
-		const auto& identifier = Nz::Retrieve(m_currentState->structs, *node.structIndex);
-		if (identifier.moduleIndex != 0)
-			AppendLine(m_currentState->moduleNames[identifier.moduleIndex - 1], '_', node.description.name);
-		else
-			AppendLine(node.description.name);
-		EnterScope();
+		auto appendStruct = [&](bool emulateStd140)
 		{
-			bool first = true;
-			for (const auto& member : node.description.members)
-			{
-				// If builtin needs emulation, skip struct declaration as all shader
-				// input struct members need builtin or location attributes
-				if (member.builtin.HasValue())
-				{
-					if (std::find(s_wgslBuiltinsToEmulate.begin(), s_wgslBuiltinsToEmulate.end(), member.builtin.GetResultingValue()) != s_wgslBuiltinsToEmulate.end())
-						continue;
-				}
-				if (!first)
-					AppendLine(",");
-				first = false;
+			AppendAttributes(true, LayoutAttribute{ node.description.layout }, TagAttribute{ node.description.tag });
+			Append("struct ");
 
-				AppendAttributes(false, CondAttribute{ member.cond }, LocationAttribute{ member.locationIndex }, InterpAttribute{ member.interp }, BuiltinAttribute{ member.builtin }, TagAttribute{ member.tag });
-				Append(member.name, ": ");
-				if (node.description.layout.IsResultingValue() && node.description.layout.GetResultingValue() == Ast::MemoryLayout::Std140)
+			assert(node.structIndex);
+			const auto& identifier = Nz::Retrieve(m_currentState->structs, *node.structIndex);
+			if (identifier.moduleIndex != 0)
+				Append(m_currentState->moduleNames[identifier.moduleIndex - 1], '_');
+			if (emulateStd140)
+				AppendLine(node.description.name, "_std140");
+			else
+				AppendLine(node.description.name);
+
+			EnterScope();
+			{
+				bool first = true;
+				for (const auto& member : node.description.members)
 				{
-					Append(member.type);
+					// If builtin needs emulation, skip struct declaration as all shader
+					// input struct members need builtin or location attributes
+					if (member.builtin.HasValue())
+					{
+						if (std::find(s_wgslBuiltinsToEmulate.begin(), s_wgslBuiltinsToEmulate.end(), member.builtin.GetResultingValue()) != s_wgslBuiltinsToEmulate.end())
+							continue;
+					}
+					if (!first)
+						AppendLine(",");
+					first = false;
+
+					AppendAttributes(false, CondAttribute{ member.cond }, LocationAttribute{ member.locationIndex }, InterpAttribute{ member.interp }, BuiltinAttribute{ member.builtin }, TagAttribute{ member.tag });
+					Append(member.name, ": ", member.type);
 				}
-				else
-					Append(member.type);
 			}
+			LeaveScope();
+		};
+
+		if (isUsedInUniformBuffer || isDeclaredAsStd140)
+		{
+			m_currentState->std140EmulationState = true;
+			appendStruct(true);
+			m_currentState->std140EmulationState = false;
 		}
-		LeaveScope();
+		if (isUsedInPlainCode && !isDeclaredAsStd140)
+			appendStruct(false);
 	}
 
 	void WgslWriter::Visit(Ast::DeclareVariableStatement& node)

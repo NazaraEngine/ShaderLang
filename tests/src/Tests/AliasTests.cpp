@@ -236,12 +236,6 @@ struct ForwardOutput
 	@location(0) color: vec4<f32>
 }
 
-struct DeferredOutput
-{
-	@location(0) color: vec4<f32>,
-	@location(1) normal: vec3<f32>
-}
-
 @fragment
 fn main() -> ForwardOutput
 {
@@ -333,11 +327,6 @@ OpReturn
 OpFunctionEnd)");
 
 			ExpectWGSL(*shaderModule, R"(
-struct ForwardOutput
-{
-	@location(0) color: vec4<f32>
-}
-
 struct DeferredOutput
 {
 	@location(0) color: vec4<f32>,
