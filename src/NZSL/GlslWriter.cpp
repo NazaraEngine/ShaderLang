@@ -2791,7 +2791,7 @@ namespace nzsl
 		assert(node.structIndex);
 		RegisterStruct(*node.structIndex, &node.description, structName);
 
-		// Don't output structs used for UBO/SSBO description
+		// Don't output structs only used for UBO/SSBO description
 		if (m_currentState->previsitor.bufferStructs.UnboundedTest(*node.structIndex))
 		{
 			if (m_currentState->backendParameters.debugLevel >= DebugLevel::Minimal)

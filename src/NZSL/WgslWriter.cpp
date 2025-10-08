@@ -42,6 +42,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <variant>
+#include <iostream>
 #include <algorithm>
 
 namespace nzsl
@@ -148,6 +149,20 @@ namespace nzsl
 			RecursiveVisitor::Visit(node);
 		}
 
+		void RegisterStructType(const Ast::ExpressionType& type)
+		{
+			if (IsStorageType(type))
+				usedStructs.UnboundedSet(std::get<Ast::StorageType>(type).containedType.structIndex);
+			else if (IsUniformType(type))
+				usedStructs.UnboundedSet(std::get<Ast::UniformType>(type).containedType.structIndex);
+			else if (IsStructType(type))
+				usedStructs.UnboundedSet(std::get<Ast::StructType>(type).structIndex);
+			else if (IsArrayType(type))
+				RegisterStructType(std::get<Ast::ArrayType>(type).InnerType());
+			else if (IsDynArrayType(type))
+				RegisterStructType(std::get<Ast::DynArrayType>(type).InnerType());
+		}
+
 		void Visit(Ast::DeclareExternalStatement& node) override
 		{
 			for (const auto& extVar : node.externalVars)
@@ -165,6 +180,8 @@ namespace nzsl
 					else if (IsStructType(array.InnerType()))
 						features.insert(WgslFeature::WgpuBufferBindingArray);
 				}
+				else if (IsUniformType(type))
+					bufferStructs.UnboundedSet(std::get<Ast::UniformType>(type).containedType.structIndex);
 			}
 
 			RecursiveVisitor::Visit(node);
@@ -201,12 +218,23 @@ namespace nzsl
 		void Visit(Ast::DeclareStructStatement& node) override
 		{
 			structs[node.structIndex.value()] = &node.description;
+			for (const auto& member : node.description.members)
+				RegisterStructType(member.type.GetResultingValue());
+			RecursiveVisitor::Visit(node);
+		}
+
+		void Visit(Ast::DeclareVariableStatement& node) override
+		{
+			RegisterStructType(node.varType.GetResultingValue());
+
 			RecursiveVisitor::Visit(node);
 		}
 
 		std::unordered_map<std::size_t, Ast::StructDescription*> structs;
 		std::unordered_map<IntrinsicHelper, std::unordered_set<Ast::ExpressionType>> intrinsicHelpers;
 		tsl::ordered_set<WgslFeature> features;
+		Nz::Bitset<> bufferStructs;
+		Nz::Bitset<> usedStructs;
 		WgslWriter& m_writer;
 	};
 
@@ -369,6 +397,8 @@ namespace nzsl
 		std::unordered_set<std::uint64_t> reservedBindings;
 		std::vector<std::string> externalBlockNames;
 		std::vector<std::string> moduleNames;
+		Nz::Bitset<> bufferStructs;
+		Nz::Bitset<> usedStructs;
 		const BackendParameters& backendParameters;
 		bool isInEntryPoint = false;
 		int streamEmptyLine = 1;
@@ -447,6 +477,9 @@ namespace nzsl
 
 			module.rootNode->Visit(previsitor);
 		}
+
+		m_currentState->bufferStructs = std::move(previsitor.bufferStructs);
+		m_currentState->usedStructs = std::move(previsitor.usedStructs);
 
 		AppendHeader(*module.metadata);
 
@@ -2493,8 +2526,11 @@ namespace nzsl
 
 	void WgslWriter::Visit(Ast::DeclareStructStatement& node)
 	{
-		if (node.structIndex)
-			RegisterStruct(*node.structIndex, node.description);
+		assert(node.structIndex);
+		RegisterStruct(*node.structIndex, node.description);
+
+		bool isUsedInUniformBuffer = m_currentState->bufferStructs.UnboundedTest(*node.structIndex);
+		bool isUsedInPlainCode = m_currentState->usedStructs.UnboundedTest(*node.structIndex);
 
 		AppendAttributes(true, LayoutAttribute{ node.description.layout }, TagAttribute{ node.description.tag });
 		Append("struct ");
@@ -2522,7 +2558,13 @@ namespace nzsl
 				first = false;
 
 				AppendAttributes(false, CondAttribute{ member.cond }, LocationAttribute{ member.locationIndex }, InterpAttribute{ member.interp }, BuiltinAttribute{ member.builtin }, TagAttribute{ member.tag });
-				Append(member.name, ": ", member.type);
+				Append(member.name, ": ");
+				if (node.description.layout.IsResultingValue() && node.description.layout.GetResultingValue() == Ast::MemoryLayout::Std140)
+				{
+					Append(member.type);
+				}
+				else
+					Append(member.type);
 			}
 		}
 		LeaveScope();
