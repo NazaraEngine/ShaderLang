@@ -298,7 +298,7 @@ struct _SimpleModule_Data
 	value: f32
 }
 
-struct _SimpleModule_Block
+struct _SimpleModule_Block_std140
 {
 	data: _SimpleModule_Data
 }
@@ -318,7 +318,7 @@ struct _SimpleModule_OutputData
 	@location(0) value: vec4<f32>
 }
 
-@group(0) @binding(0) var<uniform> ExtData_block: _SimpleModule_Block;
+@group(0) @binding(0) var<uniform> ExtData_block: _SimpleModule_Block_std140;
 
 @fragment
 fn main(input: _SimpleModule_InputData) -> _SimpleModule_OutputData
@@ -576,7 +576,7 @@ struct _Modules_Data_Data
 }
 // Module Modules.Block
 
-struct _Modules_Block_Block
+struct _Modules_Block_Block_std140
 {
 	data: _Modules_Data_Data
 }
@@ -591,7 +591,7 @@ struct _Modules_InputOutput_OutputData
 	@location(0) value: vec4<f32>
 }
 
-@group(0) @binding(0) var<uniform> block: _Modules_Block_Block;
+@group(0) @binding(0) var<uniform> block: _Modules_Block_Block_std140;
 
 @fragment
 fn main(input: _Modules_InputOutput_InputData) -> _Modules_InputOutput_OutputData
@@ -956,6 +956,11 @@ struct _Modules_Data_Light
 	intensities: vec2<i32>
 }
 
+struct _Modules_Data_Lights_std140
+{
+	lights: array<_Modules_Data_Light, 3>
+}
+
 struct _Modules_Data_Lights
 {
 	lights: array<_Modules_Data_Light, 3>
@@ -996,7 +1001,7 @@ fn _Modules_Func_SumLightIntensities(lightData: _Modules_Data_Lights) -> vec2<i3
 	return intensities;
 }
 
-@group(0) @binding(0) var<uniform> lightData: _Modules_Data_Lights;
+@group(0) @binding(0) var<uniform> lightData: _Modules_Data_Lights_std140;
 
 @fragment
 fn main()
@@ -1549,7 +1554,7 @@ struct _Simple_Module_Data
 	value: f32
 }
 
-struct _Simple_Module_Block
+struct _Simple_Module_Block_std140
 {
 	data: _Simple_Module_Data
 }
@@ -1569,7 +1574,7 @@ struct _Simple_Module_OutputData
 	@location(0) value: vec4<f32>
 }
 
-@group(0) @binding(0) var<uniform> ExtData_block: _Simple_Module_Block;
+@group(0) @binding(0) var<uniform> ExtData_block: _Simple_Module_Block_std140;
 
 @fragment
 fn main(input: _Simple_Module_InputData) -> _Simple_Module_OutputData
@@ -1838,7 +1843,7 @@ struct _Simple_Module_Data
 	value: f32
 }
 
-struct _Simple_Module_Block
+struct _Simple_Module_Block_std140
 {
 	data: _Simple_Module_Data
 }
@@ -1858,7 +1863,7 @@ struct _Simple_Module_OutputData
 	@location(0) value: vec4<f32>
 }
 
-@group(0) @binding(0) var<uniform> ExtData_block: _Simple_Module_Block;
+@group(0) @binding(0) var<uniform> ExtData_block: _Simple_Module_Block_std140;
 
 @fragment
 fn main(input: _Simple_Module_InputData) -> _Simple_Module_OutputData

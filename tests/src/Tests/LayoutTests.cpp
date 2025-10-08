@@ -121,14 +121,14 @@ fn main()
 )", {}, {}, true);
 
 		ExpectWGSL(*shaderModule, R"(
-struct Foo
+struct Foo_std140
 {
 	v0: vec3<f32>,
 	v1: vec3<f32>,
 	v2: f32
 }
 
-@group(0) @binding(0) var<uniform> foo: Foo;
+@group(0) @binding(0) var<uniform> foo: Foo_std140;
 
 @fragment
 fn main()
