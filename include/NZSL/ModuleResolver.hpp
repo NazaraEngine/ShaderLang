@@ -11,7 +11,6 @@
 #include <NZSL/Config.hpp>
 #include <memory>
 #include <string>
-#include <vector>
 
 namespace nzsl
 {

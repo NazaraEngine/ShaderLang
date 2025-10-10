@@ -1242,6 +1242,10 @@ namespace nzsl::Ast
 
 		for (auto& member : node.description.members)
 		{
+			// Don't validate disabled fields
+			if (member.cond.IsResultingValue() && !member.cond.GetResultingValue())
+				continue;
+
 			if (member.type.HasValue() && member.type.IsExpression())
 			{
 				if (!m_context->partialCompilation)
