@@ -1245,7 +1245,7 @@ namespace nzsl::Ast
 			if (member.type.HasValue() && member.type.IsExpression())
 			{
 				if (!m_context->partialCompilation)
-					throw AstMissingExpressionTypeError{ member.sourceLocation };
+					throw AstUnresolvedExpressionTypeError{ member.sourceLocation };
 
 				continue;
 			}
