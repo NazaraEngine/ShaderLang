@@ -2887,7 +2887,9 @@ namespace nzsl::Ast
 
 			if (member.type.IsExpression())
 			{
-				assert(m_context->partialCompilation);
+				if (!m_context->partialCompilation)
+					throw AstUnresolvedExpressionTypeError{ member.sourceLocation };
+
 				continue;
 			}
 
