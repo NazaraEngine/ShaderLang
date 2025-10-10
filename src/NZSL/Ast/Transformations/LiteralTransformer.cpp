@@ -403,6 +403,9 @@ namespace nzsl::Ast
 		auto& funcData = m_context->functions.Retrieve(functionIndex, callFuncExpr.sourceLocation);
 		const DeclareFunctionStatement* referenceDeclaration = funcData.node;
 
+		if (callFuncExpr.parameters.size() != referenceDeclaration->parameters.size())
+			throw CompilerFunctionCallUnmatchingParameterCountError{ callFuncExpr.sourceLocation, referenceDeclaration->name, Nz::SafeCast<std::uint32_t>(referenceDeclaration->parameters.size()), Nz::SafeCast<std::uint32_t>(callFuncExpr.parameters.size()) };
+
 		for (std::size_t i = 0; i < callFuncExpr.parameters.size(); ++i)
 		{
 			const ExpressionType& expectedType = referenceDeclaration->parameters[i].type.GetResultingValue();
