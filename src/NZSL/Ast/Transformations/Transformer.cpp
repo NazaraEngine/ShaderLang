@@ -375,7 +375,6 @@ namespace nzsl::Ast
 			FinishExpressionHandling();
 		}
 
-		PushScope();
 		if (!m_flags.Test(TransformerFlag::TransformDisabled) && node.condition->GetType() == NodeType::ConstantValueExpression)
 		{
 			auto& constantVal = static_cast<ConstantValueExpression&>(*node.condition);
@@ -384,7 +383,6 @@ namespace nzsl::Ast
 		}
 
 		HandleStatement(node.statement);
-		PopScope();
 	}
 
 	void Transformer::HandleChildren(ContinueStatement& /*node*/)
