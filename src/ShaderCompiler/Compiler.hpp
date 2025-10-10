@@ -70,7 +70,6 @@ namespace nzslc
 			template<typename F> auto StepInternal(std::string_view stepName, std::size_t uniqueIndex, F&& func) -> decltype(func());
 			bool WriteFileContent(const std::filesystem::path& filePath, const void* data, std::size_t size);
 
-			static nzsl::Ast::ModulePtr Parse(std::string_view sourceContent, const std::string& filePath);
 			static std::vector<std::uint8_t> ReadFileContent(const std::filesystem::path& filePath);
 			static std::string ReadSourceFileContent(const std::filesystem::path& filePath);
 			static std::string ToHeader(const void* data, std::size_t size);

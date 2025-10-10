@@ -677,7 +677,9 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 		if (extension == ".nzsl")
 		{
 			std::string sourceContent = Step("File reading"sv, __LINE__, &Compiler::ReadSourceFileContent, m_inputFilePath);
-			m_shaderModule = Step("Parse input"sv, __LINE__, &Compiler::Parse, sourceContent, Nz::PathToString(m_inputFilePath));
+			std::string sourceFile = Nz::PathToString(m_inputFilePath);
+			std::vector<nzsl::Token> tokens = Step("Tokenizing", __LINE__, [&] { return nzsl::Tokenize(sourceContent, sourceFile); });
+			m_shaderModule = Step("Parsing"sv, __LINE__, [&] { return nzsl::Parse(tokens); });
 		}
 		else if (extension == ".nzslb")
 		{
@@ -781,12 +783,6 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 		});
 
 		return func();
-	}
-
-	nzsl::Ast::ModulePtr Compiler::Parse(std::string_view sourceContent, const std::string& filePath)
-	{
-		std::vector<nzsl::Token> tokens = nzsl::Tokenize(sourceContent, filePath);
-		return nzsl::Parse(tokens);
 	}
 
 	std::vector<std::uint8_t> Compiler::ReadFileContent(const std::filesystem::path& filePath)
