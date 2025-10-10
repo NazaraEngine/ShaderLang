@@ -553,6 +553,9 @@ namespace nzsl::Ast
 		if (referenceDeclaration->entryStage.HasValue())
 			throw CompilerFunctionCallUnexpectedEntryFunctionError{ node.sourceLocation, referenceDeclaration->name };
 
+		if (node.parameters.size() != referenceDeclaration->parameters.size())
+			throw CompilerFunctionCallUnmatchingParameterCountError{ node.sourceLocation, referenceDeclaration->name, Nz::SafeCast<std::uint32_t>(referenceDeclaration->parameters.size()), Nz::SafeCast<std::uint32_t>(node.parameters.size()) };
+
 		for (std::size_t i = 0; i < node.parameters.size(); ++i)
 		{
 			auto& expressionPtr = node.parameters[i].expr;
@@ -576,9 +579,6 @@ namespace nzsl::Ast
 			if (node.parameters[i].semantic != referenceDeclaration->parameters[i].semantic)
 				throw CompilerFunctionCallUnmatchingParameterSemanticTypeError{ node.parameters[i].expr->sourceLocation, referenceDeclaration->name, Nz::SafeCast<std::uint32_t>(i), Ast::ToString(referenceDeclaration->parameters[i].semantic), Ast::ToString(node.parameters[i].semantic) };
 		}
-
-		if (node.parameters.size() != referenceDeclaration->parameters.size())
-			throw CompilerFunctionCallUnmatchingParameterCountError{ node.sourceLocation, referenceDeclaration->name, Nz::SafeCast<std::uint32_t>(referenceDeclaration->parameters.size()), Nz::SafeCast<std::uint32_t>(node.parameters.size()) };
 
 		return DontVisitChildren{};
 	}
