@@ -72,7 +72,6 @@ namespace nzsl
 			struct EntryAttribute;
 			struct FeatureAttribute;
 			struct InterpAttribute;
-			struct LayoutAttribute;
 			struct LicenseAttribute;
 			struct LocationAttribute;
 			struct SetAttribute;
@@ -120,7 +119,6 @@ namespace nzsl
 			void AppendAttribute(bool first, EntryAttribute attribute);
 			void AppendAttribute(bool first, FeatureAttribute attribute);
 			void AppendAttribute(bool first, InterpAttribute attribute);
-			void AppendAttribute(bool first, LayoutAttribute attribute);
 			void AppendAttribute(bool first, LicenseAttribute attribute);
 			void AppendAttribute(bool first, LocationAttribute attribute);
 			void AppendAttribute(bool first, SetAttribute attribute);
@@ -146,7 +144,7 @@ namespace nzsl
 			void RegisterFunction(std::size_t funcIndex, std::string functionName);
 			void RegisterModule(std::size_t moduleIndex, std::string moduleName);
 			void RegisterStruct(std::size_t structIndex, const Ast::StructDescription& structDescription);
-			void RegisterVariable(std::size_t varIndex, std::string varName, bool isInout = false, bool isUniformBuffer = false);
+			void RegisterVariable(std::size_t varIndex, std::string varName, bool isInout = false);
 
 			void ScopeVisit(Ast::Statement& node);
 
