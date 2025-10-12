@@ -32,6 +32,8 @@ namespace nzsl::Ast
 			ModulePtr Clone(const Module& module);
 			StatementPtr Clone(const Statement& statement);
 
+			StructDescription Clone(const StructDescription& desc);
+
 			Cloner& operator=(const Cloner&) = delete;
 			Cloner& operator=(Cloner&&) = delete;
 
@@ -101,6 +103,7 @@ namespace nzsl::Ast
 	inline ExpressionPtr Clone(const Expression& node);
 	inline ModulePtr Clone(const Module& module);
 	inline StatementPtr Clone(const Statement& node);
+	inline StructDescription Clone(const StructDescription& desc);
 }
 
 #include <NZSL/Ast/Cloner.inl>

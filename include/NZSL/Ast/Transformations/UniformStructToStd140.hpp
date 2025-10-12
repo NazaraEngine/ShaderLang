@@ -23,17 +23,17 @@ namespace nzsl::Ast
 
 			struct Options
 			{
+				bool cloneStructIfUsedElsewhere = true;
 			};
 
 		private:
 			using Transformer::Transform;
 
-			StatementTransformation Transform(DeclareExternalStatement&& statement) override;
+			StatementTransformation Transform(DeclareExternalStatement&& declExternal) override;
 			StatementTransformation Transform(DeclareStructStatement&& declStruct) override;
 
-			std::unordered_map<std::size_t /*structIndex*/, StructDescription*> m_structDescs;
-
 			const Options* m_options;
+			std::unordered_map<std::size_t /*structIndex*/, std::size_t /*newStructIndex*/> m_structRemap;
 	};
 }
 

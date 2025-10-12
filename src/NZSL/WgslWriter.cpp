@@ -148,24 +148,7 @@ namespace nzsl
 				}
 			}
 
-			for (const auto& param : node.parameters)
-				RegisterStructType(param.type.GetResultingValue());
-
 			RecursiveVisitor::Visit(node);
-		}
-
-		void RegisterStructType(const Ast::ExpressionType& type)
-		{
-			if (IsStorageType(type))
-				usedStructs.UnboundedSet(std::get<Ast::StorageType>(type).containedType.structIndex);
-			else if (IsPushConstantType(type))
-				usedStructs.UnboundedSet(std::get<Ast::PushConstantType>(type).containedType.structIndex);
-			else if (IsStructType(type))
-				usedStructs.UnboundedSet(std::get<Ast::StructType>(type).structIndex);
-			else if (IsArrayType(type))
-				RegisterStructType(std::get<Ast::ArrayType>(type).InnerType());
-			else if (IsDynArrayType(type))
-				RegisterStructType(std::get<Ast::DynArrayType>(type).InnerType());
 		}
 
 		void Visit(Ast::DeclareExternalStatement& node) override
@@ -185,10 +168,6 @@ namespace nzsl
 					else if (IsStructType(array.InnerType()))
 						features.insert(WgslFeature::WgpuBufferBindingArray);
 				}
-				if (IsUniformType(type))
-					bufferStructs.UnboundedSet(std::get<Ast::UniformType>(type).containedType.structIndex);
-				else
-					RegisterStructType(type);
 			}
 
 			RecursiveVisitor::Visit(node);
@@ -225,23 +204,12 @@ namespace nzsl
 		void Visit(Ast::DeclareStructStatement& node) override
 		{
 			structs[node.structIndex.value()] = &node.description;
-			for (const auto& member : node.description.members)
-				RegisterStructType(member.type.GetResultingValue());
-			RecursiveVisitor::Visit(node);
-		}
-
-		void Visit(Ast::DeclareVariableStatement& node) override
-		{
-			RegisterStructType(node.varType.GetResultingValue());
-
 			RecursiveVisitor::Visit(node);
 		}
 
 		std::unordered_map<std::size_t, Ast::StructDescription*> structs;
 		std::unordered_map<IntrinsicHelper, std::unordered_set<Ast::ExpressionType>> intrinsicHelpers;
 		tsl::ordered_set<WgslFeature> features;
-		Nz::Bitset<> bufferStructs;
-		Nz::Bitset<> usedStructs;
 		WgslWriter& m_writer;
 	};
 
@@ -322,13 +290,6 @@ namespace nzsl
 		bool HasValue() const { return interpQualifier.HasValue(); }
 	};
 
-	struct WgslWriter::LayoutAttribute
-	{
-		const Ast::ExpressionValue<Ast::MemoryLayout>& layout;
-
-		bool HasValue() const { return layout.HasValue(); }
-	};
-
 	struct WgslWriter::LicenseAttribute
 	{
 		const std::string& license;
@@ -342,7 +303,7 @@ namespace nzsl
 
 		bool HasValue() const { return locationIndex.HasValue(); }
 	};
-	
+
 	struct WgslWriter::SetAttribute
 	{
 		const Ast::ExpressionValue<std::uint32_t>& setIndex;
@@ -384,7 +345,6 @@ namespace nzsl
 			std::size_t moduleIndex;
 			std::string name;
 			bool isDereferenceable;
-			bool isUniformBuffer;
 		};
 
 		struct StructData : Identifier
@@ -405,8 +365,6 @@ namespace nzsl
 		std::unordered_set<std::uint64_t> reservedBindings;
 		std::vector<std::string> externalBlockNames;
 		std::vector<std::string> moduleNames;
-		Nz::Bitset<> bufferStructs;
-		Nz::Bitset<> usedStructs;
 		const BackendParameters& backendParameters;
 		bool isInEntryPoint = false;
 		int streamEmptyLine = 1;
@@ -486,9 +444,6 @@ namespace nzsl
 
 			module.rootNode->Visit(previsitor);
 		}
-
-		m_currentState->bufferStructs = std::move(previsitor.bufferStructs);
-		m_currentState->usedStructs = std::move(previsitor.usedStructs);
 
 		AppendHeader(*module.metadata);
 
@@ -673,7 +628,6 @@ namespace nzsl
 
 		executor.AddPass<Ast::LoopUnrollTransformer>();
 		executor.AddPass<Ast::LiteralTransformer>();
-		//executor.AddPass<Ast::BranchSplitterTransformer>();
 		executor.AddPass<Ast::IdentifierTransformer>(firstIdentifierPassOptions);
 		executor.AddPass<Ast::ForToWhileTransformer>();
 		executor.AddPass<Ast::StructAssignmentTransformer>([](Ast::StructAssignmentTransformer::Options& opt)
@@ -698,7 +652,10 @@ namespace nzsl
 			opt.removeTypeConstant = false;
 		});
 		executor.AddPass<Ast::AliasTransformer>();
-		executor.AddPass<Ast::UniformStructToStd140Transformer>();
+		executor.AddPass<Ast::UniformStructToStd140Transformer>([](Ast::UniformStructToStd140Transformer::Options& opt)
+		{
+			opt.cloneStructIfUsedElsewhere = true;
+		});
 		executor.AddPass<Ast::IdentifierTransformer>(secondIdentifierPassOptions);
 	}
 
@@ -875,9 +832,6 @@ namespace nzsl
 	void WgslWriter::Append(const Ast::StructType& structType)
 	{
 		AppendIdentifier(m_currentState->structs, structType.structIndex, true);
-		const auto& structure = m_currentState->structs[structType.structIndex];
-		if (structure.desc->layout.HasValue() && structure.desc->layout.GetResultingValue() == Ast::MemoryLayout::Std140)
-			Append("_std140");
 	}
 
 	void WgslWriter::Append(const Ast::TextureType& textureType)
@@ -1244,11 +1198,6 @@ namespace nzsl
 			attribute.interpQualifier.GetExpression()->Visit(*this);
 
 		Append(")");
-	}
-
-	void WgslWriter::AppendAttribute(bool /*first*/, LayoutAttribute /*attribute*/)
-	{
-		// WGSL does not have memory layout management syntax
 	}
 
 	void WgslWriter::AppendAttribute(bool /*first*/, LicenseAttribute attribute)
@@ -1692,14 +1641,13 @@ namespace nzsl
 		m_currentState->structs.emplace(structIndex, std::move(structData));
 	}
 
-	void WgslWriter::RegisterVariable(std::size_t varIndex, std::string varName, bool isInout, bool isUniformBuffer)
+	void WgslWriter::RegisterVariable(std::size_t varIndex, std::string varName, bool isInout)
 	{
 		State::Identifier identifier;
 		identifier.externalBlockIndex = m_currentState->currentExternalBlockIndex;
 		identifier.moduleIndex = m_currentState->currentModuleIndex;
 		identifier.name = std::move(varName);
 		identifier.isDereferenceable = isInout;
-		identifier.isUniformBuffer = isUniformBuffer;
 
 		assert(m_currentState->variables.find(varIndex) == m_currentState->variables.end());
 		m_currentState->variables.emplace(varIndex, std::move(identifier));
@@ -1836,9 +1784,6 @@ namespace nzsl
 			case Ast::IdentifierType::Struct:
 			{
 				AppendIdentifier(m_currentState->structs, node.identifierIndex, true);
-				const auto& structure = m_currentState->structs[node.identifierIndex];
-				if (structure.desc->layout.HasValue() && structure.desc->layout.GetResultingValue() == Ast::MemoryLayout::Std140)
-					Append("_std140");
 				break;
 			}
 
@@ -1860,8 +1805,8 @@ namespace nzsl
 				if (m_currentState->variables[node.identifierIndex].isDereferenceable)
 					Append('*');
 				AppendIdentifier(m_currentState->variables, node.identifierIndex);
-				if (!m_currentState->variables[node.identifierIndex].isUniformBuffer)
-					m_currentState->std140EmulationState = false;
+				//if (!m_currentState->variables[node.identifierIndex].isUniformBuffer)
+				//	m_currentState->std140EmulationState = false;
 				break;
 			}
 		}
@@ -2469,7 +2414,7 @@ namespace nzsl
 			AppendLine(';');
 
 			if (externalVar.varIndex)
-				RegisterVariable(*externalVar.varIndex, variableName, false, IsUniformType(exprType));
+				RegisterVariable(*externalVar.varIndex, variableName);
 		}
 
 		m_currentState->currentExternalBlockIndex = {};
@@ -2559,55 +2504,36 @@ namespace nzsl
 		assert(node.structIndex);
 		RegisterStruct(*node.structIndex, node.description);
 
-		bool isUsedInUniformBuffer = m_currentState->bufferStructs.UnboundedTest(*node.structIndex);
-		bool isUsedInPlainCode = m_currentState->usedStructs.UnboundedTest(*node.structIndex);
-		bool isDeclaredAsStd140 = (node.description.layout.HasValue() && node.description.layout.GetResultingValue() == Ast::MemoryLayout::Std140);
+		AppendAttributes(true, TagAttribute{ node.description.tag });
+		Append("struct ");
 
-		auto appendStruct = [&](bool emulateStd140)
+		assert(node.structIndex);
+		const auto& identifier = Nz::Retrieve(m_currentState->structs, *node.structIndex);
+		if (identifier.moduleIndex != 0)
+			Append(m_currentState->moduleNames[identifier.moduleIndex - 1], '_');
+		AppendLine(node.description.name);
+
+		EnterScope();
 		{
-			AppendAttributes(true, LayoutAttribute{ node.description.layout }, TagAttribute{ node.description.tag });
-			Append("struct ");
-
-			assert(node.structIndex);
-			const auto& identifier = Nz::Retrieve(m_currentState->structs, *node.structIndex);
-			if (identifier.moduleIndex != 0)
-				Append(m_currentState->moduleNames[identifier.moduleIndex - 1], '_');
-			if (emulateStd140)
-				AppendLine(node.description.name, "_std140");
-			else
-				AppendLine(node.description.name);
-
-			EnterScope();
+			bool first = true;
+			for (const auto& member : node.description.members)
 			{
-				bool first = true;
-				for (const auto& member : node.description.members)
+				// If builtin needs emulation, skip struct declaration as all shader
+				// input struct members need builtin or location attributes
+				if (member.builtin.HasValue())
 				{
-					// If builtin needs emulation, skip struct declaration as all shader
-					// input struct members need builtin or location attributes
-					if (member.builtin.HasValue())
-					{
-						if (std::find(s_wgslBuiltinsToEmulate.begin(), s_wgslBuiltinsToEmulate.end(), member.builtin.GetResultingValue()) != s_wgslBuiltinsToEmulate.end())
-							continue;
-					}
-					if (!first)
-						AppendLine(",");
-					first = false;
-
-					AppendAttributes(false, CondAttribute{ member.cond }, LocationAttribute{ member.locationIndex }, InterpAttribute{ member.interp }, BuiltinAttribute{ member.builtin }, TagAttribute{ member.tag });
-					Append(member.name, ": ", member.type);
+					if (std::find(s_wgslBuiltinsToEmulate.begin(), s_wgslBuiltinsToEmulate.end(), member.builtin.GetResultingValue()) != s_wgslBuiltinsToEmulate.end())
+						continue;
 				}
-			}
-			LeaveScope();
-		};
+				if (!first)
+					AppendLine(",");
+				first = false;
 
-		if (isUsedInUniformBuffer || isDeclaredAsStd140)
-		{
-			m_currentState->std140EmulationState = true;
-			appendStruct(true);
-			m_currentState->std140EmulationState = false;
+				AppendAttributes(false, CondAttribute{ member.cond }, LocationAttribute{ member.locationIndex }, InterpAttribute{ member.interp }, BuiltinAttribute{ member.builtin }, TagAttribute{ member.tag });
+				Append(member.name, ": ", member.type);
+			}
 		}
-		if (isUsedInPlainCode && !isDeclaredAsStd140)
-			appendStruct(false);
+		LeaveScope();
 	}
 
 	void WgslWriter::Visit(Ast::DeclareVariableStatement& node)

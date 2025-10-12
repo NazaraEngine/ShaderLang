@@ -20,23 +20,66 @@ namespace nzsl::Ast
 
 	auto UniformStructToStd140Transformer::Transform(DeclareExternalStatement&& node) -> StatementTransformation
 	{
-		for (auto& extVar : node.externalVars)
+		for (auto& var : node.externalVars)
 		{
-			const ExpressionType& targetType = ResolveAlias(extVar.type.GetResultingValue());
-			if (IsUniformType(targetType))
+			auto& varType = var.type.GetResultingValue();
+			if (IsUniformType(varType))
 			{
-				const auto& uniformType = std::get<UniformType>(targetType);
-				m_structDescs[uniformType.containedType.structIndex]->layout = ExpressionValue{ MemoryLayout::Std140 };
+				auto& uniformType = std::get<UniformType>(varType);
+				if (m_structRemap.count(uniformType.containedType.structIndex))
+					uniformType.containedType.structIndex = m_structRemap.at(uniformType.containedType.structIndex);
 			}
 		}
-		return DontVisitChildren{};
+		return VisitChildren{};
 	}
 
 	auto UniformStructToStd140Transformer::Transform(DeclareStructStatement&& declStruct) -> StatementTransformation
 	{
-		if (declStruct.structIndex)
-			m_structDescs[*declStruct.structIndex] = &declStruct.description;
+		if (!declStruct.structIndex.has_value())
+			return VisitChildren{};
 
-		return DontVisitChildren{};
+		bool isUsedInUniformBuffer = false;
+		bool isUsedInPlainCode = false;
+
+		const auto& variables = m_context->variables;
+		for (const auto& [_, var] : variables.values)
+		{
+			const auto& realVarType = ResolveAlias(var.type);
+			if (IsStructType(realVarType) && std::get<StructType>(realVarType).structIndex == *declStruct.structIndex)
+				isUsedInPlainCode = true;
+			else if (IsUniformType(realVarType) && std::get<UniformType>(realVarType).containedType.structIndex == *declStruct.structIndex)
+				isUsedInUniformBuffer = true;
+
+			if (isUsedInUniformBuffer && isUsedInPlainCode) // Skip useless iterations
+				break;
+		}
+
+		if (isUsedInUniformBuffer)
+		{
+			if (isUsedInPlainCode && m_options->cloneStructIfUsedElsewhere)
+			{
+				// Cloning struct but with Std140 layout
+				StructDescription desc = Clone(declStruct.description);
+				desc.layout = ExpressionValue{ MemoryLayout::Std140 };
+				desc.name += "_std140";
+
+				MultiStatementPtr multiStatement = ShaderBuilder::MultiStatement();
+				multiStatement->sourceLocation = declStruct.sourceLocation;
+
+				auto newStruct = ShaderBuilder::DeclareStruct(std::move(desc), ExpressionValue{ (declStruct.isExported.HasValue() ? declStruct.isExported.GetResultingValue() : false) });
+				newStruct->sourceLocation = declStruct.sourceLocation;
+				newStruct->structIndex = m_context->structs.RegisterNewIndex();
+
+				m_structRemap[*declStruct.structIndex] = *newStruct->structIndex;
+
+				multiStatement->statements.emplace_back(std::make_unique<DeclareStructStatement>(std::move(declStruct)));
+				multiStatement->statements.emplace_back(std::move(newStruct));
+
+				return ReplaceStatement{ std::move(multiStatement) };
+			}
+			else
+				m_context->structs.Retrieve(*declStruct.structIndex, declStruct.sourceLocation).description->layout = ExpressionValue{ MemoryLayout::Std140 };
+		}
+		return VisitChildren{};
 	}
 }
