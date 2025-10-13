@@ -3089,7 +3089,7 @@ namespace nzsl::Ast
 		{
 			if (entry.identifier.empty())
 			{
-				// Wildcard
+				// Wildcard or module import
 
 				if (importEverythingElse)
 					throw CompilerImportMultipleWildcardError{ entry.identifierLoc };
@@ -3130,16 +3130,21 @@ namespace nzsl::Ast
 				m_context->allowUnknownIdentifiers = true;
 			else
 			{
-				for (const auto& [identifier, aliases] : importedSymbols)
+				if (!importedSymbols.empty())
 				{
-					for (const std::string& alias : aliases)
+					for (const auto& [identifier, aliases] : importedSymbols)
 					{
-						if (alias.empty())
-							RegisterUnresolved(identifier);
-						else
-							RegisterUnresolved(alias);
+						for (const std::string& alias : aliases)
+						{
+							if (alias.empty())
+								RegisterUnresolved(identifier);
+							else
+								RegisterUnresolved(alias);
+						}
 					}
 				}
+				else
+					RegisterUnresolved(importStatement.moduleIdentifier);
 			}
 
 			return VisitChildren{};
