@@ -29,6 +29,7 @@
 #include <NZSL/Ast/Transformations/LiteralTransformer.hpp>
 #include <NZSL/Ast/Transformations/MatrixTransformer.hpp>
 #include <NZSL/Ast/Transformations/ResolveTransformer.hpp>
+#include <NZSL/Ast/Transformations/Std140EmulationTransformer.hpp>
 #include <NZSL/Ast/Transformations/StructAssignmentTransformer.hpp>
 #include <NZSL/Ast/Transformations/SwizzleTransformer.hpp>
 #include <NZSL/Ast/Transformations/UniformStructToStd140.hpp>
@@ -656,6 +657,7 @@ namespace nzsl
 		{
 			opt.cloneStructIfUsedElsewhere = true;
 		});
+		executor.AddPass<Ast::Std140EmulationTransformer>();
 		executor.AddPass<Ast::IdentifierTransformer>(secondIdentifierPassOptions);
 	}
 
@@ -2505,6 +2507,8 @@ namespace nzsl
 		RegisterStruct(*node.structIndex, node.description);
 
 		AppendAttributes(true, TagAttribute{ node.description.tag });
+		if (node.description.layout.HasValue() && node.description.layout.GetResultingValue() == Ast::MemoryLayout::Std140) // Only std140 is relevent for now
+			AppendComment("std140 layout");
 		Append("struct ");
 
 		assert(node.structIndex);
