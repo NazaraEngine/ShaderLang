@@ -238,6 +238,9 @@ namespace nzsl::Ast
 
 		for (const auto& structMember : node.description.members)
 		{
+			if (structMember.cond.IsResultingValue() && !structMember.cond.GetResultingValue())
+				continue;
+
 			const auto& memberExprType = structMember.type.GetResultingValue();
 			RegisterType(usageSet, memberExprType);
 		}

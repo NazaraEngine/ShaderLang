@@ -25,8 +25,9 @@ namespace nzsl::Ast
 		IgnoreExpressions,
 		IgnoreFunctionContent,
 		IgnoreLoopContent,
+		TransformDisabled,
 
-		Max = IgnoreLoopContent
+		Max = TransformDisabled
 	};
 
 	constexpr bool EnableEnumAsNzFlags(TransformerFlag) { return true; }

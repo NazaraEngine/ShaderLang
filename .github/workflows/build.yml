@@ -81,7 +81,7 @@ jobs:
       if: ${{ matrix.confs.plat == 'wasm' }}
       uses: mymindstorm/setup-emsdk@v14
       with:
-        version: 3.1.31
+        version: 4.0.15
         actions-cache-folder: emsdk-cache-${{ matrix.confs.mode }}
 
     # Setup MSYS2

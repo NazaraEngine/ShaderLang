@@ -5,7 +5,7 @@
 namespace nzsl::Ast
 {
 	inline EliminateUnusedTransformer::EliminateUnusedTransformer() :
-	Transformer(TransformerFlag::IgnoreExpressions)
+	Transformer(TransformerFlag::IgnoreExpressions | TransformerFlag::TransformDisabled)
 	{
 	}
 

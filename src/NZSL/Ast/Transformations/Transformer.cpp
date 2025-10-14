@@ -268,8 +268,20 @@ namespace nzsl::Ast
 	void Transformer::HandleChildren(ConditionalExpression& node)
 	{
 		HandleExpression(node.condition);
-		HandleExpression(node.truePath);
-		HandleExpression(node.falsePath);
+
+		if (!m_flags.Test(TransformerFlag::TransformDisabled) && node.condition->GetType() == NodeType::ConstantValueExpression)
+		{
+			auto& constantVal = static_cast<ConstantValueExpression&>(*node.condition);
+			if (std::get<bool>(constantVal.value))
+				HandleExpression(node.truePath);
+			else
+				HandleExpression(node.falsePath);
+		}
+		else
+		{
+			HandleExpression(node.truePath);
+			HandleExpression(node.falsePath);
+		}
 
 		if (node.cachedExpressionType)
 			Transform(*node.cachedExpressionType, node.sourceLocation);
@@ -363,9 +375,14 @@ namespace nzsl::Ast
 			FinishExpressionHandling();
 		}
 
-		PushScope();
+		if (!m_flags.Test(TransformerFlag::TransformDisabled) && node.condition->GetType() == NodeType::ConstantValueExpression)
+		{
+			auto& constantVal = static_cast<ConstantValueExpression&>(*node.condition);
+			if (!std::get<bool>(constantVal.value))
+				return;
+		}
+
 		HandleStatement(node.statement);
-		PopScope();
 	}
 
 	void Transformer::HandleChildren(ContinueStatement& /*node*/)
@@ -464,6 +481,12 @@ namespace nzsl::Ast
 
 			for (auto& member : node.description.members)
 			{
+				if (!m_flags.Test(TransformerFlag::TransformDisabled))
+				{
+					if (member.cond.IsResultingValue() && !member.cond.GetResultingValue())
+						continue;
+				}
+
 				HandleExpressionValue(member.builtin, member.sourceLocation);
 				HandleExpressionValue(member.cond, member.sourceLocation);
 				HandleExpressionValue(member.interp, member.sourceLocation);

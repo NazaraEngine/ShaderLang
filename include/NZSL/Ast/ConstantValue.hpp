@@ -126,16 +126,16 @@ namespace nzsl::Ast
 	template<typename T> struct ExpressionToConstantType_t;
 	template<typename T> using ExpressionToConstantType = typename ExpressionToConstantType_t<T>::type;
 
+	NZSL_API std::string ConstantToString(NoValue value);
+	NZSL_API std::string ConstantToString(const ConstantArrayValue& value);
+	NZSL_API std::string ConstantToString(const ConstantSingleValue& value);
+
 	inline std::optional<ConstantTypeTag> GetConstantType(const ExpressionType& exprType);
 	template<typename T> ExpressionType GetConstantExpressionType();
 
 	NZSL_API ExpressionType GetConstantType(const ConstantValue& constant);
 	NZSL_API ExpressionType GetConstantType(const ConstantArrayValue& constantArray);
 	NZSL_API ExpressionType GetConstantType(const ConstantSingleValue& constant);
-
-	NZSL_API std::string ConstantToString(NoValue value);
-	NZSL_API std::string ConstantToString(const ConstantArrayValue& value);
-	NZSL_API std::string ConstantToString(const ConstantSingleValue& value);
 
 	NZSL_API bool IsArrayConstant(const ConstantValue& value);
 	NZSL_API bool IsSingleConstant(const ConstantValue& value);

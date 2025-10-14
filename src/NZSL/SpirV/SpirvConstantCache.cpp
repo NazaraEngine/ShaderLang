@@ -336,7 +336,7 @@ namespace nzsl
 
 		void Register(const ConstantBool&)
 		{
-			cache.Register({ Bool{} });
+			cache.Register(Type{ Bool{} });
 		}
 
 		void Register(const ConstantScalar& scalar)
@@ -418,14 +418,188 @@ namespace nzsl
 
 		SpirvConstantCache& cache;
 	};
-
-	//< FIXME PLZ
-	struct AnyHasher
+	
+	struct SpirvConstantCache::Hash
 	{
-		template<typename U>
-		std::size_t operator()(const U&) const
+		template<typename T>
+		void ComputeHash(std::size_t& seed, const T& v) const
 		{
-			return 42;
+			constexpr std::uint64_t kMul = 0x9ddfea08eb382d69ULL;
+
+			std::uint64_t a = (operator()(v) ^ seed) * kMul;
+			a ^= (a >> 47);
+
+			std::uint64_t b = (seed ^ a) * kMul;
+			b ^= (b >> 47);
+
+			seed = static_cast<std::size_t>(b * kMul);
+		}
+
+		template<typename T, typename... Args>
+		std::size_t ComputeHash(const T& v, const Args&... args) const
+		{
+			std::size_t hash = operator()(v);
+
+			if constexpr (sizeof...(Args) > 0)
+				ComputeHash(hash, ComputeHash(args...));
+
+			return hash;
+		}
+
+		template<typename T>
+		std::size_t operator()(const T& value) const
+		{
+			// Fallback
+			return std::hash<T>{}(value);
+		}
+
+		std::size_t operator()(const ConstantBool& constant) const
+		{
+			return ComputeHash(constant.value);
+		}
+
+		std::size_t operator()(const ConstantComposite& constant) const
+		{
+			return ComputeHash(constant.type, constant.values);
+		}
+
+		std::size_t operator()(const ConstantScalar& constant) const
+		{
+			// Handle NaN
+			if (std::holds_alternative<float>(constant.value) && std::isnan(std::get<float>(constant.value)))
+				return 0xeaf86e7f;
+			else if (std::holds_alternative<double>(constant.value) && std::isnan(std::get<double>(constant.value)))
+				return 0xc1802bed;
+
+			return ComputeHash(constant.value);
+		}
+
+		std::size_t operator()(const Array& type) const
+		{
+			return ComputeHash(type.elementType, type.length, type.stride);
+		}
+
+		std::size_t operator()(const Bool& /*type*/) const
+		{
+			return 0xa2a12a2c;
+		}
+
+		std::size_t operator()(const Float& type) const
+		{
+			return ComputeHash(type.width);
+		}
+
+		std::size_t operator()(const Function& type) const
+		{
+			return ComputeHash(type.parameters, type.returnType);
+		}
+
+		std::size_t operator()(const Image& type) const
+		{
+			return ComputeHash(type.arrayed, type.depth, type.format, type.multisampled, type.qualifier, type.sampled, type.sampledType);
+		}
+
+		std::size_t operator()(const Integer& type) const
+		{
+			return ComputeHash(type.width, type.signedness);
+		}
+
+		std::size_t operator()(const Matrix& type) const
+		{
+			return ComputeHash(type.columnCount, type.columnType);
+		}
+
+		std::size_t operator()(const Pointer& type) const
+		{
+			return ComputeHash(type.storageClass, type.type);
+		}
+
+		std::size_t operator()(const SampledImage& type) const
+		{
+			return ComputeHash(type.image);
+		}
+
+		std::size_t operator()(const Structure& type) const
+		{
+			return ComputeHash(type.name, type.decorations, type.layout, type.members);
+		}
+
+		std::size_t operator()(const Structure::Member& type) const
+		{
+			return ComputeHash(type.name, type.type); //< ignore offset
+		}
+
+		std::size_t operator()(const Variable& type) const
+		{
+			return ComputeHash(type.debugName, type.funcId, type.initializer, type.storageClass, type.type);
+		}
+
+		std::size_t operator()(const Vector& type) const
+		{
+			return ComputeHash(type.componentCount, type.componentType);
+		}
+
+		std::size_t operator()(const Void& /*type*/) const
+		{
+			return 0xe4fe8e93;
+		}
+
+
+		std::size_t operator()(const Constant& constant) const
+		{
+			return ComputeHash(constant.constant);
+		}
+
+		std::size_t operator()(const Type& type) const
+		{
+			return ComputeHash(type.type);
+		}
+
+
+		template<typename T>
+		std::size_t operator()(const std::optional<T>& opt) const
+		{
+			if (!opt)
+				return 0;
+
+			return ComputeHash(*opt);
+		}
+
+		template<typename T>
+		std::size_t operator()(const std::shared_ptr<T>& ptr) const
+		{
+			if (!ptr)
+				return 0;
+
+			return ComputeHash(*ptr);
+		}
+
+		template<typename... T>
+		std::size_t operator()(const std::variant<T...>& var) const
+		{
+			return std::visit([&](auto&& arg)
+			{
+				return ComputeHash(var.index(), arg);
+			}, var);
+		}
+
+		template<typename T>
+		std::size_t operator()(const std::vector<T>& vec) const
+		{
+			std::size_t seed = 0x285b8e92;
+			for (const T& value : vec)
+				ComputeHash(seed, value);
+
+			return seed;
+		}
+
+		template<typename T>
+		std::size_t operator()(const std::unique_ptr<T>& ptr) const
+		{
+			if (!ptr)
+				return 0;
+
+			return ComputeHash(*ptr);
 		}
 	};
 
@@ -454,7 +628,7 @@ namespace nzsl
 
 		std::vector<Source> debugSources;
 		tsl::ordered_map<std::string, std::uint32_t /*id*/, std::hash<std::string_view>, std::equal_to<>> debugStrings;
-		tsl::ordered_map<std::variant<AnyConstant, AnyType>, std::uint32_t /*id*/, AnyHasher, Eq> ids;
+		tsl::ordered_map<std::variant<AnyConstant, AnyType>, std::uint32_t /*id*/, Hash, Eq> ids;
 		std::vector<std::pair<Variable, std::uint32_t /*id*/>> variables;
 		StructCallback structCallback;
 		std::uint32_t& nextResultId;
@@ -578,7 +752,7 @@ namespace nzsl
 					else
 						length = 1; //< 0 length array is not allowed by FieldOffsets
 
-					return RegisterArrayField(structOffsets, arg.elementType->type, length);
+					return RegisterArrayField(structOffsets, Type{ arg.elementType->type }, length);
 				}
 				else if constexpr (std::is_same_v<T, Bool>)
 					return structOffsets.AddField(StructFieldType::Bool1);
@@ -732,7 +906,7 @@ namespace nzsl
 		if (m_internal->currentBlockLayout)
 		{
 			FieldOffsets fieldOffset(*m_internal->currentBlockLayout);
-			RegisterArrayField(fieldOffset, builtContainedType->type, 1);
+			RegisterArrayField(fieldOffset, Type{ builtContainedType->type }, 1);
 
 			arrayStride = Nz::SafeCast<std::uint32_t>(fieldOffset.GetAlignedSize());
 		}
@@ -757,7 +931,7 @@ namespace nzsl
 		if (m_internal->currentBlockLayout)
 		{
 			FieldOffsets fieldOffset(*m_internal->currentBlockLayout);
-			RegisterArrayField(fieldOffset, builtContainedType->type, 1);
+			RegisterArrayField(fieldOffset, Type{ builtContainedType->type }, 1);
 
 			arrayStride = Nz::SafeCast<std::uint32_t>(fieldOffset.GetAlignedSize());
 		}
@@ -1041,8 +1215,7 @@ namespace nzsl
 		DepRegisterer registerer(*this);
 		registerer.Register(constant);
 
-		std::size_t h = m_internal->ids.hash_function()(constant);
-		auto it = m_internal->ids.find(constant, h);
+		auto it = m_internal->ids.find(constant);
 		if (it == m_internal->ids.end())
 		{
 			std::uint32_t resultId = m_internal->nextResultId++;
@@ -1059,8 +1232,7 @@ namespace nzsl
 		DepRegisterer registerer(*this);
 		registerer.Register(type);
 
-		std::size_t h = m_internal->ids.hash_function()(type);
-		auto it = m_internal->ids.find(type, h);
+		auto it = m_internal->ids.find(type);
 		if (it == m_internal->ids.end())
 		{
 			std::uint32_t resultId = m_internal->nextResultId++;
@@ -1099,7 +1271,7 @@ namespace nzsl
 	std::size_t SpirvConstantCache::RegisterArrayField(FieldOffsets& fieldOffsets, const Array& type, std::size_t arrayLength) const
 	{
 		FieldOffsets dummyStruct(fieldOffsets.GetLayout());
-		RegisterArrayField(dummyStruct, type.elementType->type, (type.length) ? std::get<std::uint32_t>(std::get<ConstantScalar>(type.length->constant).value) : 1);
+		RegisterArrayField(dummyStruct, Type{ type.elementType->type }, (type.length) ? std::get<std::uint32_t>(std::get<ConstantScalar>(type.length->constant).value) : 1);
 
 		return fieldOffsets.AddStructArray(dummyStruct, arrayLength);
 	}
@@ -1241,7 +1413,7 @@ namespace nzsl
 				appender(var.storageClass);
 
 				if (var.initializer)
-					appender(GetId((*var.initializer)->constant));
+					appender(GetId(Constant{ (*var.initializer)->constant }));
 			});
 		}
 	}
@@ -1284,16 +1456,16 @@ namespace nzsl
 			using ConstantType = std::decay_t<decltype(arg)>;
 
 			if constexpr (std::is_same_v<ConstantType, ConstantBool>)
-				constants.Append((arg.value) ? SpirvOp::OpConstantTrue : SpirvOp::OpConstantFalse, GetId({ Bool{} }), resultId);
+				constants.Append((arg.value) ? SpirvOp::OpConstantTrue : SpirvOp::OpConstantFalse, GetId(Type { Bool{} }), resultId);
 			else if constexpr (std::is_same_v<ConstantType, ConstantComposite>)
 			{
 				constants.AppendVariadic(SpirvOp::OpConstantComposite, [&](const auto& appender)
 				{
-					appender(GetId(arg.type->type));
+					appender(GetId(Type{ arg.type->type }));
 					appender(resultId);
 
 					for (const auto& value : arg.values)
-						appender(GetId(value->constant));
+						appender(GetId(Constant{ value->constant }));
 				});
 			}
 			else if constexpr (std::is_same_v<ConstantType, ConstantScalar>)
@@ -1304,17 +1476,17 @@ namespace nzsl
 
 					std::uint32_t typeId;
 					if constexpr (std::is_same_v<ValueType, double>)
-						typeId = GetId({ Float{ 64 } });
+						typeId = GetId(Type{ Float{ 64 } });
 					else if constexpr (std::is_same_v<ValueType, float>)
-						typeId = GetId({ Float{ 32 } });
+						typeId = GetId(Type{ Float{ 32 } });
 					else if constexpr (std::is_same_v<ValueType, std::int32_t>)
-						typeId = GetId({ Integer{ 32, true } });
+						typeId = GetId(Type{ Integer{ 32, true } });
 					else if constexpr (std::is_same_v<ValueType, std::int64_t>)
-						typeId = GetId({ Integer{ 64, true } });
+						typeId = GetId(Type{ Integer{ 64, true } });
 					else if constexpr (std::is_same_v<ValueType, std::uint32_t>)
-						typeId = GetId({ Integer{ 32, false } });
+						typeId = GetId(Type{ Integer{ 32, false } });
 					else if constexpr (std::is_same_v<ValueType, std::uint64_t>)
-						typeId = GetId({ Integer{ 64, false } });
+						typeId = GetId(Type{ Integer{ 64, false } });
 					else
 						static_assert(Nz::AlwaysFalse<ValueType>::value, "non-exhaustive visitor");
 
