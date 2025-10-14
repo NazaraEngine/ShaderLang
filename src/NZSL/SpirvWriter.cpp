@@ -1003,8 +1003,16 @@ namespace nzsl
 
 		std::uint32_t version = MakeSpirvVersion(m_environment.spvMajorVersion, m_environment.spvMinorVersion);
 
+		// A SPIR-V Generator Magic Number is a 32 bit word: The high order 16 bits are a tool ID. The low order 16 bits are reserved for use as a tool version number, or any other purpose the tool supplier chooses.
+		// version is encoded as 0MMM mmmm mppp pppp (first bit is set to zero to allow to change version format)
+		static_assert(NZSL_VERSION_MAJOR <= 0b111 && NZSL_VERSION_MINOR <= 0b11111 && NZSL_VERSION_PATCH <= 0b1111111);
+		constexpr std::uint32_t GeneratorMagicNumber = VendorId << 16
+		                                             | (NZSL_VERSION_MAJOR << 12)
+		                                             | (NZSL_VERSION_MINOR << 7)
+		                                             | (NZSL_VERSION_PATCH << 0);
+
 		m_currentState->header.AppendRaw(version); //< SPIR-V version number
-		m_currentState->header.AppendRaw(VendorId); //< Generator identifier
+		m_currentState->header.AppendRaw(GeneratorMagicNumber);
 
 		m_currentState->header.AppendRaw(m_currentState->nextResultId); //< Bound (ID count)
 		m_currentState->header.AppendRaw(0); //< Instruction schema (required to be 0 for now)

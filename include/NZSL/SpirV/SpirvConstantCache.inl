@@ -2,7 +2,6 @@
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
-
 namespace nzsl
 {
 	template<>
@@ -19,7 +18,7 @@ namespace nzsl
 	{
 		static Type Build()
 		{
-			return { Float{ sizeof(T) * CHAR_BIT } };
+			return Type{ Float{ sizeof(T) * CHAR_BIT } };
 		}
 	};
 
@@ -28,7 +27,7 @@ namespace nzsl
 	{
 		static Type Build()
 		{
-			return { Integer{ sizeof(T) * CHAR_BIT, std::is_signed_v<T> } };
+			return Type{ Integer{ sizeof(T) * CHAR_BIT, std::is_signed_v<T> } };
 		}
 	};
 
@@ -37,7 +36,7 @@ namespace nzsl
 	{
 		static Type Build()
 		{
-			return { Vector{ std::make_shared<Type>(BuildSingleType<T>()), Nz::SafeCast<std::uint32_t>(N) } };
+			return Type{ Vector{ std::make_shared<Type>(BuildSingleType<T>()), Nz::SafeCast<std::uint32_t>(N) } };
 		}
 	};
 

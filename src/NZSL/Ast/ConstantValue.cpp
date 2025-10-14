@@ -27,64 +27,7 @@ namespace nzsl::Ast
 			using type = T;
 		};
 	}
-
-	ExpressionType GetConstantType(const ConstantValue& constant)
-	{
-		NAZARA_USE_ANONYMOUS_NAMESPACE
-
-		return std::visit([&](auto&& arg) -> Ast::ExpressionType
-		{
-			using T = std::decay_t<decltype(arg)>;
-
-			using VectorInner = GetVectorInnerType<T>;
-			using Type = typename VectorInner::type;
-
-			if constexpr (VectorInner::IsVector)
-			{
-				ArrayType arrayType;
-				arrayType.SetupInnerType(GetConstantExpressionType<Type>());
-				arrayType.length = Nz::SafeCast<std::uint32_t>(arg.size());
-
-				return arrayType;
-			}
-			else
-				return GetConstantExpressionType<Type>();
-		}, constant);
-	}
-
-	ExpressionType GetConstantType(const ConstantArrayValue& constantArray)
-	{
-		NAZARA_USE_ANONYMOUS_NAMESPACE
-
-		return std::visit([&](auto&& arg) -> Ast::ExpressionType
-		{
-			using T = std::decay_t<decltype(arg)>;
-			if constexpr (std::is_same_v<T, NoValue>)
-				return NoType{};
-			else
-			{
-				using InnerType = typename GetVectorInnerType<T>::type;
-
-				ArrayType arrayType;
-				arrayType.SetupInnerType(GetConstantExpressionType<InnerType>());
-				arrayType.length = Nz::SafeCast<std::uint32_t>(arg.size());
-
-				return arrayType;
-			}
-		}, constantArray);
-	}
-
-	ExpressionType GetConstantType(const ConstantSingleValue& constant)
-	{
-		NAZARA_USE_ANONYMOUS_NAMESPACE
-
-		return std::visit([&](auto&& arg) -> Ast::ExpressionType
-		{
-			using T = std::decay_t<decltype(arg)>;
-			return GetConstantExpressionType<T>();
-		}, constant);
-	}
-
+	
 	std::string ConstantToString(NoValue /*value*/)
 	{
 		// This overload exists only to help avoid ambiguous calls
@@ -156,6 +99,63 @@ namespace nzsl::Ast
 			else
 				static_assert(Nz::AlwaysFalse<T>(), "unexpected type");
 		}, value);
+	}
+
+	ExpressionType GetConstantType(const ConstantValue& constant)
+	{
+		NAZARA_USE_ANONYMOUS_NAMESPACE
+
+		return std::visit([&](auto&& arg) -> Ast::ExpressionType
+		{
+			using T = std::decay_t<decltype(arg)>;
+
+			using VectorInner = GetVectorInnerType<T>;
+			using Type = typename VectorInner::type;
+
+			if constexpr (VectorInner::IsVector)
+			{
+				ArrayType arrayType;
+				arrayType.SetupInnerType(GetConstantExpressionType<Type>());
+				arrayType.length = Nz::SafeCast<std::uint32_t>(arg.size());
+
+				return arrayType;
+			}
+			else
+				return GetConstantExpressionType<Type>();
+		}, constant);
+	}
+
+	ExpressionType GetConstantType(const ConstantArrayValue& constantArray)
+	{
+		NAZARA_USE_ANONYMOUS_NAMESPACE
+
+		return std::visit([&](auto&& arg) -> Ast::ExpressionType
+		{
+			using T = std::decay_t<decltype(arg)>;
+			if constexpr (std::is_same_v<T, NoValue>)
+				return NoType{};
+			else
+			{
+				using InnerType = typename GetVectorInnerType<T>::type;
+
+				ArrayType arrayType;
+				arrayType.SetupInnerType(GetConstantExpressionType<InnerType>());
+				arrayType.length = Nz::SafeCast<std::uint32_t>(arg.size());
+
+				return arrayType;
+			}
+		}, constantArray);
+	}
+
+	ExpressionType GetConstantType(const ConstantSingleValue& constant)
+	{
+		NAZARA_USE_ANONYMOUS_NAMESPACE
+
+		return std::visit([&](auto&& arg) -> Ast::ExpressionType
+		{
+			using T = std::decay_t<decltype(arg)>;
+			return GetConstantExpressionType<T>();
+		}, constant);
 	}
 
 	// Some checks to ensure IsArrayConstant and IsSingleConstant implementation
