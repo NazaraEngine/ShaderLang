@@ -8,6 +8,7 @@
 #define NZSL_AST_TRANSFORMATIONS_STD140EMULATION_HPP
 
 #include <NZSL/Ast/Transformations/Transformer.hpp>
+#include <unordered_map>
 
 namespace nzsl::Ast
 {
@@ -30,6 +31,7 @@ namespace nzsl::Ast
 
 			StatementTransformation Transform(DeclareStructStatement&& declStruct) override;
 
+			std::unordered_map<PrimitiveType, std::size_t /* structIndex */> m_stride16Structs;
 			const Options* m_options;
 	};
 }
