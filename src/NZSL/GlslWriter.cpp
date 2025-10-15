@@ -30,6 +30,8 @@
 #include <frozen/unordered_map.h>
 #include <frozen/unordered_set.h>
 #include <tsl/ordered_set.h>
+#include <algorithm>
+#include <array>
 #include <cassert>
 #include <fstream>
 #include <optional>
@@ -350,7 +352,6 @@ namespace nzsl
 		};
 	}
 
-
 	struct GlslWriter::State
 	{
 		State(const BackendParameters& backendParameters, const GlslWriter::Parameters& glslParameters) :
@@ -653,9 +654,9 @@ namespace nzsl
 				if (m_currentState->hasDrawParametersBaseInstanceUniform)
 					Append(s_glslWriterShaderDrawParametersBaseInstanceName);
 				else if (!m_environment.glES && glVersion >= 460)
-					Append("gl_BaseInstance");
+					Append("uint(gl_BaseInstance)");
 				else
-					Append("gl_BaseInstanceARB");
+					Append("uint(gl_BaseInstanceARB)");
 				break;
 			}
 
@@ -664,9 +665,9 @@ namespace nzsl
 				if (m_currentState->hasDrawParametersBaseVertexUniform)
 					Append(s_glslWriterShaderDrawParametersBaseVertexName);
 				else if (!m_environment.glES && glVersion >= 460)
-					Append("gl_BaseVertex");
+					Append("uint(gl_BaseVertex)");
 				else
-					Append("gl_BaseVertexARB");
+					Append("uint(gl_BaseVertexARB)");
 				break;
 			}
 
@@ -675,15 +676,15 @@ namespace nzsl
 				if (m_currentState->hasDrawParametersDrawIndexUniform)
 					Append(s_glslWriterShaderDrawParametersDrawIndexName);
 				else if (!m_environment.glES && glVersion >= 460)
-					Append("gl_DrawID");
+					Append("uint(gl_DrawID)");
 				else
-					Append("gl_DrawIDARB");
+					Append("uint(gl_DrawIDARB)");
 				break;
 			}
 
 			case Ast::BuiltinEntry::InstanceIndex:
 			{
-				Append("(", Ast::BuiltinEntry::BaseInstance, " + gl_InstanceID)");
+				Append(Ast::BuiltinEntry::BaseInstance, " + uint(gl_InstanceID)");
 				break;
 			}
 
@@ -691,7 +692,16 @@ namespace nzsl
 			{
 				auto it = s_glslBuiltinMapping.find(builtin);
 				assert(it != s_glslBuiltinMapping.end());
-				Append(it->second.identifier);
+				const std::array builtinsToCast {
+					Ast::BuiltinEntry::LocalInvocationIndex,
+					Ast::BuiltinEntry::VertexIndex,
+					Ast::BuiltinEntry::WorkgroupCount,
+					Ast::BuiltinEntry::WorkgroupIndices,
+				};
+				if (std::find(builtinsToCast.begin(), builtinsToCast.end(), it->first) != builtinsToCast.end())
+					Append("uint(", it->second.identifier, ')');
+				else
+					Append(it->second.identifier);
 			}
 		}
 	}
@@ -1333,13 +1343,13 @@ namespace nzsl
 		if (m_currentState->hasDrawParametersBaseInstanceUniform || m_currentState->hasDrawParametersBaseVertexUniform || m_currentState->hasDrawParametersDrawIndexUniform)
 		{
 			if (m_currentState->hasDrawParametersBaseInstanceUniform)
-				AppendLine("uniform int ", s_glslWriterShaderDrawParametersBaseInstanceName, ";");
+				AppendLine("uniform uint ", s_glslWriterShaderDrawParametersBaseInstanceName, ";");
 
 			if (m_currentState->hasDrawParametersBaseVertexUniform)
-				AppendLine("uniform int ", s_glslWriterShaderDrawParametersBaseVertexName, ";");
+				AppendLine("uniform uint ", s_glslWriterShaderDrawParametersBaseVertexName, ";");
 
 			if (m_currentState->hasDrawParametersDrawIndexUniform)
-				AppendLine("uniform int ", s_glslWriterShaderDrawParametersDrawIndexName, ";");
+				AppendLine("uniform uint ", s_glslWriterShaderDrawParametersDrawIndexName, ";");
 
 			AppendLine();
 		}
@@ -2781,7 +2791,7 @@ namespace nzsl
 		assert(node.structIndex);
 		RegisterStruct(*node.structIndex, &node.description, structName);
 
-		// Don't output structs used for UBO/SSBO description
+		// Don't output structs only used for UBO/SSBO description
 		if (m_currentState->previsitor.bufferStructs.UnboundedTest(*node.structIndex))
 		{
 			if (m_currentState->backendParameters.debugLevel >= DebugLevel::Minimal)

@@ -50,6 +50,30 @@ namespace nzsl::Ast
 		return PopStatement();
 	}
 
+	StructDescription Cloner::Clone(const StructDescription& desc)
+	{
+		StructDescription clone;
+		clone.layout = Clone(desc.layout);
+		clone.name = desc.name;
+		clone.tag = desc.tag;
+
+		clone.members.reserve(desc.members.size());
+		for (const auto& member : desc.members)
+		{
+			auto& cloneMember = clone.members.emplace_back();
+			cloneMember.name = member.name;
+			cloneMember.type = Clone(member.type);
+			cloneMember.builtin = Clone(member.builtin);
+			cloneMember.cond = Clone(member.cond);
+			cloneMember.interp = Clone(member.interp);
+			cloneMember.locationIndex = Clone(member.locationIndex);
+
+			cloneMember.sourceLocation = member.sourceLocation;
+			cloneMember.tag = member.tag;
+		}
+		return clone;
+	}
+
 	ExpressionValue<ExpressionType> Cloner::CloneType(const ExpressionValue<ExpressionType>& exprType)
 	{
 		if (!exprType.HasValue())
@@ -215,26 +239,7 @@ namespace nzsl::Ast
 		auto clone = std::make_unique<DeclareStructStatement>();
 		clone->isExported = Clone(node.isExported);
 		clone->structIndex = node.structIndex;
-
-		clone->description.layout = Clone(node.description.layout);
-		clone->description.name = node.description.name;
-		clone->description.tag = node.description.tag;
-
-		clone->description.members.reserve(node.description.members.size());
-		for (const auto& member : node.description.members)
-		{
-			auto& cloneMember = clone->description.members.emplace_back();
-			cloneMember.name = member.name;
-			cloneMember.type = Clone(member.type);
-			cloneMember.builtin = Clone(member.builtin);
-			cloneMember.cond = Clone(member.cond);
-			cloneMember.interp = Clone(member.interp);
-			cloneMember.locationIndex = Clone(member.locationIndex);
-
-			cloneMember.sourceLocation = member.sourceLocation;
-			cloneMember.tag = member.tag;
-		}
-
+		clone->description = Clone(node.description);
 		clone->sourceLocation = node.sourceLocation;
 
 		return clone;

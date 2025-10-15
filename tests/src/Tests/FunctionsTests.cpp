@@ -2,6 +2,7 @@
 #include <NZSL/ShaderBuilder.hpp>
 #include <NZSL/Parser.hpp>
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers.hpp>
 #include <cctype>
 
 TEST_CASE("functions", "[Shader]")
@@ -14,12 +15,12 @@ module;
 
 struct FragOut
 {
-	[location(0)] value: f32
+	[location(0)] value: vec4[f32]
 }
 
-fn GetValue() -> f32
+fn GetValue() -> vec4[f32]
 {
-	return 42.0;
+	return vec4[f32](42.0, 42.0, 42.0, 1.0);
 }
 
 [entry(frag)]
@@ -36,13 +37,13 @@ fn main() -> FragOut
 		ResolveModule(*shaderModule);
 
 		ExpectGLSL(*shaderModule, R"(
-float GetValue()
+vec4 GetValue()
 {
-	return 42.0;
+	return vec4(42.0, 42.0, 42.0, 1.0);
 }
 
 /*************** Outputs ***************/
-layout(location = 0) out float _nzslOutvalue;
+layout(location = 0) out vec4 _nzslOutvalue;
 
 void main()
 {
@@ -55,9 +56,9 @@ void main()
 )");
 
 		ExpectNZSL(*shaderModule, R"(
-fn GetValue() -> f32
+fn GetValue() -> vec4[f32]
 {
-	return 42.0;
+	return vec4[f32](42.0, 42.0, 42.0, 1.0);
 }
 
 [entry(frag)]
@@ -72,10 +73,6 @@ fn main() -> FragOut
 		ExpectSPIRV(*shaderModule, R"(
 OpFunction
 OpLabel
-OpReturnValue
-OpFunctionEnd
-OpFunction
-OpLabel
 OpVariable
 OpFunctionCall
 OpFNegate
@@ -86,6 +83,25 @@ OpCompositeExtract
 OpStore
 OpReturn
 OpFunctionEnd)");
+
+		ExpectWGSL(*shaderModule, R"(
+struct FragOut
+{
+	@location(0) value: vec4<f32>
+}
+
+fn GetValue() -> vec4<f32>
+{
+	return vec4<f32>(42.0, 42.0, 42.0, 1.0);
+}
+
+@fragment
+fn main() -> FragOut
+{
+	var output: FragOut;
+	output.value = -GetValue();
+	return output;
+})");
 	}
 
 	SECTION("Unordered functions")
@@ -96,12 +112,12 @@ module;
 
 struct FragOut
 {
-	[location(0)] value: f32
+	[location(0)] value: vec4[f32]
 }
 
-fn bar() -> f32
+fn bar() -> vec4[f32]
 {
-	return 42.0;
+	return vec4[f32](42.0, 42.0, 42.0, 1.0);
 }
 
 [entry(frag)]
@@ -113,12 +129,12 @@ fn main() -> FragOut
 	return output;
 }
 
-fn baz() -> f32
+fn baz() -> vec4[f32]
 {
 	return foo();
 }
 
-fn foo() -> f32
+fn foo() -> vec4[f32]
 {
 	return bar();
 }
@@ -128,15 +144,15 @@ fn foo() -> f32
 		ResolveModule(*shaderModule);
 
 		ExpectGLSL(*shaderModule, R"(
-float bar()
+vec4 bar()
 {
-	return 42.0;
+	return vec4(42.0, 42.0, 42.0, 1.0);
 }
 
-float baz();
+vec4 baz();
 
 /*************** Outputs ***************/
-layout(location = 0) out float _nzslOutvalue;
+layout(location = 0) out vec4 _nzslOutvalue;
 
 void main()
 {
@@ -147,23 +163,23 @@ void main()
 	return;
 }
 
-float foo();
+vec4 foo();
 
-float baz()
+vec4 baz()
 {
 	return foo();
 }
 
-float foo()
+vec4 foo()
 {
 	return bar();
 }
 )");
 
 		ExpectNZSL(*shaderModule, R"(
-fn bar() -> f32
+fn bar() -> vec4[f32]
 {
-	return 42.0;
+	return vec4[f32](42.0, 42.0, 42.0, 1.0);
 }
 
 [entry(frag)]
@@ -174,22 +190,18 @@ fn main() -> FragOut
 	return output;
 }
 
-fn baz() -> f32
+fn baz() -> vec4[f32]
 {
 	return foo();
 }
 
-fn foo() -> f32
+fn foo() -> vec4[f32]
 {
 	return bar();
 }
 )");
 
 		ExpectSPIRV(*shaderModule, R"(
-OpFunction
-OpLabel
-OpReturnValue
-OpFunctionEnd
 OpFunction
 OpLabel
 OpVariable
@@ -211,6 +223,31 @@ OpLabel
 OpFunctionCall
 OpReturnValue
 OpFunctionEnd)");
+
+		ExpectWGSL(*shaderModule, R"(
+fn bar() -> vec4<f32>
+{
+	return vec4<f32>(42.0, 42.0, 42.0, 1.0);
+}
+
+@fragment
+fn main() -> FragOut
+{
+	var output: FragOut;
+	output.value = baz();
+	return output;
+}
+
+fn baz() -> vec4<f32>
+{
+	return foo();
+}
+
+fn foo() -> vec4<f32>
+{
+	return bar();
+}
+)");
 	}
 
 	SECTION("inout function call")
@@ -362,6 +399,26 @@ fn main() -> FragOut
       OpStore %12 %50
       OpReturn
       OpFunctionEnd)", {}, {}, true);
+
+		ExpectWGSL(*shaderModule, R"(
+fn Half(color: ptr<function, vec3<f32>>, value: ptr<function, f32>, inValue: f32, inValue2: f32)
+{
+	*color *= 2.0;
+	*value = 10.0;
+}
+
+@fragment
+fn main() -> FragOut
+{
+	var output: FragOut;
+	var mainColor: vec3<f32> = vec3<f32>(1.0, 1.0, 1.0);
+	var inValue: f32 = 2.0;
+	var inValue2: f32 = 1.0;
+	Half(&mainColor, &output.value2, inValue, inValue2);
+	output.value = mainColor.x;
+	return output;
+}
+)");
 	}
 
 	SECTION("passing sampler to function")
@@ -489,6 +546,29 @@ fn main() -> FragOut
       OpStore %14 %33
       OpReturn
       OpFunctionEnd)", {}, {}, true);
+
+		ExpectWGSL(*shaderModule, R"(
+fn sample_center(tex: texture_2d<f32>, texSampler: sampler) -> vec4<f32>
+{
+	return textureSample(tex, texSampler, vec2<f32>(0.5, 0.5));
+}
+
+@group(0) @binding(0) var ExtData_texture: texture_2d<f32>;
+@group(0) @binding(1) var ExtData_textureSampler: sampler;
+
+struct FragOut
+{
+	@location(0) value: vec4<f32>
+}
+
+@fragment
+fn main() -> FragOut
+{
+	var output: FragOut;
+	output.value = sample_center(ExtData_texture, ExtData_textureSampler);
+	return output;
+}
+)");
 	}
 
 	SECTION("passing sampler array to function")
@@ -622,5 +702,8 @@ fn main() -> FragOut
       OpStore %19 %39
       OpReturn
       OpFunctionEnd)", {}, {}, true);
+
+		nzsl::WgslWriter wgslWriter;
+		CHECK_THROWS_WITH(wgslWriter.Generate(*shaderModule), "WGSL does not support sampled texture array as funtion parameter");
 	}
 }

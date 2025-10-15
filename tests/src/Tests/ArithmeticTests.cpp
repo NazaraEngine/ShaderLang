@@ -268,6 +268,41 @@ fn main()
        OpStore %48 %112
        OpReturn
        OpFunctionEnd)", {}, {}, true);
+
+		ExpectWGSL(*shaderModule, R"(
+@fragment
+fn main()
+{
+	var x: i32 = 5;
+	var y: i32 = 2;
+	var r: i32 = x + y;
+	var r_2: i32 = x - y;
+	var r_3: i32 = x * y;
+	var r_4: i32 = x / y;
+	var r_5: i32 = x % y;
+	var x_2: f32 = 5.0;
+	var y_2: f32 = 2.0;
+	var r_6: f32 = x_2 + y_2;
+	var r_7: f32 = x_2 - y_2;
+	var r_8: f32 = x_2 * y_2;
+	var r_9: f32 = x_2 / y_2;
+	var r_10: f32 = x_2 % y_2;
+	var x_3: vec2<i32> = vec2<i32>(5, 7);
+	var y_3: vec2<i32> = vec2<i32>(2, 3);
+	var r_11: vec2<i32> = x_3 + y_3;
+	var r_12: vec2<i32> = x_3 - y_3;
+	var r_13: vec2<i32> = x_3 * y_3;
+	var r_14: vec2<i32> = x_3 / y_3;
+	var r_15: vec2<i32> = x_3 % y_3;
+	var x_4: vec2<f32> = vec2<f32>(5.0, 7.0);
+	var y_4: vec2<f32> = vec2<f32>(2.0, 3.0);
+	var r_16: vec2<f32> = x_4 + y_4;
+	var r_17: vec2<f32> = x_4 - y_4;
+	var r_18: vec2<f32> = x_4 * y_4;
+	var r_19: vec2<f32> = x_4 / y_4;
+	var r_20: vec2<f32> = x_4 % y_4;
+}
+)");
 	}
 
 	SECTION("Bitwise operations")
@@ -533,6 +568,41 @@ fn main()
        OpStore %48 %112
        OpReturn
        OpFunctionEnd)", {}, {}, true);
+
+		ExpectWGSL(*shaderModule, R"(
+@fragment
+fn main()
+{
+	var x: i32 = 5;
+	var y: i32 = 2;
+	var r: i32 = x & y;
+	var r_2: i32 = x | y;
+	var r_3: i32 = x ^ y;
+	var r_4: i32 = x << u32(y);
+	var r_5: i32 = x >> u32(y);
+	var x_2: u32 = 5u;
+	var y_2: u32 = 2u;
+	var r_6: u32 = x_2 & y_2;
+	var r_7: u32 = x_2 | y_2;
+	var r_8: u32 = x_2 ^ y_2;
+	var r_9: u32 = x_2 << y_2;
+	var r_10: u32 = x_2 >> y_2;
+	var x_3: vec3<i32> = vec3<i32>(0, 1, 2);
+	var y_3: vec3<i32> = vec3<i32>(2, 1, 0);
+	var r_11: vec3<i32> = x_3 & y_3;
+	var r_12: vec3<i32> = x_3 | y_3;
+	var r_13: vec3<i32> = x_3 ^ y_3;
+	var r_14: vec3<i32> = x_3 << vec3<u32>(y_3);
+	var r_15: vec3<i32> = x_3 >> vec3<u32>(y_3);
+	var x_4: vec3<u32> = vec3<u32>(0u, 1u, 2u);
+	var y_4: vec3<u32> = vec3<u32>(2u, 1u, 0u);
+	var r_16: vec3<u32> = x_4 & y_4;
+	var r_17: vec3<u32> = x_4 | y_4;
+	var r_18: vec3<u32> = x_4 ^ y_4;
+	var r_19: vec3<u32> = x_4 << y_4;
+	var r_20: vec3<u32> = x_4 >> y_4;
+}
+)"); // r_9 and r_10 expressions should perhaps not cast the right node to u32
 	}
 
 	SECTION("Matrix/matrix operations")
@@ -737,6 +807,39 @@ fn main()
        OpStore %18 %131
        OpReturn
        OpFunctionEnd)", {}, {}, true);
+
+		ExpectWGSL(*shaderModule, R"(
+@fragment
+fn main()
+{
+	var _nzsl_matrix: mat3x3<f32>;
+	var _nzsl_cachedResult: f32 = 0.0;
+	_nzsl_matrix[0u] = vec3<f32>(_nzsl_cachedResult, 0.0, 0.0);
+	_nzsl_matrix[1u] = vec3<f32>(0.0, _nzsl_cachedResult, 0.0);
+	_nzsl_matrix[2u] = vec3<f32>(0.0, 0.0, _nzsl_cachedResult);
+	var x: mat3x3<f32> = _nzsl_matrix;
+	var _nzsl_matrix_2: mat3x3<f32>;
+	var _nzsl_cachedResult_2: f32 = 1.0;
+	_nzsl_matrix_2[0u] = vec3<f32>(_nzsl_cachedResult_2, 0.0, 0.0);
+	_nzsl_matrix_2[1u] = vec3<f32>(0.0, _nzsl_cachedResult_2, 0.0);
+	_nzsl_matrix_2[2u] = vec3<f32>(0.0, 0.0, _nzsl_cachedResult_2);
+	var y: mat3x3<f32> = _nzsl_matrix_2;
+	var _nzsl_matrix_3: mat3x3<f32>;
+	_nzsl_matrix_3[0u] = x[0u] + y[0u];
+	_nzsl_matrix_3[1u] = x[1u] + y[1u];
+	_nzsl_matrix_3[2u] = x[2u] + y[2u];
+	var r: mat3x3<f32> = _nzsl_matrix_3;
+	var _nzsl_matrix_4: mat3x3<f32>;
+	_nzsl_matrix_4[0u] = x[0u] - y[0u];
+	_nzsl_matrix_4[1u] = x[1u] - y[1u];
+	_nzsl_matrix_4[2u] = x[2u] - y[2u];
+	var r_2: mat3x3<f32> = _nzsl_matrix_4;
+	var r_3: mat3x3<f32> = x * y;
+	x += y;
+	x -= y;
+	x *= y;
+}
+)");
 	}
 	
 	SECTION("Matrix/scalars operations")
@@ -815,6 +918,22 @@ fn main()
       OpStore %22 %39
       OpReturn
       OpFunctionEnd)", {}, {}, true);
+
+		ExpectWGSL(*shaderModule, R"(
+@fragment
+fn main()
+{
+	var _nzsl_matrix: mat3x3<f32>;
+	var _nzsl_cachedResult: f32 = 1.0;
+	_nzsl_matrix[0u] = vec3<f32>(_nzsl_cachedResult, 0.0, 0.0);
+	_nzsl_matrix[1u] = vec3<f32>(0.0, _nzsl_cachedResult, 0.0);
+	_nzsl_matrix[2u] = vec3<f32>(0.0, 0.0, _nzsl_cachedResult);
+	var mat: mat3x3<f32> = _nzsl_matrix;
+	var val: f32 = 42.0;
+	var r: mat3x3<f32> = mat * val;
+	var r_2: mat3x3<f32> = val * mat;
+}
+)");
 	}
 	
 	SECTION("Vector/vector operations")
@@ -957,6 +1076,27 @@ fn main()
       OpStore %30 %64
       OpReturn
       OpFunctionEnd)", {}, {}, true);
+
+		ExpectWGSL(*shaderModule, R"(
+@fragment
+fn main()
+{
+	var x: vec3<f32> = vec3<f32>(0.0, 1.0, 2.0);
+	var y: vec3<f32> = vec3<f32>(2.0, 1.0, 0.0);
+	var r: vec3<f32> = x + y;
+	var r_2: vec3<f32> = x - y;
+	var r_3: vec3<f32> = x * y;
+	var r_4: vec3<f32> = x / y;
+	var r_5: vec3<f32> = x % y;
+	var x_2: vec3<u32> = vec3<u32>(0u, 1u, 2u);
+	var y_2: vec3<u32> = vec3<u32>(2u, 1u, 0u);
+	var r_6: vec3<u32> = x_2 + y_2;
+	var r_7: vec3<u32> = x_2 - y_2;
+	var r_8: vec3<u32> = x_2 * y_2;
+	var r_9: vec3<u32> = x_2 / y_2;
+	var r_10: vec3<u32> = x_2 % y_2;
+}
+)");
 	}
 	
 	SECTION("Vector/scalars operations")
@@ -1123,6 +1263,29 @@ fn main()
       OpStore %38 %85
       OpReturn
       OpFunctionEnd)", {}, {}, true);
+
+		ExpectWGSL(*shaderModule, R"(
+@fragment
+fn main()
+{
+	var vec: vec4<i32> = vec4<i32>(1, 2, 3, 4);
+	var val: i32 = 42;
+	var r: vec4<i32> = vec * val;
+	var r_2: vec4<i32> = val * vec;
+	var r_3: vec4<i32> = vec / val;
+	var r_4: vec4<i32> = val / vec;
+	var r_5: vec4<i32> = vec % val;
+	var r_6: vec4<i32> = val % vec;
+	var vec_2: vec4<f32> = vec4<f32>(1.0, 2.0, 3.0, 4.0);
+	var val_2: f32 = 42.0;
+	var r_7: vec4<f32> = vec_2 * val_2;
+	var r_8: vec4<f32> = val_2 * vec_2;
+	var r_9: vec4<f32> = vec_2 / val_2;
+	var r_10: vec4<f32> = val_2 / vec_2;
+	var r_11: vec4<f32> = vec_2 % val_2;
+	var r_12: vec4<f32> = val_2 % vec_2;
+}
+)");
 	}
 
 	SECTION("Unary operators")
@@ -1234,5 +1397,20 @@ fn main()
       OpStore %35 %46
       OpReturn
       OpFunctionEnd)", {}, {}, true);
+
+		ExpectWGSL(*shaderModule, R"(
+@fragment
+fn main()
+{
+	var r: f32 = 42.0;
+	var r_2: f32 = -6.0;
+	var r_3: f32 = (-r_2) * (r_2);
+	var r_4: i32 = ~42;
+	var r_5: u32 = ~42u;
+	var r_6: bool = !true;
+	var r_7: vec3<i32> = ~vec3<i32>(1, 2, 3);
+	var r_8: vec3<u32> = ~vec3<u32>(1u, 2u, 3u);
+}
+)");
 	}
 }

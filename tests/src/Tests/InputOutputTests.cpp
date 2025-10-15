@@ -25,16 +25,17 @@ external
 
 struct VertIn
 {
-	[builtin(instance_index)] instance_index: i32,
-	[builtin(draw_index)] draw_index: i32,
-	[builtin(vertex_index)] vertex_index: i32
+	[builtin(instance_index)] instance_index: u32,
+	[builtin(draw_index)] draw_index: u32,
+	[builtin(vertex_index)] vertex_index: u32
 }
 
 struct VertOut
 {
-	[location(0), interp(flat)] instance_index: i32,
+	[location(0), interp(flat)] instance_index: u32,
 	[location(1), interp(no_perspective)] x: f32,
 	[location(2), interp(smooth)] y: f32,
+	[builtin(position)] position: vec4[f32],
 }
 
 struct FragOut
@@ -58,6 +59,7 @@ fn main(input: VertIn) -> VertOut
 	output.instance_index = input.instance_index;
 	output.x = f32(input.draw_index);
 	output.y = f32(input.vertex_index);
+	output.position = vec4[f32](0.0, 0.0, 0.0, 1.0);
 
 	return output;
 }
@@ -79,16 +81,17 @@ layout(std430) buffer _nzslBindingdata
 
 struct VertIn
 {
-	int instance_index;
-	int draw_index;
-	int vertex_index;
+	uint instance_index;
+	uint draw_index;
+	uint vertex_index;
 };
 
 struct VertOut
 {
-	int instance_index;
+	uint instance_index;
 	float x;
 	float y;
+	vec4 position;
 };
 
 struct FragOut
@@ -97,25 +100,27 @@ struct FragOut
 };
 
 /*************** Outputs ***************/
-layout(location = 0) flat out int _nzslOutinstance_index;
+layout(location = 0) flat out uint _nzslOutinstance_index;
 layout(location = 1) noperspective out float _nzslOutx;
 layout(location = 2) smooth out float _nzslOuty;
 
 void main()
 {
 	VertIn input_;
-	input_.instance_index = (gl_BaseInstance + gl_InstanceID);
-	input_.draw_index = gl_DrawID;
-	input_.vertex_index = gl_VertexID;
+	input_.instance_index = uint(gl_BaseInstance) + uint(gl_InstanceID);
+	input_.draw_index = uint(gl_DrawID);
+	input_.vertex_index = uint(gl_VertexID);
 
 	VertOut output_;
 	output_.instance_index = input_.instance_index;
 	output_.x = float(input_.draw_index);
 	output_.y = float(input_.vertex_index);
+	output_.position = vec4(0.0, 0.0, 0.0, 1.0);
 
 	_nzslOutinstance_index = output_.instance_index;
 	_nzslOutx = output_.x;
 	_nzslOuty = output_.y;
+	gl_Position = output_.position;
 	return;
 }
 )", {}, glslEnv);
@@ -128,16 +133,17 @@ layout(std430) buffer _nzslBindingdata
 
 struct VertIn
 {
-	int instance_index;
-	int draw_index;
-	int vertex_index;
+	uint instance_index;
+	uint draw_index;
+	uint vertex_index;
 };
 
 struct VertOut
 {
-	int instance_index;
+	uint instance_index;
 	float x;
 	float y;
+	vec4 position;
 };
 
 struct FragOut
@@ -146,7 +152,7 @@ struct FragOut
 };
 
 /**************** Inputs ****************/
-layout(location = 0) flat in int _nzslIninstance_index;
+layout(location = 0) flat in uint _nzslIninstance_index;
 layout(location = 1) noperspective in float _nzslInx;
 layout(location = 2) smooth in float _nzslIny;
 
@@ -185,16 +191,17 @@ external
 
 struct VertIn
 {
-	[builtin(instance_index)] instance_index: i32,
-	[builtin(draw_index)] draw_index: i32,
-	[builtin(vertex_index)] vertex_index: i32
+	[builtin(instance_index)] instance_index: u32,
+	[builtin(draw_index)] draw_index: u32,
+	[builtin(vertex_index)] vertex_index: u32
 }
 
 struct VertOut
 {
-	[location(0), interp(flat)] instance_index: i32,
+	[location(0), interp(flat)] instance_index: u32,
 	[location(1), interp(no_perspective)] x: f32,
-	[location(2), interp(smooth)] y: f32
+	[location(2), interp(smooth)] y: f32,
+	[builtin(position)] position: vec4[f32]
 }
 
 struct FragOut
@@ -217,6 +224,7 @@ fn main(input: VertIn) -> VertOut
 	output.instance_index = input.instance_index;
 	output.x = f32(input.draw_index);
 	output.y = f32(input.vertex_index);
+	output.position = vec4[f32](0.0, 0.0, 0.0, 1.0);
 	return output;
 }
 )");
@@ -226,65 +234,68 @@ fn main(input: VertIn) -> VertOut
 		spirvEnv.spvMinorVersion = 3;
 
 		ExpectSPIRV(*shaderModule, R"(
-      OpCapability Capability(Shader)
       OpCapability Capability(DrawParameters)
       OpMemoryModel AddressingModel(Logical) MemoryModel(GLSL450)
-      OpEntryPoint ExecutionModel(Fragment) %37 "main" %11 %15 %18 %23
-      OpEntryPoint ExecutionModel(Vertex) %38 "main" %27 %28 %29 %33 %35 %36
-      OpExecutionMode %37 ExecutionMode(OriginUpperLeft)
+      OpEntryPoint ExecutionModel(Fragment) %42 "main" %11 %16 %19 %24
+      OpEntryPoint ExecutionModel(Vertex) %43 "main" %28 %29 %30 %34 %36 %37 %38
+      OpExecutionMode %42 ExecutionMode(OriginUpperLeft)
       OpSource SourceLanguage(NZSL) 4198400
       OpSourceExtension "Version: 1.1"
       OpName %4 "ColorData"
       OpMemberName %4 0 "colors"
-      OpName %20 "VertOut"
-      OpMemberName %20 0 "instance_index"
-      OpMemberName %20 1 "x"
-      OpMemberName %20 2 "y"
-      OpName %24 "FragOut"
-      OpMemberName %24 0 "color"
-      OpName %30 "VertIn"
-      OpMemberName %30 0 "instance_index"
-      OpMemberName %30 1 "draw_index"
-      OpMemberName %30 2 "vertex_index"
+      OpName %21 "VertOut"
+      OpMemberName %21 0 "instance_index"
+      OpMemberName %21 1 "x"
+      OpMemberName %21 2 "y"
+      OpMemberName %21 3 "position"
+      OpName %25 "FragOut"
+      OpMemberName %25 0 "color"
+      OpName %31 "VertIn"
+      OpMemberName %31 0 "instance_index"
+      OpMemberName %31 1 "draw_index"
+      OpMemberName %31 2 "vertex_index"
       OpName %6 "data"
       OpName %11 "instance_index"
-      OpName %15 "x"
-      OpName %18 "y"
-      OpName %23 "color"
-      OpName %27 "instance_index"
-      OpName %28 "draw_index"
-      OpName %29 "vertex_index"
-      OpName %33 "instance_index"
-      OpName %35 "x"
-      OpName %36 "y"
-      OpName %37 "main"
-      OpName %38 "main"
+      OpName %16 "x"
+      OpName %19 "y"
+      OpName %24 "color"
+      OpName %28 "instance_index"
+      OpName %29 "draw_index"
+      OpName %30 "vertex_index"
+      OpName %34 "instance_index"
+      OpName %36 "x"
+      OpName %37 "y"
+      OpName %38 "position"
+      OpName %42 "main"
+      OpName %43 "main"
       OpDecorate %6 Decoration(Binding) 0
       OpDecorate %6 Decoration(DescriptorSet) 0
-      OpDecorate %27 Decoration(BuiltIn) BuiltIn(InstanceIndex)
-      OpDecorate %28 Decoration(BuiltIn) BuiltIn(DrawIndex)
-      OpDecorate %29 Decoration(BuiltIn) BuiltIn(VertexIndex)
+      OpDecorate %28 Decoration(BuiltIn) BuiltIn(InstanceIndex)
+      OpDecorate %29 Decoration(BuiltIn) BuiltIn(DrawIndex)
+      OpDecorate %30 Decoration(BuiltIn) BuiltIn(VertexIndex)
+      OpDecorate %38 Decoration(BuiltIn) BuiltIn(Position)
       OpDecorate %11 Decoration(Location) 0
-      OpDecorate %15 Decoration(Location) 1
-      OpDecorate %18 Decoration(Location) 2
-      OpDecorate %23 Decoration(Location) 0
-      OpDecorate %33 Decoration(Location) 0
-      OpDecorate %35 Decoration(Location) 1
-      OpDecorate %36 Decoration(Location) 2
+      OpDecorate %16 Decoration(Location) 1
+      OpDecorate %19 Decoration(Location) 2
+      OpDecorate %24 Decoration(Location) 0
+      OpDecorate %34 Decoration(Location) 0
+      OpDecorate %36 Decoration(Location) 1
+      OpDecorate %37 Decoration(Location) 2
       OpDecorate %11 Decoration(Flat)
-      OpDecorate %15 Decoration(NoPerspective)
-      OpDecorate %33 Decoration(Flat)
-      OpDecorate %35 Decoration(NoPerspective)
+      OpDecorate %16 Decoration(NoPerspective)
+      OpDecorate %34 Decoration(Flat)
+      OpDecorate %36 Decoration(NoPerspective)
       OpDecorate %3 Decoration(ArrayStride) 16
       OpDecorate %4 Decoration(Block)
       OpMemberDecorate %4 0 Decoration(Offset) 0
-      OpMemberDecorate %20 0 Decoration(Offset) 0
-      OpMemberDecorate %20 1 Decoration(Offset) 4
-      OpMemberDecorate %20 2 Decoration(Offset) 8
-      OpMemberDecorate %24 0 Decoration(Offset) 0
-      OpMemberDecorate %30 0 Decoration(Offset) 0
-      OpMemberDecorate %30 1 Decoration(Offset) 4
-      OpMemberDecorate %30 2 Decoration(Offset) 8
+      OpMemberDecorate %21 0 Decoration(Offset) 0
+      OpMemberDecorate %21 1 Decoration(Offset) 4
+      OpMemberDecorate %21 2 Decoration(Offset) 8
+      OpMemberDecorate %21 3 Decoration(Offset) 16
+      OpMemberDecorate %25 0 Decoration(Offset) 0
+      OpMemberDecorate %31 0 Decoration(Offset) 0
+      OpMemberDecorate %31 1 Decoration(Offset) 4
+      OpMemberDecorate %31 2 Decoration(Offset) 8
  %1 = OpTypeFloat 32
  %2 = OpTypeVector %1 4
  %3 = OpTypeRuntimeArray %2
@@ -292,96 +303,163 @@ fn main(input: VertIn) -> VertOut
  %5 = OpTypePointer StorageClass(StorageBuffer) %4
  %7 = OpTypeVoid
  %8 = OpTypeFunction %7
- %9 = OpTypeInt 32 1
+ %9 = OpTypeInt 32 0
 %10 = OpTypePointer StorageClass(Input) %9
-%12 = OpConstant %9 i32(0)
-%13 = OpTypePointer StorageClass(Function) %9
-%14 = OpTypePointer StorageClass(Input) %1
-%16 = OpConstant %9 i32(1)
-%17 = OpTypePointer StorageClass(Function) %1
-%19 = OpConstant %9 i32(2)
-%20 = OpTypeStruct %9 %1 %1
-%21 = OpTypePointer StorageClass(Function) %20
-%22 = OpTypePointer StorageClass(Output) %2
-%24 = OpTypeStruct %2
-%25 = OpTypePointer StorageClass(Function) %24
-%26 = OpTypeRuntimeArray %2
-%30 = OpTypeStruct %9 %9 %9
-%31 = OpTypePointer StorageClass(Function) %30
-%32 = OpTypePointer StorageClass(Output) %9
-%34 = OpTypePointer StorageClass(Output) %1
-%47 = OpTypePointer StorageClass(StorageBuffer) %2
-%57 = OpTypePointer StorageClass(Function) %2
+%12 = OpTypeInt 32 1
+%13 = OpConstant %12 i32(0)
+%14 = OpTypePointer StorageClass(Function) %9
+%15 = OpTypePointer StorageClass(Input) %1
+%17 = OpConstant %12 i32(1)
+%18 = OpTypePointer StorageClass(Function) %1
+%20 = OpConstant %12 i32(2)
+%21 = OpTypeStruct %9 %1 %1 %2
+%22 = OpTypePointer StorageClass(Function) %21
+%23 = OpTypePointer StorageClass(Output) %2
+%25 = OpTypeStruct %2
+%26 = OpTypePointer StorageClass(Function) %25
+%27 = OpTypeRuntimeArray %2
+%31 = OpTypeStruct %9 %9 %9
+%32 = OpTypePointer StorageClass(Function) %31
+%33 = OpTypePointer StorageClass(Output) %9
+%35 = OpTypePointer StorageClass(Output) %1
+%39 = OpConstant %12 i32(3)
+%40 = OpConstant %1 f32(0)
+%41 = OpConstant %1 f32(1)
+%52 = OpTypePointer StorageClass(StorageBuffer) %2
+%62 = OpTypePointer StorageClass(Function) %2
  %6 = OpVariable %5 StorageClass(StorageBuffer)
 %11 = OpVariable %10 StorageClass(Input)
-%15 = OpVariable %14 StorageClass(Input)
-%18 = OpVariable %14 StorageClass(Input)
-%23 = OpVariable %22 StorageClass(Output)
-%27 = OpVariable %10 StorageClass(Input)
+%16 = OpVariable %15 StorageClass(Input)
+%19 = OpVariable %15 StorageClass(Input)
+%24 = OpVariable %23 StorageClass(Output)
 %28 = OpVariable %10 StorageClass(Input)
 %29 = OpVariable %10 StorageClass(Input)
-%33 = OpVariable %32 StorageClass(Output)
-%35 = OpVariable %34 StorageClass(Output)
-%36 = OpVariable %34 StorageClass(Output)
-%37 = OpFunction %7 FunctionControl(0) %8
-%39 = OpLabel
-%40 = OpVariable %25 StorageClass(Function)
-%41 = OpVariable %21 StorageClass(Function)
-%42 = OpAccessChain %13 %41 %12
-      OpCopyMemory %42 %11
-%43 = OpAccessChain %17 %41 %16
-      OpCopyMemory %43 %15
-%44 = OpAccessChain %17 %41 %19
-      OpCopyMemory %44 %18
-%45 = OpAccessChain %13 %41 %12
-%46 = OpLoad %9 %45
-%48 = OpAccessChain %47 %6 %12 %46
-%49 = OpLoad %2 %48
-%50 = OpAccessChain %17 %41 %16
-%51 = OpLoad %1 %50
-%52 = OpVectorTimesScalar %2 %49 %51
-%53 = OpAccessChain %17 %41 %19
-%54 = OpLoad %1 %53
-%55 = OpVectorTimesScalar %2 %52 %54
-%56 = OpAccessChain %57 %40 %12
-      OpStore %56 %55
-%58 = OpLoad %24 %40
-%59 = OpCompositeExtract %2 %58 0
-      OpStore %23 %59
+%30 = OpVariable %10 StorageClass(Input)
+%34 = OpVariable %33 StorageClass(Output)
+%36 = OpVariable %35 StorageClass(Output)
+%37 = OpVariable %35 StorageClass(Output)
+%38 = OpVariable %23 StorageClass(Output)
+%42 = OpFunction %7 FunctionControl(0) %8
+%44 = OpLabel
+%45 = OpVariable %26 StorageClass(Function)
+%46 = OpVariable %22 StorageClass(Function)
+%47 = OpAccessChain %14 %46 %13
+      OpCopyMemory %47 %11
+%48 = OpAccessChain %18 %46 %17
+      OpCopyMemory %48 %16
+%49 = OpAccessChain %18 %46 %20
+      OpCopyMemory %49 %19
+%50 = OpAccessChain %14 %46 %13
+%51 = OpLoad %9 %50
+%53 = OpAccessChain %52 %6 %13 %51
+%54 = OpLoad %2 %53
+%55 = OpAccessChain %18 %46 %17
+%56 = OpLoad %1 %55
+%57 = OpVectorTimesScalar %2 %54 %56
+%58 = OpAccessChain %18 %46 %20
+%59 = OpLoad %1 %58
+%60 = OpVectorTimesScalar %2 %57 %59
+%61 = OpAccessChain %62 %45 %13
+      OpStore %61 %60
+%63 = OpLoad %25 %45
+%64 = OpCompositeExtract %2 %63 0
+      OpStore %24 %64
       OpReturn
       OpFunctionEnd
-%38 = OpFunction %7 FunctionControl(0) %8
-%60 = OpLabel
-%61 = OpVariable %21 StorageClass(Function)
-%62 = OpVariable %31 StorageClass(Function)
-%63 = OpAccessChain %13 %62 %12
-      OpCopyMemory %63 %27
-%64 = OpAccessChain %13 %62 %16
-      OpCopyMemory %64 %28
-%65 = OpAccessChain %13 %62 %19
-      OpCopyMemory %65 %29
-%66 = OpAccessChain %13 %62 %12
-%67 = OpLoad %9 %66
-%68 = OpAccessChain %13 %61 %12
-      OpStore %68 %67
-%69 = OpAccessChain %13 %62 %16
-%70 = OpLoad %9 %69
-%71 = OpConvertSToF %1 %70
-%72 = OpAccessChain %17 %61 %16
-      OpStore %72 %71
-%73 = OpAccessChain %13 %62 %19
-%74 = OpLoad %9 %73
-%75 = OpConvertSToF %1 %74
-%76 = OpAccessChain %17 %61 %19
-      OpStore %76 %75
-%77 = OpLoad %20 %61
-%78 = OpCompositeExtract %9 %77 0
-      OpStore %33 %78
-%79 = OpCompositeExtract %1 %77 1
-      OpStore %35 %79
-%80 = OpCompositeExtract %1 %77 2
-      OpStore %36 %80
+%43 = OpFunction %7 FunctionControl(0) %8
+%65 = OpLabel
+%66 = OpVariable %22 StorageClass(Function)
+%67 = OpVariable %32 StorageClass(Function)
+%68 = OpAccessChain %14 %67 %13
+      OpCopyMemory %68 %28
+%69 = OpAccessChain %14 %67 %17
+      OpCopyMemory %69 %29
+%70 = OpAccessChain %14 %67 %20
+      OpCopyMemory %70 %30
+%71 = OpAccessChain %14 %67 %13
+%72 = OpLoad %9 %71
+%73 = OpAccessChain %14 %66 %13
+      OpStore %73 %72
+%74 = OpAccessChain %14 %67 %17
+%75 = OpLoad %9 %74
+%76 = OpConvertUToF %1 %75
+%77 = OpAccessChain %18 %66 %17
+      OpStore %77 %76
+%78 = OpAccessChain %14 %67 %20
+%79 = OpLoad %9 %78
+%80 = OpConvertUToF %1 %79
+%81 = OpAccessChain %18 %66 %20
+      OpStore %81 %80
+%82 = OpCompositeConstruct %2 %40 %40 %40 %41
+%83 = OpAccessChain %62 %66 %39
+      OpStore %83 %82
+%84 = OpLoad %21 %66
+%85 = OpCompositeExtract %9 %84 0
+      OpStore %34 %85
+%86 = OpCompositeExtract %1 %84 1
+      OpStore %36 %86
+%87 = OpCompositeExtract %1 %84 2
+      OpStore %37 %87
+%88 = OpCompositeExtract %2 %84 3
+      OpStore %38 %88
       OpReturn
       OpFunctionEnd)", {}, spirvEnv, true);
+
+		nzsl::WgslWriter::Environment wgslEnv;
+		wgslEnv.featuresCallback = [](std::string_view) { return true; };
+
+		ExpectWGSL(*shaderModule, R"(
+struct _nzslBuiltinEmulationStruct
+{
+	draw_index: u32,
+
+}
+@group(0) @binding(0) var<uniform> _nzslBuiltinEmulation: _nzslBuiltinEmulationStruct;
+
+struct ColorData
+{
+	colors: array<vec4<f32>>
+}
+
+@group(0) @binding(1) var<storage, read_write> data: ColorData;
+
+struct VertIn
+{
+	@builtin(instance_index) instance_index: u32,
+	@builtin(vertex_index) vertex_index: u32
+}
+
+struct VertOut
+{
+	@location(0) @interpolate(flat) instance_index: u32,
+	@location(1) @interpolate(perspective) x: f32,
+	@location(2) @interpolate(linear) y: f32,
+	@builtin(position) position: vec4<f32>
+}
+
+struct FragOut
+{
+	@location(0) color: vec4<f32>
+}
+
+@fragment
+fn main(input: VertOut) -> FragOut
+{
+	var output: FragOut;
+	output.color = (data.colors[input.instance_index] * input.x) * input.y;
+	return output;
+}
+
+@vertex
+fn main_2(input: VertIn) -> VertOut
+{
+	var output: VertOut;
+	output.instance_index = input.instance_index;
+	output.x = f32(_nzslBuiltinEmulation.draw_index);
+	output.y = f32(input.vertex_index);
+	output.position = vec4<f32>(0.0, 0.0, 0.0, 1.0);
+	return output;
+}
+)", {}, wgslEnv);
 	}
 }
