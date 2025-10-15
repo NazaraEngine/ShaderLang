@@ -596,6 +596,7 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 	{
 		// TODO : add a way to validate Wgsl feature usage
 		nzsl::WgslWriter::Environment env;
+		env.featuresCallback = [](std::string_view) { return true; };
 
 		nzsl::WgslWriter wgslWriter;
 		wgslWriter.SetEnv(env);

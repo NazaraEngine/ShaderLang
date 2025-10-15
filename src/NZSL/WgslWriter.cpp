@@ -376,7 +376,6 @@ namespace nzsl
 		bool hasDrawParametersBaseInstanceUniform = false;
 		bool hasDrawParametersBaseVertexUniform = false;
 		bool hasDrawParametersDrawIndexUniform = false;
-		bool std140EmulationState = false;
 	};
 
 	WgslWriter::Output WgslWriter::Generate(Ast::Module& module, const BackendParameters& parameters)
@@ -670,12 +669,7 @@ namespace nzsl
 	{
 		if (IsSamplerType(type.containedType->type))
 			Append("binding_");
-		Append("array<");
-
-		if (m_currentState->std140EmulationState && IsPrimitiveType(type.containedType->type))
-			Append(Ast::VectorType{ .componentCount = 4, .type = std::get<Ast::PrimitiveType>(type.containedType->type) });
-		else
-			Append(type.containedType->type);
+		Append("array<", type.containedType->type);
 		
 		if (type.length > 0)
 			Append(", ", type.length);
@@ -1690,6 +1684,7 @@ namespace nzsl
 		// in a string, visit struct's name and then append the statement.
 
 		const Ast::ExpressionType* exprType = GetExpressionType(*node.expr);
+		NazaraUnused(exprType);
 		assert(exprType);
 		assert(IsStructAddressible(*exprType));
 
@@ -1698,7 +1693,7 @@ namespace nzsl
 
 		const auto& structData = Nz::Retrieve(m_currentState->structs, structIndex);
 
-		const Ast::StructDescription::StructMember* foundMember;
+		std::string_view memberName;
 
 		std::uint32_t remainingIndices = node.fieldIndex;
 		for (const auto& member : structData.desc->members)
@@ -1718,22 +1713,15 @@ namespace nzsl
 						return;
 					}
 				}
-				foundMember = &member;
+				memberName = member.name;
 				break;
 			}
 
 			remainingIndices--;
 		}
 
-		assert(foundMember);
-		if (m_currentState->std140EmulationState && foundMember->type.HasValue())
-		{
-			const auto& memberType = foundMember->type.GetResultingValue();
-			if (!IsArrayType(memberType) || !IsPrimitiveType(std::get<Ast::ArrayType>(memberType).containedType->type))
-				m_currentState->std140EmulationState = false;
-		}
 		Visit(node.expr, true);
-		Append('.', foundMember->name);
+		Append('.', memberName);
 	}
 
 	void WgslWriter::Visit(Ast::AccessIdentifierExpression& node)
@@ -1746,10 +1734,7 @@ namespace nzsl
 
 	void WgslWriter::Visit(Ast::AccessIndexExpression& node)
 	{
-		m_currentState->std140EmulationState = true;
 		Visit(node.expr, true);
-		bool appendStd140Emulation = m_currentState->std140EmulationState;
-		m_currentState->std140EmulationState = false;
 
 		for (Ast::ExpressionPtr& expr : node.indices)
 		{
@@ -1757,9 +1742,6 @@ namespace nzsl
 			expr->Visit(*this);
 			Append(']');
 		}
-
-		if (appendStd140Emulation)
-			Append(".x");
 	}
 
 	void WgslWriter::Visit(Ast::IdentifierValueExpression& node)
@@ -1792,7 +1774,6 @@ namespace nzsl
 			case Ast::IdentifierType::Constant:
 			{
 				AppendIdentifier(m_currentState->constants, node.identifierIndex);
-				m_currentState->std140EmulationState = false;
 				break;
 			}
 
@@ -1807,8 +1788,6 @@ namespace nzsl
 				if (m_currentState->variables[node.identifierIndex].isDereferenceable)
 					Append('*');
 				AppendIdentifier(m_currentState->variables, node.identifierIndex);
-				//if (!m_currentState->variables[node.identifierIndex].isUniformBuffer)
-				//	m_currentState->std140EmulationState = false;
 				break;
 			}
 		}
