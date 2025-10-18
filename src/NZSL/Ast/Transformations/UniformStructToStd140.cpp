@@ -72,7 +72,7 @@ namespace nzsl::Ast
 
 				m_structRemap[*declStruct.structIndex] = *newStruct->structIndex;
 
-				multiStatement->statements.emplace_back(std::make_unique<DeclareStructStatement>(std::move(declStruct)));
+				multiStatement->statements.emplace_back(std::move(GetCurrentStatementPtr()));
 				multiStatement->statements.emplace_back(std::move(newStruct));
 
 				return ReplaceStatement{ std::move(multiStatement) };
