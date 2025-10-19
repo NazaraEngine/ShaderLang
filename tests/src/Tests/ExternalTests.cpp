@@ -309,20 +309,33 @@ fn main()
       OpFunctionEnd)", {}, {}, true);
 
 		ExpectWGSL(*shaderModule, R"(
-struct Data_std140
+struct f32_stride16
 {
-	// Tag: Values
-	 values: array<vec4<f32>, 47>,
-	matrices: array<mat4x4<f32>, 3>
+	value: f32,
+	_padding0: f32,
+	_padding1: f32,
+	_padding2: f32
 }
 
-@group(0) @binding(0) var<uniform> data: Data_std140;
+// Tag: DataStruct
+
+// std140 layout
+struct Data
+{
+	// Tag: Values
+	 values: array<f32_stride16, 47>,
+	matrices: array<mat4x4<f32>, 3>,
+	_padding0: f32
+}
+
+@group(0) @binding(0) var<uniform> data: Data;
 
 @fragment
 fn main()
 {
-	var value: mat4x4<f32> = data.values[42].x * data.matrices[1];
-})");
+	var value: mat4x4<f32> = data.values[42].value * data.matrices[1];
+}
+)");
 	}
 
 	SECTION("Storage buffers")
@@ -1125,9 +1138,13 @@ fn main()
 		wgslEnv.featuresCallback = [](std::string_view) { return true; };
 
 		ExpectWGSL(*shaderModule, R"(
+// std140 layout
 struct Data
 {
-	index: i32
+	index: i32,
+	_padding0: f32,
+	_padding1: f32,
+	_padding2: f32
 }
 
 var<push_constant> data: Data;
@@ -1390,7 +1407,16 @@ fn main()
        OpFunctionEnd)", {}, {}, true);
 
 		ExpectWGSL(*shaderModule, R"(
-struct DirectionalLight_std140
+struct f32_stride16
+{
+	value: f32,
+	_padding0: f32,
+	_padding1: f32,
+	_padding2: f32
+}
+
+// std140 layout
+struct DirectionalLight
 {
 	color: vec3<f32>,
 	direction: vec3<f32>,
@@ -1398,17 +1424,26 @@ struct DirectionalLight_std140
 	ambientFactor: f32,
 	diffuseFactor: f32,
 	cascadeCount: u32,
-	cascadeDistances: array<vec4<f32>, 4>,
-	viewProjMatrices: array<mat4x4<f32>, 4>
+	_padding0: f32,
+	_padding1: f32,
+	_padding2: f32,
+	cascadeDistances: array<f32_stride16, 4>,
+	viewProjMatrices: array<mat4x4<f32>, 4>,
+	_padding3: f32,
+	_padding4: f32
 }
 
-struct LightData_std140
+// std140 layout
+struct LightData
 {
-	directionalLights: array<DirectionalLight_std140, 3>,
-	directionalLightCount: u32
+	directionalLights: array<DirectionalLight, 3>,
+	directionalLightCount: u32,
+	_padding0: f32,
+	_padding1: f32,
+	_padding2: f32
 }
 
-@group(0) @binding(0) var<uniform> lightData: LightData_std140;
+@group(0) @binding(0) var<uniform> lightData: LightData;
 
 @fragment
 fn main()
@@ -1418,7 +1453,7 @@ fn main()
 		var _nzsl_to: u32 = lightData.directionalLightCount;
 		while (lightIndex < _nzsl_to)
 		{
-			var light: DirectionalLight_std140;
+			var light: DirectionalLight;
 			light.color = lightData.directionalLights[lightIndex].color;
 			light.direction = lightData.directionalLights[lightIndex].direction;
 			light.invShadowMapSize = lightData.directionalLights[lightIndex].invShadowMapSize;
@@ -1426,8 +1461,8 @@ fn main()
 			light.diffuseFactor = lightData.directionalLights[lightIndex].diffuseFactor;
 			light.cascadeCount = lightData.directionalLights[lightIndex].cascadeCount;
 			light.cascadeDistances = lightData.directionalLights[lightIndex].cascadeDistances;
-			light.viewProjMatrices = lightData.directionalLights[lightIndex].viewProjMatrices;
-			var lightCopy: DirectionalLight_std140 = light;
+			light.cascadeDistances = lightData.directionalLights[lightIndex].cascadeDistances;
+			var lightCopy: DirectionalLight = light;
 			lightIndex += 1u;
 		}
 
@@ -1533,7 +1568,8 @@ fn main()
       OpFunctionEnd)", {}, {}, true);
 
 		ExpectWGSL(*shaderModule, R"(
-struct Data_std140
+// std140 layout
+struct Data
 {
 	color: vec4<f32>
 }
@@ -1541,7 +1577,7 @@ struct Data_std140
 // Tag: Color map
 @group(0) @binding(0) var Instance_tex: texture_2d<f32>;
 @group(0) @binding(1) var Instance_texSampler: sampler;
-@group(0) @binding(2) var<uniform> Instance_data: Data_std140;
+@group(0) @binding(2) var<uniform> Instance_data: Data;
 
 @fragment
 fn main()
@@ -2119,20 +2155,25 @@ fn main(input: VertIn) -> VertOut
       OpFunctionEnd)", {}, env, true);
 
 		ExpectWGSL(*shaderModule, R"(
-struct MaterialData_std140
+// std140 layout
+struct MaterialData
 {
 	color: vec4<f32>
 }
 
-struct InstanceData_std140
+// std140 layout
+struct InstanceData
 {
-	worldViewProjMat: mat4x4<f32>
+	worldViewProjMat: mat4x4<f32>,
+	_padding0: f32,
+	_padding1: f32,
+	_padding2: f32
 }
 
 @group(0) @binding(0) var tex: texture_2d<f32>;
 @group(0) @binding(1) var texSampler: sampler;
-@group(0) @binding(2) var<uniform> instanceData: InstanceData_std140;
-@group(0) @binding(3) var<uniform> materialData: MaterialData_std140;
+@group(0) @binding(2) var<uniform> instanceData: InstanceData;
+@group(0) @binding(3) var<uniform> materialData: MaterialData;
 
 struct VertIn
 {

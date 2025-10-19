@@ -29,12 +29,16 @@ namespace nzsl::Ast
 		private:
 			using Transformer::Transform;
 
+			ExpressionTransformation Transform(AccessFieldExpression&& accessFieldExpr) override;
 			ExpressionTransformation Transform(AccessIndexExpression&& accessIndexExpr) override;
 			StatementTransformation Transform(DeclareStructStatement&& declStruct) override;
 
 			DeclareStructStatementPtr DeclareStride16PrimitiveHelper(PrimitiveType type, std::size_t moduleIndex, SourceLocation sourceLocation);
-			FieldOffsets ComputeStructFieldOffsets(const StructDescription& desc, const SourceLocation& location) const;
+			bool ComputeStructDeclarationPadding(StructDescription& desc, const SourceLocation& sourceLocation) const;
+			FieldOffsets ComputeStructFieldOffsets(const StructDescription& desc, const SourceLocation& sourceLocation) const;
+			bool HandleStd140Propagation(MultiStatementPtr& multiStatement, std::size_t structIndex, SourceLocation sourceLocation, bool shouldExport);
 
+			std::unordered_map<std::size_t /*structIndex*/, std::size_t /*newStructIndex*/> m_structStd140Map;
 			std::unordered_map<PrimitiveType, std::size_t /* structIndex */> m_stride16Structs;
 			const Options* m_options;
 	};

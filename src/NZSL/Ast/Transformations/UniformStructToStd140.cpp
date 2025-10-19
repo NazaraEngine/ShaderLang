@@ -38,16 +38,19 @@ namespace nzsl::Ast
 		if (!declStruct.structIndex.has_value())
 			return VisitChildren{};
 
+		if (declStruct.description.layout.HasValue() && declStruct.description.layout.GetResultingValue() == MemoryLayout::Std140)
+			return DontVisitChildren{};
+
 		bool isUsedInUniformBuffer = false;
 		bool isUsedInPlainCode = false;
 
 		const auto& variables = m_context->variables;
 		for (const auto& [_, var] : variables.values)
 		{
-			const auto& realVarType = ResolveAlias(var.type);
-			if (IsStructType(realVarType) && std::get<StructType>(realVarType).structIndex == *declStruct.structIndex)
+			const auto& resolvedVarType = ResolveAlias(var.type);
+			if (IsStructType(resolvedVarType) && std::get<StructType>(resolvedVarType).structIndex == *declStruct.structIndex)
 				isUsedInPlainCode = true;
-			else if (IsUniformType(realVarType) && std::get<UniformType>(realVarType).containedType.structIndex == *declStruct.structIndex)
+			else if (IsUniformType(resolvedVarType) && std::get<UniformType>(resolvedVarType).containedType.structIndex == *declStruct.structIndex)
 				isUsedInUniformBuffer = true;
 
 			if (isUsedInUniformBuffer && isUsedInPlainCode) // Skip useless iterations
@@ -72,8 +75,8 @@ namespace nzsl::Ast
 
 				m_structRemap[*declStruct.structIndex] = *newStruct->structIndex;
 
-				multiStatement->statements.emplace_back(std::move(GetCurrentStatementPtr()));
 				multiStatement->statements.emplace_back(std::move(newStruct));
+				multiStatement->statements.emplace_back(std::move(GetCurrentStatementPtr()));
 
 				return ReplaceStatement{ std::move(multiStatement) };
 			}

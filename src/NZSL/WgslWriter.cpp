@@ -2,9 +2,6 @@
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
-#include "NZSL/Ast/Enums.hpp"
-#include "NZSL/Ast/ExpressionType.hpp"
-#include "NZSL/Ast/Nodes.hpp"
 #include <NZSL/WgslWriter.hpp>
 #include <NazaraUtils/Algorithm.hpp>
 #include <NazaraUtils/CallOnExit.hpp>
@@ -46,7 +43,6 @@
 #include <unordered_set>
 #include <variant>
 #include <algorithm>
-#include <iostream>
 
 namespace nzsl
 {
@@ -651,12 +647,12 @@ namespace nzsl
 			opt.removeConstArraySize = false;
 			opt.removeTypeConstant = false;
 		});
-		executor.AddPass<Ast::AliasTransformer>();
 		executor.AddPass<Ast::UniformStructToStd140Transformer>([](Ast::UniformStructToStd140Transformer::Options& opt)
 		{
 			opt.cloneStructIfUsedElsewhere = true;
 		});
 		executor.AddPass<Ast::Std140EmulationTransformer>();
+		executor.AddPass<Ast::AliasTransformer>();
 		executor.AddPass<Ast::IdentifierTransformer>(secondIdentifierPassOptions);
 	}
 
@@ -2498,6 +2494,7 @@ namespace nzsl
 
 		EnterScope();
 		{
+			const Ast::StructDescription::StructMember* dynArrayMember = nullptr;
 			bool first = true;
 			for (const auto& member : node.description.members)
 			{
@@ -2508,12 +2505,31 @@ namespace nzsl
 					if (std::find(s_wgslBuiltinsToEmulate.begin(), s_wgslBuiltinsToEmulate.end(), member.builtin.GetResultingValue()) != s_wgslBuiltinsToEmulate.end())
 						continue;
 				}
+
+				// Runtime sized arrays should always be last in structs
+				// See https://www.w3.org/TR/WGSL/#struct-types
+				if (IsDynArrayType(member.type.GetResultingValue()))
+				{
+					if (dynArrayMember != nullptr)
+						throw std::runtime_error("WGSL structures can only have a single runtime sized array");
+					dynArrayMember = &member;
+					continue;
+				}
+
 				if (!first)
 					AppendLine(",");
 				first = false;
 
 				AppendAttributes(false, CondAttribute{ member.cond }, LocationAttribute{ member.locationIndex }, InterpAttribute{ member.interp }, BuiltinAttribute{ member.builtin }, TagAttribute{ member.tag });
 				Append(member.name, ": ", member.type);
+			}
+
+			if (dynArrayMember)
+			{
+				if (!first)
+					AppendLine(",");
+				AppendAttributes(false, CondAttribute{ dynArrayMember->cond }, LocationAttribute{ dynArrayMember->locationIndex }, InterpAttribute{ dynArrayMember->interp }, BuiltinAttribute{ dynArrayMember->builtin }, TagAttribute{ dynArrayMember->tag });
+				Append(dynArrayMember->name, ": ", dynArrayMember->type);
 			}
 		}
 		LeaveScope();

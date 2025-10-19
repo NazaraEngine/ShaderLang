@@ -2,6 +2,7 @@
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
+#include <NazaraUtils/MathUtils.hpp>
 #include <NZSL/Ast/Transformations/Std140EmulationTransformer.hpp>
 #include <NZSL/Ast/Cloner.hpp>
 #include <NZSL/Lang/Errors.hpp>
@@ -9,16 +10,28 @@
 #include <NZSL/Math/FieldOffsets.hpp>
 #include <fmt/format.h>
 #include <frozen/unordered_map.h>
-#include <iostream>
 
 namespace nzsl::Ast
 {
+	constexpr std::string_view s_paddingBaseName = "_padding";
 	const auto s_primitiveTypeToStructFieldType = frozen::make_unordered_map<PrimitiveType, StructFieldType>({
 		{ PrimitiveType::Float32, StructFieldType::Float1 },
 		{ PrimitiveType::Float64, StructFieldType::Float2 },
 		{ PrimitiveType::Int32, StructFieldType::Int1 },
 		{ PrimitiveType::UInt32, StructFieldType::UInt1 },
+		{ PrimitiveType::Boolean, StructFieldType::Bool1 },
 	});
+
+	std::size_t DeepResolveStructIndex(const ExpressionType& exprType)
+	{
+		std::size_t structIndex;
+		ExpressionType resolvedExprType = ResolveAlias(exprType);
+		if (IsArrayType(resolvedExprType))
+			structIndex = ResolveStructIndex(std::get<ArrayType>(resolvedExprType).InnerType());
+		else
+			structIndex = ResolveStructIndex(resolvedExprType);
+		return structIndex;
+	}
 
 	bool Std140EmulationTransformer::Transform(Module& module, TransformerContext& context, const Options& options, std::string* error)
 	{
@@ -27,6 +40,39 @@ namespace nzsl::Ast
 			return false;
 
 		return TransformModule(module, context, error);
+	}
+
+	auto Std140EmulationTransformer::Transform(AccessFieldExpression&& accessFieldExpr) -> ExpressionTransformation
+	{
+		const ExpressionType* exprType = GetExpressionType(*accessFieldExpr.expr);
+		if (!exprType)
+			return DontVisitChildren{};
+		ExpressionType resolvedExprType = ResolveAlias(*exprType);
+		std::size_t structIndex = DeepResolveStructIndex(resolvedExprType);
+		if (structIndex == std::numeric_limits<std::size_t>::max())
+			return DontVisitChildren{};
+		const auto& structData = m_context->structs.Retrieve(structIndex, accessFieldExpr.sourceLocation);
+
+		std::uint32_t remainingIndex = accessFieldExpr.fieldIndex;
+		for (auto it = structData.description->members.begin(); it != structData.description->members.end(); ++it)
+		{
+			if (it->cond.HasValue() && !it->cond.GetResultingValue())
+				continue;
+
+			if (remainingIndex == 0)
+			{
+				while (it != structData.description->members.end() && it->name.compare(0, s_paddingBaseName.length(), s_paddingBaseName) == 0)
+				{
+					accessFieldExpr.fieldIndex++;
+					++it;
+				}
+				break;
+			}
+
+			remainingIndex--;
+		}
+
+		return DontVisitChildren{};
 	}
 
 	auto Std140EmulationTransformer::Transform(AccessIndexExpression&& accessIndexExpr) -> ExpressionTransformation
@@ -40,19 +86,7 @@ namespace nzsl::Ast
 			return DontVisitChildren{};
 		ExpressionType resolvedExprType = ResolveAlias(*exprType);
 
-		std::optional<std::size_t> innerStructIndex;
-
-		if (IsUniformType(resolvedExprType))
-			innerStructIndex = std::get<UniformType>(resolvedExprType).containedType.structIndex;
-		else if (IsStorageType(resolvedExprType))
-			innerStructIndex = std::get<StorageType>(resolvedExprType).containedType.structIndex;
-		else if (IsStructType(resolvedExprType))
-			innerStructIndex = std::get<StructType>(resolvedExprType).structIndex;
-
-		if (!innerStructIndex)
-			return DontVisitChildren{};
-
-		StructDescription& desc = *m_context->structs.Retrieve(*innerStructIndex, accessFieldExpr.sourceLocation).description;
+		StructDescription& desc = *m_context->structs.Retrieve(DeepResolveStructIndex(resolvedExprType), accessFieldExpr.sourceLocation).description;
 		if (!desc.layout.HasValue() || desc.layout.GetResultingValue() != MemoryLayout::Std140)
 			return DontVisitChildren{};
 
@@ -100,16 +134,30 @@ namespace nzsl::Ast
 	{
 		auto& structData = m_context->structs.Retrieve(*declStruct.structIndex, declStruct.sourceLocation);
 		StructDescription* desc = structData.description;
-		if (!desc->layout.HasValue() || desc->layout.GetResultingValue() != MemoryLayout::Std140)
-			return VisitChildren{};
 
 		bool shouldReplaceStatement = false;
 		MultiStatementPtr multiStatement = ShaderBuilder::MultiStatement();
 		multiStatement->sourceLocation = declStruct.sourceLocation;
 
+		if (!desc->layout.HasValue() || desc->layout.GetResultingValue() != MemoryLayout::Std140)
+		{
+			if (!HandleStd140Propagation(multiStatement, *declStruct.structIndex, declStruct.sourceLocation, (declStruct.isExported.HasValue() ? declStruct.isExported.GetResultingValue() : false)))
+				return DontVisitChildren{};
+			shouldReplaceStatement = m_structStd140Map.count(*declStruct.structIndex);
+		}
+
 		for (auto& field : desc->members)
 		{
-			const auto& resolvedFieldType = ResolveAlias(field.type.GetResultingValue());
+			const ExpressionType& resolvedFieldType = ResolveAlias(field.type.GetResultingValue());
+			auto handleStruct = [&](const StructType& structure)
+			{
+				if (m_structStd140Map.count(structure.structIndex))
+				{
+					field.type = ExpressionType{ StructType{ m_structStd140Map.at(structure.structIndex) } };
+					shouldReplaceStatement = true;
+				}
+			};
+
 			if (IsArrayType(resolvedFieldType))
 			{
 				const auto& array = std::get<ArrayType>(resolvedFieldType);
@@ -121,14 +169,22 @@ namespace nzsl::Ast
 					array.containedType->type = ExpressionType{ StructType{ m_stride16Structs[primitiveType] } };
 					shouldReplaceStatement = true;
 				}
+				else if (IsStructType(array.containedType->type))
+					handleStruct(std::get<StructType>(array.containedType->type));
 			}
+			else if (IsStructType(resolvedFieldType))
+				handleStruct(std::get<StructType>(resolvedFieldType));
 		}
+
+		if (desc->layout.HasValue() && desc->layout.GetResultingValue() == MemoryLayout::Std140)
+			ComputeStructDeclarationPadding(*desc, declStruct.sourceLocation);
+
 		if (shouldReplaceStatement)
 		{
 			multiStatement->statements.emplace_back(std::move(GetCurrentStatementPtr()));
 			return ReplaceStatement{ std::move(multiStatement) };
 		}
-		return VisitChildren{};
+		return DontVisitChildren{};
 	}
 
 	DeclareStructStatementPtr Std140EmulationTransformer::DeclareStride16PrimitiveHelper(PrimitiveType type, std::size_t moduleIndex, SourceLocation sourceLocation)
@@ -144,14 +200,7 @@ namespace nzsl::Ast
 		StructDescription desc;
 		desc.name = fmt::format("{}_stride16", ToString(type, sourceLocation));
 		desc.members.push_back(std::move(member));
-		for (std::size_t i = 0; fieldOffset.GetAlignedSize() < 16; ++i)
-		{
-			member.type = ExpressionValue{ ExpressionType{ type } };
-			member.sourceLocation = sourceLocation;
-			member.name = fmt::format("_padding{}", i);
-			desc.members.push_back(std::move(member));
-			fieldOffset.AddField(s_primitiveTypeToStructFieldType.at(type));
-		}
+		ComputeStructDeclarationPadding(desc, sourceLocation);
 
 		auto structStatement = ShaderBuilder::DeclareStruct(std::move(desc), ExpressionValue{ false });
 		structStatement->sourceLocation = sourceLocation;
@@ -165,9 +214,68 @@ namespace nzsl::Ast
 		return structStatement;
 	}
 
+	bool Std140EmulationTransformer::ComputeStructDeclarationPadding(StructDescription& desc, const SourceLocation& sourceLocation) const
+	{
+		bool descriptionChanged = false;
+		std::size_t paddingFieldIndex = 0;
+		FieldOffsets fieldOffsets(StructLayout::Packed);
+
+		auto appendPaddingField = [&](std::size_t fieldIndex)
+		{
+			StructDescription::StructMember member;
+			member.type = ExpressionType{ PrimitiveType::Float32 };
+			member.sourceLocation = sourceLocation;
+			member.name = fmt::format("{}{}", s_paddingBaseName, paddingFieldIndex);
+			desc.members.insert(desc.members.begin() + fieldIndex, std::move(member));
+			fieldOffsets.AddField(s_primitiveTypeToStructFieldType.at(PrimitiveType::Float32));
+			paddingFieldIndex++;
+		};
+
+		auto fillWithPaddingFieldsUntilAlignedSize = [&](std::size_t fieldIndex, std::size_t sizeGoal) -> std::size_t
+		{
+			std::size_t i = 0;
+			for (; fieldOffsets.GetSize() < sizeGoal; ++i)
+			{
+				appendPaddingField(fieldIndex + i);
+				descriptionChanged = true;
+			}
+			return i;
+		};
+	
+		// Field that have struct type or array of struct must be aligned on 16 bytes
+		// This loop adds padding elements before those fields if necessary
+		for (std::size_t i = 0; i < desc.members.size(); ++i)
+		{
+			ExpressionType resolvedFieldType = ResolveAlias(desc.members.at(i).type.GetResultingValue());
+
+			std::size_t structIndex = DeepResolveStructIndex(resolvedFieldType);
+			if (structIndex != std::numeric_limits<std::size_t>::max())
+			{
+				if (fieldOffsets.GetSize() % 16 != 0)
+					i += fillWithPaddingFieldsUntilAlignedSize(i, Nz::Align(static_cast<int>(fieldOffsets.GetSize()), 16));
+
+				FieldOffsets innerFieldOffsets = ComputeStructFieldOffsets(*m_context->structs.Retrieve(structIndex, sourceLocation).description, sourceLocation);
+				if (IsArrayType(resolvedFieldType))
+					fieldOffsets.AddStructArray(innerFieldOffsets, std::get<ArrayType>(resolvedFieldType).length);
+				else
+					fieldOffsets.AddStruct(innerFieldOffsets);
+			}
+			else
+			{
+				FieldOffsets alignedFieldOffsets(StructLayout::Std140);
+				RegisterStructField(alignedFieldOffsets, resolvedFieldType);
+				fieldOffsets.AddStruct(alignedFieldOffsets);
+			}
+		}
+
+		fieldOffsets = ComputeStructFieldOffsets(desc, sourceLocation);
+		fillWithPaddingFieldsUntilAlignedSize(desc.members.size(), Nz::Align(static_cast<int>(fieldOffsets.GetAlignedSize()), 16));
+		return descriptionChanged;
+	}
+
 	FieldOffsets Std140EmulationTransformer::ComputeStructFieldOffsets(const StructDescription& desc, const SourceLocation& location) const
 	{
-		FieldOffsets innerFieldOffset(nzsl::StructLayout::Packed);
+		FieldOffsets innerFieldOffset(StructLayout::Packed);
 		auto structFinder = [&](std::size_t structIndex) -> const nzsl::FieldOffsets&
 		{
 			StructDescription* innerDesc = m_context->structs.Retrieve(structIndex, location).description;
@@ -175,7 +283,7 @@ namespace nzsl::Ast
 			return innerFieldOffset;
 		};
 
-		FieldOffsets fieldOffset(nzsl::StructLayout::Packed);
+		FieldOffsets fieldOffset(StructLayout::Packed);
 		for (auto& field : desc.members)
 		{
 			const auto& resolvedFieldType = ResolveAlias(field.type.GetResultingValue());
@@ -184,5 +292,63 @@ namespace nzsl::Ast
 
 		return fieldOffset;
 	}
-}
 
+	bool Std140EmulationTransformer::HandleStd140Propagation(MultiStatementPtr& multiStatement, std::size_t structIndex, SourceLocation sourceLocation, bool shouldExport)
+	{
+		bool isUsedInStd140Struct = false;
+		bool isUsedInPlainCode = false;
+
+		const auto& variables = m_context->variables;
+		for (const auto& [_, var] : variables.values)
+		{
+			std::size_t varStructIndex = DeepResolveStructIndex(var.type);
+			if (varStructIndex == std::numeric_limits<std::size_t>::max())
+				continue;
+			if (varStructIndex == structIndex)
+				isUsedInPlainCode = true;
+			StructDescription& varStructDesc = *m_context->structs.Retrieve(varStructIndex, sourceLocation).description;
+			for (const auto& member : varStructDesc.members)
+			{
+				std::size_t memberStructIndex = DeepResolveStructIndex(member.type.GetResultingValue());
+				if (memberStructIndex == structIndex)
+				{
+					if (varStructDesc.layout.HasValue() && varStructDesc.layout.GetResultingValue() == MemoryLayout::Std140)
+						isUsedInStd140Struct = true;
+					else
+						isUsedInPlainCode = true;
+				}
+			}
+
+			if (isUsedInStd140Struct && isUsedInPlainCode) // Skip useless iterations
+				break;
+		}
+		if (isUsedInStd140Struct)
+		{
+			auto& structData = m_context->structs.Retrieve(structIndex, sourceLocation);
+			if (isUsedInPlainCode)
+			{
+				// Cloning struct but with Std140 layout
+				StructDescription desc = Clone(*structData.description);
+				desc.layout = ExpressionValue{ MemoryLayout::Std140 };
+				desc.name += "_std140";
+				ComputeStructDeclarationPadding(desc, sourceLocation);
+
+				auto newStruct = ShaderBuilder::DeclareStruct(std::move(desc), ExpressionValue{ shouldExport });
+				newStruct->sourceLocation = sourceLocation;
+
+				TransformerContext::StructData newStructData;
+				newStructData.description = &newStruct->description;
+				newStructData.moduleIndex = structData.moduleIndex;
+
+				newStruct->structIndex = m_context->structs.Register(newStructData, std::nullopt, sourceLocation);
+				m_structStd140Map[structIndex] = *newStruct->structIndex;
+
+				multiStatement->statements.emplace_back(std::move(newStruct));
+			}
+			else
+				structData.description->layout = ExpressionValue{ MemoryLayout::Std140 };
+			return true;
+		}
+		return false;
+	}
+}

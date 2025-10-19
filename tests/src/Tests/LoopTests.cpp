@@ -851,12 +851,21 @@ OpReturn
 OpFunctionEnd)");
 
 		ExpectWGSL(*shaderModule, R"(
-struct inputStruct_std140
+struct f32_stride16
 {
-	value: array<vec4<f32>, 10>
+	value: f32,
+	_padding0: f32,
+	_padding1: f32,
+	_padding2: f32
 }
 
-@group(0) @binding(0) var<uniform> data: inputStruct_std140;
+// std140 layout
+struct inputStruct
+{
+	value: array<f32_stride16, 10>
+}
+
+@group(0) @binding(0) var<uniform> data: inputStruct;
 
 @fragment
 fn main()
@@ -866,7 +875,7 @@ fn main()
 		var _nzsl_counter: u32 = 0u;
 		while (_nzsl_counter < 10u)
 		{
-			var v: f32 = data.value[_nzsl_counter].x;
+			var v: f32 = data.value[_nzsl_counter].value;
 			x += v;
 			_nzsl_counter += 1u;
 		}
@@ -1014,12 +1023,21 @@ fn main()
       OpFunctionEnd)", {}, {}, true);
 
 			ExpectWGSL(*shaderModule2, R"(
-struct inputStruct_std140
+struct f32_stride16
 {
-	value: array<vec4<f32>, 10>
+	value: f32,
+	_padding0: f32,
+	_padding1: f32,
+	_padding2: f32
 }
 
-@group(0) @binding(0) var<uniform> data: inputStruct_std140;
+// std140 layout
+struct inputStruct
+{
+	value: array<f32_stride16, 10>
+}
+
+@group(0) @binding(0) var<uniform> data: inputStruct;
 
 @fragment
 fn main()
@@ -1029,7 +1047,7 @@ fn main()
 		var _nzsl_counter: u32 = 0u;
 		while (_nzsl_counter < 10u)
 		{
-			var v: f32 = data.value[_nzsl_counter].x;
+			var v: f32 = data.value[_nzsl_counter].value;
 			if (v < 0.0)
 			{
 				continue;

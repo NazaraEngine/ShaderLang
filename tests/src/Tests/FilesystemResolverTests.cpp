@@ -264,6 +264,7 @@ struct _OutputStruct_Output
 	@location(0) color: vec4<f32>
 }
 
+// std140 layout
 struct PushConstants
 {
 	color: vec4<f32>

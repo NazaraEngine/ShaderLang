@@ -292,13 +292,17 @@ OpFunctionEnd)");
 // License: "Public domain"
 
 // Module SimpleModule
-
+// std140 layout
 struct _SimpleModule_Data
 {
-	value: f32
+	value: f32,
+	_padding0: f32,
+	_padding1: f32,
+	_padding2: f32
 }
 
-struct _SimpleModule_Block_std140
+// std140 layout
+struct _SimpleModule_Block
 {
 	data: _SimpleModule_Data
 }
@@ -318,7 +322,7 @@ struct _SimpleModule_OutputData
 	@location(0) value: vec4<f32>
 }
 
-@group(0) @binding(0) var<uniform> ExtData_block: _SimpleModule_Block_std140;
+@group(0) @binding(0) var<uniform> ExtData_block: _SimpleModule_Block;
 
 @fragment
 fn main(input: _SimpleModule_InputData) -> _SimpleModule_OutputData
@@ -569,14 +573,18 @@ OpFunctionEnd)");
 
 		ExpectWGSL(*shaderModule, R"(
 // Module Modules.Data
-
+// std140 layout
 struct _Modules_Data_Data
 {
-	value: f32
+	value: f32,
+	_padding0: f32,
+	_padding1: f32,
+	_padding2: f32
 }
 // Module Modules.Block
 
-struct _Modules_Block_Block_std140
+// std140 layout
+struct _Modules_Block_Block
 {
 	data: _Modules_Data_Data
 }
@@ -591,7 +599,7 @@ struct _Modules_InputOutput_OutputData
 	@location(0) value: vec4<f32>
 }
 
-@group(0) @binding(0) var<uniform> block: _Modules_Block_Block_std140;
+@group(0) @binding(0) var<uniform> block: _Modules_Block_Block;
 
 @fragment
 fn main(input: _Modules_InputOutput_InputData) -> _Modules_InputOutput_OutputData
@@ -949,18 +957,16 @@ OpFunctionEnd)");
 
 		ExpectWGSL(*shaderModule, R"(
 // Module Modules.Data
-
+// std140 layout
 struct _Modules_Data_Light
 {
 	color: vec4<f32>,
-	intensities: vec2<i32>
+	intensities: vec2<i32>,
+	_padding0: f32,
+	_padding1: f32
 }
 
-struct _Modules_Data_Lights_std140
-{
-	lights: array<_Modules_Data_Light, 3>
-}
-
+// std140 layout
 struct _Modules_Data_Lights
 {
 	lights: array<_Modules_Data_Light, 3>
@@ -1001,7 +1007,7 @@ fn _Modules_Func_SumLightIntensities(lightData: _Modules_Data_Lights) -> vec2<i3
 	return intensities;
 }
 
-@group(0) @binding(0) var<uniform> lightData: _Modules_Data_Lights_std140;
+@group(0) @binding(0) var<uniform> lightData: _Modules_Data_Lights;
 
 @fragment
 fn main()
@@ -1547,14 +1553,26 @@ OpReturn
 OpFunctionEnd)");
 
 		ExpectWGSL(*shaderModule, R"(
-// Module Simple.Module
+// Author "Sir Lynix"
+// Description: "Main file"
+// License: "MIT"
 
+// Author "Lynix"
+// Description: "Simple \"module\" for testing"
+// License: "Public domain"
+
+// Module Simple.Module
+// std140 layout
 struct _Simple_Module_Data
 {
-	value: f32
+	value: f32,
+	_padding0: f32,
+	_padding1: f32,
+	_padding2: f32
 }
 
-struct _Simple_Module_Block_std140
+// std140 layout
+struct _Simple_Module_Block
 {
 	data: _Simple_Module_Data
 }
@@ -1574,7 +1592,7 @@ struct _Simple_Module_OutputData
 	@location(0) value: vec4<f32>
 }
 
-@group(0) @binding(0) var<uniform> ExtData_block: _Simple_Module_Block_std140;
+@group(0) @binding(0) var<uniform> ExtData_block: _Simple_Module_Block;
 
 @fragment
 fn main(input: _Simple_Module_InputData) -> _Simple_Module_OutputData
@@ -1836,14 +1854,26 @@ OpReturn
 OpFunctionEnd)");
 
 		ExpectWGSL(*shaderModule, R"(
-// Module Simple.Module
+// Author "Sir Lynix"
+// Description: "Main file"
+// License: "MIT"
 
+// Author "Lynix"
+// Description: "Simple \"module\" for testing"
+// License: "Public domain"
+
+// Module Simple.Module
+// std140 layout
 struct _Simple_Module_Data
 {
-	value: f32
+	value: f32,
+	_padding0: f32,
+	_padding1: f32,
+	_padding2: f32
 }
 
-struct _Simple_Module_Block_std140
+// std140 layout
+struct _Simple_Module_Block
 {
 	data: _Simple_Module_Data
 }
@@ -1863,7 +1893,7 @@ struct _Simple_Module_OutputData
 	@location(0) value: vec4<f32>
 }
 
-@group(0) @binding(0) var<uniform> ExtData_block: _Simple_Module_Block_std140;
+@group(0) @binding(0) var<uniform> ExtData_block: _Simple_Module_Block;
 
 @fragment
 fn main(input: _Simple_Module_InputData) -> _Simple_Module_OutputData
