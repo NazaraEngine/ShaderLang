@@ -11,6 +11,7 @@ vsxmake*
 cmake*/
 CMakeLists.txt
 .luarc.json
+.gdb_history
 
 # vscode
 .vscode
