@@ -2662,7 +2662,8 @@ namespace nzsl::Ast
 
 			if (auto it = m_states->declaredExternalVar.find(internalName); it != m_states->declaredExternalVar.end())
 			{
-				if ((it->second.conditionalStatementIndex == 0 || it->second.conditionalStatementIndex == m_states->currentConditionalIndex) || (usedBindingData.conditionalStatementIndex == 0 || usedBindingData.conditionalStatementIndex == m_states->currentConditionalIndex))
+				// We're only conflicting if one of the two external var is not behind a condition
+				if (m_states->currentConditionalIndex == 0 || it->second.conditionalStatementIndex == 0 || it->second.conditionalStatementIndex == m_states->currentConditionalIndex)
 					throw CompilerExtAlreadyDeclaredError{ extVar.sourceLocation, extVar.name };
 			}
 
