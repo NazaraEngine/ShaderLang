@@ -1196,12 +1196,11 @@ namespace nzsl::Ast
 		bool unresolved = false;
 		if (auto* identifier = FindIdentifier(name))
 		{
-			// Allow variable shadowing
-			if (identifier->type != IdentifierType::Variable)
-				throw CompilerIdentifierAlreadyUsedError{ sourceLocation, name };
-
 			if (identifier->conditionalIndex != m_states->currentConditionalIndex)
 				unresolved = true; //< right variable isn't know from this point
+			else if (identifier->type != IdentifierType::Variable)
+				// Allow variable shadowing
+				throw CompilerIdentifierAlreadyUsedError{ sourceLocation, name };
 		}
 
 		std::size_t varIndex;
