@@ -32,7 +32,7 @@
 // NZSL version macro
 #define NZSL_VERSION_MAJOR 1
 #define NZSL_VERSION_MINOR 1
-#define NZSL_VERSION_PATCH 1
+#define NZSL_VERSION_PATCH 2
 #define NZSL_VERSION_SUFFIX ""
 
 #if !defined(NZSL_STATIC)
