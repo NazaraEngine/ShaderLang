@@ -64,9 +64,9 @@ There are two binary tools you can use:
 **nzslc example usage:**
 
 - Validating shader: `nzslc file.nzsl`
-- Compile a shader to GLSL: `nzsl --compile=glsl file.nzsl`
-- Compile a shader to SPIR-V: `nzsl --compile=spv file.nzsl`
-- Compile a shader using modules to both GLSL and SPIR-V header includable version: `nzsl --module module_file.nzsl --module module_folder/ --compile=glsl-header,spv-header file.nzsl`
+- Compile a shader to GLSL: `nzslc --compile=glsl file.nzsl`
+- Compile a shader to SPIR-V: `nzslc --compile=spv file.nzsl`
+- Compile a shader using modules to both GLSL and SPIR-V header includable version: `nzslc --module module_file.nzsl --module module_folder/ --compile=glsl-header,spv-header file.nzsl`
 
 Run `nzslc -h` to see all supported options.
 
