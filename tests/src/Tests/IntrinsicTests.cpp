@@ -113,8 +113,13 @@ fn main()
       OpFunctionEnd)", {}, {}, true);
 
 		ExpectWGSL(*shaderModule, R"(
+// std140 layout
 struct DataStruct
 {
+	_padding0: f32,
+	_padding1: f32,
+	_padding2: f32,
+	_padding3: f32,
 	values: array<i32>
 }
 
