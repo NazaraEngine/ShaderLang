@@ -27,7 +27,7 @@ namespace nzslc
 	{
 		public:
 			static constexpr std::uint32_t MajorVersion = 1;
-			static constexpr std::uint32_t MinorVersion = 0;
+			static constexpr std::uint32_t MinorVersion = 1;
 			static constexpr std::uint32_t PatchVersion = 0;
 
 			Compiler(cxxopts::ParseResult& options);

@@ -1196,12 +1196,11 @@ namespace nzsl::Ast
 		bool unresolved = false;
 		if (auto* identifier = FindIdentifier(name))
 		{
-			// Allow variable shadowing
-			if (identifier->type != IdentifierType::Variable)
-				throw CompilerIdentifierAlreadyUsedError{ sourceLocation, name };
-
 			if (identifier->conditionalIndex != m_states->currentConditionalIndex)
 				unresolved = true; //< right variable isn't know from this point
+			else if (identifier->type != IdentifierType::Variable)
+				// Allow variable shadowing
+				throw CompilerIdentifierAlreadyUsedError{ sourceLocation, name };
 		}
 
 		std::size_t varIndex;
@@ -2662,7 +2661,8 @@ namespace nzsl::Ast
 
 			if (auto it = m_states->declaredExternalVar.find(internalName); it != m_states->declaredExternalVar.end())
 			{
-				if ((it->second.conditionalStatementIndex == 0 || it->second.conditionalStatementIndex == m_states->currentConditionalIndex) || (usedBindingData.conditionalStatementIndex == 0 || usedBindingData.conditionalStatementIndex == m_states->currentConditionalIndex))
+				// We're only conflicting if one of the two external var is not behind a condition
+				if (m_states->currentConditionalIndex == 0 || it->second.conditionalStatementIndex == 0 || it->second.conditionalStatementIndex == m_states->currentConditionalIndex)
 					throw CompilerExtAlreadyDeclaredError{ extVar.sourceLocation, extVar.name };
 			}
 
