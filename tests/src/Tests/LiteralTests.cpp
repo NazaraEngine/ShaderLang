@@ -85,6 +85,21 @@ fn foo()
       OpStore %31 %20
       OpReturn
       OpFunctionEnd)", {}, {}, true);
+
+		ExpectWGSL(*shaderModule, R"(
+@fragment
+fn foo()
+{
+	var bar: f32 = -1.0;
+	var _nzsl_cachedResult: f32 = 1.0 + bar;
+	var bar_2: vec3<f32> = vec3<f32>(_nzsl_cachedResult, _nzsl_cachedResult, _nzsl_cachedResult);
+	var bar_3: vec3<f32> = vec3<f32>(2.0, 2.0, 2.0);
+	var bar_4: f32 = (max(1.0, 2.0)) + (min(2.0, 1.0));
+	var bar_5: f32 = max(min(1.0, 2.0), 3.0);
+	var bar_6: u32 = max(1u, 2u);
+	var bar_7: vec3<u32> = vec3<u32>(1, 2, 3);
+}
+)");
 	}
 
 	
@@ -140,5 +155,14 @@ fn foo()
       OpStore %10 %6
       OpReturn
       OpFunctionEnd)", {}, {}, true);
+
+		ExpectWGSL(*shaderModule, R"(
+@fragment
+fn foo()
+{
+	var bar: u32 = 4u;
+	var bar_2: u32 = 5u;
+}
+)");
 	}
 }

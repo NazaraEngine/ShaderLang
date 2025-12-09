@@ -3,7 +3,6 @@
 #include <NZSL/Parser.hpp>
 #include <NZSL/Ast/Transformations/ConstantRemovalTransformer.hpp>
 #include <catch2/catch_test_macros.hpp>
-#include <cctype>
 
 TEST_CASE("aliases", "[Shader]")
 {
@@ -15,7 +14,7 @@ module;
 
 struct Data
 {
-	value: f32
+	value: vec4[f32]
 }
 
 alias ExtData = Data;
@@ -27,14 +26,14 @@ external
 
 struct Input
 {
-	value: f32
+	[location(0)] value: vec4[f32]
 }
 
 alias In = Input;
 
 struct Output
 {
-	[location(0)] value: f32
+	[location(0)] value: vec4[f32]
 }
 
 alias Out = Output;
@@ -56,7 +55,7 @@ fn main(input: In) -> FragOut
 void main()
 {
 	Input input_;
-	input_.value = _nzslInvalue;
+	input_.value = _nzslVarying0;
 
 	Output output_;
 	output_.value = extData.value * input_.value;
@@ -82,6 +81,8 @@ OpLabel
 OpVariable
 OpVariable
 OpAccessChain
+OpCopyMemory
+OpAccessChain
 OpLoad
 OpAccessChain
 OpLoad
@@ -93,6 +94,16 @@ OpCompositeExtract
 OpStore
 OpReturn
 OpFunctionEnd)");
+
+		ExpectWGSL(*shaderModule, R"(
+@fragment
+fn main(input: Input) -> Output
+{
+	var output: Output;
+	output.value = extData.value * input.value;
+	return output;
+}
+)");
 	}
 
 	SECTION("Conditional aliases")
@@ -218,6 +229,16 @@ OpCompositeExtract
 OpStore
 OpReturn
 OpFunctionEnd)");
+
+			ExpectWGSL(*shaderModule, R"(
+@fragment
+fn main() -> ForwardOutput
+{
+	var output: ForwardOutput;
+	output.color = vec4<f32>(0.0, 0.0, 1.0, 1.0);
+	return output;
+}
+)");
 		}
 
 		WHEN("We disable ForwardPass")
@@ -299,6 +320,17 @@ OpCompositeExtract
 OpStore
 OpReturn
 OpFunctionEnd)");
+
+			ExpectWGSL(*shaderModule, R"(
+@fragment
+fn main() -> DeferredOutput
+{
+	var output: DeferredOutput;
+	output.color = vec4<f32>(0.0, 0.0, 1.0, 1.0);
+	output.normal = vec3<f32>(0.0, 1.0, 0.0);
+	return output;
+}
+)");
 		}
 	}
 }

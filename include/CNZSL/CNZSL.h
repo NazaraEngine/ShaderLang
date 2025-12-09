@@ -16,5 +16,6 @@
 #include <CNZSL/Parser.h>
 #include <CNZSL/Serializer.h>
 #include <CNZSL/SpirvWriter.h>
+#include <CNZSL/WgslWriter.h>
 
 #endif /* CNZSL_CNZSL_H */

@@ -226,5 +226,36 @@ fn main(input: Input)
       OpImageWrite %56 %60 %61
       OpReturn
       OpFunctionEnd)", {}, {}, true);
+
+		ExpectWGSL(*shaderModule, R"(
+// std140 layout
+struct Data
+{
+	tex_size: vec2<u32>,
+	_padding0: f32,
+	_padding1: f32
+}
+
+@group(0) @binding(0) var input_tex: texture_storage_2d<rgba8unorm, read>;
+@group(0) @binding(1) var output_tex: texture_storage_2d<rgba8unorm, write>;
+@group(0) @binding(2) var<uniform> data: Data;
+
+struct Input
+{
+	@builtin(global_invocation_id) indices: vec3<u32>
+}
+
+@compute @workgroup_size(32, 32, 1)
+fn main(input: Input)
+{
+	if ((input.indices.x >= data.tex_size.x) || (input.indices.y >= data.tex_size.y))
+	{
+		return;
+	}
+
+	var value: vec4<f32> = textureLoad(input_tex, vec2<i32>(input.indices.xy));
+	textureStore(output_tex, vec2<i32>(input.indices.xy), value);
+}
+)");
 	}
 }

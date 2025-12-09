@@ -94,6 +94,21 @@ OpLabel
 OpReturn
 OpFunctionEnd)");
 
+		ExpectWGSL(*shaderModule, R"(
+@fragment
+fn main()
+{
+	var value: f32 = 0.0;
+	var i: i32 = 0;
+	while (i < 10)
+	{
+		value += 0.1;
+		i += 1;
+	}
+
+}
+)");
+
 		WHEN("using break and continue")
 		{
 			std::string_view nzslSource2 = R"(
@@ -237,6 +252,33 @@ fn main()
 %25 = OpLabel
       OpReturn
       OpFunctionEnd)", {}, {}, true);
+
+			ExpectWGSL(*shaderModule2, R"(
+@fragment
+fn main()
+{
+	var value: f32 = 0.0;
+	var value2: f32 = 0.0;
+	var i: i32 = 0;
+	while (i < 10)
+	{
+		if (i >= 8)
+		{
+			break;
+		}
+
+		value += 0.1;
+		i += 1;
+		if (i == 4)
+		{
+			continue;
+		}
+
+		value2 += value;
+	}
+
+}
+)");
 		}
 	}
 	
@@ -409,6 +451,47 @@ OpLabel
 OpReturn
 OpFunctionEnd)");
 
+		ExpectWGSL(*shaderModule, R"(
+@fragment
+fn main()
+{
+	var x: i32 = 0;
+	{
+		var v: i32 = 0;
+		var _nzsl_to: i32 = 10;
+		while (v < _nzsl_to)
+		{
+			x += v;
+			{
+				var v_2: i32 = 5;
+				var _nzsl_to_2: i32 = 7;
+				while (v_2 < _nzsl_to_2)
+				{
+					x += v_2;
+					v_2 += 1;
+				}
+
+			}
+
+			v += 1;
+		}
+
+	}
+
+	{
+		var v: i32 = 0;
+		var _nzsl_to: i32 = 20;
+		while (v < _nzsl_to)
+		{
+			x += v;
+			v += 1;
+		}
+
+	}
+
+}
+)");
+
 
 		WHEN("using break and continue")
 		{
@@ -534,6 +617,35 @@ fn main()
 %18 = OpLabel
       OpReturn
       OpFunctionEnd)", {}, {}, true);
+
+			ExpectWGSL(*shaderModule2, R"(
+@fragment
+fn main()
+{
+	var x: i32 = 0;
+	{
+		var v: i32 = 0;
+		var _nzsl_to: i32 = 10;
+		while (v < _nzsl_to)
+		{
+			if (v == 4)
+			{
+				continue;
+			}
+
+			x += v;
+			if (v >= 8)
+			{
+				break;
+			}
+
+			v += 1;
+		}
+
+	}
+
+}
+)");
 		}
 	}
 
@@ -622,6 +734,26 @@ OpBranch
 OpLabel
 OpReturn
 OpFunctionEnd)");
+
+		ExpectWGSL(*shaderModule, R"(
+@fragment
+fn main()
+{
+	var x: i32 = 0;
+	{
+		var v: i32 = 0;
+		var _nzsl_to: i32 = 10;
+		var _nzsl_step: i32 = 2;
+		while (v < _nzsl_to)
+		{
+			x += v;
+			v += _nzsl_step;
+		}
+
+	}
+
+}
+)");
 	}
 
 	WHEN("using a for-each")
@@ -718,7 +850,40 @@ OpLabel
 OpReturn
 OpFunctionEnd)");
 
+		ExpectWGSL(*shaderModule, R"(
+struct f32_stride16
+{
+	value: f32,
+	_padding0: f32,
+	_padding1: f32,
+	_padding2: f32
+}
 
+// std140 layout
+struct inputStruct
+{
+	value: array<f32_stride16, 10>
+}
+
+@group(0) @binding(0) var<uniform> data: inputStruct;
+
+@fragment
+fn main()
+{
+	var x: f32 = 0.0;
+	{
+		var _nzsl_counter: u32 = 0u;
+		while (_nzsl_counter < 10u)
+		{
+			var v: f32 = data.value[_nzsl_counter].value;
+			x += v;
+			_nzsl_counter += 1u;
+		}
+
+	}
+
+}
+)");
 
 		WHEN("using break and continue")
 		{
@@ -856,6 +1021,51 @@ fn main()
 %27 = OpLabel
       OpReturn
       OpFunctionEnd)", {}, {}, true);
+
+			ExpectWGSL(*shaderModule2, R"(
+struct f32_stride16
+{
+	value: f32,
+	_padding0: f32,
+	_padding1: f32,
+	_padding2: f32
+}
+
+// std140 layout
+struct inputStruct
+{
+	value: array<f32_stride16, 10>
+}
+
+@group(0) @binding(0) var<uniform> data: inputStruct;
+
+@fragment
+fn main()
+{
+	var x: f32 = 0.0;
+	{
+		var _nzsl_counter: u32 = 0u;
+		while (_nzsl_counter < 10u)
+		{
+			var v: f32 = data.value[_nzsl_counter].value;
+			if (v < 0.0)
+			{
+				continue;
+			}
+
+			x += v;
+			if (x >= 10.0)
+			{
+				break;
+			}
+
+			_nzsl_counter += 1u;
+		}
+
+	}
+
+}
+)");
 		}
 	}
 
@@ -945,5 +1155,25 @@ OpBranch
 OpLabel
 OpReturn
 OpFunctionEnd)");
+
+		ExpectWGSL(*shaderModule, R"(
+@fragment
+fn main()
+{
+	var cascadeIndex: u32 = 0u;
+	var cascadeCount: u32 = 4u;
+	{
+		var index: u32 = 0u;
+		var _nzsl_to: u32 = cascadeCount;
+		while (index < _nzsl_to)
+		{
+			cascadeIndex = index;
+			index += 1u;
+		}
+
+	}
+
+}
+)");
 	}
 }

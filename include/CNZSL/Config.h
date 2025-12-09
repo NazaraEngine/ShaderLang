@@ -3,6 +3,7 @@
 
 	Copyright (C) 2024 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
 	              2024 REMqb (remqb at remqb dot fr)
+	              2025 kbz_8 (contact@kbz8.me)
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy of
 	this software and associated documentation files (the "Software"), to deal in

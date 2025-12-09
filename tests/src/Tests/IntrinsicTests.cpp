@@ -2,6 +2,7 @@
 #include <NZSL/ShaderBuilder.hpp>
 #include <NZSL/Parser.hpp>
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers.hpp>
 #include <cctype>
 
 TEST_CASE("intrinsics", "[Shader]")
@@ -110,6 +111,28 @@ fn main()
       OpStore %23 %25
       OpReturn
       OpFunctionEnd)", {}, {}, true);
+
+		ExpectWGSL(*shaderModule, R"(
+// std140 layout
+struct DataStruct
+{
+	_padding0: f32,
+	_padding1: f32,
+	_padding2: f32,
+	_padding3: f32,
+	values: array<i32>
+}
+
+@group(0) @binding(0) var<storage, read_write> data: DataStruct;
+
+@fragment
+fn main()
+{
+	var a: array<f32, 3> = array<f32, 3>(1.0, 2.0, 3.0);
+	var arraySize: u32 = 3;
+	var dynArraySize: u32 = arrayLength(&data.values);
+}
+)");
 	}
 
 	WHEN("testing texture intrinsics")
@@ -123,13 +146,10 @@ module;
 external
 {
 	tex1D: sampler1D[f32],
-	tex1DArray: sampler1D_array[f32],
 	tex2D: sampler2D[f32],
 	tex2DArray: sampler2D_array[f32],
 	tex3D: sampler3D[f32],
 	texCube: sampler_cube[f32],
-	tex1DDepth: depth_sampler1D[f32],
-	tex1DArrayDepth: depth_sampler1D_array[f32],
 	tex2DDepth: depth_sampler2D[f32],
 	tex2DArrayDepth: depth_sampler2D_array[f32],
 	texCubeDepth: depth_sampler_cube[f32],
@@ -144,14 +164,11 @@ fn main()
 	let uv3f = vec3[f32](0.0, 1.0, 2.0);
 
 	let sampleResult1 = tex1D.Sample(uv1f);
-	let sampleResult2 = tex1DArray.Sample(uv2f);
-	let sampleResult3 = tex2D.Sample(uv2f);
-	let sampleResult4 = tex2DArray.Sample(uv3f);
-	let sampleResult5 = tex3D.Sample(uv3f);
-	let sampleResult6 = texCube.Sample(uv3f);
+	let sampleResult2 = tex2D.Sample(uv2f);
+	let sampleResult3 = tex2DArray.Sample(uv3f);
+	let sampleResult4 = tex3D.Sample(uv3f);
+	let sampleResult5 = texCube.Sample(uv3f);
 
-	let depthSampleResult1 = tex1DDepth.SampleDepthComp(uv1f, depth);
-	let depthSampleResult2 = tex1DArrayDepth.SampleDepthComp(uv2f, depth);
 	let depthSampleResult3 = tex2DDepth.SampleDepthComp(uv2f, depth);
 	let depthSampleResult4 = tex2DArrayDepth.SampleDepthComp(uv3f, depth);
 	let depthSampleResult5 = texCubeDepth.SampleDepthComp(uv3f, depth);
@@ -167,13 +184,10 @@ fn main()
 
 		ExpectGLSL(*shaderModule, R"(
 uniform sampler1D tex1D;
-uniform sampler1DArray tex1DArray;
 uniform sampler2D tex2D;
 uniform sampler2DArray tex2DArray;
 uniform sampler3D tex3D;
 uniform samplerCube texCube;
-uniform sampler1DShadow tex1DDepth;
-uniform sampler1DArrayShadow tex1DArrayDepth;
 uniform sampler2DShadow tex2DDepth;
 uniform sampler2DArrayShadow tex2DArrayDepth;
 uniform samplerCubeShadow texCubeDepth;
@@ -185,13 +199,10 @@ void main()
 	vec2 uv2f = vec2(0.0, 1.0);
 	vec3 uv3f = vec3(0.0, 1.0, 2.0);
 	vec4 sampleResult1 = texture(tex1D, uv1f);
-	vec4 sampleResult2 = texture(tex1DArray, uv2f);
-	vec4 sampleResult3 = texture(tex2D, uv2f);
-	vec4 sampleResult4 = texture(tex2DArray, uv3f);
-	vec4 sampleResult5 = texture(tex3D, uv3f);
-	vec4 sampleResult6 = texture(texCube, uv3f);
-	float depthSampleResult1 = texture(tex1DDepth, vec3(uv1f, 0.0, depth));
-	float depthSampleResult2 = texture(tex1DArrayDepth, vec3(uv2f, depth));
+	vec4 sampleResult2 = texture(tex2D, uv2f);
+	vec4 sampleResult3 = texture(tex2DArray, uv3f);
+	vec4 sampleResult4 = texture(tex3D, uv3f);
+	vec4 sampleResult5 = texture(texCube, uv3f);
 	float depthSampleResult3 = texture(tex2DDepth, vec3(uv2f, depth));
 	float depthSampleResult4 = texture(tex2DArrayDepth, vec4(uv3f, depth));
 	float depthSampleResult5 = texture(texCubeDepth, vec4(uv3f, depth));
@@ -203,16 +214,13 @@ void main()
 external
 {
 	[set(0), binding(0)] tex1D: sampler1D[f32],
-	[set(0), binding(1)] tex1DArray: sampler1D_array[f32],
-	[set(0), binding(2)] tex2D: sampler2D[f32],
-	[set(0), binding(3)] tex2DArray: sampler2D_array[f32],
-	[set(0), binding(4)] tex3D: sampler3D[f32],
-	[set(0), binding(5)] texCube: sampler_cube[f32],
-	[set(0), binding(6)] tex1DDepth: depth_sampler1D[f32],
-	[set(0), binding(7)] tex1DArrayDepth: depth_sampler1D_array[f32],
-	[set(0), binding(8)] tex2DDepth: depth_sampler2D[f32],
-	[set(0), binding(9)] tex2DArrayDepth: depth_sampler2D_array[f32],
-	[set(0), binding(10)] texCubeDepth: depth_sampler_cube[f32]
+	[set(0), binding(1)] tex2D: sampler2D[f32],
+	[set(0), binding(2)] tex2DArray: sampler2D_array[f32],
+	[set(0), binding(3)] tex3D: sampler3D[f32],
+	[set(0), binding(4)] texCube: sampler_cube[f32],
+	[set(0), binding(5)] tex2DDepth: depth_sampler2D[f32],
+	[set(0), binding(6)] tex2DArrayDepth: depth_sampler2D_array[f32],
+	[set(0), binding(7)] texCubeDepth: depth_sampler_cube[f32]
 }
 
 [entry(frag)]
@@ -223,13 +231,10 @@ fn main()
 	let uv2f: vec2[f32] = vec2[f32](0.0, 1.0);
 	let uv3f: vec3[f32] = vec3[f32](0.0, 1.0, 2.0);
 	let sampleResult1: vec4[f32] = tex1D.Sample(uv1f);
-	let sampleResult2: vec4[f32] = tex1DArray.Sample(uv2f);
-	let sampleResult3: vec4[f32] = tex2D.Sample(uv2f);
-	let sampleResult4: vec4[f32] = tex2DArray.Sample(uv3f);
-	let sampleResult5: vec4[f32] = tex3D.Sample(uv3f);
-	let sampleResult6: vec4[f32] = texCube.Sample(uv3f);
-	let depthSampleResult1: f32 = tex1DDepth.SampleDepthComp(uv1f, depth);
-	let depthSampleResult2: f32 = tex1DArrayDepth.SampleDepthComp(uv2f, depth);
+	let sampleResult2: vec4[f32] = tex2D.Sample(uv2f);
+	let sampleResult3: vec4[f32] = tex2DArray.Sample(uv3f);
+	let sampleResult4: vec4[f32] = tex3D.Sample(uv3f);
+	let sampleResult5: vec4[f32] = texCube.Sample(uv3f);
 	let depthSampleResult3: f32 = tex2DDepth.SampleDepthComp(uv2f, depth);
 	let depthSampleResult4: f32 = tex2DArrayDepth.SampleDepthComp(uv3f, depth);
 	let depthSampleResult5: f32 = texCubeDepth.SampleDepthComp(uv3f, depth);
@@ -237,179 +242,265 @@ fn main()
 )");
 
 		ExpectSPIRV(*shaderModule, R"(
-       OpCapability Capability(Shader)
-       OpCapability Capability(Sampled1D)
-       OpMemoryModel AddressingModel(Logical) MemoryModel(GLSL450)
-       OpEntryPoint ExecutionModel(Fragment) %59 "main"
-       OpExecutionMode %59 ExecutionMode(OriginUpperLeft)
-       OpSource SourceLanguage(NZSL) 4198400
-       OpSourceExtension "Version: 1.1"
-       OpName %5 "tex1D"
-       OpName %9 "tex1DArray"
-       OpName %13 "tex2D"
-       OpName %17 "tex2DArray"
-       OpName %21 "tex3D"
-       OpName %25 "texCube"
-       OpName %29 "tex1DDepth"
-       OpName %33 "tex1DArrayDepth"
-       OpName %37 "tex2DDepth"
-       OpName %41 "tex2DArrayDepth"
-       OpName %45 "texCubeDepth"
-       OpName %59 "main"
-       OpDecorate %5 Decoration(Binding) 0
-       OpDecorate %5 Decoration(DescriptorSet) 0
-       OpDecorate %9 Decoration(Binding) 1
-       OpDecorate %9 Decoration(DescriptorSet) 0
-       OpDecorate %13 Decoration(Binding) 2
-       OpDecorate %13 Decoration(DescriptorSet) 0
-       OpDecorate %17 Decoration(Binding) 3
-       OpDecorate %17 Decoration(DescriptorSet) 0
-       OpDecorate %21 Decoration(Binding) 4
-       OpDecorate %21 Decoration(DescriptorSet) 0
-       OpDecorate %25 Decoration(Binding) 5
-       OpDecorate %25 Decoration(DescriptorSet) 0
-       OpDecorate %29 Decoration(Binding) 6
-       OpDecorate %29 Decoration(DescriptorSet) 0
-       OpDecorate %33 Decoration(Binding) 7
-       OpDecorate %33 Decoration(DescriptorSet) 0
-       OpDecorate %37 Decoration(Binding) 8
-       OpDecorate %37 Decoration(DescriptorSet) 0
-       OpDecorate %41 Decoration(Binding) 9
-       OpDecorate %41 Decoration(DescriptorSet) 0
-       OpDecorate %45 Decoration(Binding) 10
-       OpDecorate %45 Decoration(DescriptorSet) 0
-  %1 = OpTypeFloat 32
-  %2 = OpTypeImage %1 Dim(Dim1D) 0 0 0 1 ImageFormat(Unknown)
-  %3 = OpTypeSampledImage %2
-  %4 = OpTypePointer StorageClass(UniformConstant) %3
-  %6 = OpTypeImage %1 Dim(Dim1D) 0 1 0 1 ImageFormat(Unknown)
-  %7 = OpTypeSampledImage %6
-  %8 = OpTypePointer StorageClass(UniformConstant) %7
- %10 = OpTypeImage %1 Dim(Dim2D) 0 0 0 1 ImageFormat(Unknown)
- %11 = OpTypeSampledImage %10
- %12 = OpTypePointer StorageClass(UniformConstant) %11
- %14 = OpTypeImage %1 Dim(Dim2D) 0 1 0 1 ImageFormat(Unknown)
- %15 = OpTypeSampledImage %14
- %16 = OpTypePointer StorageClass(UniformConstant) %15
- %18 = OpTypeImage %1 Dim(Dim3D) 0 0 0 1 ImageFormat(Unknown)
- %19 = OpTypeSampledImage %18
- %20 = OpTypePointer StorageClass(UniformConstant) %19
- %22 = OpTypeImage %1 Dim(Cube) 0 0 0 1 ImageFormat(Unknown)
- %23 = OpTypeSampledImage %22
- %24 = OpTypePointer StorageClass(UniformConstant) %23
- %26 = OpTypeImage %1 Dim(Dim1D) 1 0 0 1 ImageFormat(Unknown)
- %27 = OpTypeSampledImage %26
- %28 = OpTypePointer StorageClass(UniformConstant) %27
- %30 = OpTypeImage %1 Dim(Dim1D) 1 1 0 1 ImageFormat(Unknown)
- %31 = OpTypeSampledImage %30
- %32 = OpTypePointer StorageClass(UniformConstant) %31
- %34 = OpTypeImage %1 Dim(Dim2D) 1 0 0 1 ImageFormat(Unknown)
- %35 = OpTypeSampledImage %34
- %36 = OpTypePointer StorageClass(UniformConstant) %35
- %38 = OpTypeImage %1 Dim(Dim2D) 1 1 0 1 ImageFormat(Unknown)
- %39 = OpTypeSampledImage %38
- %40 = OpTypePointer StorageClass(UniformConstant) %39
- %42 = OpTypeImage %1 Dim(Cube) 1 0 0 1 ImageFormat(Unknown)
- %43 = OpTypeSampledImage %42
- %44 = OpTypePointer StorageClass(UniformConstant) %43
- %46 = OpTypeVoid
- %47 = OpTypeFunction %46
- %48 = OpConstant %1 f32(0.5)
- %49 = OpTypePointer StorageClass(Function) %1
- %50 = OpConstant %1 f32(0)
- %51 = OpConstant %1 f32(1)
- %52 = OpTypeVector %1 2
- %53 = OpTypePointer StorageClass(Function) %52
- %54 = OpConstant %1 f32(2)
- %55 = OpTypeVector %1 3
- %56 = OpTypePointer StorageClass(Function) %55
- %57 = OpTypeVector %1 4
- %58 = OpTypePointer StorageClass(Function) %57
-  %5 = OpVariable %4 StorageClass(UniformConstant)
-  %9 = OpVariable %8 StorageClass(UniformConstant)
- %13 = OpVariable %12 StorageClass(UniformConstant)
- %17 = OpVariable %16 StorageClass(UniformConstant)
- %21 = OpVariable %20 StorageClass(UniformConstant)
- %25 = OpVariable %24 StorageClass(UniformConstant)
- %29 = OpVariable %28 StorageClass(UniformConstant)
- %33 = OpVariable %32 StorageClass(UniformConstant)
- %37 = OpVariable %36 StorageClass(UniformConstant)
- %41 = OpVariable %40 StorageClass(UniformConstant)
- %45 = OpVariable %44 StorageClass(UniformConstant)
- %59 = OpFunction %46 FunctionControl(0) %47
- %60 = OpLabel
- %61 = OpVariable %49 StorageClass(Function)
- %62 = OpVariable %49 StorageClass(Function)
- %63 = OpVariable %53 StorageClass(Function)
- %64 = OpVariable %56 StorageClass(Function)
- %65 = OpVariable %58 StorageClass(Function)
- %66 = OpVariable %58 StorageClass(Function)
- %67 = OpVariable %58 StorageClass(Function)
- %68 = OpVariable %58 StorageClass(Function)
- %69 = OpVariable %58 StorageClass(Function)
- %70 = OpVariable %58 StorageClass(Function)
- %71 = OpVariable %49 StorageClass(Function)
- %72 = OpVariable %49 StorageClass(Function)
- %73 = OpVariable %49 StorageClass(Function)
- %74 = OpVariable %49 StorageClass(Function)
- %75 = OpVariable %49 StorageClass(Function)
-       OpStore %61 %48
-       OpStore %62 %50
- %76 = OpCompositeConstruct %52 %50 %51
-       OpStore %63 %76
- %77 = OpCompositeConstruct %55 %50 %51 %54
-       OpStore %64 %77
- %78 = OpLoad %3 %5
- %79 = OpLoad %1 %62
- %80 = OpImageSampleImplicitLod %57 %78 %79
-       OpStore %65 %80
- %81 = OpLoad %7 %9
- %82 = OpLoad %52 %63
- %83 = OpImageSampleImplicitLod %57 %81 %82
-       OpStore %66 %83
- %84 = OpLoad %11 %13
- %85 = OpLoad %52 %63
- %86 = OpImageSampleImplicitLod %57 %84 %85
-       OpStore %67 %86
- %87 = OpLoad %15 %17
- %88 = OpLoad %55 %64
- %89 = OpImageSampleImplicitLod %57 %87 %88
-       OpStore %68 %89
- %90 = OpLoad %19 %21
- %91 = OpLoad %55 %64
- %92 = OpImageSampleImplicitLod %57 %90 %91
-       OpStore %69 %92
- %93 = OpLoad %23 %25
- %94 = OpLoad %55 %64
- %95 = OpImageSampleImplicitLod %57 %93 %94
-       OpStore %70 %95
- %96 = OpLoad %27 %29
- %97 = OpLoad %1 %62
- %98 = OpLoad %1 %61
- %99 = OpImageSampleDrefImplicitLod %1 %96 %97 %98
-       OpStore %71 %99
-%100 = OpLoad %31 %33
-%101 = OpLoad %52 %63
-%102 = OpLoad %1 %61
-%103 = OpImageSampleDrefImplicitLod %1 %100 %101 %102
-       OpStore %72 %103
-%104 = OpLoad %35 %37
-%105 = OpLoad %52 %63
-%106 = OpLoad %1 %61
-%107 = OpImageSampleDrefImplicitLod %1 %104 %105 %106
-       OpStore %73 %107
-%108 = OpLoad %39 %41
-%109 = OpLoad %55 %64
-%110 = OpLoad %1 %61
-%111 = OpImageSampleDrefImplicitLod %1 %108 %109 %110
-       OpStore %74 %111
-%112 = OpLoad %43 %45
-%113 = OpLoad %55 %64
-%114 = OpLoad %1 %61
-%115 = OpImageSampleDrefImplicitLod %1 %112 %113 %114
-       OpStore %75 %115
-       OpReturn
-       OpFunctionEnd)", {}, {}, true);
+      OpCapability Capability(Shader)
+      OpCapability Capability(Sampled1D)
+      OpMemoryModel AddressingModel(Logical) MemoryModel(GLSL450)
+      OpEntryPoint ExecutionModel(Fragment) %47 "main"
+      OpExecutionMode %47 ExecutionMode(OriginUpperLeft)
+      OpSource SourceLanguage(NZSL) 4198400
+      OpSourceExtension "Version: 1.1"
+      OpName %5 "tex1D"
+      OpName %9 "tex2D"
+      OpName %13 "tex2DArray"
+      OpName %17 "tex3D"
+      OpName %21 "texCube"
+      OpName %25 "tex2DDepth"
+      OpName %29 "tex2DArrayDepth"
+      OpName %33 "texCubeDepth"
+      OpName %47 "main"
+      OpDecorate %5 Decoration(Binding) 0
+      OpDecorate %5 Decoration(DescriptorSet) 0
+      OpDecorate %9 Decoration(Binding) 1
+      OpDecorate %9 Decoration(DescriptorSet) 0
+      OpDecorate %13 Decoration(Binding) 2
+      OpDecorate %13 Decoration(DescriptorSet) 0
+      OpDecorate %17 Decoration(Binding) 3
+      OpDecorate %17 Decoration(DescriptorSet) 0
+      OpDecorate %21 Decoration(Binding) 4
+      OpDecorate %21 Decoration(DescriptorSet) 0
+      OpDecorate %25 Decoration(Binding) 5
+      OpDecorate %25 Decoration(DescriptorSet) 0
+      OpDecorate %29 Decoration(Binding) 6
+      OpDecorate %29 Decoration(DescriptorSet) 0
+      OpDecorate %33 Decoration(Binding) 7
+      OpDecorate %33 Decoration(DescriptorSet) 0
+ %1 = OpTypeFloat 32
+ %2 = OpTypeImage %1 Dim(Dim1D) 0 0 0 1 ImageFormat(Unknown)
+ %3 = OpTypeSampledImage %2
+ %4 = OpTypePointer StorageClass(UniformConstant) %3
+ %6 = OpTypeImage %1 Dim(Dim2D) 0 0 0 1 ImageFormat(Unknown)
+ %7 = OpTypeSampledImage %6
+ %8 = OpTypePointer StorageClass(UniformConstant) %7
+%10 = OpTypeImage %1 Dim(Dim2D) 0 1 0 1 ImageFormat(Unknown)
+%11 = OpTypeSampledImage %10
+%12 = OpTypePointer StorageClass(UniformConstant) %11
+%14 = OpTypeImage %1 Dim(Dim3D) 0 0 0 1 ImageFormat(Unknown)
+%15 = OpTypeSampledImage %14
+%16 = OpTypePointer StorageClass(UniformConstant) %15
+%18 = OpTypeImage %1 Dim(Cube) 0 0 0 1 ImageFormat(Unknown)
+%19 = OpTypeSampledImage %18
+%20 = OpTypePointer StorageClass(UniformConstant) %19
+%22 = OpTypeImage %1 Dim(Dim2D) 1 0 0 1 ImageFormat(Unknown)
+%23 = OpTypeSampledImage %22
+%24 = OpTypePointer StorageClass(UniformConstant) %23
+%26 = OpTypeImage %1 Dim(Dim2D) 1 1 0 1 ImageFormat(Unknown)
+%27 = OpTypeSampledImage %26
+%28 = OpTypePointer StorageClass(UniformConstant) %27
+%30 = OpTypeImage %1 Dim(Cube) 1 0 0 1 ImageFormat(Unknown)
+%31 = OpTypeSampledImage %30
+%32 = OpTypePointer StorageClass(UniformConstant) %31
+%34 = OpTypeVoid
+%35 = OpTypeFunction %34
+%36 = OpConstant %1 f32(0.5)
+%37 = OpTypePointer StorageClass(Function) %1
+%38 = OpConstant %1 f32(0)
+%39 = OpConstant %1 f32(1)
+%40 = OpTypeVector %1 2
+%41 = OpTypePointer StorageClass(Function) %40
+%42 = OpConstant %1 f32(2)
+%43 = OpTypeVector %1 3
+%44 = OpTypePointer StorageClass(Function) %43
+%45 = OpTypeVector %1 4
+%46 = OpTypePointer StorageClass(Function) %45
+ %5 = OpVariable %4 StorageClass(UniformConstant)
+ %9 = OpVariable %8 StorageClass(UniformConstant)
+%13 = OpVariable %12 StorageClass(UniformConstant)
+%17 = OpVariable %16 StorageClass(UniformConstant)
+%21 = OpVariable %20 StorageClass(UniformConstant)
+%25 = OpVariable %24 StorageClass(UniformConstant)
+%29 = OpVariable %28 StorageClass(UniformConstant)
+%33 = OpVariable %32 StorageClass(UniformConstant)
+%47 = OpFunction %34 FunctionControl(0) %35
+%48 = OpLabel
+%49 = OpVariable %37 StorageClass(Function)
+%50 = OpVariable %37 StorageClass(Function)
+%51 = OpVariable %41 StorageClass(Function)
+%52 = OpVariable %44 StorageClass(Function)
+%53 = OpVariable %46 StorageClass(Function)
+%54 = OpVariable %46 StorageClass(Function)
+%55 = OpVariable %46 StorageClass(Function)
+%56 = OpVariable %46 StorageClass(Function)
+%57 = OpVariable %46 StorageClass(Function)
+%58 = OpVariable %37 StorageClass(Function)
+%59 = OpVariable %37 StorageClass(Function)
+%60 = OpVariable %37 StorageClass(Function)
+      OpStore %49 %36
+      OpStore %50 %38
+%61 = OpCompositeConstruct %40 %38 %39
+      OpStore %51 %61
+%62 = OpCompositeConstruct %43 %38 %39 %42
+      OpStore %52 %62
+%63 = OpLoad %3 %5
+%64 = OpLoad %1 %50
+%65 = OpImageSampleImplicitLod %45 %63 %64
+      OpStore %53 %65
+%66 = OpLoad %7 %9
+%67 = OpLoad %40 %51
+%68 = OpImageSampleImplicitLod %45 %66 %67
+      OpStore %54 %68
+%69 = OpLoad %11 %13
+%70 = OpLoad %43 %52
+%71 = OpImageSampleImplicitLod %45 %69 %70
+      OpStore %55 %71
+%72 = OpLoad %15 %17
+%73 = OpLoad %43 %52
+%74 = OpImageSampleImplicitLod %45 %72 %73
+      OpStore %56 %74
+%75 = OpLoad %19 %21
+%76 = OpLoad %43 %52
+%77 = OpImageSampleImplicitLod %45 %75 %76
+      OpStore %57 %77
+%78 = OpLoad %23 %25
+%79 = OpLoad %40 %51
+%80 = OpLoad %1 %49
+%81 = OpImageSampleDrefImplicitLod %1 %78 %79 %80
+      OpStore %58 %81
+%82 = OpLoad %27 %29
+%83 = OpLoad %43 %52
+%84 = OpLoad %1 %49
+%85 = OpImageSampleDrefImplicitLod %1 %82 %83 %84
+      OpStore %59 %85
+%86 = OpLoad %31 %33
+%87 = OpLoad %43 %52
+%88 = OpLoad %1 %49
+%89 = OpImageSampleDrefImplicitLod %1 %86 %87 %88
+      OpStore %60 %89
+      OpReturn
+      OpFunctionEnd)", {}, {}, true);
+
+		ExpectWGSL(*shaderModule, R"(
+@group(0) @binding(0) var tex1D: texture_1d<f32>;
+@group(0) @binding(1) var tex1DSampler: sampler;
+@group(0) @binding(2) var tex2D: texture_2d<f32>;
+@group(0) @binding(3) var tex2DSampler: sampler;
+@group(0) @binding(4) var tex2DArray: texture_2d_array<f32>;
+@group(0) @binding(5) var tex2DArraySampler: sampler;
+@group(0) @binding(6) var tex3D: texture_3d<f32>;
+@group(0) @binding(7) var tex3DSampler: sampler;
+@group(0) @binding(8) var texCube: texture_cube<f32>;
+@group(0) @binding(9) var texCubeSampler: sampler;
+@group(0) @binding(10) var tex2DDepth: texture_depth_2d;
+@group(0) @binding(11) var tex2DDepthSampler: sampler_comparison;
+@group(0) @binding(12) var tex2DArrayDepth: texture_depth_2d_array;
+@group(0) @binding(13) var tex2DArrayDepthSampler: sampler_comparison;
+@group(0) @binding(14) var texCubeDepth: texture_depth_cube;
+@group(0) @binding(15) var texCubeDepthSampler: sampler_comparison;
+
+@fragment
+fn main()
+{
+	var depth: f32 = 0.5;
+	var uv1f: f32 = 0.0;
+	var uv2f: vec2<f32> = vec2<f32>(0.0, 1.0);
+	var uv3f: vec3<f32> = vec3<f32>(0.0, 1.0, 2.0);
+	var sampleResult1: vec4<f32> = textureSample(tex1D, tex1DSampler, uv1f);
+	var sampleResult2: vec4<f32> = textureSample(tex2D, tex2DSampler, uv2f);
+	var sampleResult3: vec4<f32> = textureSample(tex2DArray, tex2DArraySampler, uv3f.xy, u32(uv3f.z));
+	var sampleResult4: vec4<f32> = textureSample(tex3D, tex3DSampler, uv3f);
+	var sampleResult5: vec4<f32> = textureSample(texCube, texCubeSampler, uv3f);
+	var depthSampleResult3: f32 = textureSampleCompare(tex2DDepth, tex2DDepthSampler, uv2f, depth);
+	var depthSampleResult4: f32 = textureSampleCompare(tex2DArrayDepth, tex2DArrayDepthSampler, uv3f.xy, u32(uv3f.z), depth);
+	var depthSampleResult5: f32 = textureSampleCompare(texCubeDepth, texCubeDepthSampler, uv3f, depth);
+}
+)");
+	}
+
+	WHEN("testing texture 1d array intrinsics")
+	{
+		std::string_view nzslSource = R"(
+[nzsl_version("1.1")]
+[feature(texture1D)]
+module;
+
+[auto_binding]
+external
+{
+	tex1DArray: sampler1D_array[f32],
+}
+
+[entry(frag)]
+fn main()
+{
+	let sampleResult = tex1DArray.Sample(vec2[f32](0.0, 1.0));
+}
+)";
+
+		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
+		ResolveModule(*shaderModule);
+
+		// sampler1D and sampler1D_array are not supported by GLSL ES
+		nzsl::GlslWriter::Environment glslEnv;
+		glslEnv.glES = false;
+
+		ExpectGLSL(*shaderModule, R"(
+uniform sampler1DArray tex1DArray;
+
+void main()
+{
+	vec4 sampleResult = texture(tex1DArray, vec2(0.0, 1.0));
+}
+)", {}, glslEnv);
+
+		ExpectNZSL(*shaderModule, R"(
+[auto_binding(true)]
+external
+{
+	[set(0), binding(0)] tex1DArray: sampler1D_array[f32]
+}
+
+[entry(frag)]
+fn main()
+{
+	let sampleResult: vec4[f32] = tex1DArray.Sample(vec2[f32](0.0, 1.0));
+}
+)");
+
+		ExpectSPIRV(*shaderModule, R"(
+      OpCapability Capability(Shader)
+      OpCapability Capability(Sampled1D)
+      OpMemoryModel AddressingModel(Logical) MemoryModel(GLSL450)
+      OpEntryPoint ExecutionModel(Fragment) %13 "main"
+      OpExecutionMode %13 ExecutionMode(OriginUpperLeft)
+      OpSource SourceLanguage(NZSL) 4198400
+      OpSourceExtension "Version: 1.1"
+      OpName %5 "tex1DArray"
+      OpName %13 "main"
+      OpDecorate %5 Decoration(Binding) 0
+      OpDecorate %5 Decoration(DescriptorSet) 0
+ %1 = OpTypeFloat 32
+ %2 = OpTypeImage %1 Dim(Dim1D) 0 1 0 1 ImageFormat(Unknown)
+ %3 = OpTypeSampledImage %2
+ %4 = OpTypePointer StorageClass(UniformConstant) %3
+ %6 = OpTypeVoid
+ %7 = OpTypeFunction %6
+ %8 = OpConstant %1 f32(0)
+ %9 = OpConstant %1 f32(1)
+%10 = OpTypeVector %1 2
+%11 = OpTypeVector %1 4
+%12 = OpTypePointer StorageClass(Function) %11
+ %5 = OpVariable %4 StorageClass(UniformConstant)
+%13 = OpFunction %6 FunctionControl(0) %7
+%14 = OpLabel
+%15 = OpVariable %12 StorageClass(Function)
+%16 = OpLoad %3 %5
+%17 = OpCompositeConstruct %10 %8 %9
+%18 = OpImageSampleImplicitLod %11 %16 %17
+      OpStore %15 %18
+      OpReturn
+      OpFunctionEnd)", {}, {}, true);
+
+		nzsl::WgslWriter wgslWriter;
+		CHECK_THROWS_WITH(wgslWriter.Generate(*shaderModule), "texture 1D array are not supported by WGSL");
 	}
 	
 	WHEN("testing math intrinsics")
@@ -1142,6 +1233,135 @@ fn main()
        OpStore %166 %419
        OpReturn
        OpFunctionEnd)", {}, {}, true);
+
+		nzsl::WgslWriter::Environment wgslEnv;
+		wgslEnv.featuresCallback = [](std::string_view) { return true; };
+
+		ExpectWGSL(*shaderModule, R"(
+@fragment
+fn main()
+{
+	var d1: f64 = 4.2;
+	var d2: f64 = 133.699999999999989;
+	var d3: f64 = -123.400000000000006;
+	var f1: f32 = 4.2;
+	var f2: f32 = 133.699997;
+	var f3: f32 = -123.400002;
+	var i1: i32 = 42;
+	var i2: i32 = 1337;
+	var i3: i32 = -1234;
+	var u1: u32 = 42u;
+	var u2: u32 = 1337u;
+	var u3: u32 = 123456789u;
+	var uv: vec2<f32> = vec2<f32>(0.0, 1.0);
+	var v1: vec3<f32> = vec3<f32>(0.0, 1.0, 2.0);
+	var v2: vec3<f32> = vec3<f32>(2.0, 1.0, 0.0);
+	var v3: vec3<f32> = vec3<f32>(1.0, 0.0, 2.0);
+	var dv1: vec3<f64> = vec3<f64>(0.0, 1.0, 2.0);
+	var dv2: vec3<f64> = vec3<f64>(2.0, 1.0, 0.0);
+	var dv3: vec3<f64> = vec3<f64>(1.0, 0.0, 2.0);
+	var iv1: vec3<i32> = vec3<i32>(0, 1, 2);
+	var iv2: vec3<i32> = vec3<i32>(2, 1, 0);
+	var iv3: vec3<i32> = vec3<i32>(1, 0, 2);
+	var uv1: vec3<u32> = vec3<u32>(0u, 1u, 2u);
+	var uv2: vec3<u32> = vec3<u32>(2u, 1u, 0u);
+	var uv3: vec3<u32> = vec3<u32>(1u, 0u, 2u);
+	var absResult1: f32 = abs(f1);
+	var absResult2: vec3<f32> = abs(v1);
+	var absResult3: f64 = abs(d1);
+	var absResult3_2: vec3<f64> = abs(dv1);
+	var ceilResult1: f32 = ceil(f1);
+	var ceilResult2: vec3<f32> = ceil(v1);
+	var ceilResult3: f64 = ceil(d1);
+	var ceilResult4: vec3<f64> = ceil(dv1);
+	var clampResult1: f32 = clamp(f1, f3, f2);
+	var clampResult2: vec3<f32> = clamp(v1, v3, v2);
+	var clampResult3: f64 = clamp(d1, d3, d2);
+	var clampResult4: vec3<f64> = clamp(dv1, dv3, dv2);
+	var crossResult1: vec3<f32> = cross(v1, v2);
+	var crossResult2: vec3<f64> = cross(dv1, dv2);
+	var distanceResult1: f32 = distance(v1, v2);
+	var distanceResult2: f64 = distance(dv1, dv2);
+	var dotResult1: f32 = dot(v1, v2);
+	var dotResult2: f64 = dot(dv1, dv2);
+	var expResult1: vec3<f32> = exp(v1);
+	var expResult2: f32 = exp(f1);
+	var exp2Result1: vec3<f32> = exp2(v1);
+	var exp2Result2: f32 = exp2(f1);
+	var floorResult1: f32 = floor(f1);
+	var floorResult2: vec3<f32> = floor(v1);
+	var floorResult3: f64 = floor(d1);
+	var floorResult4: vec3<f64> = floor(dv1);
+	var fractResult1: f32 = fract(f1);
+	var fractResult2: vec3<f32> = fract(v1);
+	var fractResult3: f64 = fract(d1);
+	var fractResult4: vec3<f64> = fract(dv1);
+	var rsqrtResult1: f32 = inverseSqrt(f1);
+	var rsqrtResult2: vec3<f32> = inverseSqrt(v1);
+	var rsqrtResult3: f64 = inverseSqrt(d1);
+	var rsqrtResult4: vec3<f64> = inverseSqrt(dv1);
+	var lengthResult1: f32 = length(v1);
+	var lengthResult2: f64 = length(dv1);
+	var lerpResult1: f32 = mix(f1, f3, f2);
+	var lerpResult2: vec3<f32> = mix(v1, v3, v2);
+	var lerpResult3: f64 = mix(d1, d3, d2);
+	var lerpResult4: vec3<f64> = mix(dv1, dv3, dv2);
+	var logResult1: vec3<f32> = log(v1);
+	var logResult2: f32 = log(f1);
+	var log2Result1: vec3<f32> = log2(v1);
+	var log2Result2: f32 = log2(f1);
+	var maxResult1: f32 = max(f1, f2);
+	var maxResult2: i32 = max(i1, i2);
+	var maxResult3: u32 = max(u1, u2);
+	var maxResult4: vec3<f32> = max(v1, v2);
+	var maxResult5: vec3<f64> = max(dv1, dv2);
+	var maxResult6: vec3<i32> = max(iv1, iv2);
+	var maxResult7: vec3<u32> = max(uv1, uv2);
+	var minResult1: f32 = min(f1, f2);
+	var minResult2: i32 = min(i1, i2);
+	var minResult3: u32 = min(u1, u2);
+	var minResult4: vec3<f32> = min(v1, v2);
+	var minResult5: vec3<f64> = min(dv1, dv2);
+	var minResult6: vec3<i32> = min(iv1, iv2);
+	var minResult7: vec3<u32> = min(uv1, uv2);
+	var normalizeResult1: vec3<f32> = normalize(v1);
+	var normalizeResult2: vec3<f64> = normalize(dv1);
+	var powResult1: f32 = pow(f1, f2);
+	var powResult2: vec3<f32> = pow(v1, v2);
+	var reflectResult1: vec3<f32> = reflect(v1, v2);
+	var reflectResult2: vec3<f64> = reflect(dv1, dv2);
+	var roundResult1: f32 = round(f1);
+	var roundResult2: vec3<f32> = round(v1);
+	var roundResult3: f64 = round(d1);
+	var roundResult4: vec3<f64> = round(dv1);
+	var roundevenResult1: f32 = round(f1);
+	var roundevenResult2: vec3<f32> = round(v1);
+	var roundevenResult3: f64 = round(d1);
+	var roundevenResult4: vec3<f64> = round(dv1);
+	var signResult1: f32 = sign(f1);
+	var signResult2: i32 = sign(i1);
+	var signResult3: f64 = sign(d1);
+	var signResult4: vec3<f32> = sign(v1);
+	var signResult5: vec3<f64> = sign(dv1);
+	var signResult6: vec3<i32> = sign(iv1);
+	var smoothStepResult1: f32 = smoothstep(f1, f2, f3);
+	var smoothStepResult2: vec3<f32> = smoothstep(v1, v2, v3);
+	var smoothStepResult1_2: f64 = smoothstep(d1, d2, d3);
+	var smoothStepResult2_2: vec3<f64> = smoothstep(dv1, dv2, dv3);
+	var sqrtResult1: f32 = sqrt(f1);
+	var sqrtResult2: vec3<f32> = sqrt(v1);
+	var sqrtResult3: f64 = sqrt(d1);
+	var sqrtResult4: vec3<f64> = sqrt(dv1);
+	var stepResult1: f32 = step(f1, f2);
+	var stepResult2: vec3<f32> = step(v1, v2);
+	var stepResult1_2: f64 = step(d1, d2);
+	var stepResult2_2: vec3<f64> = step(dv1, dv2);
+	var truncResult1: f32 = trunc(f1);
+	var truncResult2: vec3<f32> = trunc(v1);
+	var truncResult3: f64 = trunc(d1);
+	var truncResult4: vec3<f64> = trunc(dv1);
+}
+)", {}, wgslEnv);
 	}
 	
 	WHEN("testing matrix intrinsics")
@@ -1340,6 +1560,40 @@ fn main()
        OpStore %66 %106
        OpReturn
        OpFunctionEnd)", {}, {}, true);
+
+		nzsl::WgslWriter::Environment wgslEnv;
+		wgslEnv.featuresCallback = [](std::string_view) { return true; };
+
+		ExpectWGSL(*shaderModule, R"(
+@fragment
+fn main()
+{
+	var _nzsl_matrix: mat4x4<f32>;
+	_nzsl_matrix[0u] = vec4<f32>(0.0, 1.0, 2.0, 3.0);
+	_nzsl_matrix[1u] = vec4<f32>(4.0, 5.0, 6.0, 7.0);
+	_nzsl_matrix[2u] = vec4<f32>(8.0, 9.0, 10.0, 11.0);
+	_nzsl_matrix[3u] = vec4<f32>(12.0, 13.0, 14.0, 15.0);
+	var m1: mat4x4<f32> = _nzsl_matrix;
+	var _nzsl_matrix_2: mat2x3<f32>;
+	_nzsl_matrix_2[0u] = vec3<f32>(0.0, 1.0, 2.0);
+	_nzsl_matrix_2[1u] = vec3<f32>(3.0, 4.0, 5.0);
+	var m2: mat2x3<f32> = _nzsl_matrix_2;
+	var _nzsl_matrix_3: mat3x3<f64>;
+	_nzsl_matrix_3[0u] = vec3<f64>(0.0, 1.0, 2.0);
+	_nzsl_matrix_3[1u] = vec3<f64>(3.0, 4.0, 5.0);
+	_nzsl_matrix_3[2u] = vec3<f64>(6.0, 7.0, 8.0);
+	var m3: mat3x3<f64> = _nzsl_matrix_3;
+	var _nzsl_matrix_4: mat3x2<f64>;
+	_nzsl_matrix_4[0u] = vec2<f64>(0.0, 1.0);
+	_nzsl_matrix_4[1u] = vec2<f64>(2.0, 3.0);
+	_nzsl_matrix_4[2u] = vec2<f64>(4.0, 5.0);
+	var m4: mat3x2<f64> = _nzsl_matrix_4;
+	var inverseResult1: mat4x4<f32> = _nzslMatrixInverse4x4f32(m1);
+	var inverseResult2: mat3x3<f64> = _nzslMatrixInverse3x3f64(m3);
+	var transposeResult1: mat3x2<f32> = transpose(m2);
+	var transposeResult2: mat2x3<f64> = transpose(m4);
+}
+)", {}, wgslEnv);
 	}
 
 	WHEN("testing trigonometry intrinsics")
@@ -1562,6 +1816,49 @@ fn main()
        OpStore %57 %115
        OpReturn
        OpFunctionEnd)", {}, {}, true);
+
+		nzsl::WgslWriter::Environment wgslEnv;
+		wgslEnv.featuresCallback = [](std::string_view) { return true; };
+
+		ExpectWGSL(*shaderModule, R"(
+fn main()
+{
+	var d1: f64 = 42.0;
+	var d2: f64 = 1337.0;
+	var f1: f32 = 42.0;
+	var f2: f32 = 1337.0;
+	var v1: vec3<f32> = vec3<f32>(0.0, 1.0, 2.0);
+	var v2: vec3<f32> = vec3<f32>(2.0, 1.0, 0.0);
+	var dv1: vec3<f64> = vec3<f64>(0.0, 1.0, 2.0);
+	var dv2: vec3<f64> = vec3<f64>(2.0, 1.0, 0.0);
+	var acosResult1: f32 = acos(f1);
+	var acosResult2: vec3<f32> = acos(v1);
+	var acoshResult1: f32 = acosh(f1);
+	var acoshResult2: vec3<f32> = acosh(v1);
+	var asinResult1: f32 = asin(f1);
+	var asinResult2: vec3<f32> = asin(v1);
+	var asinhResult1: f32 = asinh(f1);
+	var asinhResult2: vec3<f32> = asinh(v1);
+	var atanResult1: f32 = atan(f1);
+	var atanResult2: vec3<f32> = atan(v1);
+	var atan2Result1: f32 = atan2(f1, f2);
+	var atan2Result2: vec3<f32> = atan2(v1, v2);
+	var atanhResult1: f32 = atanh(f1);
+	var atanhResult2: vec3<f32> = atanh(v1);
+	var cosResult1: f32 = cos(f1);
+	var cosResult2: vec3<f32> = cos(v1);
+	var coshResult1: f32 = cosh(f1);
+	var coshResult2: vec3<f32> = cosh(v1);
+	var deg2radResult1: f32 = radians(f1);
+	var deg2radResult2: vec3<f32> = radians(v1);
+	var rad2degResult1: f32 = degrees(f1);
+	var rad2degResult2: vec3<f32> = degrees(v1);
+	var sinResult1: f32 = sin(f1);
+	var sinResult2: vec3<f32> = sin(v1);
+	var sinhResult1: f32 = sinh(f1);
+	var sinhResult2: vec3<f32> = sinh(v1);
+}
+)", {}, wgslEnv);
 	}
 
 	WHEN("testing select intrinsic")
@@ -2116,6 +2413,50 @@ fn main()
        OpReturn
        OpFunctionEnd)", {}, env, true);
 		}
+
+		nzsl::WgslWriter::Environment wgslEnv;
+		wgslEnv.featuresCallback = [](std::string_view) { return true; };
+
+		ExpectWGSL(*shaderModule, R"(
+@fragment
+fn main()
+{
+	var b1: bool = false;
+	var b2: bool = true;
+	var d1: f64 = 4.2;
+	var d2: f64 = 133.699999999999989;
+	var f1: f32 = 4.2;
+	var f2: f32 = 133.699997;
+	var i1: i32 = 42;
+	var i2: i32 = 1337;
+	var u1: u32 = 42u;
+	var u2: u32 = 1337u;
+	var v1: vec3<f32> = vec3<f32>(0.0, 1.0, 2.0);
+	var v2: vec3<f32> = vec3<f32>(2.0, 1.0, 0.0);
+	var bv1: vec3<bool> = vec3<bool>(true, false, true);
+	var bv2: vec3<bool> = vec3<bool>(false, false, true);
+	var dv1: vec3<f64> = vec3<f64>(0.0, 1.0, 2.0);
+	var dv2: vec3<f64> = vec3<f64>(2.0, 1.0, 0.0);
+	var iv1: vec3<i32> = vec3<i32>(0, 1, 2);
+	var iv2: vec3<i32> = vec3<i32>(2, 1, 0);
+	var uv1: vec3<u32> = vec3<u32>(0u, 1u, 2u);
+	var uv2: vec3<u32> = vec3<u32>(2u, 1u, 0u);
+	var result: f64 = select(d2, d1, b1);
+	var result_2: f32 = select(f2, f1, b2);
+	var result_3: i32 = select(i2, i1, b1);
+	var result_4: u32 = select(u2, u1, b2);
+	var result_5: vec3<f32> = select(v2, v1, vec3<bool>(b1));
+	var result_6: vec3<bool> = select(bv2, bv1, vec3<bool>(b2));
+	var result_7: vec3<f64> = select(dv2, dv1, vec3<bool>(b1));
+	var result_8: vec3<i32> = select(iv2, iv1, vec3<bool>(b2));
+	var result_9: vec3<u32> = select(uv2, uv1, vec3<bool>(b1));
+	var result_10: vec3<f32> = select(v2, v1, bv1);
+	var result_11: vec3<bool> = select(bv2, bv1, bv2);
+	var result_12: vec3<f64> = select(dv2, dv1, bv1);
+	var result_13: vec3<i32> = select(iv2, iv1, bv2);
+	var result_14: vec3<u32> = select(uv2, uv1, bv1);
+}
+)", {}, wgslEnv);
 	}
 
 	WHEN("testing all/any/not intrinsics")
@@ -2187,6 +2528,17 @@ fn main()
       OpStore %14 %21
       OpReturn
       OpFunctionEnd)", {}, {}, true);
+
+		ExpectWGSL(*shaderModule, R"(
+@fragment
+fn main()
+{
+	var x: vec3<bool> = vec3<bool>(true, false, false);
+	var r: bool = all(x);
+	var r_2: bool = any(x);
+	var r_3: vec3<bool> = !(x);
+}
+)");
 	}
 
 	WHEN("testing isinf/isnan intrinsics")
@@ -2254,5 +2606,25 @@ fn main()
       OpStore %17 %21
       OpReturn
       OpFunctionEnd)", {}, {}, true);
+
+		ExpectWGSL(*shaderModule, R"(
+fn _nzslRatiof32(n: f32, d: f32) -> f32
+{
+	return n / d;	
+}
+
+fn _nzslInfinityf32() -> f32
+{
+	return _nzslRatiof32(1.0, 0.0);	
+}
+
+@fragment
+fn main()
+{
+	var x: vec3<f32> = vec3<f32>(1.0, 2.0, 3.0);
+	var r: vec3<bool> = vec3<bool>(x.x == _nzslInfinityf32(), x.y == _nzslInfinityf32(), x.z == _nzslInfinityf32());
+	var r_2: vec3<bool> = x != x;
+}
+)");
 	}
 }

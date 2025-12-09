@@ -59,6 +59,7 @@ namespace nzslc
 			void CompileToNZSL(std::filesystem::path outputPath, const nzsl::Ast::Module& module);
 			void CompileToNZSLB(std::filesystem::path outputPath, const nzsl::Ast::Module& module);
 			void CompileToSPV(std::filesystem::path outputPath, nzsl::Ast::Module& module, bool textual);
+			void CompileToWGSL(std::filesystem::path outputPath, nzsl::Ast::Module& module);
 			nzsl::Ast::ModulePtr Deserialize(const std::uint8_t* data, std::size_t size);
 			void PrintTime();
 			void OutputFile(std::filesystem::path filePath, const void* data, std::size_t size, bool disallowHeader = false);
