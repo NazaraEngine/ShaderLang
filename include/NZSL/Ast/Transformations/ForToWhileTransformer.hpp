@@ -8,6 +8,7 @@
 #define NZSL_AST_TRANSFORMATIONS_FORTOWHILETRANSFORMER_HPP
 
 #include <NZSL/Ast/Transformations/Transformer.hpp>
+#include <optional>
 
 namespace nzsl::Ast
 {
@@ -31,7 +32,9 @@ namespace nzsl::Ast
 			using Transformer::Transform;
 			StatementTransformation Transform(ForEachStatement&& statement) override;
 			StatementTransformation Transform(ForStatement&& statement) override;
+			StatementTransformation Transform(ContinueStatement&& statement) override;
 
+			std::optional<ExpressionPtr> m_incrExpr;
 			const Options* m_options;
 	};
 }

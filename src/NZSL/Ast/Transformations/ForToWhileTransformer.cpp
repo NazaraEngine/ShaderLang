@@ -3,6 +3,7 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <NZSL/Ast/Transformations/ForToWhileTransformer.hpp>
+#include <NZSL/Ast/Cloner.hpp>
 #include <NZSL/Ast/Utils.hpp>
 #include <NZSL/Lang/Errors.hpp>
 #include <NZSL/Ast/Transformations/TransformerContext.hpp>
@@ -113,8 +114,6 @@ namespace nzsl::Ast
 			return ExpressionType{ counterType };
 		};
 
-		HandleStatement(forStatement.statement);
-
 		auto multi = std::make_unique<MultiStatement>();
 		multi->sourceLocation = forStatement.sourceLocation;
 
@@ -179,6 +178,10 @@ namespace nzsl::Ast
 		incrCounter->cachedExpressionType = PrimitiveType::UInt32;
 		incrCounter->sourceLocation = forStatement.sourceLocation;
 
+		m_incrExpr = Clone(*incrCounter);
+		HandleStatement(forStatement.statement);
+		m_incrExpr = std::nullopt;
+
 		body->statements.emplace_back(Unscope(std::move(forStatement.statement)));
 		body->statements.emplace_back(ShaderBuilder::ExpressionStatement(std::move(incrCounter)));
 
@@ -186,6 +189,17 @@ namespace nzsl::Ast
 
 		multi->statements.emplace_back(std::move(whileStatement));
 
+		return ReplaceStatement{ ShaderBuilder::Scoped(std::move(multi)) };
+	}
+
+	auto ForToWhileTransformer::Transform(ContinueStatement&& statement) -> StatementTransformation
+	{
+		if (!m_incrExpr)
+			return DontVisitChildren{};
+		auto multi = std::make_unique<MultiStatement>();
+		multi->statements.reserve(2);
+		multi->statements.emplace_back(ShaderBuilder::ExpressionStatement(Clone(*(*m_incrExpr))));
+		multi->statements.emplace_back(Clone(statement));
 		return ReplaceStatement{ ShaderBuilder::Scoped(std::move(multi)) };
 	}
 }
