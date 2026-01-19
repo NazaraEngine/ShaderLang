@@ -20,16 +20,17 @@ namespace nzsl::Ast
 		return TransformModule(module, context, error);
 	}
 
-	auto ForToWhileTransformer::Transform(ContinueStatement&& /*statement*/) -> StatementTransformation
+	auto ForToWhileTransformer::Transform(ContinueStatement&& statement) -> StatementTransformation
 	{
 		if (!m_incrExpr)
 			return DontVisitChildren{};
 
 		auto multi = std::make_unique<MultiStatement>();
+		multi->sourceLocation = statement.sourceLocation;
 		multi->statements.reserve(2);
 		multi->statements.emplace_back(ShaderBuilder::ExpressionStatement(Clone(*(*m_incrExpr))));
-		multi->statements.emplace_back(ShaderBuilder::Continue());
-		return ReplaceStatement{ ShaderBuilder::Scoped(std::move(multi)) };
+		multi->statements.emplace_back(std::move(GetCurrentStatementPtr()));
+		return ReplaceStatement{ std::move(multi) };
 	}
 
 	auto ForToWhileTransformer::Transform(ForEachStatement&& forEachStatement) -> StatementTransformation
