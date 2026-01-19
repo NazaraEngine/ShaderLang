@@ -29,9 +29,11 @@ namespace nzsl::Ast
 
 		private:
 			using Transformer::Transform;
+			StatementTransformation Transform(ContinueStatement&& statement) override;
 			StatementTransformation Transform(ForEachStatement&& statement) override;
 			StatementTransformation Transform(ForStatement&& statement) override;
 
+			ExpressionPtr* m_incrExpr;
 			const Options* m_options;
 	};
 }

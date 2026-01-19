@@ -3,6 +3,7 @@
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <NZSL/Ast/Transformations/ForToWhileTransformer.hpp>
+#include <NZSL/Ast/Cloner.hpp>
 #include <NZSL/Ast/Utils.hpp>
 #include <NZSL/Lang/Errors.hpp>
 #include <NZSL/Ast/Transformations/TransformerContext.hpp>
@@ -19,6 +20,19 @@ namespace nzsl::Ast
 		return TransformModule(module, context, error);
 	}
 
+	auto ForToWhileTransformer::Transform(ContinueStatement&& statement) -> StatementTransformation
+	{
+		if (!m_incrExpr)
+			return DontVisitChildren{};
+
+		auto multi = std::make_unique<MultiStatement>();
+		multi->sourceLocation = statement.sourceLocation;
+		multi->statements.reserve(2);
+		multi->statements.emplace_back(ShaderBuilder::ExpressionStatement(Clone(*(*m_incrExpr))));
+		multi->statements.emplace_back(std::move(GetCurrentStatementPtr()));
+		return ReplaceStatement{ std::move(multi) };
+	}
+
 	auto ForToWhileTransformer::Transform(ForEachStatement&& forEachStatement) -> StatementTransformation
 	{
 		if (!m_options->reduceForEachLoopsToWhile)
@@ -31,14 +45,11 @@ namespace nzsl::Ast
 		if (!IsArrayType(*exprType))
 			throw CompilerForEachUnsupportedTypeError{ forEachStatement.sourceLocation, ToString(*exprType, forEachStatement.sourceLocation) };
 
-		HandleStatement(forEachStatement.statement);
-
 		const ArrayType& arrayType = std::get<ArrayType>(*exprType);
 		const ExpressionType& innerType = ResolveAlias(arrayType.InnerType());
 
 		auto multi = std::make_unique<MultiStatement>();
 		multi->sourceLocation = forEachStatement.sourceLocation;
-
 		multi->statements.reserve(2);
 
 		// Counter variable
@@ -72,12 +83,16 @@ namespace nzsl::Ast
 		elementVariable->sourceLocation = forEachStatement.sourceLocation;
 		elementVariable->varIndex = forEachStatement.varIndex; //< Preserve var index
 
-		body->statements.emplace_back(std::move(elementVariable));
-		body->statements.emplace_back(Unscope(std::move(forEachStatement.statement)));
-
-		auto incrCounter = ShaderBuilder::Assign(AssignType::CompoundAdd, ShaderBuilder::Variable(counterVarIndex, PrimitiveType::UInt32, forEachStatement.sourceLocation), ShaderBuilder::ConstantValue(1u, forEachStatement.sourceLocation));
+		ExpressionPtr incrCounter = ShaderBuilder::Assign(AssignType::CompoundAdd, ShaderBuilder::Variable(counterVarIndex, PrimitiveType::UInt32, forEachStatement.sourceLocation), ShaderBuilder::ConstantValue(1u, forEachStatement.sourceLocation));
 		incrCounter->cachedExpressionType = PrimitiveType::UInt32;
 		incrCounter->sourceLocation = forEachStatement.sourceLocation;
+
+		m_incrExpr = &incrCounter;
+		HandleStatement(forEachStatement.statement);
+		m_incrExpr = nullptr;
+
+		body->statements.emplace_back(std::move(elementVariable));
+		body->statements.emplace_back(Unscope(std::move(forEachStatement.statement)));
 
 		body->statements.emplace_back(ShaderBuilder::ExpressionStatement(std::move(incrCounter)));
 
@@ -112,8 +127,6 @@ namespace nzsl::Ast
 
 			return ExpressionType{ counterType };
 		};
-
-		HandleStatement(forStatement.statement);
 
 		auto multi = std::make_unique<MultiStatement>();
 		multi->sourceLocation = forStatement.sourceLocation;
@@ -175,9 +188,13 @@ namespace nzsl::Ast
 
 		incrExpr->sourceLocation = forStatement.sourceLocation;
 
-		auto incrCounter = ShaderBuilder::Assign(AssignType::CompoundAdd, ShaderBuilder::Variable(counterVarIndex, counterType, forStatement.sourceLocation), std::move(incrExpr));
+		ExpressionPtr incrCounter = ShaderBuilder::Assign(AssignType::CompoundAdd, ShaderBuilder::Variable(counterVarIndex, counterType, forStatement.sourceLocation), std::move(incrExpr));
 		incrCounter->cachedExpressionType = PrimitiveType::UInt32;
 		incrCounter->sourceLocation = forStatement.sourceLocation;
+
+		m_incrExpr = &incrCounter;
+		HandleStatement(forStatement.statement);
+		m_incrExpr = nullptr;
 
 		body->statements.emplace_back(Unscope(std::move(forStatement.statement)));
 		body->statements.emplace_back(ShaderBuilder::ExpressionStatement(std::move(incrCounter)));
