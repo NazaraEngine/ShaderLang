@@ -8,7 +8,6 @@
 #define NZSL_AST_TRANSFORMATIONS_FORTOWHILETRANSFORMER_HPP
 
 #include <NZSL/Ast/Transformations/Transformer.hpp>
-#include <optional>
 
 namespace nzsl::Ast
 {
