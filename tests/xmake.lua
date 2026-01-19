@@ -7,7 +7,7 @@ if has_config("tests") then
 	end
 
 	add_requires("catch2 3", "spirv-tools", "tiny-process-library")
-	add_requires("glslang", { configs = { rtti = has_config("ubsan") } }) -- ubsan requires rtti
+	add_requires("glslang[tools]", { configs = { rtti = has_config("ubsan") } }) -- ubsan requires rtti
 
 	add_includedirs("src")
 
