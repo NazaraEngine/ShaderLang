@@ -30,11 +30,11 @@ namespace nzsl::Ast
 
 		private:
 			using Transformer::Transform;
+			StatementTransformation Transform(ContinueStatement&& statement) override;
 			StatementTransformation Transform(ForEachStatement&& statement) override;
 			StatementTransformation Transform(ForStatement&& statement) override;
-			StatementTransformation Transform(ContinueStatement&& statement) override;
 
-			std::optional<ExpressionPtr> m_incrExpr;
+			ExpressionPtr* m_incrExpr;
 			const Options* m_options;
 	};
 }

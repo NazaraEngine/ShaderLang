@@ -446,6 +446,7 @@ void main()
 		{
 			if (v == 4)
 			{
+				v += 1;
 				continue;
 			}
 
@@ -508,26 +509,29 @@ fn main()
       OpSelectionMerge %23 SelectionControl(0)
       OpBranchConditional %27 %24 %25
 %24 = OpLabel
+%28 = OpLoad %3 %14
+%29 = OpIAdd %3 %28 %9
+      OpStore %14 %29
       OpBranch %19
 %25 = OpLabel
       OpBranch %23
 %23 = OpLabel
-%28 = OpLoad %3 %13
-%29 = OpLoad %3 %14
-%30 = OpIAdd %3 %28 %29
-      OpStore %13 %30
-%34 = OpLoad %3 %14
-%35 = OpSGreaterThanEqual %7 %34 %9
-      OpSelectionMerge %31 SelectionControl(0)
-      OpBranchConditional %35 %32 %33
-%32 = OpLabel
-      OpBranch %18
-%33 = OpLabel
-      OpBranch %31
-%31 = OpLabel
+%30 = OpLoad %3 %13
+%31 = OpLoad %3 %14
+%32 = OpIAdd %3 %30 %31
+      OpStore %13 %32
 %36 = OpLoad %3 %14
-%37 = OpIAdd %3 %36 %10
-      OpStore %14 %37
+%37 = OpSGreaterThanEqual %7 %36 %10
+      OpSelectionMerge %33 SelectionControl(0)
+      OpBranchConditional %37 %34 %35
+%34 = OpLabel
+      OpBranch %18
+%35 = OpLabel
+      OpBranch %33
+%33 = OpLabel
+%38 = OpLoad %3 %14
+%39 = OpIAdd %3 %38 %9
+      OpStore %14 %39
       OpBranch %19
 %19 = OpLabel
       OpBranch %16
@@ -766,6 +770,7 @@ void main()
 			float v = data.value[_nzsl_counter];
 			if (v < 0.0)
 			{
+				_nzsl_counter += 1u;
 				continue;
 			}
 
@@ -830,26 +835,29 @@ fn main()
       OpSelectionMerge %35 SelectionControl(0)
       OpBranchConditional %39 %36 %37
 %36 = OpLabel
+%40 = OpLoad %2 %23
+%41 = OpIAdd %2 %40 %18
+      OpStore %23 %41
       OpBranch %28
 %37 = OpLabel
       OpBranch %35
 %35 = OpLabel
-%40 = OpLoad %1 %22
-%41 = OpLoad %1 %24
-%42 = OpFAdd %1 %40 %41
-      OpStore %22 %42
-%46 = OpLoad %1 %22
-%47 = OpFOrdGreaterThanEqual %14 %46 %18
-      OpSelectionMerge %43 SelectionControl(0)
-      OpBranchConditional %47 %44 %45
-%44 = OpLabel
+%42 = OpLoad %1 %22
+%43 = OpLoad %1 %24
+%44 = OpFAdd %1 %42 %43
+      OpStore %22 %44
+%48 = OpLoad %1 %22
+%49 = OpFOrdGreaterThanEqual %14 %48 %19
+      OpSelectionMerge %45 SelectionControl(0)
+      OpBranchConditional %49 %46 %47
+%46 = OpLabel
       OpBranch %27
+%47 = OpLabel
+      OpBranch %45
 %45 = OpLabel
-      OpBranch %43
-%43 = OpLabel
-%48 = OpLoad %2 %23
-%49 = OpIAdd %2 %48 %19
-      OpStore %23 %49
+%50 = OpLoad %2 %23
+%51 = OpIAdd %2 %50 %18
+      OpStore %23 %51
       OpBranch %28
 %28 = OpLabel
       OpBranch %25
