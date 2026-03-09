@@ -1,4 +1,4 @@
-// Copyright (C) 2025 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
+// Copyright (C) 2026 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -45,7 +45,7 @@ namespace nzsl::Ast
 			const ExpressionType* GetExpressionType(const Expression& expr) const;
 
 			void PopScope() override;
-			
+
 			void PropagateFunctionStages(FunctionData& callingFuncData, Nz::HybridBitset<Nz::UInt32, 32>& seen);
 
 			void PushScope() override;
