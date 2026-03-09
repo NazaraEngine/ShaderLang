@@ -31,7 +31,7 @@
 /* CNZSL version macro */
 #define CNZSL_VERSION_MAJOR 1
 #define CNZSL_VERSION_MINOR 1
-#define CNZSL_VERSION_PATCH 2
+#define CNZSL_VERSION_PATCH 3
 
 #if !defined(CNZSL_STATIC)
 	#ifdef _WIN32
