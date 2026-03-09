@@ -554,6 +554,8 @@ namespace nzsl
 				if (it == SpirvGenData::s_intrinsicData.end())
 					throw std::runtime_error("unknown intrinsic value " + std::to_string(Nz::UnderlyingCast(node.intrinsic)));
 
+				const SpirvGenData::IntrinsicData& intrinsicData = it->second;
+
 				std::visit([&](auto&& arg)
 				{
 					using namespace SpirvGenData;
@@ -567,7 +569,10 @@ namespace nzsl
 					}
 					else
 						static_assert(Nz::AlwaysFalse<T>(), "non-exhaustive visitor");
-				}, it->second.op);
+				}, intrinsicData.op);
+
+				if (intrinsicData.capability)
+					spirvCapabilities.insert(*intrinsicData.capability);
 
 				m_constantCache.Register(*m_constantCache.BuildType(node.cachedExpressionType.value()));
 			}

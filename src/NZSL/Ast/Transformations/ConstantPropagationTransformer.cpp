@@ -663,10 +663,21 @@ namespace nzsl::Ast
 				break;
 
 			// Intrinsics that can't be evalutated at compilation time
+			case IntrinsicType::Ddx:
+			case IntrinsicType::DdxCoarse:
+			case IntrinsicType::DdxFine:
+			case IntrinsicType::Ddy:
+			case IntrinsicType::DdyCoarse:
+			case IntrinsicType::DdyFine:
+			case IntrinsicType::Fwidth:
+			case IntrinsicType::FwidthCoarse:
+			case IntrinsicType::FwidthFine:
 			case IntrinsicType::TextureRead:
 			case IntrinsicType::TextureWrite:
 			case IntrinsicType::TextureSampleImplicitLod:
 			case IntrinsicType::TextureSampleImplicitLodDepthComp:
+				break;
+			default:
 				break;
 		}
 

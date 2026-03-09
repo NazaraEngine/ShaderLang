@@ -148,7 +148,7 @@ namespace nzsl::Ast
 
 	enum class IntrinsicType
 	{
-		// Next free index: 55
+		// Next free index: 64
 		Abs                               = 31,
 		ArcCos                            = 21,
 		ArcCosh                           = 22,
@@ -166,12 +166,21 @@ namespace nzsl::Ast
 		Cosh                              = 16,
 		CrossProduct                      = 0,
 		DegToRad                          = 37,
+		Ddx                               = 55,
+		DdxCoarse                         = 56,
+		DdxFine                           = 57,
+		Ddy                               = 58,
+		DdyCoarse                         = 59,
+		DdyFine                           = 60,
 		Distance                          = 46,
 		DotProduct                        = 1,
 		Exp                               = 7,
 		Exp2                              = 40,
 		Floor                             = 33,
 		Fract                             = 35,
+		Fwidth                            = 61,
+		FwidthCoarse                      = 62,
+		FwidthFine                        = 63,
 		InverseSqrt                       = 26,
 		IsInf                             = 51,
 		IsNaN                             = 52,

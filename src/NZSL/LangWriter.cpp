@@ -1279,12 +1279,21 @@ namespace nzsl
 			case Ast::IntrinsicType::Cosh:
 			case Ast::IntrinsicType::CrossProduct:
 			case Ast::IntrinsicType::DegToRad:
+			case Ast::IntrinsicType::Ddx:
+			case Ast::IntrinsicType::DdxCoarse:
+			case Ast::IntrinsicType::DdxFine:
+			case Ast::IntrinsicType::Ddy:
+			case Ast::IntrinsicType::DdyCoarse:
+			case Ast::IntrinsicType::DdyFine:
 			case Ast::IntrinsicType::Distance:
 			case Ast::IntrinsicType::DotProduct:
 			case Ast::IntrinsicType::Exp:
 			case Ast::IntrinsicType::Exp2:
 			case Ast::IntrinsicType::Floor:
 			case Ast::IntrinsicType::Fract:
+			case Ast::IntrinsicType::Fwidth:
+			case Ast::IntrinsicType::FwidthCoarse:
+			case Ast::IntrinsicType::FwidthFine:
 			case Ast::IntrinsicType::InverseSqrt:
 			case Ast::IntrinsicType::IsInf:
 			case Ast::IntrinsicType::IsNaN:

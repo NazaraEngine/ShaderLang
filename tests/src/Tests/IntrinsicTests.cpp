@@ -2255,4 +2255,147 @@ fn main()
       OpReturn
       OpFunctionEnd)", {}, {}, true);
 	}
+
+	WHEN("testing derivate intrinsics")
+	{
+		std::string_view nzslSource = R"(
+[nzsl_version("1.1")]
+module;
+
+struct Input
+{
+	normal: vec3[f32]
+}
+
+[entry(frag)]
+fn main(input: Input)
+{
+	let x = ddx(input.normal);
+	let x = ddxcoarse(input.normal.x);
+	let x = ddxfine(input.normal.xy);
+
+	let y = ddy(input.normal);
+	let y = ddycoarse(input.normal.x);
+	let y = ddyfine(input.normal.xy);
+
+	let w = fwidth(input.normal);
+	let w = fwidthcoarse(input.normal.x);
+	let w = fwidthfine(input.normal.xy);
+}
+)";
+
+		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
+		ResolveModule(*shaderModule);
+
+		// coarse derivatives requires GLSL 4.5
+		nzsl::GlslWriter::Environment glslEnv;
+		glslEnv.glMajorVersion = 4;
+		glslEnv.glMinorVersion = 5;
+		glslEnv.glES = false;
+
+		ExpectGLSL(*shaderModule, R"(
+void main()
+{
+	Input input_;
+	input_.normal = _nzslInnormal;
+
+	vec3 x = dFdx(input_.normal);
+	float x_2 = dFdxCoarse(input_.normal.x);
+	vec2 x_3 = dFdxFine(input_.normal.xy);
+	vec3 y = dFdy(input_.normal);
+	float y_2 = dFdyCoarse(input_.normal.x);
+	vec2 y_3 = dFdyFine(input_.normal.xy);
+	vec3 w = fwidth(input_.normal);
+	float w_2 = fwidthCoarse(input_.normal.x);
+	vec2 w_3 = fwidthFine(input_.normal.xy);
+}
+)", {}, glslEnv);
+
+		ExpectNZSL(*shaderModule, R"(
+[entry(frag)]
+fn main(input: Input)
+{
+	let x: vec3[f32] = ddx(input.normal);
+	let x: f32 = ddxcoarse(input.normal.x);
+	let x: vec2[f32] = ddxfine(input.normal.xy);
+	let y: vec3[f32] = ddy(input.normal);
+	let y: f32 = ddycoarse(input.normal.x);
+	let y: vec2[f32] = ddyfine(input.normal.xy);
+	let w: vec3[f32] = fwidth(input.normal);
+	let w: f32 = fwidthcoarse(input.normal.x);
+	let w: vec2[f32] = fwidthfine(input.normal.xy);
+}
+)");
+
+		ExpectSPIRV(*shaderModule, R"(
+ %1 = OpTypeVoid
+ %2 = OpTypeFunction %1
+ %3 = OpTypeFloat 32
+ %4 = OpTypeVector %3 3
+ %5 = OpTypeStruct %4
+ %6 = OpTypePointer StorageClass(Function) %5
+ %7 = OpTypeInt 32 1
+ %8 = OpConstant %7 i32(0)
+ %9 = OpTypePointer StorageClass(Function) %4
+%10 = OpTypePointer StorageClass(Function) %3
+%11 = OpConstant %7 i32(1)
+%12 = OpTypeVector %3 2
+%13 = OpTypePointer StorageClass(Function) %12
+%14 = OpFunction %1 FunctionControl(0) %2
+%15 = OpLabel
+%16 = OpVariable %9 StorageClass(Function)
+%17 = OpVariable %10 StorageClass(Function)
+%18 = OpVariable %13 StorageClass(Function)
+%19 = OpVariable %9 StorageClass(Function)
+%20 = OpVariable %10 StorageClass(Function)
+%21 = OpVariable %13 StorageClass(Function)
+%22 = OpVariable %9 StorageClass(Function)
+%23 = OpVariable %10 StorageClass(Function)
+%24 = OpVariable %13 StorageClass(Function)
+%25 = OpVariable %6 StorageClass(Function)
+%26 = OpAccessChain %9 %25 %8
+%27 = OpLoad %4 %26
+%28 = OpDPdx %4 %27
+      OpStore %16 %28
+%29 = OpAccessChain %9 %25 %8
+%30 = OpLoad %4 %29
+%31 = OpCompositeExtract %3 %30 0
+%32 = OpDPdxCoarse %3 %31
+      OpStore %17 %32
+%33 = OpAccessChain %9 %25 %8
+%34 = OpLoad %4 %33
+%35 = OpVectorShuffle %12 %34 %34 0 1
+%36 = OpDPdxFine %12 %35
+      OpStore %18 %36
+%37 = OpAccessChain %9 %25 %8
+%38 = OpLoad %4 %37
+%39 = OpDPdy %4 %38
+      OpStore %19 %39
+%40 = OpAccessChain %9 %25 %8
+%41 = OpLoad %4 %40
+%42 = OpCompositeExtract %3 %41 0
+%43 = OpDPdyCoarse %3 %42
+      OpStore %20 %43
+%44 = OpAccessChain %9 %25 %8
+%45 = OpLoad %4 %44
+%46 = OpVectorShuffle %12 %45 %45 0 1
+%47 = OpDPdyFine %12 %46
+      OpStore %21 %47
+%48 = OpAccessChain %9 %25 %8
+%49 = OpLoad %4 %48
+%50 = OpFwidth %4 %49
+      OpStore %22 %50
+%51 = OpAccessChain %9 %25 %8
+%52 = OpLoad %4 %51
+%53 = OpCompositeExtract %3 %52 0
+%54 = OpFwidthCoarse %3 %53
+      OpStore %23 %54
+%55 = OpAccessChain %9 %25 %8
+%56 = OpLoad %4 %55
+%57 = OpVectorShuffle %12 %56 %56 0 1
+%58 = OpFwidthFine %12 %57
+      OpStore %24 %58
+      OpReturn
+      OpFunctionEnd)", {}, {}, true);
+	}
 }

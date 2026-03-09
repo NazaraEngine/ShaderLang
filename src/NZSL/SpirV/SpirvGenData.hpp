@@ -70,7 +70,11 @@ namespace nzsl::SpirvGenData
 	struct IntrinsicData
 	{
 		std::variant<SpirvOp, SpirvGlslStd450Op, SpirvGlslStd450Selector, SpirvCodeGenerator> op;
+		std::optional<SpirvCapability> capability;
 	};
+
+NAZARA_WARNING_PUSH()
+NAZARA_WARNING_CLANG_GCC_DISABLE("-Wmissing-field-initializers")
 
 	constexpr auto s_intrinsicData = frozen::make_unordered_map<Ast::IntrinsicType, IntrinsicData>({
 		{ Ast::IntrinsicType::Abs,                               { &SpirvAstVisitor::SelectAbs } },
@@ -90,12 +94,21 @@ namespace nzsl::SpirvGenData
 		{ Ast::IntrinsicType::Cosh,                              { SpirvGlslStd450Op::Cosh } },
 		{ Ast::IntrinsicType::CrossProduct,                      { SpirvGlslStd450Op::Cross } },
 		{ Ast::IntrinsicType::DegToRad,                          { SpirvGlslStd450Op::Degrees } },
+		{ Ast::IntrinsicType::Ddx,                               { SpirvOp::OpDPdx } },
+		{ Ast::IntrinsicType::DdxCoarse,                         { SpirvOp::OpDPdxCoarse, SpirvCapability::DerivativeControl } },
+		{ Ast::IntrinsicType::DdxFine,                           { SpirvOp::OpDPdxFine, SpirvCapability::DerivativeControl } },
+		{ Ast::IntrinsicType::Ddy,                               { SpirvOp::OpDPdy } },
+		{ Ast::IntrinsicType::DdyCoarse,                         { SpirvOp::OpDPdyCoarse, SpirvCapability::DerivativeControl } },
+		{ Ast::IntrinsicType::DdyFine,                           { SpirvOp::OpDPdyFine, SpirvCapability::DerivativeControl } },
 		{ Ast::IntrinsicType::Distance,                          { SpirvGlslStd450Op::Distance } },
 		{ Ast::IntrinsicType::DotProduct,                        { SpirvOp::OpDot } },
 		{ Ast::IntrinsicType::Exp,                               { SpirvGlslStd450Op::Exp } },
 		{ Ast::IntrinsicType::Exp2,                              { SpirvGlslStd450Op::Exp2 } },
 		{ Ast::IntrinsicType::Floor,                             { SpirvGlslStd450Op::Floor } },
 		{ Ast::IntrinsicType::Fract,                             { SpirvGlslStd450Op::Fract } },
+		{ Ast::IntrinsicType::Fwidth,                            { SpirvOp::OpFwidth } },
+		{ Ast::IntrinsicType::FwidthCoarse,                      { SpirvOp::OpFwidthCoarse, SpirvCapability::DerivativeControl } },
+		{ Ast::IntrinsicType::FwidthFine,                        { SpirvOp::OpFwidthFine, SpirvCapability::DerivativeControl } },
 		{ Ast::IntrinsicType::IsInf,                             { SpirvOp::OpIsInf } },
 		{ Ast::IntrinsicType::IsNaN,                             { SpirvOp::OpIsNan } },
 		{ Ast::IntrinsicType::InverseSqrt,                       { SpirvGlslStd450Op::InverseSqrt } },
@@ -129,6 +142,8 @@ namespace nzsl::SpirvGenData
 		{ Ast::IntrinsicType::TextureWrite,                      { SpirvOp::OpImageWrite } },
 		{ Ast::IntrinsicType::Trunc,                             { SpirvGlslStd450Op::Trunc } },
 	});
+
+NAZARA_WARNING_POP()
 
 	static_assert(LangData::s_intrinsicData.size() == s_intrinsicData.size());
 }
