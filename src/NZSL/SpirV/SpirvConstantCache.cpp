@@ -614,12 +614,6 @@ namespace nzsl
 			std::vector<std::string> extensions;
 		};
 
-		struct StructOffsets
-		{
-			FieldOffsets fieldOffsets;
-			std::vector<std::uint32_t> offsets;
-		};
-
 		Internal(SpirvWriter& writer, std::uint32_t& resultId) :
 		nextResultId(resultId),
 		writer(writer)
@@ -1126,16 +1120,23 @@ namespace nzsl
 		{
 			switch (type.dim)
 			{
-				case ImageType::Cubemap: return SpirvDim::Cube;
+				case ImageType::Cubemap:
+					return SpirvDim::Cube;
+
 				case ImageType::E1D_Array:
 					imageType.arrayed = true;
 					[[fallthrough]];
-				case ImageType::E1D: return SpirvDim::Dim1D;
+				case ImageType::E1D:
+					return SpirvDim::Dim1D;
+
 				case ImageType::E2D_Array:
 					imageType.arrayed = true;
 					[[fallthrough]];
-				case ImageType::E2D: return SpirvDim::Dim2D;
-				case ImageType::E3D: return SpirvDim::Dim3D;
+				case ImageType::E2D:
+					return SpirvDim::Dim2D;
+
+				case ImageType::E3D:
+					return SpirvDim::Dim3D;
 			}
 
 			throw std::runtime_error("unhandled image dimension");
