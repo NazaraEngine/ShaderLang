@@ -967,8 +967,17 @@ namespace nzsl::Ast
 	{
 		HandleChildren(node);
 
+		auto intrinsicIt = LangData::s_intrinsicData.find(node.intrinsic);
+		if (intrinsicIt == LangData::s_intrinsicData.end())
+			throw AstInternalError{ node.sourceLocation, fmt::format("missing intrinsic data for intrinsic {}", Nz::UnderlyingCast(node.intrinsic)) };
+
+		const auto& intrinsicData = intrinsicIt->second;
+
 		// Parameter validation
-		ValidateIntrinsicParameters(node);
+		ValidateIntrinsicParameters(node, intrinsicData);
+
+		if (intrinsicData.requiredStage)
+			m_states->currentFunction->requiredShaderStage.emplace(*intrinsicData.requiredStage, node.sourceLocation);
 
 		return DontVisitChildren{};
 	}
@@ -1484,14 +1493,9 @@ namespace nzsl::Ast
 			throw AstUnexpectedUntypedError{ sourceLocation };
 	}
 
-	void ValidationTransformer::ValidateIntrinsicParameters(IntrinsicExpression& node)
+	template<typename T>
+	void ValidationTransformer::ValidateIntrinsicParameters(IntrinsicExpression& node, const T& intrinsicData)
 	{
-		auto intrinsicIt = LangData::s_intrinsicData.find(node.intrinsic);
-		if (intrinsicIt == LangData::s_intrinsicData.end())
-			throw AstInternalError{ node.sourceLocation, fmt::format("missing intrinsic data for intrinsic {}", Nz::UnderlyingCast(node.intrinsic)) };
-
-		const auto& intrinsicData = intrinsicIt->second;
-
 		std::optional<std::size_t> unresolvedParameter;
 
 		std::size_t paramIndex = 0;

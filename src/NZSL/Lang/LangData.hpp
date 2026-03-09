@@ -173,6 +173,7 @@ namespace nzsl::LangData
 			ReturnType returnType;
 			const ParameterType* parameterTypes;
 			std::size_t parameterCount;
+			std::optional<ShaderStageType> requiredStage;
 		};
 
 		template<ParameterType... Types>
@@ -185,9 +186,9 @@ namespace nzsl::LangData
 		};
 
 		template<ParameterType... Types>
-		constexpr IntrinsicData Build(std::string_view name, ReturnType retType, Params<Types...>)
+		constexpr IntrinsicData Build(std::string_view name, ReturnType retType, Params<Types...>, std::optional<ShaderStageType> requiredStage = std::nullopt)
 		{
-			return { name, retType, IntrinsicFuncHelper<Types...>::parameterArray.data(), IntrinsicFuncHelper<Types...>::parameterArray.size()};
+			return { name, retType, IntrinsicFuncHelper<Types...>::parameterArray.data(), IntrinsicFuncHelper<Types...>::parameterArray.size(), requiredStage };
 		}
 
 		constexpr auto data = frozen::make_unordered_map<Ast::IntrinsicType, IntrinsicData>({
@@ -208,21 +209,21 @@ namespace nzsl::LangData
 			{ Ast::IntrinsicType::Cosh,                              Build("cosh",         ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
 			{ Ast::IntrinsicType::CrossProduct,                      Build("cross",        ReturnType::Param0Type,         Params<ParameterType::FVec3, ParameterType::FVec3, ParameterType::SameType>{}) },
 			{ Ast::IntrinsicType::DegToRad,                          Build("deg2rad",      ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
-			{ Ast::IntrinsicType::Ddx,                               Build("ddx",          ReturnType::Param0Type,         Params<ParameterType::FValVec>{}) },
-			{ Ast::IntrinsicType::DdxCoarse,                         Build("ddxcoarse",    ReturnType::Param0Type,         Params<ParameterType::FValVec>{}) },
-			{ Ast::IntrinsicType::DdxFine,                           Build("ddxfine",      ReturnType::Param0Type,         Params<ParameterType::FValVec>{}) },
-			{ Ast::IntrinsicType::Ddy,                               Build("ddy",          ReturnType::Param0Type,         Params<ParameterType::FValVec>{}) },
-			{ Ast::IntrinsicType::DdyCoarse,                         Build("ddycoarse",    ReturnType::Param0Type,         Params<ParameterType::FValVec>{}) },
-			{ Ast::IntrinsicType::DdyFine,                           Build("ddyfine",      ReturnType::Param0Type,         Params<ParameterType::FValVec>{}) },
+			{ Ast::IntrinsicType::Ddx,                               Build("ddx",          ReturnType::Param0Type,         Params<ParameterType::FValVec>{}, ShaderStageType::Fragment) },
+			{ Ast::IntrinsicType::DdxCoarse,                         Build("ddxcoarse",    ReturnType::Param0Type,         Params<ParameterType::FValVec>{}, ShaderStageType::Fragment) },
+			{ Ast::IntrinsicType::DdxFine,                           Build("ddxfine",      ReturnType::Param0Type,         Params<ParameterType::FValVec>{}, ShaderStageType::Fragment) },
+			{ Ast::IntrinsicType::Ddy,                               Build("ddy",          ReturnType::Param0Type,         Params<ParameterType::FValVec>{}, ShaderStageType::Fragment) },
+			{ Ast::IntrinsicType::DdyCoarse,                         Build("ddycoarse",    ReturnType::Param0Type,         Params<ParameterType::FValVec>{}, ShaderStageType::Fragment) },
+			{ Ast::IntrinsicType::DdyFine,                           Build("ddyfine",      ReturnType::Param0Type,         Params<ParameterType::FValVec>{}, ShaderStageType::Fragment) },
 			{ Ast::IntrinsicType::Distance,                          Build("distance",     ReturnType::Param0VecComponent, Params<ParameterType::FVec, ParameterType::FVec, ParameterType::SameType>{}) },
 			{ Ast::IntrinsicType::DotProduct,                        Build("dot",          ReturnType::Param0VecComponent, Params<ParameterType::FVec, ParameterType::FVec, ParameterType::SameType>{}) },
 			{ Ast::IntrinsicType::Exp,                               Build("exp",          ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
 			{ Ast::IntrinsicType::Exp2,                              Build("exp2",         ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
 			{ Ast::IntrinsicType::Floor,                             Build("floor",        ReturnType::Param0Type,         Params<ParameterType::FValVec>{}) },
 			{ Ast::IntrinsicType::Fract,                             Build("fract",        ReturnType::Param0Type,         Params<ParameterType::FValVec>{}) },
-			{ Ast::IntrinsicType::Fwidth,                            Build("fwidth",       ReturnType::Param0Type,         Params<ParameterType::FValVec>{}) },
-			{ Ast::IntrinsicType::FwidthCoarse,                      Build("fwidthcoarse", ReturnType::Param0Type,         Params<ParameterType::FValVec>{}) },
-			{ Ast::IntrinsicType::FwidthFine,                        Build("fwidthfine",   ReturnType::Param0Type,         Params<ParameterType::FValVec>{}) },
+			{ Ast::IntrinsicType::Fwidth,                            Build("fwidth",       ReturnType::Param0Type,         Params<ParameterType::FValVec>{}, ShaderStageType::Fragment) },
+			{ Ast::IntrinsicType::FwidthCoarse,                      Build("fwidthcoarse", ReturnType::Param0Type,         Params<ParameterType::FValVec>{}, ShaderStageType::Fragment) },
+			{ Ast::IntrinsicType::FwidthFine,                        Build("fwidthfine",   ReturnType::Param0Type,         Params<ParameterType::FValVec>{}, ShaderStageType::Fragment) },
 			{ Ast::IntrinsicType::InverseSqrt,                       Build("rsqrt",        ReturnType::Param0Type,         Params<ParameterType::FValVec>{}) },
 			{ Ast::IntrinsicType::IsInf,                             Build("isinf",        ReturnType::Param0AsBool,       Params<ParameterType::FValVec>{}) },
 			{ Ast::IntrinsicType::IsNaN,                             Build("isnan",        ReturnType::Param0AsBool,       Params<ParameterType::FValVec>{}) },
@@ -251,8 +252,8 @@ namespace nzsl::LangData
 			{ Ast::IntrinsicType::Tan,                               Build("tan",          ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
 			{ Ast::IntrinsicType::Tanh,                              Build("tanh",         ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
 			{ Ast::IntrinsicType::TextureRead,                       Build("",             ReturnType::Param0TextureValue, Params<ParameterType::Texture, ParameterType::TextureCoordinates>{}) },
-			{ Ast::IntrinsicType::TextureSampleImplicitLod,          Build("",             ReturnType::Param0SampledValue, Params<ParameterType::Sampler, ParameterType::SampleCoordinates>{}) },
-			{ Ast::IntrinsicType::TextureSampleImplicitLodDepthComp, Build("",             ReturnType::Param0SampledValue, Params<ParameterType::Sampler, ParameterType::SampleCoordinates, ParameterType::F32>{}) },
+			{ Ast::IntrinsicType::TextureSampleImplicitLod,          Build("",             ReturnType::Param0SampledValue, Params<ParameterType::Sampler, ParameterType::SampleCoordinates>{}, ShaderStageType::Fragment) },
+			{ Ast::IntrinsicType::TextureSampleImplicitLodDepthComp, Build("",             ReturnType::Param0SampledValue, Params<ParameterType::Sampler, ParameterType::SampleCoordinates, ParameterType::F32>{}, ShaderStageType::Fragment) },
 			{ Ast::IntrinsicType::TextureWrite,                      Build("",             ReturnType::None,               Params<ParameterType::Texture, ParameterType::TextureCoordinates, ParameterType::TextureData>{}) },
 			{ Ast::IntrinsicType::Trunc,                             Build("trunc",        ReturnType::Param0Type,         Params<ParameterType::FValVec>{}) },
 		});

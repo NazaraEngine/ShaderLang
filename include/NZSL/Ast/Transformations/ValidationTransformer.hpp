@@ -107,7 +107,7 @@ namespace nzsl::Ast
 			bool TransformModule(Module& module, TransformerContext& context, std::string* error, Nz::FunctionRef<void()> postCallback = nullptr) override;
 
 			void ValidateConcreteType(const ExpressionType& exprType, const SourceLocation& sourceLocation);
-			void ValidateIntrinsicParameters(IntrinsicExpression& node);
+			template<typename T> void ValidateIntrinsicParameters(IntrinsicExpression& node, const T& intrinsicData);
 			ValidationResult ValidateIntrinsicParamMatchingType(IntrinsicExpression& node, std::size_t from, std::size_t to);
 			ValidationResult ValidateIntrinsicParamMatchingVecComponent(IntrinsicExpression& node, std::size_t from, std::size_t to);
 			template<typename F> ValidationResult ValidateIntrinsicParameter(IntrinsicExpression& node, F&& func, std::size_t index);

@@ -927,6 +927,28 @@ fn main()
 	let a = tex.Sample(vec2[i32](0, 0));
 }
 )"), "(12,21 -> 35): CIntrinsicExpectedType error: expected type floating-point vector of 2 components for parameter #1, got vec2[i32]");
+
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.1")]
+module;
+
+struct Input
+{
+	value: f32
+}
+
+fn foo(input: Input) -> f32
+{
+	return ddx(input.value);
+}
+
+[entry(vert)]
+fn main(input: Input)
+{
+	foo(input);
+}
+)"), "(12,9 -> 24): CInvalidStageDependency error: this is only valid in the fragment stage but this functions gets called in the vertex stage");
+
 		}
 
 		/************************************************************************/
