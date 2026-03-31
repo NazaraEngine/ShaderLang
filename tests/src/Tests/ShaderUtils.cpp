@@ -1,5 +1,6 @@
 #include <Tests/ShaderUtils.hpp>
 #include <NZSL/GlslWriter.hpp>
+#include <NZSL/HlslWriter.hpp>
 #include <NZSL/LangWriter.hpp>
 #include <NZSL/Parser.hpp>
 #include <NZSL/SpirV/SpirvPrinter.hpp>
@@ -345,6 +346,83 @@ void ExpectGLSL(nzsl::Ast::Module& shaderModule, std::string_view expectedOutput
 	}
 
 	ExpectGLSL(entryShaderStage.value(), shaderModule, expectedOutput, options, env, testShaderCompilation);
+}
+
+void ExpectHLSL(nzsl::ShaderStageType stageType, nzsl::Ast::Module& shaderModule, std::string_view expectedOutput, const nzsl::BackendParameters& options, const nzsl::HlslWriter::Environment& env)
+{
+	NAZARA_USE_ANONYMOUS_NAMESPACE
+
+	nzsl::Ast::ModulePtr moduleClone = nzsl::Ast::Clone(shaderModule);
+
+	std::string expectedSource = SanitizeSource(expectedOutput);
+
+	std::string_view stageName;
+	switch (stageType)
+	{
+		case nzsl::ShaderStageType::Compute: stageName = "compute"; break;
+		case nzsl::ShaderStageType::Fragment: stageName = "fragment"; break;
+		case nzsl::ShaderStageType::Vertex: stageName = "vertex"; break;
+	}
+
+	DYNAMIC_SECTION("Generating HLSL for " << stageName << " stage")
+	{
+		nzsl::HlslWriter writer;
+		writer.SetEnv(env);
+
+		nzsl::HlslWriter::Output output = writer.Generate(stageType, *moduleClone, options);
+		std::string outputCode = SanitizeSource(output.code);
+
+		SECTION("Validating expected code")
+		{
+			if (outputCode.find(expectedSource) == std::string::npos)
+				HandleSourceError("HLSL", expectedSource, outputCode);
+		}
+	}
+}
+
+void ExpectHLSL(nzsl::Ast::Module& shaderModule, std::string_view expectedOutput, const nzsl::BackendParameters& options, const nzsl::HlslWriter::Environment& env)
+{
+	nzsl::Ast::ReflectVisitor::Callbacks callbacks;
+	std::vector<nzsl::ShaderStageType> entryStages;
+	callbacks.onEntryPointDeclaration = [&](nzsl::ShaderStageType stageType, const std::string& /*functionName*/)
+	{
+		entryStages.push_back(stageType);
+	};
+
+	nzsl::Ast::ReflectVisitor reflectVisitor;
+	reflectVisitor.Reflect(*shaderModule.rootNode, callbacks);
+
+	{
+		INFO("no entry point found");
+		REQUIRE(!entryStages.empty());
+	}
+
+	if (entryStages.size() == 1)
+	{
+		ExpectHLSL(entryStages.front(), shaderModule, expectedOutput, options, env);
+	}
+	else
+	{
+		DYNAMIC_SECTION("Generating HLSL (multi-entry)")
+		{
+			NAZARA_USE_ANONYMOUS_NAMESPACE
+
+			nzsl::Ast::ModulePtr moduleClone = nzsl::Ast::Clone(shaderModule);
+
+			nzsl::HlslWriter writer;
+			writer.SetEnv(env);
+
+			nzsl::HlslWriter::Output output = writer.Generate(*moduleClone, options);
+			std::string outputCode = SanitizeSource(output.code);
+			std::string expectedSource = SanitizeSource(expectedOutput);
+
+			SECTION("Validating expected code")
+			{
+				if (outputCode.find(expectedSource) == std::string::npos)
+					HandleSourceError("HLSL", expectedSource, outputCode);
+			}
+		}
+	}
 }
 
 void ExpectNZSL(const nzsl::Ast::Module& shaderModule, std::string_view expectedOutput)
