@@ -87,6 +87,7 @@ namespace nzsl
 			template<typename... Args> void Append(const std::variant<Args...>& param);
 			void AppendArray(const Ast::ExpressionType& varType, const std::string& varName = {});
 			void AppendComment(std::string_view section);
+			void AppendHelperFunctions();
 			void AppendCommentSection(std::string_view section);
 			void AppendFunctionDeclaration(const Ast::DeclareFunctionStatement& node, const std::string& nameOverride, bool forward = false);
 			void AppendHeader();

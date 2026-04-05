@@ -184,6 +184,18 @@ namespace nzsl
 			void Visit(Ast::IntrinsicExpression& node) override
 			{
 				RecursiveVisitor::Visit(node);
+
+				if (node.intrinsic == Ast::IntrinsicType::MatrixInverse)
+				{
+					assert(!node.parameters.empty());
+					const Ast::ExpressionType* argType = GetExpressionType(*node.parameters.front());
+					if (argType && std::holds_alternative<Ast::MatrixType>(*argType))
+					{
+						const Ast::MatrixType& matType = std::get<Ast::MatrixType>(*argType);
+						if (std::find(requiredInverseMatrixTypes.begin(), requiredInverseMatrixTypes.end(), matType) == requiredInverseMatrixTypes.end())
+							requiredInverseMatrixTypes.push_back(matType);
+					}
+				}
 			}
 
 			struct FunctionData
@@ -204,6 +216,7 @@ namespace nzsl
 			Nz::Bitset<> usedStructs;
 			Ast::DeclareFunctionStatement* entryPoint = nullptr;
 			std::vector<Ast::DeclareFunctionStatement*> entryPoints;
+			std::vector<Ast::MatrixType> requiredInverseMatrixTypes;
 		};
 	}
 
@@ -311,6 +324,7 @@ namespace nzsl
 
 		// Code generation
 		AppendHeader();
+		AppendHelperFunctions();
 
 		for (const auto& importedModule : module.importedModules)
 		{
@@ -855,6 +869,89 @@ namespace nzsl
 		if (m_currentState->backendParameters.debugLevel >= DebugLevel::Minimal)
 		{
 			AppendLine("// header end");
+			AppendLine();
+		}
+	}
+
+	void HlslWriter::AppendHelperFunctions()
+	{
+		for (const Ast::MatrixType& matType : m_currentState->previsitor.requiredInverseMatrixTypes)
+		{
+			assert(matType.columnCount == matType.rowCount);
+			std::string_view scalarName;
+			std::string_view oneLiteral;
+			switch (matType.type)
+			{
+				case Ast::PrimitiveType::Float32: scalarName = "float";  oneLiteral = "1.0f"; break;
+				case Ast::PrimitiveType::Float64: scalarName = "double"; oneLiteral = "1.0";  break;
+				default: throw std::runtime_error("unsupported scalar type for matrix inverse helper");
+			}
+
+			std::string matTypeName = fmt::format("{}{}x{}", scalarName, matType.columnCount, matType.rowCount);
+
+			AppendCommentSection(fmt::format("Matrix inverse helper for {}", matTypeName));
+			Append(matTypeName, " _nzsl_inverse(", matTypeName, " m)");
+			AppendLine();
+			EnterScope();
+
+			std::size_t n = matType.columnCount;
+
+			// M^-1 = adj(M) / det(M)
+			// adj(M)[i][j] = (-1)^(i+j) * det(minor removing row j, col i)
+			AppendLine(scalarName, " det = determinant(m);");
+			AppendLine(scalarName, " invDet = ", oneLiteral, " / det;");
+			AppendLine(matTypeName, " r;");
+
+			for (std::size_t i = 0; i < n; i++)
+			{
+				for (std::size_t j = 0; j < n; j++)
+				{
+					std::vector<std::size_t> subRows, subCols;
+					for (std::size_t k = 0; k < n; k++)
+					{
+						if (k != j) subRows.push_back(k);
+						if (k != i) subCols.push_back(k);
+					}
+
+					bool negative = (i + j) % 2 == 1;
+
+					if (n == 2)
+					{
+						// 1x1 minor is a single element
+						std::string elem = fmt::format("m[{}][{}]", subRows[0], subCols[0]);
+						if (negative)
+							AppendLine("r[", i, "][", j, "] = -(", elem, ") * invDet;");
+						else
+							AppendLine("r[", i, "][", j, "] = ", elem, " * invDet;");
+					}
+					else
+					{
+						// Build (n-1)x(n-1) submatrix and use HLSL determinant()
+						std::string subMatType = fmt::format("{}{}x{}", scalarName, n - 1, n - 1);
+						std::string subMatExpr = subMatType + "(";
+						bool first = true;
+						for (std::size_t r : subRows)
+						{
+							for (std::size_t c : subCols)
+							{
+								if (!first) subMatExpr += ", ";
+								subMatExpr += fmt::format("m[{}][{}]", r, c);
+								first = false;
+							}
+						}
+						subMatExpr += ")";
+
+						if (negative)
+							AppendLine("r[", i, "][", j, "] = -determinant(", subMatExpr, ") * invDet;");
+						else
+							AppendLine("r[", i, "][", j, "] = determinant(", subMatExpr, ") * invDet;");
+					}
+				}
+			}
+
+			AppendLine("return r;");
+
+			LeaveScope();
 			AppendLine();
 		}
 	}
@@ -1610,7 +1707,7 @@ namespace nzsl
 			case Ast::IntrinsicType::Log:                      Append("log");          break;
 			case Ast::IntrinsicType::Log2:                     Append("log2");         break;
 			case Ast::IntrinsicType::InverseSqrt:              Append("rsqrt");        break;
-			case Ast::IntrinsicType::MatrixInverse:            Append("inverse_");     break; //< HLSL has no built-in inverse, user must provide one or we emit a helper
+			case Ast::IntrinsicType::MatrixInverse:            Append("_nzsl_inverse"); break;
 			case Ast::IntrinsicType::MatrixTranspose:          Append("transpose");    break;
 			case Ast::IntrinsicType::Max:                      Append("max");          break;
 			case Ast::IntrinsicType::Min:                      Append("min");          break;
