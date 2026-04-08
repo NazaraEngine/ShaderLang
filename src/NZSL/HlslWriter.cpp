@@ -2413,7 +2413,14 @@ namespace nzsl
 				if (member.interp.HasValue())
 					Append(member.interp.GetResultingValue(), " ");
 
-				AppendVariableDeclaration(member.type.GetResultingValue(), member.name);
+				// SV_VertexID and SV_InstanceID must be uint in HLSL regardless of NZSL type
+				bool forceUint = member.builtin.HasValue() &&
+				                 (member.builtin.GetResultingValue() == Ast::BuiltinEntry::VertexIndex ||
+				                  member.builtin.GetResultingValue() == Ast::BuiltinEntry::InstanceIndex);
+				if (forceUint)
+					Append("uint ", member.name);
+				else
+					AppendVariableDeclaration(member.type.GetResultingValue(), member.name);
 				bool isFragOutput = m_currentState->previsitor.fragmentOutputStructIndex.has_value()
 				                 && *node.structIndex == *m_currentState->previsitor.fragmentOutputStructIndex;
 				AppendSemantic(member, isFragOutput);

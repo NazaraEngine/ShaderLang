@@ -15,6 +15,13 @@
 #include <NZSL/Ast/Transformations/LiteralTransformer.hpp>
 #include <NZSL/Ast/Cloner.hpp>
 #include <sstream>
+#ifdef NZSL_HAS_DXC
+#ifdef _WIN32
+#define NOMINMAX
+#include <windows.h>
+#endif
+#include <dxcapi.h>
+#endif
 
 namespace NAZARA_ANONYMOUS_NAMESPACE
 {
@@ -209,6 +216,74 @@ namespace NAZARA_ANONYMOUS_NAMESPACE
 		return std::string_view(&fullCode[prefixIndex], suffixIndex - prefixIndex);
 	}
 
+#ifdef NZSL_HAS_DXC
+	std::wstring GetHlslProfile(nzsl::ShaderStageType stage)
+	{
+		switch (stage)
+		{
+			case nzsl::ShaderStageType::Compute:  return L"cs_6_6";
+			case nzsl::ShaderStageType::Fragment: return L"ps_6_6";
+			case nzsl::ShaderStageType::Vertex:   return L"vs_6_6";
+		}
+		throw std::runtime_error("unknown stage");
+	}
+
+	void ValidateHLSLWithDXC(const std::string& code, nzsl::ShaderStageType stage, const std::string& entryPoint)
+	{
+		IDxcUtils* utils = nullptr;
+		IDxcCompiler3* compiler = nullptr;
+		DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&utils));
+		DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&compiler));
+
+		if (!utils || !compiler)
+		{
+			if (utils)
+				utils->Release();
+			if (compiler)
+				compiler->Release();
+			INFO("Failed to initialize DXC");
+			REQUIRE(false);
+			return;
+		}
+
+		DxcBuffer sourceBuffer = { code.c_str(), code.size(), DXC_CP_UTF8 };
+
+		std::wstring profile = GetHlslProfile(stage);
+		std::wstring wEntry(entryPoint.begin(), entryPoint.end());
+
+		std::vector<LPCWSTR> args = { L"-T", profile.c_str(), L"-E", wEntry.c_str(), L"-HV", L"2021" };
+
+		IDxcResult* result = nullptr;
+		HRESULT hr = compiler->Compile(&sourceBuffer, args.data(), static_cast<UINT32>(args.size()), nullptr, IID_PPV_ARGS(&result));
+		if (FAILED(hr) || !result)
+		{
+			INFO("DXC Compile call failed");
+			REQUIRE(false);
+			return;
+		}
+
+		HRESULT status = S_OK;
+		result->GetStatus(&status);
+		if (FAILED(status))
+		{
+			IDxcBlobUtf8* errors = nullptr;
+			result->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&errors), nullptr);
+			std::string errorMsg = errors ? static_cast<const char*>(errors->GetBufferPointer()) : "unknown error";
+			if (errors)
+				errors->Release();
+			result->Release();
+			compiler->Release();
+			utils->Release();
+			INFO("full HLSL output:\n" << code << "\nDXC error:\n" << errorMsg);
+			REQUIRE(false);
+			return;
+		}
+		result->Release();
+		compiler->Release();
+		utils->Release();
+	}
+#endif
+
 	void HandleSourceError(std::string_view lang, std::string_view expectedCode, std::string_view outputCode)
 	{
 		constexpr std::size_t PartialMatchLength = 30;
@@ -364,7 +439,7 @@ void ExpectHLSL(nzsl::ShaderStageType stageType, nzsl::Ast::Module& shaderModule
 		case nzsl::ShaderStageType::Vertex: stageName = "vertex"; break;
 	}
 
-	DYNAMIC_SECTION("Generating HLSL for " << stageName << " stage")
+	DYNAMIC_SECTION("Generating HLSL for " << stageName << " stage (" << CappedView(expectedOutput, 30) << ")")
 	{
 		nzsl::HlslWriter writer;
 		writer.SetEnv(env);
@@ -377,16 +452,25 @@ void ExpectHLSL(nzsl::ShaderStageType stageType, nzsl::Ast::Module& shaderModule
 			if (outputCode.find(expectedSource) == std::string::npos)
 				HandleSourceError("HLSL", expectedSource, outputCode);
 		}
+
+#ifdef NZSL_HAS_DXC
+		SECTION("Validating full HLSL code (using DXC)")
+		{
+			ValidateHLSLWithDXC(outputCode, stageType, "main");
+		}
+#endif
 	}
 }
 
 void ExpectHLSL(nzsl::Ast::Module& shaderModule, std::string_view expectedOutput, const nzsl::BackendParameters& options, const nzsl::HlslWriter::Environment& env)
 {
+	struct EntryInfo { nzsl::ShaderStageType stage; std::string name; };
+	std::vector<EntryInfo> entryPoints;
+
 	nzsl::Ast::ReflectVisitor::Callbacks callbacks;
-	std::vector<nzsl::ShaderStageType> entryStages;
-	callbacks.onEntryPointDeclaration = [&](nzsl::ShaderStageType stageType, const std::string& /*functionName*/)
+	callbacks.onEntryPointDeclaration = [&](nzsl::ShaderStageType stageType, const std::string& functionName)
 	{
-		entryStages.push_back(stageType);
+		entryPoints.push_back({ stageType, functionName });
 	};
 
 	nzsl::Ast::ReflectVisitor reflectVisitor;
@@ -394,16 +478,16 @@ void ExpectHLSL(nzsl::Ast::Module& shaderModule, std::string_view expectedOutput
 
 	{
 		INFO("no entry point found");
-		REQUIRE(!entryStages.empty());
+		REQUIRE(!entryPoints.empty());
 	}
 
-	if (entryStages.size() == 1)
+	if (entryPoints.size() == 1)
 	{
-		ExpectHLSL(entryStages.front(), shaderModule, expectedOutput, options, env);
+		ExpectHLSL(entryPoints.front().stage, shaderModule, expectedOutput, options, env);
 	}
 	else
 	{
-		DYNAMIC_SECTION("Generating HLSL (multi-entry)")
+			DYNAMIC_SECTION("Generating HLSL (multi-entry) " << CappedView(expectedOutput, 30))
 		{
 			NAZARA_USE_ANONYMOUS_NAMESPACE
 
@@ -421,6 +505,14 @@ void ExpectHLSL(nzsl::Ast::Module& shaderModule, std::string_view expectedOutput
 				if (outputCode.find(expectedSource) == std::string::npos)
 					HandleSourceError("HLSL", expectedSource, outputCode);
 			}
+
+#ifdef NZSL_HAS_DXC
+			SECTION("Validating full HLSL code (using DXC)")
+			{
+				for (const auto& ep : entryPoints)
+					ValidateHLSLWithDXC(outputCode, ep.stage, ep.name);
+			}
+#endif
 		}
 	}
 }
