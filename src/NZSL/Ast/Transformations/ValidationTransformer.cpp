@@ -1496,6 +1496,9 @@ namespace nzsl::Ast
 	template<typename T>
 	void ValidationTransformer::ValidateIntrinsicParameters(IntrinsicExpression& node, const T& intrinsicData)
 	{
+		if (node.parameters.size() != intrinsicData.nonConstraintParameterCount)
+			throw CompilerIntrinsicExpectedParameterCountError{ node.sourceLocation, Nz::SafeCast<std::uint32_t>(intrinsicData.nonConstraintParameterCount), intrinsicData.functionName, Nz::SafeCast<std::uint32_t>(node.parameters.size()) };
+
 		std::optional<std::size_t> unresolvedParameter;
 
 		std::size_t paramIndex = 0;
@@ -2331,9 +2334,6 @@ namespace nzsl::Ast
 				}
 			}
 		}
-
-		if (node.parameters.size() != paramIndex)
-			throw CompilerIntrinsicExpectedParameterCountError{ node.sourceLocation, Nz::SafeCast<std::uint32_t>(paramIndex) };
 
 		if (unresolvedParameter && !m_context->partialCompilation)
 			throw CompilerIntrinsicUnresolvedParameterError{ node.parameters[*unresolvedParameter]->sourceLocation, *unresolvedParameter };

@@ -150,7 +150,9 @@ namespace nzsl::LangData
 			SameType,                     // Checks that all types since the last SameTypeBarrier (or first parameter) are the same (note that literal types are taken into account, i.e. FloatLiteral is compatible with f32 and f64)
 			SameTypeBarrier,
 			SameVecComponentCount,        // Checks that all vectors since the last SameVecComponentCountBarrier (or first parameter) have the same component count
-			SameVecComponentCountBarrier
+			SameVecComponentCountBarrier,
+
+			ConstraintStart = SameType
 		};
 
 		enum class ReturnType
@@ -172,6 +174,7 @@ namespace nzsl::LangData
 			std::string_view functionName; // empty if not a function
 			ReturnType returnType;
 			const ParameterType* parameterTypes;
+			std::size_t nonConstraintParameterCount;
 			std::size_t parameterCount;
 			std::optional<ShaderStageType> requiredStage;
 		};
@@ -188,7 +191,16 @@ namespace nzsl::LangData
 		template<ParameterType... Types>
 		constexpr IntrinsicData Build(std::string_view name, ReturnType retType, Params<Types...>, std::optional<ShaderStageType> requiredStage = std::nullopt)
 		{
-			return { name, retType, IntrinsicFuncHelper<Types...>::parameterArray.data(), IntrinsicFuncHelper<Types...>::parameterArray.size(), requiredStage };
+			constexpr auto& parameterArray = IntrinsicFuncHelper<Types...>::parameterArray;
+
+			std::size_t nonConstraintParameterCount = 0;
+			for (ParameterType parameterType : parameterArray)
+			{
+				if (parameterType < ParameterType::ConstraintStart)
+					nonConstraintParameterCount++;
+			}
+
+			return { name, retType, parameterArray.data(), nonConstraintParameterCount, parameterArray.size(), requiredStage };
 		}
 
 		constexpr auto data = frozen::make_unordered_map<Ast::IntrinsicType, IntrinsicData>({

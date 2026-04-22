@@ -893,6 +893,26 @@ module;
 
 fn main()
 {
+	let a = max();
+}
+)"), "(7,10 -> 14): CIntrinsicExpectedParameterCount error: expected 2 parameter(s) for max intrinsic, got 0");
+
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.1")]
+module;
+
+fn main()
+{
+	let a = min(1.0, 2.0, 3.0);
+}
+)"), "(7,10 -> 27): CIntrinsicExpectedParameterCount error: expected 2 parameter(s) for min intrinsic, got 3");
+
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.1")]
+module;
+
+fn main()
+{
 	let a = mat2x3[f32](1.0, 2.0, 3.0, 4.0, 5.0, 6.0);
 	let b = inverse(a);
 }

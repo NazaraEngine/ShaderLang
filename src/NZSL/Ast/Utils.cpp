@@ -181,6 +181,9 @@ namespace nzsl::Ast
 
 		const auto& intrinsicData = intrinsicIt->second;
 
+		if (intrinsicExpr.parameters.size() != intrinsicData.nonConstraintParameterCount)
+			throw CompilerIntrinsicExpectedParameterCountError{ intrinsicExpr.sourceLocation, Nz::SafeCast<std::uint32_t>(intrinsicData.nonConstraintParameterCount), intrinsicData.functionName, Nz::SafeCast<std::uint32_t>(intrinsicExpr.parameters.size()) };
+
 		std::array<std::optional<ExpressionType>, 2> parameterTypes;
 		if (intrinsicData.returnType == ReturnType::Param0Type || intrinsicData.returnType == ReturnType::Param1Type)
 		{
