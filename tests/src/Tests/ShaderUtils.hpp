@@ -4,6 +4,7 @@
 #define NAZARA_UNITTESTS_SHADER_SHADERUTILS_HPP
 
 #include <NZSL/GlslWriter.hpp>
+#include <NZSL/HlslWriter.hpp>
 #include <NZSL/SpirvWriter.hpp>
 #include <NZSL/Ast/Module.hpp>
 #include <NZSL/Ast/Transformations/BindingResolverTransformer.hpp>
@@ -32,6 +33,8 @@ struct ResolveOptions
 
 void ExpectGLSL(nzsl::ShaderStageType stageType, nzsl::Ast::Module& shader, std::string_view expectedOutput, const nzsl::BackendParameters& options = {}, const nzsl::GlslWriter::Environment& env = {}, bool testShaderCompilation = true);
 void ExpectGLSL(nzsl::Ast::Module& shader, std::string_view expectedOutput, const nzsl::BackendParameters& options = {}, const nzsl::GlslWriter::Environment& env = {}, bool testShaderCompilation = true);
+void ExpectHLSL(nzsl::ShaderStageType stageType, nzsl::Ast::Module& shader, std::string_view expectedOutput, const nzsl::BackendParameters& options = {}, const nzsl::HlslWriter::Environment& env = {});
+void ExpectHLSL(nzsl::Ast::Module& shader, std::string_view expectedOutput, const nzsl::BackendParameters& options = {}, const nzsl::HlslWriter::Environment& env = {});
 void ExpectNZSL(const nzsl::Ast::Module& shader, std::string_view expectedOutput);
 void ExpectSPIRV(nzsl::Ast::Module& shader, std::string_view expectedOutput, const nzsl::BackendParameters& options = {}, const nzsl::SpirvWriter::Environment& env = {}, bool outputParameter = false, const spvtools::ValidatorOptions& validatorOptions = {});
 

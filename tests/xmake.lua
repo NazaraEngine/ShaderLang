@@ -9,6 +9,10 @@ if has_config("tests") then
 	add_requires("catch2 3", "spirv-tools", "tiny-process-library")
 	add_requires("glslang[tools]", { configs = { rtti = has_config("ubsan") } }) -- ubsan requires rtti
 
+	if is_plat("windows", "linux") then
+		add_requires("directxshadercompiler", { optional = true })
+	end
+
 	add_includedirs("src")
 
 	target("UnitTests", function ()
@@ -38,6 +42,11 @@ if has_config("tests") then
 		if not has_config("with_nzsla", "with_nzslc") then
 			remove_headerfiles("src/Tests/ToolTests.hpp")
 			remove_files("src/Tests/ToolTests.cpp")
+		end
+
+		if is_plat("windows", "linux") then
+			add_packages("directxshadercompiler")
+			add_defines("NZSL_HAS_DXC")
 		end
 	end)
 end
