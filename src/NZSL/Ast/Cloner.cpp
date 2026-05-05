@@ -14,12 +14,16 @@ namespace nzsl::Ast
 		const_cast<Expression&>(expr).Visit(*this); //< won't be used for writing
 
 		assert(m_statementStack.empty() && m_expressionStack.size() == 1);
-		return PopExpression();
+		ExpressionPtr cloneExpression = PopExpression();
+		cloneExpression->cachedExpressionType = expr.cachedExpressionType;
+		cloneExpression->sourceLocation = expr.sourceLocation;
+
+		return cloneExpression;
 	}
 
 	ModulePtr Cloner::Clone(const Module& module)
 	{
-		MultiStatementPtr rootNode = Nz::StaticUniquePointerCast<MultiStatement>(Clone(*module.rootNode));
+		MultiStatementPtr rootNode = Nz::StaticUniquePointerCast<MultiStatement>(CloneStatement(*module.rootNode));
 		std::vector<Module::ImportedModule> importedModules(module.importedModules.size());
 		for (std::size_t i = 0; i < importedModules.size(); ++i)
 		{
@@ -35,19 +39,20 @@ namespace nzsl::Ast
 		const_cast<Statement&>(statement).Visit(*this); //< won't be used for writing
 
 		assert(m_expressionStack.empty() && m_statementStack.size() == 1);
-		return PopStatement();
+		StatementPtr cloneStatement = PopStatement();
+		cloneStatement->sourceLocation = statement.sourceLocation;
+
+		return cloneStatement;
 	}
 
 	ExpressionPtr Cloner::CloneExpression(Expression& expr)
 	{
-		expr.Visit(*this);
-		return PopExpression();
+		return Clone(expr);
 	}
 
 	StatementPtr Cloner::CloneStatement(Statement& statement)
 	{
-		statement.Visit(*this);
-		return PopStatement();
+		return Clone(statement);
 	}
 
 	ExpressionValue<ExpressionType> Cloner::CloneType(const ExpressionValue<ExpressionType>& exprType)
@@ -79,17 +84,12 @@ namespace nzsl::Ast
 
 		clone->elseStatement = CloneStatement(node.elseStatement);
 
-		clone->sourceLocation = node.sourceLocation;
-
 		return clone;
 	}
 
-	StatementPtr Cloner::Clone(BreakStatement& node)
+	StatementPtr Cloner::Clone(BreakStatement& /*node*/)
 	{
-		auto clone = std::make_unique<BreakStatement>();
-		clone->sourceLocation = node.sourceLocation;
-
-		return clone;
+		return std::make_unique<BreakStatement>();
 	}
 
 	StatementPtr Cloner::Clone(ConditionalStatement& node)
@@ -98,17 +98,12 @@ namespace nzsl::Ast
 		clone->condition = CloneExpression(node.condition);
 		clone->statement = CloneStatement(node.statement);
 
-		clone->sourceLocation = node.sourceLocation;
-
 		return clone;
 	}
 
-	StatementPtr Cloner::Clone(ContinueStatement& node)
+	StatementPtr Cloner::Clone(ContinueStatement& /*node*/)
 	{
-		auto clone = std::make_unique<ContinueStatement>();
-		clone->sourceLocation = node.sourceLocation;
-
-		return clone;
+		return std::make_unique<ContinueStatement>();
 	}
 
 	StatementPtr Cloner::Clone(DeclareAliasStatement& node)
@@ -117,8 +112,6 @@ namespace nzsl::Ast
 		clone->aliasIndex = node.aliasIndex;
 		clone->name = node.name;
 		clone->expression = CloneExpression(node.expression);
-
-		clone->sourceLocation = node.sourceLocation;
 
 		return clone;
 	}
@@ -131,8 +124,6 @@ namespace nzsl::Ast
 		clone->name = node.name;
 		clone->type = Clone(node.type);
 		clone->expression = CloneExpression(node.expression);
-
-		clone->sourceLocation = node.sourceLocation;
 
 		return clone;
 	}
@@ -158,8 +149,6 @@ namespace nzsl::Ast
 
 			cloneVar.sourceLocation = var.sourceLocation;
 		}
-
-		clone->sourceLocation = node.sourceLocation;
 
 		return clone;
 	}
@@ -192,8 +181,6 @@ namespace nzsl::Ast
 		for (auto& statement : node.statements)
 			clone->statements.push_back(CloneStatement(statement));
 
-		clone->sourceLocation = node.sourceLocation;
-
 		return clone;
 	}
 
@@ -204,8 +191,6 @@ namespace nzsl::Ast
 		clone->optIndex = node.optIndex;
 		clone->optName = node.optName;
 		clone->optType = Clone(node.optType);
-
-		clone->sourceLocation = node.sourceLocation;
 
 		return clone;
 	}
@@ -235,8 +220,6 @@ namespace nzsl::Ast
 			cloneMember.tag = member.tag;
 		}
 
-		clone->sourceLocation = node.sourceLocation;
-
 		return clone;
 	}
 
@@ -248,25 +231,18 @@ namespace nzsl::Ast
 		clone->varName = node.varName;
 		clone->varType = Clone(node.varType);
 
-		clone->sourceLocation = node.sourceLocation;
-
 		return clone;
 	}
 
-	StatementPtr Cloner::Clone(DiscardStatement& node)
+	StatementPtr Cloner::Clone(DiscardStatement& /*node*/)
 	{
-		auto clone = std::make_unique<DiscardStatement>();
-		clone->sourceLocation = node.sourceLocation;
-
-		return clone;
+		return std::make_unique<DiscardStatement>();
 	}
 
 	StatementPtr Cloner::Clone(ExpressionStatement& node)
 	{
 		auto clone = std::make_unique<ExpressionStatement>();
 		clone->expression = CloneExpression(node.expression);
-
-		clone->sourceLocation = node.sourceLocation;
 
 		return clone;
 	}
@@ -282,8 +258,6 @@ namespace nzsl::Ast
 		clone->varIndex = node.varIndex;
 		clone->varName = node.varName;
 
-		clone->sourceLocation = node.sourceLocation;
-
 		return clone;
 	}
 
@@ -296,8 +270,6 @@ namespace nzsl::Ast
 		clone->varIndex = node.varIndex;
 		clone->varName = node.varName;
 
-		clone->sourceLocation = node.sourceLocation;
-
 		return clone;
 	}
 
@@ -307,8 +279,6 @@ namespace nzsl::Ast
 		clone->identifiers = node.identifiers;
 		clone->moduleName = node.moduleName;
 		clone->moduleIdentifier = node.moduleIdentifier;
-
-		clone->sourceLocation = node.sourceLocation;
 
 		return clone;
 	}
@@ -320,26 +290,18 @@ namespace nzsl::Ast
 		for (auto& statement : node.statements)
 			clone->statements.push_back(CloneStatement(statement));
 
-		clone->sourceLocation = node.sourceLocation;
-
 		return clone;
 	}
 
-	StatementPtr Cloner::Clone(NoOpStatement& node)
+	StatementPtr Cloner::Clone(NoOpStatement& /*node*/)
 	{
-		auto clone = std::make_unique<NoOpStatement>();
-
-		clone->sourceLocation = node.sourceLocation;
-
-		return clone;
+		return std::make_unique<NoOpStatement>();
 	}
 
 	StatementPtr Cloner::Clone(ReturnStatement& node)
 	{
 		auto clone = std::make_unique<ReturnStatement>();
 		clone->returnExpr = CloneExpression(node.returnExpr);
-
-		clone->sourceLocation = node.sourceLocation;
 
 		return clone;
 	}
@@ -348,8 +310,6 @@ namespace nzsl::Ast
 	{
 		auto clone = std::make_unique<ScopedStatement>();
 		clone->statement = CloneStatement(node.statement);
-
-		clone->sourceLocation = node.sourceLocation;
 
 		return clone;
 	}
@@ -361,8 +321,6 @@ namespace nzsl::Ast
 		clone->body = CloneStatement(node.body);
 		clone->unroll = Clone(node.unroll);
 
-		clone->sourceLocation = node.sourceLocation;
-
 		return clone;
 	}
 
@@ -372,9 +330,6 @@ namespace nzsl::Ast
 		clone->fieldIndex = node.fieldIndex;
 		clone->expr = CloneExpression(node.expr);
 
-		clone->cachedExpressionType = node.cachedExpressionType;
-		clone->sourceLocation = node.sourceLocation;
-
 		return clone;
 	}
 
@@ -383,9 +338,6 @@ namespace nzsl::Ast
 		auto clone = std::make_unique<AccessIdentifierExpression>();
 		clone->identifiers = node.identifiers;
 		clone->expr = CloneExpression(node.expr);
-
-		clone->cachedExpressionType = node.cachedExpressionType;
-		clone->sourceLocation = node.sourceLocation;
 
 		return clone;
 	}
@@ -399,9 +351,6 @@ namespace nzsl::Ast
 		for (auto& parameter : node.indices)
 			clone->indices.push_back(CloneExpression(parameter));
 
-		clone->cachedExpressionType = node.cachedExpressionType;
-		clone->sourceLocation = node.sourceLocation;
-
 		return clone;
 	}
 
@@ -412,9 +361,6 @@ namespace nzsl::Ast
 		clone->left = CloneExpression(node.left);
 		clone->right = CloneExpression(node.right);
 
-		clone->cachedExpressionType = node.cachedExpressionType;
-		clone->sourceLocation = node.sourceLocation;
-
 		return clone;
 	}
 
@@ -424,9 +370,6 @@ namespace nzsl::Ast
 		clone->op = node.op;
 		clone->left = CloneExpression(node.left);
 		clone->right = CloneExpression(node.right);
-
-		clone->cachedExpressionType = node.cachedExpressionType;
-		clone->sourceLocation = node.sourceLocation;
 
 		return clone;
 	}
@@ -444,9 +387,6 @@ namespace nzsl::Ast
 			cloneParameter.semantic = parameter.semantic;
 		}
 
-		clone->cachedExpressionType = node.cachedExpressionType;
-		clone->sourceLocation = node.sourceLocation;
-
 		return clone;
 	}
 
@@ -461,9 +401,6 @@ namespace nzsl::Ast
 		for (auto& parameter : node.parameters)
 			clone->parameters.push_back(CloneExpression(parameter));
 
-		clone->cachedExpressionType = node.cachedExpressionType;
-		clone->sourceLocation = node.sourceLocation;
-
 		return clone;
 	}
 
@@ -476,9 +413,6 @@ namespace nzsl::Ast
 		for (const auto& exprPtr : node.expressions)
 			clone->expressions.push_back(CloneExpression(exprPtr));
 
-		clone->cachedExpressionType = node.cachedExpressionType;
-		clone->sourceLocation = node.sourceLocation;
-
 		return clone;
 	}
 
@@ -489,9 +423,6 @@ namespace nzsl::Ast
 		clone->falsePath = CloneExpression(node.falsePath);
 		clone->truePath = CloneExpression(node.truePath);
 
-		clone->cachedExpressionType = node.cachedExpressionType;
-		clone->sourceLocation = node.sourceLocation;
-
 		return clone;
 	}
 
@@ -499,9 +430,6 @@ namespace nzsl::Ast
 	{
 		auto clone = std::make_unique<ConstantArrayValueExpression>();
 		clone->values = node.values;
-
-		clone->cachedExpressionType = node.cachedExpressionType;
-		clone->sourceLocation = node.sourceLocation;
 
 		return clone;
 	}
@@ -511,9 +439,6 @@ namespace nzsl::Ast
 		auto clone = std::make_unique<ConstantValueExpression>();
 		clone->value = node.value;
 
-		clone->cachedExpressionType = node.cachedExpressionType;
-		clone->sourceLocation = node.sourceLocation;
-
 		return clone;
 	}
 
@@ -521,9 +446,6 @@ namespace nzsl::Ast
 	{
 		auto clone = std::make_unique<IdentifierExpression>();
 		clone->identifier = node.identifier;
-
-		clone->cachedExpressionType = node.cachedExpressionType;
-		clone->sourceLocation = node.sourceLocation;
 
 		return clone;
 	}
@@ -533,9 +455,6 @@ namespace nzsl::Ast
 		auto clone = std::make_unique<IdentifierValueExpression>();
 		clone->identifierIndex = node.identifierIndex;
 		clone->identifierType = node.identifierType;
-
-		clone->cachedExpressionType = node.cachedExpressionType;
-		clone->sourceLocation = node.sourceLocation;
 
 		return clone;
 	}
@@ -549,9 +468,6 @@ namespace nzsl::Ast
 		for (auto& parameter : node.parameters)
 			clone->parameters.push_back(CloneExpression(parameter));
 
-		clone->cachedExpressionType = node.cachedExpressionType;
-		clone->sourceLocation = node.sourceLocation;
-
 		return clone;
 	}
 
@@ -562,9 +478,6 @@ namespace nzsl::Ast
 		clone->components = node.components;
 		clone->expression = CloneExpression(node.expression);
 
-		clone->cachedExpressionType = node.cachedExpressionType;
-		clone->sourceLocation = node.sourceLocation;
-
 		return clone;
 	}
 
@@ -574,9 +487,6 @@ namespace nzsl::Ast
 		clone->type = node.type;
 		clone->typeConstant = node.typeConstant;
 
-		clone->cachedExpressionType = node.cachedExpressionType;
-		clone->sourceLocation = node.sourceLocation;
-
 		return clone;
 	}
 
@@ -585,9 +495,6 @@ namespace nzsl::Ast
 		auto clone = std::make_unique<UnaryExpression>();
 		clone->expression = CloneExpression(node.expression);
 		clone->op = node.op;
-
-		clone->cachedExpressionType = node.cachedExpressionType;
-		clone->sourceLocation = node.sourceLocation;
 
 		return clone;
 	}
