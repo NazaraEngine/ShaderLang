@@ -881,9 +881,9 @@ namespace nzsl
 
 		HandleStatementList(node.statements);
 
-		// Add implicit return
+		// Add implicit return / unreachable
 		if (!m_functionBlocks.back()->IsTerminated())
-			m_functionBlocks.back()->Append(SpirvOp::OpReturn);
+			m_functionBlocks.back()->Append(node.isReturning ? SpirvOp::OpUnreachable : SpirvOp::OpReturn);
 
 		for (std::unique_ptr<SpirvBlock>& block : m_functionBlocks)
 			m_instructions.AppendSection(*block);

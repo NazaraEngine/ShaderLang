@@ -30,6 +30,7 @@
 #include <NZSL/Ast/Transformations/LoopUnrollTransformer.hpp>
 #include <NZSL/Ast/Transformations/MatrixTransformer.hpp>
 #include <NZSL/Ast/Transformations/ResolveTransformer.hpp>
+#include <NZSL/Ast/Transformations/ReturningStatementTransformer.hpp>
 #include <NZSL/Ast/Transformations/StructAssignmentTransformer.hpp>
 #include <NZSL/Ast/Transformations/ValidationTransformer.hpp>
 #include <fmt/format.h>
@@ -993,6 +994,7 @@ namespace nzsl
 		});
 		executor.AddPass<Ast::BindingResolverTransformer>();
 		executor.AddPass<Ast::AliasTransformer>();
+		executor.AddPass<Ast::ReturningStatementTransformer>();
 	}
 
 	std::uint32_t SpirvWriter::AllocateResultId()

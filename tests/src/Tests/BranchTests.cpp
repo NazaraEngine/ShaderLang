@@ -463,4 +463,145 @@ OpLabel
 OpReturn
 OpFunctionEnd)");
 	}
+
+	WHEN("testing unreachable code")
+	{
+		// Regression test for a case where a OpReturn was wrongly emitted in a function conditionally returning a value or another
+		std::string_view nzslSource = R"(
+[nzsl_version("1.1")]
+module;
+
+struct inputStruct
+{
+	value: f32
+}
+
+external
+{
+	[set(0), binding(0)] data: uniform[inputStruct]
+}
+
+fn get_value() -> f32
+{
+	if (data.value >= 3.0)
+		return 3.0;
+	else if (data.value > 2.0)
+		return 2.0;
+	else if (data.value > 1.0)
+		return 1.0;
+	else
+		return 0.0;
+}
+
+[entry(frag)]
+fn main()
+{
+	let value = get_value();
+}
+)";
+
+		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
+		ResolveModule(*shaderModule);
+
+		ExpectGLSL(*shaderModule, R"(
+float get_value()
+{
+	if (data.value >= 3.0)
+	{
+		return 3.0;
+	}
+	else if (data.value > 2.0)
+	{
+		return 2.0;
+	}
+	else if (data.value > 1.0)
+	{
+		return 1.0;
+	}
+	else
+	{
+		return 0.0;
+	}
+
+}
+
+void main()
+{
+	float value = get_value();
+}
+)");
+
+		ExpectNZSL(*shaderModule, R"(
+fn get_value() -> f32
+{
+	if (data.value >= 3.0)
+	{
+		return 3.0;
+	}
+	else if (data.value > 2.0)
+	{
+		return 2.0;
+	}
+	else if (data.value > 1.0)
+	{
+		return 1.0;
+	}
+	else
+	{
+		return 0.0;
+	}
+
+}
+
+[entry(frag)]
+fn main()
+{
+	let value: f32 = get_value();
+}
+)");
+
+		ExpectSPIRV(*shaderModule, R"(
+OpFunction
+OpLabel
+OpAccessChain
+OpLoad
+OpFOrdGreaterThanEqual
+OpSelectionMerge
+OpBranchConditional
+OpLabel
+OpReturnValue
+OpLabel
+OpAccessChain
+OpLoad
+OpFOrdGreaterThan
+OpSelectionMerge
+OpBranchConditional
+OpLabel
+OpReturnValue
+OpLabel
+OpAccessChain
+OpLoad
+OpFOrdGreaterThan
+OpSelectionMerge
+OpBranchConditional
+OpLabel
+OpReturnValue
+OpLabel
+OpReturnValue
+OpLabel
+OpBranch
+OpLabel
+OpBranch
+OpLabel
+OpUnreachable
+OpFunctionEnd
+OpFunction
+OpLabel
+OpVariable
+OpFunctionCall
+OpStore
+OpReturn
+OpFunctionEnd)");
+	}
+
 }

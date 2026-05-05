@@ -254,6 +254,8 @@ namespace nzsl::Ast
 
 		Statement& operator=(const Statement&) = delete;
 		Statement& operator=(Statement&&) noexcept = default;
+
+		bool isReturning = false;
 	};
 
 	struct NZSL_API BranchStatement : Statement

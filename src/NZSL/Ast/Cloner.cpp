@@ -40,6 +40,7 @@ namespace nzsl::Ast
 
 		assert(m_expressionStack.empty() && m_statementStack.size() == 1);
 		StatementPtr cloneStatement = PopStatement();
+		cloneStatement->isReturning = statement.isReturning;
 		cloneStatement->sourceLocation = statement.sourceLocation;
 
 		return cloneStatement;

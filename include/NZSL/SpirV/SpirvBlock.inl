@@ -55,6 +55,7 @@ namespace nzsl
 			case SpirvOp::OpReturn:
 			case SpirvOp::OpReturnValue:
 			case SpirvOp::OpSwitch:
+			case SpirvOp::OpTerminateInvocation:
 			case SpirvOp::OpUnreachable:
 				return true;
 
