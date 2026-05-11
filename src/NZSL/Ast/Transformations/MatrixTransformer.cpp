@@ -22,17 +22,19 @@ namespace nzsl::Ast
 
 	auto MatrixTransformer::Transform(BinaryExpression&& binExpr) -> ExpressionTransformation
 	{
+		HandleChildren(binExpr);
+
 		if (!m_options->removeMatrixBinaryAddSub)
-			return VisitChildren{};
+			return DontVisitChildren{};
 
 		if (binExpr.op == BinaryType::Add || binExpr.op == BinaryType::Subtract)
 		{
-			const ExpressionType* leftExprType = GetExpressionType(*binExpr.left);
-			const ExpressionType* rightExprType = GetExpressionType(*binExpr.right);
-			if (IsMatrixType(*leftExprType) && IsMatrixType(*rightExprType))
+			const ExpressionType& leftExprType = *GetResolvedExpressionType(*binExpr.left);
+			const ExpressionType& rightExprType = *GetResolvedExpressionType(*binExpr.right);
+			if (IsMatrixType(leftExprType) && IsMatrixType(rightExprType))
 			{
-				const MatrixType& matrixType = std::get<MatrixType>(*leftExprType);
-				if (*leftExprType != *rightExprType)
+				const MatrixType& matrixType = std::get<MatrixType>(leftExprType);
+				if (leftExprType != rightExprType)
 					throw AstInternalError{ binExpr.sourceLocation, "expected matrices of the same type" };
 
 				// Since we're going to access both matrices multiples times, make sure we cache them into variables if required
@@ -61,7 +63,7 @@ namespace nzsl::Ast
 				}
 
 				// Build resulting matrix
-				auto result = ShaderBuilder::Cast(*leftExprType, std::move(columnExpressions));
+				auto result = ShaderBuilder::Cast(leftExprType, std::move(columnExpressions));
 				result->cachedExpressionType = matrixType;
 				result->sourceLocation = binExpr.sourceLocation;
 
@@ -72,18 +74,20 @@ namespace nzsl::Ast
 			}
 		}
 
-		return VisitChildren{};
+		return DontVisitChildren{};
 	}
 
 	auto MatrixTransformer::Transform(CastExpression&& castExpr) -> ExpressionTransformation
 	{
+		HandleChildren(castExpr);
+
 		if (!m_options->removeMatrixCast)
-			return VisitChildren{};
+			return DontVisitChildren{};
 
 		if (!castExpr.targetType.IsResultingValue())
 		{
 			if (m_context->partialCompilation)
-				return VisitChildren{};
+				return DontVisitChildren{};
 
 			throw CompilerConstantExpressionRequiredError{ castExpr.targetType.GetExpression()->sourceLocation };
 		}
@@ -92,141 +96,142 @@ namespace nzsl::Ast
 
 		const ExpressionType& resolvedTargetType = ResolveAlias(targetType);
 
-		if (IsMatrixType(resolvedTargetType))
+		if (!IsMatrixType(resolvedTargetType))
+			return DontVisitChildren{};
+
+		const MatrixType& targetMatrixType = std::get<MatrixType>(resolvedTargetType);
+
+		// Check if all types are known
+		for (std::size_t i = 0; i < castExpr.expressions.size(); ++i)
 		{
-			const MatrixType& targetMatrixType = std::get<MatrixType>(resolvedTargetType);
-
-			// Check if all types are known
-			for (std::size_t i = 0; i < castExpr.expressions.size(); ++i)
-			{
-				const ExpressionType* exprType = GetExpressionType(*castExpr.expressions[i]);
-				if (!exprType)
-					return VisitChildren{}; //< unresolved type
-			}
-
-			const ExpressionType& resolvedFrontExprType = *GetResolvedExpressionType(*castExpr.expressions.front());
-			bool isMatrixCast = IsMatrixType(resolvedFrontExprType);
-			if (isMatrixCast && std::get<MatrixType>(resolvedFrontExprType) == targetMatrixType)
-			{
-				// Nothing to do
-				return ReplaceExpression{ std::move(castExpr.expressions.front()) };
-			}
-
-			auto* variableDeclaration = DeclareVariable("matrix", targetType, castExpr.sourceLocation);
-
-			std::size_t variableIndex = *variableDeclaration->varIndex;
-
-			ExpressionPtr cachedDiagonalValue;
-
-			for (std::uint32_t i = 0; i < targetMatrixType.columnCount; ++i)
-			{
-				// temp[i]
-				auto columnExpr = ShaderBuilder::AccessIndex(ShaderBuilder::Variable(variableIndex, resolvedTargetType, castExpr.sourceLocation), ShaderBuilder::ConstantValue(i, castExpr.sourceLocation));
-				columnExpr->cachedExpressionType = VectorType{ targetMatrixType.rowCount, targetMatrixType.type };
-
-				// vector expression
-				ExpressionPtr vectorExpr;
-				std::size_t vectorComponentCount;
-				if (isMatrixCast)
-				{
-					if (!cachedDiagonalValue)
-						cachedDiagonalValue = CacheExpression(std::move(castExpr.expressions.front()));
-
-					const MatrixType& fromMatrixType = std::get<MatrixType>(resolvedFrontExprType);
-
-					// fromMatrix[i]
-					auto matrixColumnExpr = ShaderBuilder::AccessIndex(Clone(*cachedDiagonalValue), ShaderBuilder::ConstantValue(i, castExpr.sourceLocation));
-					matrixColumnExpr->cachedExpressionType = VectorType{ fromMatrixType.rowCount, fromMatrixType.type };
-
-					vectorExpr = std::move(matrixColumnExpr);
-					vectorComponentCount = fromMatrixType.rowCount;
-				}
-				else if (IsVectorType(resolvedFrontExprType))
-				{
-					// parameter #i
-					vectorExpr = std::move(castExpr.expressions[i]);
-					vectorComponentCount = std::get<VectorType>(*GetResolvedExpressionType(*vectorExpr)).componentCount;
-				}
-				else
-				{
-					assert(IsPrimitiveType(resolvedFrontExprType));
-
-					// Use a Cast expression to replace swizzle
-					std::vector<ExpressionPtr> expressions(targetMatrixType.rowCount);
-					SourceLocation location;
-					for (std::size_t j = 0; j < targetMatrixType.rowCount; ++j)
-					{
-						if (castExpr.expressions.size() == 1) //< diagonal value
-						{
-							if (!cachedDiagonalValue)
-								cachedDiagonalValue = CacheExpression(std::move(castExpr.expressions.front()));
-
-							if (i == j)
-								expressions[j] = Clone(*cachedDiagonalValue);
-							else
-								expressions[j] = ShaderBuilder::ConstantValue(ExpressionType{ targetMatrixType.type }, 0, castExpr.sourceLocation);
-						}
-						else
-							expressions[j] = std::move(castExpr.expressions[i * targetMatrixType.rowCount + j]);
-
-						if (j == 0)
-							location = expressions[j]->sourceLocation;
-						else
-							location.ExtendToRight(expressions[j]->sourceLocation);
-					}
-
-					auto buildVec = ShaderBuilder::Cast(ExpressionType{ VectorType{ targetMatrixType.rowCount, targetMatrixType.type } }, std::move(expressions));
-					buildVec->cachedExpressionType = buildVec->targetType.GetResultingValue();
-					buildVec->sourceLocation = location;
-
-					vectorExpr = std::move(buildVec);
-					vectorComponentCount = targetMatrixType.rowCount;
-				}
-
-				// cast expression (turn fromMatrix[i] to vec3[f32](fromMatrix[i]))
-				ExpressionPtr columnCastExpr;
-				if (vectorComponentCount != targetMatrixType.rowCount)
-				{
-					CastExpressionPtr vecCast;
-					if (vectorComponentCount < targetMatrixType.rowCount)
-					{
-						std::vector<ExpressionPtr> expressions;
-						expressions.push_back(std::move(vectorExpr));
-						for (std::size_t j = 0; j < targetMatrixType.rowCount - vectorComponentCount; ++j)
-							expressions.push_back(ShaderBuilder::ConstantValue(ExpressionType{ targetMatrixType.type }, (i == j + vectorComponentCount) ? 1 : 0, castExpr.sourceLocation)); //< set 1 to diagonal
-
-						vecCast = ShaderBuilder::Cast(ExpressionType{ VectorType{ targetMatrixType.rowCount, targetMatrixType.type } }, std::move(expressions));
-						vecCast->sourceLocation = castExpr.sourceLocation;
-
-						columnCastExpr = std::move(vecCast);
-					}
-					else
-					{
-						std::array<std::uint32_t, 4> swizzleComponents;
-						std::iota(swizzleComponents.begin(), swizzleComponents.begin() + targetMatrixType.rowCount, 0);
-
-						auto swizzleExpr = ShaderBuilder::Swizzle(std::move(vectorExpr), swizzleComponents, targetMatrixType.rowCount);
-						swizzleExpr->sourceLocation = castExpr.sourceLocation;
-
-						columnCastExpr = std::move(swizzleExpr);
-					}
-				}
-				else
-					columnCastExpr = std::move(vectorExpr);
-
-				columnCastExpr->cachedExpressionType = VectorType{ targetMatrixType.rowCount, targetMatrixType.type };
-
-				// temp[i] = columnCastExpr
-				auto assignExpr = ShaderBuilder::Assign(AssignType::Simple, std::move(columnExpr), std::move(columnCastExpr));
-				assignExpr->cachedExpressionType = assignExpr->right->cachedExpressionType;
-				assignExpr->sourceLocation = castExpr.sourceLocation;
-
-				AppendStatement(ShaderBuilder::ExpressionStatement(std::move(assignExpr)));
-			}
-
-			return ReplaceExpression{ ShaderBuilder::Variable(variableIndex, resolvedTargetType, castExpr.sourceLocation) };
+			const ExpressionType* exprType = GetExpressionType(*castExpr.expressions[i]);
+			if (!exprType)
+				return DontVisitChildren{}; //< unresolved type
 		}
 
-		return VisitChildren{};
+		const ExpressionType& resolvedFrontExprType = *GetResolvedExpressionType(*castExpr.expressions.front());
+		bool isMatrixCast = IsMatrixType(resolvedFrontExprType);
+		if (isMatrixCast && std::get<MatrixType>(resolvedFrontExprType) == targetMatrixType)
+		{
+			// Nothing to do
+			return ReplaceExpression{ std::move(castExpr.expressions.front()) };
+		}
+
+		auto* variableDeclaration = DeclareVariable("matrix", targetType, castExpr.sourceLocation);
+
+		std::size_t variableIndex = *variableDeclaration->varIndex;
+
+		ExpressionPtr cachedDiagonalValue;
+
+		for (std::uint32_t i = 0; i < targetMatrixType.columnCount; ++i)
+		{
+			// temp[i]
+			auto columnExpr = ShaderBuilder::AccessIndex(ShaderBuilder::Variable(variableIndex, resolvedTargetType, castExpr.sourceLocation), ShaderBuilder::ConstantValue(i, castExpr.sourceLocation));
+			columnExpr->cachedExpressionType = VectorType{ targetMatrixType.rowCount, targetMatrixType.type };
+
+			// vector expression
+			ExpressionPtr vectorExpr;
+			std::size_t vectorComponentCount;
+			if (isMatrixCast)
+			{
+				if (!cachedDiagonalValue)
+					cachedDiagonalValue = CacheExpression(std::move(castExpr.expressions.front()));
+
+				const MatrixType& fromMatrixType = std::get<MatrixType>(resolvedFrontExprType);
+
+				// fromMatrix[i]
+				auto matrixColumnExpr = ShaderBuilder::AccessIndex(Clone(*cachedDiagonalValue), ShaderBuilder::ConstantValue(i, castExpr.sourceLocation));
+				matrixColumnExpr->cachedExpressionType = VectorType{ fromMatrixType.rowCount, fromMatrixType.type };
+
+				vectorExpr = std::move(matrixColumnExpr);
+				vectorComponentCount = fromMatrixType.rowCount;
+			}
+			else if (IsVectorType(resolvedFrontExprType))
+			{
+				// parameter #i
+				vectorExpr = std::move(castExpr.expressions[i]);
+				vectorComponentCount = std::get<VectorType>(*GetResolvedExpressionType(*vectorExpr)).componentCount;
+			}
+			else
+			{
+				assert(IsPrimitiveType(resolvedFrontExprType));
+
+				// Use a Cast expression to replace swizzle
+				std::vector<ExpressionPtr> expressions(targetMatrixType.rowCount);
+				SourceLocation location;
+				for (std::size_t j = 0; j < targetMatrixType.rowCount; ++j)
+				{
+					if (castExpr.expressions.size() == 1) //< diagonal value
+					{
+						if (!cachedDiagonalValue)
+							cachedDiagonalValue = CacheExpression(std::move(castExpr.expressions.front()));
+
+						if (i == j)
+							expressions[j] = Clone(*cachedDiagonalValue);
+						else
+							expressions[j] = ShaderBuilder::ConstantValue(ExpressionType{ targetMatrixType.type }, 0, castExpr.sourceLocation);
+					}
+					else
+						expressions[j] = std::move(castExpr.expressions[i * targetMatrixType.rowCount + j]);
+
+					if (j == 0)
+						location = expressions[j]->sourceLocation;
+					else
+						location.ExtendToRight(expressions[j]->sourceLocation);
+				}
+
+				auto buildVec = ShaderBuilder::Cast(ExpressionType{ VectorType{ targetMatrixType.rowCount, targetMatrixType.type } }, std::move(expressions));
+				buildVec->cachedExpressionType = buildVec->targetType.GetResultingValue();
+				buildVec->sourceLocation = location;
+
+				vectorExpr = std::move(buildVec);
+				vectorComponentCount = targetMatrixType.rowCount;
+			}
+
+			// cast expression (turn fromMatrix[i] to vec3[f32](fromMatrix[i]))
+			ExpressionPtr columnCastExpr;
+			if (vectorComponentCount != targetMatrixType.rowCount)
+			{
+				CastExpressionPtr vecCast;
+				if (vectorComponentCount < targetMatrixType.rowCount)
+				{
+					std::vector<ExpressionPtr> expressions;
+					expressions.push_back(std::move(vectorExpr));
+					for (std::size_t j = 0; j < targetMatrixType.rowCount - vectorComponentCount; ++j)
+						expressions.push_back(ShaderBuilder::ConstantValue(ExpressionType{ targetMatrixType.type }, (i == j + vectorComponentCount) ? 1 : 0, castExpr.sourceLocation)); //< set 1 to diagonal
+
+					vecCast = ShaderBuilder::Cast(ExpressionType{ VectorType{ targetMatrixType.rowCount, targetMatrixType.type } }, std::move(expressions));
+					vecCast->sourceLocation = castExpr.sourceLocation;
+
+					columnCastExpr = std::move(vecCast);
+				}
+				else
+				{
+					std::array<std::uint32_t, 4> swizzleComponents;
+					std::iota(swizzleComponents.begin(), swizzleComponents.begin() + targetMatrixType.rowCount, 0);
+
+					auto swizzleExpr = ShaderBuilder::Swizzle(std::move(vectorExpr), swizzleComponents, targetMatrixType.rowCount);
+					swizzleExpr->sourceLocation = castExpr.sourceLocation;
+
+					columnCastExpr = std::move(swizzleExpr);
+				}
+			}
+			else
+				columnCastExpr = std::move(vectorExpr);
+
+			columnCastExpr->cachedExpressionType = VectorType{ targetMatrixType.rowCount, targetMatrixType.type };
+
+			// temp[i] = columnCastExpr
+			auto assignExpr = ShaderBuilder::Assign(AssignType::Simple, std::move(columnExpr), std::move(columnCastExpr));
+			assignExpr->cachedExpressionType = assignExpr->right->cachedExpressionType;
+			assignExpr->sourceLocation = castExpr.sourceLocation;
+
+			ExpressionPtr expr = std::move(assignExpr);
+			HandleExpression(expr);
+
+			AppendStatement(ShaderBuilder::ExpressionStatement(std::move(expr)));
+		}
+
+		return ReplaceExpression{ ShaderBuilder::Variable(variableIndex, resolvedTargetType, castExpr.sourceLocation) };
 	}
 }

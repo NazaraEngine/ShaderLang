@@ -54,7 +54,7 @@ namespace nzsl::Ast
 		return stringifier;
 	}
 
-	ExpressionPtr Transformer::CacheExpression(ExpressionPtr expression)
+	ExpressionPtr Transformer::CacheExpression(ExpressionPtr&& expression)
 	{
 		assert(expression);
 

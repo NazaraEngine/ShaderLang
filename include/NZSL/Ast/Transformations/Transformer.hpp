@@ -52,7 +52,7 @@ namespace nzsl::Ast
 
 			Stringifier BuildStringifier(const SourceLocation& sourceLocation) const;
 
-			ExpressionPtr CacheExpression(ExpressionPtr expression);
+			ExpressionPtr CacheExpression(ExpressionPtr&& expression);
 
 			inline void ClearFlags(TransformerFlags flags);
 

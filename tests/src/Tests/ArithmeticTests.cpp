@@ -1235,4 +1235,149 @@ fn main()
       OpReturn
       OpFunctionEnd)", {}, {}, true);
 	}
+
+	SECTION("Matrix constructed with scalar regression test")
+	{
+		// Bug reported by @Kbz-8 where mat3 built with values trigger an assert and use a SPIR-V OpCompositeConstruct
+		// Caused by the MatrixTransformer not applying transformation on binary operands when transforming them (causing a double transformation)
+		std::string_view nzslSource = R"(
+[nzsl_version("1.1")]
+module;
+
+struct VertOut
+{
+	[location(0)] value: mat3[f32]
+}
+
+[entry(vert)]
+fn main() -> VertOut
+{
+	let output: VertOut;
+	output.value = mat3[f32](
+		0.88655806, 0.009954549, 0.59965825,
+		0.075560495, 0.29032412, 0.28093582,
+		0.23636213, 0.06779966, 0.8011529
+	) + mat3[f32](
+		0.02265614, 0.16646017, 0.26177958,
+		0.0025147542, 0.7595951, 0.8430143,
+		0.7603316, 0.5172906, 0.3882018
+	);
+	return output;
+}
+)";
+
+		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
+		ResolveModule(*shaderModule);
+
+		ExpectGLSL(*shaderModule, R"(
+void main()
+{
+	VertOut output_;
+	output_.value = (mat3(0.886558, 0.009955, 0.599658, 0.07556, 0.290324, 0.280936, 0.236362, 0.0678, 0.801153)) + (mat3(0.022656, 0.16646, 0.26178, 0.002515, 0.759595, 0.843014, 0.760332, 0.517291, 0.388202));
+
+	_nzslVarying0 = output_.value;
+	return;
+
+)");
+
+		ExpectNZSL(*shaderModule, R"(
+[entry(vert)]
+fn main() -> VertOut
+{
+	let output: VertOut;
+	output.value = (mat3[f32](0.88655806, 0.009954549, 0.59965825, 0.075560495, 0.29032412, 0.28093582, 0.23636213, 0.06779966, 0.8011529)) + (mat3[f32](0.02265614, 0.16646017, 0.26177958, 0.0025147542, 0.7595951, 0.8430143, 0.7603316, 0.5172906, 0.3882018));
+	return output;
+}
+)");
+
+		ExpectSPIRV(*shaderModule, R"(
+ %1 = OpTypeVoid
+ %2 = OpTypeFunction %1
+ %3 = OpTypeFloat 32
+ %4 = OpTypeVector %3 3
+ %5 = OpTypeMatrix %4 3
+ %6 = OpTypePointer StorageClass(Output) %5
+ %8 = OpTypeStruct %5
+ %9 = OpTypePointer StorageClass(Function) %8
+%10 = OpTypePointer StorageClass(Function) %5
+%11 = OpTypeInt 32 0
+%12 = OpConstant %11 u32(0)
+%13 = OpConstant %3 f32(0.886558)
+%14 = OpConstant %3 f32(0.00995455)
+%15 = OpConstant %3 f32(0.599658)
+%16 = OpConstant %11 u32(1)
+%17 = OpConstant %3 f32(0.0755605)
+%18 = OpConstant %3 f32(0.290324)
+%19 = OpConstant %3 f32(0.280936)
+%20 = OpConstant %11 u32(2)
+%21 = OpConstant %3 f32(0.236362)
+%22 = OpConstant %3 f32(0.0677997)
+%23 = OpConstant %3 f32(0.801153)
+%24 = OpConstant %3 f32(0.0226561)
+%25 = OpConstant %3 f32(0.16646)
+%26 = OpConstant %3 f32(0.26178)
+%27 = OpConstant %3 f32(0.00251475)
+%28 = OpConstant %3 f32(0.759595)
+%29 = OpConstant %3 f32(0.843014)
+%30 = OpConstant %3 f32(0.760332)
+%31 = OpConstant %3 f32(0.517291)
+%32 = OpConstant %3 f32(0.388202)
+%33 = OpTypeInt 32 1
+%34 = OpConstant %33 i32(0)
+%43 = OpTypePointer StorageClass(Function) %4
+ %7 = OpVariable %6 StorageClass(Output)
+%35 = OpFunction %1 FunctionControl(0) %2
+%36 = OpLabel
+%37 = OpVariable %9 StorageClass(Function)
+%38 = OpVariable %10 StorageClass(Function)
+%39 = OpVariable %10 StorageClass(Function)
+%40 = OpVariable %10 StorageClass(Function)
+%41 = OpCompositeConstruct %4 %13 %14 %15
+%42 = OpAccessChain %43 %38 %12
+      OpStore %42 %41
+%44 = OpCompositeConstruct %4 %17 %18 %19
+%45 = OpAccessChain %43 %38 %16
+      OpStore %45 %44
+%46 = OpCompositeConstruct %4 %21 %22 %23
+%47 = OpAccessChain %43 %38 %20
+      OpStore %47 %46
+%48 = OpCompositeConstruct %4 %24 %25 %26
+%49 = OpAccessChain %43 %39 %12
+      OpStore %49 %48
+%50 = OpCompositeConstruct %4 %27 %28 %29
+%51 = OpAccessChain %43 %39 %16
+      OpStore %51 %50
+%52 = OpCompositeConstruct %4 %30 %31 %32
+%53 = OpAccessChain %43 %39 %20
+      OpStore %53 %52
+%54 = OpAccessChain %43 %38 %12
+%55 = OpLoad %4 %54
+%56 = OpAccessChain %43 %39 %12
+%57 = OpLoad %4 %56
+%58 = OpFAdd %4 %55 %57
+%59 = OpAccessChain %43 %40 %12
+      OpStore %59 %58
+%60 = OpAccessChain %43 %38 %16
+%61 = OpLoad %4 %60
+%62 = OpAccessChain %43 %39 %16
+%63 = OpLoad %4 %62
+%64 = OpFAdd %4 %61 %63
+%65 = OpAccessChain %43 %40 %16
+      OpStore %65 %64
+%66 = OpAccessChain %43 %38 %20
+%67 = OpLoad %4 %66
+%68 = OpAccessChain %43 %39 %20
+%69 = OpLoad %4 %68
+%70 = OpFAdd %4 %67 %69
+%71 = OpAccessChain %43 %40 %20
+      OpStore %71 %70
+%72 = OpLoad %5 %40
+%73 = OpAccessChain %10 %37 %34
+      OpStore %73 %72
+%74 = OpLoad %8 %37
+%75 = OpCompositeExtract %5 %74 0
+      OpStore %7 %75
+      OpReturn
+      OpFunctionEnd)", {}, {}, true);
+	}
 }

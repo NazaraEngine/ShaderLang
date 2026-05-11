@@ -20,9 +20,11 @@ namespace nzsl::Ast
 
 	auto SwizzleTransformer::Transform(SwizzleExpression&& swizzle) -> ExpressionTransformation
 	{
+		HandleChildren(swizzle);
+
 		const ExpressionType* exprType = GetResolvedExpressionType(*swizzle.expression);
 		if (!exprType)
-			return VisitChildren{};
+			return DontVisitChildren{};
 
 		if (m_options->removeScalarSwizzling && IsPrimitiveType(*exprType))
 		{
@@ -55,6 +57,6 @@ namespace nzsl::Ast
 			return ReplaceExpression{ std::move(cast) };
 		}
 
-		return VisitChildren{};
+		return DontVisitChildren{};
 	}
 }
