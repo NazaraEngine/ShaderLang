@@ -60,7 +60,7 @@ namespace nzsl::Ast
 
 		// No need to cache variables
 		if (GetExpressionCategory(*expression) == ExpressionCategory::Variable)
-			return expression;
+			return std::move(expression);
 
 		DeclareVariableStatement* variableDeclaration = DeclareVariable("cachedResult", std::move(expression));
 		return ShaderBuilder::Variable(*variableDeclaration->varIndex, variableDeclaration->varType.GetResultingValue(), variableDeclaration->sourceLocation);
