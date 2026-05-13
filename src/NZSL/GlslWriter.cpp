@@ -2280,7 +2280,7 @@ namespace nzsl
 				node.parameters[1]->Visit(*this);
 				Append(", ");
 
-				// texture with a sampler1DShadow takes a vec3 for now reason
+				// texture with a sampler1DShadow takes a vec3 for no reason
 				// "The second component of P is unused for 1D shadow lookups."
 				if (samplerType.dim == ImageType::E1D)
 					Append("0.0, ");

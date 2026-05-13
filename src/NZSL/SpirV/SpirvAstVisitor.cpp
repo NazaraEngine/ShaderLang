@@ -541,7 +541,7 @@ namespace nzsl
 			std::uint32_t varId = var.varId;
 			parameterIds[i] = varId;
 
-			//Don't generate OpLoad and OpStore for out arguments
+			// Don't generate OpStore for out arguments (their value is not copied to the function)
 			if (node.parameters[i].semantic == Ast::FunctionParameterSemantic::Out)
 				continue;
 
@@ -573,7 +573,7 @@ namespace nzsl
 
 		for (std::size_t i = 0; i < node.parameters.size(); ++i)
 		{
-			// Don't generate OpLoad and OpStore for in arguments
+			// Don't generate OpLoad for In arguments (they are not modified by the function)
 			if (node.parameters[i].semantic == Ast::FunctionParameterSemantic::In)
 				continue;
 
