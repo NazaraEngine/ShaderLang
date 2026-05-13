@@ -143,7 +143,8 @@ namespace nzsl
 
 			void Visit(Ast::CallFunctionExpression& node) override
 			{
-				RecursiveVisitor::Visit(node);
+				// Don't use recursive visitor here, in order to visit parameters as we iterate on them to maintain the same funcCall order
+				node.targetFunction->Visit(*this);
 
 				assert(m_funcIndex);
 				auto it = funcs.find(*m_funcIndex);
@@ -161,6 +162,8 @@ namespace nzsl
 					auto& var = func.variables.emplace_back();
 					var.sourceLocation = parameter.expr->sourceLocation;
 					var.typeId = m_constantCache.Register(*m_constantCache.BuildPointerType(*GetExpressionType(*parameter.expr), SpirvStorageClass::Function));
+
+					parameter.expr->Visit(*this);
 				}
 			}
 
