@@ -1686,7 +1686,6 @@ namespace nzsl
 	{
 		std::vector<Ast::CallFunctionExpression::Parameter> parameters;
 		bool first = true;
-		size_t parameterIndex = 0;
 		while (Peek().type != TokenType::ClosingParenthesis)
 		{
 			if (!first)
@@ -1713,7 +1712,6 @@ namespace nzsl
 			}
 
 			first = false;
-			parameterIndex++;
 		}
 
 		const Token& endToken = Expect(Advance(), TokenType::ClosingParenthesis);
