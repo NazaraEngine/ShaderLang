@@ -1,8 +1,8 @@
 /*
 	Nazara Shading Language - C Binding (CNZSL)
 
-	Copyright (C) 2024 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
-	              2024 REMqb (remqb at remqb dot fr)
+	Copyright (C) 2026 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
+	              2026 REMqb (remqb at remqb dot fr)
 
 	Permission is hereby granted, free of charge, to any person obtaining a copy of
 	this software and associated documentation files (the "Software"), to deal in
@@ -31,7 +31,7 @@
 /* CNZSL version macro */
 #define CNZSL_VERSION_MAJOR 1
 #define CNZSL_VERSION_MINOR 1
-#define CNZSL_VERSION_PATCH 4
+#define CNZSL_VERSION_PATCH 5
 
 #if !defined(CNZSL_STATIC)
 	#ifdef _WIN32
