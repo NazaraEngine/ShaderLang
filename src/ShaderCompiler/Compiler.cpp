@@ -13,6 +13,7 @@
 #include <NZSL/Lang/Errors.hpp>
 #include <NZSL/Lexer.hpp>
 #include <NZSL/Parser.hpp>
+#include <NZSL/Math/FieldOffsets.hpp>
 #include <NZSL/SpirV/SpirvPrinter.hpp>
 #include <NZSL/SpirvWriter.hpp>
 #include <NZSL/Serializer.hpp>
@@ -30,6 +31,7 @@
 #include <chrono>
 #include <fstream>
 #include <stdexcept>
+#include <unordered_set>
 
 namespace nzslc
 {
@@ -201,6 +203,9 @@ namespace nzslc
 
 				if (m_options.count("compile") > 0)
 					Step("Compiling"sv, __LINE__, &Compiler::Compile);
+
+				if (m_options.count("reflect") > 0)
+					Step("Reflecting"sv, __LINE__, &Compiler::Reflect);
 			});
 		}
 
@@ -239,6 +244,9 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 			("optimize", "Optimize shader code")
 			("p,partial", "Allow partial compilation")
 			("skip-unchanged", "After compilation, compare the output with the current output file and skip writing if the content is the same", cxxopts::value<bool>()->default_value("false"));
+
+		options.add_options("reflection")
+			("r,reflect", "Outputs informations about a struct as a json", cxxopts::value<std::vector<std::string>>());
 
 		options.add_options("glsl output")
 			("gl-es", "Generate GLSL ES instead of GLSL", cxxopts::value<bool>()->default_value("false"))
@@ -690,12 +698,96 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 			throw std::runtime_error(fmt::format("{} has unknown extension \"{}\"", Nz::PathToString(m_inputFilePath.filename()), Nz::PathToString(extension)));
 	}
 
+	void Compiler::Reflect()
+	{
+		// if no output path has been provided, output in the same folder as the input file
+		std::filesystem::path outputFilePath = m_outputPath;
+		if (outputFilePath.empty())
+			outputFilePath = m_inputFilePath.parent_path();
+
+		outputFilePath /= m_inputFilePath.filename();
+
+		const std::vector<std::string>& reflectTypes = m_options["reflect"].as<std::vector<std::string>>();
+
+		std::unordered_set<std::string> remainingStructs(reflectTypes.begin(), reflectTypes.end());
+
+		nlohmann::ordered_json structArray = nlohmann::ordered_json::array();
+
+		nzsl::Ast::ReflectVisitor::Callbacks callbacks;
+		callbacks.onStructDeclaration = [&](const nzsl::Ast::DeclareStructStatement& structDecl)
+		{
+			auto it = remainingStructs.find(structDecl.description.name);
+			if (it == remainingStructs.end())
+				return;
+
+			remainingStructs.erase(it);
+
+			nlohmann::ordered_json structDoc;
+			structDoc["name"] = structDecl.description.name;
+			if (!structDecl.description.tag.empty())
+				structDoc["tag"] = structDecl.description.tag;
+
+			nlohmann::ordered_json structMemberArray = nlohmann::ordered_json::array();
+
+			nzsl::StructLayout structLayout;
+			switch (structDecl.description.layout.GetResultingValue())
+			{
+				case nzsl::Ast::MemoryLayout::Scalar:
+					structDoc["layout"] = "scalar";
+					structLayout = nzsl::StructLayout::Scalar;
+					break;
+
+				case nzsl::Ast::MemoryLayout::Std140: 
+					structDoc["layout"] = "std140";
+					structLayout = nzsl::StructLayout::Std140;
+					break;
+
+				case nzsl::Ast::MemoryLayout::Std430:
+					structDoc["layout"] = "std430";
+					structLayout = nzsl::StructLayout::Std430;
+					break;
+			}
+
+			nzsl::FieldOffsets fieldOffsets(structLayout);
+
+			for (const auto& member : structDecl.description.members)
+			{
+				nlohmann::ordered_json memberDoc;
+				memberDoc["name"] = member.name;
+				memberDoc["type"] = nzsl::Ast::ToString(member.type.GetResultingValue());
+				memberDoc["offset"] = nzsl::Ast::RegisterStructField(fieldOffsets, member.type.GetResultingValue());
+
+				structMemberArray.push_back(std::move(memberDoc));
+			}
+
+			structDoc["members"] = std::move(structMemberArray);
+
+			structArray.push_back(std::move(structDoc));
+
+			// TODO: Cancel visit if remainingStructs.empty()
+		};
+
+		nzsl::Ast::ReflectVisitor reflectVisitor;
+		reflectVisitor.Reflect(*m_shaderModule, callbacks);
+
+		nlohmann::ordered_json result;
+		result["structs"] = std::move(structArray);
+
+		if (m_skipOutput)
+			return;
+
+		if (m_outputToStdout)
+		{
+			OutputToStdout(result.dump(1, '\t'));
+			return;
+		}
+	}
+
 	void Compiler::Resolve()
 	{
 		using namespace std::literals;
 
-		nzsl::Ast::TransformerContext context;
-		context.partialCompilation = m_options.count("partial") > 0;
+		m_transformerContext.partialCompilation = m_options.count("partial") > 0;
 
 		nzsl::Ast::ResolveTransformer::Options resolverOpt;
 
@@ -726,8 +818,8 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 		nzsl::Ast::ResolveTransformer resolver;
 		nzsl::Ast::ValidationTransformer validation;
 
-		Step("AST processing"sv, __LINE__, [&] { resolver.Transform(*m_shaderModule, context, resolverOpt); });
-		Step("AST validation"sv, __LINE__, [&] { validation.Transform(*m_shaderModule, context); });
+		Step("AST processing"sv, __LINE__, [&] { resolver.Transform(*m_shaderModule, m_transformerContext, resolverOpt); });
+		Step("AST validation"sv, __LINE__, [&] { validation.Transform(*m_shaderModule, m_transformerContext); });
 	}
 
 	template<typename F, typename... Args>

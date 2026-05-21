@@ -10,6 +10,7 @@
 #include <NZSL/Config.hpp>
 #include <NZSL/Lang/Errors.hpp>
 #include <NZSL/Ast/Module.hpp>
+#include <NZSL/Ast/Transformations/TransformerContext.hpp>
 #include <cxxopts.hpp>
 #include <filesystem>
 #include <type_traits>
@@ -64,6 +65,7 @@ namespace nzslc
 			void OutputFile(std::filesystem::path filePath, const void* data, std::size_t size, bool disallowHeader = false);
 			void OutputToStdout(std::string_view str);
 			void ReadInput();
+			void Reflect();
 			void Resolve();
 			template<typename F, typename... Args> auto Step(std::enable_if_t<!std::is_member_function_pointer_v<F>, std::string_view> stepName, std::size_t uniqueIndex, F&& func, Args&&... args) -> decltype(std::invoke(func, std::forward<Args>(args)...));
 			template<typename F, typename... Args> auto Step(std::enable_if_t<std::is_member_function_pointer_v<F>, std::string_view> stepName, std::size_t uniqueIndex, F&& func, Args&&... args) -> decltype(std::invoke(func, this, std::forward<Args>(args)...));
@@ -88,6 +90,7 @@ namespace nzslc
 			std::vector<StepTime> m_steps;
 			LogFormat m_logFormat;
 			nzsl::Ast::ModulePtr m_shaderModule;
+			nzsl::Ast::TransformerContext m_transformerContext;
 			cxxopts::ParseResult& m_options;
 			bool m_isProfiling;
 			bool m_outputHeader;
