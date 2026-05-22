@@ -56,6 +56,7 @@ namespace nzslc
 			nzsl::BackendParameters BuildWriterOptions();
 			void Compile();
 			void CompileToGLSL(std::filesystem::path outputPath, nzsl::Ast::Module& module);
+			void CompileToHLSL(std::filesystem::path outputPath, nzsl::Ast::Module& module);
 			void CompileToNZSL(std::filesystem::path outputPath, const nzsl::Ast::Module& module);
 			void CompileToNZSLB(std::filesystem::path outputPath, const nzsl::Ast::Module& module);
 			void CompileToSPV(std::filesystem::path outputPath, nzsl::Ast::Module& module, bool textual);
