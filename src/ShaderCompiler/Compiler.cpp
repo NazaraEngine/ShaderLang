@@ -700,12 +700,15 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 
 	void Compiler::Reflect()
 	{
+		m_outputHeader = false;
+
 		// if no output path has been provided, output in the same folder as the input file
 		std::filesystem::path outputFilePath = m_outputPath;
 		if (outputFilePath.empty())
 			outputFilePath = m_inputFilePath.parent_path();
 
 		outputFilePath /= m_inputFilePath.filename();
+		outputFilePath += Nz::Utf8Path(".json");
 
 		const std::vector<std::string>& reflectTypes = m_options["reflect"].as<std::vector<std::string>>();
 
@@ -729,33 +732,48 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 
 			nlohmann::ordered_json structMemberArray = nlohmann::ordered_json::array();
 
-			nzsl::StructLayout structLayout;
-			switch (structDecl.description.layout.GetResultingValue())
+			std::optional<nzsl::FieldOffsets> fieldOffsets;
+			if (structDecl.description.layout.IsResultingValue())
 			{
-				case nzsl::Ast::MemoryLayout::Scalar:
-					structDoc["layout"] = "scalar";
-					structLayout = nzsl::StructLayout::Scalar;
-					break;
+				switch (structDecl.description.layout.GetResultingValue())
+				{
+					case nzsl::Ast::MemoryLayout::Scalar:
+						structDoc["layout"] = "scalar";
+						fieldOffsets.emplace(nzsl::StructLayout::Scalar);
+						break;
 
-				case nzsl::Ast::MemoryLayout::Std140: 
-					structDoc["layout"] = "std140";
-					structLayout = nzsl::StructLayout::Std140;
-					break;
+					case nzsl::Ast::MemoryLayout::Std140:
+						structDoc["layout"] = "std140";
+						fieldOffsets.emplace(nzsl::StructLayout::Std140);
+						break;
 
-				case nzsl::Ast::MemoryLayout::Std430:
-					structDoc["layout"] = "std430";
-					structLayout = nzsl::StructLayout::Std430;
-					break;
+					case nzsl::Ast::MemoryLayout::Std430:
+						structDoc["layout"] = "std430";
+						fieldOffsets.emplace(nzsl::StructLayout::Std430);
+						break;
+				}
 			}
-
-			nzsl::FieldOffsets fieldOffsets(structLayout);
+			else if (structDecl.description.layout.IsExpression())
+				structDoc["layout"] = "unresolved";
 
 			for (const auto& member : structDecl.description.members)
 			{
 				nlohmann::ordered_json memberDoc;
 				memberDoc["name"] = member.name;
-				memberDoc["type"] = nzsl::Ast::ToString(member.type.GetResultingValue());
-				memberDoc["offset"] = nzsl::Ast::RegisterStructField(fieldOffsets, member.type.GetResultingValue());
+
+				if (member.type.IsResultingValue())
+				{
+					memberDoc["type"] = nzsl::Ast::ToString(member.type.GetResultingValue());
+					if (fieldOffsets)
+						memberDoc["offset"] = nzsl::Ast::RegisterStructField(*fieldOffsets, member.type.GetResultingValue());
+				}
+				else if (member.type.IsExpression())
+					memberDoc["type"] = "unresolved";
+
+				if (member.locationIndex.IsResultingValue())
+					memberDoc["location"] = member.locationIndex.GetResultingValue();
+				else if (member.locationIndex.IsExpression())
+					memberDoc["location"] = "unresolved";
 
 				structMemberArray.push_back(std::move(memberDoc));
 			}
@@ -764,11 +782,14 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 
 			structArray.push_back(std::move(structDoc));
 
-			// TODO: Cancel visit if remainingStructs.empty()
+			// TODO: Stop visit if remainingStructs.empty()
 		};
 
 		nzsl::Ast::ReflectVisitor reflectVisitor;
 		reflectVisitor.Reflect(*m_shaderModule, callbacks);
+
+		if (!remainingStructs.empty())
+			throw std::runtime_error(fmt::format("struct \"{}\" was not found", *remainingStructs.begin()));
 
 		nlohmann::ordered_json result;
 		result["structs"] = std::move(structArray);
@@ -781,6 +802,9 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 			OutputToStdout(result.dump(1, '\t'));
 			return;
 		}
+
+		std::string output = result.dump(1, '\t');
+		OutputFile(std::move(outputFilePath), output.data(), output.size());
 	}
 
 	void Compiler::Resolve()
