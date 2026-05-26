@@ -1,0 +1,15 @@
+[nzsl_version("1.1")]
+[author("SirLynix"), desc("Test module")]
+[license("MIT")]
+module Shader;
+
+import * from DataStruct;
+
+[layout(std140)]
+struct Output
+{
+    color: vec4[f32],
+    normal: vec3[f32],
+    roughness: f32,
+    metalness: f32
+}
