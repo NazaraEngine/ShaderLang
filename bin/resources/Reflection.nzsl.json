@@ -1,0 +1,30 @@
+{
+	"structs": [
+		{
+			"name": "Output",
+			"layout": "std140",
+			"members": [
+				{
+					"name": "color",
+					"type": "vec4[f32]",
+					"offset": 0
+				},
+				{
+					"name": "normal",
+					"type": "vec3[f32]",
+					"offset": 16
+				},
+				{
+					"name": "roughness",
+					"type": "f32",
+					"offset": 28
+				},
+				{
+					"name": "metalness",
+					"type": "f32",
+					"offset": 32
+				}
+			]
+		}
+	]
+}
