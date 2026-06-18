@@ -51,6 +51,7 @@ namespace nzsl::Ast
 			void PushScope() override;
 
 			void RegisterAlias(std::size_t aliasIndex, const SourceLocation& sourceLocation);
+			void RegisterBuiltin();
 			void RegisterConst(std::size_t constIndex, const SourceLocation& sourceLocation);
 			void RegisterExternal(std::size_t externalIndex, const SourceLocation& sourceLocation);
 			void RegisterFunc(std::size_t funcIndex, const SourceLocation& sourceLocation);

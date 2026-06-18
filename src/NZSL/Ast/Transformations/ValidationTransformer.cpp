@@ -64,6 +64,8 @@ namespace nzsl::Ast
 		m_states = &states;
 
 		PushScope();
+		RegisterBuiltin();
+
 		NAZARA_DEFER({ PopScope(); });
 
 		if (!TransformImportedModules(module, context, error))
@@ -252,6 +254,12 @@ namespace nzsl::Ast
 		m_states->registeredAliases.UnboundedSet(aliasIndex);
 		auto& scope = m_states->scopes.back();
 		scope.aliases.push_back(aliasIndex);
+	}
+
+	void ValidationTransformer::RegisterBuiltin()
+	{
+		for (const auto& [constantName, data] : LangData::s_constants)
+			RegisterConst(data.constantIndex, {});
 	}
 
 	void ValidationTransformer::RegisterConst(std::size_t constIndex, const SourceLocation& sourceLocation)
@@ -517,7 +525,7 @@ namespace nzsl::Ast
 	{
 		HandleChildren(node);
 
-		// Validation already done by IdentifierTypeTransformer
+		// Validation already done by ResolveTransformer
 
 		return DontVisitChildren{};
 	}
