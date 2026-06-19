@@ -3433,7 +3433,8 @@ namespace nzsl::Ast
 			if (structData.moduleIndex != m_states->currentModuleId)
 			{
 				assert(structData.moduleIndex < m_states->modules.size());
-				m_states->modules[structData.moduleIndex].dependenciesVisitor->MarkStructAsUsed(structIndex);
+				if (m_states->modules[structData.moduleIndex].dependenciesVisitor)
+					m_states->modules[structData.moduleIndex].dependenciesVisitor->MarkStructAsUsed(structIndex);
 			}
 		}
 		else if (IsFunctionType(resolvedType))
@@ -3444,7 +3445,8 @@ namespace nzsl::Ast
 			if (funcData.moduleIndex != m_states->currentModuleId)
 			{
 				assert(funcData.moduleIndex < m_states->modules.size());
-				m_states->modules[funcData.moduleIndex].dependenciesVisitor->MarkFunctionAsUsed(funcIndex);
+				if (m_states->modules[funcData.moduleIndex].dependenciesVisitor)
+					m_states->modules[funcData.moduleIndex].dependenciesVisitor->MarkFunctionAsUsed(funcIndex);
 			}
 		}
 	}
