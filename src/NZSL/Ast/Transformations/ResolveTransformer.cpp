@@ -2342,7 +2342,8 @@ namespace nzsl::Ast
 				if (constantData->moduleIndex != m_states->currentModuleId)
 				{
 					assert(constantData->moduleIndex < m_states->modules.size());
-					m_states->modules[constantData->moduleIndex].dependenciesVisitor->MarkConstantAsUsed(identifierValueExpression.identifierIndex);
+					if (m_states->modules[constantData->moduleIndex].dependenciesVisitor)
+						m_states->modules[constantData->moduleIndex].dependenciesVisitor->MarkConstantAsUsed(identifierValueExpression.identifierIndex);
 				}
 
 				identifierValueExpression.cachedExpressionType = GetConstantType(*constantData->value);
@@ -2505,7 +2506,8 @@ namespace nzsl::Ast
 			if (structData.moduleIndex != m_states->currentModuleId)
 			{
 				assert(structData.moduleIndex < m_states->modules.size());
-				m_states->modules[structData.moduleIndex].dependenciesVisitor->MarkStructAsUsed(structIndex);
+				if (m_states->modules[structData.moduleIndex].dependenciesVisitor)
+					m_states->modules[structData.moduleIndex].dependenciesVisitor->MarkStructAsUsed(structIndex);
 			}
 		}
 		else if (IsFunctionType(resolvedType))
@@ -2517,7 +2519,8 @@ namespace nzsl::Ast
 			if (funcData.moduleIndex != m_states->currentModuleId)
 			{
 				assert(funcData.moduleIndex < m_states->modules.size());
-				m_states->modules[funcData.moduleIndex].dependenciesVisitor->MarkFunctionAsUsed(funcIndex);
+				if (m_states->modules[funcData.moduleIndex].dependenciesVisitor)
+					m_states->modules[funcData.moduleIndex].dependenciesVisitor->MarkFunctionAsUsed(funcIndex);
 			}
 		}
 		else if (IsAliasType(resolvedType))
@@ -2566,7 +2569,8 @@ namespace nzsl::Ast
 			if (constantData.moduleIndex != m_states->currentModuleId)
 			{
 				assert(constantData.moduleIndex < m_states->modules.size());
-				m_states->modules[constantData.moduleIndex].dependenciesVisitor->MarkConstantAsUsed(constantId);
+				if (m_states->modules[constantData.moduleIndex].dependenciesVisitor)
+					m_states->modules[constantData.moduleIndex].dependenciesVisitor->MarkConstantAsUsed(constantId);
 			}
 
 			declConst.constIndex = RegisterConstant(declConst.name, TransformerContext::ConstantData{ m_states->currentModuleId, constantData.value }, declConst.constIndex, declConst.sourceLocation);
