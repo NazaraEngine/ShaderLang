@@ -287,6 +287,7 @@ namespace nzsl::Ast
 						default:
 							NAZARA_UNREACHABLE();
 					}
+					break;
 				}
 
 				case PrimitiveType::IntLiteral:
@@ -317,6 +318,7 @@ namespace nzsl::Ast
 						default:
 							NAZARA_UNREACHABLE();
 					}
+					break;
 				}
 			}
 
