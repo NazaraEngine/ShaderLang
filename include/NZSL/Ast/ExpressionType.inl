@@ -421,6 +421,8 @@ namespace nzsl::Ast
 		PrimitiveType primType;
 		if (IsPrimitiveType(exprType))
 			primType = std::get<PrimitiveType>(exprType);
+		else if (IsMatrixType(exprType))
+			primType = std::get<MatrixType>(exprType).type;
 		else if (IsVectorType(exprType))
 			primType = std::get<VectorType>(exprType).type;
 		else

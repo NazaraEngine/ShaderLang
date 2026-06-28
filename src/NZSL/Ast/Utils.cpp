@@ -527,6 +527,8 @@ namespace nzsl::Ast
 			{
 				if (IsPrimitiveType(*referenceType))
 					resolvedReferenceType = std::get<PrimitiveType>(*referenceType);
+				else if (IsMatrixType(*referenceType))
+					resolvedReferenceType = std::get<MatrixType>(*referenceType).type;
 				else if (IsVectorType(*referenceType))
 					resolvedReferenceType = std::get<VectorType>(*referenceType).type;
 				else if (IsArrayType(*referenceType))
@@ -534,6 +536,8 @@ namespace nzsl::Ast
 					const ArrayType& arrType = std::get<ArrayType>(*referenceType);
 					if (IsPrimitiveType(arrType.InnerType()))
 						resolvedReferenceType = std::get<PrimitiveType>(arrType.InnerType());
+					else if (IsMatrixType(arrType.InnerType()))
+						resolvedReferenceType = std::get<MatrixType>(arrType.InnerType()).type;
 					else if (IsVectorType(arrType.InnerType()))
 						resolvedReferenceType = std::get<VectorType>(arrType.InnerType()).type;
 					else
@@ -561,6 +565,16 @@ namespace nzsl::Ast
 					return *resolvedReferenceType;
 				else
 					throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(expressionType), Ast::ToString(*referenceType) };
+			}
+		}
+		else if (IsMatrixType(resolvedType))
+		{
+			MatrixType matrixType = std::get<MatrixType>(resolvedType);
+
+			if (auto resolvedTypeOpt = ResolveLiteralType(matrixType.type, referenceType, sourceLocation))
+			{
+				matrixType.type = std::get<PrimitiveType>(*resolvedTypeOpt);
+				return matrixType;
 			}
 		}
 		else if (IsVectorType(resolvedType))
@@ -649,6 +663,9 @@ namespace nzsl::Ast
 			// One of the two type is unresolved but not both
 			if (IsPrimitiveType(resolvedLeftType) && IsPrimitiveType(resolvedRightType))
 				return CheckLiteralType(std::get<PrimitiveType>(resolvedLeftType), std::get<PrimitiveType>(resolvedRightType));
+
+			if (IsMatrixType(resolvedLeftType) && IsMatrixType(resolvedRightType))
+				return CheckLiteralType(std::get<MatrixType>(resolvedLeftType).type, std::get<MatrixType>(resolvedRightType).type);
 
 			if (IsVectorType(resolvedLeftType) && IsVectorType(resolvedRightType))
 				return CheckLiteralType(std::get<VectorType>(resolvedLeftType).type, std::get<VectorType>(resolvedRightType).type);

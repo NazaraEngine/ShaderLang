@@ -277,6 +277,13 @@ namespace nzsl::Ast
 			else if (primitiveType == PrimitiveType::IntLiteral)
 				primitiveType = PrimitiveType::Int32;
 		}
+		else if (IsMatrixType(expressionType))
+		{
+			MatrixType& matType = std::get<MatrixType>(expressionType);
+
+			if (matType.type == PrimitiveType::FloatLiteral)
+				matType.type = PrimitiveType::Float32;
+		}
 		else if (IsVectorType(expressionType))
 		{
 			VectorType& vecType = std::get<VectorType>(expressionType);
@@ -306,6 +313,8 @@ namespace nzsl::Ast
 			PrimitiveType innerType;
 			if (IsPrimitiveType(expressionType))
 				innerType = std::get<PrimitiveType>(expressionType);
+			else if (IsMatrixType(expressionType))
+				innerType = std::get<MatrixType>(expressionType).type;
 			else if (IsVectorType(expressionType))
 				innerType = std::get<VectorType>(expressionType).type;
 			else if (IsArrayType(expressionType))
@@ -315,6 +324,8 @@ namespace nzsl::Ast
 				const ExpressionType& arrayInnerType = arrType.InnerType();
 				if (IsPrimitiveType(arrayInnerType))
 					innerType = std::get<PrimitiveType>(arrayInnerType);
+				if (IsMatrixType(arrayInnerType))
+					innerType = std::get<MatrixType>(arrayInnerType).type;
 				else if (IsVectorType(arrayInnerType))
 					innerType = std::get<VectorType>(arrayInnerType).type;
 				else

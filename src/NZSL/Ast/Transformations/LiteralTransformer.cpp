@@ -88,6 +88,26 @@ namespace nzsl::Ast
 				return true;
 			}
 		}
+		else if (expression.GetType() == NodeType::CastExpression)
+		{
+			// FloatLiteral Matrices and array of FloatLiteral matrices are handled are cast expressions
+			CastExpression& castExpr = static_cast<CastExpression&>(expression);
+
+			if (!castExpr.targetType.IsResultingValue())
+				return false;
+			
+			if (auto targetTypeOpt = ResolveLiteralType(castExpr.targetType.GetResultingValue(), referenceType, sourceLocation))
+			{
+				castExpr.targetType = *targetTypeOpt;
+				castExpr.cachedExpressionType = *targetTypeOpt;
+
+				bool succeeded = true;
+				for (auto& expr : castExpr.expressions)
+					succeeded &= ResolveLiteral(expr, referenceType, sourceLocation);
+
+				return succeeded;
+			}
+		}
 		else
 			throw AstUntypedExpectedConstantError{ expression.sourceLocation, Ast::ToString(expression.GetType()) };
 

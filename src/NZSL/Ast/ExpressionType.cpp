@@ -351,24 +351,6 @@ namespace nzsl::Ast
 			return fmt::format("array[{}]", ToString(type.InnerType(), stringifier));
 	}
 
-	std::string ToString(const ImplicitArrayType& /*type*/, const Stringifier& /*stringifier*/)
-	{
-		return "array";
-	}
-
-	std::string ToString(const ImplicitMatrixType& type, const Stringifier& /*stringifier*/)
-	{
-		if (type.columnCount == type.rowCount)
-			return fmt::format("mat{}", type.columnCount);
-		else
-			return fmt::format("mat{}x{}", type.columnCount, type.rowCount);
-	}
-
-	std::string ToString(const ImplicitVectorType& type, const Stringifier& /*stringifier*/)
-	{
-		return fmt::format("vec{}", type.componentCount);
-	}
-
 	std::string ToString(const DynArrayType& type, const Stringifier& stringifier)
 	{
 		return fmt::format("dyn_array[{}]", ToString(type.InnerType(), stringifier));
@@ -385,6 +367,24 @@ namespace nzsl::Ast
 	std::string ToString(const FunctionType& /*type*/, const Stringifier& /*stringifier*/)
 	{
 		return "<function type>";
+	}
+
+	std::string ToString(const ImplicitArrayType& /*type*/, const Stringifier& /*stringifier*/)
+	{
+		return "array";
+	}
+
+	std::string ToString(const ImplicitMatrixType& type, const Stringifier& /*stringifier*/)
+	{
+		if (type.columnCount == type.rowCount)
+			return fmt::format("mat{}", type.columnCount);
+		else
+			return fmt::format("mat{}x{}", type.columnCount, type.rowCount);
+	}
+
+	std::string ToString(const ImplicitVectorType& type, const Stringifier& /*stringifier*/)
+	{
+		return fmt::format("vec{}", type.componentCount);
 	}
 
 	std::string ToString(const IntrinsicFunctionType& /*type*/, const Stringifier& /*stringifier*/)

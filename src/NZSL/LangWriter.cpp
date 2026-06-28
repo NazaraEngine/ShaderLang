@@ -267,15 +267,21 @@ namespace nzsl
 
 	void LangWriter::Append(const Ast::ArrayType& type)
 	{
-		if (type.length > 0)
-			Append("array[", type.InnerType(), ", ", type.length, "]");
-		else
-			Append("array[", type.InnerType(), "]");
+		Append("array");
+		if (!IsLiteralType(type.InnerType()))
+		{
+			if (type.length > 0)
+				Append("[", type.InnerType(), ", ", type.length, "]");
+			else
+				Append("[", type.InnerType(), "]");
+		}
 	}
 
 	void LangWriter::Append(const Ast::DynArrayType& type)
 	{
-		Append("dyn_array[", type.InnerType(), "]");
+		Append("dyn_array");
+		if (!IsLiteralType(type.InnerType()))
+			Append("[", type.InnerType(), "]");
 	}
 
 	void LangWriter::Append(const Ast::ExpressionType& type)
@@ -335,7 +341,8 @@ namespace nzsl
 			Append(matrixType.rowCount);
 		}
 
-		Append("[", matrixType.type, "]");
+		if (matrixType.type != Ast::PrimitiveType::FloatLiteral && matrixType.type != Ast::PrimitiveType::IntLiteral)
+			Append("[", matrixType.type, "]");
 	}
 
 	void LangWriter::Append(const Ast::MethodType& /*functionType*/)

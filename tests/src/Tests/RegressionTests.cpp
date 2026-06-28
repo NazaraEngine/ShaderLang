@@ -402,4 +402,231 @@ fn main()
       OpReturn
       OpFunctionEnd)", {}, {}, true);
 	}
+
+	SECTION("Array of matN[FloatLiteral] are not resolved")
+	{
+		// Bug found by @SirLynix where arrays of matrices using float literals are not resolved to f32
+		std::string_view nzslSource = R"(
+[nzsl_version("1.1")]
+module;
+
+[entry(vert)]
+fn main()
+{
+	let faceIndex = 3;
+
+	let projMatrix = mat4(
+		1.0, 0.0, 0.0, 0.0,
+		0.0, -1.0, 0.0, 0.0,
+		0.0, 0.0, -1.0001, -1.0,
+		0.0, 0.0, -0.010001, 0.0
+	);
+
+	let viewMatrices = array(
+		mat4(
+			0.0, 0.0, -1.0, 0.0,
+			0.0, 1.0, 0.0, 0.0,
+			1.0, 0.0, 0.0, 0.0,
+			0.0, 0.0, 0.0, 1.0
+		),
+		mat4(
+			0.0, 0.0, 1.0, 0.0,
+			0.0, 1.0, 0.0, 0.0,
+			-1.0, 0.0, 0.0, 0.0,
+			0.0, 0.0, 0.0, 1.0
+		),
+		mat4(
+			1.0, 0.0, 0.0, 0.0,
+			0.0, 0.0, -1.0, 0.0,
+			0.0, 1.0, 0.0, 0.0,
+			0.0, 0.0, 0.0, 1.0
+		),
+		mat4(
+			1.0, 0.0, 0.0, 0.0,
+			0.0, 0.0, 1.0, 0.0,
+			0.0, -1.0, 0.0, 0.0,
+			0.0, 0.0, 0.0, 1.0
+		),
+		mat4(
+			1.0, 0.0, 0.0, 0.0,
+			0.0, 1.0, 0.0, 0.0,
+			0.0, 0.0, 1.0, 0.0,
+			0.0, 0.0, 0.0, 1.0
+		),
+		mat4(
+			-1.0, 0.0, 0.0, 0.0,
+			0.0, 1.0, 0.0, 0.0,
+			0.0, 0.0, -1.0, 0.0,
+			0.0, 0.0, 0.0, 1.0
+		)
+	);
+
+	let viewProj = projMatrix * viewMatrices[faceIndex];
+}
+)";
+
+		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
+		ResolveModule(*shaderModule);
+
+		ExpectGLSL(*shaderModule, R"(
+void main()
+{
+	int faceIndex = 3;
+	mat4 projMatrix = mat4(1.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, -1.0001, -1.0, 0.0, 0.0, -0.010001, 0.0);
+	mat4 viewMatrices[6] = mat4[6](mat4(0.0, 0.0, -1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0), mat4(0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0), mat4(1.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0), mat4(1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0), mat4(1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0), mat4(-1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, 1.0));
+	mat4 viewProj = projMatrix * viewMatrices[faceIndex];
+}
+)");
+
+		ExpectNZSL(*shaderModule, R"(
+[entry(vert)]
+fn main()
+{
+	let faceIndex: i32 = 3;
+	let projMatrix: mat4[f32] = mat4(1.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, -1.0001, -1.0, 0.0, 0.0, -0.010001, 0.0);
+	let viewMatrices: array[mat4[f32], 6] = array(mat4(0.0, 0.0, -1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0), mat4(0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0), mat4(1.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0), mat4(1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0), mat4(1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0), mat4(-1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, 1.0));
+	let viewProj: mat4[f32] = projMatrix * viewMatrices[faceIndex];
+)");
+
+		ExpectSPIRV(*shaderModule, R"(
+  %1 = OpTypeVoid
+  %2 = OpTypeFunction %1
+  %3 = OpTypeInt 32 1
+  %4 = OpConstant %3 i32(3)
+  %5 = OpTypePointer StorageClass(Function) %3
+  %6 = OpTypeFloat 32
+  %7 = OpTypeVector %6 4
+  %8 = OpTypeMatrix %7 4
+  %9 = OpTypePointer StorageClass(Function) %8
+ %10 = OpTypeInt 32 0
+ %11 = OpConstant %10 u32(0)
+ %12 = OpConstant %6 f32(1)
+ %13 = OpConstant %6 f32(0)
+ %14 = OpConstant %10 u32(1)
+ %15 = OpConstant %6 f32(-1)
+ %16 = OpConstant %10 u32(2)
+ %17 = OpConstant %6 f32(-1.0001)
+ %18 = OpConstant %10 u32(3)
+ %19 = OpConstant %6 f32(-0.010001)
+ %20 = OpConstant %10 u32(6)
+ %21 = OpTypeArray %8 %20
+ %22 = OpTypePointer StorageClass(Function) %21
+ %38 = OpTypePointer StorageClass(Function) %7
+ %23 = OpFunction %1 FunctionControl(0) %2
+ %24 = OpLabel
+ %25 = OpVariable %5 StorageClass(Function)
+ %26 = OpVariable %9 StorageClass(Function)
+ %27 = OpVariable %9 StorageClass(Function)
+ %28 = OpVariable %9 StorageClass(Function)
+ %29 = OpVariable %9 StorageClass(Function)
+ %30 = OpVariable %9 StorageClass(Function)
+ %31 = OpVariable %9 StorageClass(Function)
+ %32 = OpVariable %9 StorageClass(Function)
+ %33 = OpVariable %9 StorageClass(Function)
+ %34 = OpVariable %22 StorageClass(Function)
+ %35 = OpVariable %9 StorageClass(Function)
+       OpStore %25 %4
+ %36 = OpCompositeConstruct %7 %12 %13 %13 %13
+ %37 = OpAccessChain %38 %26 %11
+       OpStore %37 %36
+ %39 = OpCompositeConstruct %7 %13 %15 %13 %13
+ %40 = OpAccessChain %38 %26 %14
+       OpStore %40 %39
+ %41 = OpCompositeConstruct %7 %13 %13 %17 %15
+ %42 = OpAccessChain %38 %26 %16
+       OpStore %42 %41
+ %43 = OpCompositeConstruct %7 %13 %13 %19 %13
+ %44 = OpAccessChain %38 %26 %18
+       OpStore %44 %43
+ %45 = OpLoad %8 %26
+       OpStore %27 %45
+ %46 = OpCompositeConstruct %7 %13 %13 %15 %13
+ %47 = OpAccessChain %38 %28 %11
+       OpStore %47 %46
+ %48 = OpCompositeConstruct %7 %13 %12 %13 %13
+ %49 = OpAccessChain %38 %28 %14
+       OpStore %49 %48
+ %50 = OpCompositeConstruct %7 %12 %13 %13 %13
+ %51 = OpAccessChain %38 %28 %16
+       OpStore %51 %50
+ %52 = OpCompositeConstruct %7 %13 %13 %13 %12
+ %53 = OpAccessChain %38 %28 %18
+       OpStore %53 %52
+ %54 = OpCompositeConstruct %7 %13 %13 %12 %13
+ %55 = OpAccessChain %38 %29 %11
+       OpStore %55 %54
+ %56 = OpCompositeConstruct %7 %13 %12 %13 %13
+ %57 = OpAccessChain %38 %29 %14
+       OpStore %57 %56
+ %58 = OpCompositeConstruct %7 %15 %13 %13 %13
+ %59 = OpAccessChain %38 %29 %16
+       OpStore %59 %58
+ %60 = OpCompositeConstruct %7 %13 %13 %13 %12
+ %61 = OpAccessChain %38 %29 %18
+       OpStore %61 %60
+ %62 = OpCompositeConstruct %7 %12 %13 %13 %13
+ %63 = OpAccessChain %38 %30 %11
+       OpStore %63 %62
+ %64 = OpCompositeConstruct %7 %13 %13 %15 %13
+ %65 = OpAccessChain %38 %30 %14
+       OpStore %65 %64
+ %66 = OpCompositeConstruct %7 %13 %12 %13 %13
+ %67 = OpAccessChain %38 %30 %16
+       OpStore %67 %66
+ %68 = OpCompositeConstruct %7 %13 %13 %13 %12
+ %69 = OpAccessChain %38 %30 %18
+       OpStore %69 %68
+ %70 = OpCompositeConstruct %7 %12 %13 %13 %13
+ %71 = OpAccessChain %38 %31 %11
+       OpStore %71 %70
+ %72 = OpCompositeConstruct %7 %13 %13 %12 %13
+ %73 = OpAccessChain %38 %31 %14
+       OpStore %73 %72
+ %74 = OpCompositeConstruct %7 %13 %15 %13 %13
+ %75 = OpAccessChain %38 %31 %16
+       OpStore %75 %74
+ %76 = OpCompositeConstruct %7 %13 %13 %13 %12
+ %77 = OpAccessChain %38 %31 %18
+       OpStore %77 %76
+ %78 = OpCompositeConstruct %7 %12 %13 %13 %13
+ %79 = OpAccessChain %38 %32 %11
+       OpStore %79 %78
+ %80 = OpCompositeConstruct %7 %13 %12 %13 %13
+ %81 = OpAccessChain %38 %32 %14
+       OpStore %81 %80
+ %82 = OpCompositeConstruct %7 %13 %13 %12 %13
+ %83 = OpAccessChain %38 %32 %16
+       OpStore %83 %82
+ %84 = OpCompositeConstruct %7 %13 %13 %13 %12
+ %85 = OpAccessChain %38 %32 %18
+       OpStore %85 %84
+ %86 = OpCompositeConstruct %7 %15 %13 %13 %13
+ %87 = OpAccessChain %38 %33 %11
+       OpStore %87 %86
+ %88 = OpCompositeConstruct %7 %13 %12 %13 %13
+ %89 = OpAccessChain %38 %33 %14
+       OpStore %89 %88
+ %90 = OpCompositeConstruct %7 %13 %13 %15 %13
+ %91 = OpAccessChain %38 %33 %16
+       OpStore %91 %90
+ %92 = OpCompositeConstruct %7 %13 %13 %13 %12
+ %93 = OpAccessChain %38 %33 %18
+       OpStore %93 %92
+ %94 = OpLoad %8 %28
+ %95 = OpLoad %8 %29
+ %96 = OpLoad %8 %30
+ %97 = OpLoad %8 %31
+ %98 = OpLoad %8 %32
+ %99 = OpLoad %8 %33
+%100 = OpCompositeConstruct %21 %94 %95 %96 %97 %98 %99
+       OpStore %34 %100
+%101 = OpLoad %8 %27
+%102 = OpLoad %3 %25
+%103 = OpAccessChain %9 %34 %102
+%104 = OpLoad %8 %103
+%105 = OpMatrixTimesMatrix %8 %101 %104
+       OpStore %35 %105
+       OpReturn
+       OpFunctionEnd)", {}, {}, true);
+	}
 }
