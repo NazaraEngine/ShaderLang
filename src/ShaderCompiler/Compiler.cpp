@@ -9,6 +9,7 @@
 #include <NZSL/BackendParameters.hpp>
 #include <NZSL/FilesystemModuleResolver.hpp>
 #include <NZSL/GlslWriter.hpp>
+#include <NZSL/HlslWriter.hpp>
 #include <NZSL/LangWriter.hpp>
 #include <NZSL/Lang/Errors.hpp>
 #include <NZSL/Lexer.hpp>
@@ -226,6 +227,7 @@ namespace nzslc
 		options.add_options("compilation")
 			("c,compile", R"(Compile input shader to the following format. Possible values are:
 - glsl : GLSL (GLSL ES if --gl-es is set)
+- hlsl : HLSL (for DirectX / DXIL compilation via DXC)
 - nzsl : textual NZSL
 - nzslb : binary NZSL
 - spv : binary SPIR-V
@@ -246,6 +248,9 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 			("gl-flipy", "Add code to conditionally flip gl_Position Y value")
 			("gl-remapz", "Add code to remap gl_Position Z value from [0;1] to [-1;1]")
 			("gl-bindingmap", "Add binding support (generates a .binding.json mapping file)");
+
+		options.add_options("hlsl output")
+			("hlsl-version", "HLSL shader model version (60 being 6.0)", cxxopts::value<std::uint32_t>(), "version");
 
 		options.add_options("spirv output")
 			("spv-version", "SPIR-V version (110 being 1.1)", cxxopts::value<std::uint32_t>(), "version");
@@ -322,6 +327,8 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 				Step("Compile to textual SPIR-V", __LINE__, &Compiler::CompileToSPV, outputFilePath, *targetModule, true);
 			else if (outputType == "glsl")
 				Step("Compile to GLSL", __LINE__, &Compiler::CompileToGLSL, outputFilePath, *targetModule);
+			else if (outputType == "hlsl")
+				Step("Compile to HLSL", __LINE__, &Compiler::CompileToHLSL, outputFilePath, *targetModule);
 			else
 			{
 				fmt::print("Unknown format {}, ignoring\n", outputType);
@@ -486,6 +493,77 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 
 			OutputFile(std::move(filePath), output.code.data(), output.code.size());
 			first = false;
+		}
+	}
+
+	void Compiler::CompileToHLSL(std::filesystem::path outputPath, nzsl::Ast::Module& module)
+	{
+		nzsl::HlslWriter::Environment env;
+
+		if (m_options.count("hlsl-version") > 0)
+		{
+			std::uint32_t version = m_options["hlsl-version"].as<std::uint32_t>();
+			env.shaderModelMajorVersion = version / 10;
+			env.shaderModelMinorVersion = version % 10;
+		}
+
+		nzsl::HlslWriter writer;
+		writer.SetEnv(env);
+
+		nzsl::ShaderStageTypeFlags entryTypes;
+		nzsl::Ast::ReflectVisitor::Callbacks callbacks;
+		callbacks.onEntryPointDeclaration = [&](nzsl::ShaderStageType shaderStage, const std::string& /*functionName*/)
+		{
+			entryTypes |= shaderStage;
+		};
+
+		nzsl::Ast::ReflectVisitor reflectVisitor;
+		reflectVisitor.Reflect(module, callbacks);
+
+		if (entryTypes == 0)
+			throw std::runtime_error("shader has no entry function!");
+
+		nzsl::BackendParameters backendParameters = BuildWriterOptions();
+		nzsl::HlslWriter::Parameters parameters;
+
+		if (entryTypes.size() > 1)
+		{
+			// Multiple entry points: generate a single file with original function names
+			nzsl::HlslWriter::Output output = writer.Generate(module, backendParameters, parameters);
+			if (!m_skipOutput)
+			{
+				if (m_outputToStdout)
+					OutputToStdout(output.code);
+				else
+				{
+					std::filesystem::path filePath = outputPath;
+					filePath.replace_extension("hlsl");
+					OutputFile(std::move(filePath), output.code.data(), output.code.size());
+				}
+			}
+		}
+		else
+		{
+			// Single entry point: generate with specific stage, entry point named "main"
+			nzsl::ShaderStageType entryType = *entryTypes.begin();
+
+			nzsl::HlslWriter::Output output = writer.Generate(entryType, module, backendParameters, parameters);
+			if (!m_skipOutput)
+			{
+				if (m_outputToStdout)
+					OutputToStdout(output.code);
+				else
+				{
+					std::filesystem::path filePath = outputPath;
+					switch (entryType)
+					{
+						case nzsl::ShaderStageType::Compute:  filePath.replace_extension("comp.hlsl"); break;
+						case nzsl::ShaderStageType::Fragment: filePath.replace_extension("frag.hlsl"); break;
+						case nzsl::ShaderStageType::Vertex:   filePath.replace_extension("vert.hlsl"); break;
+					}
+					OutputFile(std::move(filePath), output.code.data(), output.code.size());
+				}
+			}
 		}
 	}
 
