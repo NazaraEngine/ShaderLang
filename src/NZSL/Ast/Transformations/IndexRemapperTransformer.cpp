@@ -46,6 +46,7 @@ namespace nzsl::Ast
 
 	void IndexRemapperTransformer::Transform(ExpressionType& expressionType, const SourceLocation& sourceLocation)
 	{
+		// ArrayType and DynArrayType inner types are handled here
 		Transformer::Transform(expressionType, sourceLocation);
 
 		if (IsAliasType(expressionType))
@@ -54,16 +55,6 @@ namespace nzsl::Ast
 			auto it = m_context->newIndices.find({ IdentifierType::Alias, aliasType.aliasIndex });
 			if (it != m_context->newIndices.end())
 				aliasType.aliasIndex = it->second;
-		}
-		else if (IsArrayType(expressionType))
-		{
-			ArrayType& arrayType = std::get<ArrayType>(expressionType);
-			Transform(arrayType.InnerType(), sourceLocation);
-		}
-		else if (IsDynArrayType(expressionType))
-		{
-			DynArrayType& arrayType = std::get<DynArrayType>(expressionType);
-			Transform(arrayType.InnerType(), sourceLocation);
 		}
 		else if (IsFunctionType(expressionType))
 		{
