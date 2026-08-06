@@ -716,6 +716,8 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 
 		nlohmann::ordered_json structArray = nlohmann::ordered_json::array();
 
+		std::unordered_map<std::size_t, nzsl::FieldOffsets> structFieldOffsets;
+
 		nzsl::Ast::ReflectVisitor::Callbacks callbacks;
 		callbacks.onStructDeclaration = [&](const nzsl::Ast::DeclareStructStatement& structDecl)
 		{
@@ -730,25 +732,26 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 			if (!structDecl.description.tag.empty())
 				structDoc["tag"] = structDecl.description.tag;
 
+			if (structDecl.structIndex)
+				structDoc["structIndex"] = *structDecl.structIndex;
+
 			nlohmann::ordered_json structMemberArray = nlohmann::ordered_json::array();
 
 			std::optional<nzsl::FieldOffsets> fieldOffsets;
 			if (structDecl.description.layout.IsResultingValue())
 			{
+				structDoc["layout"] = nzsl::Parser::ToString(structDecl.description.layout.GetResultingValue());
 				switch (structDecl.description.layout.GetResultingValue())
 				{
 					case nzsl::Ast::MemoryLayout::Scalar:
-						structDoc["layout"] = "scalar";
 						fieldOffsets.emplace(nzsl::StructLayout::Scalar);
 						break;
 
 					case nzsl::Ast::MemoryLayout::Std140:
-						structDoc["layout"] = "std140";
 						fieldOffsets.emplace(nzsl::StructLayout::Std140);
 						break;
 
 					case nzsl::Ast::MemoryLayout::Std430:
-						structDoc["layout"] = "std430";
 						fieldOffsets.emplace(nzsl::StructLayout::Std430);
 						break;
 				}
@@ -761,11 +764,32 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 				nlohmann::ordered_json memberDoc;
 				memberDoc["name"] = member.name;
 
+				if (member.cond.HasValue())
+				{
+					if (member.cond.IsResultingValue())
+					{
+						if (!member.cond.GetResultingValue())
+							continue;
+					}
+					else
+					{
+						memberDoc["condition"] = "unresolved";
+						fieldOffsets.reset(); //< member offset can no longer be guaranteed at this point
+					}
+				}
+
 				if (member.type.IsResultingValue())
 				{
-					memberDoc["type"] = nzsl::Ast::ToString(member.type.GetResultingValue());
+					memberDoc["type"] = ReflectType(member.type.GetResultingValue());
 					if (fieldOffsets)
-						memberDoc["offset"] = nzsl::Ast::RegisterStructField(*fieldOffsets, member.type.GetResultingValue());
+					{
+						auto structFinder = [&](std::size_t structIndex) -> const nzsl::FieldOffsets&
+						{
+							return Nz::Retrieve(structFieldOffsets, structIndex);
+						};
+
+						memberDoc["offset"] = nzsl::Ast::RegisterStructField(*fieldOffsets, member.type.GetResultingValue(), structFinder);
+					}
 				}
 				else if (member.type.IsExpression())
 					memberDoc["type"] = "unresolved";
@@ -777,6 +801,9 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 
 				structMemberArray.push_back(std::move(memberDoc));
 			}
+
+			if (fieldOffsets && structDecl.structIndex)
+				structFieldOffsets.emplace(*structDecl.structIndex, *fieldOffsets);
 
 			structDoc["members"] = std::move(structMemberArray);
 
@@ -805,6 +832,201 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 
 		std::string output = result.dump(1, '\t');
 		OutputFile(std::move(outputFilePath), output.data(), output.size());
+	}
+
+	nlohmann::ordered_json Compiler::ReflectType(const nzsl::Ast::ExpressionType& exprType) const
+	{
+		return std::visit([this](auto&& type)
+		{
+			return ReflectType(type);
+		}, exprType);
+	}
+
+	nlohmann::ordered_json Compiler::ReflectType(const nzsl::Ast::NoType& /*exprType*/) const
+	{
+		return {
+			{"type", "noType"}
+		};
+	}
+
+	nlohmann::ordered_json Compiler::ReflectType(const nzsl::Ast::AliasType& exprType) const
+	{
+		return {
+			{"type",       "alias"},
+			{"targetType", ReflectType(exprType.TargetType())}
+		};
+	}
+
+	nlohmann::ordered_json Compiler::ReflectType(const nzsl::Ast::ArrayType& exprType) const
+	{
+		return {
+			{"type",      "array"},
+			{"length",    exprType.length},
+			{"isWrapped", exprType.isWrapped},
+			{"innerType", ReflectType(exprType.InnerType())},
+		};
+	}
+
+	nlohmann::ordered_json Compiler::ReflectType(const nzsl::Ast::DynArrayType& exprType) const
+	{
+		return {
+			{"type",      "dynArray"},
+			{"isWrapped", exprType.isWrapped},
+			{"innerType", ReflectType(exprType.InnerType())},
+		};
+	}
+
+	nlohmann::ordered_json Compiler::ReflectType(const nzsl::Ast::FunctionType& exprType) const
+	{
+		return {
+			{"type", "function"},
+			{"index", exprType.funcIndex}
+		};
+	}
+
+	nlohmann::ordered_json Compiler::ReflectType(const nzsl::Ast::ImplicitArrayType& /*exprType*/) const
+	{
+		return {
+			{"type", "implicitArray"}
+		};
+	}
+
+	nlohmann::ordered_json Compiler::ReflectType(const nzsl::Ast::ImplicitMatrixType& exprType) const
+	{
+		return {
+			{"type",        "implicitMatrix"},
+			{"columnCount", exprType.columnCount},
+			{"rowCount",    exprType.rowCount}
+		};
+	}
+
+	nlohmann::ordered_json Compiler::ReflectType(const nzsl::Ast::ImplicitVectorType& exprType) const
+	{
+		return {
+			{"type", "implicitVector"},
+			{"dims", exprType.componentCount}
+		};
+	}
+	
+	nlohmann::ordered_json Compiler::ReflectType(const nzsl::Ast::IntrinsicFunctionType& exprType) const
+	{
+		return {
+			{"type",      "intrinsicFunction"},
+			{"intrinsic", nzsl::Parser::ToString(exprType.intrinsic)}
+		};
+	}
+
+	nlohmann::ordered_json Compiler::ReflectType(const nzsl::Ast::MatrixType& exprType) const
+	{
+		return {
+			{"type",        "matrix"},
+			{"columnCount", exprType.columnCount},
+			{"rowCount",    exprType.rowCount},
+			{"cellType",    nzsl::Ast::ToString(exprType.type)},
+		};
+	}
+
+	nlohmann::ordered_json Compiler::ReflectType(const nzsl::Ast::MethodType& exprType) const
+	{
+		return {
+			{"type",        "method"},
+			{"objectType",  ReflectType(exprType.ObjectType())},
+			{"methodIndex", exprType.methodIndex }
+		};
+	}
+
+	nlohmann::ordered_json Compiler::ReflectType(const nzsl::Ast::ModuleType& exprType) const
+	{
+		return {
+			{"type",  "module"},
+			{"index", exprType.moduleIndex}
+		};
+	}
+
+	nlohmann::ordered_json Compiler::ReflectType(const nzsl::Ast::NamedExternalBlockType& exprType) const
+	{
+		return {
+			{"type",  "namedExternalBlock"},
+			{"index", exprType.namedExternalBlockIndex}
+		};
+	}
+
+	nlohmann::ordered_json Compiler::ReflectType(const nzsl::Ast::PrimitiveType& exprType) const
+	{
+		return {
+			{"type",          "primitive"},
+			{"primitiveType", nzsl::Ast::ToString(exprType)}
+		};
+	}
+
+	nlohmann::ordered_json Compiler::ReflectType(const nzsl::Ast::PushConstantType& exprType) const
+	{
+		return {
+			{"type",        "push_constant"},
+			{"structIndex", exprType.containedType.structIndex}
+		};
+	}
+
+	nlohmann::ordered_json Compiler::ReflectType(const nzsl::Ast::SamplerType& exprType) const
+	{
+		return {
+			{"type",        "sampler"},
+			{"depth",       exprType.depth},
+			{"dim",         nzsl::Parser::ToString(exprType.dim)},
+			{"sampledType", nzsl::Ast::ToString(exprType.sampledType)}
+		};
+	}
+
+	nlohmann::ordered_json Compiler::ReflectType(const nzsl::Ast::StorageType& exprType) const
+	{
+		return {
+			{"type",        "storage"},
+			{"structIndex", exprType.containedType.structIndex}
+		};
+	}
+
+	nlohmann::ordered_json Compiler::ReflectType(const nzsl::Ast::StructType& exprType) const
+	{
+		return {
+			{"type",  "struct"},
+			{"index", exprType.structIndex}
+		};
+	}
+
+	nlohmann::ordered_json Compiler::ReflectType(const nzsl::Ast::TextureType& exprType) const
+	{
+		return {
+			{"type",         "texture"},
+			{"accessPolicy", exprType.accessPolicy},
+			{"baseType",     nzsl::Ast::ToString(exprType.baseType)},
+			{"dim",          nzsl::Parser::ToString(exprType.dim)},
+			{"format",       nzsl::Parser::ToString(exprType.format)},
+		};
+	}
+
+	nlohmann::ordered_json Compiler::ReflectType(const nzsl::Ast::Type& exprType) const
+	{
+		return {
+			{"type",  "type"},
+			{"index", exprType.typeIndex}
+		};
+	}
+
+	nlohmann::ordered_json Compiler::ReflectType(const nzsl::Ast::UniformType& exprType) const
+	{
+		return {
+			{"type",        "uniform"},
+			{"structIndex", exprType.containedType.structIndex}
+		};
+	}
+
+	nlohmann::ordered_json Compiler::ReflectType(const nzsl::Ast::VectorType& exprType) const
+	{
+		return {
+			{"type",     "vector"},
+			{"dims",     exprType.componentCount},
+			{"baseType", nzsl::Ast::ToString(exprType.type)}
+		};
 	}
 
 	void Compiler::Resolve()

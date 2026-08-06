@@ -182,7 +182,7 @@ namespace nzsl::Ast
 		const auto& intrinsicData = intrinsicIt->second;
 
 		if (intrinsicExpr.parameters.size() != intrinsicData.nonConstraintParameterCount)
-			throw CompilerIntrinsicExpectedParameterCountError{ intrinsicExpr.sourceLocation, Nz::SafeCast<std::uint32_t>(intrinsicData.nonConstraintParameterCount), intrinsicData.functionName, Nz::SafeCast<std::uint32_t>(intrinsicExpr.parameters.size()) };
+			throw CompilerIntrinsicExpectedParameterCountError{ intrinsicExpr.sourceLocation, Nz::SafeCast<std::uint32_t>(intrinsicData.nonConstraintParameterCount), intrinsicData.name, Nz::SafeCast<std::uint32_t>(intrinsicExpr.parameters.size()) };
 
 		std::array<std::optional<ExpressionType>, 2> parameterTypes;
 		if (intrinsicData.returnType == ReturnType::Param0Type || intrinsicData.returnType == ReturnType::Param1Type)
@@ -270,7 +270,7 @@ namespace nzsl::Ast
 					return vecType;
 				}
 				else
-					throw AstInternalError{ intrinsicExpr.sourceLocation, fmt::format("intrinsic {} first parameter is not a primitive nor vector", intrinsicData.functionName) };
+					throw AstInternalError{ intrinsicExpr.sourceLocation, fmt::format("intrinsic {} first parameter is not a primitive nor vector", intrinsicData.name) };
 			}
 
 			case ReturnType::Param0SampledValue:
@@ -281,7 +281,7 @@ namespace nzsl::Ast
 
 				const ExpressionType& paramType = ResolveAlias(*expressionType);
 				if (!IsSamplerType(paramType))
-					throw AstInternalError{ intrinsicExpr.sourceLocation, fmt::format("intrinsic {} first parameter is not a sampler", intrinsicData.functionName) };
+					throw AstInternalError{ intrinsicExpr.sourceLocation, fmt::format("intrinsic {} first parameter is not a sampler", intrinsicData.name) };
 
 				const SamplerType& samplerType = std::get<SamplerType>(paramType);
 				if (samplerType.depth)
@@ -298,7 +298,7 @@ namespace nzsl::Ast
 
 				const ExpressionType& paramType = ResolveAlias(*expressionType);
 				if (!IsTextureType(paramType))
-					throw AstInternalError{ intrinsicExpr.sourceLocation, fmt::format("intrinsic {} first parameter is not a sampler", intrinsicData.functionName) };
+					throw AstInternalError{ intrinsicExpr.sourceLocation, fmt::format("intrinsic {} first parameter is not a sampler", intrinsicData.name) };
 
 				const TextureType& textureType = std::get<TextureType>(paramType);
 				return VectorType{ 4, textureType.baseType };
@@ -312,7 +312,7 @@ namespace nzsl::Ast
 
 				const ExpressionType& paramType = ResolveAlias(*expressionType);
 				if (!IsMatrixType(paramType))
-					throw AstInternalError{ intrinsicExpr.sourceLocation, fmt::format("intrinsic {} first parameter is not a matrix", intrinsicData.functionName) };
+					throw AstInternalError{ intrinsicExpr.sourceLocation, fmt::format("intrinsic {} first parameter is not a matrix", intrinsicData.name) };
 
 				MatrixType matrixType = std::get<MatrixType>(paramType);
 				std::swap(matrixType.columnCount, matrixType.rowCount);
@@ -346,7 +346,7 @@ namespace nzsl::Ast
 
 				const ExpressionType& paramType = ResolveAlias(*expressionType);
 				if (!IsVectorType(paramType))
-					throw AstInternalError{ intrinsicExpr.sourceLocation, fmt::format("intrinsic {} first parameter is not a vector", intrinsicData.functionName) };
+					throw AstInternalError{ intrinsicExpr.sourceLocation, fmt::format("intrinsic {} first parameter is not a vector", intrinsicData.name) };
 
 				const VectorType& vecType = std::get<VectorType>(paramType);
 				return vecType.type;

@@ -160,6 +160,23 @@ namespace nzsl::Ast
 		return !operator==(rhs);
 	}
 
+	inline auto& MethodType::ObjectType()
+	{
+		return objectType->type;
+	}
+
+	inline const auto& MethodType::ObjectType() const
+	{
+		return objectType->type;
+	}
+
+	template<typename T>
+	void MethodType::SetupObjectType(T&& value)
+	{
+		objectType = std::make_unique<ContainedType>();
+		objectType->type = std::forward<T>(value);
+	}
+
 
 	inline bool ModuleType::operator==(const ModuleType& rhs) const
 	{

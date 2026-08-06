@@ -5,6 +5,7 @@
 #include <NZSL/Ast/ExpressionType.hpp>
 #include <NazaraUtils/Algorithm.hpp>
 #include <NazaraUtils/TypeList.hpp>
+#include <NZSL/Parser.hpp>
 #include <NZSL/Ast/Cloner.hpp>
 #include <NZSL/Ast/Compare.hpp>
 #include <NZSL/Math/FieldOffsets.hpp>
@@ -450,18 +451,7 @@ namespace nzsl::Ast
 
 	std::string ToString(const SamplerType& type, const Stringifier& /*stringifier*/)
 	{
-		std::string_view dimensionStr;
-		switch (type.dim)
-		{
-			case ImageType::E1D:       dimensionStr = "1D";      break;
-			case ImageType::E1D_Array: dimensionStr = "1DArray"; break;
-			case ImageType::E2D:       dimensionStr = "2D";      break;
-			case ImageType::E2D_Array: dimensionStr = "2DArray"; break;
-			case ImageType::E3D:       dimensionStr = "3D";      break;
-			case ImageType::Cubemap:   dimensionStr = "Cube";    break;
-		}
-
-		return fmt::format("{}sampler{}[{}]", (type.depth) ? "depth_" : "", dimensionStr, ToString(type.sampledType));
+		return fmt::format("{}sampler{}[{}]", (type.depth) ? "depth_" : "", Parser::ToString(type.dim), ToString(type.sampledType));
 	}
 
 	std::string ToString(const StorageType& type, const Stringifier& stringifier)
@@ -479,18 +469,7 @@ namespace nzsl::Ast
 
 	std::string ToString(const TextureType& type, const Stringifier& /*stringifier*/)
 	{
-		std::string_view dimensionStr;
-		switch (type.dim)
-		{
-			case ImageType::E1D:       dimensionStr = "1D";      break;
-			case ImageType::E1D_Array: dimensionStr = "1DArray"; break;
-			case ImageType::E2D:       dimensionStr = "2D";      break;
-			case ImageType::E2D_Array: dimensionStr = "2DArray"; break;
-			case ImageType::E3D:       dimensionStr = "3D";      break;
-			case ImageType::Cubemap:   dimensionStr = "Cube";    break;
-		}
-
-		return fmt::format("texture{}[{}]", dimensionStr, ToString(type.baseType));
+		return fmt::format("texture{}[{}]", Parser::ToString(type.dim), ToString(type.baseType));
 	}
 
 	std::string ToString(const Type& type, const Stringifier& stringifier)

@@ -1505,7 +1505,7 @@ namespace nzsl::Ast
 	void ValidationTransformer::ValidateIntrinsicParameters(IntrinsicExpression& node, const T& intrinsicData)
 	{
 		if (node.parameters.size() != intrinsicData.nonConstraintParameterCount)
-			throw CompilerIntrinsicExpectedParameterCountError{ node.sourceLocation, Nz::SafeCast<std::uint32_t>(intrinsicData.nonConstraintParameterCount), intrinsicData.functionName, Nz::SafeCast<std::uint32_t>(node.parameters.size()) };
+			throw CompilerIntrinsicExpectedParameterCountError{ node.sourceLocation, Nz::SafeCast<std::uint32_t>(intrinsicData.nonConstraintParameterCount), intrinsicData.name, Nz::SafeCast<std::uint32_t>(node.parameters.size()) };
 
 		std::optional<std::size_t> unresolvedParameter;
 

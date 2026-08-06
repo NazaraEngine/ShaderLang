@@ -986,8 +986,8 @@ namespace nzsl::Ast
 
 		for (const auto& [intrinsic, data] : LangData::s_intrinsicData)
 		{
-			if (!data.functionName.empty())
-				RegisterBuiltinIntrinsic(std::string(data.functionName), intrinsic);
+			if (!data.isMethod)
+				RegisterBuiltinIntrinsic(std::string(data.name), intrinsic);
 		}
 
 		// Constants
@@ -1404,8 +1404,7 @@ namespace nzsl::Ast
 				else
 					throw CompilerUnknownMethodError{ identifierEntry.sourceLocation, ToString(resolvedType, indexedExpr->sourceLocation), identifierEntry.identifier };
 
-				methodType.objectType = std::make_unique<ContainedType>();
-				methodType.objectType->type = resolvedType;
+				methodType.SetupObjectType(resolvedType);
 
 				// TODO: Add a MethodExpression?
 				auto identifierExpr = std::make_unique<AccessIdentifierExpression>();
@@ -1428,8 +1427,7 @@ namespace nzsl::Ast
 				else
 					throw CompilerUnknownMethodError{ identifierEntry.sourceLocation, ToString(resolvedType, indexedExpr->sourceLocation), identifierEntry.identifier };
 
-				methodType.objectType = std::make_unique<ContainedType>();
-				methodType.objectType->type = resolvedType;
+				methodType.SetupObjectType(resolvedType);
 
 				// TODO: Add a MethodExpression?
 				auto identifierExpr = std::make_unique<AccessIdentifierExpression>();
@@ -1452,8 +1450,7 @@ namespace nzsl::Ast
 
 					MethodType methodType;
 					methodType.methodIndex = 0; //< FIXME
-					methodType.objectType = std::make_unique<ContainedType>();
-					methodType.objectType->type = resolvedType;
+					methodType.SetupObjectType(resolvedType);
 
 					identifierExpr->cachedExpressionType = std::move(methodType);
 					indexedExpr = std::move(identifierExpr);

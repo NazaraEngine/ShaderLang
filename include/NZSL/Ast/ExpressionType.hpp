@@ -158,6 +158,11 @@ namespace nzsl::Ast
 		MethodType(const MethodType& methodType);
 		MethodType(MethodType&&) noexcept = default;
 
+		inline auto& ObjectType();
+		inline const auto& ObjectType() const;
+
+		template<typename T> void SetupObjectType(T&& value);
+
 		MethodType& operator=(const MethodType& methodType);
 		MethodType& operator=(MethodType&&) noexcept = default;
 

@@ -154,6 +154,14 @@ namespace nzsl
 		return it->second.identifier;
 	}
 
+	std::string_view Parser::ToString(Ast::IntrinsicType intrinsicType)
+	{
+		auto it = LangData::s_intrinsicData.find(intrinsicType);
+		assert(it != LangData::s_intrinsicData.end());
+
+		return it->second.name;
+	}
+
 	std::string_view Parser::ToString(Ast::LoopUnroll loopUnroll)
 	{
 		auto it = LangData::s_unrollModes.find(loopUnroll);
@@ -192,6 +200,33 @@ namespace nzsl
 
 		NAZARA_UNREACHABLE();
 	}
+	
+	std::string_view Parser::ToString(AccessPolicy accessPolicy)
+	{
+		switch (accessPolicy)
+		{
+			case AccessPolicy::ReadOnly:  return "readonly";
+			case AccessPolicy::ReadWrite: return "readwrite";
+			case AccessPolicy::WriteOnly: return "writeonly";
+		}
+
+		NAZARA_UNREACHABLE();
+	}
+
+	std::string_view Parser::ToString(ImageType imageType)
+	{
+		switch (imageType)
+		{
+			case ImageType::E1D:       return "1D";
+			case ImageType::E1D_Array: return "1DArray";
+			case ImageType::E2D:       return "2D";
+			case ImageType::E2D_Array: return "2DArray";
+			case ImageType::E3D:       return "3D";
+			case ImageType::Cubemap:   return "Cube";
+		}
+
+		NAZARA_UNREACHABLE();
+	}
 
 	std::string_view Parser::ToString(ShaderStageType shaderStage)
 	{
@@ -199,6 +234,14 @@ namespace nzsl
 		assert(it != LangData::s_entryPoints.end());
 
 		return it->second.identifier;
+	}
+
+	std::string_view Parser::ToString(ImageFormat imageFormat)
+	{
+		auto formatIt = LangData::s_imageFormats.find(imageFormat);
+		assert(formatIt != LangData::s_imageFormats.end());
+
+		return formatIt->second.identifier;
 	}
 
 	const Token& Parser::Advance()

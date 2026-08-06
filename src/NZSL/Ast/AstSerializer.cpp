@@ -1163,8 +1163,7 @@ NAZARA_WARNING_GCC_DISABLE("-Wmaybe-uninitialized")
 				SizeT(methodIndex);
 
 				MethodType methodType;
-				methodType.objectType = std::make_unique<ContainedType>();
-				methodType.objectType->type = std::move(objectType);
+				methodType.SetupObjectType(std::move(objectType));
 				methodType.methodIndex = methodIndex;
 
 				type = std::move(methodType);

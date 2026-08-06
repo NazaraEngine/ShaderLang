@@ -408,11 +408,10 @@ namespace nzsl
 	void LangWriter::Append(const Ast::StorageType& storageType)
 	{
 		Append("storage[", storageType.containedType);
-		switch (storageType.accessPolicy)
+		if (storageType.accessPolicy != AccessPolicy::ReadWrite)
 		{
-			case AccessPolicy::ReadOnly:  Append(", readonly"); break;
-			case AccessPolicy::ReadWrite: break;
-			case AccessPolicy::WriteOnly: Append(", writeonly"); break;
+			Append(", ");
+			Append(Parser::ToString(storageType.accessPolicy));
 		}
 		Append("]");
 	}
@@ -437,19 +436,11 @@ namespace nzsl
 		}
 
 		Append("[", textureType.baseType, ", ");
-		switch (textureType.accessPolicy)
-		{
-			case AccessPolicy::ReadOnly:  Append("readonly"); break;
-			case AccessPolicy::ReadWrite: Append("readwrite"); break;
-			case AccessPolicy::WriteOnly: Append("writeonly"); break;
-		}
+		Append(Parser::ToString(textureType.accessPolicy));
 
 		if (textureType.format != ImageFormat::Unknown)
-		{
-			auto formatIt = LangData::s_imageFormats.find(textureType.format);
-			assert(formatIt != LangData::s_imageFormats.end());
-			Append(", ", formatIt->second.identifier);
-		}
+			Append(", ", Parser::ToString(textureType.format));
+
 		Append("]");
 	}
 
@@ -1333,9 +1324,9 @@ namespace nzsl
 			{
 				auto intrinsicIt = LangData::s_intrinsicData.find(node.intrinsic);
 				assert(intrinsicIt != LangData::s_intrinsicData.end());
-				assert(!intrinsicIt->second.functionName.empty());
+				assert(!intrinsicIt->second.isMethod);
 
-				Append(intrinsicIt->second.functionName);
+				Append(intrinsicIt->second.name);
 				break;
 			}
 

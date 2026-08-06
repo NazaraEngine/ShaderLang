@@ -12,6 +12,7 @@
 #include <NZSL/Ast/Module.hpp>
 #include <NZSL/Ast/Transformations/TransformerContext.hpp>
 #include <cxxopts.hpp>
+#include <nlohmann/json_fwd.hpp>
 #include <filesystem>
 #include <type_traits>
 #include <unordered_map>
@@ -66,6 +67,29 @@ namespace nzslc
 			void OutputToStdout(std::string_view str);
 			void ReadInput();
 			void Reflect();
+			nlohmann::ordered_json ReflectType(const nzsl::Ast::ExpressionType& exprType) const;
+			nlohmann::ordered_json ReflectType(const nzsl::Ast::NoType& exprType) const;
+			nlohmann::ordered_json ReflectType(const nzsl::Ast::AliasType& exprType) const;
+			nlohmann::ordered_json ReflectType(const nzsl::Ast::ArrayType& exprType) const;
+			nlohmann::ordered_json ReflectType(const nzsl::Ast::DynArrayType& exprType) const;
+			nlohmann::ordered_json ReflectType(const nzsl::Ast::FunctionType& exprType) const;
+			nlohmann::ordered_json ReflectType(const nzsl::Ast::ImplicitArrayType& exprType) const;
+			nlohmann::ordered_json ReflectType(const nzsl::Ast::ImplicitMatrixType& exprType) const;
+			nlohmann::ordered_json ReflectType(const nzsl::Ast::ImplicitVectorType& exprType) const;
+			nlohmann::ordered_json ReflectType(const nzsl::Ast::IntrinsicFunctionType& exprType) const;
+			nlohmann::ordered_json ReflectType(const nzsl::Ast::MatrixType& exprType) const;
+			nlohmann::ordered_json ReflectType(const nzsl::Ast::MethodType& exprType) const;
+			nlohmann::ordered_json ReflectType(const nzsl::Ast::ModuleType& exprType) const;
+			nlohmann::ordered_json ReflectType(const nzsl::Ast::NamedExternalBlockType& exprType) const;
+			nlohmann::ordered_json ReflectType(const nzsl::Ast::PrimitiveType& exprType) const;
+			nlohmann::ordered_json ReflectType(const nzsl::Ast::PushConstantType& exprType) const;
+			nlohmann::ordered_json ReflectType(const nzsl::Ast::SamplerType& exprType) const;
+			nlohmann::ordered_json ReflectType(const nzsl::Ast::StorageType& exprType) const;
+			nlohmann::ordered_json ReflectType(const nzsl::Ast::StructType& exprType) const;
+			nlohmann::ordered_json ReflectType(const nzsl::Ast::TextureType& exprType) const;
+			nlohmann::ordered_json ReflectType(const nzsl::Ast::Type& exprType) const;
+			nlohmann::ordered_json ReflectType(const nzsl::Ast::UniformType& exprType) const;
+			nlohmann::ordered_json ReflectType(const nzsl::Ast::VectorType& exprType) const;
 			void Resolve();
 			template<typename F, typename... Args> auto Step(std::enable_if_t<!std::is_member_function_pointer_v<F>, std::string_view> stepName, std::size_t uniqueIndex, F&& func, Args&&... args) -> decltype(std::invoke(func, std::forward<Args>(args)...));
 			template<typename F, typename... Args> auto Step(std::enable_if_t<std::is_member_function_pointer_v<F>, std::string_view> stepName, std::size_t uniqueIndex, F&& func, Args&&... args) -> decltype(std::invoke(func, this, std::forward<Args>(args)...));
