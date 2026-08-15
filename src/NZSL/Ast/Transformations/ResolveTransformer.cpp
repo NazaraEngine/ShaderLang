@@ -889,6 +889,8 @@ namespace nzsl::Ast
 						throw CompilerTextureUnexpectedAccessError{ sourceLocation, "<TODO>" };
 
 					AccessPolicy access = static_cast<AccessPolicy>(std::get<std::uint32_t>(accessValue));
+					if (LangData::s_accessPolicies.find(access) == LangData::s_accessPolicies.end())
+						throw CompilerTextureUnexpectedAccessError{ sourceLocation, std::to_string(Nz::SafeCast<std::uint32_t>(access)) };
 
 					std::optional<ImageFormat> formatOpt;
 					if (parameterCount >= 3)
@@ -932,6 +934,8 @@ namespace nzsl::Ast
 						throw CompilerStorageUnexpectedAccessError{ sourceLocation, "<TODO>" };
 
 					access = static_cast<AccessPolicy>(std::get<std::uint32_t>(accessValue));
+					if (LangData::s_accessPolicies.find(access) == LangData::s_accessPolicies.end())
+						throw CompilerStorageUnexpectedAccessError{ sourceLocation, std::to_string(Nz::SafeCast<std::uint32_t>(access)) };
 				}
 
 				StructType structType = std::get<StructType>(exprType);

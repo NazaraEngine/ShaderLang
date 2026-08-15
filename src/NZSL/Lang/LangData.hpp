@@ -18,6 +18,17 @@
 
 namespace nzsl::LangData
 {
+	struct AccessPolicyData
+	{
+		std::string_view identifier;
+	};
+
+	constexpr auto s_accessPolicies = frozen::make_unordered_map<AccessPolicy, AccessPolicyData>({
+		{ AccessPolicy::ReadOnly,  { "readonly" } },
+		{ AccessPolicy::ReadWrite, { "readwrite" } },
+		{ AccessPolicy::WriteOnly, { "writeonly" } },
+	});
+
 	struct AttributeData
 	{
 		std::string_view identifier;

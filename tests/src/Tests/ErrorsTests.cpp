@@ -735,6 +735,32 @@ fn main()
 }
 )"), "(14,2 -> 18): CIdentifierAlreadyUsed error: identifier Viewer is already used");
 
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.1")]
+module;
+
+external
+{
+	[binding(0)] tex: texture2D[f32, rgba8]
+}
+
+)"), "(7,20 -> 40): CTextureUnexpectedAccess error: texture type require readonly, readwrite or writeonly qualifier (got 38)");
+
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.1")]
+module;
+
+struct Foo
+{
+}
+
+external
+{
+	[binding(0)] foo: storage[Foo, rgba8]
+}
+
+)"), "(11,20 -> 38): CStorageUnexpectedAccess error: storage type access qualifiers must be readonly, readwrite or writeonly (got 38)");
+
 		}
 
 		/************************************************************************/
