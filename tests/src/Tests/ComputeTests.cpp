@@ -286,4 +286,52 @@ layout(rgba8_snorm) uniform writeonly image2D tex_rgba8_snorm;
  %6 = OpTypePointer StorageClass(UniformConstant) %5
  %8 = OpTypeImage %1 Dim(Dim2D) 2 0 0 2 ImageFormat(Rgba8Snorm))", {}, {}, true);
 	}
+
+	SECTION("Explicit LOD sampling")
+	{
+		std::string_view nzslSource = R"(
+[nzsl_version("1.1")]
+module;
+
+[auto_binding]
+external
+{
+	tex: sampler2D[f32],
+	output_tex: texture2D[f32, writeonly, rgba8]
+}
+
+struct Input
+{
+	[builtin(global_invocation_indices)] indices: vec3[u32]
+}
+
+[entry(compute)]
+[workgroup(8, 8, 1)]
+fn main(input: Input)
+{
+	let coords = vec2[i32](input.indices.xy);
+	let value = tex.SampleLevel(vec2[f32](0.5, 0.5), 0.0);
+	output_tex.Write(coords, value);
+}
+)";
+
+		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
+		ResolveModule(*shaderModule);
+
+		nzsl::GlslWriter::Environment glslEnv;
+		glslEnv.glES = true;
+		glslEnv.glMajorVersion = 3;
+		glslEnv.glMinorVersion = 1;
+
+		ExpectGLSL(*shaderModule, R"(
+	vec4 value = textureLod(tex, vec2(0.5, 0.5), 0.0);
+)", {}, glslEnv);
+
+		ExpectNZSL(*shaderModule, R"(
+	let value: vec4[f32] = tex.SampleLevel(vec2[f32](0.5, 0.5), 0.0);
+)");
+
+		ExpectSPIRV(*shaderModule, R"(
+OpImageSampleExplicitLod %27 %39 %40 ImageOperands(2) ImageOperands(26))", {}, {}, true);
+	}
 }

@@ -77,6 +77,7 @@ namespace nzsl
 			// Should be private but are referenced in SpirvGenData.hpp
 			void BuildArraySizeIntrinsic(const Ast::IntrinsicExpression& node);
 			void BuildSelectIntrinsic(const Ast::IntrinsicExpression& node);
+			void BuildTextureSampleExplicitLodIntrinsic(const Ast::IntrinsicExpression& node);
 			static SpirvGlslStd450Op SelectAbs(const Ast::IntrinsicExpression& node);
 			static SpirvGlslStd450Op SelectClamp(const Ast::IntrinsicExpression& node);
 			static SpirvGlslStd450Op SelectLerp(const Ast::IntrinsicExpression& node);

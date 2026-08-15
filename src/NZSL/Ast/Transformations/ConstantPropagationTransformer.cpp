@@ -674,6 +674,7 @@ namespace nzsl::Ast
 			case IntrinsicType::FwidthFine:
 			case IntrinsicType::TextureRead:
 			case IntrinsicType::TextureWrite:
+			case IntrinsicType::TextureSampleExplicitLod:
 			case IntrinsicType::TextureSampleImplicitLod:
 			case IntrinsicType::TextureSampleImplicitLodDepthComp:
 				break;

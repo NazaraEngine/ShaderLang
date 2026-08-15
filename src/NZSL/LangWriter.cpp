@@ -1352,6 +1352,13 @@ namespace nzsl
 				method = true;
 				break;
 
+			case Ast::IntrinsicType::TextureSampleExplicitLod:
+				assert(!node.parameters.empty());
+				Visit(node.parameters.front(), true);
+				Append(".SampleLevel");
+				method = true;
+				break;
+
 			case Ast::IntrinsicType::TextureSampleImplicitLodDepthComp:
 				assert(!node.parameters.empty());
 				Visit(node.parameters.front(), true);

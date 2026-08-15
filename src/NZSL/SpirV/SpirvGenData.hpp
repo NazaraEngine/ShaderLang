@@ -138,6 +138,7 @@ NAZARA_WARNING_CLANG_GCC_DISABLE("-Wmissing-field-initializers")
 		{ Ast::IntrinsicType::Tan,                               { SpirvGlslStd450Op::Tan } },
 		{ Ast::IntrinsicType::Tanh,                              { SpirvGlslStd450Op::Tanh } },
 		{ Ast::IntrinsicType::TextureRead,                       { SpirvOp::OpImageRead } },
+		{ Ast::IntrinsicType::TextureSampleExplicitLod,          { &SpirvAstVisitor::BuildTextureSampleExplicitLodIntrinsic } },
 		{ Ast::IntrinsicType::TextureSampleImplicitLod,          { SpirvOp::OpImageSampleImplicitLod } },
 		{ Ast::IntrinsicType::TextureSampleImplicitLodDepthComp, { SpirvOp::OpImageSampleDrefImplicitLod } },
 		{ Ast::IntrinsicType::TextureWrite,                      { SpirvOp::OpImageWrite } },
