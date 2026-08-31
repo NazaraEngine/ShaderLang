@@ -1,8 +1,41 @@
 {
 	"structs": [
 		{
-			"name": "Output",
+			"name": "Color",
 			"structIndex": 0,
+			"layout": "std140",
+			"size": 12,
+			"alignment": 4,
+			"members": [
+				{
+					"name": "r",
+					"type": {
+						"kind": "primitive",
+						"primitiveType": "f32"
+					},
+					"offset": 0
+				},
+				{
+					"name": "g",
+					"type": {
+						"kind": "primitive",
+						"primitiveType": "f32"
+					},
+					"offset": 4
+				},
+				{
+					"name": "b",
+					"type": {
+						"kind": "primitive",
+						"primitiveType": "f32"
+					},
+					"offset": 8
+				}
+			]
+		},
+		{
+			"name": "Output",
+			"structIndex": 1,
 			"layout": "std140",
 			"size": 36,
 			"alignment": 16,
@@ -10,9 +43,8 @@
 				{
 					"name": "color",
 					"type": {
-						"kind": "vector",
-						"dims": 4,
-						"baseType": "f32"
+						"kind": "struct",
+						"index": 0
 					},
 					"offset": 0
 				},

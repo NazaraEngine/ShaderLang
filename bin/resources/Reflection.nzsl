@@ -6,9 +6,17 @@ module Shader;
 import * from DataStruct;
 
 [layout(std140)]
+struct Color
+{
+    r: f32,
+    g: f32,
+    b: f32
+}
+
+[layout(std140)]
 struct Output
 {
-    color: vec4[f32],
+    color: Color,
     normal: vec3[f32],
     roughness: f32,
     metalness: f32

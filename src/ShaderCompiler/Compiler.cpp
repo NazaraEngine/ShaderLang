@@ -19,7 +19,9 @@
 #include <NZSL/Serializer.hpp>
 #include <NZSL/Ast/AstSerializer.hpp>
 #include <NZSL/Ast/Cloner.hpp>
+#include <NZSL/Ast/DependencyCheckerVisitor.hpp>
 #include <NZSL/Ast/ReflectVisitor.hpp>
+#include <NZSL/Ast/Transformations/EliminateUnusedTransformer.hpp>
 #include <NZSL/Ast/Transformations/ResolveTransformer.hpp>
 #include <NZSL/Ast/Transformations/ValidationTransformer.hpp>
 #include <fmt/color.h>
@@ -718,15 +720,37 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 
 		std::unordered_map<std::size_t, nzsl::FieldOffsets> structFieldOffsets;
 
+		nzsl::Ast::DependencyCheckerVisitor dependencyChecker;
+
 		nzsl::Ast::ReflectVisitor::Callbacks callbacks;
+		nzsl::Ast::ReflectVisitor reflectVisitor;
+
 		callbacks.onStructDeclaration = [&](const nzsl::Ast::DeclareStructStatement& structDecl)
 		{
 			auto it = remainingStructs.find(structDecl.description.name);
 			if (it == remainingStructs.end())
 				return;
 
-			remainingStructs.erase(it);
+			if (!structDecl.structIndex)
+				throw std::runtime_error(fmt::format("struct {} has no index", structDecl.description.name));
 
+			dependencyChecker.MarkStructAsUsed(*structDecl.structIndex);
+
+			remainingStructs.erase(it);
+		};
+
+		reflectVisitor.Reflect(*m_shaderModule, callbacks);
+
+		if (!remainingStructs.empty())
+			throw std::runtime_error(fmt::format("struct \"{}\" was not found", *remainingStructs.begin()));
+
+		dependencyChecker.Register(*m_shaderModule->rootNode);
+		dependencyChecker.Resolve();
+
+		nzsl::Ast::EliminateUnusedPass(*m_shaderModule, dependencyChecker.GetUsage());
+
+		callbacks.onStructDeclaration = [&](const nzsl::Ast::DeclareStructStatement& structDecl)
+		{
 			nlohmann::ordered_json structDoc;
 			structDoc["name"] = structDecl.description.name;
 			if (!structDecl.description.tag.empty())
@@ -814,15 +838,9 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 			structDoc["members"] = std::move(structMemberArray);
 
 			structArray.push_back(std::move(structDoc));
-
-			// TODO: Stop visit if remainingStructs.empty()
 		};
 
-		nzsl::Ast::ReflectVisitor reflectVisitor;
 		reflectVisitor.Reflect(*m_shaderModule, callbacks);
-
-		if (!remainingStructs.empty())
-			throw std::runtime_error(fmt::format("struct \"{}\" was not found", *remainingStructs.begin()));
 
 		nlohmann::ordered_json result;
 		result["structs"] = std::move(structArray);
