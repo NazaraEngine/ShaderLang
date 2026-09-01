@@ -441,4 +441,96 @@ fn main()
       OpReturn
       OpFunctionEnd)", {}, {}, true);
 	}
+
+	SECTION("Compound assignements")
+	{
+		std::string_view nzslSource = R"(
+[nzsl_version("1.1")]
+module;
+
+fn foo() -> bool { return false; }
+fn bar() -> bool { return true; }
+
+[entry(frag)]
+fn main()
+{
+	let x = true;
+	x &&= foo();
+	x ||= bar();
+}
+)";
+
+		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
+		ResolveModule(*shaderModule);
+
+		ExpectGLSL(*shaderModule, R"(
+bool foo()
+{
+	return false;
+}
+
+bool bar()
+{
+	return true;
+}
+
+void main()
+{
+	bool x = true;
+	x = x && (foo());
+	x = x || (bar());
+}
+)");
+
+		ExpectNZSL(*shaderModule, R"(
+fn foo() -> bool
+{
+	return false;
+}
+
+fn bar() -> bool
+{
+	return true;
+}
+
+[entry(frag)]
+fn main()
+{
+	let x: bool = true;
+	x &&= foo();
+	x ||= bar();
+}
+)");
+
+		ExpectSPIRV(*shaderModule, R"(
+ %1 = OpTypeBool
+ %2 = OpTypeFunction %1
+ %3 = OpConstantFalse %1
+ %4 = OpConstantTrue %1
+ %5 = OpTypeVoid
+ %6 = OpTypeFunction %5
+ %7 = OpTypePointer StorageClass(Function) %1
+ %8 = OpFunction %1 FunctionControl(0) %2
+%11 = OpLabel
+      OpReturnValue %3
+      OpFunctionEnd
+ %9 = OpFunction %1 FunctionControl(0) %2
+%12 = OpLabel
+      OpReturnValue %4
+      OpFunctionEnd
+%10 = OpFunction %5 FunctionControl(0) %6
+%13 = OpLabel
+%14 = OpVariable %7 StorageClass(Function)
+      OpStore %14 %4
+%15 = OpLoad %1 %14
+%16 = OpFunctionCall %1 %8
+%17 = OpLogicalAnd %1 %15 %16
+      OpStore %14 %17
+%18 = OpLoad %1 %14
+%19 = OpFunctionCall %1 %9
+%20 = OpLogicalOr %1 %18 %19
+      OpStore %14 %20
+      OpReturn
+      OpFunctionEnd)", {}, {}, true);
+	}
 }

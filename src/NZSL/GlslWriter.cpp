@@ -15,6 +15,7 @@
 #include <NZSL/Lang/Version.hpp>
 #include <NZSL/Ast/Transformations/AliasTransformer.hpp>
 #include <NZSL/Ast/Transformations/BindingResolverTransformer.hpp>
+#include <NZSL/Ast/Transformations/CompoundAssignmentTransformer.hpp>
 #include <NZSL/Ast/Transformations/ConstantPropagationTransformer.hpp>
 #include <NZSL/Ast/Transformations/ConstantRemovalTransformer.hpp>
 #include <NZSL/Ast/Transformations/EliminateUnusedTransformer.hpp>
@@ -622,6 +623,10 @@ namespace nzsl
 		executor.AddPass<Ast::SwizzleTransformer>([](Ast::SwizzleTransformer::Options& opt)
 		{
 			opt.removeScalarSwizzling = true;
+		});
+		executor.AddPass<Ast::CompoundAssignmentTransformer>([](Ast::CompoundAssignmentTransformer::Options& opt)
+		{
+			opt.removeCompoundAssignmentMask = Ast::AssignType::CompoundLogicalAnd | Ast::AssignType::CompoundLogicalOr;
 		});
 		executor.AddPass<Ast::BindingResolverTransformer>();
 		executor.AddPass<Ast::ConstantRemovalTransformer>([](Ast::ConstantRemovalTransformer::Options& opt)
