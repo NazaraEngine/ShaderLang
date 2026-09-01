@@ -25,8 +25,6 @@ jobs:
         - { name: Windows,           runner: windows-latest, shell: bash,        plat: windows,  arch: x64,         mode: releasedbg, package: true,  test: true,                                }
         - { name: Windows,           runner: windows-latest, shell: bash,        plat: windows,  arch: arm64,       mode: debug,      package: true,  test: false,                               }
         - { name: Windows,           runner: windows-latest, shell: bash,        plat: windows,  arch: arm64,       mode: releasedbg, package: true,  test: false,                               }
-        - { name: MinGW,             runner: windows-latest, shell: 'msys2 {0}', plat: mingw,    arch: i686,        mode: debug,      package: true,  test: true, msystem: mingw32               }
-        - { name: MinGW,             runner: windows-latest, shell: 'msys2 {0}', plat: mingw,    arch: i686,        mode: releasedbg, package: true,  test: true, msystem: mingw32               }
         - { name: MinGW,             runner: windows-latest, shell: 'msys2 {0}', plat: mingw,    arch: x86_64,      mode: debug,      package: true,  test: true, msystem: mingw64               }
         - { name: MinGW,             runner: windows-latest, shell: 'msys2 {0}', plat: mingw,    arch: x86_64,      mode: releasedbg, package: true,  test: true, msystem: mingw64               }
         - { name: Linux,             runner: ubuntu-latest,  shell: bash,        plat: linux,    arch: x86_64,      mode: debug,      package: true,  test: true,                                }
