@@ -988,7 +988,7 @@ namespace nzsl
 		});
 		executor.AddPass<Ast::CompoundAssignmentTransformer>([](Ast::CompoundAssignmentTransformer::Options& opt)
 		{
-			opt.removeCompoundAssignment = true;
+			opt.removeCompoundAssignmentMask = Ast::AssignType_All;
 		});
 		executor.AddPass<Ast::MatrixTransformer>([](Ast::MatrixTransformer::Options& opt)
 		{

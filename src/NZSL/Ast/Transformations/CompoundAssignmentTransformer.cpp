@@ -20,7 +20,7 @@ namespace nzsl::Ast
 
 	auto CompoundAssignmentTransformer::Transform(AssignExpression&& assign) -> ExpressionTransformation
 	{
-		if (assign.op == AssignType::Simple || !m_options->removeCompoundAssignment)
+		if (assign.op == AssignType::Simple || !m_options->removeCompoundAssignmentMask.Test(assign.op))
 			return VisitChildren{};
 
 		HandleChildren(assign);

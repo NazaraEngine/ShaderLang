@@ -14,6 +14,7 @@ namespace nzsl::Ast
 {
 	enum class AssignType
 	{
+		// Next free ID: 8 (don't forget to update Max)
 		Simple             = 0, //< a = b
 		CompoundAdd        = 1, //< a += b
 		CompoundDivide     = 2, //< a /= b
@@ -22,7 +23,15 @@ namespace nzsl::Ast
 		CompoundLogicalAnd = 4, //< a &&= b
 		CompoundLogicalOr  = 5, //< a ||= b
 		CompoundSubtract   = 6, //< a -= b
+
+		Max = CompoundModulo
 	};
+
+	constexpr bool EnableEnumAsNzFlags(AssignType) { return true; }
+
+	using AssignTypeMask = Nz::Flags<AssignType>;
+
+	constexpr AssignTypeMask AssignType_All = AssignTypeMask(AssignTypeMask::ValueMask);
 
 	enum class AttributeType
 	{

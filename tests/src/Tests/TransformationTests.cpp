@@ -213,14 +213,14 @@ fn main()
 	let x = 1;
 	let y = 2;
 	x += y;
-	x += 1;
+	x -= 1;
 }
 )";
 
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
 
 		nzsl::Ast::CompoundAssignmentTransformer::Options options;
-		options.removeCompoundAssignment = true;
+		options.removeCompoundAssignmentMask = nzsl::Ast::AssignType::CompoundAdd;
 
 		nzsl::Ast::CompoundAssignmentTransformer assignmentTransformer;
 		nzsl::Ast::TransformerContext context;
@@ -236,7 +236,7 @@ fn main()
 	let x = 1;
 	let y = 2;
 	x = x + y;
-	x = x + 1;
+	x -= 1;
 }
 )");
 
@@ -433,7 +433,7 @@ fn testMat4CompoundMinusMat4(x: mat4[f32], y: mat4[f32]) -> mat4[f32]
 			executor.AddPass<nzsl::Ast::ResolveTransformer>();
 			executor.AddPass<nzsl::Ast::CompoundAssignmentTransformer>([](nzsl::Ast::CompoundAssignmentTransformer::Options& opt)
 			{
-				opt.removeCompoundAssignment = true;
+				opt.removeCompoundAssignmentMask = nzsl::Ast::AssignType_All;
 			});
 			executor.AddPass<nzsl::Ast::MatrixTransformer>([](nzsl::Ast::MatrixTransformer::Options& opt)
 			{

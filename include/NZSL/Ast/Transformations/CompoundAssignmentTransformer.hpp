@@ -23,7 +23,7 @@ namespace nzsl::Ast
 
 			struct Options
 			{
-				bool removeCompoundAssignment = false;
+				AssignTypeMask removeCompoundAssignmentMask;
 			};
 
 		private:
