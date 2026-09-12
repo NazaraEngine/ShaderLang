@@ -98,6 +98,7 @@ namespace nzsl::Ast
 		std::size_t currentModuleId;
 		std::unordered_map<std::string, std::size_t> moduleByName;
 		std::unordered_map<std::string, UsedExternalData> declaredExternalVar;
+		std::unordered_map<std::string, UsedExternalData> declaredSharedVar;
 		std::vector<ModuleData> modules;
 		std::vector<NamedExternalBlock> namedExternalBlocks;
 		Module* currentModule;
@@ -3007,6 +3008,85 @@ namespace nzsl::Ast
 			declVariable.varType = std::move(resolvedType);
 
 		return DontVisitChildren{};
+	}
+
+	auto ResolveTransformer::Transform(DeclareWorkgroupSharedStatement&& declWorkgroupShared) -> StatementTransformation
+	{
+		assert(m_context);
+
+		std::shared_ptr<Environment> previousEnv;
+		if (!declWorkgroupShared.name.empty())
+		{
+			std::size_t namedExternalBlockIndex = m_states->namedExternalBlocks.size();
+
+			auto& namedExternalData = m_states->namedExternalBlocks.emplace_back();
+			namedExternalData.environment = std::make_shared<Environment>();
+			namedExternalData.environment->parentEnv = m_states->currentEnv;
+
+			TransformerContext::ExternalBlockData namedBlock;
+			namedBlock.environmentIndex = namedExternalBlockIndex;
+			namedBlock.name = declWorkgroupShared.name;
+
+			declWorkgroupShared.externalIndex = RegisterExternalBlock(declWorkgroupShared.name, std::move(namedBlock), declWorkgroupShared.externalIndex, declWorkgroupShared.sourceLocation);
+
+			previousEnv = std::move(m_states->currentEnv);
+			m_states->currentEnv = namedExternalData.environment;
+		}
+
+		for (std::size_t i = 0; i < declWorkgroupShared.vars.size(); ++i)
+		{
+			auto& extVar = declWorkgroupShared.vars[i];
+
+			std::string fullName;
+			if (!declWorkgroupShared.name.empty())
+				fullName = fmt::format("{}_{}", declWorkgroupShared.name, extVar.name);
+
+			std::string& internalName = (!declWorkgroupShared.name.empty()) ? fullName : extVar.name;
+
+			States::UsedExternalData usedBindingData;
+			usedBindingData.conditionalStatementIndex = m_states->currentConditionalIndex;
+
+			if (auto it = m_states->declaredSharedVar.find(internalName); it != m_states->declaredSharedVar.end())
+			{
+				// We're only conflicting if one of the two external var is not behind a condition
+				if (m_states->currentConditionalIndex == 0 || it->second.conditionalStatementIndex == 0 || it->second.conditionalStatementIndex == m_states->currentConditionalIndex)
+					throw CompilerWorkgroupSharedAlreadyDeclaredError{ extVar.sourceLocation, extVar.name };
+			}
+
+			m_states->declaredSharedVar.emplace(internalName, usedBindingData);
+
+			std::optional<ExpressionType> resolvedType = ResolveTypeExpr(extVar.type, false, declWorkgroupShared.sourceLocation);
+			if (!resolvedType.has_value())
+			{
+				RegisterUnresolved(extVar.name);
+				continue;
+			}
+
+			const ExpressionType& targetType = ResolveAlias(*resolvedType);
+
+			ExpressionType varType;
+			if (IsArrayType(targetType))
+			{
+				const ExpressionType& innerType = std::get<ArrayType>(targetType).InnerType();
+				if (IsPrimitiveType(innerType) || IsVectorType(innerType) || IsMatrixType(innerType))
+					varType = targetType;
+			}
+			else if (IsPrimitiveType(targetType) || IsVectorType(targetType) || IsMatrixType(targetType))
+				varType = targetType;
+
+			if (IsNoType(varType))
+				throw CompilerWorkgroupSharedTypeNotAllowedError{ extVar.sourceLocation, extVar.name, ToString(*resolvedType, extVar.sourceLocation) };
+
+			ValidateConcreteType(varType, extVar.sourceLocation);
+
+			extVar.type = std::move(resolvedType).value();
+			extVar.varIndex = RegisterVariable(extVar.name, TransformerContext::VariableData{ std::move(varType) }, extVar.varIndex, extVar.sourceLocation);
+		}
+
+		if (previousEnv)
+			m_states->currentEnv = std::move(previousEnv);
+
+		return VisitChildren{};
 	}
 
 	auto ResolveTransformer::Transform(ForEachStatement&& forEachStatement) -> StatementTransformation

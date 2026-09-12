@@ -399,6 +399,26 @@ namespace nzsl::Ast
 		ExpressionValue<ExpressionType> varType;
 	};
 
+	struct NZSL_API DeclareWorkgroupSharedStatement : Statement
+	{
+		NodeType GetType() const override;
+		void Visit(StatementVisitor& visitor) override;
+
+		struct SharedVar
+		{
+			std::optional<std::size_t> varIndex;
+			std::string name;
+			std::string tag;
+			ExpressionValue<ExpressionType> type;
+			SourceLocation sourceLocation;
+		};
+
+		std::optional<std::size_t> externalIndex;
+		std::string name;
+		std::string tag;
+		std::vector<SharedVar> vars;
+	};
+
 	struct NZSL_API DiscardStatement : Statement
 	{
 		NodeType GetType() const override;

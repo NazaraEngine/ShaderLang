@@ -261,4 +261,23 @@ namespace nzsl::Ast
 		RecursiveVisitor::Visit(node);
 		m_currentVariableDeclIndex = {};
 	}
+
+	void DependencyCheckerVisitor::Visit(DeclareWorkgroupSharedStatement& node)
+	{
+		for (const auto& sharedVar : node.vars)
+		{
+			assert(sharedVar.varIndex);
+			std::size_t varIndex = *sharedVar.varIndex;
+
+			assert(m_variableUsages.find(varIndex) == m_variableUsages.end());
+			UsageSet& usageSet = m_variableUsages[varIndex];
+
+			const auto& exprType = sharedVar.type.GetResultingValue();
+			RegisterType(usageSet, exprType);
+
+			++varIndex;
+		}
+
+		RecursiveVisitor::Visit(node);
+	}
 }

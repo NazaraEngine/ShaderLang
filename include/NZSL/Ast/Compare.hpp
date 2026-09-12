@@ -39,6 +39,7 @@ namespace nzsl::Ast
 	inline bool Compare(const CallFunctionExpression::Parameter& lhs, const CallFunctionExpression::Parameter& rhs, const ComparisonParams& params = {});
 	inline bool Compare(const DeclareExternalStatement::ExternalVar& lhs, const DeclareExternalStatement::ExternalVar& rhs, const ComparisonParams& params = {});
 	inline bool Compare(const DeclareFunctionStatement::Parameter& lhs, const DeclareFunctionStatement::Parameter& rhs, const ComparisonParams& params = {});
+	inline bool Compare(const DeclareWorkgroupSharedStatement::SharedVar& lhs, const DeclareWorkgroupSharedStatement::SharedVar& rhs, const ComparisonParams& params = {});
 	inline bool Compare(const ImportStatement::Identifier& lhs, const ImportStatement::Identifier& rhs, const ComparisonParams& params = {});
 	inline bool Compare(const SourceLocation& lhs, const SourceLocation& rhs, const ComparisonParams& params = {});
 	inline bool Compare(const StructDescription& lhs, const StructDescription& rhs, const ComparisonParams& params = {});
@@ -73,6 +74,7 @@ namespace nzsl::Ast
 	inline bool Compare(const DeclareOptionStatement& lhs, const DeclareOptionStatement& rhs, const ComparisonParams& params = {});
 	inline bool Compare(const DeclareStructStatement& lhs, const DeclareStructStatement& rhs, const ComparisonParams& params = {});
 	inline bool Compare(const DeclareVariableStatement& lhs, const DeclareVariableStatement& rhs, const ComparisonParams& params = {});
+	inline bool Compare(const DeclareWorkgroupSharedStatement& lhs, const DeclareWorkgroupSharedStatement& rhs, const ComparisonParams& params = {});
 	inline bool Compare(const DiscardStatement& lhs, const DiscardStatement& rhs, const ComparisonParams& params = {});
 	inline bool Compare(const ExpressionStatement& lhs, const ExpressionStatement& rhs, const ComparisonParams& params = {});
 	inline bool Compare(const ForStatement& lhs, const ForStatement& rhs, const ComparisonParams& params = {});

@@ -129,6 +129,24 @@ namespace nzsl::Ast
 		RecursiveVisitor::Visit(node);
 	}
 
+	void ReflectVisitor::Visit(DeclareWorkgroupSharedStatement& node)
+	{
+		assert(m_callbacks);
+		if (m_callbacks->onWorkgroupSharedDeclaration)
+			m_callbacks->onWorkgroupSharedDeclaration(node);
+
+		if (m_callbacks->onVariableIndex)
+		{
+			for (const auto& sharedVar : node.vars)
+			{
+				if (sharedVar.varIndex)
+					m_callbacks->onVariableIndex(sharedVar.name, *sharedVar.varIndex, sharedVar.sourceLocation);
+			}
+		}
+
+		RecursiveVisitor::Visit(node);
+	}
+
 	void ReflectVisitor::Visit(ForStatement& node)
 	{
 		assert(m_callbacks);

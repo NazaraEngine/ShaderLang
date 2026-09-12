@@ -37,6 +37,7 @@ namespace nzsl::Ast
 			StatementTransformation Transform(DeclareFunctionStatement&& node) override;
 			StatementTransformation Transform(DeclareStructStatement&& node) override;
 			StatementTransformation Transform(DeclareVariableStatement&& node) override;
+			StatementTransformation Transform(DeclareWorkgroupSharedStatement&& node) override;
 
 			bool IsAliasUsed(std::size_t aliasIndex) const;
 			bool IsConstantUsed(std::size_t constantIndex) const;

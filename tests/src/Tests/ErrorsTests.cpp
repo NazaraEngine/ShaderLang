@@ -442,7 +442,7 @@ external
 	[set(0)] foo: push_constant[Foo]
 }
 
-)"), "(11,11 -> 33): CUnexpectedAttributeOnPushConstant error: unexpected attribute set on push_constant");
+)"), "(11,11 -> 33): CUnexpectedAttribute error: unexpected attribute set on push constant");
 
 			CHECK_THROWS_WITH(Compile(R"(
 [nzsl_version("1.1")]

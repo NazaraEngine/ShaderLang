@@ -517,6 +517,29 @@ namespace nzsl
 				var.sourceLocation = node.sourceLocation;
 				var.typeId = m_constantCache.Register(*m_constantCache.BuildPointerType(node.varType.GetResultingValue(), SpirvStorageClass::Function));
 			}
+			
+			void Visit(Ast::DeclareWorkgroupSharedStatement& node) override
+			{
+				for (auto& extVar : node.vars)
+				{
+					assert(extVar.varIndex);
+					ExternalVar& extVarData = extVars[*extVar.varIndex];
+
+					SpirvConstantCache::Variable variable;
+					variable.debugName = (!node.name.empty()) ? fmt::format("{}_{}", node.name, extVar.name) : extVar.name;
+
+					const Ast::ExpressionType& extVarType = extVar.type.GetResultingValue();
+
+					SpirvConstantCache::TypePtr typePtr;
+					variable.storageClass = SpirvStorageClass::Workgroup;
+					variable.type = m_constantCache.BuildPointerType(extVarType, variable.storageClass);
+
+					extVarData.varData.typePtr = (typePtr) ? typePtr : m_constantCache.BuildType(extVarType, variable.storageClass);
+					extVarData.varData.typeId = m_constantCache.Register(*extVarData.varData.typePtr);
+					extVarData.varData.storageClass = variable.storageClass;
+					extVarData.varData.pointerId = m_constantCache.Register(std::move(variable));
+				}
+			}
 
 			void Visit(Ast::IdentifierExpression& /*node*/) override
 			{

@@ -241,7 +241,15 @@ namespace nzsl::Ast
 		inline bool operator!=(const VectorType& rhs) const;
 	};
 
-	// Uniform, storages and push constant type need StructType to be declared
+	// the following types need StructType to be declared
+
+	struct PushConstantType
+	{
+		StructType containedType;
+
+		inline bool operator==(const PushConstantType& rhs) const;
+		inline bool operator!=(const PushConstantType& rhs) const;
+	};
 
 	struct StorageType
 	{
@@ -258,14 +266,6 @@ namespace nzsl::Ast
 
 		inline bool operator==(const UniformType& rhs) const;
 		inline bool operator!=(const UniformType& rhs) const;
-	};
-
-	struct PushConstantType
-	{
-		StructType containedType;
-
-		inline bool operator==(const PushConstantType& rhs) const;
-		inline bool operator!=(const PushConstantType& rhs) const;
 	};
 
 	using ExpressionType = std::variant<NoType, AliasType, ArrayType, DynArrayType, FunctionType, ImplicitArrayType, ImplicitMatrixType, ImplicitVectorType, IntrinsicFunctionType, MatrixType, MethodType, ModuleType, NamedExternalBlockType, PrimitiveType, PushConstantType, SamplerType, StorageType, StructType, TextureType, Type, UniformType, VectorType>;
@@ -299,6 +299,7 @@ namespace nzsl::Ast
 	inline bool IsAliasType(const ExpressionType& type);
 	inline bool IsArrayType(const ExpressionType& type);
 	inline bool IsDynArrayType(const ExpressionType& type);
+	inline bool IsExternalType(const ExpressionType& type);
 	inline bool IsFunctionType(const ExpressionType& type);
 	inline bool IsImplicitType(const ExpressionType& type);
 	inline bool IsImplicitArrayType(const ExpressionType& type);
@@ -349,7 +350,7 @@ namespace nzsl::Ast
 	NZSL_API std::size_t ResolveStructIndex(const AliasType& aliasType);
 	NZSL_API std::size_t ResolveStructIndex(const ExpressionType& exprType);
 	NZSL_API std::size_t ResolveStructIndex(const PushConstantType& pushConstantType);
-	NZSL_API std::size_t ResolveStructIndex(const StorageType& structType);
+	NZSL_API std::size_t ResolveStructIndex(const StorageType& storageType);
 	NZSL_API std::size_t ResolveStructIndex(const StructType& structType);
 	NZSL_API std::size_t ResolveStructIndex(const UniformType& uniformType);
 

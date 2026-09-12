@@ -71,11 +71,8 @@ namespace nzsl::SpirvGenData
 	struct IntrinsicData
 	{
 		std::variant<SpirvOp, SpirvGlslStd450Op, SpirvGlslStd450Selector, SpirvCodeGenerator> op;
-		std::optional<SpirvCapability> capability;
+		std::optional<SpirvCapability> capability = std::nullopt;
 	};
-
-NAZARA_WARNING_PUSH()
-NAZARA_WARNING_CLANG_GCC_DISABLE("-Wmissing-field-initializers")
 
 	constexpr auto s_intrinsicData = frozen::make_unordered_map<Ast::IntrinsicType, IntrinsicData>({
 		{ Ast::IntrinsicType::Abs,                               { &SpirvAstVisitor::SelectAbs } },
@@ -89,8 +86,21 @@ NAZARA_WARNING_CLANG_GCC_DISABLE("-Wmissing-field-initializers")
 		{ Ast::IntrinsicType::ArcTan2,                           { SpirvGlslStd450Op::Atan2 } },
 		{ Ast::IntrinsicType::ArcTanh,                           { SpirvGlslStd450Op::Atanh } },
 		{ Ast::IntrinsicType::ArraySize,                         { &SpirvAstVisitor::BuildArraySizeIntrinsic } },
+		{ Ast::IntrinsicType::AtomicAdd,                         { &SpirvAstVisitor::BuildAtomicIntrinsic } },
+		{ Ast::IntrinsicType::AtomicAnd,                         { &SpirvAstVisitor::BuildAtomicIntrinsic } },
+		{ Ast::IntrinsicType::AtomicCompareExchange,             { &SpirvAstVisitor::BuildAtomic2Intrinsic } },
+		{ Ast::IntrinsicType::AtomicExchange,                    { &SpirvAstVisitor::BuildAtomicIntrinsic } },
+		{ Ast::IntrinsicType::AtomicMax,                         { &SpirvAstVisitor::BuildAtomicIntrinsic } },
+		{ Ast::IntrinsicType::AtomicMin,                         { &SpirvAstVisitor::BuildAtomicIntrinsic } },
+		{ Ast::IntrinsicType::AtomicOr,                          { &SpirvAstVisitor::BuildAtomicIntrinsic } },
+		{ Ast::IntrinsicType::AtomicSub,                         { &SpirvAstVisitor::BuildAtomicIntrinsic } },
+		{ Ast::IntrinsicType::AtomicXor,                         { &SpirvAstVisitor::BuildAtomicIntrinsic } },
 		{ Ast::IntrinsicType::Ceil,                              { SpirvGlslStd450Op::Ceil } },
 		{ Ast::IntrinsicType::Clamp,                             { &SpirvAstVisitor::SelectClamp } },
+		//{ Ast::IntrinsicType::ControlAndMemoryBarrierSubgroup,   { &SpirvAstVisitor::BuildControlBarrierIntrinsic } },
+		{ Ast::IntrinsicType::ControlAndMemoryBarrierWorkgroup,  { &SpirvAstVisitor::BuildControlBarrierIntrinsic } },
+		//{ Ast::IntrinsicType::ControlBarrierSubgroup,            { &SpirvAstVisitor::BuildControlBarrierIntrinsic } },
+		{ Ast::IntrinsicType::ControlBarrierWorkgroup,           { &SpirvAstVisitor::BuildControlBarrierIntrinsic } },
 		{ Ast::IntrinsicType::Cos,                               { SpirvGlslStd450Op::Cos } },
 		{ Ast::IntrinsicType::Cosh,                              { SpirvGlslStd450Op::Cosh } },
 		{ Ast::IntrinsicType::CrossProduct,                      { SpirvGlslStd450Op::Cross } },
@@ -120,6 +130,11 @@ NAZARA_WARNING_CLANG_GCC_DISABLE("-Wmissing-field-initializers")
 		{ Ast::IntrinsicType::MatrixInverse,                     { SpirvGlslStd450Op::MatrixInverse } },
 		{ Ast::IntrinsicType::MatrixTranspose,                   { SpirvOp::OpTranspose } },
 		{ Ast::IntrinsicType::Max,                               { &SpirvAstVisitor::SelectMaxMin } },
+		{ Ast::IntrinsicType::MemoryBarrierDevice,               { &SpirvAstVisitor::BuildMemoryBarrierIntrinsic } },
+		{ Ast::IntrinsicType::MemoryBarrierStorage,              { &SpirvAstVisitor::BuildMemoryBarrierIntrinsic } },
+		//{ Ast::IntrinsicType::MemoryBarrierSubgroup,             { &SpirvAstVisitor::BuildMemoryBarrierIntrinsic } },
+		{ Ast::IntrinsicType::MemoryBarrierTexture,              { &SpirvAstVisitor::BuildMemoryBarrierIntrinsic } },
+		{ Ast::IntrinsicType::MemoryBarrierWorkgroup,            { &SpirvAstVisitor::BuildMemoryBarrierIntrinsic } },
 		{ Ast::IntrinsicType::Min,                               { &SpirvAstVisitor::SelectMaxMin } },
 		{ Ast::IntrinsicType::Normalize,                         { SpirvGlslStd450Op::Normalize } },
 		{ Ast::IntrinsicType::Not,                               { SpirvOp::OpLogicalNot } },
@@ -144,8 +159,6 @@ NAZARA_WARNING_CLANG_GCC_DISABLE("-Wmissing-field-initializers")
 		{ Ast::IntrinsicType::TextureWrite,                      { SpirvOp::OpImageWrite } },
 		{ Ast::IntrinsicType::Trunc,                             { SpirvGlslStd450Op::Trunc } },
 	});
-
-NAZARA_WARNING_POP()
 
 	static_assert(LangData::s_intrinsicData.size() == s_intrinsicData.size());
 }

@@ -48,6 +48,7 @@ namespace nzsl::Ast
 			void Visit(DeclareOptionStatement& node) override;
 			void Visit(DeclareStructStatement& node) override;
 			void Visit(DeclareVariableStatement& node) override;
+			void Visit(DeclareWorkgroupSharedStatement& node) override;
 			void Visit(DiscardStatement& node) override;
 			void Visit(ExpressionStatement& node) override;
 			void Visit(ForStatement& node) override;

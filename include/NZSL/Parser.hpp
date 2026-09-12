@@ -84,6 +84,7 @@ namespace nzsl
 			Ast::StatementPtr ParseStructDeclaration(std::vector<Attribute> attributes = {});
 			Ast::StatementPtr ParseVariableDeclaration();
 			Ast::StatementPtr ParseWhileStatement(std::vector<Attribute> attributes);
+			Ast::StatementPtr ParseWorkgroupSharedBlock(std::vector<Attribute> attributes = {});
 
 			// Expressions
 			Ast::ExpressionPtr ParseBinOpRhs(int exprPrecedence, Ast::ExpressionPtr lhs);

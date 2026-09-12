@@ -46,6 +46,7 @@ namespace nzsl::Ast
 			StatementTransformation Transform(DeclareOptionStatement&& node) override;
 			StatementTransformation Transform(DeclareStructStatement&& node) override;
 			StatementTransformation Transform(DeclareVariableStatement&& node) override;
+			StatementTransformation Transform(DeclareWorkgroupSharedStatement&& node) override;
 			StatementTransformation Transform(ForStatement&& node) override;
 			StatementTransformation Transform(ForEachStatement&& node) override;
 

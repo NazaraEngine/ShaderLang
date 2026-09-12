@@ -107,6 +107,7 @@ namespace nzsl::Ast
 			void HandleChildren(DeclareOptionStatement& node);
 			void HandleChildren(DeclareStructStatement& node);
 			void HandleChildren(DeclareVariableStatement& node);
+			void HandleChildren(DeclareWorkgroupSharedStatement& node);
 			void HandleChildren(DiscardStatement& node);
 			void HandleChildren(ExpressionStatement& node);
 			void HandleChildren(ForStatement& node);

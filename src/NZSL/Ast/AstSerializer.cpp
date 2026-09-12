@@ -445,6 +445,23 @@ namespace nzsl::Ast
 		Node(node.initialExpression);
 	}
 
+	void SerializerBase::Serialize(DeclareWorkgroupSharedStatement& node)
+	{
+		Value(node.tag);
+		OptSizeT(node.externalIndex);
+		Value(node.name);
+
+		Container(node.vars);
+		for (auto& sharedVar : node.vars)
+		{
+			Value(sharedVar.name);
+			OptSizeT(sharedVar.varIndex);
+			ExprValue(sharedVar.type);
+			SourceLoc(sharedVar.sourceLocation);
+			Value(sharedVar.tag);
+		}
+	}
+
 	void SerializerBase::Serialize(DiscardStatement& /*node*/)
 	{
 		/* Nothing to do */

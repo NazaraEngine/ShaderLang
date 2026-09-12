@@ -143,8 +143,8 @@ namespace nzsl::Ast
 
 		if (node.externalIndex)
 		{
-			std::size_t newIndex = m_context->options->indexGenerator(IdentifierType::Variable, *node.externalIndex);
-			UniqueInsert(m_context->newIndices, { IdentifierType::Variable, *node.externalIndex }, newIndex);
+			std::size_t newIndex = m_context->options->indexGenerator(IdentifierType::ExternalBlock, *node.externalIndex);
+			UniqueInsert(m_context->newIndices, { IdentifierType::ExternalBlock, *node.externalIndex }, newIndex);
 			node.externalIndex = newIndex;
 		}
 
@@ -159,7 +159,7 @@ namespace nzsl::Ast
 				extVar.varIndex = newIndex;
 			}
 			else if (m_context->options->forceIndexGeneration)
-				extVar.varIndex = m_context->options->indexGenerator(IdentifierType::Constant, std::numeric_limits<std::size_t>::max());
+				extVar.varIndex = m_context->options->indexGenerator(IdentifierType::Variable, std::numeric_limits<std::size_t>::max());
 		}
 
 		return VisitChildren{};
@@ -238,6 +238,34 @@ namespace nzsl::Ast
 		}
 		else if (m_context->options->forceIndexGeneration)
 			node.varIndex = m_context->options->indexGenerator(IdentifierType::Variable, std::numeric_limits<std::size_t>::max());
+
+		return VisitChildren{};
+	}
+
+	auto IndexRemapperTransformer::Transform(DeclareWorkgroupSharedStatement&& node) -> StatementTransformation
+	{
+		NAZARA_USE_ANONYMOUS_NAMESPACE
+
+		if (node.externalIndex)
+		{
+			std::size_t newIndex = m_context->options->indexGenerator(IdentifierType::ExternalBlock, *node.externalIndex);
+			UniqueInsert(m_context->newIndices, { IdentifierType::ExternalBlock, *node.externalIndex }, newIndex);
+			node.externalIndex = newIndex;
+		}
+
+		for (auto& extVar : node.vars)
+		{
+			if (extVar.varIndex)
+			{
+				std::pair oldIndexPair = { IdentifierType::Variable, *extVar.varIndex };
+
+				std::size_t newIndex = m_context->options->indexGenerator(oldIndexPair.first, oldIndexPair.second);
+				UniqueInsert(m_context->newIndices, oldIndexPair, newIndex);
+				extVar.varIndex = newIndex;
+			}
+			else if (m_context->options->forceIndexGeneration)
+				extVar.varIndex = m_context->options->indexGenerator(IdentifierType::Variable, std::numeric_limits<std::size_t>::max());
+		}
 
 		return VisitChildren{};
 	}

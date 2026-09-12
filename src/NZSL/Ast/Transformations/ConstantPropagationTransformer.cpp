@@ -663,6 +663,18 @@ namespace nzsl::Ast
 				break;
 
 			// Intrinsics that can't be evalutated at compilation time
+			case IntrinsicType::AtomicAdd:
+			case IntrinsicType::AtomicAnd:
+			case IntrinsicType::AtomicCompareExchange:
+			case IntrinsicType::AtomicExchange:
+			case IntrinsicType::AtomicMax:
+			case IntrinsicType::AtomicMin:
+			case IntrinsicType::AtomicOr:
+			case IntrinsicType::AtomicXor:
+			//case IntrinsicType::ControlBarrierSubgroup:
+			case IntrinsicType::ControlBarrierWorkgroup:
+			//case IntrinsicType::ControlAndMemoryBarrierSubgroup:
+			case IntrinsicType::ControlAndMemoryBarrierWorkgroup:
 			case IntrinsicType::Ddx:
 			case IntrinsicType::DdxCoarse:
 			case IntrinsicType::DdxFine:
@@ -672,14 +684,21 @@ namespace nzsl::Ast
 			case IntrinsicType::Fwidth:
 			case IntrinsicType::FwidthCoarse:
 			case IntrinsicType::FwidthFine:
+			case IntrinsicType::MemoryBarrierDevice:
+			case IntrinsicType::MemoryBarrierStorage:
+			//case IntrinsicType::MemoryBarrierSubgroup:
+			case IntrinsicType::MemoryBarrierTexture:
+			case IntrinsicType::MemoryBarrierWorkgroup:
 			case IntrinsicType::TextureRead:
 			case IntrinsicType::TextureWrite:
 			case IntrinsicType::TextureSampleExplicitLod:
 			case IntrinsicType::TextureSampleImplicitLod:
 			case IntrinsicType::TextureSampleImplicitLodDepthComp:
 				break;
+
 			default:
 				break;
+			
 		}
 
 		return DontVisitChildren{};

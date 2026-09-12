@@ -131,7 +131,9 @@ namespace nzsl::Ast
 		Struct,
 		Type,
 		Unresolved,
-		Variable
+		Variable,
+		WorkgroupSharedBlock,
+		WorkgroupSharedVariable
 	};
 
 	enum class IdentifierType
@@ -158,8 +160,10 @@ namespace nzsl::Ast
 
 	enum class IntrinsicType
 	{
-		// Next free index: 65
+		// Next free index: 83
 		Abs                               = 31,
+		All                               = 48,
+		Any                               = 49,
 		ArcCos                            = 21,
 		ArcCosh                           = 22,
 		ArcSin                            = 19,
@@ -168,8 +172,19 @@ namespace nzsl::Ast
 		ArcTan2                           = 25,
 		ArcTanh                           = 23,
 		ArraySize                         = 10,
-		All                               = 48,
-		Any                               = 49,
+		AtomicAdd                         = 65,
+		AtomicAnd                         = 66,
+		AtomicCompareExchange             = 67,
+		AtomicExchange                    = 68,
+		AtomicMax                         = 69,
+		AtomicMin                         = 70,
+		AtomicOr                          = 71,
+		AtomicSub                         = 72,
+		AtomicXor                         = 73,
+		//ControlBarrierSubgroup            = 74,
+		ControlBarrierWorkgroup           = 75,
+		//ControlAndMemoryBarrierSubgroup   = 76,
+		ControlAndMemoryBarrierWorkgroup  = 77,
 		Ceil                              = 34,
 		Clamp                             = 41,
 		Cos                               = 15,
@@ -201,6 +216,11 @@ namespace nzsl::Ast
 		MatrixInverse                     = 11,
 		MatrixTranspose                   = 12,
 		Max                               = 4,
+		MemoryBarrierDevice               = 78,
+		MemoryBarrierStorage              = 79,
+		//MemoryBarrierSubgroup             = 80,
+		MemoryBarrierTexture              = 81,
+		MemoryBarrierWorkgroup            = 82,
 		Min                               = 5,
 		Normalize                         = 9,
 		Not                               = 50,
@@ -255,7 +275,7 @@ namespace nzsl::Ast
 
 	enum class NodeType
 	{
-		// Remember to update Max value at the end of the enum when adding an entry (next free id: 47)
+		// Remember to update Max value at the end of the enum when adding an entry (next free id: 48)
 		None = -1,
 
 		// Expressions
@@ -287,29 +307,30 @@ namespace nzsl::Ast
 		UnaryExpression              = 20,
 
 		// Statements
-		BranchStatement          = 21,
-		BreakStatement           = 40,
-		ConditionalStatement     = 22,
-		ContinueStatement        = 41,
-		DeclareAliasStatement    = 23,
-		DeclareConstStatement    = 24,
-		DeclareExternalStatement = 25,
-		DeclareFunctionStatement = 26,
-		DeclareOptionStatement   = 27,
-		DeclareStructStatement   = 28,
-		DeclareVariableStatement = 29,
-		DiscardStatement         = 30,
-		ForStatement             = 31,
-		ForEachStatement         = 32,
-		ExpressionStatement      = 33,
-		ImportStatement          = 34,
-		MultiStatement           = 35,
-		NoOpStatement            = 36,
-		ReturnStatement          = 37,
-		ScopedStatement          = 38,
-		WhileStatement           = 39,
+		BranchStatement                 = 21,
+		BreakStatement                  = 40,
+		ConditionalStatement            = 22,
+		ContinueStatement               = 41,
+		DeclareAliasStatement           = 23,
+		DeclareConstStatement           = 24,
+		DeclareExternalStatement        = 25,
+		DeclareFunctionStatement        = 26,
+		DeclareOptionStatement          = 27,
+		DeclareStructStatement          = 28,
+		DeclareVariableStatement        = 29,
+		DeclareWorkgroupSharedStatement = 47,
+		DiscardStatement                = 30,
+		ForStatement                    = 31,
+		ForEachStatement                = 32,
+		ExpressionStatement             = 33,
+		ImportStatement                 = 34,
+		MultiStatement                  = 35,
+		NoOpStatement                   = 36,
+		ReturnStatement                 = 37,
+		ScopedStatement                 = 38,
+		WhileStatement                  = 39,
 
-		Max = IdentifierValueExpression
+		Max = DeclareWorkgroupSharedStatement
 	};
 
 	enum class PrimitiveType

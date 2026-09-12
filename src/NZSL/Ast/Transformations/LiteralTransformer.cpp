@@ -596,6 +596,7 @@ namespace nzsl::Ast
 				case ParameterType::FValVec1632:
 				case ParameterType::FVec:
 				case ParameterType::FVec3:
+				case ParameterType::IntegerScalar:
 				case ParameterType::Matrix:
 				case ParameterType::MatrixSquare:
 				case ParameterType::Numerical:

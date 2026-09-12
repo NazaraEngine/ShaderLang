@@ -72,6 +72,7 @@ namespace nzsl::Ast
 			virtual StatementPtr Clone(DeclareOptionStatement& node);
 			virtual StatementPtr Clone(DeclareStructStatement& node);
 			virtual StatementPtr Clone(DeclareVariableStatement& node);
+			virtual StatementPtr Clone(DeclareWorkgroupSharedStatement& node);
 			virtual StatementPtr Clone(DiscardStatement& node);
 			virtual StatementPtr Clone(ExpressionStatement& node);
 			virtual StatementPtr Clone(ForStatement& node);

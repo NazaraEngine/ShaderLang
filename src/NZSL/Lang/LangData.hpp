@@ -159,6 +159,7 @@ namespace nzsl::LangData
 			FValVec1632,        // Floating-point value or vector of floating-point of 16/32 bits (no f64)
 			FVec,               // Floating-point vector
 			FVec3,              // Floating-point vector3
+			IntegerScalar,      // Integer/Unsigned integer
 			Matrix,             // Matrix (N*M)
 			MatrixSquare,       // Square matrix (N*N)
 			Numerical,          // Integer/Floating-point/Unsigned integer
@@ -168,7 +169,7 @@ namespace nzsl::LangData
 			Scalar,             // Boolean/Integer/Floating-point/Unsigned integer
 			ScalarVec,          // Scalar or vector of scalar
 			SignedNumerical,    // Integer/Floating-point value
-			SignedNumericalVec, // signed numerical or vector of signed numerical
+			SignedNumericalVec, // Signed numerical or vector of signed numerical
 			Texture,            // texture
 			TextureCoordinates, // Integer vector used to sample the texture parameter
 			TextureData,        // Texture content
@@ -216,6 +217,12 @@ namespace nzsl::LangData
 			static constexpr std::array parameterArray { Types... };
 		};
 
+		template<>
+		struct IntrinsicFuncHelper<>
+		{
+			static constexpr std::array<ParameterType, 0> parameterArray {};
+		};
+
 		template<ParameterType... Types>
 		constexpr IntrinsicData Build(std::string_view name, bool isMethod, ReturnType retType, Params<Types...>, std::optional<ShaderStageType> requiredStage = std::nullopt)
 		{
@@ -243,6 +250,19 @@ namespace nzsl::LangData
 			{ Ast::IntrinsicType::ArcTan2,                           Build("atan2",                             false, ReturnType::Param0Type,         Params<ParameterType::FValVec1632, ParameterType::FValVec1632, ParameterType::SameType>{}) },
 			{ Ast::IntrinsicType::ArcTanh,                           Build("atanh",                             false, ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
 			{ Ast::IntrinsicType::ArraySize,                         Build("arraySize",                         true,  ReturnType::U32,                Params<ParameterType::ArrayDyn>{}) },
+			{ Ast::IntrinsicType::AtomicAdd,                         Build("atomicAdd",                         false, ReturnType::Param0Type,         Params<ParameterType::IntegerScalar, ParameterType::IntegerScalar, ParameterType::SameType>{}) },
+			{ Ast::IntrinsicType::AtomicAnd,                         Build("atomicAnd",                         false, ReturnType::Param0Type,         Params<ParameterType::IntegerScalar, ParameterType::IntegerScalar, ParameterType::SameType>{}) },
+			{ Ast::IntrinsicType::AtomicCompareExchange,             Build("atomicCompareExchange",             false, ReturnType::Param0Type,         Params<ParameterType::IntegerScalar, ParameterType::IntegerScalar, ParameterType::IntegerScalar, ParameterType::SameType>{}) },
+			{ Ast::IntrinsicType::AtomicExchange,                    Build("atomicExchange",                    false, ReturnType::Param0Type,         Params<ParameterType::Numerical, ParameterType::Numerical, ParameterType::SameType>{}) },
+			{ Ast::IntrinsicType::AtomicMax,                         Build("atomicMax",                         false, ReturnType::Param0Type,         Params<ParameterType::IntegerScalar, ParameterType::IntegerScalar, ParameterType::SameType>{}) },
+			{ Ast::IntrinsicType::AtomicMin,                         Build("atomicMin",                         false, ReturnType::Param0Type,         Params<ParameterType::IntegerScalar, ParameterType::IntegerScalar, ParameterType::SameType>{}) },
+			{ Ast::IntrinsicType::AtomicOr,                          Build("atomicOr",                          false, ReturnType::Param0Type,         Params<ParameterType::IntegerScalar, ParameterType::IntegerScalar, ParameterType::SameType>{}) },
+			{ Ast::IntrinsicType::AtomicSub,                         Build("atomicSub",                         false, ReturnType::Param0Type,         Params<ParameterType::IntegerScalar, ParameterType::IntegerScalar, ParameterType::SameType>{}) },
+			{ Ast::IntrinsicType::AtomicXor,                         Build("atomicXor",                         false, ReturnType::Param0Type,         Params<ParameterType::IntegerScalar, ParameterType::IntegerScalar, ParameterType::SameType>{}) },
+			//{ Ast::IntrinsicType::ControlAndMemoryBarrierSubgroup,   Build("subgroupBarrierWithMemory",         false, ReturnType::None,               Params<>{}) },
+			{ Ast::IntrinsicType::ControlAndMemoryBarrierWorkgroup,  Build("workgroupBarrierWithMemory",        false, ReturnType::None,               Params<>{}) },
+			//{ Ast::IntrinsicType::ControlBarrierSubgroup,            Build("subgroupBarrier",                   false, ReturnType::None,               Params<>{}) },
+			{ Ast::IntrinsicType::ControlBarrierWorkgroup,           Build("workgroupBarrier",                  false, ReturnType::None,               Params<>{}) },
 			{ Ast::IntrinsicType::Ceil,                              Build("ceil",                              false, ReturnType::Param0Type,         Params<ParameterType::FValVec>{}) },
 			{ Ast::IntrinsicType::Clamp,                             Build("clamp",                             false, ReturnType::Param0Type,         Params<ParameterType::FValVec, ParameterType::FValVec, ParameterType::FValVec, ParameterType::SameType>{}) },
 			{ Ast::IntrinsicType::Cos,                               Build("cos",                               false, ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
@@ -274,6 +294,11 @@ namespace nzsl::LangData
 			{ Ast::IntrinsicType::MatrixInverse,                     Build("inverse",                           false, ReturnType::Param0Type,         Params<ParameterType::MatrixSquare>{}) },
 			{ Ast::IntrinsicType::MatrixTranspose,                   Build("transpose",                         false, ReturnType::Param0Transposed,   Params<ParameterType::Matrix>{}) },
 			{ Ast::IntrinsicType::Max,                               Build("max",                               false, ReturnType::Param0Type,         Params<ParameterType::NumericalVec, ParameterType::NumericalVec, ParameterType::SameType>{}) },
+			{ Ast::IntrinsicType::MemoryBarrierDevice,               Build("deviceMemoryBarrier",               false, ReturnType::None,               Params<>{}) },
+			{ Ast::IntrinsicType::MemoryBarrierStorage,              Build("storageMemoryBarrier",              false, ReturnType::None,               Params<>{}) },
+			//{ Ast::IntrinsicType::MemoryBarrierSubgroup,             Build("subgroupMemoryBarrier",             false, ReturnType::None,               Params<>{}) },
+			{ Ast::IntrinsicType::MemoryBarrierTexture,              Build("textureMemoryBarrier",              false, ReturnType::None,               Params<>{}) },
+			{ Ast::IntrinsicType::MemoryBarrierWorkgroup,            Build("workgroupMemoryBarrier",            false, ReturnType::None,               Params<>{}) },
 			{ Ast::IntrinsicType::Min,                               Build("min",                               false, ReturnType::Param0Type,         Params<ParameterType::NumericalVec, ParameterType::NumericalVec, ParameterType::SameType>{}) },
 			{ Ast::IntrinsicType::Normalize,                         Build("normalize",                         false, ReturnType::Param0Type,         Params<ParameterType::FVec>{}) },
 			{ Ast::IntrinsicType::Not,                               Build("not",                               false, ReturnType::Param0Type,         Params<ParameterType::BVec>{}) },

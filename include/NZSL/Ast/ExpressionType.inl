@@ -254,6 +254,17 @@ namespace nzsl::Ast
 	}
 
 
+	inline bool PushConstantType::operator==(const PushConstantType& rhs) const
+	{
+		return containedType == rhs.containedType;
+	}
+
+	inline bool PushConstantType::operator!=(const PushConstantType& rhs) const
+	{
+		return !operator==(rhs);
+	}
+
+
 	inline bool StorageType::operator==(const StorageType& rhs) const
 	{
 		return accessPolicy == rhs.accessPolicy && containedType == rhs.containedType;
@@ -276,17 +287,6 @@ namespace nzsl::Ast
 	}
 
 
-	inline bool PushConstantType::operator==(const PushConstantType& rhs) const
-	{
-		return containedType == rhs.containedType;
-	}
-
-	inline bool PushConstantType::operator!=(const PushConstantType& rhs) const
-	{
-		return !operator==(rhs);
-	}
-
-
 	inline bool IsAliasType(const ExpressionType& type)
 	{
 		return std::holds_alternative<AliasType>(type);
@@ -300,6 +300,11 @@ namespace nzsl::Ast
 	inline bool IsDynArrayType(const ExpressionType& type)
 	{
 		return std::holds_alternative<DynArrayType>(type);
+	}
+
+	inline bool IsExternalType(const ExpressionType& type)
+	{
+		return IsPushConstantType(type) || IsStorageType(type) || IsUniformType(type);
 	}
 
 	inline bool IsFunctionType(const ExpressionType& type)
@@ -362,6 +367,11 @@ namespace nzsl::Ast
 		return std::holds_alternative<PrimitiveType>(type);
 	}
 
+	inline bool IsPushConstantType(const ExpressionType& type)
+	{
+		return std::holds_alternative<PushConstantType>(type);
+	}
+
 	inline bool IsSamplerType(const ExpressionType& type)
 	{
 		return std::holds_alternative<SamplerType>(type);
@@ -390,11 +400,6 @@ namespace nzsl::Ast
 	inline bool IsUniformType(const ExpressionType& type)
 	{
 		return std::holds_alternative<UniformType>(type);
-	}
-
-	inline bool IsPushConstantType(const ExpressionType& type)
-	{
-		return std::holds_alternative<PushConstantType>(type);
 	}
 
 	inline bool IsVectorType(const ExpressionType& type)
@@ -479,7 +484,7 @@ namespace nzsl::Ast
 			return exprType;
 	}
 
-	ExpressionType ResolveAlias(ExpressionType&& exprType)
+	inline ExpressionType ResolveAlias(ExpressionType&& exprType)
 	{
 		if (IsAliasType(exprType))
 		{
@@ -556,7 +561,7 @@ namespace nzsl::Ast
 		if (IsStorageType(referenceType))
 			return WrapExternalType<StorageType>(exprType);
 		else if (IsUniformType(referenceType))
-			return WrapExternalType<StorageType>(exprType);
+			return WrapExternalType<UniformType>(exprType);
 		else if (IsArrayType(referenceType))
 			return WrapExternalType(exprType, std::get<ArrayType>(referenceType).InnerType());
 		else if (IsDynArrayType(referenceType))

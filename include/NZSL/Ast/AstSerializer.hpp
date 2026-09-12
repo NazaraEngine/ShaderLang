@@ -52,6 +52,7 @@ namespace nzsl::Ast
 			void Serialize(DeclareOptionStatement& node);
 			void Serialize(DeclareStructStatement& node);
 			void Serialize(DeclareVariableStatement& node);
+			void Serialize(DeclareWorkgroupSharedStatement& node);
 			void Serialize(DiscardStatement& node);
 			void Serialize(ExpressionStatement& node);
 			void Serialize(ForStatement& node);

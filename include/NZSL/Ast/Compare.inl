@@ -250,6 +250,23 @@ namespace nzsl::Ast
 		return true;
 	}
 
+	inline bool Compare(const DeclareWorkgroupSharedStatement::SharedVar& lhs, const DeclareWorkgroupSharedStatement::SharedVar& rhs, const ComparisonParams& params)
+	{
+		if (!Compare(lhs.name, rhs.name, params))
+			return false;
+
+		if (!Compare(lhs.type, rhs.type, params))
+			return false;
+
+		if (!Compare(lhs.sourceLocation, rhs.sourceLocation, params))
+			return false;
+
+		if (!Compare(lhs.tag, rhs.tag, params))
+			return false;
+
+		return true;
+	}
+
 	inline bool Compare(const ImportStatement::Identifier& lhs, const ImportStatement::Identifier& rhs, const ComparisonParams& params)
 	{
 		if (!Compare(lhs.identifier, rhs.identifier, params))
@@ -669,6 +686,20 @@ namespace nzsl::Ast
 			return false;
 
 		if (!Compare(lhs.initialExpression, rhs.initialExpression, params))
+			return false;
+
+		return true;
+	}
+
+	inline bool Compare(const DeclareWorkgroupSharedStatement& lhs, const DeclareWorkgroupSharedStatement& rhs, const ComparisonParams& params)
+	{
+		if (!Compare(lhs.tag, rhs.tag, params))
+			return false;
+
+		if (!Compare(lhs.name, rhs.name, params))
+			return false;
+
+		if (!Compare(lhs.vars, rhs.vars, params))
 			return false;
 
 		return true;

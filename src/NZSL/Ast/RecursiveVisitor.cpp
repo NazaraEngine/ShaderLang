@@ -171,6 +171,11 @@ namespace nzsl::Ast
 			node.initialExpression->Visit(*this);
 	}
 
+	void RecursiveVisitor::Visit(DeclareWorkgroupSharedStatement& /*node*/)
+	{
+		/* Nothing to do */
+	}
+
 	void RecursiveVisitor::Visit(DiscardStatement& /*node*/)
 	{
 		/* Nothing to do */

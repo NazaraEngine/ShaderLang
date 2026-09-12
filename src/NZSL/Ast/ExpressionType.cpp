@@ -316,6 +316,11 @@ namespace nzsl::Ast
 		}, exprType);
 	}
 
+	std::size_t ResolveStructIndex(const PushConstantType& pushConstantType)
+	{
+		return pushConstantType.containedType.structIndex;
+	}
+
 	std::size_t ResolveStructIndex(const StorageType& structType)
 	{
 		return structType.containedType.structIndex;
@@ -329,11 +334,6 @@ namespace nzsl::Ast
 	std::size_t ResolveStructIndex(const UniformType& uniformType)
 	{
 		return uniformType.containedType.structIndex;
-	}
-
-	std::size_t ResolveStructIndex(const PushConstantType& pushConstantType)
-	{
-		return pushConstantType.containedType.structIndex;
 	}
 
 	std::string ToString(const AliasType& type, const Stringifier& stringifier)

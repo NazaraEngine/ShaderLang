@@ -511,6 +511,17 @@ namespace nzsl::Ast
 		}
 	}
 
+	void Transformer::HandleChildren(DeclareWorkgroupSharedStatement& node)
+	{
+		if (!m_flags.Test(TransformerFlag::IgnoreExpressions))
+		{
+			for (auto& externalVar : node.vars)
+				HandleExpressionValue(externalVar.type, externalVar.sourceLocation);
+
+			FinishExpressionHandling();
+		}
+	}
+
 	void Transformer::HandleChildren(DiscardStatement& /*node*/)
 	{
 	}

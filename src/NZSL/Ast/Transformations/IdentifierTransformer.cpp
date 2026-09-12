@@ -149,6 +149,23 @@ namespace nzsl::Ast
 		return VisitChildren{};
 	}
 
+	auto IdentifierTransformer::Transform(DeclareWorkgroupSharedStatement&& statement) -> StatementTransformation
+	{
+		if (!statement.name.empty())
+		{
+			HandleIdentifier(statement.name, IdentifierCategory::WorkgroupSharedBlock);
+			PushScope();
+		}
+
+		for (auto& sharedVar : statement.vars)
+			HandleIdentifier(sharedVar.name, IdentifierCategory::WorkgroupSharedVariable);
+
+		if (!statement.name.empty())
+			PopScope();
+
+		return VisitChildren{};
+	}
+
 	auto IdentifierTransformer::Transform(ForEachStatement&& statement) -> StatementTransformation
 	{
 		HandleIdentifier(statement.varName, IdentifierCategory::Variable);

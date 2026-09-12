@@ -1438,13 +1438,33 @@ namespace nzsl
 			throw std::runtime_error("unexpected string literal");
 		else if constexpr (std::is_same_v<T, bool> || std::is_same_v<T, std::vector<bool>::reference>)
 			Append((value) ? "true" : "false");
-		else if constexpr (std::is_same_v<T, double> || std::is_same_v<T, float> || std::is_same_v<T, std::int32_t> || std::is_same_v<T, std::uint32_t>)
+		else if constexpr (std::is_same_v<T, double> || std::is_same_v<T, float>)
+		{
+			if (std::isinf(value) || std::isnan(value))
+			{
+				Append("(");
+
+				if (std::isinf(value))
+					AppendValue(value > T(0.0) ? T{ 1 } : T{ -1 });
+				else
+					AppendValue(T{ 0 });
+
+				Append(" / ");
+				AppendValue(T{ 0 });
+				Append(")");
+			}
+			else
+			{
+				Append(Ast::ToString(value));
+				if constexpr (std::is_same_v<T, double>)
+					Append("lf");
+			}
+		}
+		else if constexpr (std::is_same_v<T, std::int32_t> || std::is_same_v<T, std::uint32_t>)
 		{
 			Append(Ast::ToString(value));
 			if constexpr (std::is_same_v<T, std::uint32_t>)
 				Append("u");
-			else if constexpr (std::is_same_v<T, double>)
-				Append("lf");
 		}
 		else if constexpr (IsVector_v<T>)
 		{
@@ -2109,68 +2129,86 @@ namespace nzsl
 		switch (node.intrinsic)
 		{
 			// Function intrinsics
-			case Ast::IntrinsicType::Abs:                      Append("abs");          break;
-			case Ast::IntrinsicType::All:                      Append("all");          break;
-			case Ast::IntrinsicType::Any:                      Append("any");          break;
-			case Ast::IntrinsicType::ArcCos:                   Append("acos");         break;
-			case Ast::IntrinsicType::ArcCosh:                  Append("acosh");        break;
-			case Ast::IntrinsicType::ArcSin:                   Append("asin");         break;
-			case Ast::IntrinsicType::ArcSinh:                  Append("asinh");        break;
-			case Ast::IntrinsicType::ArcTan:                   Append("atan");         break;
-			case Ast::IntrinsicType::ArcTan2:                  Append("atan");         break;
-			case Ast::IntrinsicType::ArcTanh:                  Append("atanh");        break;
-			case Ast::IntrinsicType::Ceil:                     Append("ceil");         break;
-			case Ast::IntrinsicType::Clamp:                    Append("clamp");        break;
-			case Ast::IntrinsicType::Cos:                      Append("cos");          break;
-			case Ast::IntrinsicType::Cosh:                     Append("cosh");         break;
-			case Ast::IntrinsicType::CrossProduct:             Append("cross");        break;
-			case Ast::IntrinsicType::DegToRad:                 Append("radians");      break;
-			case Ast::IntrinsicType::Ddx:                      Append("dFdx");         break;
-			case Ast::IntrinsicType::DdxCoarse:                Append("dFdxCoarse");   break;
-			case Ast::IntrinsicType::DdxFine:                  Append("dFdxFine");     break;
-			case Ast::IntrinsicType::Ddy:                      Append("dFdy");         break;
-			case Ast::IntrinsicType::DdyCoarse:                Append("dFdyCoarse");   break;
-			case Ast::IntrinsicType::DdyFine:                  Append("dFdyFine");     break;
-			case Ast::IntrinsicType::Distance:                 Append("distance");     break;
-			case Ast::IntrinsicType::DotProduct:               Append("dot");          break;
-			case Ast::IntrinsicType::Exp:                      Append("exp");          break;
-			case Ast::IntrinsicType::Exp2:                     Append("exp2");         break;
-			case Ast::IntrinsicType::Floor:                    Append("floor");        break;
-			case Ast::IntrinsicType::Fract:                    Append("fract");        break;
-			case Ast::IntrinsicType::Fwidth:                   Append("fwidth");       break;
-			case Ast::IntrinsicType::FwidthCoarse:             Append("fwidthCoarse"); break;
-			case Ast::IntrinsicType::FwidthFine:               Append("fwidthFine");   break;
-			case Ast::IntrinsicType::IsInf:                    Append("isinf");        break;
-			case Ast::IntrinsicType::IsNaN:                    Append("isnan");        break;
-			case Ast::IntrinsicType::Length:                   Append("length");       break;
-			case Ast::IntrinsicType::Lerp:                     Append("mix");          break;
-			case Ast::IntrinsicType::Log:                      Append("log");          break;
-			case Ast::IntrinsicType::Log2:                     Append("log2");         break;
-			case Ast::IntrinsicType::InverseSqrt:              Append("inversesqrt");  break;
-			case Ast::IntrinsicType::MatrixInverse:            Append("inverse");      break;
-			case Ast::IntrinsicType::MatrixTranspose:          Append("transpose");    break;
-			case Ast::IntrinsicType::Max:                      Append("max");          break;
-			case Ast::IntrinsicType::Min:                      Append("min");          break;
-			case Ast::IntrinsicType::Normalize:                Append("normalize");    break;
-			case Ast::IntrinsicType::Not:                      Append("not");          break;
-			case Ast::IntrinsicType::Pow:                      Append("pow");          break;
-			case Ast::IntrinsicType::Reflect:                  Append("reflect");      break;
-			case Ast::IntrinsicType::Sin:                      Append("sin");          break;
-			case Ast::IntrinsicType::Sinh:                     Append("sinh");         break;
-			case Ast::IntrinsicType::SmoothStep:               Append("smoothstep");   break;
-			case Ast::IntrinsicType::Sqrt:                     Append("sqrt");         break;
-			case Ast::IntrinsicType::Step:                     Append("step");         break;
-			case Ast::IntrinsicType::Tan:                      Append("tan");          break;
-			case Ast::IntrinsicType::Tanh:                     Append("tanh");         break;
-			case Ast::IntrinsicType::RadToDeg:                 Append("degrees");      break;
-			case Ast::IntrinsicType::Round:                    Append("round");        break;
-			case Ast::IntrinsicType::RoundEven:                Append("roundEven");    break;
-			case Ast::IntrinsicType::Sign:                     Append("sign");         break;
-			case Ast::IntrinsicType::TextureRead:              Append("imageLoad");    break;
-			case Ast::IntrinsicType::TextureSampleExplicitLod: Append("textureLod");   break;
-			case Ast::IntrinsicType::TextureSampleImplicitLod: Append("texture");      break;
-			case Ast::IntrinsicType::TextureWrite:             Append("imageStore");   break;
-			case Ast::IntrinsicType::Trunc:                    Append("trunc");        break;
+			case Ast::IntrinsicType::Abs:                              Append("abs");                   break;
+			case Ast::IntrinsicType::All:                              Append("all");                   break;
+			case Ast::IntrinsicType::Any:                              Append("any");                   break;
+			case Ast::IntrinsicType::ArcCos:                           Append("acos");                  break;
+			case Ast::IntrinsicType::ArcCosh:                          Append("acosh");                 break;
+			case Ast::IntrinsicType::ArcSin:                           Append("asin");                  break;
+			case Ast::IntrinsicType::ArcSinh:                          Append("asinh");                 break;
+			case Ast::IntrinsicType::ArcTan:                           Append("atan");                  break;
+			case Ast::IntrinsicType::ArcTan2:                          Append("atan");                  break;
+			case Ast::IntrinsicType::ArcTanh:                          Append("atanh");                 break;
+			case Ast::IntrinsicType::AtomicAdd:                        Append("atomicAdd");             break;
+			case Ast::IntrinsicType::AtomicAnd:                        Append("atomicAnd");             break;
+			case Ast::IntrinsicType::AtomicCompareExchange:            Append("atomicCompSwap");        break;
+			case Ast::IntrinsicType::AtomicExchange:                   Append("atomicExchange");        break;
+			case Ast::IntrinsicType::AtomicMax:                        Append("atomicMax");             break;
+			case Ast::IntrinsicType::AtomicMin:                        Append("atomicMin");             break;
+			case Ast::IntrinsicType::AtomicOr:                         Append("atomicOr");              break;
+			case Ast::IntrinsicType::AtomicSub:                        Append("atomicSub");             break;
+			case Ast::IntrinsicType::AtomicXor:                        Append("atomicXor");             break;
+			case Ast::IntrinsicType::Ceil:                             Append("ceil");                  break;
+			case Ast::IntrinsicType::Clamp:                            Append("clamp");                 break;
+			//case Ast::IntrinsicType::ControlBarrierSubgroup:           Append("subgroupBarrier");       break;
+			case Ast::IntrinsicType::ControlBarrierWorkgroup:          Append("barrier");               break;
+			//case Ast::IntrinsicType::ControlAndMemoryBarrierSubgroup:  Append("subgroupBarrier");       break;
+			case Ast::IntrinsicType::ControlAndMemoryBarrierWorkgroup: Append("barrier");               break;
+			case Ast::IntrinsicType::Cos:                              Append("cos");                   break;
+			case Ast::IntrinsicType::Cosh:                             Append("cosh");                  break;
+			case Ast::IntrinsicType::CrossProduct:                     Append("cross");                 break;
+			case Ast::IntrinsicType::DegToRad:                         Append("radians");               break;
+			case Ast::IntrinsicType::Ddx:                              Append("dFdx");                  break;
+			case Ast::IntrinsicType::DdxCoarse:                        Append("dFdxCoarse");            break;
+			case Ast::IntrinsicType::DdxFine:                          Append("dFdxFine");              break;
+			case Ast::IntrinsicType::Ddy:                              Append("dFdy");                  break;
+			case Ast::IntrinsicType::DdyCoarse:                        Append("dFdyCoarse");            break;
+			case Ast::IntrinsicType::DdyFine:                          Append("dFdyFine");              break;
+			case Ast::IntrinsicType::Distance:                         Append("distance");              break;
+			case Ast::IntrinsicType::DotProduct:                       Append("dot");                   break;
+			case Ast::IntrinsicType::Exp:                              Append("exp");                   break;
+			case Ast::IntrinsicType::Exp2:                             Append("exp2");                  break;
+			case Ast::IntrinsicType::Floor:                            Append("floor");                 break;
+			case Ast::IntrinsicType::Fract:                            Append("fract");                 break;
+			case Ast::IntrinsicType::Fwidth:                           Append("fwidth");                break;
+			case Ast::IntrinsicType::FwidthCoarse:                     Append("fwidthCoarse");          break;
+			case Ast::IntrinsicType::FwidthFine:                       Append("fwidthFine");            break;
+			case Ast::IntrinsicType::IsInf:                            Append("isinf");                 break;
+			case Ast::IntrinsicType::IsNaN:                            Append("isnan");                 break;
+			case Ast::IntrinsicType::Length:                           Append("length");                break;
+			case Ast::IntrinsicType::Lerp:                             Append("mix");                   break;
+			case Ast::IntrinsicType::Log:                              Append("log");                   break;
+			case Ast::IntrinsicType::Log2:                             Append("log2");                  break;
+			case Ast::IntrinsicType::InverseSqrt:                      Append("inversesqrt");           break;
+			case Ast::IntrinsicType::MatrixInverse:                    Append("inverse");               break;
+			case Ast::IntrinsicType::MatrixTranspose:                  Append("transpose");             break;
+			case Ast::IntrinsicType::MemoryBarrierDevice:              Append("memoryBarrier");         break;
+			case Ast::IntrinsicType::MemoryBarrierStorage:             Append("memoryBarrierBuffer");   break;
+			//case Ast::IntrinsicType::MemoryBarrierSubgroup:            Append("subgroupMemoryBarrier"); break;
+			case Ast::IntrinsicType::MemoryBarrierTexture:             Append("memoryBarrierImage");    break;
+			case Ast::IntrinsicType::MemoryBarrierWorkgroup:           Append("groupMemoryBarrier");    break;
+			case Ast::IntrinsicType::Max:                              Append("max");                   break;
+			case Ast::IntrinsicType::Min:                              Append("min");                   break;
+			case Ast::IntrinsicType::Normalize:                        Append("normalize");             break;
+			case Ast::IntrinsicType::Not:                              Append("not");                   break;
+			case Ast::IntrinsicType::Pow:                              Append("pow");                   break;
+			case Ast::IntrinsicType::Reflect:                          Append("reflect");               break;
+			case Ast::IntrinsicType::Sin:                              Append("sin");                   break;
+			case Ast::IntrinsicType::Sinh:                             Append("sinh");                  break;
+			case Ast::IntrinsicType::SmoothStep:                       Append("smoothstep");            break;
+			case Ast::IntrinsicType::Sqrt:                             Append("sqrt");                  break;
+			case Ast::IntrinsicType::Step:                             Append("step");                  break;
+			case Ast::IntrinsicType::Tan:                              Append("tan");                   break;
+			case Ast::IntrinsicType::Tanh:                             Append("tanh");                  break;
+			case Ast::IntrinsicType::RadToDeg:                         Append("degrees");               break;
+			case Ast::IntrinsicType::Round:                            Append("round");                 break;
+			case Ast::IntrinsicType::RoundEven:                        Append("roundEven");             break;
+			case Ast::IntrinsicType::Sign:                             Append("sign");                  break;
+			case Ast::IntrinsicType::TextureRead:                      Append("imageLoad");             break;
+			case Ast::IntrinsicType::TextureSampleExplicitLod:         Append("textureLod");            break;
+			case Ast::IntrinsicType::TextureSampleImplicitLod:         Append("texture");               break;
+			case Ast::IntrinsicType::TextureWrite:                     Append("imageStore");            break;
+			case Ast::IntrinsicType::Trunc:                            Append("trunc");                 break;
 
 			// select using mix (order of parameters)
 			case Ast::IntrinsicType::Select:
@@ -2532,15 +2570,7 @@ namespace nzsl
 			const char* memoryLayout = nullptr;
 			if (isUniformOrStorageBuffer)
 			{
-				std::size_t structIndex;
-				if (IsStorageType(exprType))
-					structIndex = std::get<Ast::StorageType>(exprType).containedType.structIndex;
-				else if (IsUniformType(exprType))
-					structIndex = std::get<Ast::UniformType>(exprType).containedType.structIndex;
-				else if (IsPushConstantType(exprType))
-					structIndex = std::get<Ast::PushConstantType>(exprType).containedType.structIndex;
-				else
-					throw std::runtime_error("unexpected type");
+				std::size_t structIndex = ResolveStructIndex(exprType);
 
 				const auto& structInfo = Nz::Retrieve(m_currentState->structs, structIndex);
 				if (structInfo.desc->layout.HasValue())
@@ -2595,7 +2625,7 @@ namespace nzsl
 					Append(") ");
 			};
 
-			if (!IsPushConstantType(exprType))
+			if (IsStorageType(exprType) || IsUniformType(exprType))
 			{
 				if (!m_currentState->glslParameters.bindingMapping.empty())
 				{
@@ -2631,7 +2661,7 @@ namespace nzsl
 					}
 				}
 			}
-			else if (m_currentState->glslParameters.pushConstantBinding.has_value())
+			else if (IsPushConstantType(exprType) && m_currentState->glslParameters.pushConstantBinding.has_value())
 			{
 				if (!m_currentState->requiresExplicitUniformBinding)
 				{
@@ -2869,6 +2899,47 @@ namespace nzsl
 		}
 
 		Append(";");
+	}
+	
+	void GlslWriter::Visit(Ast::DeclareWorkgroupSharedStatement& node)
+	{
+		HandleSourceLocation(node.sourceLocation, DebugLevel::Regular);
+
+		if (!node.tag.empty() && m_currentState->backendParameters.debugLevel >= DebugLevel::Minimal)
+			AppendComment("workgroup shared block tag: " + node.tag);
+
+		for (const auto& externalVar : node.vars)
+		{
+			if (!externalVar.tag.empty() && m_currentState->backendParameters.debugLevel >= DebugLevel::Minimal)
+				AppendComment("workgroup shared var tag: " + externalVar.tag);
+
+			std::string varName = externalVar.name + m_currentState->moduleSuffix;
+			if (!node.name.empty())
+				varName = fmt::format("{}_{}", node.name, varName);
+
+			if (m_currentState->reservedNames.count(varName) > 0)
+			{
+				unsigned int cloneIndex = 2;
+				std::string candidateName;
+				do
+				{
+					candidateName = fmt::format("{}_{}", varName, cloneIndex++);
+				}
+				while (m_currentState->reservedNames.count(candidateName) > 0);
+
+				varName = std::move(candidateName);
+			}
+
+			m_currentState->reservedNames.insert(varName);
+
+			// Variable declaration
+			Append("shared ");
+			AppendVariableDeclaration(externalVar.type.GetResultingValue(), varName);
+			AppendLine(";");
+
+			assert(externalVar.varIndex);
+			RegisterVariable(*externalVar.varIndex, varName);
+		}
 	}
 
 	void GlslWriter::Visit(Ast::DiscardStatement& /*node*/)

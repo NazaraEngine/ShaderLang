@@ -1272,8 +1272,21 @@ namespace nzsl
 			case Ast::IntrinsicType::ArcTan:
 			case Ast::IntrinsicType::ArcTan2:
 			case Ast::IntrinsicType::ArcTanh:
+			case Ast::IntrinsicType::AtomicAdd:
+			case Ast::IntrinsicType::AtomicAnd:
+			case Ast::IntrinsicType::AtomicCompareExchange:
+			case Ast::IntrinsicType::AtomicExchange:
+			case Ast::IntrinsicType::AtomicMax:
+			case Ast::IntrinsicType::AtomicMin:
+			case Ast::IntrinsicType::AtomicOr:
+			case Ast::IntrinsicType::AtomicSub:
+			case Ast::IntrinsicType::AtomicXor:
 			case Ast::IntrinsicType::Ceil:
 			case Ast::IntrinsicType::Clamp:
+			//case Ast::IntrinsicType::ControlBarrierSubgroup:
+			case Ast::IntrinsicType::ControlBarrierWorkgroup:
+			//case Ast::IntrinsicType::ControlAndMemoryBarrierSubgroup:
+			case Ast::IntrinsicType::ControlAndMemoryBarrierWorkgroup:
 			case Ast::IntrinsicType::Cos:
 			case Ast::IntrinsicType::Cosh:
 			case Ast::IntrinsicType::CrossProduct:
@@ -1303,6 +1316,11 @@ namespace nzsl
 			case Ast::IntrinsicType::MatrixInverse:
 			case Ast::IntrinsicType::MatrixTranspose:
 			case Ast::IntrinsicType::Max:
+			case Ast::IntrinsicType::MemoryBarrierDevice:
+			//case Ast::IntrinsicType::MemoryBarrierSubgroup:
+			case Ast::IntrinsicType::MemoryBarrierStorage:
+			case Ast::IntrinsicType::MemoryBarrierTexture:
+			case Ast::IntrinsicType::MemoryBarrierWorkgroup:
 			case Ast::IntrinsicType::Min:
 			case Ast::IntrinsicType::Normalize:
 			case Ast::IntrinsicType::Not:
@@ -1675,6 +1693,43 @@ namespace nzsl
 		}
 
 		Append(";");
+	}
+	
+	void LangWriter::Visit(Ast::DeclareWorkgroupSharedStatement& node)
+	{
+		AppendAttributes(true, TagAttribute{ node.tag });
+		Append("workgroup_shared");
+
+		if (!node.name.empty())
+		{
+			Append(" ", node.name);
+
+			m_currentState->currentExternalBlockIndex = m_currentState->externalBlockNames.size();
+			m_currentState->externalBlockNames.push_back(node.name);
+		}
+
+		AppendLine();
+
+		EnterScope();
+
+		bool first = true;
+		for (const auto& sharedVar : node.vars)
+		{
+			if (!first)
+				AppendLine(",");
+
+			first = false;
+
+			AppendAttributes(false, TagAttribute{ sharedVar.tag });
+			Append(sharedVar.name, ": ", sharedVar.type);
+
+			if (sharedVar.varIndex)
+				RegisterVariable(*sharedVar.varIndex, sharedVar.name);
+		}
+
+		LeaveScope();
+
+		m_currentState->currentExternalBlockIndex = {};
 	}
 
 	void LangWriter::Visit(Ast::DiscardStatement& /*node*/)

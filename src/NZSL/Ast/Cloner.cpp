@@ -235,6 +235,27 @@ namespace nzsl::Ast
 		return clone;
 	}
 
+	StatementPtr Cloner::Clone(DeclareWorkgroupSharedStatement& node)
+	{
+		auto clone = std::make_unique<DeclareWorkgroupSharedStatement>();
+		clone->name = node.name;
+		clone->tag = node.tag;
+
+		clone->vars.reserve(node.vars.size());
+		for (const auto& var : node.vars)
+		{
+			auto& cloneVar = clone->vars.emplace_back();
+			cloneVar.name = var.name;
+			cloneVar.varIndex = var.varIndex;
+			cloneVar.type = Clone(var.type);
+			cloneVar.tag = var.tag;
+
+			cloneVar.sourceLocation = var.sourceLocation;
+		}
+
+		return clone;
+	}
+
 	StatementPtr Cloner::Clone(DiscardStatement& /*node*/)
 	{
 		return std::make_unique<DiscardStatement>();

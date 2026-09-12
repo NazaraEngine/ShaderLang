@@ -119,6 +119,28 @@ namespace nzsl::Ast
 		return DontVisitChildren{};
 	}
 
+	auto EliminateUnusedTransformer::Transform(DeclareWorkgroupSharedStatement&& node) -> StatementTransformation
+	{
+		for (auto it = node.vars.begin(); it != node.vars.end(); )
+		{
+			auto& externalVar = *it;
+			if NAZARA_UNLIKELY(!externalVar.varIndex)
+				throw AstExpectedIndexError{ node.sourceLocation, "workgroup shared variable" };
+
+			std::size_t varIndex = *externalVar.varIndex;
+
+			if (!IsVariableUsed(varIndex))
+				it = node.vars.erase(it);
+			else
+				++it;
+		}
+
+		if (node.vars.empty())
+			return RemoveStatement{};
+
+		return DontVisitChildren{};
+	}
+
 	bool EliminateUnusedTransformer::IsAliasUsed(std::size_t aliasIndex) const
 	{
 		assert(m_options);

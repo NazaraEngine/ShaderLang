@@ -68,6 +68,7 @@ namespace nzsl::Ast
 			void Visit(DeclareFunctionStatement& node) override;
 			void Visit(DeclareStructStatement& node) override;
 			void Visit(DeclareVariableStatement& node) override;
+			void Visit(DeclareWorkgroupSharedStatement& node) override;
 
 			std::optional<std::size_t> m_currentAliasDeclIndex;
 			std::optional<std::size_t> m_currentConstantIndex;

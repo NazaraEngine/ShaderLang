@@ -156,6 +156,7 @@ namespace nzsl
 			void Visit(Ast::DeclareOptionStatement& node) override;
 			void Visit(Ast::DeclareStructStatement& node) override;
 			void Visit(Ast::DeclareVariableStatement& node) override;
+			void Visit(Ast::DeclareWorkgroupSharedStatement& node) override;
 			void Visit(Ast::DiscardStatement& node) override;
 			void Visit(Ast::ExpressionStatement& node) override;
 			void Visit(Ast::ImportStatement& node) override;

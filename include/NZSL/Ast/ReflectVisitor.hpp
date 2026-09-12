@@ -42,6 +42,7 @@ namespace nzsl::Ast
 				std::function<void(const DeclareOptionStatement&   optionDecl)>   onOptionDeclaration;
 				std::function<void(const DeclareStructStatement&   structDecl)>   onStructDeclaration;
 				std::function<void(const DeclareVariableStatement& variableDecl)> onVariableDeclaration;
+				std::function<void(const DeclareWorkgroupSharedStatement& sharedDecl)> onWorkgroupSharedDeclaration;
 
 				std::function<void(const std::string& name, std::size_t aliasIndex,  const SourceLocation& sourceLocation)> onAliasIndex;
 				std::function<void(const std::string& name, std::size_t constIndex,  const SourceLocation& sourceLocation)> onConstIndex;
@@ -59,6 +60,7 @@ namespace nzsl::Ast
 			void Visit(DeclareOptionStatement& node) override;
 			void Visit(DeclareStructStatement& node) override;
 			void Visit(DeclareVariableStatement& node) override;
+			void Visit(DeclareWorkgroupSharedStatement& node) override;
 			void Visit(ForStatement& node) override;
 			void Visit(ForEachStatement& node) override;
 

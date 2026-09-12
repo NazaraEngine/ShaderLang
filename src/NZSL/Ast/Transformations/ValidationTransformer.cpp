@@ -1171,9 +1171,9 @@ namespace nzsl::Ast
 				m_states->pushConstantLocation = extVar.sourceLocation;
 
 				if (extVar.bindingSet.HasValue())
-					throw CompilerUnexpectedAttributeOnPushConstantError{ extVar.sourceLocation, Ast::AttributeType::Set };
+					throw CompilerUnexpectedAttributeError{ extVar.sourceLocation, Ast::AttributeType::Set, "push constant" };
 				else if (extVar.bindingIndex.HasValue())
-					throw CompilerUnexpectedAttributeOnPushConstantError{ extVar.sourceLocation, Ast::AttributeType::Binding };
+					throw CompilerUnexpectedAttributeError{ extVar.sourceLocation, Ast::AttributeType::Binding, "push constant" };
 			}
 		}
 
@@ -1299,6 +1299,35 @@ namespace nzsl::Ast
 
 		if (node.varIndex && m_options->checkIndices)
 			RegisterVariable(*node.varIndex, node.sourceLocation);
+
+		return DontVisitChildren{};
+	}
+	
+	auto ValidationTransformer::Transform(DeclareWorkgroupSharedStatement&& node) -> StatementTransformation
+	{
+		HandleChildren(node);
+
+		if (node.externalIndex && m_options->checkIndices)
+			RegisterExternal(*node.externalIndex, node.sourceLocation);
+
+		for (auto& extVar : node.vars)
+		{
+			if (extVar.varIndex && m_options->checkIndices)
+				RegisterVariable(*extVar.varIndex, extVar.sourceLocation);
+
+			if (!extVar.type.IsResultingValue())
+			{
+				if (!m_context->partialCompilation)
+					throw AstMissingTypeError{ extVar.sourceLocation };
+
+				continue;
+			}
+
+			const ExpressionType& targetType = ResolveAlias(extVar.type.GetResultingValue());
+
+			if (IsNoType(targetType))
+				throw CompilerExtTypeNotAllowedError{ extVar.sourceLocation, extVar.name, ToString(extVar.type.GetResultingValue(), extVar.sourceLocation) };
+		}
 
 		return DontVisitChildren{};
 	}
@@ -1753,6 +1782,26 @@ namespace nzsl::Ast
 					};
 
 					if (ValidateIntrinsicParameterType(node, Check, "floating-point vec3", paramIndex) == ValidationResult::Unresolved)
+					{
+						if (!unresolvedParameter)
+							unresolvedParameter = paramIndex;
+
+						paramIndex++;
+						continue;
+					}
+
+					paramIndex++;
+					break;
+				}
+
+				case ParameterType::IntegerScalar:
+				{
+					auto Check = [](const ExpressionType& type)
+					{
+						return type == ExpressionType{ PrimitiveType::Int32 } || type == ExpressionType{ PrimitiveType::UInt32 } || type == ExpressionType{ PrimitiveType::IntLiteral };
+					};
+
+					if (ValidateIntrinsicParameterType(node, Check, "integer", paramIndex) == ValidationResult::Unresolved)
 					{
 						if (!unresolvedParameter)
 							unresolvedParameter = paramIndex;
