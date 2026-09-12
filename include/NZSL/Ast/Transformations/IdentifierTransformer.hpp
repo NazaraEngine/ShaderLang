@@ -1,4 +1,4 @@
-// Copyright (C) 2025 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
+// Copyright (C) 2026 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -45,6 +45,7 @@ namespace nzsl::Ast
 			StatementTransformation Transform(DeclareOptionStatement&& statement) override;
 			StatementTransformation Transform(DeclareStructStatement&& statement) override;
 			StatementTransformation Transform(DeclareVariableStatement&& statement) override;
+			StatementTransformation Transform(DeclareWorkgroupSharedStatement&& statement) override;
 			StatementTransformation Transform(ForEachStatement&& statement) override;
 			StatementTransformation Transform(ForStatement&& statement) override;
 

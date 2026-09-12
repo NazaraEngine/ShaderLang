@@ -1,0 +1,79 @@
+{
+	"structs": [
+		{
+			"name": "Color",
+			"structIndex": 0,
+			"layout": "std140",
+			"size": 12,
+			"alignment": 4,
+			"members": [
+				{
+					"name": "r",
+					"type": {
+						"kind": "primitive",
+						"primitiveType": "f32"
+					},
+					"offset": 0
+				},
+				{
+					"name": "g",
+					"type": {
+						"kind": "primitive",
+						"primitiveType": "f32"
+					},
+					"offset": 4
+				},
+				{
+					"name": "b",
+					"type": {
+						"kind": "primitive",
+						"primitiveType": "f32"
+					},
+					"offset": 8
+				}
+			]
+		},
+		{
+			"name": "Output",
+			"structIndex": 1,
+			"layout": "std140",
+			"size": 36,
+			"alignment": 16,
+			"members": [
+				{
+					"name": "color",
+					"type": {
+						"kind": "struct",
+						"index": 0
+					},
+					"offset": 0
+				},
+				{
+					"name": "normal",
+					"type": {
+						"kind": "vector",
+						"dims": 3,
+						"baseType": "f32"
+					},
+					"offset": 16
+				},
+				{
+					"name": "roughness",
+					"type": {
+						"kind": "primitive",
+						"primitiveType": "f32"
+					},
+					"offset": 28
+				},
+				{
+					"name": "metalness",
+					"type": {
+						"kind": "primitive",
+						"primitiveType": "f32"
+					},
+					"offset": 32
+				}
+			]
+		}
+	]
+}

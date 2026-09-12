@@ -1,4 +1,4 @@
-// Copyright (C) 2025 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
+// Copyright (C) 2026 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -46,6 +46,7 @@ namespace nzsl::Ast
 
 	void IndexRemapperTransformer::Transform(ExpressionType& expressionType, const SourceLocation& sourceLocation)
 	{
+		// ArrayType and DynArrayType inner types are handled here
 		Transformer::Transform(expressionType, sourceLocation);
 
 		if (IsAliasType(expressionType))
@@ -54,16 +55,6 @@ namespace nzsl::Ast
 			auto it = m_context->newIndices.find({ IdentifierType::Alias, aliasType.aliasIndex });
 			if (it != m_context->newIndices.end())
 				aliasType.aliasIndex = it->second;
-		}
-		else if (IsArrayType(expressionType))
-		{
-			ArrayType& arrayType = std::get<ArrayType>(expressionType);
-			Transform(arrayType.InnerType(), sourceLocation);
-		}
-		else if (IsDynArrayType(expressionType))
-		{
-			DynArrayType& arrayType = std::get<DynArrayType>(expressionType);
-			Transform(arrayType.InnerType(), sourceLocation);
 		}
 		else if (IsFunctionType(expressionType))
 		{
@@ -152,8 +143,8 @@ namespace nzsl::Ast
 
 		if (node.externalIndex)
 		{
-			std::size_t newIndex = m_context->options->indexGenerator(IdentifierType::Variable, *node.externalIndex);
-			UniqueInsert(m_context->newIndices, { IdentifierType::Variable, *node.externalIndex }, newIndex);
+			std::size_t newIndex = m_context->options->indexGenerator(IdentifierType::ExternalBlock, *node.externalIndex);
+			UniqueInsert(m_context->newIndices, { IdentifierType::ExternalBlock, *node.externalIndex }, newIndex);
 			node.externalIndex = newIndex;
 		}
 
@@ -168,7 +159,7 @@ namespace nzsl::Ast
 				extVar.varIndex = newIndex;
 			}
 			else if (m_context->options->forceIndexGeneration)
-				extVar.varIndex = m_context->options->indexGenerator(IdentifierType::Constant, std::numeric_limits<std::size_t>::max());
+				extVar.varIndex = m_context->options->indexGenerator(IdentifierType::Variable, std::numeric_limits<std::size_t>::max());
 		}
 
 		return VisitChildren{};
@@ -247,6 +238,34 @@ namespace nzsl::Ast
 		}
 		else if (m_context->options->forceIndexGeneration)
 			node.varIndex = m_context->options->indexGenerator(IdentifierType::Variable, std::numeric_limits<std::size_t>::max());
+
+		return VisitChildren{};
+	}
+
+	auto IndexRemapperTransformer::Transform(DeclareWorkgroupSharedStatement&& node) -> StatementTransformation
+	{
+		NAZARA_USE_ANONYMOUS_NAMESPACE
+
+		if (node.externalIndex)
+		{
+			std::size_t newIndex = m_context->options->indexGenerator(IdentifierType::ExternalBlock, *node.externalIndex);
+			UniqueInsert(m_context->newIndices, { IdentifierType::ExternalBlock, *node.externalIndex }, newIndex);
+			node.externalIndex = newIndex;
+		}
+
+		for (auto& extVar : node.vars)
+		{
+			if (extVar.varIndex)
+			{
+				std::pair oldIndexPair = { IdentifierType::Variable, *extVar.varIndex };
+
+				std::size_t newIndex = m_context->options->indexGenerator(oldIndexPair.first, oldIndexPair.second);
+				UniqueInsert(m_context->newIndices, oldIndexPair, newIndex);
+				extVar.varIndex = newIndex;
+			}
+			else if (m_context->options->forceIndexGeneration)
+				extVar.varIndex = m_context->options->indexGenerator(IdentifierType::Variable, std::numeric_limits<std::size_t>::max());
+		}
 
 		return VisitChildren{};
 	}

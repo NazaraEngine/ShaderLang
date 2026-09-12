@@ -1,4 +1,4 @@
-// Copyright (C) 2025 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
+// Copyright (C) 2026 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -26,22 +26,24 @@ namespace nzsl
 			constexpr std::size_t AddMatrix(StructFieldType cellType, unsigned int columns, unsigned int rows, bool columnMajor);
 			constexpr std::size_t AddMatrixArray(StructFieldType cellType, unsigned int columns, unsigned int rows, bool columnMajor, std::size_t arraySize);
 			constexpr std::size_t AddStruct(const FieldOffsets& fieldStruct);
+			constexpr std::size_t AddStruct(std::size_t structSize, std::size_t structAlignment);
 			constexpr std::size_t AddStructArray(const FieldOffsets& fieldStruct, std::size_t arraySize);
+			constexpr std::size_t AddStructArray(std::size_t structSize, std::size_t structAlignment, std::size_t arraySize);
 
 			constexpr std::size_t GetAlignedSize() const;
-			constexpr std::size_t GetLargestFieldAlignement() const;
+			constexpr std::size_t GetAlignment() const;
 			constexpr StructLayout GetLayout() const;
 			constexpr std::size_t GetSize() const;
 
 			constexpr FieldOffsets& operator=(const FieldOffsets&) = default;
 			constexpr FieldOffsets& operator=(FieldOffsets&&) = default;
 
-			static constexpr std::size_t GetAlignement(StructLayout layout, StructFieldType fieldType);
+			static constexpr std::size_t GetAlignment(StructLayout layout, StructFieldType fieldType);
 			static constexpr std::size_t GetCount(StructFieldType fieldType);
 			static constexpr std::size_t GetSize(StructFieldType fieldType);
 
 		private:
-			std::size_t m_largestFieldAlignment;
+			std::size_t m_alignment;
 			std::size_t m_offsetRounding;
 			std::size_t m_size;
 			StructLayout m_layout;

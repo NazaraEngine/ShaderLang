@@ -59,4 +59,22 @@ TEST_CASE("Standalone compiler", "[NZSLC]")
 		// Generate the same shader a second time with --skip-unchanged and ensure file wasn't modified
 		ExecuteCommand("./nzslc --skip-unchanged --verbose --compile=spv --debug-level=regular -o test_files -m ../resources/modules/Color.nzslb  -m ../resources/modules/Data/OutputStruct.nzslb -m ../resources/modules/Data/DataStruct.nzslb ../resources/Shader.nzslb", "Skipped file .+Shader.spv");
 	}
+
+	WHEN("Performing reflection")
+	{
+		REQUIRE(std::filesystem::exists("../resources/Reflection.nzsl"));
+
+		auto Cleanup = []
+		{
+			if (std::filesystem::is_directory("test_files"))
+				std::filesystem::remove_all("test_files");
+		};
+
+		Cleanup();
+
+		Nz::CallOnExit cleanupOnExit(std::move(Cleanup));
+
+		ExecuteCommand("./nzslc --verbose --reflect=Output --partial -o test_files ../resources/Reflection.nzsl");
+		CheckFileMatch("../resources/Reflection.nzsl.json", "test_files/Reflection.nzsl.json");
+	}
 }

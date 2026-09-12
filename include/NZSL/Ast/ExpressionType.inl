@@ -1,4 +1,4 @@
-// Copyright (C) 2025 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
+// Copyright (C) 2026 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -160,6 +160,23 @@ namespace nzsl::Ast
 		return !operator==(rhs);
 	}
 
+	inline auto& MethodType::ObjectType()
+	{
+		return objectType->type;
+	}
+
+	inline const auto& MethodType::ObjectType() const
+	{
+		return objectType->type;
+	}
+
+	template<typename T>
+	void MethodType::SetupObjectType(T&& value)
+	{
+		objectType = std::make_unique<ContainedType>();
+		objectType->type = std::forward<T>(value);
+	}
+
 
 	inline bool ModuleType::operator==(const ModuleType& rhs) const
 	{
@@ -237,6 +254,17 @@ namespace nzsl::Ast
 	}
 
 
+	inline bool PushConstantType::operator==(const PushConstantType& rhs) const
+	{
+		return containedType == rhs.containedType;
+	}
+
+	inline bool PushConstantType::operator!=(const PushConstantType& rhs) const
+	{
+		return !operator==(rhs);
+	}
+
+
 	inline bool StorageType::operator==(const StorageType& rhs) const
 	{
 		return accessPolicy == rhs.accessPolicy && containedType == rhs.containedType;
@@ -259,17 +287,6 @@ namespace nzsl::Ast
 	}
 
 
-	inline bool PushConstantType::operator==(const PushConstantType& rhs) const
-	{
-		return containedType == rhs.containedType;
-	}
-
-	inline bool PushConstantType::operator!=(const PushConstantType& rhs) const
-	{
-		return !operator==(rhs);
-	}
-
-
 	inline bool IsAliasType(const ExpressionType& type)
 	{
 		return std::holds_alternative<AliasType>(type);
@@ -283,6 +300,11 @@ namespace nzsl::Ast
 	inline bool IsDynArrayType(const ExpressionType& type)
 	{
 		return std::holds_alternative<DynArrayType>(type);
+	}
+
+	inline bool IsExternalType(const ExpressionType& type)
+	{
+		return IsPushConstantType(type) || IsStorageType(type) || IsUniformType(type);
 	}
 
 	inline bool IsFunctionType(const ExpressionType& type)
@@ -345,6 +367,11 @@ namespace nzsl::Ast
 		return std::holds_alternative<PrimitiveType>(type);
 	}
 
+	inline bool IsPushConstantType(const ExpressionType& type)
+	{
+		return std::holds_alternative<PushConstantType>(type);
+	}
+
 	inline bool IsSamplerType(const ExpressionType& type)
 	{
 		return std::holds_alternative<SamplerType>(type);
@@ -373,11 +400,6 @@ namespace nzsl::Ast
 	inline bool IsUniformType(const ExpressionType& type)
 	{
 		return std::holds_alternative<UniformType>(type);
-	}
-
-	inline bool IsPushConstantType(const ExpressionType& type)
-	{
-		return std::holds_alternative<PushConstantType>(type);
 	}
 
 	inline bool IsVectorType(const ExpressionType& type)
@@ -421,6 +443,8 @@ namespace nzsl::Ast
 		PrimitiveType primType;
 		if (IsPrimitiveType(exprType))
 			primType = std::get<PrimitiveType>(exprType);
+		else if (IsMatrixType(exprType))
+			primType = std::get<MatrixType>(exprType).type;
 		else if (IsVectorType(exprType))
 			primType = std::get<VectorType>(exprType).type;
 		else
@@ -460,7 +484,7 @@ namespace nzsl::Ast
 			return exprType;
 	}
 
-	ExpressionType ResolveAlias(ExpressionType&& exprType)
+	inline ExpressionType ResolveAlias(ExpressionType&& exprType)
 	{
 		if (IsAliasType(exprType))
 		{
@@ -537,7 +561,7 @@ namespace nzsl::Ast
 		if (IsStorageType(referenceType))
 			return WrapExternalType<StorageType>(exprType);
 		else if (IsUniformType(referenceType))
-			return WrapExternalType<StorageType>(exprType);
+			return WrapExternalType<UniformType>(exprType);
 		else if (IsArrayType(referenceType))
 			return WrapExternalType(exprType, std::get<ArrayType>(referenceType).InnerType());
 		else if (IsDynArrayType(referenceType))

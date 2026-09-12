@@ -1,4 +1,4 @@
-// Copyright (C) 2025 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
+// Copyright (C) 2026 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -86,6 +86,26 @@ namespace nzsl::Ast
 				constantArrayExpr.values = std::move(resolvedValues);
 				constantArrayExpr.cachedExpressionType = GetConstantType(constantArrayExpr.values);
 				return true;
+			}
+		}
+		else if (expression.GetType() == NodeType::CastExpression)
+		{
+			// FloatLiteral Matrices and array of FloatLiteral matrices are handled are cast expressions
+			CastExpression& castExpr = static_cast<CastExpression&>(expression);
+
+			if (!castExpr.targetType.IsResultingValue())
+				return false;
+			
+			if (auto targetTypeOpt = ResolveLiteralType(castExpr.targetType.GetResultingValue(), referenceType, sourceLocation))
+			{
+				castExpr.targetType = *targetTypeOpt;
+				castExpr.cachedExpressionType = *targetTypeOpt;
+
+				bool succeeded = true;
+				for (auto& expr : castExpr.expressions)
+					succeeded &= ResolveLiteral(expr, referenceType, sourceLocation);
+
+				return succeeded;
 			}
 		}
 		else
@@ -267,6 +287,7 @@ namespace nzsl::Ast
 						default:
 							NAZARA_UNREACHABLE();
 					}
+					break;
 				}
 
 				case PrimitiveType::IntLiteral:
@@ -297,6 +318,7 @@ namespace nzsl::Ast
 						default:
 							NAZARA_UNREACHABLE();
 					}
+					break;
 				}
 			}
 
@@ -574,6 +596,7 @@ namespace nzsl::Ast
 				case ParameterType::FValVec1632:
 				case ParameterType::FVec:
 				case ParameterType::FVec3:
+				case ParameterType::IntegerScalar:
 				case ParameterType::Matrix:
 				case ParameterType::MatrixSquare:
 				case ParameterType::Numerical:

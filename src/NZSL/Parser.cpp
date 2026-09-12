@@ -1,4 +1,4 @@
-// Copyright (C) 2025 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
+// Copyright (C) 2026 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -154,6 +154,14 @@ namespace nzsl
 		return it->second.identifier;
 	}
 
+	std::string_view Parser::ToString(Ast::IntrinsicType intrinsicType)
+	{
+		auto it = LangData::s_intrinsicData.find(intrinsicType);
+		assert(it != LangData::s_intrinsicData.end());
+
+		return it->second.name;
+	}
+
 	std::string_view Parser::ToString(Ast::LoopUnroll loopUnroll)
 	{
 		auto it = LangData::s_unrollModes.find(loopUnroll);
@@ -192,6 +200,33 @@ namespace nzsl
 
 		NAZARA_UNREACHABLE();
 	}
+	
+	std::string_view Parser::ToString(AccessPolicy accessPolicy)
+	{
+		switch (accessPolicy)
+		{
+			case AccessPolicy::ReadOnly:  return "readonly";
+			case AccessPolicy::ReadWrite: return "readwrite";
+			case AccessPolicy::WriteOnly: return "writeonly";
+		}
+
+		NAZARA_UNREACHABLE();
+	}
+
+	std::string_view Parser::ToString(ImageType imageType)
+	{
+		switch (imageType)
+		{
+			case ImageType::E1D:       return "1D";
+			case ImageType::E1D_Array: return "1DArray";
+			case ImageType::E2D:       return "2D";
+			case ImageType::E2D_Array: return "2DArray";
+			case ImageType::E3D:       return "3D";
+			case ImageType::Cubemap:   return "Cube";
+		}
+
+		NAZARA_UNREACHABLE();
+	}
 
 	std::string_view Parser::ToString(ShaderStageType shaderStage)
 	{
@@ -199,6 +234,14 @@ namespace nzsl
 		assert(it != LangData::s_entryPoints.end());
 
 		return it->second.identifier;
+	}
+
+	std::string_view Parser::ToString(ImageFormat imageFormat)
+	{
+		auto formatIt = LangData::s_imageFormats.find(imageFormat);
+		assert(formatIt != LangData::s_imageFormats.end());
+
+		return formatIt->second.identifier;
 	}
 
 	const Token& Parser::Advance()
@@ -1249,6 +1292,9 @@ namespace nzsl
 			case TokenType::Struct:
 				return ParseStructDeclaration(std::move(attributes));
 
+			case TokenType::WorkgroupShared:
+				return ParseWorkgroupSharedBlock(std::move(attributes));
+
 			default:
 				throw ParserUnexpectedTokenError{ nextToken.location, nextToken.type };
 		}
@@ -1552,6 +1598,101 @@ namespace nzsl
 		return whileStatement;
 	}
 
+	Ast::StatementPtr Parser::ParseWorkgroupSharedBlock(std::vector<Attribute> attributes /*= {}*/)
+	{
+		NAZARA_USE_ANONYMOUS_NAMESPACE
+
+		const Token& externalToken = Expect(Advance(), TokenType::WorkgroupShared);
+
+		std::unique_ptr<Ast::DeclareWorkgroupSharedStatement> workgroupSharedStatement = std::make_unique<Ast::DeclareWorkgroupSharedStatement>();
+		workgroupSharedStatement->sourceLocation = externalToken.location;
+
+		if (const Token& peekToken = Peek(); peekToken.type == TokenType::Identifier)
+			workgroupSharedStatement->name = ParseIdentifierAsName(nullptr);
+
+		Expect(Advance(), TokenType::OpenCurlyBracket);
+
+		Ast::ExpressionValue<bool> condition;
+
+		for (auto&& attribute : attributes)
+		{
+			switch (attribute.type)
+			{
+				case Ast::AttributeType::Cond:
+					HandleUniqueAttribute(condition, std::move(attribute));
+					break;
+
+				case Ast::AttributeType::Tag:
+					if (!workgroupSharedStatement->tag.empty())
+						throw ParserAttributeMultipleUniqueError{ attribute.sourceLocation, attribute.type };
+
+					workgroupSharedStatement->tag = ExtractStringAttribute(std::move(attribute));
+					break;
+
+				default:
+					throw ParserUnexpectedAttributeError{ attribute.sourceLocation, attribute.type, "external block" };
+			}
+		}
+
+		bool first = true;
+		for (;;)
+		{
+			if (!first)
+			{
+				const Token& nextToken = Peek();
+				if (nextToken.type == TokenType::Comma)
+					Consume();
+				else
+				{
+					Expect(nextToken, TokenType::ClosingCurlyBracket);
+					break;
+				}
+			}
+
+			first = false;
+
+			const Token& token = Peek();
+			if (token.type == TokenType::ClosingCurlyBracket)
+				break;
+
+			auto& sharedVar = workgroupSharedStatement->vars.emplace_back();
+
+			if (token.type == TokenType::OpenSquareBracket)
+			{
+				for (auto&& attribute : ParseAttributes())
+				{
+					switch (attribute.type)
+					{
+						case Ast::AttributeType::Tag:
+							if (!sharedVar.tag.empty())
+								throw ParserAttributeMultipleUniqueError{ attribute.sourceLocation, attribute.type };
+
+							sharedVar.tag = ExtractStringAttribute(std::move(attribute));
+							break;
+
+						default:
+							throw ParserUnexpectedAttributeError{ attribute.sourceLocation, attribute.type, "external variable" };
+					}
+				}
+			}
+
+			sharedVar.name = ParseIdentifierAsName(&sharedVar.sourceLocation);
+			Expect(Advance(), TokenType::Colon);
+
+			auto typeExpr = ParseType();
+			sharedVar.sourceLocation.ExtendToRight(typeExpr->sourceLocation);
+
+			sharedVar.type = std::move(typeExpr);
+		}
+
+		Expect(Advance(), TokenType::ClosingCurlyBracket);
+
+		if (condition.HasValue())
+			return ShaderBuilder::ConditionalStatement(std::move(condition).GetExpression(), std::move(workgroupSharedStatement));
+		else
+			return workgroupSharedStatement;
+	}
+
 	Ast::ExpressionPtr Parser::ParseBinOpRhs(int exprPrecedence, Ast::ExpressionPtr lhs)
 	{
 		for (;;)
@@ -1686,7 +1827,6 @@ namespace nzsl
 	{
 		std::vector<Ast::CallFunctionExpression::Parameter> parameters;
 		bool first = true;
-		size_t parameterIndex = 0;
 		while (Peek().type != TokenType::ClosingParenthesis)
 		{
 			if (!first)
@@ -1713,7 +1853,6 @@ namespace nzsl
 			}
 
 			first = false;
-			parameterIndex++;
 		}
 
 		const Token& endToken = Expect(Advance(), TokenType::ClosingParenthesis);

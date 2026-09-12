@@ -14,12 +14,15 @@
 #include <NZSL/Lang/Errors.hpp>
 #include <NZSL/Lexer.hpp>
 #include <NZSL/Parser.hpp>
+#include <NZSL/Math/FieldOffsets.hpp>
 #include <NZSL/SpirV/SpirvPrinter.hpp>
 #include <NZSL/SpirvWriter.hpp>
 #include <NZSL/Serializer.hpp>
 #include <NZSL/Ast/AstSerializer.hpp>
 #include <NZSL/Ast/Cloner.hpp>
+#include <NZSL/Ast/DependencyCheckerVisitor.hpp>
 #include <NZSL/Ast/ReflectVisitor.hpp>
+#include <NZSL/Ast/Transformations/EliminateUnusedTransformer.hpp>
 #include <NZSL/Ast/Transformations/ResolveTransformer.hpp>
 #include <NZSL/Ast/Transformations/ValidationTransformer.hpp>
 #include <fmt/color.h>
@@ -31,6 +34,7 @@
 #include <chrono>
 #include <fstream>
 #include <stdexcept>
+#include <unordered_set>
 
 namespace nzslc
 {
@@ -202,6 +206,9 @@ namespace nzslc
 
 				if (m_options.count("compile") > 0)
 					Step("Compiling"sv, __LINE__, &Compiler::Compile);
+
+				if (m_options.count("reflect") > 0)
+					Step("Reflecting"sv, __LINE__, &Compiler::Reflect);
 			});
 		}
 
@@ -241,6 +248,9 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 			("optimize", "Optimize shader code")
 			("p,partial", "Allow partial compilation")
 			("skip-unchanged", "After compilation, compare the output with the current output file and skip writing if the content is the same", cxxopts::value<bool>()->default_value("false"));
+
+		options.add_options("reflection")
+			("r,reflect", "Outputs informations about a struct as a json", cxxopts::value<std::vector<std::string>>());
 
 		options.add_options("glsl output")
 			("gl-es", "Generate GLSL ES instead of GLSL", cxxopts::value<bool>()->default_value("false"))
@@ -718,12 +728,364 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 			throw std::runtime_error(fmt::format("{} has unknown extension \"{}\"", Nz::PathToString(m_inputFilePath.filename()), Nz::PathToString(extension)));
 	}
 
+	void Compiler::Reflect()
+	{
+		m_outputHeader = false;
+
+		// if no output path has been provided, output in the same folder as the input file
+		std::filesystem::path outputFilePath = m_outputPath;
+		if (outputFilePath.empty())
+			outputFilePath = m_inputFilePath.parent_path();
+
+		outputFilePath /= m_inputFilePath.filename();
+		outputFilePath += Nz::Utf8Path(".json");
+
+		const std::vector<std::string>& reflectTypes = m_options["reflect"].as<std::vector<std::string>>();
+
+		std::unordered_set<std::string> remainingStructs(reflectTypes.begin(), reflectTypes.end());
+
+		nlohmann::ordered_json structArray = nlohmann::ordered_json::array();
+
+		std::unordered_map<std::size_t, nzsl::FieldOffsets> structFieldOffsets;
+
+		nzsl::Ast::DependencyCheckerVisitor dependencyChecker;
+
+		nzsl::Ast::ReflectVisitor::Callbacks callbacks;
+		nzsl::Ast::ReflectVisitor reflectVisitor;
+
+		callbacks.onStructDeclaration = [&](const nzsl::Ast::DeclareStructStatement& structDecl)
+		{
+			auto it = remainingStructs.find(structDecl.description.name);
+			if (it == remainingStructs.end())
+				return;
+
+			if (!structDecl.structIndex)
+				throw std::runtime_error(fmt::format("struct {} has no index", structDecl.description.name));
+
+			dependencyChecker.MarkStructAsUsed(*structDecl.structIndex);
+
+			remainingStructs.erase(it);
+		};
+
+		reflectVisitor.Reflect(*m_shaderModule, callbacks);
+
+		if (!remainingStructs.empty())
+			throw std::runtime_error(fmt::format("struct \"{}\" was not found", *remainingStructs.begin()));
+
+		dependencyChecker.Register(*m_shaderModule->rootNode);
+		dependencyChecker.Resolve();
+
+		nzsl::Ast::EliminateUnusedPass(*m_shaderModule, dependencyChecker.GetUsage());
+
+		callbacks.onStructDeclaration = [&](const nzsl::Ast::DeclareStructStatement& structDecl)
+		{
+			nlohmann::ordered_json structDoc;
+			structDoc["name"] = structDecl.description.name;
+			if (!structDecl.description.tag.empty())
+				structDoc["tag"] = structDecl.description.tag;
+
+			if (structDecl.structIndex)
+				structDoc["structIndex"] = *structDecl.structIndex;
+
+			nlohmann::ordered_json structMemberArray = nlohmann::ordered_json::array();
+
+			std::optional<nzsl::FieldOffsets> fieldOffsets;
+			if (structDecl.description.layout.IsResultingValue())
+			{
+				structDoc["layout"] = nzsl::Parser::ToString(structDecl.description.layout.GetResultingValue());
+				switch (structDecl.description.layout.GetResultingValue())
+				{
+					case nzsl::Ast::MemoryLayout::Scalar:
+						fieldOffsets.emplace(nzsl::StructLayout::Scalar);
+						break;
+
+					case nzsl::Ast::MemoryLayout::Std140:
+						fieldOffsets.emplace(nzsl::StructLayout::Std140);
+						break;
+
+					case nzsl::Ast::MemoryLayout::Std430:
+						fieldOffsets.emplace(nzsl::StructLayout::Std430);
+						break;
+				}
+			}
+			else if (structDecl.description.layout.IsExpression())
+				structDoc["layout"] = "unresolved";
+
+			for (const auto& member : structDecl.description.members)
+			{
+				nlohmann::ordered_json memberDoc;
+				memberDoc["name"] = member.name;
+
+				if (member.cond.HasValue())
+				{
+					if (member.cond.IsResultingValue())
+					{
+						if (!member.cond.GetResultingValue())
+							continue;
+					}
+					else
+					{
+						memberDoc["condition"] = "unresolved";
+						fieldOffsets.reset(); //< member offset can no longer be guaranteed at this point
+					}
+				}
+
+				if (member.type.IsResultingValue())
+				{
+					memberDoc["type"] = ReflectType(member.type.GetResultingValue());
+					if (fieldOffsets)
+					{
+						auto structFinder = [&](std::size_t structIndex) -> const nzsl::FieldOffsets&
+						{
+							return Nz::Retrieve(structFieldOffsets, structIndex);
+						};
+
+						memberDoc["offset"] = nzsl::Ast::RegisterStructField(*fieldOffsets, member.type.GetResultingValue(), structFinder);
+					}
+				}
+				else if (member.type.IsExpression())
+					memberDoc["type"] = "unresolved";
+
+				if (member.locationIndex.IsResultingValue())
+					memberDoc["location"] = member.locationIndex.GetResultingValue();
+				else if (member.locationIndex.IsExpression())
+					memberDoc["location"] = "unresolved";
+
+				structMemberArray.push_back(std::move(memberDoc));
+			}
+
+			if (fieldOffsets)
+			{
+				structDoc["size"] = fieldOffsets->GetSize();
+				structDoc["alignment"] = fieldOffsets->GetAlignment();
+
+				if (structDecl.structIndex)
+					structFieldOffsets.emplace(*structDecl.structIndex, *fieldOffsets);
+			}
+
+			structDoc["members"] = std::move(structMemberArray);
+
+			structArray.push_back(std::move(structDoc));
+		};
+
+		reflectVisitor.Reflect(*m_shaderModule, callbacks);
+
+		nlohmann::ordered_json result;
+		result["structs"] = std::move(structArray);
+
+		if (m_skipOutput)
+			return;
+
+		if (m_outputToStdout)
+		{
+			OutputToStdout(result.dump(1, '\t'));
+			return;
+		}
+
+		std::string output = result.dump(1, '\t');
+		OutputFile(std::move(outputFilePath), output.data(), output.size());
+	}
+
+	nlohmann::ordered_json Compiler::ReflectType(const nzsl::Ast::ExpressionType& exprType) const
+	{
+		return std::visit([this](auto&& type)
+		{
+			return ReflectType(type);
+		}, exprType);
+	}
+
+	nlohmann::ordered_json Compiler::ReflectType(const nzsl::Ast::NoType& /*exprType*/) const
+	{
+		return {
+			{"kind", "noType"}
+		};
+	}
+
+	nlohmann::ordered_json Compiler::ReflectType(const nzsl::Ast::AliasType& exprType) const
+	{
+		return {
+			{"kind",       "alias"},
+			{"targetType", ReflectType(exprType.TargetType())}
+		};
+	}
+
+	nlohmann::ordered_json Compiler::ReflectType(const nzsl::Ast::ArrayType& exprType) const
+	{
+		return {
+			{"kind",      "array"},
+			{"length",    exprType.length},
+			{"isWrapped", exprType.isWrapped},
+			{"innerType", ReflectType(exprType.InnerType())},
+		};
+	}
+
+	nlohmann::ordered_json Compiler::ReflectType(const nzsl::Ast::DynArrayType& exprType) const
+	{
+		return {
+			{"kind",      "dynArray"},
+			{"isWrapped", exprType.isWrapped},
+			{"innerType", ReflectType(exprType.InnerType())},
+		};
+	}
+
+	nlohmann::ordered_json Compiler::ReflectType(const nzsl::Ast::FunctionType& exprType) const
+	{
+		return {
+			{"kind", "function"},
+			{"index", exprType.funcIndex}
+		};
+	}
+
+	nlohmann::ordered_json Compiler::ReflectType(const nzsl::Ast::ImplicitArrayType& /*exprType*/) const
+	{
+		return {
+			{"kind", "implicitArray"}
+		};
+	}
+
+	nlohmann::ordered_json Compiler::ReflectType(const nzsl::Ast::ImplicitMatrixType& exprType) const
+	{
+		return {
+			{"kind",        "implicitMatrix"},
+			{"columnCount", exprType.columnCount},
+			{"rowCount",    exprType.rowCount}
+		};
+	}
+
+	nlohmann::ordered_json Compiler::ReflectType(const nzsl::Ast::ImplicitVectorType& exprType) const
+	{
+		return {
+			{"kind", "implicitVector"},
+			{"dims", exprType.componentCount}
+		};
+	}
+	
+	nlohmann::ordered_json Compiler::ReflectType(const nzsl::Ast::IntrinsicFunctionType& exprType) const
+	{
+		return {
+			{"kind",      "intrinsicFunction"},
+			{"intrinsic", nzsl::Parser::ToString(exprType.intrinsic)}
+		};
+	}
+
+	nlohmann::ordered_json Compiler::ReflectType(const nzsl::Ast::MatrixType& exprType) const
+	{
+		return {
+			{"kind",        "matrix"},
+			{"columnCount", exprType.columnCount},
+			{"rowCount",    exprType.rowCount},
+			{"cellType",    nzsl::Ast::ToString(exprType.type)},
+		};
+	}
+
+	nlohmann::ordered_json Compiler::ReflectType(const nzsl::Ast::MethodType& exprType) const
+	{
+		return {
+			{"kind",        "method"},
+			{"objectType",  ReflectType(exprType.ObjectType())},
+			{"methodIndex", exprType.methodIndex }
+		};
+	}
+
+	nlohmann::ordered_json Compiler::ReflectType(const nzsl::Ast::ModuleType& exprType) const
+	{
+		return {
+			{"kind",  "module"},
+			{"index", exprType.moduleIndex}
+		};
+	}
+
+	nlohmann::ordered_json Compiler::ReflectType(const nzsl::Ast::NamedExternalBlockType& exprType) const
+	{
+		return {
+			{"kind",  "namedExternalBlock"},
+			{"index", exprType.namedExternalBlockIndex}
+		};
+	}
+
+	nlohmann::ordered_json Compiler::ReflectType(const nzsl::Ast::PrimitiveType& exprType) const
+	{
+		return {
+			{"kind",          "primitive"},
+			{"primitiveType", nzsl::Ast::ToString(exprType)}
+		};
+	}
+
+	nlohmann::ordered_json Compiler::ReflectType(const nzsl::Ast::PushConstantType& exprType) const
+	{
+		return {
+			{"kind",        "push_constant"},
+			{"structIndex", exprType.containedType.structIndex}
+		};
+	}
+
+	nlohmann::ordered_json Compiler::ReflectType(const nzsl::Ast::SamplerType& exprType) const
+	{
+		return {
+			{"kind",        "sampler"},
+			{"depth",       exprType.depth},
+			{"dim",         nzsl::Parser::ToString(exprType.dim)},
+			{"sampledType", nzsl::Ast::ToString(exprType.sampledType)}
+		};
+	}
+
+	nlohmann::ordered_json Compiler::ReflectType(const nzsl::Ast::StorageType& exprType) const
+	{
+		return {
+			{"kind",        "storage"},
+			{"structIndex", exprType.containedType.structIndex}
+		};
+	}
+
+	nlohmann::ordered_json Compiler::ReflectType(const nzsl::Ast::StructType& exprType) const
+	{
+		return {
+			{"kind",  "struct"},
+			{"index", exprType.structIndex}
+		};
+	}
+
+	nlohmann::ordered_json Compiler::ReflectType(const nzsl::Ast::TextureType& exprType) const
+	{
+		return {
+			{"kind",         "texture"},
+			{"accessPolicy", exprType.accessPolicy},
+			{"baseType",     nzsl::Ast::ToString(exprType.baseType)},
+			{"dim",          nzsl::Parser::ToString(exprType.dim)},
+			{"format",       nzsl::Parser::ToString(exprType.format)},
+		};
+	}
+
+	nlohmann::ordered_json Compiler::ReflectType(const nzsl::Ast::Type& exprType) const
+	{
+		return {
+			{"kind",  "type"},
+			{"index", exprType.typeIndex}
+		};
+	}
+
+	nlohmann::ordered_json Compiler::ReflectType(const nzsl::Ast::UniformType& exprType) const
+	{
+		return {
+			{"kind",        "uniform"},
+			{"structIndex", exprType.containedType.structIndex}
+		};
+	}
+
+	nlohmann::ordered_json Compiler::ReflectType(const nzsl::Ast::VectorType& exprType) const
+	{
+		return {
+			{"kind",     "vector"},
+			{"dims",     exprType.componentCount},
+			{"baseType", nzsl::Ast::ToString(exprType.type)}
+		};
+	}
+
 	void Compiler::Resolve()
 	{
 		using namespace std::literals;
 
-		nzsl::Ast::TransformerContext context;
-		context.partialCompilation = m_options.count("partial") > 0;
+		m_transformerContext.partialCompilation = m_options.count("partial") > 0;
 
 		nzsl::Ast::ResolveTransformer::Options resolverOpt;
 
@@ -754,8 +1116,8 @@ You can also specify -header as a suffix (ex: --compile=glsl-header) to generate
 		nzsl::Ast::ResolveTransformer resolver;
 		nzsl::Ast::ValidationTransformer validation;
 
-		Step("AST processing"sv, __LINE__, [&] { resolver.Transform(*m_shaderModule, context, resolverOpt); });
-		Step("AST validation"sv, __LINE__, [&] { validation.Transform(*m_shaderModule, context); });
+		Step("AST processing"sv, __LINE__, [&] { resolver.Transform(*m_shaderModule, m_transformerContext, resolverOpt); });
+		Step("AST validation"sv, __LINE__, [&] { validation.Transform(*m_shaderModule, m_transformerContext); });
 	}
 
 	template<typename F, typename... Args>

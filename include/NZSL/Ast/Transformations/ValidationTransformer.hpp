@@ -1,4 +1,4 @@
-// Copyright (C) 2025 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
+// Copyright (C) 2026 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -45,12 +45,13 @@ namespace nzsl::Ast
 			const ExpressionType* GetExpressionType(const Expression& expr) const;
 
 			void PopScope() override;
-			
+
 			void PropagateFunctionStages(FunctionData& callingFuncData, Nz::HybridBitset<Nz::UInt32, 32>& seen);
 
 			void PushScope() override;
 
 			void RegisterAlias(std::size_t aliasIndex, const SourceLocation& sourceLocation);
+			void RegisterBuiltin();
 			void RegisterConst(std::size_t constIndex, const SourceLocation& sourceLocation);
 			void RegisterExternal(std::size_t externalIndex, const SourceLocation& sourceLocation);
 			void RegisterFunc(std::size_t funcIndex, const SourceLocation& sourceLocation);
@@ -91,6 +92,7 @@ namespace nzsl::Ast
 			StatementTransformation Transform(DeclareOptionStatement&& node) override;
 			StatementTransformation Transform(DeclareStructStatement&& node) override;
 			StatementTransformation Transform(DeclareVariableStatement&& node) override;
+			StatementTransformation Transform(DeclareWorkgroupSharedStatement&& node) override;
 			StatementTransformation Transform(DiscardStatement&& node) override;
 			StatementTransformation Transform(ExpressionStatement&& node) override;
 			StatementTransformation Transform(ForStatement&& node) override;
@@ -107,7 +109,7 @@ namespace nzsl::Ast
 			bool TransformModule(Module& module, TransformerContext& context, std::string* error, Nz::FunctionRef<void()> postCallback = nullptr) override;
 
 			void ValidateConcreteType(const ExpressionType& exprType, const SourceLocation& sourceLocation);
-			void ValidateIntrinsicParameters(IntrinsicExpression& node);
+			template<typename T> void ValidateIntrinsicParameters(IntrinsicExpression& node, const T& intrinsicData);
 			ValidationResult ValidateIntrinsicParamMatchingType(IntrinsicExpression& node, std::size_t from, std::size_t to);
 			ValidationResult ValidateIntrinsicParamMatchingVecComponent(IntrinsicExpression& node, std::size_t from, std::size_t to);
 			template<typename F> ValidationResult ValidateIntrinsicParameter(IntrinsicExpression& node, F&& func, std::size_t index);

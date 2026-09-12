@@ -1,4 +1,4 @@
-// Copyright (C) 2025 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
+// Copyright (C) 2026 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -52,7 +52,7 @@ namespace nzsl::Ast
 
 			Stringifier BuildStringifier(const SourceLocation& sourceLocation) const;
 
-			ExpressionPtr CacheExpression(ExpressionPtr expression);
+			ExpressionPtr CacheExpression(ExpressionPtr&& expression);
 
 			inline void ClearFlags(TransformerFlags flags);
 
@@ -107,6 +107,7 @@ namespace nzsl::Ast
 			void HandleChildren(DeclareOptionStatement& node);
 			void HandleChildren(DeclareStructStatement& node);
 			void HandleChildren(DeclareVariableStatement& node);
+			void HandleChildren(DeclareWorkgroupSharedStatement& node);
 			void HandleChildren(DiscardStatement& node);
 			void HandleChildren(ExpressionStatement& node);
 			void HandleChildren(ForStatement& node);

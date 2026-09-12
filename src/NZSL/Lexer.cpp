@@ -1,4 +1,4 @@
-// Copyright (C) 2025 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
+// Copyright (C) 2026 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -18,31 +18,32 @@ namespace nzsl
 	namespace
 	{
 		constexpr auto s_reservedKeywords = frozen::make_unordered_map<frozen::string, TokenType>({
-			{ "alias",        TokenType::Alias },
-			{ "as",           TokenType::As },
-			{ "break",        TokenType::Break },
-			{ "const",        TokenType::Const },
-			{ "const_select", TokenType::ConstSelect },
-			{ "continue",     TokenType::Continue },
-			{ "discard",      TokenType::Discard },
-			{ "else",         TokenType::Else },
-			{ "external",     TokenType::External },
-			{ "false",        TokenType::BoolFalse },
-			{ "fn",           TokenType::FunctionDeclaration },
-			{ "for",          TokenType::For },
-			{ "from",         TokenType::From },
-			{ "if",           TokenType::If },
-			{ "import",       TokenType::Import },
-			{ "in",           TokenType::In },
-			{ "inout",        TokenType::InOut },
-			{ "let",          TokenType::Let },
-			{ "module",       TokenType::Module },
-			{ "option",       TokenType::Option },
-			{ "out",          TokenType::Out },
-			{ "return",       TokenType::Return },
-			{ "struct",       TokenType::Struct },
-			{ "true",         TokenType::BoolTrue },
-			{ "while",        TokenType::While }
+			{ "alias",            TokenType::Alias },
+			{ "as",               TokenType::As },
+			{ "break",            TokenType::Break },
+			{ "const",            TokenType::Const },
+			{ "const_select",     TokenType::ConstSelect },
+			{ "continue",         TokenType::Continue },
+			{ "discard",          TokenType::Discard },
+			{ "else",             TokenType::Else },
+			{ "external",         TokenType::External },
+			{ "false",            TokenType::BoolFalse },
+			{ "fn",               TokenType::FunctionDeclaration },
+			{ "for",              TokenType::For },
+			{ "from",             TokenType::From },
+			{ "if",               TokenType::If },
+			{ "import",           TokenType::Import },
+			{ "in",               TokenType::In },
+			{ "inout",            TokenType::InOut },
+			{ "let",              TokenType::Let },
+			{ "module",           TokenType::Module },
+			{ "option",           TokenType::Option },
+			{ "out",              TokenType::Out },
+			{ "return",           TokenType::Return },
+			{ "struct",           TokenType::Struct },
+			{ "true",             TokenType::BoolTrue },
+			{ "while",            TokenType::While },
+			{ "workgroup_shared", TokenType::WorkgroupShared }
 		});
 	}
 

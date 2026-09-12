@@ -1,4 +1,4 @@
-// Copyright (C) 2025 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
+// Copyright (C) 2026 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -64,6 +64,8 @@ namespace nzsl::Ast
 		m_states = &states;
 
 		PushScope();
+		RegisterBuiltin();
+
 		NAZARA_DEFER({ PopScope(); });
 
 		if (!TransformImportedModules(module, context, error))
@@ -220,7 +222,7 @@ namespace nzsl::Ast
 
 		m_states->scopes.pop_back();
 	}
-	
+
 	void ValidationTransformer::PropagateFunctionStages(FunctionData& calledFuncData, Nz::HybridBitset<Nz::UInt32, 32>& seen)
 	{
 		seen.UnboundedSet(calledFuncData.funcIndex);
@@ -252,6 +254,12 @@ namespace nzsl::Ast
 		m_states->registeredAliases.UnboundedSet(aliasIndex);
 		auto& scope = m_states->scopes.back();
 		scope.aliases.push_back(aliasIndex);
+	}
+
+	void ValidationTransformer::RegisterBuiltin()
+	{
+		for (const auto& [constantName, data] : LangData::s_constants)
+			RegisterConst(data.constantIndex, {});
 	}
 
 	void ValidationTransformer::RegisterConst(std::size_t constIndex, const SourceLocation& sourceLocation)
@@ -517,7 +525,7 @@ namespace nzsl::Ast
 	{
 		HandleChildren(node);
 
-		// Validation already done by IdentifierTypeTransformer
+		// Validation already done by ResolveTransformer
 
 		return DontVisitChildren{};
 	}
@@ -967,8 +975,17 @@ namespace nzsl::Ast
 	{
 		HandleChildren(node);
 
+		auto intrinsicIt = LangData::s_intrinsicData.find(node.intrinsic);
+		if (intrinsicIt == LangData::s_intrinsicData.end())
+			throw AstInternalError{ node.sourceLocation, fmt::format("missing intrinsic data for intrinsic {}", Nz::UnderlyingCast(node.intrinsic)) };
+
+		const auto& intrinsicData = intrinsicIt->second;
+
 		// Parameter validation
-		ValidateIntrinsicParameters(node);
+		ValidateIntrinsicParameters(node, intrinsicData);
+
+		if (intrinsicData.requiredStage)
+			m_states->currentFunction->requiredShaderStage.emplace(*intrinsicData.requiredStage, node.sourceLocation);
 
 		return DontVisitChildren{};
 	}
@@ -1154,9 +1171,9 @@ namespace nzsl::Ast
 				m_states->pushConstantLocation = extVar.sourceLocation;
 
 				if (extVar.bindingSet.HasValue())
-					throw CompilerUnexpectedAttributeOnPushConstantError{ extVar.sourceLocation, Ast::AttributeType::Set };
+					throw CompilerUnexpectedAttributeError{ extVar.sourceLocation, Ast::AttributeType::Set, "push constant" };
 				else if (extVar.bindingIndex.HasValue())
-					throw CompilerUnexpectedAttributeOnPushConstantError{ extVar.sourceLocation, Ast::AttributeType::Binding };
+					throw CompilerUnexpectedAttributeError{ extVar.sourceLocation, Ast::AttributeType::Binding, "push constant" };
 			}
 		}
 
@@ -1282,6 +1299,35 @@ namespace nzsl::Ast
 
 		if (node.varIndex && m_options->checkIndices)
 			RegisterVariable(*node.varIndex, node.sourceLocation);
+
+		return DontVisitChildren{};
+	}
+	
+	auto ValidationTransformer::Transform(DeclareWorkgroupSharedStatement&& node) -> StatementTransformation
+	{
+		HandleChildren(node);
+
+		if (node.externalIndex && m_options->checkIndices)
+			RegisterExternal(*node.externalIndex, node.sourceLocation);
+
+		for (auto& extVar : node.vars)
+		{
+			if (extVar.varIndex && m_options->checkIndices)
+				RegisterVariable(*extVar.varIndex, extVar.sourceLocation);
+
+			if (!extVar.type.IsResultingValue())
+			{
+				if (!m_context->partialCompilation)
+					throw AstMissingTypeError{ extVar.sourceLocation };
+
+				continue;
+			}
+
+			const ExpressionType& targetType = ResolveAlias(extVar.type.GetResultingValue());
+
+			if (IsNoType(targetType))
+				throw CompilerExtTypeNotAllowedError{ extVar.sourceLocation, extVar.name, ToString(extVar.type.GetResultingValue(), extVar.sourceLocation) };
+		}
 
 		return DontVisitChildren{};
 	}
@@ -1484,13 +1530,11 @@ namespace nzsl::Ast
 			throw AstUnexpectedUntypedError{ sourceLocation };
 	}
 
-	void ValidationTransformer::ValidateIntrinsicParameters(IntrinsicExpression& node)
+	template<typename T>
+	void ValidationTransformer::ValidateIntrinsicParameters(IntrinsicExpression& node, const T& intrinsicData)
 	{
-		auto intrinsicIt = LangData::s_intrinsicData.find(node.intrinsic);
-		if (intrinsicIt == LangData::s_intrinsicData.end())
-			throw AstInternalError{ node.sourceLocation, fmt::format("missing intrinsic data for intrinsic {}", Nz::UnderlyingCast(node.intrinsic)) };
-
-		const auto& intrinsicData = intrinsicIt->second;
+		if (node.parameters.size() != intrinsicData.nonConstraintParameterCount)
+			throw CompilerIntrinsicExpectedParameterCountError{ node.sourceLocation, Nz::SafeCast<std::uint32_t>(intrinsicData.nonConstraintParameterCount), intrinsicData.name, Nz::SafeCast<std::uint32_t>(node.parameters.size()) };
 
 		std::optional<std::size_t> unresolvedParameter;
 
@@ -1738,6 +1782,26 @@ namespace nzsl::Ast
 					};
 
 					if (ValidateIntrinsicParameterType(node, Check, "floating-point vec3", paramIndex) == ValidationResult::Unresolved)
+					{
+						if (!unresolvedParameter)
+							unresolvedParameter = paramIndex;
+
+						paramIndex++;
+						continue;
+					}
+
+					paramIndex++;
+					break;
+				}
+
+				case ParameterType::IntegerScalar:
+				{
+					auto Check = [](const ExpressionType& type)
+					{
+						return type == ExpressionType{ PrimitiveType::Int32 } || type == ExpressionType{ PrimitiveType::UInt32 } || type == ExpressionType{ PrimitiveType::IntLiteral };
+					};
+
+					if (ValidateIntrinsicParameterType(node, Check, "integer", paramIndex) == ValidationResult::Unresolved)
 					{
 						if (!unresolvedParameter)
 							unresolvedParameter = paramIndex;
@@ -2327,9 +2391,6 @@ namespace nzsl::Ast
 				}
 			}
 		}
-
-		if (node.parameters.size() != paramIndex)
-			throw CompilerIntrinsicExpectedParameterCountError{ node.sourceLocation, Nz::SafeCast<std::uint32_t>(paramIndex) };
 
 		if (unresolvedParameter && !m_context->partialCompilation)
 			throw CompilerIntrinsicUnresolvedParameterError{ node.parameters[*unresolvedParameter]->sourceLocation, *unresolvedParameter };

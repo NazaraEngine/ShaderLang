@@ -1,4 +1,4 @@
-// Copyright (C) 2025 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
+// Copyright (C) 2026 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -56,6 +56,7 @@ NZSL_SHADERAST_STATEMENT(DeclareFunction)
 NZSL_SHADERAST_STATEMENT(DeclareOption)
 NZSL_SHADERAST_STATEMENT(DeclareStruct)
 NZSL_SHADERAST_STATEMENT(DeclareVariable)
+NZSL_SHADERAST_STATEMENT(DeclareWorkgroupShared)
 NZSL_SHADERAST_STATEMENT(Discard)
 NZSL_SHADERAST_STATEMENT(For)
 NZSL_SHADERAST_STATEMENT(ForEach)

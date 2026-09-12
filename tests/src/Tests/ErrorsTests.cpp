@@ -442,7 +442,7 @@ external
 	[set(0)] foo: push_constant[Foo]
 }
 
-)"), "(11,11 -> 33): CUnexpectedAttributeOnPushConstant error: unexpected attribute set on push_constant");
+)"), "(11,11 -> 33): CUnexpectedAttribute error: unexpected attribute set on push constant");
 
 			CHECK_THROWS_WITH(Compile(R"(
 [nzsl_version("1.1")]
@@ -735,6 +735,32 @@ fn main()
 }
 )"), "(14,2 -> 18): CIdentifierAlreadyUsed error: identifier Viewer is already used");
 
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.1")]
+module;
+
+external
+{
+	[binding(0)] tex: texture2D[f32, rgba8]
+}
+
+)"), "(7,20 -> 40): CTextureUnexpectedAccess error: texture type require readonly, readwrite or writeonly qualifier (got 38)");
+
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.1")]
+module;
+
+struct Foo
+{
+}
+
+external
+{
+	[binding(0)] foo: storage[Foo, rgba8]
+}
+
+)"), "(11,20 -> 38): CStorageUnexpectedAccess error: storage type access qualifiers must be readonly, readwrite or writeonly (got 38)");
+
 		}
 
 		/************************************************************************/
@@ -893,6 +919,26 @@ module;
 
 fn main()
 {
+	let a = max();
+}
+)"), "(7,10 -> 14): CIntrinsicExpectedParameterCount error: expected 2 parameter(s) for max intrinsic, got 0");
+
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.1")]
+module;
+
+fn main()
+{
+	let a = min(1.0, 2.0, 3.0);
+}
+)"), "(7,10 -> 27): CIntrinsicExpectedParameterCount error: expected 2 parameter(s) for min intrinsic, got 3");
+
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.1")]
+module;
+
+fn main()
+{
 	let a = mat2x3[f32](1.0, 2.0, 3.0, 4.0, 5.0, 6.0);
 	let b = inverse(a);
 }
@@ -927,6 +973,28 @@ fn main()
 	let a = tex.Sample(vec2[i32](0, 0));
 }
 )"), "(12,21 -> 35): CIntrinsicExpectedType error: expected type floating-point vector of 2 components for parameter #1, got vec2[i32]");
+
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.1")]
+module;
+
+struct Input
+{
+	value: f32
+}
+
+fn foo(input: Input) -> f32
+{
+	return ddx(input.value);
+}
+
+[entry(vert)]
+fn main(input: Input)
+{
+	foo(input);
+}
+)"), "(12,9 -> 24): CInvalidStageDependency error: this is only valid in the fragment stage but this functions gets called in the vertex stage");
+
 		}
 
 		/************************************************************************/

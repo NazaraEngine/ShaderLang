@@ -1,4 +1,4 @@
-// Copyright (C) 2025 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
+// Copyright (C) 2026 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -59,6 +59,7 @@ namespace nzsl
 			void Visit(Ast::DeclareOptionStatement& node) override;
 			void Visit(Ast::DeclareStructStatement& node) override;
 			void Visit(Ast::DeclareVariableStatement& node) override;
+			void Visit(Ast::DeclareWorkgroupSharedStatement& node) override;
 			void Visit(Ast::DiscardStatement& node) override;
 			void Visit(Ast::ExpressionStatement& node) override;
 			void Visit(Ast::IdentifierValueExpression& node) override;
@@ -76,7 +77,13 @@ namespace nzsl
 
 			// Should be private but are referenced in SpirvGenData.hpp
 			void BuildArraySizeIntrinsic(const Ast::IntrinsicExpression& node);
+			void BuildAtomicIntrinsic(const Ast::IntrinsicExpression& node);
+			void BuildAtomic2Intrinsic(const Ast::IntrinsicExpression& node);
+			void BuildControlBarrierIntrinsic(const Ast::IntrinsicExpression& node);
+			void BuildMemoryBarrierIntrinsic(const Ast::IntrinsicExpression& node);
 			void BuildSelectIntrinsic(const Ast::IntrinsicExpression& node);
+			void BuildTextureSampleExplicitLodIntrinsic(const Ast::IntrinsicExpression& node);
+
 			static SpirvGlslStd450Op SelectAbs(const Ast::IntrinsicExpression& node);
 			static SpirvGlslStd450Op SelectClamp(const Ast::IntrinsicExpression& node);
 			static SpirvGlslStd450Op SelectLerp(const Ast::IntrinsicExpression& node);

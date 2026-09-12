@@ -1,4 +1,4 @@
-// Copyright (C) 2025 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
+// Copyright (C) 2026 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -245,6 +245,23 @@ namespace nzsl::Ast
 			return false;
 
 		if (!Compare(lhs.sourceLocation, rhs.sourceLocation, params))
+			return false;
+
+		return true;
+	}
+
+	inline bool Compare(const DeclareWorkgroupSharedStatement::SharedVar& lhs, const DeclareWorkgroupSharedStatement::SharedVar& rhs, const ComparisonParams& params)
+	{
+		if (!Compare(lhs.name, rhs.name, params))
+			return false;
+
+		if (!Compare(lhs.type, rhs.type, params))
+			return false;
+
+		if (!Compare(lhs.sourceLocation, rhs.sourceLocation, params))
+			return false;
+
+		if (!Compare(lhs.tag, rhs.tag, params))
 			return false;
 
 		return true;
@@ -669,6 +686,20 @@ namespace nzsl::Ast
 			return false;
 
 		if (!Compare(lhs.initialExpression, rhs.initialExpression, params))
+			return false;
+
+		return true;
+	}
+
+	inline bool Compare(const DeclareWorkgroupSharedStatement& lhs, const DeclareWorkgroupSharedStatement& rhs, const ComparisonParams& params)
+	{
+		if (!Compare(lhs.tag, rhs.tag, params))
+			return false;
+
+		if (!Compare(lhs.name, rhs.name, params))
+			return false;
+
+		if (!Compare(lhs.vars, rhs.vars, params))
 			return false;
 
 		return true;

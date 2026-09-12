@@ -1,4 +1,4 @@
-// Copyright (C) 2025 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
+// Copyright (C) 2026 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -254,6 +254,8 @@ namespace nzsl::Ast
 
 		Statement& operator=(const Statement&) = delete;
 		Statement& operator=(Statement&&) noexcept = default;
+
+		bool isReturning = false;
 	};
 
 	struct NZSL_API BranchStatement : Statement
@@ -395,6 +397,26 @@ namespace nzsl::Ast
 		std::string varName;
 		ExpressionPtr initialExpression;
 		ExpressionValue<ExpressionType> varType;
+	};
+
+	struct NZSL_API DeclareWorkgroupSharedStatement : Statement
+	{
+		NodeType GetType() const override;
+		void Visit(StatementVisitor& visitor) override;
+
+		struct SharedVar
+		{
+			std::optional<std::size_t> varIndex;
+			std::string name;
+			std::string tag;
+			ExpressionValue<ExpressionType> type;
+			SourceLocation sourceLocation;
+		};
+
+		std::optional<std::size_t> externalIndex;
+		std::string name;
+		std::string tag;
+		std::vector<SharedVar> vars;
 	};
 
 	struct NZSL_API DiscardStatement : Statement

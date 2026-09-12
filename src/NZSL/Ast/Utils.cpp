@@ -1,4 +1,4 @@
-// Copyright (C) 2025 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
+// Copyright (C) 2026 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -181,6 +181,9 @@ namespace nzsl::Ast
 
 		const auto& intrinsicData = intrinsicIt->second;
 
+		if (intrinsicExpr.parameters.size() != intrinsicData.nonConstraintParameterCount)
+			throw CompilerIntrinsicExpectedParameterCountError{ intrinsicExpr.sourceLocation, Nz::SafeCast<std::uint32_t>(intrinsicData.nonConstraintParameterCount), intrinsicData.name, Nz::SafeCast<std::uint32_t>(intrinsicExpr.parameters.size()) };
+
 		std::array<std::optional<ExpressionType>, 2> parameterTypes;
 		if (intrinsicData.returnType == ReturnType::Param0Type || intrinsicData.returnType == ReturnType::Param1Type)
 		{
@@ -267,7 +270,7 @@ namespace nzsl::Ast
 					return vecType;
 				}
 				else
-					throw AstInternalError{ intrinsicExpr.sourceLocation, fmt::format("intrinsic {} first parameter is not a primitive nor vector", intrinsicData.functionName) };
+					throw AstInternalError{ intrinsicExpr.sourceLocation, fmt::format("intrinsic {} first parameter is not a primitive nor vector", intrinsicData.name) };
 			}
 
 			case ReturnType::Param0SampledValue:
@@ -278,7 +281,7 @@ namespace nzsl::Ast
 
 				const ExpressionType& paramType = ResolveAlias(*expressionType);
 				if (!IsSamplerType(paramType))
-					throw AstInternalError{ intrinsicExpr.sourceLocation, fmt::format("intrinsic {} first parameter is not a sampler", intrinsicData.functionName) };
+					throw AstInternalError{ intrinsicExpr.sourceLocation, fmt::format("intrinsic {} first parameter is not a sampler", intrinsicData.name) };
 
 				const SamplerType& samplerType = std::get<SamplerType>(paramType);
 				if (samplerType.depth)
@@ -295,7 +298,7 @@ namespace nzsl::Ast
 
 				const ExpressionType& paramType = ResolveAlias(*expressionType);
 				if (!IsTextureType(paramType))
-					throw AstInternalError{ intrinsicExpr.sourceLocation, fmt::format("intrinsic {} first parameter is not a sampler", intrinsicData.functionName) };
+					throw AstInternalError{ intrinsicExpr.sourceLocation, fmt::format("intrinsic {} first parameter is not a sampler", intrinsicData.name) };
 
 				const TextureType& textureType = std::get<TextureType>(paramType);
 				return VectorType{ 4, textureType.baseType };
@@ -309,7 +312,7 @@ namespace nzsl::Ast
 
 				const ExpressionType& paramType = ResolveAlias(*expressionType);
 				if (!IsMatrixType(paramType))
-					throw AstInternalError{ intrinsicExpr.sourceLocation, fmt::format("intrinsic {} first parameter is not a matrix", intrinsicData.functionName) };
+					throw AstInternalError{ intrinsicExpr.sourceLocation, fmt::format("intrinsic {} first parameter is not a matrix", intrinsicData.name) };
 
 				MatrixType matrixType = std::get<MatrixType>(paramType);
 				std::swap(matrixType.columnCount, matrixType.rowCount);
@@ -343,7 +346,7 @@ namespace nzsl::Ast
 
 				const ExpressionType& paramType = ResolveAlias(*expressionType);
 				if (!IsVectorType(paramType))
-					throw AstInternalError{ intrinsicExpr.sourceLocation, fmt::format("intrinsic {} first parameter is not a vector", intrinsicData.functionName) };
+					throw AstInternalError{ intrinsicExpr.sourceLocation, fmt::format("intrinsic {} first parameter is not a vector", intrinsicData.name) };
 
 				const VectorType& vecType = std::get<VectorType>(paramType);
 				return vecType.type;
@@ -524,6 +527,8 @@ namespace nzsl::Ast
 			{
 				if (IsPrimitiveType(*referenceType))
 					resolvedReferenceType = std::get<PrimitiveType>(*referenceType);
+				else if (IsMatrixType(*referenceType))
+					resolvedReferenceType = std::get<MatrixType>(*referenceType).type;
 				else if (IsVectorType(*referenceType))
 					resolvedReferenceType = std::get<VectorType>(*referenceType).type;
 				else if (IsArrayType(*referenceType))
@@ -531,6 +536,8 @@ namespace nzsl::Ast
 					const ArrayType& arrType = std::get<ArrayType>(*referenceType);
 					if (IsPrimitiveType(arrType.InnerType()))
 						resolvedReferenceType = std::get<PrimitiveType>(arrType.InnerType());
+					else if (IsMatrixType(arrType.InnerType()))
+						resolvedReferenceType = std::get<MatrixType>(arrType.InnerType()).type;
 					else if (IsVectorType(arrType.InnerType()))
 						resolvedReferenceType = std::get<VectorType>(arrType.InnerType()).type;
 					else
@@ -558,6 +565,16 @@ namespace nzsl::Ast
 					return *resolvedReferenceType;
 				else
 					throw CompilerCastIncompatibleTypesError{ sourceLocation, Ast::ToString(expressionType), Ast::ToString(*referenceType) };
+			}
+		}
+		else if (IsMatrixType(resolvedType))
+		{
+			MatrixType matrixType = std::get<MatrixType>(resolvedType);
+
+			if (auto resolvedTypeOpt = ResolveLiteralType(matrixType.type, referenceType, sourceLocation))
+			{
+				matrixType.type = std::get<PrimitiveType>(*resolvedTypeOpt);
+				return matrixType;
 			}
 		}
 		else if (IsVectorType(resolvedType))
@@ -646,6 +663,9 @@ namespace nzsl::Ast
 			// One of the two type is unresolved but not both
 			if (IsPrimitiveType(resolvedLeftType) && IsPrimitiveType(resolvedRightType))
 				return CheckLiteralType(std::get<PrimitiveType>(resolvedLeftType), std::get<PrimitiveType>(resolvedRightType));
+
+			if (IsMatrixType(resolvedLeftType) && IsMatrixType(resolvedRightType))
+				return CheckLiteralType(std::get<MatrixType>(resolvedLeftType).type, std::get<MatrixType>(resolvedRightType).type);
 
 			if (IsVectorType(resolvedLeftType) && IsVectorType(resolvedRightType))
 				return CheckLiteralType(std::get<VectorType>(resolvedLeftType).type, std::get<VectorType>(resolvedRightType).type);

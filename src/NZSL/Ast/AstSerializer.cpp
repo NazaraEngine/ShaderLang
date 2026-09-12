@@ -1,4 +1,4 @@
-// Copyright (C) 2025 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
+// Copyright (C) 2026 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -49,7 +49,7 @@ namespace nzsl::Ast
 	namespace
 	{
 		constexpr std::uint32_t s_shaderAstMagicNumber = 0x4E534852;
-		constexpr std::uint32_t s_shaderAstCurrentVersion = 16;
+		constexpr std::uint32_t s_shaderAstCurrentVersion = 17;
 
 		class ShaderSerializerVisitor : public ExpressionVisitor, public StatementVisitor
 		{
@@ -350,6 +350,9 @@ namespace nzsl::Ast
 		if (IsVersionGreaterOrEqual(13))
 			OptSizeT(node.externalIndex);
 
+		if (IsVersionGreaterOrEqual(17))
+			Value(node.name);
+
 		Container(node.externalVars);
 		for (auto& extVar : node.externalVars)
 		{
@@ -440,6 +443,23 @@ namespace nzsl::Ast
 		Value(node.varName);
 		ExprValue(node.varType);
 		Node(node.initialExpression);
+	}
+
+	void SerializerBase::Serialize(DeclareWorkgroupSharedStatement& node)
+	{
+		Value(node.tag);
+		OptSizeT(node.externalIndex);
+		Value(node.name);
+
+		Container(node.vars);
+		for (auto& sharedVar : node.vars)
+		{
+			Value(sharedVar.name);
+			OptSizeT(sharedVar.varIndex);
+			ExprValue(sharedVar.type);
+			SourceLoc(sharedVar.sourceLocation);
+			Value(sharedVar.tag);
+		}
 	}
 
 	void SerializerBase::Serialize(DiscardStatement& /*node*/)
@@ -1160,8 +1180,7 @@ NAZARA_WARNING_GCC_DISABLE("-Wmaybe-uninitialized")
 				SizeT(methodIndex);
 
 				MethodType methodType;
-				methodType.objectType = std::make_unique<ContainedType>();
-				methodType.objectType->type = std::move(objectType);
+				methodType.SetupObjectType(std::move(objectType));
 				methodType.methodIndex = methodIndex;
 
 				type = std::move(methodType);

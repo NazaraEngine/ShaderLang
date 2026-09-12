@@ -1,4 +1,4 @@
-// Copyright (C) 2025 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
+// Copyright (C) 2026 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -18,6 +18,17 @@
 
 namespace nzsl::LangData
 {
+	struct AccessPolicyData
+	{
+		std::string_view identifier;
+	};
+
+	constexpr auto s_accessPolicies = frozen::make_unordered_map<AccessPolicy, AccessPolicyData>({
+		{ AccessPolicy::ReadOnly,  { "readonly" } },
+		{ AccessPolicy::ReadWrite, { "readwrite" } },
+		{ AccessPolicy::WriteOnly, { "writeonly" } },
+	});
+
 	struct AttributeData
 	{
 		std::string_view identifier;
@@ -59,6 +70,7 @@ namespace nzsl::LangData
 		{ Ast::BuiltinEntry::DrawIndex,                 { "draw_index",                ShaderStageType::Vertex,   Ast::PrimitiveType::UInt32 } },
 		{ Ast::BuiltinEntry::FragCoord,                 { "frag_coord",                ShaderStageType::Fragment, Ast::VectorType { 4, Ast::PrimitiveType::Float32 } } },
 		{ Ast::BuiltinEntry::FragDepth,                 { "frag_depth",                ShaderStageType::Fragment, Ast::PrimitiveType::Float32 } },
+		{ Ast::BuiltinEntry::FrontFacing,               { "front_facing",              ShaderStageType::Fragment, Ast::PrimitiveType::Boolean } },
 		{ Ast::BuiltinEntry::GlocalInvocationIndices,   { "global_invocation_indices", ShaderStageType::Compute,  Ast::VectorType { 3, Ast::PrimitiveType::UInt32 } } },
 		{ Ast::BuiltinEntry::InstanceIndex,             { "instance_index",            ShaderStageType::Vertex,   Ast::PrimitiveType::UInt32 } },
 		{ Ast::BuiltinEntry::LocalInvocationIndex,      { "local_invocation_index",    ShaderStageType::Compute,  Ast::PrimitiveType::UInt32 } },
@@ -80,8 +92,11 @@ namespace nzsl::LangData
 		{ "readwrite", { 1, Nz::SafeCast<std::uint32_t>(AccessPolicy::ReadWrite) } },
 		{ "writeonly", { 2, Nz::SafeCast<std::uint32_t>(AccessPolicy::WriteOnly) } },
 
-		// TODO: Register more image formats
-		{ "rgba8", { 3, Nz::SafeCast<std::uint32_t>(ImageFormat::RGBA8) }}
+		// TODO: Register more image formats (integer and narrow ones, see s_imageFormats)
+		{ "rgba8", { 3, Nz::SafeCast<std::uint32_t>(ImageFormat::RGBA8) }},
+		{ "rgba8_snorm", { 4, Nz::SafeCast<std::uint32_t>(ImageFormat::RGBA8Snorm) }},
+		{ "rgba16f", { 5, Nz::SafeCast<std::uint32_t>(ImageFormat::RGBA16f) }},
+		{ "rgba32f", { 6, Nz::SafeCast<std::uint32_t>(ImageFormat::RGBA32f) }}
 	});
 
 	struct DepthWriteModeData
@@ -106,6 +121,18 @@ namespace nzsl::LangData
 		{ ShaderStageType::Compute,  { "comp", "compute" }},
 		{ ShaderStageType::Fragment, { "frag", "fragment" }},
 		{ ShaderStageType::Vertex,   { "vert", "vertex" }},
+	});
+	
+	struct ImageFormatData
+	{
+		std::string_view identifier;
+	};
+
+	constexpr auto s_imageFormats = frozen::make_unordered_map<ImageFormat, ImageFormatData>({
+		{ ImageFormat::RGBA8,      { "rgba8" } },
+		{ ImageFormat::RGBA8Snorm, { "rgba8_snorm" } },
+		{ ImageFormat::RGBA16f,    { "rgba16f" } },
+		{ ImageFormat::RGBA32f,    { "rgba32f" } },
 	});
 
 	struct InterpolationData
@@ -132,25 +159,28 @@ namespace nzsl::LangData
 			FValVec1632,        // Floating-point value or vector of floating-point of 16/32 bits (no f64)
 			FVec,               // Floating-point vector
 			FVec3,              // Floating-point vector3
+			IntegerScalar,      // Integer/Unsigned integer
 			Matrix,             // Matrix (N*M)
 			MatrixSquare,       // Square matrix (N*N)
 			Numerical,          // Integer/Floating-point/Unsigned integer
 			NumericalVec,       // Numerical or vector of numerical
 			Sampler,            // sampler
-			SampleCoordinates,  // floating-point vector used to sample the texture parameter
+			SampleCoordinates,  // Floating-point vector used to sample the texture parameter
 			Scalar,             // Boolean/Integer/Floating-point/Unsigned integer
 			ScalarVec,          // Scalar or vector of scalar
 			SignedNumerical,    // Integer/Floating-point value
-			SignedNumericalVec, // signed numerical or vector of signed numerical
+			SignedNumericalVec, // Signed numerical or vector of signed numerical
 			Texture,            // texture
-			TextureCoordinates, // integer vector used to sample the texture parameter
-			TextureData,        // texture content
+			TextureCoordinates, // Integer vector used to sample the texture parameter
+			TextureData,        // Texture content
 
 			// Constraints
 			SameType,                     // Checks that all types since the last SameTypeBarrier (or first parameter) are the same (note that literal types are taken into account, i.e. FloatLiteral is compatible with f32 and f64)
 			SameTypeBarrier,
 			SameVecComponentCount,        // Checks that all vectors since the last SameVecComponentCountBarrier (or first parameter) have the same component count
-			SameVecComponentCountBarrier
+			SameVecComponentCountBarrier,
+
+			ConstraintStart = SameType
 		};
 
 		enum class ReturnType
@@ -169,10 +199,13 @@ namespace nzsl::LangData
 
 		struct IntrinsicData
 		{
-			std::string_view functionName; // empty if not a function
+			std::string_view name;
+			bool isMethod;
 			ReturnType returnType;
 			const ParameterType* parameterTypes;
+			std::size_t nonConstraintParameterCount;
 			std::size_t parameterCount;
+			std::optional<ShaderStageType> requiredStage;
 		};
 
 		template<ParameterType... Types>
@@ -184,68 +217,111 @@ namespace nzsl::LangData
 			static constexpr std::array parameterArray { Types... };
 		};
 
-		template<ParameterType... Types>
-		constexpr IntrinsicData Build(std::string_view name, ReturnType retType, Params<Types...>)
+		template<>
+		struct IntrinsicFuncHelper<>
 		{
-			return { name, retType, IntrinsicFuncHelper<Types...>::parameterArray.data(), IntrinsicFuncHelper<Types...>::parameterArray.size()};
+			static constexpr std::array<ParameterType, 0> parameterArray {};
+		};
+
+		template<ParameterType... Types>
+		constexpr IntrinsicData Build(std::string_view name, bool isMethod, ReturnType retType, Params<Types...>, std::optional<ShaderStageType> requiredStage = std::nullopt)
+		{
+			constexpr auto& parameterArray = IntrinsicFuncHelper<Types...>::parameterArray;
+
+			std::size_t nonConstraintParameterCount = 0;
+			for (ParameterType parameterType : parameterArray)
+			{
+				if (parameterType < ParameterType::ConstraintStart)
+					nonConstraintParameterCount++;
+			}
+
+			return { name, isMethod, retType, parameterArray.data(), nonConstraintParameterCount, parameterArray.size(), requiredStage };
 		}
 
 		constexpr auto data = frozen::make_unordered_map<Ast::IntrinsicType, IntrinsicData>({
-			{ Ast::IntrinsicType::Abs,                               Build("abs",        ReturnType::Param0Type,         Params<ParameterType::SignedNumericalVec>{}) },
-			{ Ast::IntrinsicType::All,                               Build("all",        ReturnType::Bool,               Params<ParameterType::BVec>{}) },
-			{ Ast::IntrinsicType::Any,                               Build("any",        ReturnType::Bool,               Params<ParameterType::BVec>{}) },
-			{ Ast::IntrinsicType::ArcCos,                            Build("acos",       ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
-			{ Ast::IntrinsicType::ArcCosh,                           Build("acosh",      ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
-			{ Ast::IntrinsicType::ArcSin,                            Build("asin",       ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
-			{ Ast::IntrinsicType::ArcSinh,                           Build("asinh",      ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
-			{ Ast::IntrinsicType::ArcTan,                            Build("atan",       ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
-			{ Ast::IntrinsicType::ArcTan2,                           Build("atan2",      ReturnType::Param0Type,         Params<ParameterType::FValVec1632, ParameterType::FValVec1632, ParameterType::SameType>{}) },
-			{ Ast::IntrinsicType::ArcTanh,                           Build("atanh",      ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
-			{ Ast::IntrinsicType::ArraySize,                         Build("",           ReturnType::U32,                Params<ParameterType::ArrayDyn>{}) },
-			{ Ast::IntrinsicType::Ceil,                              Build("ceil",       ReturnType::Param0Type,         Params<ParameterType::FValVec>{}) },
-			{ Ast::IntrinsicType::Clamp,                             Build("clamp",      ReturnType::Param0Type,         Params<ParameterType::FValVec, ParameterType::FValVec, ParameterType::FValVec, ParameterType::SameType>{}) },
-			{ Ast::IntrinsicType::Cos,                               Build("cos",        ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
-			{ Ast::IntrinsicType::Cosh,                              Build("cosh",       ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
-			{ Ast::IntrinsicType::CrossProduct,                      Build("cross",      ReturnType::Param0Type,         Params<ParameterType::FVec3, ParameterType::FVec3, ParameterType::SameType>{}) },
-			{ Ast::IntrinsicType::DegToRad,                          Build("deg2rad",    ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
-			{ Ast::IntrinsicType::Distance,                          Build("distance",   ReturnType::Param0VecComponent, Params<ParameterType::FVec, ParameterType::FVec, ParameterType::SameType>{}) },
-			{ Ast::IntrinsicType::DotProduct,                        Build("dot",        ReturnType::Param0VecComponent, Params<ParameterType::FVec, ParameterType::FVec, ParameterType::SameType>{}) },
-			{ Ast::IntrinsicType::Exp,                               Build("exp",        ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
-			{ Ast::IntrinsicType::Exp2,                              Build("exp2",       ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
-			{ Ast::IntrinsicType::Floor,                             Build("floor",      ReturnType::Param0Type,         Params<ParameterType::FValVec>{}) },
-			{ Ast::IntrinsicType::Fract,                             Build("fract",      ReturnType::Param0Type,         Params<ParameterType::FValVec>{}) },
-			{ Ast::IntrinsicType::InverseSqrt,                       Build("rsqrt",      ReturnType::Param0Type,         Params<ParameterType::FValVec>{}) },
-			{ Ast::IntrinsicType::IsInf,                             Build("isinf",      ReturnType::Param0AsBool,       Params<ParameterType::FValVec>{}) },
-			{ Ast::IntrinsicType::IsNaN,                             Build("isnan",      ReturnType::Param0AsBool,       Params<ParameterType::FValVec>{}) },
-			{ Ast::IntrinsicType::Length,                            Build("length",     ReturnType::Param0VecComponent, Params<ParameterType::FVec>{}) },
-			{ Ast::IntrinsicType::Lerp,                              Build("lerp",       ReturnType::Param0Type,         Params<ParameterType::FValVec, ParameterType::FValVec, ParameterType::FValVec, ParameterType::SameType>{}) },
-			{ Ast::IntrinsicType::Log,                               Build("log",        ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
-			{ Ast::IntrinsicType::Log2,                              Build("log2",       ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
-			{ Ast::IntrinsicType::MatrixInverse,                     Build("inverse",    ReturnType::Param0Type,         Params<ParameterType::MatrixSquare>{}) },
-			{ Ast::IntrinsicType::MatrixTranspose,                   Build("transpose",  ReturnType::Param0Transposed,   Params<ParameterType::Matrix>{}) },
-			{ Ast::IntrinsicType::Max,                               Build("max",        ReturnType::Param0Type,         Params<ParameterType::NumericalVec, ParameterType::NumericalVec, ParameterType::SameType>{}) },
-			{ Ast::IntrinsicType::Min,                               Build("min",        ReturnType::Param0Type,         Params<ParameterType::NumericalVec, ParameterType::NumericalVec, ParameterType::SameType>{}) },
-			{ Ast::IntrinsicType::Normalize,                         Build("normalize",  ReturnType::Param0Type,         Params<ParameterType::FVec>{}) },
-			{ Ast::IntrinsicType::Not,                               Build("not",        ReturnType::Param0Type,         Params<ParameterType::BVec>{}) },
-			{ Ast::IntrinsicType::Pow,                               Build("pow",        ReturnType::Param0Type,         Params<ParameterType::FValVec1632, ParameterType::FValVec1632, ParameterType::SameType>{}) },
-			{ Ast::IntrinsicType::RadToDeg,                          Build("rad2deg",    ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
-			{ Ast::IntrinsicType::Reflect,                           Build("reflect",    ReturnType::Param0Type,         Params<ParameterType::FVec3, ParameterType::FVec3, ParameterType::SameType>{}) },
-			{ Ast::IntrinsicType::Round,                             Build("round",      ReturnType::Param0Type,         Params<ParameterType::FValVec>{}) },
-			{ Ast::IntrinsicType::RoundEven,                         Build("roundeven",  ReturnType::Param0Type,         Params<ParameterType::FValVec>{}) },
-			{ Ast::IntrinsicType::Select,                            Build("select",     ReturnType::Param1Type,         Params<ParameterType::BValVec, ParameterType::SameTypeBarrier, ParameterType::ScalarVec, ParameterType::ScalarVec, ParameterType::SameType>{}) },
-			{ Ast::IntrinsicType::Sign,                              Build("sign",       ReturnType::Param0Type,         Params<ParameterType::SignedNumericalVec>{}) },
-			{ Ast::IntrinsicType::Sin,                               Build("sin",        ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
-			{ Ast::IntrinsicType::Sinh,                              Build("sinh",       ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
-			{ Ast::IntrinsicType::SmoothStep,                        Build("smoothstep", ReturnType::Param0Type,         Params<ParameterType::FValVec, ParameterType::FValVec, ParameterType::FValVec, ParameterType::SameType>{}) },
-			{ Ast::IntrinsicType::Step,                              Build("step",       ReturnType::Param0Type,         Params<ParameterType::FValVec, ParameterType::FValVec, ParameterType::SameType>{}) },
-			{ Ast::IntrinsicType::Sqrt,                              Build("sqrt",       ReturnType::Param0Type,         Params<ParameterType::FValVec>{}) },
-			{ Ast::IntrinsicType::Tan,                               Build("tan",        ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
-			{ Ast::IntrinsicType::Tanh,                              Build("tanh",       ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
-			{ Ast::IntrinsicType::TextureRead,                       Build("",           ReturnType::Param0TextureValue, Params<ParameterType::Texture, ParameterType::TextureCoordinates>{}) },
-			{ Ast::IntrinsicType::TextureSampleImplicitLod,          Build("",           ReturnType::Param0SampledValue, Params<ParameterType::Sampler, ParameterType::SampleCoordinates>{}) },
-			{ Ast::IntrinsicType::TextureSampleImplicitLodDepthComp, Build("",           ReturnType::Param0SampledValue, Params<ParameterType::Sampler, ParameterType::SampleCoordinates, ParameterType::F32>{}) },
-			{ Ast::IntrinsicType::TextureWrite,                      Build("",           ReturnType::None,               Params<ParameterType::Texture, ParameterType::TextureCoordinates, ParameterType::TextureData>{}) },
-			{ Ast::IntrinsicType::Trunc,                             Build("trunc",      ReturnType::Param0Type,         Params<ParameterType::FValVec>{}) },
+			{ Ast::IntrinsicType::Abs,                               Build("abs",                               false, ReturnType::Param0Type,         Params<ParameterType::SignedNumericalVec>{}) },
+			{ Ast::IntrinsicType::All,                               Build("all",                               false, ReturnType::Bool,               Params<ParameterType::BVec>{}) },
+			{ Ast::IntrinsicType::Any,                               Build("any",                               false, ReturnType::Bool,               Params<ParameterType::BVec>{}) },
+			{ Ast::IntrinsicType::ArcCos,                            Build("acos",                              false, ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
+			{ Ast::IntrinsicType::ArcCosh,                           Build("acosh",                             false, ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
+			{ Ast::IntrinsicType::ArcSin,                            Build("asin",                              false, ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
+			{ Ast::IntrinsicType::ArcSinh,                           Build("asinh",                             false, ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
+			{ Ast::IntrinsicType::ArcTan,                            Build("atan",                              false, ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
+			{ Ast::IntrinsicType::ArcTan2,                           Build("atan2",                             false, ReturnType::Param0Type,         Params<ParameterType::FValVec1632, ParameterType::FValVec1632, ParameterType::SameType>{}) },
+			{ Ast::IntrinsicType::ArcTanh,                           Build("atanh",                             false, ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
+			{ Ast::IntrinsicType::ArraySize,                         Build("arraySize",                         true,  ReturnType::U32,                Params<ParameterType::ArrayDyn>{}) },
+			{ Ast::IntrinsicType::AtomicAdd,                         Build("atomicAdd",                         false, ReturnType::Param0Type,         Params<ParameterType::IntegerScalar, ParameterType::IntegerScalar, ParameterType::SameType>{}) },
+			{ Ast::IntrinsicType::AtomicAnd,                         Build("atomicAnd",                         false, ReturnType::Param0Type,         Params<ParameterType::IntegerScalar, ParameterType::IntegerScalar, ParameterType::SameType>{}) },
+			{ Ast::IntrinsicType::AtomicCompareExchange,             Build("atomicCompareExchange",             false, ReturnType::Param0Type,         Params<ParameterType::IntegerScalar, ParameterType::IntegerScalar, ParameterType::IntegerScalar, ParameterType::SameType>{}) },
+			{ Ast::IntrinsicType::AtomicExchange,                    Build("atomicExchange",                    false, ReturnType::Param0Type,         Params<ParameterType::Numerical, ParameterType::Numerical, ParameterType::SameType>{}) },
+			{ Ast::IntrinsicType::AtomicMax,                         Build("atomicMax",                         false, ReturnType::Param0Type,         Params<ParameterType::IntegerScalar, ParameterType::IntegerScalar, ParameterType::SameType>{}) },
+			{ Ast::IntrinsicType::AtomicMin,                         Build("atomicMin",                         false, ReturnType::Param0Type,         Params<ParameterType::IntegerScalar, ParameterType::IntegerScalar, ParameterType::SameType>{}) },
+			{ Ast::IntrinsicType::AtomicOr,                          Build("atomicOr",                          false, ReturnType::Param0Type,         Params<ParameterType::IntegerScalar, ParameterType::IntegerScalar, ParameterType::SameType>{}) },
+			{ Ast::IntrinsicType::AtomicSub,                         Build("atomicSub",                         false, ReturnType::Param0Type,         Params<ParameterType::IntegerScalar, ParameterType::IntegerScalar, ParameterType::SameType>{}) },
+			{ Ast::IntrinsicType::AtomicXor,                         Build("atomicXor",                         false, ReturnType::Param0Type,         Params<ParameterType::IntegerScalar, ParameterType::IntegerScalar, ParameterType::SameType>{}) },
+			//{ Ast::IntrinsicType::ControlAndMemoryBarrierSubgroup,   Build("subgroupBarrierWithMemory",         false, ReturnType::None,               Params<>{}) },
+			{ Ast::IntrinsicType::ControlAndMemoryBarrierWorkgroup,  Build("workgroupBarrierWithMemory",        false, ReturnType::None,               Params<>{}) },
+			//{ Ast::IntrinsicType::ControlBarrierSubgroup,            Build("subgroupBarrier",                   false, ReturnType::None,               Params<>{}) },
+			{ Ast::IntrinsicType::ControlBarrierWorkgroup,           Build("workgroupBarrier",                  false, ReturnType::None,               Params<>{}) },
+			{ Ast::IntrinsicType::Ceil,                              Build("ceil",                              false, ReturnType::Param0Type,         Params<ParameterType::FValVec>{}) },
+			{ Ast::IntrinsicType::Clamp,                             Build("clamp",                             false, ReturnType::Param0Type,         Params<ParameterType::FValVec, ParameterType::FValVec, ParameterType::FValVec, ParameterType::SameType>{}) },
+			{ Ast::IntrinsicType::Cos,                               Build("cos",                               false, ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
+			{ Ast::IntrinsicType::Cosh,                              Build("cosh",                              false, ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
+			{ Ast::IntrinsicType::CrossProduct,                      Build("cross",                             false, ReturnType::Param0Type,         Params<ParameterType::FVec3, ParameterType::FVec3, ParameterType::SameType>{}) },
+			{ Ast::IntrinsicType::DegToRad,                          Build("deg2rad",                           false, ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
+			{ Ast::IntrinsicType::Ddx,                               Build("ddx",                               false, ReturnType::Param0Type,         Params<ParameterType::FValVec>{}, ShaderStageType::Fragment) },
+			{ Ast::IntrinsicType::DdxCoarse,                         Build("ddxcoarse",                         false, ReturnType::Param0Type,         Params<ParameterType::FValVec>{}, ShaderStageType::Fragment) },
+			{ Ast::IntrinsicType::DdxFine,                           Build("ddxfine",                           false, ReturnType::Param0Type,         Params<ParameterType::FValVec>{}, ShaderStageType::Fragment) },
+			{ Ast::IntrinsicType::Ddy,                               Build("ddy",                               false, ReturnType::Param0Type,         Params<ParameterType::FValVec>{}, ShaderStageType::Fragment) },
+			{ Ast::IntrinsicType::DdyCoarse,                         Build("ddycoarse",                         false, ReturnType::Param0Type,         Params<ParameterType::FValVec>{}, ShaderStageType::Fragment) },
+			{ Ast::IntrinsicType::DdyFine,                           Build("ddyfine",                           false, ReturnType::Param0Type,         Params<ParameterType::FValVec>{}, ShaderStageType::Fragment) },
+			{ Ast::IntrinsicType::Distance,                          Build("distance",                          false, ReturnType::Param0VecComponent, Params<ParameterType::FVec, ParameterType::FVec, ParameterType::SameType>{}) },
+			{ Ast::IntrinsicType::DotProduct,                        Build("dot",                               false, ReturnType::Param0VecComponent, Params<ParameterType::FVec, ParameterType::FVec, ParameterType::SameType>{}) },
+			{ Ast::IntrinsicType::Exp,                               Build("exp",                               false, ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
+			{ Ast::IntrinsicType::Exp2,                              Build("exp2",                              false, ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
+			{ Ast::IntrinsicType::Floor,                             Build("floor",                             false, ReturnType::Param0Type,         Params<ParameterType::FValVec>{}) },
+			{ Ast::IntrinsicType::Fract,                             Build("fract",                             false, ReturnType::Param0Type,         Params<ParameterType::FValVec>{}) },
+			{ Ast::IntrinsicType::Fwidth,                            Build("fwidth",                            false, ReturnType::Param0Type,         Params<ParameterType::FValVec>{}, ShaderStageType::Fragment) },
+			{ Ast::IntrinsicType::FwidthCoarse,                      Build("fwidthcoarse",                      false, ReturnType::Param0Type,         Params<ParameterType::FValVec>{}, ShaderStageType::Fragment) },
+			{ Ast::IntrinsicType::FwidthFine,                        Build("fwidthfine",                        false, ReturnType::Param0Type,         Params<ParameterType::FValVec>{}, ShaderStageType::Fragment) },
+			{ Ast::IntrinsicType::InverseSqrt,                       Build("rsqrt",                             false, ReturnType::Param0Type,         Params<ParameterType::FValVec>{}) },
+			{ Ast::IntrinsicType::IsInf,                             Build("isinf",                             false, ReturnType::Param0AsBool,       Params<ParameterType::FValVec>{}) },
+			{ Ast::IntrinsicType::IsNaN,                             Build("isnan",                             false, ReturnType::Param0AsBool,       Params<ParameterType::FValVec>{}) },
+			{ Ast::IntrinsicType::Length,                            Build("length",                            false, ReturnType::Param0VecComponent, Params<ParameterType::FVec>{}) },
+			{ Ast::IntrinsicType::Lerp,                              Build("lerp",                              false, ReturnType::Param0Type,         Params<ParameterType::FValVec, ParameterType::FValVec, ParameterType::FValVec, ParameterType::SameType>{}) },
+			{ Ast::IntrinsicType::Log,                               Build("log",                               false, ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
+			{ Ast::IntrinsicType::Log2,                              Build("log2",                              false, ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
+			{ Ast::IntrinsicType::MatrixInverse,                     Build("inverse",                           false, ReturnType::Param0Type,         Params<ParameterType::MatrixSquare>{}) },
+			{ Ast::IntrinsicType::MatrixTranspose,                   Build("transpose",                         false, ReturnType::Param0Transposed,   Params<ParameterType::Matrix>{}) },
+			{ Ast::IntrinsicType::Max,                               Build("max",                               false, ReturnType::Param0Type,         Params<ParameterType::NumericalVec, ParameterType::NumericalVec, ParameterType::SameType>{}) },
+			{ Ast::IntrinsicType::MemoryBarrierDevice,               Build("deviceMemoryBarrier",               false, ReturnType::None,               Params<>{}) },
+			{ Ast::IntrinsicType::MemoryBarrierStorage,              Build("storageMemoryBarrier",              false, ReturnType::None,               Params<>{}) },
+			//{ Ast::IntrinsicType::MemoryBarrierSubgroup,             Build("subgroupMemoryBarrier",             false, ReturnType::None,               Params<>{}) },
+			{ Ast::IntrinsicType::MemoryBarrierTexture,              Build("textureMemoryBarrier",              false, ReturnType::None,               Params<>{}) },
+			{ Ast::IntrinsicType::MemoryBarrierWorkgroup,            Build("workgroupMemoryBarrier",            false, ReturnType::None,               Params<>{}) },
+			{ Ast::IntrinsicType::Min,                               Build("min",                               false, ReturnType::Param0Type,         Params<ParameterType::NumericalVec, ParameterType::NumericalVec, ParameterType::SameType>{}) },
+			{ Ast::IntrinsicType::Normalize,                         Build("normalize",                         false, ReturnType::Param0Type,         Params<ParameterType::FVec>{}) },
+			{ Ast::IntrinsicType::Not,                               Build("not",                               false, ReturnType::Param0Type,         Params<ParameterType::BVec>{}) },
+			{ Ast::IntrinsicType::Pow,                               Build("pow",                               false, ReturnType::Param0Type,         Params<ParameterType::FValVec1632, ParameterType::FValVec1632, ParameterType::SameType>{}) },
+			{ Ast::IntrinsicType::RadToDeg,                          Build("rad2deg",                           false, ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
+			{ Ast::IntrinsicType::Reflect,                           Build("reflect",                           false, ReturnType::Param0Type,         Params<ParameterType::FVec3, ParameterType::FVec3, ParameterType::SameType>{}) },
+			{ Ast::IntrinsicType::Round,                             Build("round",                             false, ReturnType::Param0Type,         Params<ParameterType::FValVec>{}) },
+			{ Ast::IntrinsicType::RoundEven,                         Build("roundeven",                         false, ReturnType::Param0Type,         Params<ParameterType::FValVec>{}) },
+			{ Ast::IntrinsicType::Select,                            Build("select",                            false, ReturnType::Param1Type,         Params<ParameterType::BValVec, ParameterType::SameTypeBarrier, ParameterType::ScalarVec, ParameterType::ScalarVec, ParameterType::SameType>{}) },
+			{ Ast::IntrinsicType::Sign,                              Build("sign",                              false, ReturnType::Param0Type,         Params<ParameterType::SignedNumericalVec>{}) },
+			{ Ast::IntrinsicType::Sin,                               Build("sin",                               false, ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
+			{ Ast::IntrinsicType::Sinh,                              Build("sinh",                              false, ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
+			{ Ast::IntrinsicType::SmoothStep,                        Build("smoothstep",                        false, ReturnType::Param0Type,         Params<ParameterType::FValVec, ParameterType::FValVec, ParameterType::FValVec, ParameterType::SameType>{}) },
+			{ Ast::IntrinsicType::Step,                              Build("step",                              false, ReturnType::Param0Type,         Params<ParameterType::FValVec, ParameterType::FValVec, ParameterType::SameType>{}) },
+			{ Ast::IntrinsicType::Sqrt,                              Build("sqrt",                              false, ReturnType::Param0Type,         Params<ParameterType::FValVec>{}) },
+			{ Ast::IntrinsicType::Tan,                               Build("tan",                               false, ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
+			{ Ast::IntrinsicType::Tanh,                              Build("tanh",                              false, ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
+			{ Ast::IntrinsicType::TextureRead,                       Build("textureRead",                       true,  ReturnType::Param0TextureValue, Params<ParameterType::Texture, ParameterType::TextureCoordinates>{}) },
+			{ Ast::IntrinsicType::TextureSampleExplicitLod,          Build("textureSampleExplicitLod",          true,  ReturnType::Param0SampledValue, Params<ParameterType::Sampler, ParameterType::SampleCoordinates, ParameterType::F32>{}) },
+			{ Ast::IntrinsicType::TextureSampleImplicitLod,          Build("textureSampleImplicitLod",          true,  ReturnType::Param0SampledValue, Params<ParameterType::Sampler, ParameterType::SampleCoordinates>{}, ShaderStageType::Fragment) },
+			{ Ast::IntrinsicType::TextureSampleImplicitLodDepthComp, Build("textureSampleImplicitLodDepthComp", true,  ReturnType::Param0SampledValue, Params<ParameterType::Sampler, ParameterType::SampleCoordinates, ParameterType::F32>{}, ShaderStageType::Fragment) },
+			{ Ast::IntrinsicType::TextureWrite,                      Build("textureWrite",                      true,  ReturnType::None,               Params<ParameterType::Texture, ParameterType::TextureCoordinates, ParameterType::TextureData>{}) },
+			{ Ast::IntrinsicType::Trunc,                             Build("trunc",                             false, ReturnType::Param0Type,         Params<ParameterType::FValVec>{}) },
 		});
 	}
 

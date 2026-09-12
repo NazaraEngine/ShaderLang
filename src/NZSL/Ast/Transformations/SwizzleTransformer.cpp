@@ -1,4 +1,4 @@
-// Copyright (C) 2025 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
+// Copyright (C) 2026 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -32,9 +32,11 @@ namespace nzsl::Ast
 
 	auto SwizzleTransformer::Transform(SwizzleExpression&& swizzle) -> ExpressionTransformation
 	{
+		HandleChildren(swizzle);
+
 		const ExpressionType* exprType = GetResolvedExpressionType(*swizzle.expression);
 		if (!exprType)
-			return VisitChildren{};
+			return DontVisitChildren{};
 
 		if (m_options->removeScalarSwizzling && IsPrimitiveType(*exprType))
 		{
@@ -89,6 +91,7 @@ namespace nzsl::Ast
 				std::array<unsigned int, 4> nextComponents{};
 				for (std::size_t i = 0; i < flatCount; ++i)
 					nextComponents[i] = innerSwz->components[flatComponents[i]];
+
 				flatComponents = nextComponents;
 				// Step deeper
 				baseExpr = std::move(innerSwz->expression);
@@ -146,8 +149,10 @@ namespace nzsl::Ast
 				std::size_t minWritten = vecSize;
 				for (std::size_t k = 0; k < flatCount; ++k)
 					minWritten = std::min<std::size_t>(minWritten, flatComponents[k]);
+
 				if (minWritten + flatCount != vecSize)
 					return std::nullopt; // Not a suffix length
+
 				// Check order: {min,...,vec_size-1}
 				for (std::size_t k = 0; k < flatCount; ++k)
 				{
@@ -206,7 +211,7 @@ namespace nzsl::Ast
 			assign->right = std::move(ctor);
 		}
 
-		return VisitChildren{};
+		return DontVisitChildren{};
 	}
 
 	auto SwizzleTransformer::Transform(AssignExpression&& assign) -> ExpressionTransformation
@@ -216,6 +221,6 @@ namespace nzsl::Ast
 		PopAssignment();
 
 		HandleExpression(assign.right);
-		return VisitChildren{};
+		return DontVisitChildren{};
 	}
 }

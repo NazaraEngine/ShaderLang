@@ -1,10 +1,11 @@
-// Copyright (C) 2025 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
+// Copyright (C) 2026 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
 #include <NZSL/Ast/ExpressionType.hpp>
 #include <NazaraUtils/Algorithm.hpp>
 #include <NazaraUtils/TypeList.hpp>
+#include <NZSL/Parser.hpp>
 #include <NZSL/Ast/Cloner.hpp>
 #include <NZSL/Ast/Compare.hpp>
 #include <NZSL/Math/FieldOffsets.hpp>
@@ -315,6 +316,11 @@ namespace nzsl::Ast
 		}, exprType);
 	}
 
+	std::size_t ResolveStructIndex(const PushConstantType& pushConstantType)
+	{
+		return pushConstantType.containedType.structIndex;
+	}
+
 	std::size_t ResolveStructIndex(const StorageType& structType)
 	{
 		return structType.containedType.structIndex;
@@ -328,11 +334,6 @@ namespace nzsl::Ast
 	std::size_t ResolveStructIndex(const UniformType& uniformType)
 	{
 		return uniformType.containedType.structIndex;
-	}
-
-	std::size_t ResolveStructIndex(const PushConstantType& pushConstantType)
-	{
-		return pushConstantType.containedType.structIndex;
 	}
 
 	std::string ToString(const AliasType& type, const Stringifier& stringifier)
@@ -351,24 +352,6 @@ namespace nzsl::Ast
 			return fmt::format("array[{}]", ToString(type.InnerType(), stringifier));
 	}
 
-	std::string ToString(const ImplicitArrayType& /*type*/, const Stringifier& /*stringifier*/)
-	{
-		return "array";
-	}
-
-	std::string ToString(const ImplicitMatrixType& type, const Stringifier& /*stringifier*/)
-	{
-		if (type.columnCount == type.rowCount)
-			return fmt::format("mat{}", type.columnCount);
-		else
-			return fmt::format("mat{}x{}", type.columnCount, type.rowCount);
-	}
-
-	std::string ToString(const ImplicitVectorType& type, const Stringifier& /*stringifier*/)
-	{
-		return fmt::format("vec{}", type.componentCount);
-	}
-
 	std::string ToString(const DynArrayType& type, const Stringifier& stringifier)
 	{
 		return fmt::format("dyn_array[{}]", ToString(type.InnerType(), stringifier));
@@ -385,6 +368,24 @@ namespace nzsl::Ast
 	std::string ToString(const FunctionType& /*type*/, const Stringifier& /*stringifier*/)
 	{
 		return "<function type>";
+	}
+
+	std::string ToString(const ImplicitArrayType& /*type*/, const Stringifier& /*stringifier*/)
+	{
+		return "array";
+	}
+
+	std::string ToString(const ImplicitMatrixType& type, const Stringifier& /*stringifier*/)
+	{
+		if (type.columnCount == type.rowCount)
+			return fmt::format("mat{}", type.columnCount);
+		else
+			return fmt::format("mat{}x{}", type.columnCount, type.rowCount);
+	}
+
+	std::string ToString(const ImplicitVectorType& type, const Stringifier& /*stringifier*/)
+	{
+		return fmt::format("vec{}", type.componentCount);
 	}
 
 	std::string ToString(const IntrinsicFunctionType& /*type*/, const Stringifier& /*stringifier*/)
@@ -450,18 +451,7 @@ namespace nzsl::Ast
 
 	std::string ToString(const SamplerType& type, const Stringifier& /*stringifier*/)
 	{
-		std::string_view dimensionStr;
-		switch (type.dim)
-		{
-			case ImageType::E1D:       dimensionStr = "1D";      break;
-			case ImageType::E1D_Array: dimensionStr = "1DArray"; break;
-			case ImageType::E2D:       dimensionStr = "2D";      break;
-			case ImageType::E2D_Array: dimensionStr = "2DArray"; break;
-			case ImageType::E3D:       dimensionStr = "3D";      break;
-			case ImageType::Cubemap:   dimensionStr = "Cube";    break;
-		}
-
-		return fmt::format("{}sampler{}[{}]", (type.depth) ? "depth_" : "", dimensionStr, ToString(type.sampledType));
+		return fmt::format("{}sampler{}[{}]", (type.depth) ? "depth_" : "", Parser::ToString(type.dim), ToString(type.sampledType));
 	}
 
 	std::string ToString(const StorageType& type, const Stringifier& stringifier)
@@ -479,18 +469,7 @@ namespace nzsl::Ast
 
 	std::string ToString(const TextureType& type, const Stringifier& /*stringifier*/)
 	{
-		std::string_view dimensionStr;
-		switch (type.dim)
-		{
-			case ImageType::E1D:       dimensionStr = "1D";      break;
-			case ImageType::E1D_Array: dimensionStr = "1DArray"; break;
-			case ImageType::E2D:       dimensionStr = "2D";      break;
-			case ImageType::E2D_Array: dimensionStr = "2DArray"; break;
-			case ImageType::E3D:       dimensionStr = "3D";      break;
-			case ImageType::Cubemap:   dimensionStr = "Cube";    break;
-		}
-
-		return fmt::format("texture{}[{}]", dimensionStr, ToString(type.baseType));
+		return fmt::format("texture{}[{}]", Parser::ToString(type.dim), ToString(type.baseType));
 	}
 
 	std::string ToString(const Type& type, const Stringifier& stringifier)

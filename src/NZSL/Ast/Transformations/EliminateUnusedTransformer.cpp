@@ -1,4 +1,4 @@
-// Copyright (C) 2025 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
+// Copyright (C) 2026 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -114,6 +114,28 @@ namespace nzsl::Ast
 			throw AstExpectedIndexError{ node.sourceLocation, "variable" };
 
 		if (!IsVariableUsed(*node.varIndex))
+			return RemoveStatement{};
+
+		return DontVisitChildren{};
+	}
+
+	auto EliminateUnusedTransformer::Transform(DeclareWorkgroupSharedStatement&& node) -> StatementTransformation
+	{
+		for (auto it = node.vars.begin(); it != node.vars.end(); )
+		{
+			auto& externalVar = *it;
+			if NAZARA_UNLIKELY(!externalVar.varIndex)
+				throw AstExpectedIndexError{ node.sourceLocation, "workgroup shared variable" };
+
+			std::size_t varIndex = *externalVar.varIndex;
+
+			if (!IsVariableUsed(varIndex))
+				it = node.vars.erase(it);
+			else
+				++it;
+		}
+
+		if (node.vars.empty())
 			return RemoveStatement{};
 
 		return DontVisitChildren{};

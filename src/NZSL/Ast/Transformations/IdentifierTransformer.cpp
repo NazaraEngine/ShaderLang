@@ -1,4 +1,4 @@
-// Copyright (C) 2025 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
+// Copyright (C) 2026 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -146,6 +146,23 @@ namespace nzsl::Ast
 	auto IdentifierTransformer::Transform(DeclareVariableStatement&& statement) -> StatementTransformation
 	{
 		HandleIdentifier(statement.varName, IdentifierCategory::Variable);
+		return VisitChildren{};
+	}
+
+	auto IdentifierTransformer::Transform(DeclareWorkgroupSharedStatement&& statement) -> StatementTransformation
+	{
+		if (!statement.name.empty())
+		{
+			HandleIdentifier(statement.name, IdentifierCategory::WorkgroupSharedBlock);
+			PushScope();
+		}
+
+		for (auto& sharedVar : statement.vars)
+			HandleIdentifier(sharedVar.name, IdentifierCategory::WorkgroupSharedVariable);
+
+		if (!statement.name.empty())
+			PopScope();
+
 		return VisitChildren{};
 	}
 

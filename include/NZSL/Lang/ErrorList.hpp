@@ -1,4 +1,4 @@
-// Copyright (C) 2025 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
+// Copyright (C) 2026 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -122,7 +122,7 @@ NZSL_SHADERLANG_COMPILER_ERROR(IndexUnexpectedType, "unexpected type: only array
 NZSL_SHADERLANG_COMPILER_ERROR(IntegralDivisionByZero, "integral division by zero in expression ({} / {})", std::string, std::string)
 NZSL_SHADERLANG_COMPILER_ERROR(IntegralModuloByZero, "integral modulo by zero in expression ({} % {})", std::string, std::string)
 NZSL_SHADERLANG_COMPILER_ERROR(IntrinsicExpectedFloat, "expected scalar or vector floating-points")
-NZSL_SHADERLANG_COMPILER_ERROR(IntrinsicExpectedParameterCount, "expected {} parameter(s)", std::uint32_t)
+NZSL_SHADERLANG_COMPILER_ERROR(IntrinsicExpectedParameterCount, "expected {} parameter(s) for {} intrinsic, got {}", std::uint32_t, std::string, std::uint32_t)
 NZSL_SHADERLANG_COMPILER_ERROR(IntrinsicExpectedType, "expected type {1} for parameter #{0}, got {2}", std::uint32_t, std::string, std::string)
 NZSL_SHADERLANG_COMPILER_ERROR(IntrinsicUnexpectedBoolean, "boolean parameters are not allowed")
 NZSL_SHADERLANG_COMPILER_ERROR(IntrinsicUnmatchingParameterType, "unmatching intrinsic types (param #{}->#{} types must match)", std::uint32_t, std::uint32_t)
@@ -166,6 +166,7 @@ NZSL_SHADERLANG_COMPILER_ERROR(TextureUnexpectedType, "for now only f32 textures
 NZSL_SHADERLANG_COMPILER_ERROR(TypeConstantUnsupportedType, "type {} doesn't support constant {}", std::string, Ast::TypeConstant)
 NZSL_SHADERLANG_COMPILER_ERROR(UnaryUnsupported, "type ({}) does not support this unary operation", std::string)
 NZSL_SHADERLANG_COMPILER_ERROR(UnexpectedAccessedType, "unexpected type (only struct and vectors can be indexed with identifiers)")
+NZSL_SHADERLANG_COMPILER_ERROR(UnexpectedAttribute, "unexpected attribute {} on {}", Ast::AttributeType, std::string)
 NZSL_SHADERLANG_COMPILER_ERROR(UnexpectedUntyped, "unallowed usage of untyped as a type")
 NZSL_SHADERLANG_COMPILER_ERROR(UnknownField, "unknown field {}", std::string)
 NZSL_SHADERLANG_COMPILER_ERROR(UnknownIdentifier, "unknown identifier {}", std::string)
@@ -177,7 +178,8 @@ NZSL_SHADERLANG_COMPILER_ERROR(VarDeclarationMissingTypeAndValue, "variable must
 NZSL_SHADERLANG_COMPILER_ERROR(VarDeclarationOutsideOfFunction, "global variables outside of external blocks are forbidden")
 NZSL_SHADERLANG_COMPILER_ERROR(VarDeclarationTypeUnmatching, "initial expression type ({}) doesn't match specified type ({})", std::string, std::string)
 NZSL_SHADERLANG_COMPILER_ERROR(WhileUnrollNotSupported, "unroll(always) is not yet supported on while, use a for loop")
-NZSL_SHADERLANG_COMPILER_ERROR(UnexpectedAttributeOnPushConstant, "unexpected attribute {} on push_constant", Ast::AttributeType)
+NZSL_SHADERLANG_COMPILER_ERROR(WorkgroupSharedAlreadyDeclared, "workgroup shared variable {} is already declared", std::string)
+NZSL_SHADERLANG_COMPILER_ERROR(WorkgroupSharedTypeNotAllowed, "workgroup shared variable {} has unauthorized type ({}): only primitive, vectors, matrices, structs and arrays of those types are allowed in external blocks", std::string, std::string)
 
 // AST errors
 NZSL_SHADERLANG_AST_ERROR(AlreadyUsedIndex, "index {} is already used", std::size_t)

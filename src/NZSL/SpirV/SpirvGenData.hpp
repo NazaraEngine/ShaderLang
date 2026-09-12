@@ -1,4 +1,4 @@
-// Copyright (C) 2025 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
+// Copyright (C) 2026 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -43,6 +43,7 @@ namespace nzsl::SpirvGenData
 		{ Ast::BuiltinEntry::DrawIndex,               { SpirvBuiltIn::DrawIndex,            SpirvCapability::DrawParameters, SpirvVersion{ 1, 3 } } },
 		{ Ast::BuiltinEntry::FragCoord,               { SpirvBuiltIn::FragCoord,            SpirvCapability::Shader,         SpirvVersion{ 1, 0 } } },
 		{ Ast::BuiltinEntry::FragDepth,               { SpirvBuiltIn::FragDepth,            SpirvCapability::Shader,         SpirvVersion{ 1, 0 } } },
+		{ Ast::BuiltinEntry::FrontFacing,             { SpirvBuiltIn::FrontFacing,          SpirvCapability::Shader,         SpirvVersion{ 1, 0 } } },
 		{ Ast::BuiltinEntry::GlocalInvocationIndices, { SpirvBuiltIn::GlobalInvocationId,   SpirvCapability::Shader,         SpirvVersion{ 1, 0 } } },
 		{ Ast::BuiltinEntry::InstanceIndex,           { SpirvBuiltIn::InstanceIndex,        SpirvCapability::Shader,         SpirvVersion{ 1, 0 } } },
 		{ Ast::BuiltinEntry::LocalInvocationIndex,    { SpirvBuiltIn::LocalInvocationIndex, SpirvCapability::Shader,         SpirvVersion{ 1, 0 } } },
@@ -70,6 +71,7 @@ namespace nzsl::SpirvGenData
 	struct IntrinsicData
 	{
 		std::variant<SpirvOp, SpirvGlslStd450Op, SpirvGlslStd450Selector, SpirvCodeGenerator> op;
+		std::optional<SpirvCapability> capability = std::nullopt;
 	};
 
 	constexpr auto s_intrinsicData = frozen::make_unordered_map<Ast::IntrinsicType, IntrinsicData>({
@@ -84,18 +86,40 @@ namespace nzsl::SpirvGenData
 		{ Ast::IntrinsicType::ArcTan2,                           { SpirvGlslStd450Op::Atan2 } },
 		{ Ast::IntrinsicType::ArcTanh,                           { SpirvGlslStd450Op::Atanh } },
 		{ Ast::IntrinsicType::ArraySize,                         { &SpirvAstVisitor::BuildArraySizeIntrinsic } },
+		{ Ast::IntrinsicType::AtomicAdd,                         { &SpirvAstVisitor::BuildAtomicIntrinsic } },
+		{ Ast::IntrinsicType::AtomicAnd,                         { &SpirvAstVisitor::BuildAtomicIntrinsic } },
+		{ Ast::IntrinsicType::AtomicCompareExchange,             { &SpirvAstVisitor::BuildAtomic2Intrinsic } },
+		{ Ast::IntrinsicType::AtomicExchange,                    { &SpirvAstVisitor::BuildAtomicIntrinsic } },
+		{ Ast::IntrinsicType::AtomicMax,                         { &SpirvAstVisitor::BuildAtomicIntrinsic } },
+		{ Ast::IntrinsicType::AtomicMin,                         { &SpirvAstVisitor::BuildAtomicIntrinsic } },
+		{ Ast::IntrinsicType::AtomicOr,                          { &SpirvAstVisitor::BuildAtomicIntrinsic } },
+		{ Ast::IntrinsicType::AtomicSub,                         { &SpirvAstVisitor::BuildAtomicIntrinsic } },
+		{ Ast::IntrinsicType::AtomicXor,                         { &SpirvAstVisitor::BuildAtomicIntrinsic } },
 		{ Ast::IntrinsicType::Ceil,                              { SpirvGlslStd450Op::Ceil } },
 		{ Ast::IntrinsicType::Clamp,                             { &SpirvAstVisitor::SelectClamp } },
+		//{ Ast::IntrinsicType::ControlAndMemoryBarrierSubgroup,   { &SpirvAstVisitor::BuildControlBarrierIntrinsic } },
+		{ Ast::IntrinsicType::ControlAndMemoryBarrierWorkgroup,  { &SpirvAstVisitor::BuildControlBarrierIntrinsic } },
+		//{ Ast::IntrinsicType::ControlBarrierSubgroup,            { &SpirvAstVisitor::BuildControlBarrierIntrinsic } },
+		{ Ast::IntrinsicType::ControlBarrierWorkgroup,           { &SpirvAstVisitor::BuildControlBarrierIntrinsic } },
 		{ Ast::IntrinsicType::Cos,                               { SpirvGlslStd450Op::Cos } },
 		{ Ast::IntrinsicType::Cosh,                              { SpirvGlslStd450Op::Cosh } },
 		{ Ast::IntrinsicType::CrossProduct,                      { SpirvGlslStd450Op::Cross } },
 		{ Ast::IntrinsicType::DegToRad,                          { SpirvGlslStd450Op::Degrees } },
+		{ Ast::IntrinsicType::Ddx,                               { SpirvOp::OpDPdx } },
+		{ Ast::IntrinsicType::DdxCoarse,                         { SpirvOp::OpDPdxCoarse, SpirvCapability::DerivativeControl } },
+		{ Ast::IntrinsicType::DdxFine,                           { SpirvOp::OpDPdxFine, SpirvCapability::DerivativeControl } },
+		{ Ast::IntrinsicType::Ddy,                               { SpirvOp::OpDPdy } },
+		{ Ast::IntrinsicType::DdyCoarse,                         { SpirvOp::OpDPdyCoarse, SpirvCapability::DerivativeControl } },
+		{ Ast::IntrinsicType::DdyFine,                           { SpirvOp::OpDPdyFine, SpirvCapability::DerivativeControl } },
 		{ Ast::IntrinsicType::Distance,                          { SpirvGlslStd450Op::Distance } },
 		{ Ast::IntrinsicType::DotProduct,                        { SpirvOp::OpDot } },
 		{ Ast::IntrinsicType::Exp,                               { SpirvGlslStd450Op::Exp } },
 		{ Ast::IntrinsicType::Exp2,                              { SpirvGlslStd450Op::Exp2 } },
 		{ Ast::IntrinsicType::Floor,                             { SpirvGlslStd450Op::Floor } },
 		{ Ast::IntrinsicType::Fract,                             { SpirvGlslStd450Op::Fract } },
+		{ Ast::IntrinsicType::Fwidth,                            { SpirvOp::OpFwidth } },
+		{ Ast::IntrinsicType::FwidthCoarse,                      { SpirvOp::OpFwidthCoarse, SpirvCapability::DerivativeControl } },
+		{ Ast::IntrinsicType::FwidthFine,                        { SpirvOp::OpFwidthFine, SpirvCapability::DerivativeControl } },
 		{ Ast::IntrinsicType::IsInf,                             { SpirvOp::OpIsInf } },
 		{ Ast::IntrinsicType::IsNaN,                             { SpirvOp::OpIsNan } },
 		{ Ast::IntrinsicType::InverseSqrt,                       { SpirvGlslStd450Op::InverseSqrt } },
@@ -106,6 +130,11 @@ namespace nzsl::SpirvGenData
 		{ Ast::IntrinsicType::MatrixInverse,                     { SpirvGlslStd450Op::MatrixInverse } },
 		{ Ast::IntrinsicType::MatrixTranspose,                   { SpirvOp::OpTranspose } },
 		{ Ast::IntrinsicType::Max,                               { &SpirvAstVisitor::SelectMaxMin } },
+		{ Ast::IntrinsicType::MemoryBarrierDevice,               { &SpirvAstVisitor::BuildMemoryBarrierIntrinsic } },
+		{ Ast::IntrinsicType::MemoryBarrierStorage,              { &SpirvAstVisitor::BuildMemoryBarrierIntrinsic } },
+		//{ Ast::IntrinsicType::MemoryBarrierSubgroup,             { &SpirvAstVisitor::BuildMemoryBarrierIntrinsic } },
+		{ Ast::IntrinsicType::MemoryBarrierTexture,              { &SpirvAstVisitor::BuildMemoryBarrierIntrinsic } },
+		{ Ast::IntrinsicType::MemoryBarrierWorkgroup,            { &SpirvAstVisitor::BuildMemoryBarrierIntrinsic } },
 		{ Ast::IntrinsicType::Min,                               { &SpirvAstVisitor::SelectMaxMin } },
 		{ Ast::IntrinsicType::Normalize,                         { SpirvGlslStd450Op::Normalize } },
 		{ Ast::IntrinsicType::Not,                               { SpirvOp::OpLogicalNot } },
@@ -124,6 +153,7 @@ namespace nzsl::SpirvGenData
 		{ Ast::IntrinsicType::Tan,                               { SpirvGlslStd450Op::Tan } },
 		{ Ast::IntrinsicType::Tanh,                              { SpirvGlslStd450Op::Tanh } },
 		{ Ast::IntrinsicType::TextureRead,                       { SpirvOp::OpImageRead } },
+		{ Ast::IntrinsicType::TextureSampleExplicitLod,          { &SpirvAstVisitor::BuildTextureSampleExplicitLodIntrinsic } },
 		{ Ast::IntrinsicType::TextureSampleImplicitLod,          { SpirvOp::OpImageSampleImplicitLod } },
 		{ Ast::IntrinsicType::TextureSampleImplicitLodDepthComp, { SpirvOp::OpImageSampleDrefImplicitLod } },
 		{ Ast::IntrinsicType::TextureWrite,                      { SpirvOp::OpImageWrite } },

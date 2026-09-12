@@ -1,4 +1,4 @@
-// Copyright (C) 2025 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
+// Copyright (C) 2026 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -98,6 +98,7 @@ namespace nzsl::Ast
 		std::size_t currentModuleId;
 		std::unordered_map<std::string, std::size_t> moduleByName;
 		std::unordered_map<std::string, UsedExternalData> declaredExternalVar;
+		std::unordered_map<std::string, UsedExternalData> declaredSharedVar;
 		std::vector<ModuleData> modules;
 		std::vector<NamedExternalBlock> namedExternalBlocks;
 		Module* currentModule;
@@ -277,6 +278,13 @@ namespace nzsl::Ast
 			else if (primitiveType == PrimitiveType::IntLiteral)
 				primitiveType = PrimitiveType::Int32;
 		}
+		else if (IsMatrixType(expressionType))
+		{
+			MatrixType& matType = std::get<MatrixType>(expressionType);
+
+			if (matType.type == PrimitiveType::FloatLiteral)
+				matType.type = PrimitiveType::Float32;
+		}
 		else if (IsVectorType(expressionType))
 		{
 			VectorType& vecType = std::get<VectorType>(expressionType);
@@ -306,6 +314,8 @@ namespace nzsl::Ast
 			PrimitiveType innerType;
 			if (IsPrimitiveType(expressionType))
 				innerType = std::get<PrimitiveType>(expressionType);
+			else if (IsMatrixType(expressionType))
+				innerType = std::get<MatrixType>(expressionType).type;
 			else if (IsVectorType(expressionType))
 				innerType = std::get<VectorType>(expressionType).type;
 			else if (IsArrayType(expressionType))
@@ -315,6 +325,8 @@ namespace nzsl::Ast
 				const ExpressionType& arrayInnerType = arrType.InnerType();
 				if (IsPrimitiveType(arrayInnerType))
 					innerType = std::get<PrimitiveType>(arrayInnerType);
+				if (IsMatrixType(arrayInnerType))
+					innerType = std::get<MatrixType>(arrayInnerType).type;
 				else if (IsVectorType(arrayInnerType))
 					innerType = std::get<VectorType>(arrayInnerType).type;
 				else
@@ -878,6 +890,8 @@ namespace nzsl::Ast
 						throw CompilerTextureUnexpectedAccessError{ sourceLocation, "<TODO>" };
 
 					AccessPolicy access = static_cast<AccessPolicy>(std::get<std::uint32_t>(accessValue));
+					if (LangData::s_accessPolicies.find(access) == LangData::s_accessPolicies.end())
+						throw CompilerTextureUnexpectedAccessError{ sourceLocation, std::to_string(Nz::SafeCast<std::uint32_t>(access)) };
 
 					std::optional<ImageFormat> formatOpt;
 					if (parameterCount >= 3)
@@ -888,8 +902,8 @@ namespace nzsl::Ast
 							throw CompilerTextureUnexpectedFormatError{ sourceLocation, "<TODO>" };
 
 						ImageFormat format = static_cast<ImageFormat>(std::get<std::uint32_t>(formatValue));
-						if (format != ImageFormat::RGBA8) //< TODO: Add support for more formats
-							throw CompilerTextureUnexpectedFormatError{ sourceLocation, "<TODO>" };
+						if (LangData::s_imageFormats.find(format) == LangData::s_imageFormats.end())
+							throw CompilerTextureUnexpectedFormatError{ sourceLocation, std::to_string(Nz::SafeCast<std::uint32_t>(format)) };
 
 						formatOpt = format;
 					}
@@ -921,6 +935,8 @@ namespace nzsl::Ast
 						throw CompilerStorageUnexpectedAccessError{ sourceLocation, "<TODO>" };
 
 					access = static_cast<AccessPolicy>(std::get<std::uint32_t>(accessValue));
+					if (LangData::s_accessPolicies.find(access) == LangData::s_accessPolicies.end())
+						throw CompilerStorageUnexpectedAccessError{ sourceLocation, std::to_string(Nz::SafeCast<std::uint32_t>(access)) };
 				}
 
 				StructType structType = std::get<StructType>(exprType);
@@ -975,8 +991,8 @@ namespace nzsl::Ast
 
 		for (const auto& [intrinsic, data] : LangData::s_intrinsicData)
 		{
-			if (!data.functionName.empty())
-				RegisterBuiltinIntrinsic(std::string(data.functionName), intrinsic);
+			if (!data.isMethod)
+				RegisterBuiltinIntrinsic(std::string(data.name), intrinsic);
 		}
 
 		// Constants
@@ -1390,11 +1406,12 @@ namespace nzsl::Ast
 					methodType.methodIndex = 0;
 				else if (identifierEntry.identifier == "SampleDepthComp")
 					methodType.methodIndex = 1;
+				else if (identifierEntry.identifier == "SampleLevel")
+					methodType.methodIndex = 2;
 				else
 					throw CompilerUnknownMethodError{ identifierEntry.sourceLocation, ToString(resolvedType, indexedExpr->sourceLocation), identifierEntry.identifier };
 
-				methodType.objectType = std::make_unique<ContainedType>();
-				methodType.objectType->type = resolvedType;
+				methodType.SetupObjectType(resolvedType);
 
 				// TODO: Add a MethodExpression?
 				auto identifierExpr = std::make_unique<AccessIdentifierExpression>();
@@ -1417,8 +1434,7 @@ namespace nzsl::Ast
 				else
 					throw CompilerUnknownMethodError{ identifierEntry.sourceLocation, ToString(resolvedType, indexedExpr->sourceLocation), identifierEntry.identifier };
 
-				methodType.objectType = std::make_unique<ContainedType>();
-				methodType.objectType->type = resolvedType;
+				methodType.SetupObjectType(resolvedType);
 
 				// TODO: Add a MethodExpression?
 				auto identifierExpr = std::make_unique<AccessIdentifierExpression>();
@@ -1441,8 +1457,7 @@ namespace nzsl::Ast
 
 					MethodType methodType;
 					methodType.methodIndex = 0; //< FIXME
-					methodType.objectType = std::make_unique<ContainedType>();
-					methodType.objectType->type = resolvedType;
+					methodType.SetupObjectType(resolvedType);
 
 					identifierExpr->cachedExpressionType = std::move(methodType);
 					indexedExpr = std::move(identifierExpr);
@@ -2047,6 +2062,7 @@ namespace nzsl::Ast
 				{
 					case 0: intrinsicType = IntrinsicType::TextureSampleImplicitLod; break;
 					case 1: intrinsicType = IntrinsicType::TextureSampleImplicitLodDepthComp; break;
+					case 2: intrinsicType = IntrinsicType::TextureSampleExplicitLod; break;
 					default:
 						throw AstInvalidMethodIndexError{ callFuncExpr.sourceLocation, methodType.methodIndex, ToString(objectType, callFuncExpr.sourceLocation) };
 				}
@@ -2342,7 +2358,8 @@ namespace nzsl::Ast
 				if (constantData->moduleIndex != m_states->currentModuleId)
 				{
 					assert(constantData->moduleIndex < m_states->modules.size());
-					m_states->modules[constantData->moduleIndex].dependenciesVisitor->MarkConstantAsUsed(identifierValueExpression.identifierIndex);
+					if (m_states->modules[constantData->moduleIndex].dependenciesVisitor)
+						m_states->modules[constantData->moduleIndex].dependenciesVisitor->MarkConstantAsUsed(identifierValueExpression.identifierIndex);
 				}
 
 				identifierValueExpression.cachedExpressionType = GetConstantType(*constantData->value);
@@ -2505,7 +2522,8 @@ namespace nzsl::Ast
 			if (structData.moduleIndex != m_states->currentModuleId)
 			{
 				assert(structData.moduleIndex < m_states->modules.size());
-				m_states->modules[structData.moduleIndex].dependenciesVisitor->MarkStructAsUsed(structIndex);
+				if (m_states->modules[structData.moduleIndex].dependenciesVisitor)
+					m_states->modules[structData.moduleIndex].dependenciesVisitor->MarkStructAsUsed(structIndex);
 			}
 		}
 		else if (IsFunctionType(resolvedType))
@@ -2517,7 +2535,8 @@ namespace nzsl::Ast
 			if (funcData.moduleIndex != m_states->currentModuleId)
 			{
 				assert(funcData.moduleIndex < m_states->modules.size());
-				m_states->modules[funcData.moduleIndex].dependenciesVisitor->MarkFunctionAsUsed(funcIndex);
+				if (m_states->modules[funcData.moduleIndex].dependenciesVisitor)
+					m_states->modules[funcData.moduleIndex].dependenciesVisitor->MarkFunctionAsUsed(funcIndex);
 			}
 		}
 		else if (IsAliasType(resolvedType))
@@ -2566,7 +2585,8 @@ namespace nzsl::Ast
 			if (constantData.moduleIndex != m_states->currentModuleId)
 			{
 				assert(constantData.moduleIndex < m_states->modules.size());
-				m_states->modules[constantData.moduleIndex].dependenciesVisitor->MarkConstantAsUsed(constantId);
+				if (m_states->modules[constantData.moduleIndex].dependenciesVisitor)
+					m_states->modules[constantData.moduleIndex].dependenciesVisitor->MarkConstantAsUsed(constantId);
 			}
 
 			declConst.constIndex = RegisterConstant(declConst.name, TransformerContext::ConstantData{ m_states->currentModuleId, constantData.value }, declConst.constIndex, declConst.sourceLocation);
@@ -2990,6 +3010,85 @@ namespace nzsl::Ast
 		return DontVisitChildren{};
 	}
 
+	auto ResolveTransformer::Transform(DeclareWorkgroupSharedStatement&& declWorkgroupShared) -> StatementTransformation
+	{
+		assert(m_context);
+
+		std::shared_ptr<Environment> previousEnv;
+		if (!declWorkgroupShared.name.empty())
+		{
+			std::size_t namedExternalBlockIndex = m_states->namedExternalBlocks.size();
+
+			auto& namedExternalData = m_states->namedExternalBlocks.emplace_back();
+			namedExternalData.environment = std::make_shared<Environment>();
+			namedExternalData.environment->parentEnv = m_states->currentEnv;
+
+			TransformerContext::ExternalBlockData namedBlock;
+			namedBlock.environmentIndex = namedExternalBlockIndex;
+			namedBlock.name = declWorkgroupShared.name;
+
+			declWorkgroupShared.externalIndex = RegisterExternalBlock(declWorkgroupShared.name, std::move(namedBlock), declWorkgroupShared.externalIndex, declWorkgroupShared.sourceLocation);
+
+			previousEnv = std::move(m_states->currentEnv);
+			m_states->currentEnv = namedExternalData.environment;
+		}
+
+		for (std::size_t i = 0; i < declWorkgroupShared.vars.size(); ++i)
+		{
+			auto& extVar = declWorkgroupShared.vars[i];
+
+			std::string fullName;
+			if (!declWorkgroupShared.name.empty())
+				fullName = fmt::format("{}_{}", declWorkgroupShared.name, extVar.name);
+
+			std::string& internalName = (!declWorkgroupShared.name.empty()) ? fullName : extVar.name;
+
+			States::UsedExternalData usedBindingData;
+			usedBindingData.conditionalStatementIndex = m_states->currentConditionalIndex;
+
+			if (auto it = m_states->declaredSharedVar.find(internalName); it != m_states->declaredSharedVar.end())
+			{
+				// We're only conflicting if one of the two external var is not behind a condition
+				if (m_states->currentConditionalIndex == 0 || it->second.conditionalStatementIndex == 0 || it->second.conditionalStatementIndex == m_states->currentConditionalIndex)
+					throw CompilerWorkgroupSharedAlreadyDeclaredError{ extVar.sourceLocation, extVar.name };
+			}
+
+			m_states->declaredSharedVar.emplace(internalName, usedBindingData);
+
+			std::optional<ExpressionType> resolvedType = ResolveTypeExpr(extVar.type, false, declWorkgroupShared.sourceLocation);
+			if (!resolvedType.has_value())
+			{
+				RegisterUnresolved(extVar.name);
+				continue;
+			}
+
+			const ExpressionType& targetType = ResolveAlias(*resolvedType);
+
+			ExpressionType varType;
+			if (IsArrayType(targetType))
+			{
+				const ExpressionType& innerType = std::get<ArrayType>(targetType).InnerType();
+				if (IsPrimitiveType(innerType) || IsVectorType(innerType) || IsMatrixType(innerType))
+					varType = targetType;
+			}
+			else if (IsPrimitiveType(targetType) || IsVectorType(targetType) || IsMatrixType(targetType))
+				varType = targetType;
+
+			if (IsNoType(varType))
+				throw CompilerWorkgroupSharedTypeNotAllowedError{ extVar.sourceLocation, extVar.name, ToString(*resolvedType, extVar.sourceLocation) };
+
+			ValidateConcreteType(varType, extVar.sourceLocation);
+
+			extVar.type = std::move(resolvedType).value();
+			extVar.varIndex = RegisterVariable(extVar.name, TransformerContext::VariableData{ std::move(varType) }, extVar.varIndex, extVar.sourceLocation);
+		}
+
+		if (previousEnv)
+			m_states->currentEnv = std::move(previousEnv);
+
+		return VisitChildren{};
+	}
+
 	auto ResolveTransformer::Transform(ForEachStatement&& forEachStatement) -> StatementTransformation
 	{
 		if (forEachStatement.varName.empty())
@@ -3003,7 +3102,10 @@ namespace nzsl::Ast
 			if (forEachStatement.statement)
 			{
 				PushScope();
-				HandleStatement(forEachStatement.statement);
+				{
+					RegisterUnresolved(forEachStatement.varName);
+					HandleStatement(forEachStatement.statement);
+				}
 				PopScope();
 			}
 
@@ -3433,7 +3535,8 @@ namespace nzsl::Ast
 			if (structData.moduleIndex != m_states->currentModuleId)
 			{
 				assert(structData.moduleIndex < m_states->modules.size());
-				m_states->modules[structData.moduleIndex].dependenciesVisitor->MarkStructAsUsed(structIndex);
+				if (m_states->modules[structData.moduleIndex].dependenciesVisitor)
+					m_states->modules[structData.moduleIndex].dependenciesVisitor->MarkStructAsUsed(structIndex);
 			}
 		}
 		else if (IsFunctionType(resolvedType))
@@ -3444,7 +3547,8 @@ namespace nzsl::Ast
 			if (funcData.moduleIndex != m_states->currentModuleId)
 			{
 				assert(funcData.moduleIndex < m_states->modules.size());
-				m_states->modules[funcData.moduleIndex].dependenciesVisitor->MarkFunctionAsUsed(funcIndex);
+				if (m_states->modules[funcData.moduleIndex].dependenciesVisitor)
+					m_states->modules[funcData.moduleIndex].dependenciesVisitor->MarkFunctionAsUsed(funcIndex);
 			}
 		}
 	}

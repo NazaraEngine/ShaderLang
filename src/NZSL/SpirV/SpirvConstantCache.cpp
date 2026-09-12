@@ -1,4 +1,4 @@
-// Copyright (C) 2025 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
+// Copyright (C) 2026 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -418,7 +418,7 @@ namespace nzsl
 
 		SpirvConstantCache& cache;
 	};
-	
+
 	struct SpirvConstantCache::Hash
 	{
 		template<typename T>
@@ -612,12 +612,6 @@ namespace nzsl
 			std::uint32_t file = 0;
 			std::uint32_t version;
 			std::vector<std::string> extensions;
-		};
-
-		struct StructOffsets
-		{
-			FieldOffsets fieldOffsets;
-			std::vector<std::uint32_t> offsets;
 		};
 
 		Internal(SpirvWriter& writer, std::uint32_t& resultId) :
@@ -1114,11 +1108,14 @@ namespace nzsl
 		{
 			switch (type.format)
 			{
+				// Keep in sync with LangData::s_imageFormats
 				case ImageFormat::Unknown: return SpirvImageFormat::Unknown;
 				case ImageFormat::RGBA8: return SpirvImageFormat::Rgba8;
+				case ImageFormat::RGBA8Snorm: return SpirvImageFormat::Rgba8Snorm;
+				case ImageFormat::RGBA16f: return SpirvImageFormat::Rgba16f;
 				case ImageFormat::RGBA32f: return SpirvImageFormat::Rgba32f;
 				default:
-					throw std::runtime_error("<TODO>");
+					throw std::runtime_error("unsupported image format");
 			}
 		}();
 
@@ -1126,16 +1123,23 @@ namespace nzsl
 		{
 			switch (type.dim)
 			{
-				case ImageType::Cubemap: return SpirvDim::Cube;
+				case ImageType::Cubemap:
+					return SpirvDim::Cube;
+
 				case ImageType::E1D_Array:
 					imageType.arrayed = true;
 					[[fallthrough]];
-				case ImageType::E1D: return SpirvDim::Dim1D;
+				case ImageType::E1D:
+					return SpirvDim::Dim1D;
+
 				case ImageType::E2D_Array:
 					imageType.arrayed = true;
 					[[fallthrough]];
-				case ImageType::E2D: return SpirvDim::Dim2D;
-				case ImageType::E3D: return SpirvDim::Dim3D;
+				case ImageType::E2D:
+					return SpirvDim::Dim2D;
+
+				case ImageType::E3D:
+					return SpirvDim::Dim3D;
 			}
 
 			throw std::runtime_error("unhandled image dimension");

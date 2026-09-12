@@ -6,8 +6,8 @@ if has_config("tests") then
 		add_defines("CATCH_CONFIG_NO_POSIX_SIGNALS")
 	end
 
-	add_requires("catch2 3", "wgsl-validator", "spirv-tools", "tiny-process-library")
-	add_requires("glslang", { configs = { rtti = has_config("ubsan") } }) -- ubsan requires rtti
+	add_requires("catch2 3", "spirv-tools", "tiny-process-library", "wgsl-validator")
+	add_requires("glslang[tools]", { configs = { rtti = has_config("ubsan") } }) -- ubsan requires rtti
 
 	add_includedirs("src")
 

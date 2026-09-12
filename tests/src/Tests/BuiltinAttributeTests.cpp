@@ -7,6 +7,53 @@
 
 TEST_CASE("builtin attributes", "[Shader]")
 {
+	SECTION("fragment builtin")
+	{
+		std::string_view nzslSource = R"(
+[nzsl_version("1.1")]
+module;
+
+struct Input
+{
+	[builtin(front_facing)] frontFacing: bool
+}
+
+[entry(frag)]
+fn main(input: Input)
+{
+	let frontFacing = input.frontFacing;
+}
+)";
+
+		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
+		ResolveModule(*shaderModule);
+
+		ExpectGLSL(*shaderModule, R"(
+void main()
+{
+	Input input_;
+	input_.frontFacing = gl_FrontFacing;
+
+	bool frontFacing = input_.frontFacing;
+}
+)");
+
+		ExpectNZSL(*shaderModule, R"(
+struct Input
+{
+	[builtin(front_facing)] frontFacing: bool
+}
+
+[entry(frag)]
+fn main(input: Input)
+{
+	let frontFacing: bool = input.frontFacing;
+}
+)");
+
+		ExpectSPIRV(*shaderModule, R"(OpDecorate %5 Decoration(BuiltIn) BuiltIn(FrontFacing))", {}, {}, true);
+	}
+
 	SECTION("vertex draw parameters")
 	{
 		std::string_view nzslSource = R"(

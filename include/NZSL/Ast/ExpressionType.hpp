@@ -1,4 +1,4 @@
-// Copyright (C) 2025 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
+// Copyright (C) 2026 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -7,6 +7,7 @@
 #ifndef NZSL_AST_EXPRESSIONTYPE_HPP
 #define NZSL_AST_EXPRESSIONTYPE_HPP
 
+#include <NazaraUtils/FunctionRef.hpp>
 #include <NZSL/Config.hpp>
 #include <NZSL/Enums.hpp>
 #include <NZSL/Ast/Enums.hpp>
@@ -157,6 +158,11 @@ namespace nzsl::Ast
 		MethodType(const MethodType& methodType);
 		MethodType(MethodType&&) noexcept = default;
 
+		inline auto& ObjectType();
+		inline const auto& ObjectType() const;
+
+		template<typename T> void SetupObjectType(T&& value);
+
 		MethodType& operator=(const MethodType& methodType);
 		MethodType& operator=(MethodType&&) noexcept = default;
 
@@ -235,7 +241,15 @@ namespace nzsl::Ast
 		inline bool operator!=(const VectorType& rhs) const;
 	};
 
-	// Uniform, storages and push constant type need StructType to be declared
+	// the following types need StructType to be declared
+
+	struct PushConstantType
+	{
+		StructType containedType;
+
+		inline bool operator==(const PushConstantType& rhs) const;
+		inline bool operator!=(const PushConstantType& rhs) const;
+	};
 
 	struct StorageType
 	{
@@ -252,14 +266,6 @@ namespace nzsl::Ast
 
 		inline bool operator==(const UniformType& rhs) const;
 		inline bool operator!=(const UniformType& rhs) const;
-	};
-
-	struct PushConstantType
-	{
-		StructType containedType;
-
-		inline bool operator==(const PushConstantType& rhs) const;
-		inline bool operator!=(const PushConstantType& rhs) const;
 	};
 
 	using ExpressionType = std::variant<NoType, AliasType, ArrayType, DynArrayType, FunctionType, ImplicitArrayType, ImplicitMatrixType, ImplicitVectorType, IntrinsicFunctionType, MatrixType, MethodType, ModuleType, NamedExternalBlockType, PrimitiveType, PushConstantType, SamplerType, StorageType, StructType, TextureType, Type, UniformType, VectorType>;
@@ -293,6 +299,7 @@ namespace nzsl::Ast
 	inline bool IsAliasType(const ExpressionType& type);
 	inline bool IsArrayType(const ExpressionType& type);
 	inline bool IsDynArrayType(const ExpressionType& type);
+	inline bool IsExternalType(const ExpressionType& type);
 	inline bool IsFunctionType(const ExpressionType& type);
 	inline bool IsImplicitType(const ExpressionType& type);
 	inline bool IsImplicitArrayType(const ExpressionType& type);
@@ -319,23 +326,23 @@ namespace nzsl::Ast
 	inline bool IsLiteralType(const ExpressionType& exprType);
 	inline bool IsStructAddressible(const ExpressionType& exprType);
 
-	using StructFinder = std::function<const FieldOffsets& (std::size_t structIndex)>;
+	using StructFinder = Nz::FunctionRef<const FieldOffsets& (std::size_t structIndex)>;
 
-	NZSL_API std::size_t RegisterStructField(FieldOffsets& fieldOffsets, const ExpressionType& type, const StructFinder& structFinder = {});
-	NZSL_API std::size_t RegisterStructField(FieldOffsets& fieldOffsets, const ExpressionType& type, std::size_t arraySize, const StructFinder& structFinder = {});
+	NZSL_API std::size_t RegisterStructField(FieldOffsets& fieldOffsets, const ExpressionType& type, const StructFinder& structFinder = nullptr);
+	NZSL_API std::size_t RegisterStructField(FieldOffsets& fieldOffsets, const ExpressionType& type, std::size_t arraySize, const StructFinder& structFinder = nullptr);
 
-	NZSL_API std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const ArrayType& arrayType, const StructFinder& structFinder = {});
-	NZSL_API std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const ArrayType& arrayType, std::size_t arraySize, const StructFinder& structFinder = {});
-	NZSL_API std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const DynArrayType& dynArrayType, const StructFinder& structFinder = {});
-	NZSL_API std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const DynArrayType& dynArrayType, std::size_t arraySize, const StructFinder& structFinder = {});
-	NZSL_API std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const MatrixType& matrixType, const StructFinder& structFinder = {});
-	NZSL_API std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const MatrixType& matrixType, std::size_t arraySize, const StructFinder& structFinder = {});
-	NZSL_API std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const PrimitiveType& primitiveType, const StructFinder& structFinder = {});
-	NZSL_API std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const PrimitiveType& primitiveType, std::size_t arraySize, const StructFinder& structFinder = {});
-	NZSL_API std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const StructType& primitiveType, const StructFinder& structFinder = {});
-	NZSL_API std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const StructType& primitiveType, std::size_t arraySize, const StructFinder& structFinder = {});
-	NZSL_API std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const VectorType& vectorType, const StructFinder& structFinder = {});
-	NZSL_API std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const VectorType& vectorType, std::size_t arraySize, const StructFinder& structFinder = {});
+	NZSL_API std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const ArrayType& arrayType, const StructFinder& structFinder = nullptr);
+	NZSL_API std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const ArrayType& arrayType, std::size_t arraySize, const StructFinder& structFinder = nullptr);
+	NZSL_API std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const DynArrayType& dynArrayType, const StructFinder& structFinder = nullptr);
+	NZSL_API std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const DynArrayType& dynArrayType, std::size_t arraySize, const StructFinder& structFinder  = nullptr);
+	NZSL_API std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const MatrixType& matrixType, const StructFinder& structFinder  = nullptr);
+	NZSL_API std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const MatrixType& matrixType, std::size_t arraySize, const StructFinder& structFinder  = nullptr);
+	NZSL_API std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const PrimitiveType& primitiveType, const StructFinder& structFinder  = nullptr);
+	NZSL_API std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const PrimitiveType& primitiveType, std::size_t arraySize, const StructFinder& structFinder  = nullptr);
+	NZSL_API std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const StructType& primitiveType, const StructFinder& structFinder  = nullptr);
+	NZSL_API std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const StructType& primitiveType, std::size_t arraySize, const StructFinder& structFinder  = nullptr);
+	NZSL_API std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const VectorType& vectorType, const StructFinder& structFinder  = nullptr);
+	NZSL_API std::size_t RegisterStructFieldType(FieldOffsets& fieldOffsets, const VectorType& vectorType, std::size_t arraySize, const StructFinder& structFinder  = nullptr);
 
 	inline const ExpressionType& ResolveAlias(const ExpressionType& exprType);
 	inline ExpressionType ResolveAlias(ExpressionType&& exprType);
@@ -343,7 +350,7 @@ namespace nzsl::Ast
 	NZSL_API std::size_t ResolveStructIndex(const AliasType& aliasType);
 	NZSL_API std::size_t ResolveStructIndex(const ExpressionType& exprType);
 	NZSL_API std::size_t ResolveStructIndex(const PushConstantType& pushConstantType);
-	NZSL_API std::size_t ResolveStructIndex(const StorageType& structType);
+	NZSL_API std::size_t ResolveStructIndex(const StorageType& storageType);
 	NZSL_API std::size_t ResolveStructIndex(const StructType& structType);
 	NZSL_API std::size_t ResolveStructIndex(const UniformType& uniformType);
 

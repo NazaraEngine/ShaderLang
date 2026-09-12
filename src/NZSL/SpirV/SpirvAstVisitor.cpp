@@ -1,4 +1,4 @@
-// Copyright (C) 2025 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
+// Copyright (C) 2026 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -541,7 +541,7 @@ namespace nzsl
 			std::uint32_t varId = var.varId;
 			parameterIds[i] = varId;
 
-			//Don't generate OpLoad and OpStore for out arguments
+			// Don't generate OpStore for out arguments (their value is not copied to the function)
 			if (node.parameters[i].semantic == Ast::FunctionParameterSemantic::Out)
 				continue;
 
@@ -573,7 +573,7 @@ namespace nzsl
 
 		for (std::size_t i = 0; i < node.parameters.size(); ++i)
 		{
-			// Don't generate OpLoad and OpStore for in arguments
+			// Don't generate OpLoad for In arguments (they are not modified by the function)
 			if (node.parameters[i].semantic == Ast::FunctionParameterSemantic::In)
 				continue;
 
@@ -766,7 +766,7 @@ namespace nzsl
 		}
 		else
 		{
-			assert(IsArrayType(targetExprType) || IsVectorType(targetExprType));
+			assert(IsArrayType(targetExprType) || IsMatrixType(targetExprType) || IsVectorType(targetExprType));
 			Nz::StackVector<std::uint32_t> exprResults = NazaraStackVector(std::uint32_t, node.expressions.size());
 
 			for (auto& exprPtr : node.expressions)
@@ -881,9 +881,9 @@ namespace nzsl
 
 		HandleStatementList(node.statements);
 
-		// Add implicit return
+		// Add implicit return / unreachable
 		if (!m_functionBlocks.back()->IsTerminated())
-			m_functionBlocks.back()->Append(SpirvOp::OpReturn);
+			m_functionBlocks.back()->Append(node.isReturning ? SpirvOp::OpUnreachable : SpirvOp::OpReturn);
 
 		for (std::unique_ptr<SpirvBlock>& block : m_functionBlocks)
 			m_instructions.AppendSection(*block);
@@ -917,6 +917,11 @@ namespace nzsl
 			std::uint32_t value = EvaluateExpression(*node.initialExpression);
 			m_currentBlock->Append(SpirvOp::OpStore, varId, value);
 		}
+	}
+
+	void SpirvAstVisitor::Visit(Ast::DeclareWorkgroupSharedStatement& /*node*/)
+	{
+		/* Handled by the previsitor - nothing to do */
 	}
 
 	void SpirvAstVisitor::Visit(Ast::DiscardStatement& node)
@@ -1338,6 +1343,213 @@ namespace nzsl
 		PushResultId(resultId);
 	}
 
+	void SpirvAstVisitor::BuildAtomicIntrinsic(const Ast::IntrinsicExpression& node)
+	{
+		NazaraAssert(node.parameters.size() == 2);
+
+		const Ast::ExpressionType& parameterType = ResolveAlias(EnsureExpressionType(*node.parameters[0]));
+		NazaraAssert(IsPrimitiveType(parameterType));
+
+		std::uint32_t resultTypeId = m_writer.GetTypeId(parameterType);
+
+		Ast::PrimitiveType basicType = std::get<Ast::PrimitiveType>(parameterType);
+
+		std::uint32_t parameterPointer = EvaluatePointer(*node.parameters[0]);
+		std::uint32_t value = EvaluateExpression(*node.parameters[1]);
+
+		SpirvOp op;
+		SpirvScope scope = SpirvScope::Device;
+		Nz::Flags<SpirvMemorySemantics> semantics;
+
+		switch (node.intrinsic)
+		{
+			case Ast::IntrinsicType::AtomicAdd:
+				NazaraAssert(basicType == Ast::PrimitiveType::Int32 || basicType == Ast::PrimitiveType::UInt32);
+				op = SpirvOp::OpAtomicIAdd;
+				break;
+
+			case Ast::IntrinsicType::AtomicAnd:
+				NazaraAssert(basicType == Ast::PrimitiveType::Int32 || basicType == Ast::PrimitiveType::UInt32);
+				op = SpirvOp::OpAtomicAnd;
+				break;
+
+			case Ast::IntrinsicType::AtomicExchange:
+				NazaraAssert(basicType == Ast::PrimitiveType::Int32 || basicType == Ast::PrimitiveType::UInt32);
+				op = SpirvOp::OpAtomicExchange;
+				break;
+
+			case Ast::IntrinsicType::AtomicMax:
+				NazaraAssert(basicType == Ast::PrimitiveType::Int32 || basicType == Ast::PrimitiveType::UInt32);
+				op = (basicType == Ast::PrimitiveType::Int32) ? SpirvOp::OpAtomicSMax : SpirvOp::OpAtomicUMax;
+				break;
+
+			case Ast::IntrinsicType::AtomicMin:
+				NazaraAssert(basicType == Ast::PrimitiveType::Int32 || basicType == Ast::PrimitiveType::UInt32);
+				op = (basicType == Ast::PrimitiveType::Int32) ? SpirvOp::OpAtomicSMin : SpirvOp::OpAtomicUMin;
+				break;
+
+			case Ast::IntrinsicType::AtomicOr:
+				NazaraAssert(basicType == Ast::PrimitiveType::Int32 || basicType == Ast::PrimitiveType::UInt32);
+				op = SpirvOp::OpAtomicOr;
+				break;
+
+			case Ast::IntrinsicType::AtomicSub:
+				NazaraAssert(basicType == Ast::PrimitiveType::Int32 || basicType == Ast::PrimitiveType::UInt32);
+				op = SpirvOp::OpAtomicISub;
+				break;
+
+			case Ast::IntrinsicType::AtomicXor:
+				NazaraAssert(basicType == Ast::PrimitiveType::Int32 || basicType == Ast::PrimitiveType::UInt32);
+				op = SpirvOp::OpAtomicXor;
+				break;
+
+			default:
+				NAZARA_UNREACHABLE();
+		}
+
+		std::uint32_t scopeId = m_writer.RegisterSingleConstant(static_cast<std::uint32_t>(scope));
+		std::uint32_t semanticsId = m_writer.RegisterSingleConstant(static_cast<std::uint32_t>(static_cast<std::uint64_t>(semantics)));
+
+		std::uint32_t resultId = m_writer.AllocateResultId();
+
+		HandleSourceLocation(node.sourceLocation);
+
+		m_currentBlock->Append(op, resultTypeId, resultId, parameterPointer, scopeId, semanticsId, value);
+
+		PushResultId(resultId);
+	}
+
+	void SpirvAstVisitor::BuildAtomic2Intrinsic(const Ast::IntrinsicExpression& node)
+	{
+		NazaraAssert(node.parameters.size() == 3);
+
+		const Ast::ExpressionType& parameter1Type = ResolveAlias(EnsureExpressionType(*node.parameters[0]));
+		NazaraAssert(IsPrimitiveType(parameter1Type));
+
+		std::uint32_t resultTypeId = m_writer.GetTypeId(parameter1Type);
+
+		[[maybe_unused]] Ast::PrimitiveType basicType = std::get<Ast::PrimitiveType>(parameter1Type);
+
+		std::uint32_t parameterPointer = EvaluatePointer(*node.parameters[0]);
+		std::uint32_t value = EvaluateExpression(*node.parameters[1]);
+		std::uint32_t comparator = EvaluateExpression(*node.parameters[2]);
+
+		SpirvOp op;
+		SpirvScope scope = SpirvScope::Device;
+		Nz::Flags<SpirvMemorySemantics> semantics;
+
+		switch (node.intrinsic)
+		{
+			case Ast::IntrinsicType::AtomicCompareExchange:
+				NazaraAssert(basicType == Ast::PrimitiveType::Int32 || basicType == Ast::PrimitiveType::UInt32);
+				op = SpirvOp::OpAtomicCompareExchange;
+				break;
+
+			default:
+				NAZARA_UNREACHABLE();
+		}
+
+		std::uint32_t scopeId = m_writer.RegisterSingleConstant(static_cast<std::uint32_t>(scope));
+		std::uint32_t semanticsId = m_writer.RegisterSingleConstant(static_cast<std::uint32_t>(static_cast<std::uint64_t>(semantics)));
+
+		std::uint32_t resultId = m_writer.AllocateResultId();
+
+		HandleSourceLocation(node.sourceLocation);
+
+		m_currentBlock->Append(op, resultTypeId, resultId, parameterPointer, scopeId, semanticsId, semanticsId, value, comparator);
+
+		PushResultId(resultId);
+	}
+
+	void SpirvAstVisitor::BuildControlBarrierIntrinsic(const Ast::IntrinsicExpression& node)
+	{
+		if (node.parameters.size() != 0)
+			throw std::runtime_error("barrier intrinsic: unexpected parameter count");
+
+		SpirvScope scope;
+		Nz::Flags<SpirvMemorySemantics> semantics;
+		switch (node.intrinsic)
+		{
+			/*case Ast::IntrinsicType::ControlBarrierSubgroup:
+				scope = SpirvScope::Subgroup;
+				break;*/
+
+			case Ast::IntrinsicType::ControlBarrierWorkgroup:
+				scope = SpirvScope::Workgroup;
+				break;
+
+			/*case Ast::IntrinsicType::ControlAndMemoryBarrierSubgroup:
+				scope = SpirvScope::Subgroup;
+				semantics = SpirvMemorySemantics::AcquireRelease | SpirvMemorySemantics::SubgroupMemory;
+				break;*/
+
+			case Ast::IntrinsicType::ControlAndMemoryBarrierWorkgroup:
+				scope = SpirvScope::Workgroup;
+				semantics = SpirvMemorySemantics::AcquireRelease | SpirvMemorySemantics::WorkgroupMemory;
+				break;
+
+			default:
+				NAZARA_UNREACHABLE();
+		}
+
+		std::uint32_t scopeId = m_writer.RegisterSingleConstant(static_cast<std::uint32_t>(scope));
+		std::uint32_t semanticsId = m_writer.RegisterSingleConstant(static_cast<std::uint32_t>(semantics));
+
+		HandleSourceLocation(node.sourceLocation);
+
+		m_currentBlock->Append(SpirvOp::OpControlBarrier, scopeId, scopeId, semanticsId);
+
+		PushResultId(m_writer.GetTypeId(Ast::NoType{}));
+	}
+
+	void SpirvAstVisitor::BuildMemoryBarrierIntrinsic(const Ast::IntrinsicExpression& node)
+	{
+		if (node.parameters.size() != 0)
+			throw std::runtime_error("barrier intrinsic: unexpected parameter count");
+
+		SpirvScope scope;
+		Nz::Flags<SpirvMemorySemantics> semantics = SpirvMemorySemantics::AcquireRelease;
+		switch (node.intrinsic)
+		{
+			case Ast::IntrinsicType::MemoryBarrierDevice:
+				scope = SpirvScope::Device;
+				semantics |= SpirvMemorySemantics::AtomicCounterMemory | SpirvMemorySemantics::ImageMemory | SpirvMemorySemantics::UniformMemory | SpirvMemorySemantics::WorkgroupMemory;
+				break;
+
+			case Ast::IntrinsicType::MemoryBarrierStorage:
+				scope = SpirvScope::Device;
+				semantics |= SpirvMemorySemantics::UniformMemory;
+				break;
+
+			/*case Ast::IntrinsicType::MemoryBarrierSubgroup:
+				scope = SpirvScope::Subgroup;
+				semantics |= SpirvMemorySemantics::SubgroupMemory;
+				break;*/
+
+			case Ast::IntrinsicType::MemoryBarrierTexture:
+				scope = SpirvScope::Device;
+				semantics |= SpirvMemorySemantics::ImageMemory;
+				break;
+
+			case Ast::IntrinsicType::MemoryBarrierWorkgroup:
+				scope = SpirvScope::Workgroup;
+				semantics |= SpirvMemorySemantics::WorkgroupMemory;
+				break;
+
+			default:
+				NAZARA_UNREACHABLE();
+		}
+
+		std::uint32_t scopeId = m_writer.RegisterSingleConstant(static_cast<std::uint32_t>(scope));
+		std::uint32_t semanticsId = m_writer.RegisterSingleConstant(static_cast<std::uint32_t>(semantics));
+
+		HandleSourceLocation(node.sourceLocation);
+
+		m_currentBlock->Append(SpirvOp::OpMemoryBarrier, scopeId, semanticsId);
+
+		PushResultId(m_writer.GetTypeId(Ast::NoType{}));
+	}
+
 	void SpirvAstVisitor::BuildSelectIntrinsic(const Ast::IntrinsicExpression& node)
 	{
 		if (node.parameters.size() != 3)
@@ -1391,12 +1603,40 @@ namespace nzsl
 		PushResultId(resultId);
 	}
 
+	void SpirvAstVisitor::BuildTextureSampleExplicitLodIntrinsic(const Ast::IntrinsicExpression& node)
+	{
+		if (node.parameters.size() != 3)
+			throw std::runtime_error("textureSampleExplicitLod intrinsic: unexpected parameter count");
+
+		std::uint32_t resultTypeId = m_writer.GetTypeId(ResolveAlias(EnsureExpressionType(node)));
+
+		std::uint32_t samplerId = EvaluateExpression(*node.parameters[0]);
+		std::uint32_t coordinatesId = EvaluateExpression(*node.parameters[1]);
+		std::uint32_t lodId = EvaluateExpression(*node.parameters[2]);
+
+		HandleSourceLocation(node.sourceLocation);
+
+		std::uint32_t resultId = m_writer.AllocateResultId();
+
+		m_currentBlock->AppendVariadic(SpirvOp::OpImageSampleExplicitLod, [&](auto&& append)
+		{
+			append(resultTypeId);
+			append(resultId);
+			append(samplerId);
+			append(coordinatesId);
+			append(SpirvImageOperands::Lod);
+			append(lodId);
+		});
+
+		PushResultId(resultId);
+	}
+
 	SpirvGlslStd450Op SpirvAstVisitor::SelectAbs(const Ast::IntrinsicExpression& node)
 	{
 		if (node.parameters.size() != 1)
 			throw std::runtime_error("abs intrinsic: unexpected parameter count");
 
-		const Ast::ExpressionType& parameterType = EnsureExpressionType(*node.parameters[0]);
+		const Ast::ExpressionType& parameterType = ResolveAlias(EnsureExpressionType(*node.parameters[0]));
 
 		Ast::PrimitiveType basicType;
 		if (IsPrimitiveType(parameterType))

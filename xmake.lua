@@ -90,6 +90,8 @@ if has_config("unitybuild") then
 	add_rules("c++.unity_build", {uniqueid = "NAZARA_UNITY_ID", batchsize = 12})
 end
 
+set_policy("install.strip_packagelibs", false)
+
 ----------------------- Targets -----------------------
 
 target("nzsl", function ()

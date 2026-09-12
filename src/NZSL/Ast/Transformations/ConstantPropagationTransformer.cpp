@@ -1,4 +1,4 @@
-// Copyright (C) 2025 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
+// Copyright (C) 2026 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -663,11 +663,42 @@ namespace nzsl::Ast
 				break;
 
 			// Intrinsics that can't be evalutated at compilation time
+			case IntrinsicType::AtomicAdd:
+			case IntrinsicType::AtomicAnd:
+			case IntrinsicType::AtomicCompareExchange:
+			case IntrinsicType::AtomicExchange:
+			case IntrinsicType::AtomicMax:
+			case IntrinsicType::AtomicMin:
+			case IntrinsicType::AtomicOr:
+			case IntrinsicType::AtomicXor:
+			//case IntrinsicType::ControlBarrierSubgroup:
+			case IntrinsicType::ControlBarrierWorkgroup:
+			//case IntrinsicType::ControlAndMemoryBarrierSubgroup:
+			case IntrinsicType::ControlAndMemoryBarrierWorkgroup:
+			case IntrinsicType::Ddx:
+			case IntrinsicType::DdxCoarse:
+			case IntrinsicType::DdxFine:
+			case IntrinsicType::Ddy:
+			case IntrinsicType::DdyCoarse:
+			case IntrinsicType::DdyFine:
+			case IntrinsicType::Fwidth:
+			case IntrinsicType::FwidthCoarse:
+			case IntrinsicType::FwidthFine:
+			case IntrinsicType::MemoryBarrierDevice:
+			case IntrinsicType::MemoryBarrierStorage:
+			//case IntrinsicType::MemoryBarrierSubgroup:
+			case IntrinsicType::MemoryBarrierTexture:
+			case IntrinsicType::MemoryBarrierWorkgroup:
 			case IntrinsicType::TextureRead:
 			case IntrinsicType::TextureWrite:
+			case IntrinsicType::TextureSampleExplicitLod:
 			case IntrinsicType::TextureSampleImplicitLod:
 			case IntrinsicType::TextureSampleImplicitLodDepthComp:
 				break;
+
+			default:
+				break;
+			
 		}
 
 		return DontVisitChildren{};

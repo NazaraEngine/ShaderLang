@@ -1,4 +1,4 @@
-// Copyright (C) 2025 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
+// Copyright (C) 2026 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -28,10 +28,14 @@ namespace nzsl
 			static std::string_view ToString(Ast::BuiltinEntry builtinEntry);
 			static std::string_view ToString(Ast::DepthWriteMode depthWriteMode);
 			static std::string_view ToString(Ast::InterpolationQualifier interpolationQualifier);
+			static std::string_view ToString(Ast::IntrinsicType intrinsicType);
 			static std::string_view ToString(Ast::LoopUnroll loopUnroll);
 			static std::string_view ToString(Ast::MemoryLayout memoryLayout);
 			static std::string_view ToString(Ast::ModuleFeature moduleFeature);
 			static std::string_view ToString(Ast::TypeConstant typeConstant);
+			static std::string_view ToString(AccessPolicy accessPolicy);
+			static std::string_view ToString(ImageFormat imageFormat);
+			static std::string_view ToString(ImageType imageType);
 			static std::string_view ToString(ShaderStageType shaderStage);
 
 		private:
@@ -80,6 +84,7 @@ namespace nzsl
 			Ast::StatementPtr ParseStructDeclaration(std::vector<Attribute> attributes = {});
 			Ast::StatementPtr ParseVariableDeclaration();
 			Ast::StatementPtr ParseWhileStatement(std::vector<Attribute> attributes);
+			Ast::StatementPtr ParseWorkgroupSharedBlock(std::vector<Attribute> attributes = {});
 
 			// Expressions
 			Ast::ExpressionPtr ParseBinOpRhs(int exprPrecedence, Ast::ExpressionPtr lhs);

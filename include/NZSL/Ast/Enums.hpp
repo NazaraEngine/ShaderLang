@@ -1,4 +1,4 @@
-// Copyright (C) 2025 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
+// Copyright (C) 2026 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -14,6 +14,7 @@ namespace nzsl::Ast
 {
 	enum class AssignType
 	{
+		// Next free ID: 8 (don't forget to update Max)
 		Simple             = 0, //< a = b
 		CompoundAdd        = 1, //< a += b
 		CompoundDivide     = 2, //< a /= b
@@ -22,7 +23,15 @@ namespace nzsl::Ast
 		CompoundLogicalAnd = 4, //< a &&= b
 		CompoundLogicalOr  = 5, //< a ||= b
 		CompoundSubtract   = 6, //< a -= b
+
+		Max = CompoundModulo
 	};
+
+	constexpr bool EnableEnumAsNzFlags(AssignType) { return true; }
+
+	using AssignTypeMask = Nz::Flags<AssignType>;
+
+	constexpr AssignTypeMask AssignType_All = AssignTypeMask(AssignTypeMask::ValueMask);
 
 	enum class AttributeType
 	{
@@ -74,14 +83,15 @@ namespace nzsl::Ast
 
 	enum class BuiltinEntry
 	{
-		// Next free ID: 13           -- GLSL / SPIR-V
+		// Next free ID: 14           -- GLSL / SPIR-V
 		BaseInstance            =  3, // gl_BaseInstance (GLSL 450) / BaseInstance (SPIR-V 1.3)
 		BaseVertex              =  4, // gl_BaseVertex (GLSL 450) / BaseVertex (SPIR-V 1.3)
 		DrawIndex               =  5, // gl_DrawID (GLSL 450) / DrawIndex (SPIR-V 1.3)
 		FragCoord               =  1, // gl_FragCoord / FragCoord
 		FragDepth               =  2, // gl_FragDepth / FragDepth
+		FrontFacing             = 13, // gl_FrontFacing / FrontFacing
 		GlocalInvocationIndices = 12, // gl_GlobalInvocationID / GlobalInvocationId
-		InstanceIndex           =  6, // gl_InstanceIndex (or gl_BaseInstance + gl_InstanceID) / InstanceId
+		InstanceIndex           =  6, // gl_InstanceIndex (or gl_BaseInstance + gl_InstanceID) / InstanceIndex
 		LocalInvocationIndex    = 11, // gl_LocalInvocationIndex / LocalInvocationIndex
 		LocalInvocationIndices  = 10, // gl_LocalInvocationID / LocalInvocationId
 		VertexIndex             =  7, // gl_VertexID - gl_VertexIndex / VertexId
@@ -121,7 +131,9 @@ namespace nzsl::Ast
 		Struct,
 		Type,
 		Unresolved,
-		Variable
+		Variable,
+		WorkgroupSharedBlock,
+		WorkgroupSharedVariable
 	};
 
 	enum class IdentifierType
@@ -148,8 +160,10 @@ namespace nzsl::Ast
 
 	enum class IntrinsicType
 	{
-		// Next free index: 55
+		// Next free index: 83
 		Abs                               = 31,
+		All                               = 48,
+		Any                               = 49,
 		ArcCos                            = 21,
 		ArcCosh                           = 22,
 		ArcSin                            = 19,
@@ -158,20 +172,40 @@ namespace nzsl::Ast
 		ArcTan2                           = 25,
 		ArcTanh                           = 23,
 		ArraySize                         = 10,
-		All                               = 48,
-		Any                               = 49,
+		AtomicAdd                         = 65,
+		AtomicAnd                         = 66,
+		AtomicCompareExchange             = 67,
+		AtomicExchange                    = 68,
+		AtomicMax                         = 69,
+		AtomicMin                         = 70,
+		AtomicOr                          = 71,
+		AtomicSub                         = 72,
+		AtomicXor                         = 73,
+		//ControlBarrierSubgroup            = 74,
+		ControlBarrierWorkgroup           = 75,
+		//ControlAndMemoryBarrierSubgroup   = 76,
+		ControlAndMemoryBarrierWorkgroup  = 77,
 		Ceil                              = 34,
 		Clamp                             = 41,
 		Cos                               = 15,
 		Cosh                              = 16,
 		CrossProduct                      = 0,
 		DegToRad                          = 37,
+		Ddx                               = 55,
+		DdxCoarse                         = 56,
+		DdxFine                           = 57,
+		Ddy                               = 58,
+		DdyCoarse                         = 59,
+		DdyFine                           = 60,
 		Distance                          = 46,
 		DotProduct                        = 1,
 		Exp                               = 7,
 		Exp2                              = 40,
 		Floor                             = 33,
 		Fract                             = 35,
+		Fwidth                            = 61,
+		FwidthCoarse                      = 62,
+		FwidthFine                        = 63,
 		InverseSqrt                       = 26,
 		IsInf                             = 51,
 		IsNaN                             = 52,
@@ -182,6 +216,11 @@ namespace nzsl::Ast
 		MatrixInverse                     = 11,
 		MatrixTranspose                   = 12,
 		Max                               = 4,
+		MemoryBarrierDevice               = 78,
+		MemoryBarrierStorage              = 79,
+		//MemoryBarrierSubgroup             = 80,
+		MemoryBarrierTexture              = 81,
+		MemoryBarrierWorkgroup            = 82,
 		Min                               = 5,
 		Normalize                         = 9,
 		Not                               = 50,
@@ -191,6 +230,7 @@ namespace nzsl::Ast
 		Round                             = 28,
 		RoundEven                         = 29,
 		TextureRead                       = 2,
+		TextureSampleExplicitLod          = 64,
 		TextureSampleImplicitLod          = 44,
 		TextureSampleImplicitLodDepthComp = 43,
 		TextureWrite                      = 45,
@@ -235,7 +275,7 @@ namespace nzsl::Ast
 
 	enum class NodeType
 	{
-		// Remember to update Max value at the end of the enum when adding an entry (next free id: 47)
+		// Remember to update Max value at the end of the enum when adding an entry (next free id: 48)
 		None = -1,
 
 		// Expressions
@@ -267,29 +307,30 @@ namespace nzsl::Ast
 		UnaryExpression              = 20,
 
 		// Statements
-		BranchStatement          = 21,
-		BreakStatement           = 40,
-		ConditionalStatement     = 22,
-		ContinueStatement        = 41,
-		DeclareAliasStatement    = 23,
-		DeclareConstStatement    = 24,
-		DeclareExternalStatement = 25,
-		DeclareFunctionStatement = 26,
-		DeclareOptionStatement   = 27,
-		DeclareStructStatement   = 28,
-		DeclareVariableStatement = 29,
-		DiscardStatement         = 30,
-		ForStatement             = 31,
-		ForEachStatement         = 32,
-		ExpressionStatement      = 33,
-		ImportStatement          = 34,
-		MultiStatement           = 35,
-		NoOpStatement            = 36,
-		ReturnStatement          = 37,
-		ScopedStatement          = 38,
-		WhileStatement           = 39,
+		BranchStatement                 = 21,
+		BreakStatement                  = 40,
+		ConditionalStatement            = 22,
+		ContinueStatement               = 41,
+		DeclareAliasStatement           = 23,
+		DeclareConstStatement           = 24,
+		DeclareExternalStatement        = 25,
+		DeclareFunctionStatement        = 26,
+		DeclareOptionStatement          = 27,
+		DeclareStructStatement          = 28,
+		DeclareVariableStatement        = 29,
+		DeclareWorkgroupSharedStatement = 47,
+		DiscardStatement                = 30,
+		ForStatement                    = 31,
+		ForEachStatement                = 32,
+		ExpressionStatement             = 33,
+		ImportStatement                 = 34,
+		MultiStatement                  = 35,
+		NoOpStatement                   = 36,
+		ReturnStatement                 = 37,
+		ScopedStatement                 = 38,
+		WhileStatement                  = 39,
 
-		Max = IdentifierValueExpression
+		Max = DeclareWorkgroupSharedStatement
 	};
 
 	enum class PrimitiveType

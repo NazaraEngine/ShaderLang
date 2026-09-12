@@ -1,4 +1,4 @@
-// Copyright (C) 2025 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
+// Copyright (C) 2026 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -54,13 +54,13 @@ namespace nzsl::Ast
 		return stringifier;
 	}
 
-	ExpressionPtr Transformer::CacheExpression(ExpressionPtr expression)
+	ExpressionPtr Transformer::CacheExpression(ExpressionPtr&& expression)
 	{
 		assert(expression);
 
 		// No need to cache variables
 		if (GetExpressionCategory(*expression) == ExpressionCategory::Variable)
-			return expression;
+			return std::move(expression);
 
 		DeclareVariableStatement* variableDeclaration = DeclareVariable("cachedResult", std::move(expression));
 		return ShaderBuilder::Variable(*variableDeclaration->varIndex, variableDeclaration->varType.GetResultingValue(), variableDeclaration->sourceLocation);
@@ -506,6 +506,17 @@ namespace nzsl::Ast
 
 			if (node.initialExpression)
 				HandleExpression(node.initialExpression);
+
+			FinishExpressionHandling();
+		}
+	}
+
+	void Transformer::HandleChildren(DeclareWorkgroupSharedStatement& node)
+	{
+		if (!m_flags.Test(TransformerFlag::IgnoreExpressions))
+		{
+			for (auto& externalVar : node.vars)
+				HandleExpressionValue(externalVar.type, externalVar.sourceLocation);
 
 			FinishExpressionHandling();
 		}

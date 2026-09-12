@@ -1,4 +1,4 @@
-// Copyright (C) 2025 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
+// Copyright (C) 2026 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -30,6 +30,7 @@
 #include <NZSL/Ast/Transformations/LoopUnrollTransformer.hpp>
 #include <NZSL/Ast/Transformations/MatrixTransformer.hpp>
 #include <NZSL/Ast/Transformations/ResolveTransformer.hpp>
+#include <NZSL/Ast/Transformations/ReturningStatementTransformer.hpp>
 #include <NZSL/Ast/Transformations/StructAssignmentTransformer.hpp>
 #include <NZSL/Ast/Transformations/ValidationTransformer.hpp>
 #include <fmt/format.h>
@@ -142,7 +143,8 @@ namespace nzsl
 
 			void Visit(Ast::CallFunctionExpression& node) override
 			{
-				RecursiveVisitor::Visit(node);
+				// Don't use recursive visitor here, in order to visit parameters as we iterate on them to maintain the same funcCall order
+				node.targetFunction->Visit(*this);
 
 				assert(m_funcIndex);
 				auto it = funcs.find(*m_funcIndex);
@@ -160,6 +162,8 @@ namespace nzsl
 					auto& var = func.variables.emplace_back();
 					var.sourceLocation = parameter.expr->sourceLocation;
 					var.typeId = m_constantCache.Register(*m_constantCache.BuildPointerType(*GetExpressionType(*parameter.expr), SpirvStorageClass::Function));
+
+					parameter.expr->Visit(*this);
 				}
 			}
 
@@ -513,12 +517,35 @@ namespace nzsl
 				var.sourceLocation = node.sourceLocation;
 				var.typeId = m_constantCache.Register(*m_constantCache.BuildPointerType(node.varType.GetResultingValue(), SpirvStorageClass::Function));
 			}
+			
+			void Visit(Ast::DeclareWorkgroupSharedStatement& node) override
+			{
+				for (auto& extVar : node.vars)
+				{
+					assert(extVar.varIndex);
+					ExternalVar& extVarData = extVars[*extVar.varIndex];
+
+					SpirvConstantCache::Variable variable;
+					variable.debugName = (!node.name.empty()) ? fmt::format("{}_{}", node.name, extVar.name) : extVar.name;
+
+					const Ast::ExpressionType& extVarType = extVar.type.GetResultingValue();
+
+					SpirvConstantCache::TypePtr typePtr;
+					variable.storageClass = SpirvStorageClass::Workgroup;
+					variable.type = m_constantCache.BuildPointerType(extVarType, variable.storageClass);
+
+					extVarData.varData.typePtr = (typePtr) ? typePtr : m_constantCache.BuildType(extVarType, variable.storageClass);
+					extVarData.varData.typeId = m_constantCache.Register(*extVarData.varData.typePtr);
+					extVarData.varData.storageClass = variable.storageClass;
+					extVarData.varData.pointerId = m_constantCache.Register(std::move(variable));
+				}
+			}
 
 			void Visit(Ast::IdentifierExpression& /*node*/) override
 			{
 				throw std::runtime_error("unexpected IdentifierExpression, is the shader resolved?");
 			}
-			
+
 			void Visit(Ast::IdentifierValueExpression& node) override
 			{
 				assert(m_funcIndex);
@@ -554,6 +581,8 @@ namespace nzsl
 				if (it == SpirvGenData::s_intrinsicData.end())
 					throw std::runtime_error("unknown intrinsic value " + std::to_string(Nz::UnderlyingCast(node.intrinsic)));
 
+				const SpirvGenData::IntrinsicData& intrinsicData = it->second;
+
 				std::visit([&](auto&& arg)
 				{
 					using namespace SpirvGenData;
@@ -567,7 +596,10 @@ namespace nzsl
 					}
 					else
 						static_assert(Nz::AlwaysFalse<T>(), "non-exhaustive visitor");
-				}, it->second.op);
+				}, intrinsicData.op);
+
+				if (intrinsicData.capability)
+					spirvCapabilities.insert(*intrinsicData.capability);
 
 				m_constantCache.Register(*m_constantCache.BuildType(node.cachedExpressionType.value()));
 			}
@@ -979,7 +1011,7 @@ namespace nzsl
 		});
 		executor.AddPass<Ast::CompoundAssignmentTransformer>([](Ast::CompoundAssignmentTransformer::Options& opt)
 		{
-			opt.removeCompoundAssignment = true;
+			opt.removeCompoundAssignmentMask = Ast::AssignType_All;
 		});
 		executor.AddPass<Ast::MatrixTransformer>([](Ast::MatrixTransformer::Options& opt)
 		{
@@ -988,6 +1020,7 @@ namespace nzsl
 		});
 		executor.AddPass<Ast::BindingResolverTransformer>();
 		executor.AddPass<Ast::AliasTransformer>();
+		executor.AddPass<Ast::ReturningStatementTransformer>();
 	}
 
 	std::uint32_t SpirvWriter::AllocateResultId()

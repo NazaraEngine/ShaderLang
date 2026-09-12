@@ -1,4 +1,4 @@
-// Copyright (C) 2025 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
+// Copyright (C) 2026 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -267,15 +267,21 @@ namespace nzsl
 
 	void LangWriter::Append(const Ast::ArrayType& type)
 	{
-		if (type.length > 0)
-			Append("array[", type.InnerType(), ", ", type.length, "]");
-		else
-			Append("array[", type.InnerType(), "]");
+		Append("array");
+		if (!IsLiteralType(type.InnerType()))
+		{
+			if (type.length > 0)
+				Append("[", type.InnerType(), ", ", type.length, "]");
+			else
+				Append("[", type.InnerType(), "]");
+		}
 	}
 
 	void LangWriter::Append(const Ast::DynArrayType& type)
 	{
-		Append("dyn_array[", type.InnerType(), "]");
+		Append("dyn_array");
+		if (!IsLiteralType(type.InnerType()))
+			Append("[", type.InnerType(), "]");
 	}
 
 	void LangWriter::Append(const Ast::ExpressionType& type)
@@ -335,7 +341,8 @@ namespace nzsl
 			Append(matrixType.rowCount);
 		}
 
-		Append("[", matrixType.type, "]");
+		if (matrixType.type != Ast::PrimitiveType::FloatLiteral && matrixType.type != Ast::PrimitiveType::IntLiteral)
+			Append("[", matrixType.type, "]");
 	}
 
 	void LangWriter::Append(const Ast::MethodType& /*functionType*/)
@@ -401,11 +408,10 @@ namespace nzsl
 	void LangWriter::Append(const Ast::StorageType& storageType)
 	{
 		Append("storage[", storageType.containedType);
-		switch (storageType.accessPolicy)
+		if (storageType.accessPolicy != AccessPolicy::ReadWrite)
 		{
-			case AccessPolicy::ReadOnly:  Append(", readonly"); break;
-			case AccessPolicy::ReadWrite: break;
-			case AccessPolicy::WriteOnly: Append(", writeonly"); break;
+			Append(", ");
+			Append(Parser::ToString(storageType.accessPolicy));
 		}
 		Append("]");
 	}
@@ -430,18 +436,11 @@ namespace nzsl
 		}
 
 		Append("[", textureType.baseType, ", ");
-		switch (textureType.accessPolicy)
-		{
-			case AccessPolicy::ReadOnly:  Append("readonly"); break;
-			case AccessPolicy::ReadWrite: Append("readwrite"); break;
-			case AccessPolicy::WriteOnly: Append("writeonly"); break;
-		}
+		Append(Parser::ToString(textureType.accessPolicy));
 
 		if (textureType.format != ImageFormat::Unknown)
-		{
-			assert(textureType.format == ImageFormat::RGBA8); //< TODO
-			Append(", rgba8");
-		}
+			Append(", ", Parser::ToString(textureType.format));
+
 		Append("]");
 	}
 
@@ -1273,18 +1272,40 @@ namespace nzsl
 			case Ast::IntrinsicType::ArcTan:
 			case Ast::IntrinsicType::ArcTan2:
 			case Ast::IntrinsicType::ArcTanh:
+			case Ast::IntrinsicType::AtomicAdd:
+			case Ast::IntrinsicType::AtomicAnd:
+			case Ast::IntrinsicType::AtomicCompareExchange:
+			case Ast::IntrinsicType::AtomicExchange:
+			case Ast::IntrinsicType::AtomicMax:
+			case Ast::IntrinsicType::AtomicMin:
+			case Ast::IntrinsicType::AtomicOr:
+			case Ast::IntrinsicType::AtomicSub:
+			case Ast::IntrinsicType::AtomicXor:
 			case Ast::IntrinsicType::Ceil:
 			case Ast::IntrinsicType::Clamp:
+			//case Ast::IntrinsicType::ControlBarrierSubgroup:
+			case Ast::IntrinsicType::ControlBarrierWorkgroup:
+			//case Ast::IntrinsicType::ControlAndMemoryBarrierSubgroup:
+			case Ast::IntrinsicType::ControlAndMemoryBarrierWorkgroup:
 			case Ast::IntrinsicType::Cos:
 			case Ast::IntrinsicType::Cosh:
 			case Ast::IntrinsicType::CrossProduct:
 			case Ast::IntrinsicType::DegToRad:
+			case Ast::IntrinsicType::Ddx:
+			case Ast::IntrinsicType::DdxCoarse:
+			case Ast::IntrinsicType::DdxFine:
+			case Ast::IntrinsicType::Ddy:
+			case Ast::IntrinsicType::DdyCoarse:
+			case Ast::IntrinsicType::DdyFine:
 			case Ast::IntrinsicType::Distance:
 			case Ast::IntrinsicType::DotProduct:
 			case Ast::IntrinsicType::Exp:
 			case Ast::IntrinsicType::Exp2:
 			case Ast::IntrinsicType::Floor:
 			case Ast::IntrinsicType::Fract:
+			case Ast::IntrinsicType::Fwidth:
+			case Ast::IntrinsicType::FwidthCoarse:
+			case Ast::IntrinsicType::FwidthFine:
 			case Ast::IntrinsicType::InverseSqrt:
 			case Ast::IntrinsicType::IsInf:
 			case Ast::IntrinsicType::IsNaN:
@@ -1295,6 +1316,11 @@ namespace nzsl
 			case Ast::IntrinsicType::MatrixInverse:
 			case Ast::IntrinsicType::MatrixTranspose:
 			case Ast::IntrinsicType::Max:
+			case Ast::IntrinsicType::MemoryBarrierDevice:
+			//case Ast::IntrinsicType::MemoryBarrierSubgroup:
+			case Ast::IntrinsicType::MemoryBarrierStorage:
+			case Ast::IntrinsicType::MemoryBarrierTexture:
+			case Ast::IntrinsicType::MemoryBarrierWorkgroup:
 			case Ast::IntrinsicType::Min:
 			case Ast::IntrinsicType::Normalize:
 			case Ast::IntrinsicType::Not:
@@ -1316,9 +1342,9 @@ namespace nzsl
 			{
 				auto intrinsicIt = LangData::s_intrinsicData.find(node.intrinsic);
 				assert(intrinsicIt != LangData::s_intrinsicData.end());
-				assert(!intrinsicIt->second.functionName.empty());
+				assert(!intrinsicIt->second.isMethod);
 
-				Append(intrinsicIt->second.functionName);
+				Append(intrinsicIt->second.name);
 				break;
 			}
 
@@ -1341,6 +1367,13 @@ namespace nzsl
 				assert(!node.parameters.empty());
 				Visit(node.parameters.front(), true);
 				Append(".Sample");
+				method = true;
+				break;
+
+			case Ast::IntrinsicType::TextureSampleExplicitLod:
+				assert(!node.parameters.empty());
+				Visit(node.parameters.front(), true);
+				Append(".SampleLevel");
 				method = true;
 				break;
 
@@ -1660,6 +1693,43 @@ namespace nzsl
 		}
 
 		Append(";");
+	}
+	
+	void LangWriter::Visit(Ast::DeclareWorkgroupSharedStatement& node)
+	{
+		AppendAttributes(true, TagAttribute{ node.tag });
+		Append("workgroup_shared");
+
+		if (!node.name.empty())
+		{
+			Append(" ", node.name);
+
+			m_currentState->currentExternalBlockIndex = m_currentState->externalBlockNames.size();
+			m_currentState->externalBlockNames.push_back(node.name);
+		}
+
+		AppendLine();
+
+		EnterScope();
+
+		bool first = true;
+		for (const auto& sharedVar : node.vars)
+		{
+			if (!first)
+				AppendLine(",");
+
+			first = false;
+
+			AppendAttributes(false, TagAttribute{ sharedVar.tag });
+			Append(sharedVar.name, ": ", sharedVar.type);
+
+			if (sharedVar.varIndex)
+				RegisterVariable(*sharedVar.varIndex, sharedVar.name);
+		}
+
+		LeaveScope();
+
+		m_currentState->currentExternalBlockIndex = {};
 	}
 
 	void LangWriter::Visit(Ast::DiscardStatement& /*node*/)

@@ -1,4 +1,4 @@
-// Copyright (C) 2025 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
+// Copyright (C) 2026 Jérôme "SirLynix" Leclercq (lynix680@gmail.com)
 // This file is part of the "Nazara Shading Language" project
 // For conditions of distribution and use, see copyright notice in Config.hpp
 
@@ -80,7 +80,8 @@ NZSL_SHADERLANG_TOKEN(ShiftLeft)
 NZSL_SHADERLANG_TOKEN(ShiftRight)
 NZSL_SHADERLANG_TOKEN(StringValue)
 NZSL_SHADERLANG_TOKEN(Struct)
-NZSL_SHADERLANG_TOKEN_LAST(While)
+NZSL_SHADERLANG_TOKEN(While)
+NZSL_SHADERLANG_TOKEN_LAST(WorkgroupShared)
 
 #undef NZSL_SHADERLANG_TOKEN
 #undef NZSL_SHADERLANG_TOKEN_LAST
