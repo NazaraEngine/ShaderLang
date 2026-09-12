@@ -1860,5 +1860,4 @@ namespace nzsl
 
 		ScopeVisit(*node.body);
 	}
-
 }

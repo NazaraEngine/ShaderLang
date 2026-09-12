@@ -65,4 +65,10 @@ namespace nzsl::Ast
 		Cloner cloner;
 		return cloner.Clone(node);
 	}
+
+	inline StructDescription Clone(const StructDescription& desc)
+	{
+		Cloner cloner;
+		return cloner.Clone(desc);
+	}
 }

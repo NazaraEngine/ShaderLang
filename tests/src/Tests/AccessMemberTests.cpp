@@ -27,7 +27,6 @@ external
 	[set(0), binding(0)] ubo: uniform[outerStruct]
 }
 )";
-
 		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
 		ResolveModule(*shaderModule);
 
@@ -40,7 +39,7 @@ external
 			auto swizzle = nzsl::ShaderBuilder::Swizzle(std::move(secondAccess), { 2u });
 			auto varDecl = nzsl::ShaderBuilder::DeclareVariable("result", nzsl::Ast::ExpressionType{ nzsl::Ast::PrimitiveType::Float32 }, std::move(swizzle));
 
-			shaderModule->rootNode->statements.push_back(nzsl::ShaderBuilder::DeclareFunction(nzsl::ShaderStageType::Vertex, "main", std::move(varDecl)));
+			shaderModule->rootNode->statements.push_back(nzsl::ShaderBuilder::DeclareFunction(nzsl::ShaderStageType::Fragment, "main", std::move(varDecl)));
 
 			ExpectGLSL(*shaderModule, R"(
 void main()
@@ -50,7 +49,7 @@ void main()
 )");
 
 			ExpectNZSL(*shaderModule, R"(
-[entry(vert)]
+[entry(frag)]
 fn main()
 {
 	let result: f32 = ubo.s.field.z;
@@ -67,6 +66,14 @@ OpCompositeExtract
 OpStore
 OpReturn
 OpFunctionEnd)");
+
+			ExpectWGSL(*shaderModule, R"(
+@fragment
+fn main()
+{
+	var result: f32 = ubo.s.field.z;
+}
+)");
 		}
 
 		SECTION("AccessMember with multiples fields")
@@ -77,7 +84,7 @@ OpFunctionEnd)");
 			auto swizzle = nzsl::ShaderBuilder::Swizzle(std::move(access), { 2u });
 			auto varDecl = nzsl::ShaderBuilder::DeclareVariable("result", nzsl::Ast::ExpressionType{ nzsl::Ast::PrimitiveType::Float32 }, std::move(swizzle));
 
-			shaderModule->rootNode->statements.push_back(nzsl::ShaderBuilder::DeclareFunction(nzsl::ShaderStageType::Vertex, "main", std::move(varDecl)));
+			shaderModule->rootNode->statements.push_back(nzsl::ShaderBuilder::DeclareFunction(nzsl::ShaderStageType::Fragment, "main", std::move(varDecl)));
 
 			ExpectGLSL(*shaderModule, R"(
 void main()
@@ -87,7 +94,7 @@ void main()
 )");
 
 			ExpectNZSL(*shaderModule, R"(
-[entry(vert)]
+[entry(frag)]
 fn main()
 {
 	let result: f32 = ubo.s.field.z;
@@ -104,6 +111,14 @@ OpCompositeExtract
 OpStore
 OpReturn
 OpFunctionEnd)");
+
+			ExpectWGSL(*shaderModule, R"(
+@fragment
+fn main()
+{
+	var result: f32 = ubo.s.field.z;
+}
+)");
 		}
 	}
 }

@@ -109,6 +109,24 @@ fn main() -> FragOut
       OpStore %5 %17
       OpReturn
       OpFunctionEnd)", {}, {}, true);
+
+				nzsl::WgslWriter::Environment wgslEnv;
+				wgslEnv.featuresCallback = [](std::string_view) { return true; };
+
+				ExpectWGSL(*shaderModule, R"(
+struct FragOut
+{
+	@builtin(frag_depth) depth: f32
+}
+
+@fragment @early_depth_test(greater_equal)
+fn main() -> FragOut
+{
+	var output: FragOut;
+	output.depth = 1.0;
+	return output;
+}
+)", {}, wgslEnv);
 			}
 
 			WHEN("Using depth_write(less)")
@@ -212,6 +230,24 @@ fn main() -> FragOut
       OpStore %5 %17
       OpReturn
       OpFunctionEnd)", {}, {}, true);
+
+				nzsl::WgslWriter::Environment wgslEnv;
+				wgslEnv.featuresCallback = [](std::string_view) { return true; };
+
+				ExpectWGSL(*shaderModule, R"(
+struct FragOut
+{
+	@builtin(frag_depth) depth: f32
+}
+
+@fragment @early_depth_test(less_equal)
+fn main() -> FragOut
+{
+	var output: FragOut;
+	output.depth = 0.0;
+	return output;
+}
+)", {}, wgslEnv);
 			}
 
 			WHEN("Using depth_write(replace)")
@@ -319,6 +355,21 @@ fn main() -> FragOut
       OpStore %5 %17
       OpReturn
       OpFunctionEnd)", {}, {}, true);
+
+				ExpectWGSL(*shaderModule, R"(
+struct FragOut
+{
+	@builtin(frag_depth) depth: f32
+}
+
+@fragment
+fn main() -> FragOut
+{
+	var output: FragOut;
+	output.depth = 0.5;
+	return output;
+}
+)");
 			}
 
 			WHEN("Using depth_write(unchanged)")
@@ -447,6 +498,29 @@ fn main(input: FragIn) -> FragOut
       OpStore %13 %28
       OpReturn
       OpFunctionEnd)", {}, {}, true);
+
+				nzsl::WgslWriter::Environment wgslEnv;
+				wgslEnv.featuresCallback = [](std::string_view) { return true; };
+
+				ExpectWGSL(*shaderModule, R"(
+struct FragIn
+{
+	@builtin(position) fragCoord: vec4<f32>
+}
+
+struct FragOut
+{
+	@builtin(frag_depth) depth: f32
+}
+
+@fragment @early_depth_test(unchanged)
+fn main(input: FragIn) -> FragOut
+{
+	var output: FragOut;
+	output.depth = input.fragCoord.z;
+	return output;
+}
+)", {}, wgslEnv);
 			}
 		}
 
@@ -590,7 +664,19 @@ fn main()
 %4 = OpLabel
      OpReturn
      OpFunctionEnd)", {}, {}, true);
+
+				nzsl::WgslWriter::Environment wgslEnv;
+				wgslEnv.featuresCallback = [](std::string_view) { return true; };
+
+				ExpectWGSL(*shaderModule, R"(
+@fragment @early_depth_test(force)
+fn main()
+{
+
+}
+)", {}, wgslEnv);
 			}
+
 			
 			WHEN("Disabling early fragment tests")
 			{
@@ -645,6 +731,14 @@ fn main()
 %4 = OpLabel
      OpReturn
      OpFunctionEnd)", {}, {}, true);
+
+				ExpectWGSL(*shaderModule, R"(
+@fragment
+fn main()
+{
+
+}
+)");
 			}
 		}
 	}
