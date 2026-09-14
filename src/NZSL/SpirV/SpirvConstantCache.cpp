@@ -1114,6 +1114,22 @@ namespace nzsl
 				case ImageFormat::RGBA8Snorm: return SpirvImageFormat::Rgba8Snorm;
 				case ImageFormat::RGBA16f: return SpirvImageFormat::Rgba16f;
 				case ImageFormat::RGBA32f: return SpirvImageFormat::Rgba32f;
+				case ImageFormat::R32f: return SpirvImageFormat::R32f;
+				case ImageFormat::RG32f: return SpirvImageFormat::Rg32f;
+				case ImageFormat::RG16f: return SpirvImageFormat::Rg16f;
+				case ImageFormat::R16f: return SpirvImageFormat::R16f;
+				case ImageFormat::R11fG11fB10f: return SpirvImageFormat::R11fG11fB10f;
+				case ImageFormat::RGBA16: return SpirvImageFormat::Rgba16;
+				case ImageFormat::RGB10A2: return SpirvImageFormat::Rgb10A2;
+				case ImageFormat::RG16: return SpirvImageFormat::Rg16;
+				case ImageFormat::RG8: return SpirvImageFormat::Rg8;
+				case ImageFormat::R16: return SpirvImageFormat::R16;
+				case ImageFormat::R8: return SpirvImageFormat::R8;
+				case ImageFormat::RGBA16Snorm: return SpirvImageFormat::Rgba16Snorm;
+				case ImageFormat::RG16Snorm: return SpirvImageFormat::Rg16Snorm;
+				case ImageFormat::RG8Snorm: return SpirvImageFormat::Rg8Snorm;
+				case ImageFormat::R16Snorm: return SpirvImageFormat::R16Snorm;
+				case ImageFormat::R8Snorm: return SpirvImageFormat::R8Snorm;
 				default:
 					throw std::runtime_error("unsupported image format");
 			}

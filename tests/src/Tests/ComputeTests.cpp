@@ -2,6 +2,7 @@
 #include <NZSL/ShaderBuilder.hpp>
 #include <NZSL/Parser.hpp>
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers.hpp>
 #include <cctype>
 
 TEST_CASE("compute", "[Shader]")
@@ -285,6 +286,80 @@ layout(rgba8_snorm) uniform writeonly image2D tex_rgba8_snorm;
  %5 = OpTypeImage %1 Dim(Dim2D) 2 0 0 2 ImageFormat(Rgba32f)
  %6 = OpTypePointer StorageClass(UniformConstant) %5
  %8 = OpTypeImage %1 Dim(Dim2D) 2 0 0 2 ImageFormat(Rgba8Snorm))", {}, {}, true);
+	}
+
+	SECTION("Extended storage image formats")
+	{
+		std::string_view nzslSource = R"(
+[nzsl_version("1.1")]
+module;
+
+[auto_binding]
+external
+{
+	tex_r8: texture2D[f32, writeonly, r8],
+	tex_rg8: texture2D[f32, writeonly, rg8],
+	tex_r32f: texture2D[f32, writeonly, r32f],
+	tex_rgb10_a2: texture2D[f32, writeonly, rgb10_a2]
+}
+
+struct Input
+{
+	[builtin(global_invocation_indices)] indices: vec3[u32]
+}
+
+[entry(compute)]
+[workgroup(8, 8, 1)]
+fn main(input: Input)
+{
+	let coords = vec2[i32](input.indices.xy);
+	let value = vec4[f32](1.0, 0.0, 0.0, 1.0);
+	tex_r8.Write(coords, value);
+	tex_rg8.Write(coords, value);
+	tex_r32f.Write(coords, value);
+	tex_rgb10_a2.Write(coords, value);
+}
+)";
+
+		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
+		ResolveModule(*shaderModule);
+
+		nzsl::GlslWriter::Environment glslEnv;
+		glslEnv.glES = false;
+		glslEnv.glMajorVersion = 4;
+		glslEnv.glMinorVersion = 3;
+
+		ExpectGLSL(*shaderModule, R"(
+layout(r8) uniform writeonly image2D tex_r8;
+layout(rg8) uniform writeonly image2D tex_rg8;
+layout(r32f) uniform writeonly image2D tex_r32f;
+layout(rgb10_a2) uniform writeonly image2D tex_rgb10_a2;
+)", {}, glslEnv);
+
+		ExpectNZSL(*shaderModule, R"(
+	[set(0), binding(0)] tex_r8: texture2D[f32, writeonly, r8],
+	[set(0), binding(1)] tex_rg8: texture2D[f32, writeonly, rg8],
+	[set(0), binding(2)] tex_r32f: texture2D[f32, writeonly, r32f],
+	[set(0), binding(3)] tex_rgb10_a2: texture2D[f32, writeonly, rgb10_a2]
+)");
+
+		ExpectSPIRV(*shaderModule, R"(
+ %2 = OpTypeImage %1 Dim(Dim2D) 2 0 0 2 ImageFormat(R8)
+ %3 = OpTypePointer StorageClass(UniformConstant) %2
+ %5 = OpTypeImage %1 Dim(Dim2D) 2 0 0 2 ImageFormat(Rg8)
+ %6 = OpTypePointer StorageClass(UniformConstant) %5
+ %8 = OpTypeImage %1 Dim(Dim2D) 2 0 0 2 ImageFormat(R32f)
+ %9 = OpTypePointer StorageClass(UniformConstant) %8
+%11 = OpTypeImage %1 Dim(Dim2D) 2 0 0 2 ImageFormat(Rgb10A2))", {}, {}, true);
+
+		nzsl::GlslWriter::Environment glslEsEnv;
+		glslEsEnv.glES = true;
+		glslEsEnv.glMajorVersion = 3;
+		glslEsEnv.glMinorVersion = 1;
+
+		nzsl::GlslWriter esWriter;
+		esWriter.SetEnv(glslEsEnv);
+		CHECK_THROWS_WITH(esWriter.Generate(nzsl::ShaderStageType::Compute, *shaderModule), "image format r8 is not supported by GLSL ES");
 	}
 
 	SECTION("Explicit LOD sampling")

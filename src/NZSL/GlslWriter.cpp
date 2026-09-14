@@ -2679,6 +2679,9 @@ namespace nzsl
 				{
 					auto formatIt = LangData::s_imageFormats.find(textureType.format);
 					assert(formatIt != LangData::s_imageFormats.end());
+					if (m_environment.glES && formatIt->second.extended)
+						throw std::runtime_error(fmt::format("image format {} is not supported by GLSL ES", formatIt->second.identifier));
+
 					BeginLayout();
 					Append(formatIt->second.identifier);
 				}
