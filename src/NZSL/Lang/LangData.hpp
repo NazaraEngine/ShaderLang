@@ -92,11 +92,27 @@ namespace nzsl::LangData
 		{ "readwrite", { 1, Nz::SafeCast<std::uint32_t>(AccessPolicy::ReadWrite) } },
 		{ "writeonly", { 2, Nz::SafeCast<std::uint32_t>(AccessPolicy::WriteOnly) } },
 
-		// TODO: Register more image formats (integer and narrow ones, see s_imageFormats)
+		// TODO: Register integer image formats once integer textures are supported (see s_imageFormats)
 		{ "rgba8", { 3, Nz::SafeCast<std::uint32_t>(ImageFormat::RGBA8) }},
 		{ "rgba8_snorm", { 4, Nz::SafeCast<std::uint32_t>(ImageFormat::RGBA8Snorm) }},
 		{ "rgba16f", { 5, Nz::SafeCast<std::uint32_t>(ImageFormat::RGBA16f) }},
-		{ "rgba32f", { 6, Nz::SafeCast<std::uint32_t>(ImageFormat::RGBA32f) }}
+		{ "rgba32f", { 6, Nz::SafeCast<std::uint32_t>(ImageFormat::RGBA32f) }},
+		{ "r32f", { 7, Nz::SafeCast<std::uint32_t>(ImageFormat::R32f) }},
+		{ "rg32f", { 8, Nz::SafeCast<std::uint32_t>(ImageFormat::RG32f) }},
+		{ "rg16f", { 9, Nz::SafeCast<std::uint32_t>(ImageFormat::RG16f) }},
+		{ "r16f", { 10, Nz::SafeCast<std::uint32_t>(ImageFormat::R16f) }},
+		{ "r11f_g11f_b10f", { 11, Nz::SafeCast<std::uint32_t>(ImageFormat::R11fG11fB10f) }},
+		{ "rgba16", { 12, Nz::SafeCast<std::uint32_t>(ImageFormat::RGBA16) }},
+		{ "rgb10_a2", { 13, Nz::SafeCast<std::uint32_t>(ImageFormat::RGB10A2) }},
+		{ "rg16", { 14, Nz::SafeCast<std::uint32_t>(ImageFormat::RG16) }},
+		{ "rg8", { 15, Nz::SafeCast<std::uint32_t>(ImageFormat::RG8) }},
+		{ "r16", { 16, Nz::SafeCast<std::uint32_t>(ImageFormat::R16) }},
+		{ "r8", { 17, Nz::SafeCast<std::uint32_t>(ImageFormat::R8) }},
+		{ "rgba16_snorm", { 18, Nz::SafeCast<std::uint32_t>(ImageFormat::RGBA16Snorm) }},
+		{ "rg16_snorm", { 19, Nz::SafeCast<std::uint32_t>(ImageFormat::RG16Snorm) }},
+		{ "rg8_snorm", { 20, Nz::SafeCast<std::uint32_t>(ImageFormat::RG8Snorm) }},
+		{ "r16_snorm", { 21, Nz::SafeCast<std::uint32_t>(ImageFormat::R16Snorm) }},
+		{ "r8_snorm", { 22, Nz::SafeCast<std::uint32_t>(ImageFormat::R8Snorm) }}
 	});
 
 	struct DepthWriteModeData
@@ -126,13 +142,30 @@ namespace nzsl::LangData
 	struct ImageFormatData
 	{
 		std::string_view identifier;
+		bool extended; //< requires SPIR-V StorageImageExtendedFormats capability and is not available in GLSL ES
 	};
 
 	constexpr auto s_imageFormats = frozen::make_unordered_map<ImageFormat, ImageFormatData>({
-		{ ImageFormat::RGBA8,      { "rgba8" } },
-		{ ImageFormat::RGBA8Snorm, { "rgba8_snorm" } },
-		{ ImageFormat::RGBA16f,    { "rgba16f" } },
-		{ ImageFormat::RGBA32f,    { "rgba32f" } },
+		{ ImageFormat::RGBA8,        { "rgba8",          false } },
+		{ ImageFormat::RGBA8Snorm,   { "rgba8_snorm",    false } },
+		{ ImageFormat::RGBA16f,      { "rgba16f",        false } },
+		{ ImageFormat::RGBA32f,      { "rgba32f",        false } },
+		{ ImageFormat::R32f,         { "r32f",           false } },
+		{ ImageFormat::RG32f,        { "rg32f",          true } },
+		{ ImageFormat::RG16f,        { "rg16f",          true } },
+		{ ImageFormat::R16f,         { "r16f",           true } },
+		{ ImageFormat::R11fG11fB10f, { "r11f_g11f_b10f", true } },
+		{ ImageFormat::RGBA16,       { "rgba16",         true } },
+		{ ImageFormat::RGB10A2,      { "rgb10_a2",       true } },
+		{ ImageFormat::RG16,         { "rg16",           true } },
+		{ ImageFormat::RG8,          { "rg8",            true } },
+		{ ImageFormat::R16,          { "r16",            true } },
+		{ ImageFormat::R8,           { "r8",             true } },
+		{ ImageFormat::RGBA16Snorm,  { "rgba16_snorm",   true } },
+		{ ImageFormat::RG16Snorm,    { "rg16_snorm",     true } },
+		{ ImageFormat::RG8Snorm,     { "rg8_snorm",      true } },
+		{ ImageFormat::R16Snorm,     { "r16_snorm",      true } },
+		{ ImageFormat::R8Snorm,      { "r8_snorm",       true } },
 	});
 
 	struct InterpolationData

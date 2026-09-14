@@ -285,6 +285,14 @@ namespace nzsl
 					{
 						variable.storageClass = SpirvStorageClass::UniformConstant;
 						variable.type = m_constantCache.BuildPointerType(extVarType, variable.storageClass);
+
+						const Ast::ExpressionType& resourceType = (Ast::IsArrayType(extVarType)) ? std::get<Ast::ArrayType>(extVarType).InnerType() : extVarType;
+						if (Ast::IsTextureType(resourceType))
+						{
+							auto formatIt = LangData::s_imageFormats.find(std::get<Ast::TextureType>(resourceType).format);
+							if (formatIt != LangData::s_imageFormats.end() && formatIt->second.extended)
+								spirvCapabilities.insert(SpirvCapability::StorageImageExtendedFormats);
+						}
 					}
 					else
 						throw std::runtime_error("unsupported type used in external block (SPIR-V doesn't allow primitive types as uniforms)");
