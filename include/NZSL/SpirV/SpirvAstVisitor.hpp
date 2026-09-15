@@ -82,6 +82,7 @@ namespace nzsl
 			void BuildControlBarrierIntrinsic(const Ast::IntrinsicExpression& node);
 			void BuildMemoryBarrierIntrinsic(const Ast::IntrinsicExpression& node);
 			void BuildSelectIntrinsic(const Ast::IntrinsicExpression& node);
+			void BuildTextureFetchIntrinsic(const Ast::IntrinsicExpression& node);
 			void BuildTextureSampleExplicitLodIntrinsic(const Ast::IntrinsicExpression& node);
 
 			static SpirvGlslStd450Op SelectAbs(const Ast::IntrinsicExpression& node);
@@ -164,6 +165,8 @@ namespace nzsl
 			};
 
 		private:
+			std::uint32_t ExtractImage(const Ast::Expression& samplerExpr, std::uint32_t sampledImageId);
+
 			void HandleSourceLocation(const SourceLocation& sourceLocation);
 			void HandleStatementList(const std::vector<Ast::StatementPtr>& statements);
 

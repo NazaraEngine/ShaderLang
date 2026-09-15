@@ -409,4 +409,68 @@ fn main(input: Input)
 		ExpectSPIRV(*shaderModule, R"(
 OpImageSampleExplicitLod %27 %39 %40 ImageOperands(2) ImageOperands(26))", {}, {}, true);
 	}
+
+	SECTION("Texel fetch")
+	{
+		std::string_view nzslSource = R"(
+[nzsl_version("1.1")]
+module;
+
+[auto_binding]
+external
+{
+	tex: sampler2D[f32],
+	tex_array: sampler2D_array[f32],
+	output_tex: texture2D[f32, writeonly, rgba8]
+}
+
+struct Input
+{
+	[builtin(global_invocation_indices)] indices: vec3[u32]
+}
+
+[entry(compute)]
+[workgroup(8, 8, 1)]
+fn main(input: Input)
+{
+	let coords = vec2[i32](input.indices.xy);
+	let value = tex.Fetch(coords, 0);
+	let layerValue = tex_array.Fetch(vec3[i32](coords.x, coords.y, 1), 2);
+	output_tex.Write(coords, value + layerValue);
+}
+)";
+
+		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
+		ResolveModule(*shaderModule);
+
+		nzsl::GlslWriter::Environment glslEnv;
+		glslEnv.glES = true;
+		glslEnv.glMajorVersion = 3;
+		glslEnv.glMinorVersion = 1;
+
+		ExpectGLSL(*shaderModule, R"(
+	vec4 value = texelFetch(tex, coords, 0);
+	vec4 layerValue = texelFetch(tex_array, ivec3(coords.x, coords.y, 1), 2);
+)", {}, glslEnv);
+
+		ExpectNZSL(*shaderModule, R"(
+	let value: vec4[f32] = tex.Fetch(coords, 0);
+	let layerValue: vec4[f32] = tex_array.Fetch(vec3[i32](coords.x, coords.y, 1), 2);
+)");
+
+		ExpectSPIRV(*shaderModule, R"(
+%43 = OpLoad %3 %5
+%44 = OpLoad %26 %34
+%45 = OpImage %2 %43
+%46 = OpImageFetch %28 %45 %44 ImageOperands(2) ImageOperands(20)
+      OpStore %35 %46
+%47 = OpLoad %7 %9
+%48 = OpLoad %26 %34
+%49 = OpCompositeExtract %19 %48 0
+%50 = OpLoad %26 %34
+%51 = OpCompositeExtract %19 %50 1
+%52 = OpCompositeConstruct %30 %49 %51 %24
+%53 = OpImage %6 %47
+%54 = OpImageFetch %28 %53 %52 ImageOperands(2) ImageOperands(31))", {}, {}, true);
+	}
 }
