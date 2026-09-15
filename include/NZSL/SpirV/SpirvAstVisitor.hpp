@@ -83,6 +83,7 @@ namespace nzsl
 			void BuildMemoryBarrierIntrinsic(const Ast::IntrinsicExpression& node);
 			void BuildSelectIntrinsic(const Ast::IntrinsicExpression& node);
 			void BuildTextureFetchIntrinsic(const Ast::IntrinsicExpression& node);
+			void BuildTextureQuerySizeLodIntrinsic(const Ast::IntrinsicExpression& node);
 			void BuildTextureSampleExplicitLodIntrinsic(const Ast::IntrinsicExpression& node);
 
 			static SpirvGlslStd450Op SelectAbs(const Ast::IntrinsicExpression& node);

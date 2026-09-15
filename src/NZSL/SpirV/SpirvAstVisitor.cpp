@@ -1633,6 +1633,26 @@ namespace nzsl
 		PushResultId(resultId);
 	}
 
+	void SpirvAstVisitor::BuildTextureQuerySizeLodIntrinsic(const Ast::IntrinsicExpression& node)
+	{
+		if (node.parameters.size() != 2)
+			throw std::runtime_error("textureQuerySizeLod intrinsic: unexpected parameter count");
+
+		std::uint32_t resultTypeId = m_writer.GetTypeId(ResolveAlias(EnsureExpressionType(node)));
+
+		std::uint32_t sampledImageId = EvaluateExpression(*node.parameters[0]);
+		std::uint32_t lodId = EvaluateExpression(*node.parameters[1]);
+
+		std::uint32_t imageId = ExtractImage(*node.parameters[0], sampledImageId);
+
+		HandleSourceLocation(node.sourceLocation);
+
+		std::uint32_t resultId = m_writer.AllocateResultId();
+		m_currentBlock->Append(SpirvOp::OpImageQuerySizeLod, resultTypeId, resultId, imageId, lodId);
+
+		PushResultId(resultId);
+	}
+
 	void SpirvAstVisitor::BuildTextureSampleExplicitLodIntrinsic(const Ast::IntrinsicExpression& node)
 	{
 		if (node.parameters.size() != 3)

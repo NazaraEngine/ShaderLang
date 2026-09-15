@@ -690,6 +690,7 @@ namespace nzsl::Ast
 			case IntrinsicType::MemoryBarrierTexture:
 			case IntrinsicType::MemoryBarrierWorkgroup:
 			case IntrinsicType::TextureFetch:
+			case IntrinsicType::TextureQuerySizeLod:
 			case IntrinsicType::TextureRead:
 			case IntrinsicType::TextureWrite:
 			case IntrinsicType::TextureSampleExplicitLod:

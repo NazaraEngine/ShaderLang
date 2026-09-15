@@ -290,6 +290,46 @@ namespace nzsl::Ast
 					return VectorType{ 4, samplerType.sampledType };
 			}
 
+			case ReturnType::Param0TextureSize:
+			{
+				const ExpressionType* expressionType = (parameterTypes[0]) ? &*parameterTypes[0] : GetExpressionType(*intrinsicExpr.parameters[0]);
+				if (!expressionType)
+					return std::nullopt; //< unresolved type
+
+				const ExpressionType& paramType = ResolveAlias(*expressionType);
+				if (!IsSamplerType(paramType))
+					throw AstInternalError{ intrinsicExpr.sourceLocation, fmt::format("intrinsic {} first parameter is not a sampler", intrinsicData.name) };
+
+				ImageType dim = std::get<SamplerType>(paramType).dim;
+
+				std::size_t componentCount = 0;
+				switch (dim)
+				{
+					case ImageType::E1D:
+						componentCount = 1;
+						break;
+
+					case ImageType::E1D_Array:
+					case ImageType::E2D:
+					case ImageType::Cubemap:
+						componentCount = 2;
+						break;
+
+					case ImageType::E2D_Array:
+					case ImageType::E3D:
+						componentCount = 3;
+						break;
+				}
+
+				if (componentCount == 0)
+					throw AstInternalError{ intrinsicExpr.sourceLocation, "unhandled texture dimensions" };
+
+				if (componentCount == 1)
+					return PrimitiveType::Int32;
+				else
+					return VectorType{ componentCount, PrimitiveType::Int32 };
+			}
+
 			case ReturnType::Param0TextureValue:
 			{
 				const ExpressionType* expressionType = (parameterTypes[0]) ? &*parameterTypes[0] : GetExpressionType(*intrinsicExpr.parameters[0]);
