@@ -224,6 +224,7 @@ namespace nzsl::LangData
 			Bool,               // bool
 			Param0AsBool,       // Boolean or vector of booleans of the same size of the first parameter
 			Param0SampledValue, // Assuming first parameter is a sampler, this represents the return type of a Sample operation on it
+			Param0TextureSize,  // Assuming first parameter is a sampler, this represents the integer type holding its dimensions (array layer count as last component)
 			Param0TextureValue, // Assuming first parameter is a texture, this represents the return type of a Read operation on it
 			Param0Transposed,   // Assuming first parameter is a matrix, this represents the transposed matrix type
 			Param0Type,         // Same type as the first parameter (after same type resolving)
@@ -352,6 +353,7 @@ namespace nzsl::LangData
 			{ Ast::IntrinsicType::Tan,                               Build("tan",                               false, ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
 			{ Ast::IntrinsicType::Tanh,                              Build("tanh",                              false, ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
 			{ Ast::IntrinsicType::TextureFetch,                      Build("textureFetch",                      true,  ReturnType::Param0SampledValue, Params<ParameterType::FetchableSampler, ParameterType::TextureCoordinates, ParameterType::I32>{}) },
+			{ Ast::IntrinsicType::TextureQuerySizeLod,               Build("textureQuerySizeLod",               true,  ReturnType::Param0TextureSize,  Params<ParameterType::Sampler, ParameterType::I32>{}) },
 			{ Ast::IntrinsicType::TextureRead,                       Build("textureRead",                       true,  ReturnType::Param0TextureValue, Params<ParameterType::Texture, ParameterType::TextureCoordinates>{}) },
 			{ Ast::IntrinsicType::TextureSampleExplicitLod,          Build("textureSampleExplicitLod",          true,  ReturnType::Param0SampledValue, Params<ParameterType::Sampler, ParameterType::SampleCoordinates, ParameterType::F32>{}) },
 			{ Ast::IntrinsicType::TextureSampleImplicitLod,          Build("textureSampleImplicitLod",          true,  ReturnType::Param0SampledValue, Params<ParameterType::Sampler, ParameterType::SampleCoordinates>{}, ShaderStageType::Fragment) },

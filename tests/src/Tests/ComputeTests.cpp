@@ -473,4 +473,71 @@ fn main(input: Input)
 %53 = OpImage %6 %47
 %54 = OpImageFetch %28 %53 %52 ImageOperands(2) ImageOperands(31))", {}, {}, true);
 	}
+
+	SECTION("Sampler size query")
+	{
+		std::string_view nzslSource = R"(
+[nzsl_version("1.1")]
+module;
+
+[auto_binding]
+external
+{
+	tex: sampler2D[f32],
+	tex_array: sampler2D_array[f32],
+	tex_depth: depth_sampler2D[f32],
+	output_tex: texture2D[f32, writeonly, rgba8]
+}
+
+struct Input
+{
+	[builtin(global_invocation_indices)] indices: vec3[u32]
+}
+
+[entry(compute)]
+[workgroup(8, 8, 1)]
+fn main(input: Input)
+{
+	let coords = vec2[i32](input.indices.xy);
+	let size = tex.Size(0);
+	let arraySize = tex_array.Size(1);
+	let depthSize = tex_depth.Size(0);
+	let uv = (vec2[f32](coords) + vec2[f32](0.5, 0.5)) / vec2[f32](size);
+	output_tex.Write(coords, tex.SampleLevel(uv, 0.0));
+}
+)";
+
+		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
+		ResolveModule(*shaderModule);
+
+		nzsl::GlslWriter::Environment glslEnv;
+		glslEnv.glES = true;
+		glslEnv.glMajorVersion = 3;
+		glslEnv.glMinorVersion = 1;
+
+		ExpectGLSL(*shaderModule, R"(
+	ivec2 size = textureSize(tex, 0);
+	ivec3 arraySize = textureSize(tex_array, 1);
+	ivec2 depthSize = textureSize(tex_depth, 0);
+)", {}, glslEnv);
+
+		ExpectNZSL(*shaderModule, R"(
+	let size: vec2[i32] = tex.Size(0);
+	let arraySize: vec3[i32] = tex_array.Size(1);
+	let depthSize: vec2[i32] = tex_depth.Size(0);
+)");
+
+		ExpectSPIRV(*shaderModule, R"(
+%52 = OpLoad %3 %5
+%53 = OpImage %2 %52
+%54 = OpImageQuerySizeLod %30 %53 %24
+      OpStore %42 %54
+%55 = OpLoad %7 %9
+%56 = OpImage %6 %55
+%57 = OpImageQuerySizeLod %32 %56 %28
+      OpStore %43 %57
+%58 = OpLoad %11 %13
+%59 = OpImage %10 %58
+%60 = OpImageQuerySizeLod %30 %59 %24)", {}, {}, true);
+	}
 }
