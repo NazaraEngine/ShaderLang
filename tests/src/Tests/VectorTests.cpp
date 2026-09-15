@@ -4,17 +4,22 @@
 #include <sstream>
 #include <unordered_map>
 
-template<typename T>
-std::string ToString(const T& value)
+namespace NAZARA_ANONYMOUS_NAMESPACE
 {
-	std::ostringstream ss;
-	ss << value;
+	template<typename T>
+	std::string ToString(const T& value)
+	{
+		std::ostringstream ss;
+		ss << value;
 
-	return std::move(ss).str();
+		return std::move(ss).str();
+	}
 }
 
 TEST_CASE("vector", "[Vector]")
 {
+	NAZARA_USE_ANONYMOUS_NAMESPACE
+
 	nzsl::Vector4i32 lhs(1, 2, 3, 4);
 	nzsl::Vector4i32 rhs(5, 6, 7, 8);
 
