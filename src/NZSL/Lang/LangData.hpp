@@ -192,6 +192,8 @@ namespace nzsl::LangData
 			FValVec1632,        // Floating-point value or vector of floating-point of 16/32 bits (no f64)
 			FVec,               // Floating-point vector
 			FVec3,              // Floating-point vector3
+			FetchableSampler,   // Non-depth sampler whose texels can be fetched (no cubemap)
+			I32,                // Integer value of 32bits
 			IntegerScalar,      // Integer/Unsigned integer
 			Matrix,             // Matrix (N*M)
 			MatrixSquare,       // Square matrix (N*N)
@@ -204,7 +206,7 @@ namespace nzsl::LangData
 			SignedNumerical,    // Integer/Floating-point value
 			SignedNumericalVec, // Signed numerical or vector of signed numerical
 			Texture,            // texture
-			TextureCoordinates, // Integer vector used to sample the texture parameter
+			TextureCoordinates, // Integer vector used to address a texel of the sampler/texture parameter
 			TextureData,        // Texture content
 
 			// Constraints
@@ -349,6 +351,7 @@ namespace nzsl::LangData
 			{ Ast::IntrinsicType::Sqrt,                              Build("sqrt",                              false, ReturnType::Param0Type,         Params<ParameterType::FValVec>{}) },
 			{ Ast::IntrinsicType::Tan,                               Build("tan",                               false, ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
 			{ Ast::IntrinsicType::Tanh,                              Build("tanh",                              false, ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
+			{ Ast::IntrinsicType::TextureFetch,                      Build("textureFetch",                      true,  ReturnType::Param0SampledValue, Params<ParameterType::FetchableSampler, ParameterType::TextureCoordinates, ParameterType::I32>{}) },
 			{ Ast::IntrinsicType::TextureRead,                       Build("textureRead",                       true,  ReturnType::Param0TextureValue, Params<ParameterType::Texture, ParameterType::TextureCoordinates>{}) },
 			{ Ast::IntrinsicType::TextureSampleExplicitLod,          Build("textureSampleExplicitLod",          true,  ReturnType::Param0SampledValue, Params<ParameterType::Sampler, ParameterType::SampleCoordinates, ParameterType::F32>{}) },
 			{ Ast::IntrinsicType::TextureSampleImplicitLod,          Build("textureSampleImplicitLod",          true,  ReturnType::Param0SampledValue, Params<ParameterType::Sampler, ParameterType::SampleCoordinates>{}, ShaderStageType::Fragment) },

@@ -1356,6 +1356,13 @@ namespace nzsl
 				method = true;
 				break;
 
+			case Ast::IntrinsicType::TextureFetch:
+				assert(!node.parameters.empty());
+				Visit(node.parameters.front(), true);
+				Append(".Fetch");
+				method = true;
+				break;
+
 			case Ast::IntrinsicType::TextureRead:
 				assert(!node.parameters.empty());
 				Visit(node.parameters.front(), true);

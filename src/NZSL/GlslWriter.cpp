@@ -2204,6 +2204,7 @@ namespace nzsl
 			case Ast::IntrinsicType::Round:                            Append("round");                 break;
 			case Ast::IntrinsicType::RoundEven:                        Append("roundEven");             break;
 			case Ast::IntrinsicType::Sign:                             Append("sign");                  break;
+			case Ast::IntrinsicType::TextureFetch:                     Append("texelFetch");            break;
 			case Ast::IntrinsicType::TextureRead:                      Append("imageLoad");             break;
 			case Ast::IntrinsicType::TextureSampleExplicitLod:         Append("textureLod");            break;
 			case Ast::IntrinsicType::TextureSampleImplicitLod:         Append("texture");               break;

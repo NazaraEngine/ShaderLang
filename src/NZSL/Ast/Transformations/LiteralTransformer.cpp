@@ -575,6 +575,7 @@ namespace nzsl::Ast
 				case ParameterType::ArrayDyn:
 				case ParameterType::BValVec:
 				case ParameterType::BVec:
+				case ParameterType::FetchableSampler:
 				case ParameterType::Sampler:
 				case ParameterType::Texture:
 				case ParameterType::TextureData:
@@ -613,6 +614,7 @@ namespace nzsl::Ast
 					break;
 				}
 
+				case ParameterType::I32:
 				case ParameterType::TextureCoordinates:
 				{
 					if (ResolveLiteral(intrinsicExpr.parameters[paramIndex], PrimitiveType::Int32, intrinsicExpr.sourceLocation))

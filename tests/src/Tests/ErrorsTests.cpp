@@ -978,6 +978,51 @@ fn main()
 [nzsl_version("1.1")]
 module;
 
+external
+{
+	[binding(0)] tex: depth_sampler2D[f32]
+}
+
+fn main()
+{
+	let a = tex.Fetch(vec2[i32](0, 0), 0);
+}
+)"), "(12,10 -> 12): CIntrinsicExpectedType error: expected type non-depth non-cubemap sampler type for parameter #0, got depth_sampler2D[f32]");
+
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.1")]
+module;
+
+external
+{
+	[binding(0)] tex: sampler_cube[f32]
+}
+
+fn main()
+{
+	let a = tex.Fetch(vec3[i32](0, 0, 0), 0);
+}
+)"), "(12,10 -> 12): CIntrinsicExpectedType error: expected type non-depth non-cubemap sampler type for parameter #0, got samplerCube[f32]");
+
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.1")]
+module;
+
+external
+{
+	[binding(0)] tex: sampler2D[f32]
+}
+
+fn main()
+{
+	let a = tex.Fetch(vec2[f32](0.0, 0.0), 0);
+}
+)"), "(12,20 -> 38): CIntrinsicExpectedType error: expected type integer vector of 2 components for parameter #1, got vec2[f32]");
+
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.1")]
+module;
+
 struct Input
 {
 	value: f32

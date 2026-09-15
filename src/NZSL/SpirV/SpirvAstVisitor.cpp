@@ -1603,6 +1603,36 @@ namespace nzsl
 		PushResultId(resultId);
 	}
 
+	void SpirvAstVisitor::BuildTextureFetchIntrinsic(const Ast::IntrinsicExpression& node)
+	{
+		if (node.parameters.size() != 3)
+			throw std::runtime_error("textureFetch intrinsic: unexpected parameter count");
+
+		std::uint32_t resultTypeId = m_writer.GetTypeId(ResolveAlias(EnsureExpressionType(node)));
+
+		std::uint32_t sampledImageId = EvaluateExpression(*node.parameters[0]);
+		std::uint32_t coordinatesId = EvaluateExpression(*node.parameters[1]);
+		std::uint32_t lodId = EvaluateExpression(*node.parameters[2]);
+
+		std::uint32_t imageId = ExtractImage(*node.parameters[0], sampledImageId);
+
+		HandleSourceLocation(node.sourceLocation);
+
+		std::uint32_t resultId = m_writer.AllocateResultId();
+
+		m_currentBlock->AppendVariadic(SpirvOp::OpImageFetch, [&](auto&& append)
+		{
+			append(resultTypeId);
+			append(resultId);
+			append(imageId);
+			append(coordinatesId);
+			append(SpirvImageOperands::Lod);
+			append(lodId);
+		});
+
+		PushResultId(resultId);
+	}
+
 	void SpirvAstVisitor::BuildTextureSampleExplicitLodIntrinsic(const Ast::IntrinsicExpression& node)
 	{
 		if (node.parameters.size() != 3)
@@ -1811,6 +1841,22 @@ namespace nzsl
 		}
 
 		throw std::runtime_error(fmt::format("unexpected type {} for sign intrinsic", ToString(basicType)));
+	}
+
+	std::uint32_t SpirvAstVisitor::ExtractImage(const Ast::Expression& samplerExpr, std::uint32_t sampledImageId)
+	{
+		// Retrieves the image of a sampled image (OpImageFetch and OpImageQuery* don't operate on sampled images)
+		const Ast::ExpressionType& samplerType = ResolveAlias(EnsureExpressionType(samplerExpr));
+		if (!IsSamplerType(samplerType))
+			throw std::runtime_error("expected a sampler expression");
+
+		SpirvConstantCache::TypePtr sampledImageType = m_writer.BuildType(samplerType);
+		std::uint32_t imageTypeId = m_writer.GetTypeId(*std::get<SpirvConstantCache::SampledImage>(sampledImageType->type).image);
+
+		std::uint32_t imageId = m_writer.AllocateResultId();
+		m_currentBlock->Append(SpirvOp::OpImage, imageTypeId, imageId, sampledImageId);
+
+		return imageId;
 	}
 
 	void SpirvAstVisitor::HandleSourceLocation(const SourceLocation& sourceLocation)

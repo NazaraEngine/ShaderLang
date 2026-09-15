@@ -1794,6 +1794,50 @@ namespace nzsl::Ast
 					break;
 				}
 
+				case ParameterType::FetchableSampler:
+				{
+					auto Check = [](const ExpressionType& type)
+					{
+						if (!IsSamplerType(type))
+							return false;
+
+						const SamplerType& samplerType = std::get<SamplerType>(type);
+						return !samplerType.depth && samplerType.dim != ImageType::Cubemap;
+					};
+
+					if (ValidateIntrinsicParameterType(node, Check, "non-depth non-cubemap sampler type", paramIndex) == ValidationResult::Unresolved)
+					{
+						if (!unresolvedParameter)
+							unresolvedParameter = paramIndex;
+
+						paramIndex++;
+						continue;
+					}
+
+					paramIndex++;
+					break;
+				}
+
+				case ParameterType::I32:
+				{
+					auto Check = [](const ExpressionType& type)
+					{
+						return type == ExpressionType{ PrimitiveType::Int32 } || type == ExpressionType{ PrimitiveType::IntLiteral };
+					};
+
+					if (ValidateIntrinsicParameterType(node, Check, "i32", paramIndex) == ValidationResult::Unresolved)
+					{
+						if (!unresolvedParameter)
+							unresolvedParameter = paramIndex;
+
+						paramIndex++;
+						continue;
+					}
+
+					paramIndex++;
+					break;
+				}
+
 				case ParameterType::IntegerScalar:
 				{
 					auto Check = [](const ExpressionType& type)
@@ -2276,9 +2320,11 @@ namespace nzsl::Ast
 						continue;
 					}
 
-					const TextureType& textureType = std::get<TextureType>(ResolveAlias(*firstParameter));
+					const ExpressionType& firstParameterType = ResolveAlias(*firstParameter);
+					ImageType dim = (IsSamplerType(firstParameterType)) ? std::get<SamplerType>(firstParameterType).dim : std::get<TextureType>(firstParameterType).dim;
+
 					std::size_t requiredComponentCount = 0;
-					switch (textureType.dim)
+					switch (dim)
 					{
 						case ImageType::E1D:
 							requiredComponentCount = 1;
