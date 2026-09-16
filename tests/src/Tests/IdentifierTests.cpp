@@ -148,4 +148,51 @@ OpLoad
 OpReturn
 OpFunctionEnd)");
 	}
+
+	SECTION("GLSL texture intrinsic identifier collisions")
+	{
+		std::string_view nzslSource = R"(
+[nzsl_version("1.1")]
+module;
+
+[auto_binding]
+external
+{
+	tex: sampler2D[f32],
+	output_tex: texture2D[f32, writeonly, rgba8]
+}
+
+struct Input
+{
+	[builtin(global_invocation_indices)] indices: vec3[u32]
+}
+
+[entry(compute)]
+[workgroup(8, 8, 1)]
+fn main(input: Input)
+{
+	let texelFetch = vec2[i32](input.indices.xy);
+	let textureSize = tex.Size(0);
+	let textureLod = tex.SampleLevel(vec2[f32](0.5, 0.5), 0.0);
+	let imageSize = output_tex.Size();
+	output_tex.Write(texelFetch, textureLod);
+}
+)";
+
+		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
+		ResolveModule(*shaderModule);
+
+		nzsl::GlslWriter::Environment glslEnv;
+		glslEnv.glES = true;
+		glslEnv.glMajorVersion = 3;
+		glslEnv.glMinorVersion = 1;
+
+		ExpectGLSL(*shaderModule, R"(
+	ivec2 texelFetch_ = ivec2(input_.indices.xy);
+	ivec2 textureSize_ = textureSize(tex, 0);
+	vec4 textureLod_ = textureLod(tex, vec2(0.5, 0.5), 0.0);
+	ivec2 imageSize_ = imageSize(output_tex);
+	imageStore(output_tex, texelFetch_, textureLod_);
+)", {}, glslEnv);
+	}
 }
