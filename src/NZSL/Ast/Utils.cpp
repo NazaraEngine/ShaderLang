@@ -297,10 +297,14 @@ namespace nzsl::Ast
 					return std::nullopt; //< unresolved type
 
 				const ExpressionType& paramType = ResolveAlias(*expressionType);
-				if (!IsSamplerType(paramType))
-					throw AstInternalError{ intrinsicExpr.sourceLocation, fmt::format("intrinsic {} first parameter is not a sampler", intrinsicData.name) };
 
-				ImageType dim = std::get<SamplerType>(paramType).dim;
+				ImageType dim;
+				if (IsSamplerType(paramType))
+					dim = std::get<SamplerType>(paramType).dim;
+				else if (IsTextureType(paramType))
+					dim = std::get<TextureType>(paramType).dim;
+				else
+					throw AstInternalError{ intrinsicExpr.sourceLocation, fmt::format("intrinsic {} first parameter is not a sampler nor a texture", intrinsicData.name) };
 
 				std::size_t componentCount = 0;
 				switch (dim)

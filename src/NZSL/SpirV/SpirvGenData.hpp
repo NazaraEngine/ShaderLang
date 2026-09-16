@@ -153,6 +153,7 @@ namespace nzsl::SpirvGenData
 		{ Ast::IntrinsicType::Tan,                               { SpirvGlslStd450Op::Tan } },
 		{ Ast::IntrinsicType::Tanh,                              { SpirvGlslStd450Op::Tanh } },
 		{ Ast::IntrinsicType::TextureFetch,                      { &SpirvAstVisitor::BuildTextureFetchIntrinsic } },
+		{ Ast::IntrinsicType::TextureQuerySize,                  { SpirvOp::OpImageQuerySize, SpirvCapability::ImageQuery } },
 		{ Ast::IntrinsicType::TextureQuerySizeLod,               { &SpirvAstVisitor::BuildTextureQuerySizeLodIntrinsic, SpirvCapability::ImageQuery } },
 		{ Ast::IntrinsicType::TextureRead,                       { SpirvOp::OpImageRead } },
 		{ Ast::IntrinsicType::TextureSampleExplicitLod,          { &SpirvAstVisitor::BuildTextureSampleExplicitLodIntrinsic } },

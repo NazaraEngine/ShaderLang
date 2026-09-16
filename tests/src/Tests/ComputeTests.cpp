@@ -540,4 +540,84 @@ fn main(input: Input)
 %59 = OpImage %10 %58
 %60 = OpImageQuerySizeLod %30 %59 %24)", {}, {}, true);
 	}
+
+	SECTION("Texture size query")
+	{
+		std::string_view nzslSource = R"(
+[nzsl_version("1.1")]
+module;
+
+[auto_binding]
+external
+{
+	input_tex: texture2D[f32, readonly, rgba8],
+	output_tex: texture2D[f32, writeonly, rgba8],
+	volume_tex: texture3D[f32, readonly, rgba16f]
+}
+
+struct Input
+{
+	[builtin(global_invocation_indices)] indices: vec3[u32]
+}
+
+[entry(compute)]
+[workgroup(8, 8, 1)]
+fn main(input: Input)
+{
+	let coords = vec2[i32](input.indices.xy);
+	let inputSize = input_tex.Size();
+	let outputSize = output_tex.Size();
+	let volumeSize = volume_tex.Size();
+	if (coords.x >= outputSize.x || coords.y >= outputSize.y)
+		return;
+
+	output_tex.Write(coords, input_tex.Read(min(coords, inputSize - vec2[i32](1, 1))));
+}
+)";
+
+		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
+		ResolveModule(*shaderModule);
+
+		nzsl::GlslWriter::Environment glslEnv;
+		glslEnv.glES = true;
+		glslEnv.glMajorVersion = 3;
+		glslEnv.glMinorVersion = 1;
+
+		ExpectGLSL(*shaderModule, R"(
+	ivec2 inputSize = imageSize(input_tex);
+	ivec2 outputSize = imageSize(output_tex);
+	ivec3 volumeSize = imageSize(volume_tex);
+)", {}, glslEnv);
+
+		ExpectNZSL(*shaderModule, R"(
+	let inputSize: vec2[i32] = input_tex.Size();
+	let outputSize: vec2[i32] = output_tex.Size();
+	let volumeSize: vec3[i32] = volume_tex.Size();
+)");
+
+		ExpectSPIRV(*shaderModule, R"(
+%41 = OpLoad %2 %4
+%42 = OpImageQuerySize %22 %41
+      OpStore %32 %42
+%43 = OpLoad %2 %5
+%44 = OpImageQuerySize %22 %43
+      OpStore %33 %44
+%45 = OpLoad %6 %8
+%46 = OpImageQuerySize %24 %45)", {}, {}, true);
+
+		nzsl::GlslWriter::Environment glsl42Env;
+		glsl42Env.glES = false;
+		glsl42Env.glMajorVersion = 4;
+		glsl42Env.glMinorVersion = 2;
+
+		nzsl::GlslWriter glsl42Writer;
+		glsl42Writer.SetEnv(glsl42Env);
+		CHECK_THROWS_WITH(glsl42Writer.Generate(nzsl::ShaderStageType::Compute, *shaderModule), "this version of OpenGL does not support imageSize");
+
+		glsl42Env.extCallback = [](std::string_view ext) { return ext == "GL_ARB_shader_image_size"; };
+		glsl42Writer.SetEnv(glsl42Env);
+
+		nzsl::GlslWriter::Output glsl42Output = glsl42Writer.Generate(nzsl::ShaderStageType::Compute, *shaderModule);
+		CHECK(glsl42Output.code.find("#extension GL_ARB_shader_image_size : require") != std::string::npos);
+	}
 }

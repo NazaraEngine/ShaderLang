@@ -1363,6 +1363,7 @@ namespace nzsl
 				method = true;
 				break;
 
+			case Ast::IntrinsicType::TextureQuerySize:
 			case Ast::IntrinsicType::TextureQuerySizeLod:
 				assert(!node.parameters.empty());
 				Visit(node.parameters.front(), true);

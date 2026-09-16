@@ -1038,6 +1038,21 @@ fn main()
 [nzsl_version("1.1")]
 module;
 
+external
+{
+	[binding(0)] tex: texture2D[f32, readonly, rgba8]
+}
+
+fn main()
+{
+	let a = tex.Size(0);
+}
+)"), "(12,10 -> 20): CIntrinsicExpectedParameterCount error: expected 1 parameter(s) for textureQuerySize intrinsic, got 2");
+
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.1")]
+module;
+
 struct Input
 {
 	value: f32

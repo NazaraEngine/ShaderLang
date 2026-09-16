@@ -1435,6 +1435,8 @@ namespace nzsl::Ast
 					methodType.methodIndex = 0;
 				else if (identifierEntry.identifier == "Write")
 					methodType.methodIndex = 1;
+				else if (identifierEntry.identifier == "Size")
+					methodType.methodIndex = 2;
 				else
 					throw CompilerUnknownMethodError{ identifierEntry.sourceLocation, ToString(resolvedType, indexedExpr->sourceLocation), identifierEntry.identifier };
 
@@ -2086,6 +2088,7 @@ namespace nzsl::Ast
 				{
 					case 0: intrinsicType = IntrinsicType::TextureRead; break;
 					case 1: intrinsicType = IntrinsicType::TextureWrite; break;
+					case 2: intrinsicType = IntrinsicType::TextureQuerySize; break;
 					default:
 						throw AstInvalidMethodIndexError{ callFuncExpr.sourceLocation, methodType.methodIndex, ToString(objectType, callFuncExpr.sourceLocation) };
 				}
