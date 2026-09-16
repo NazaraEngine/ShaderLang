@@ -91,6 +91,7 @@ namespace nzsl
 			ConservativeDepth,                 // GLSL 4.2 or GL_ARB_conservative_depth or GL_EXT_conservative_depth (ES)
 			EarlyFragmentTests,                // GLSL 4.2 or GLSL ES 3.1 or GL_ARB_shader_image_load_store 
 			Float64,                           // GLSL 4.0 or GL_ARB_gpu_shader_fp64
+			ImageSize,                         // GLSL 4.3 or GLSL ES 3.1 or GL_ARB_shader_image_size
 			ShaderDrawParameters_BaseInstance, // GLSL 4.6 or GL_ARB_shader_draw_parameters
 			ShaderDrawParameters_BaseVertex,   // GLSL 4.6 or GL_ARB_shader_draw_parameters
 			ShaderDrawParameters_DrawIndex,    // GLSL 4.6 or GL_ARB_shader_draw_parameters
@@ -328,6 +329,9 @@ namespace nzsl
 				// Detect select used on integer/booleans mix as they're a separate feature in GLSL
 				if (node.intrinsic == Ast::IntrinsicType::Select && IsIntegerMix(node))
 					capabilities.insert(GlslCapability::ShaderIntegerMix);
+
+				if (node.intrinsic == Ast::IntrinsicType::TextureQuerySize)
+					capabilities.insert(GlslCapability::ImageSize);
 			}
 
 			struct FunctionData
@@ -1192,6 +1196,24 @@ namespace nzsl
 						else
 							throw std::runtime_error("this version of OpenGL does not support fp64");
 					}
+					break;
+				}
+
+				case GlslCapability::ImageSize:
+				{
+					if (m_environment.glES)
+					{
+						if (glslVersion < 310)
+							throw std::runtime_error("this version of OpenGL ES does not support imageSize");
+					}
+					else if (glslVersion < 430)
+					{
+						if (m_environment.extCallback && m_environment.extCallback("GL_ARB_shader_image_size"))
+							requiredExtensions.emplace("GL_ARB_shader_image_size");
+						else
+							throw std::runtime_error("this version of OpenGL does not support imageSize");
+					}
+
 					break;
 				}
 
@@ -2205,6 +2227,7 @@ namespace nzsl
 			case Ast::IntrinsicType::RoundEven:                        Append("roundEven");             break;
 			case Ast::IntrinsicType::Sign:                             Append("sign");                  break;
 			case Ast::IntrinsicType::TextureFetch:                     Append("texelFetch");            break;
+			case Ast::IntrinsicType::TextureQuerySize:                 Append("imageSize");             break;
 			case Ast::IntrinsicType::TextureQuerySizeLod:              Append("textureSize");           break;
 			case Ast::IntrinsicType::TextureRead:                      Append("imageLoad");             break;
 			case Ast::IntrinsicType::TextureSampleExplicitLod:         Append("textureLod");            break;
