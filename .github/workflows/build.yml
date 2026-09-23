@@ -32,18 +32,18 @@ jobs:
         - { name: Linux,             runner: ubuntu-latest,  shell: bash,        plat: linux,    arch: x86_64,      mode: debug,      package: false, test: true, config: --lsan=y               }
         - { name: Linux,             runner: ubuntu-latest,  shell: bash,        plat: linux,    arch: x86_64,      mode: debug,      package: false, test: true, config: --tsan=y               }
         - { name: Linux,             runner: ubuntu-latest,  shell: bash,        plat: linux,    arch: x86_64,      mode: releasedbg, package: true,  test: true,                                }
-        - { name: Android NDK 25c,   runner: ubuntu-latest,  shell: bash,        plat: android,  arch: armeabi-v7a, mode: debug,      package: false, test: false, ndk_ver: 25c, ndk_sdkver: 28  }
-        - { name: Android NDK 25c,   runner: ubuntu-latest,  shell: bash,        plat: android,  arch: armeabi-v7a, mode: releasedbg, package: false, test: false, ndk_ver: 25c, ndk_sdkver: 28  }
-        - { name: Android NDK 25c,   runner: ubuntu-latest,  shell: bash,        plat: android,  arch: arm64-v8a,   mode: debug,      package: false, test: false, ndk_ver: 25c, ndk_sdkver: 28  }
-        - { name: Android NDK 25c,   runner: ubuntu-latest,  shell: bash,        plat: android,  arch: arm64-v8a,   mode: releasedbg, package: false, test: false, ndk_ver: 25c, ndk_sdkver: 28  }
         - { name: Android NDK 26b,   runner: ubuntu-latest,  shell: bash,        plat: android,  arch: armeabi-v7a, mode: debug,      package: true,  test: false, ndk_ver: 26b, ndk_sdkver: 28  }
         - { name: Android NDK 26b,   runner: ubuntu-latest,  shell: bash,        plat: android,  arch: armeabi-v7a, mode: releasedbg, package: true,  test: false, ndk_ver: 26b, ndk_sdkver: 28  }
         - { name: Android NDK 26b,   runner: ubuntu-latest,  shell: bash,        plat: android,  arch: arm64-v8a,   mode: debug,      package: true,  test: false, ndk_ver: 26b, ndk_sdkver: 28  }
         - { name: Android NDK 26b,   runner: ubuntu-latest,  shell: bash,        plat: android,  arch: arm64-v8a,   mode: releasedbg, package: true,  test: false, ndk_ver: 26b, ndk_sdkver: 28  }
+        - { name: Android NDK 30,    runner: ubuntu-latest,  shell: bash,        plat: android,  arch: armeabi-v7a, mode: debug,      package: false, test: false, ndk_ver: 30,  ndk_sdkver: 36  }
+        - { name: Android NDK 30,    runner: ubuntu-latest,  shell: bash,        plat: android,  arch: armeabi-v7a, mode: releasedbg, package: false, test: false, ndk_ver: 30,  ndk_sdkver: 36  }
+        - { name: Android NDK 30,    runner: ubuntu-latest,  shell: bash,        plat: android,  arch: arm64-v8a,   mode: debug,      package: false, test: false, ndk_ver: 30,  ndk_sdkver: 36  }
+        - { name: Android NDK 30,    runner: ubuntu-latest,  shell: bash,        plat: android,  arch: arm64-v8a,   mode: releasedbg, package: false, test: false, ndk_ver: 30,  ndk_sdkver: 36  }
         - { name: macOS,             runner: macos-latest,   shell: bash,        plat: macosx,   arch: x86_64,      mode: debug,      package: true,  test: true,                                }
         - { name: macOS,             runner: macos-latest,   shell: bash,        plat: macosx,   arch: x86_64,      mode: releasedbg, package: true,  test: true,                                }
-        - { name: macOS,             runner: macos-14,       shell: bash,        plat: macosx,   arch: arm64,       mode: debug,      package: true,  test: true,                                }
-        - { name: macOS,             runner: macos-14,       shell: bash,        plat: macosx,   arch: arm64,       mode: releasedbg, package: true,  test: true,                                }
+        - { name: macOS,             runner: macos-latest,   shell: bash,        plat: macosx,   arch: arm64,       mode: debug,      package: true,  test: true,                                }
+        - { name: macOS,             runner: macos-latest,   shell: bash,        plat: macosx,   arch: arm64,       mode: releasedbg, package: true,  test: true,                                }
         - { name: iOS,               runner: macos-latest,   shell: bash,        plat: iphoneos, arch: arm64,       mode: debug,      package: true,  test: false,                               }
         - { name: iOS,               runner: macos-latest,   shell: bash,        plat: iphoneos, arch: arm64,       mode: releasedbg, package: true,  test: false,                               }
         - { name: Emscripten,        runner: ubuntu-latest,  shell: bash,        plat: wasm,     arch: wasm32,      mode: debug,      package: true,  test: false,                               }
@@ -183,12 +183,6 @@ jobs:
 
     - name: Install
       run: xmake install -vo nzsl
-
-    # For some reason macOS-14 doesn't seem to have Python
-    - uses: actions/setup-python@v7
-      if: ${{ matrix.platform.runner == 'macos-14' }}
-      with:
-        python-version: "3.11"
 
     - name: Archive result
       uses: ihiroky/archive-action@v1
