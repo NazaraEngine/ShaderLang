@@ -135,13 +135,18 @@ external
 	texCubeDepth: depth_sampler_cube[f32],
 }
 
+struct VertOutput
+{
+	[location(0)] uv: vec3[f32]
+}
+
 [entry(frag)]
-fn main()
+fn main(input: VertOutput)
 {
 	let depth = 0.5;
-	let uv1f = 0.0;
-	let uv2f = vec2[f32](0.0, 1.0);
-	let uv3f = vec3[f32](0.0, 1.0, 2.0);
+	let uv1f = input.uv.x;
+	let uv2f = input.uv.xy;
+	let uv3f = input.uv.xyz;
 
 	let sampleResult1 = tex1D.Sample(uv1f);
 	let sampleResult2 = tex1DArray.Sample(uv2f);
@@ -155,6 +160,13 @@ fn main()
 	let depthSampleResult3 = tex2DDepth.SampleDepthComp(uv2f, depth);
 	let depthSampleResult4 = tex2DArrayDepth.SampleDepthComp(uv3f, depth);
 	let depthSampleResult5 = texCubeDepth.SampleDepthComp(uv3f, depth);
+
+	let sampleGradResult1 = tex1D.SampleGrad(uv1f, ddx(uv1f), ddy(uv1f));
+	let sampleGradResult2 = tex1DArray.SampleGrad(uv2f, ddx(uv1f), ddy(uv1f));
+	let sampleGradResult3 = tex2D.SampleGrad(uv2f, ddx(uv2f), ddy(uv2f));
+	let sampleGradResult4 = tex2DArray.SampleGrad(uv3f, ddx(uv2f), ddy(uv2f));
+	let sampleGradResult5 = tex3D.SampleGrad(uv3f, ddx(uv3f), ddy(uv3f));
+	let sampleGradResult6 = texCube.SampleGrad(uv3f, ddx(uv3f), ddy(uv3f));
 }
 )";
 
@@ -178,12 +190,23 @@ uniform sampler2DShadow tex2DDepth;
 uniform sampler2DArrayShadow tex2DArrayDepth;
 uniform samplerCubeShadow texCubeDepth;
 
+struct VertOutput
+{
+	vec3 uv;
+};
+
+/**************** Inputs ****************/
+in vec3 _nzslVarying0; // _nzslInuv
+
 void main()
 {
+	VertOutput input_;
+	input_.uv = _nzslVarying0;
+
 	float depth = 0.5;
-	float uv1f = 0.0;
-	vec2 uv2f = vec2(0.0, 1.0);
-	vec3 uv3f = vec3(0.0, 1.0, 2.0);
+	float uv1f = input_.uv.x;
+	vec2 uv2f = input_.uv.xy;
+	vec3 uv3f = input_.uv.xyz;
 	vec4 sampleResult1 = texture(tex1D, uv1f);
 	vec4 sampleResult2 = texture(tex1DArray, uv2f);
 	vec4 sampleResult3 = texture(tex2D, uv2f);
@@ -195,6 +218,12 @@ void main()
 	float depthSampleResult3 = texture(tex2DDepth, vec3(uv2f, depth));
 	float depthSampleResult4 = texture(tex2DArrayDepth, vec4(uv3f, depth));
 	float depthSampleResult5 = texture(texCubeDepth, vec4(uv3f, depth));
+	vec4 sampleGradResult1 = textureGrad(tex1D, uv1f, dFdx(uv1f), dFdy(uv1f));
+	vec4 sampleGradResult2 = textureGrad(tex1DArray, uv2f, dFdx(uv1f), dFdy(uv1f));
+	vec4 sampleGradResult3 = textureGrad(tex2D, uv2f, dFdx(uv2f), dFdy(uv2f));
+	vec4 sampleGradResult4 = textureGrad(tex2DArray, uv3f, dFdx(uv2f), dFdy(uv2f));
+	vec4 sampleGradResult5 = textureGrad(tex3D, uv3f, dFdx(uv3f), dFdy(uv3f));
+	vec4 sampleGradResult6 = textureGrad(texCube, uv3f, dFdx(uv3f), dFdy(uv3f));
 }
 )", {}, glslEnv);
 
@@ -215,13 +244,18 @@ external
 	[set(0), binding(10)] texCubeDepth: depth_sampler_cube[f32]
 }
 
+struct VertOutput
+{
+	[location(0)] uv: vec3[f32]
+}
+
 [entry(frag)]
-fn main()
+fn main(input: VertOutput)
 {
 	let depth: f32 = 0.5;
-	let uv1f: f32 = 0.0;
-	let uv2f: vec2[f32] = vec2[f32](0.0, 1.0);
-	let uv3f: vec3[f32] = vec3[f32](0.0, 1.0, 2.0);
+	let uv1f: f32 = input.uv.x;
+	let uv2f: vec2[f32] = input.uv.xy;
+	let uv3f: vec3[f32] = input.uv.xyz;
 	let sampleResult1: vec4[f32] = tex1D.Sample(uv1f);
 	let sampleResult2: vec4[f32] = tex1DArray.Sample(uv2f);
 	let sampleResult3: vec4[f32] = tex2D.Sample(uv2f);
@@ -233,6 +267,12 @@ fn main()
 	let depthSampleResult3: f32 = tex2DDepth.SampleDepthComp(uv2f, depth);
 	let depthSampleResult4: f32 = tex2DArrayDepth.SampleDepthComp(uv3f, depth);
 	let depthSampleResult5: f32 = texCubeDepth.SampleDepthComp(uv3f, depth);
+	let sampleGradResult1: vec4[f32] = tex1D.SampleGrad(uv1f, ddx(uv1f), ddy(uv1f));
+	let sampleGradResult2: vec4[f32] = tex1DArray.SampleGrad(uv2f, ddx(uv1f), ddy(uv1f));
+	let sampleGradResult3: vec4[f32] = tex2D.SampleGrad(uv2f, ddx(uv2f), ddy(uv2f));
+	let sampleGradResult4: vec4[f32] = tex2DArray.SampleGrad(uv3f, ddx(uv2f), ddy(uv2f));
+	let sampleGradResult5: vec4[f32] = tex3D.SampleGrad(uv3f, ddx(uv3f), ddy(uv3f));
+	let sampleGradResult6: vec4[f32] = texCube.SampleGrad(uv3f, ddx(uv3f), ddy(uv3f));
 }
 )");
 
@@ -240,10 +280,12 @@ fn main()
        OpCapability Capability(Shader)
        OpCapability Capability(Sampled1D)
        OpMemoryModel AddressingModel(Logical) MemoryModel(GLSL450)
-       OpEntryPoint ExecutionModel(Fragment) %59 "main"
-       OpExecutionMode %59 ExecutionMode(OriginUpperLeft)
+       OpEntryPoint ExecutionModel(Fragment) %64 "main" %50
+       OpExecutionMode %64 ExecutionMode(OriginUpperLeft)
        OpSource SourceLanguage(NZSL) 4198400
        OpSourceExtension "Version: 1.1"
+       OpName %54 "VertOutput"
+       OpMemberName %54 0 "uv"
        OpName %5 "tex1D"
        OpName %9 "tex1DArray"
        OpName %13 "tex2D"
@@ -255,7 +297,8 @@ fn main()
        OpName %37 "tex2DDepth"
        OpName %41 "tex2DArrayDepth"
        OpName %45 "texCubeDepth"
-       OpName %59 "main"
+       OpName %50 "uv"
+       OpName %64 "main"
        OpDecorate %5 Decoration(Binding) 0
        OpDecorate %5 Decoration(DescriptorSet) 0
        OpDecorate %9 Decoration(Binding) 1
@@ -278,6 +321,8 @@ fn main()
        OpDecorate %41 Decoration(DescriptorSet) 0
        OpDecorate %45 Decoration(Binding) 10
        OpDecorate %45 Decoration(DescriptorSet) 0
+       OpDecorate %50 Decoration(Location) 0
+       OpMemberDecorate %54 0 Decoration(Offset) 0
   %1 = OpTypeFloat 32
   %2 = OpTypeImage %1 Dim(Dim1D) 0 0 0 1 ImageFormat(Unknown)
   %3 = OpTypeSampledImage %2
@@ -314,17 +359,21 @@ fn main()
  %44 = OpTypePointer StorageClass(UniformConstant) %43
  %46 = OpTypeVoid
  %47 = OpTypeFunction %46
- %48 = OpConstant %1 f32(0.5)
- %49 = OpTypePointer StorageClass(Function) %1
- %50 = OpConstant %1 f32(0)
- %51 = OpConstant %1 f32(1)
- %52 = OpTypeVector %1 2
- %53 = OpTypePointer StorageClass(Function) %52
- %54 = OpConstant %1 f32(2)
- %55 = OpTypeVector %1 3
- %56 = OpTypePointer StorageClass(Function) %55
- %57 = OpTypeVector %1 4
- %58 = OpTypePointer StorageClass(Function) %57
+ %48 = OpTypeVector %1 3
+ %49 = OpTypePointer StorageClass(Input) %48
+ %51 = OpTypeInt 32 1
+ %52 = OpConstant %51 i32(0)
+ %53 = OpTypePointer StorageClass(Function) %48
+ %54 = OpTypeStruct %48
+ %55 = OpTypePointer StorageClass(Function) %54
+ %56 = OpConstant %1 f32(0.5)
+ %57 = OpTypePointer StorageClass(Function) %1
+ %58 = OpConstant %51 i32(1)
+ %59 = OpTypeVector %1 2
+ %60 = OpTypePointer StorageClass(Function) %59
+ %61 = OpConstant %51 i32(2)
+ %62 = OpTypeVector %1 4
+ %63 = OpTypePointer StorageClass(Function) %62
   %5 = OpVariable %4 StorageClass(UniformConstant)
   %9 = OpVariable %8 StorageClass(UniformConstant)
  %13 = OpVariable %12 StorageClass(UniformConstant)
@@ -336,78 +385,143 @@ fn main()
  %37 = OpVariable %36 StorageClass(UniformConstant)
  %41 = OpVariable %40 StorageClass(UniformConstant)
  %45 = OpVariable %44 StorageClass(UniformConstant)
- %59 = OpFunction %46 FunctionControl(0) %47
- %60 = OpLabel
- %61 = OpVariable %49 StorageClass(Function)
- %62 = OpVariable %49 StorageClass(Function)
- %63 = OpVariable %53 StorageClass(Function)
- %64 = OpVariable %56 StorageClass(Function)
- %65 = OpVariable %58 StorageClass(Function)
- %66 = OpVariable %58 StorageClass(Function)
- %67 = OpVariable %58 StorageClass(Function)
- %68 = OpVariable %58 StorageClass(Function)
- %69 = OpVariable %58 StorageClass(Function)
- %70 = OpVariable %58 StorageClass(Function)
- %71 = OpVariable %49 StorageClass(Function)
- %72 = OpVariable %49 StorageClass(Function)
- %73 = OpVariable %49 StorageClass(Function)
- %74 = OpVariable %49 StorageClass(Function)
- %75 = OpVariable %49 StorageClass(Function)
-       OpStore %61 %48
-       OpStore %62 %50
- %76 = OpCompositeConstruct %52 %50 %51
-       OpStore %63 %76
- %77 = OpCompositeConstruct %55 %50 %51 %54
-       OpStore %64 %77
- %78 = OpLoad %3 %5
- %79 = OpLoad %1 %62
- %80 = OpImageSampleImplicitLod %57 %78 %79
-       OpStore %65 %80
- %81 = OpLoad %7 %9
- %82 = OpLoad %52 %63
- %83 = OpImageSampleImplicitLod %57 %81 %82
-       OpStore %66 %83
- %84 = OpLoad %11 %13
- %85 = OpLoad %52 %63
- %86 = OpImageSampleImplicitLod %57 %84 %85
-       OpStore %67 %86
- %87 = OpLoad %15 %17
- %88 = OpLoad %55 %64
- %89 = OpImageSampleImplicitLod %57 %87 %88
-       OpStore %68 %89
- %90 = OpLoad %19 %21
- %91 = OpLoad %55 %64
- %92 = OpImageSampleImplicitLod %57 %90 %91
-       OpStore %69 %92
- %93 = OpLoad %23 %25
- %94 = OpLoad %55 %64
- %95 = OpImageSampleImplicitLod %57 %93 %94
-       OpStore %70 %95
- %96 = OpLoad %27 %29
- %97 = OpLoad %1 %62
- %98 = OpLoad %1 %61
- %99 = OpImageSampleDrefImplicitLod %1 %96 %97 %98
-       OpStore %71 %99
-%100 = OpLoad %31 %33
-%101 = OpLoad %52 %63
-%102 = OpLoad %1 %61
-%103 = OpImageSampleDrefImplicitLod %1 %100 %101 %102
-       OpStore %72 %103
-%104 = OpLoad %35 %37
-%105 = OpLoad %52 %63
-%106 = OpLoad %1 %61
-%107 = OpImageSampleDrefImplicitLod %1 %104 %105 %106
-       OpStore %73 %107
-%108 = OpLoad %39 %41
-%109 = OpLoad %55 %64
-%110 = OpLoad %1 %61
-%111 = OpImageSampleDrefImplicitLod %1 %108 %109 %110
-       OpStore %74 %111
-%112 = OpLoad %43 %45
-%113 = OpLoad %55 %64
-%114 = OpLoad %1 %61
-%115 = OpImageSampleDrefImplicitLod %1 %112 %113 %114
+ %50 = OpVariable %49 StorageClass(Input)
+ %64 = OpFunction %46 FunctionControl(0) %47
+ %65 = OpLabel
+ %66 = OpVariable %57 StorageClass(Function)
+ %67 = OpVariable %57 StorageClass(Function)
+ %68 = OpVariable %60 StorageClass(Function)
+ %69 = OpVariable %53 StorageClass(Function)
+ %70 = OpVariable %63 StorageClass(Function)
+ %71 = OpVariable %63 StorageClass(Function)
+ %72 = OpVariable %63 StorageClass(Function)
+ %73 = OpVariable %63 StorageClass(Function)
+ %74 = OpVariable %63 StorageClass(Function)
+ %75 = OpVariable %63 StorageClass(Function)
+ %76 = OpVariable %57 StorageClass(Function)
+ %77 = OpVariable %57 StorageClass(Function)
+ %78 = OpVariable %57 StorageClass(Function)
+ %79 = OpVariable %57 StorageClass(Function)
+ %80 = OpVariable %57 StorageClass(Function)
+ %81 = OpVariable %63 StorageClass(Function)
+ %82 = OpVariable %63 StorageClass(Function)
+ %83 = OpVariable %63 StorageClass(Function)
+ %84 = OpVariable %63 StorageClass(Function)
+ %85 = OpVariable %63 StorageClass(Function)
+ %86 = OpVariable %63 StorageClass(Function)
+ %87 = OpVariable %55 StorageClass(Function)
+ %88 = OpAccessChain %53 %87 %52
+       OpCopyMemory %88 %50
+       OpStore %66 %56
+ %89 = OpAccessChain %53 %87 %52
+ %90 = OpLoad %48 %89
+ %91 = OpCompositeExtract %1 %90 0
+       OpStore %67 %91
+ %92 = OpAccessChain %53 %87 %52
+ %93 = OpLoad %48 %92
+ %94 = OpVectorShuffle %59 %93 %93 0 1
+       OpStore %68 %94
+ %95 = OpAccessChain %53 %87 %52
+ %96 = OpLoad %48 %95
+ %97 = OpVectorShuffle %48 %96 %96 0 1 2
+       OpStore %69 %97
+ %98 = OpLoad %3 %5
+ %99 = OpLoad %1 %67
+%100 = OpImageSampleImplicitLod %62 %98 %99
+       OpStore %70 %100
+%101 = OpLoad %7 %9
+%102 = OpLoad %59 %68
+%103 = OpImageSampleImplicitLod %62 %101 %102
+       OpStore %71 %103
+%104 = OpLoad %11 %13
+%105 = OpLoad %59 %68
+%106 = OpImageSampleImplicitLod %62 %104 %105
+       OpStore %72 %106
+%107 = OpLoad %15 %17
+%108 = OpLoad %48 %69
+%109 = OpImageSampleImplicitLod %62 %107 %108
+       OpStore %73 %109
+%110 = OpLoad %19 %21
+%111 = OpLoad %48 %69
+%112 = OpImageSampleImplicitLod %62 %110 %111
+       OpStore %74 %112
+%113 = OpLoad %23 %25
+%114 = OpLoad %48 %69
+%115 = OpImageSampleImplicitLod %62 %113 %114
        OpStore %75 %115
+%116 = OpLoad %27 %29
+%117 = OpLoad %1 %67
+%118 = OpLoad %1 %66
+%119 = OpImageSampleDrefImplicitLod %1 %116 %117 %118
+       OpStore %76 %119
+%120 = OpLoad %31 %33
+%121 = OpLoad %59 %68
+%122 = OpLoad %1 %66
+%123 = OpImageSampleDrefImplicitLod %1 %120 %121 %122
+       OpStore %77 %123
+%124 = OpLoad %35 %37
+%125 = OpLoad %59 %68
+%126 = OpLoad %1 %66
+%127 = OpImageSampleDrefImplicitLod %1 %124 %125 %126
+       OpStore %78 %127
+%128 = OpLoad %39 %41
+%129 = OpLoad %48 %69
+%130 = OpLoad %1 %66
+%131 = OpImageSampleDrefImplicitLod %1 %128 %129 %130
+       OpStore %79 %131
+%132 = OpLoad %43 %45
+%133 = OpLoad %48 %69
+%134 = OpLoad %1 %66
+%135 = OpImageSampleDrefImplicitLod %1 %132 %133 %134
+       OpStore %80 %135
+%136 = OpLoad %3 %5
+%137 = OpLoad %1 %67
+%138 = OpLoad %1 %67
+%139 = OpDPdx %1 %138
+%140 = OpLoad %1 %67
+%141 = OpDPdy %1 %140
+%142 = OpImageSampleExplicitLod %62 %136 %137 ImageOperands(4) ImageOperands(139) ImageOperands(141)
+       OpStore %81 %142
+%143 = OpLoad %7 %9
+%144 = OpLoad %59 %68
+%145 = OpLoad %1 %67
+%146 = OpDPdx %1 %145
+%147 = OpLoad %1 %67
+%148 = OpDPdy %1 %147
+%149 = OpImageSampleExplicitLod %62 %143 %144 ImageOperands(4) ImageOperands(146) ImageOperands(148)
+       OpStore %82 %149
+%150 = OpLoad %11 %13
+%151 = OpLoad %59 %68
+%152 = OpLoad %59 %68
+%153 = OpDPdx %59 %152
+%154 = OpLoad %59 %68
+%155 = OpDPdy %59 %154
+%156 = OpImageSampleExplicitLod %62 %150 %151 ImageOperands(4) ImageOperands(153) ImageOperands(155)
+       OpStore %83 %156
+%157 = OpLoad %15 %17
+%158 = OpLoad %48 %69
+%159 = OpLoad %59 %68
+%160 = OpDPdx %59 %159
+%161 = OpLoad %59 %68
+%162 = OpDPdy %59 %161
+%163 = OpImageSampleExplicitLod %62 %157 %158 ImageOperands(4) ImageOperands(160) ImageOperands(162)
+       OpStore %84 %163
+%164 = OpLoad %19 %21
+%165 = OpLoad %48 %69
+%166 = OpLoad %48 %69
+%167 = OpDPdx %48 %166
+%168 = OpLoad %48 %69
+%169 = OpDPdy %48 %168
+%170 = OpImageSampleExplicitLod %62 %164 %165 ImageOperands(4) ImageOperands(167) ImageOperands(169)
+       OpStore %85 %170
+%171 = OpLoad %23 %25
+%172 = OpLoad %48 %69
+%173 = OpLoad %48 %69
+%174 = OpDPdx %48 %173
+%175 = OpLoad %48 %69
+%176 = OpDPdy %48 %175
+%177 = OpImageSampleExplicitLod %62 %171 %172 ImageOperands(4) ImageOperands(174) ImageOperands(176)
+       OpStore %86 %177
        OpReturn
        OpFunctionEnd)", {}, {}, true);
 	}

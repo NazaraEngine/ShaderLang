@@ -1412,6 +1412,8 @@ namespace nzsl::Ast
 					methodType.methodIndex = 3;
 				else if (identifierEntry.identifier == "Size")
 					methodType.methodIndex = 4;
+				else if (identifierEntry.identifier == "SampleGrad")
+					methodType.methodIndex = 5;
 				else
 					throw CompilerUnknownMethodError{ identifierEntry.sourceLocation, ToString(resolvedType, indexedExpr->sourceLocation), identifierEntry.identifier };
 
@@ -2071,6 +2073,7 @@ namespace nzsl::Ast
 					case 2: intrinsicType = IntrinsicType::TextureSampleExplicitLod; break;
 					case 3: intrinsicType = IntrinsicType::TextureFetch; break;
 					case 4: intrinsicType = IntrinsicType::TextureQuerySizeLod; break;
+					case 5: intrinsicType = IntrinsicType::TextureSampleGrad; break;
 					default:
 						throw AstInvalidMethodIndexError{ callFuncExpr.sourceLocation, methodType.methodIndex, ToString(objectType, callFuncExpr.sourceLocation) };
 				}

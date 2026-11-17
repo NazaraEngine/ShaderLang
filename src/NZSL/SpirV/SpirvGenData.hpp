@@ -157,6 +157,7 @@ namespace nzsl::SpirvGenData
 		{ Ast::IntrinsicType::TextureQuerySizeLod,               { &SpirvAstVisitor::BuildTextureQuerySizeLodIntrinsic, SpirvCapability::ImageQuery } },
 		{ Ast::IntrinsicType::TextureRead,                       { SpirvOp::OpImageRead } },
 		{ Ast::IntrinsicType::TextureSampleExplicitLod,          { &SpirvAstVisitor::BuildTextureSampleExplicitLodIntrinsic } },
+		{ Ast::IntrinsicType::TextureSampleGrad,                 { &SpirvAstVisitor::BuildTextureSampleGradIntrinsic } },
 		{ Ast::IntrinsicType::TextureSampleImplicitLod,          { SpirvOp::OpImageSampleImplicitLod } },
 		{ Ast::IntrinsicType::TextureSampleImplicitLodDepthComp, { SpirvOp::OpImageSampleDrefImplicitLod } },
 		{ Ast::IntrinsicType::TextureWrite,                      { SpirvOp::OpImageWrite } },

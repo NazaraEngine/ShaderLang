@@ -585,6 +585,7 @@ namespace nzsl::Ast
 				case ParameterType::F32:
 				case ParameterType::FVal:
 				case ParameterType::SampleCoordinates:
+				case ParameterType::SampleGrad:
 				{
 					if (ResolveLiteral(intrinsicExpr.parameters[paramIndex], PrimitiveType::Float32, intrinsicExpr.sourceLocation))
 						m_recomputeExprType = true;

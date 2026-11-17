@@ -2231,6 +2231,7 @@ namespace nzsl
 			case Ast::IntrinsicType::TextureQuerySizeLod:              Append("textureSize");           break;
 			case Ast::IntrinsicType::TextureRead:                      Append("imageLoad");             break;
 			case Ast::IntrinsicType::TextureSampleExplicitLod:         Append("textureLod");            break;
+			case Ast::IntrinsicType::TextureSampleGrad:                Append("textureGrad");           break;
 			case Ast::IntrinsicType::TextureSampleImplicitLod:         Append("texture");               break;
 			case Ast::IntrinsicType::TextureWrite:                     Append("imageStore");            break;
 			case Ast::IntrinsicType::Trunc:                            Append("trunc");                 break;

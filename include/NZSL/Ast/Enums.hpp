@@ -160,7 +160,7 @@ namespace nzsl::Ast
 
 	enum class IntrinsicType
 	{
-		// Next free index: 86
+		// Next free index: 87
 		Abs                               = 31,
 		All                               = 48,
 		Any                               = 49,
@@ -234,6 +234,7 @@ namespace nzsl::Ast
 		TextureQuerySizeLod               = 84,
 		TextureRead                       = 2,
 		TextureSampleExplicitLod          = 64,
+		TextureSampleGrad                 = 86,
 		TextureSampleImplicitLod          = 44,
 		TextureSampleImplicitLodDepthComp = 43,
 		TextureWrite                      = 45,

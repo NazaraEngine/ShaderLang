@@ -1681,6 +1681,36 @@ namespace nzsl
 		PushResultId(resultId);
 	}
 
+	void SpirvAstVisitor::BuildTextureSampleGradIntrinsic(const Ast::IntrinsicExpression& node)
+	{
+		if (node.parameters.size() != 4)
+			throw std::runtime_error("textureSampleGrad intrinsic: unexpected parameter count");
+
+		std::uint32_t resultTypeId = m_writer.GetTypeId(ResolveAlias(EnsureExpressionType(node)));
+
+		std::uint32_t samplerId = EvaluateExpression(*node.parameters[0]);
+		std::uint32_t coordinatesId = EvaluateExpression(*node.parameters[1]);
+		std::uint32_t dxId = EvaluateExpression(*node.parameters[2]);
+		std::uint32_t dyId = EvaluateExpression(*node.parameters[3]);
+
+		HandleSourceLocation(node.sourceLocation);
+
+		std::uint32_t resultId = m_writer.AllocateResultId();
+
+		m_currentBlock->AppendVariadic(SpirvOp::OpImageSampleExplicitLod, [&](auto&& append)
+		{
+			append(resultTypeId);
+			append(resultId);
+			append(samplerId);
+			append(coordinatesId);
+			append(SpirvImageOperands::Grad);
+			append(dxId);
+			append(dyId);
+		});
+
+		PushResultId(resultId);
+	}
+
 	SpirvGlslStd450Op SpirvAstVisitor::SelectAbs(const Ast::IntrinsicExpression& node)
 	{
 		if (node.parameters.size() != 1)

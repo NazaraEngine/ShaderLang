@@ -1392,6 +1392,13 @@ namespace nzsl
 				method = true;
 				break;
 
+			case Ast::IntrinsicType::TextureSampleGrad:
+				assert(!node.parameters.empty());
+				Visit(node.parameters.front(), true);
+				Append(".SampleGrad");
+				method = true;
+				break;
+
 			case Ast::IntrinsicType::TextureSampleImplicitLodDepthComp:
 				assert(!node.parameters.empty());
 				Visit(node.parameters.front(), true);

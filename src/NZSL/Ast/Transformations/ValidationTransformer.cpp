@@ -1982,6 +1982,7 @@ namespace nzsl::Ast
 				}
 
 				case ParameterType::SampleCoordinates:
+				case ParameterType::SampleGrad:
 				{
 					// Special check: vector dimensions must match sample type
 					const ExpressionType* firstParameter = GetExpressionType(*node.parameters[0]);
@@ -1997,22 +1998,47 @@ namespace nzsl::Ast
 					const SamplerType& samplerType = std::get<SamplerType>(ResolveAlias(*firstParameter));
 
 					std::size_t requiredComponentCount = 0;
-					switch (samplerType.dim)
+					if (intrinsicData.parameterTypes[i] == ParameterType::SampleCoordinates)
 					{
-						case ImageType::E1D:
-							requiredComponentCount = 1;
-							break;
+						// Component count = number of components required to sample a texture
+						switch (samplerType.dim)
+						{
+							case ImageType::E1D:
+								requiredComponentCount = 1;
+								break;
 
-						case ImageType::E1D_Array:
-						case ImageType::E2D:
-							requiredComponentCount = 2;
-							break;
+							case ImageType::E1D_Array:
+							case ImageType::E2D:
+								requiredComponentCount = 2;
+								break;
 
-						case ImageType::E2D_Array:
-						case ImageType::E3D:
-						case ImageType::Cubemap:
-							requiredComponentCount = 3;
-							break;
+							case ImageType::E2D_Array:
+							case ImageType::E3D:
+							case ImageType::Cubemap:
+								requiredComponentCount = 3;
+								break;
+						}
+					}
+					else
+					{
+						// Component count = number of components required to sample a texture, minus 1 for arrays
+						switch (samplerType.dim)
+						{
+							case ImageType::E1D:
+							case ImageType::E1D_Array:
+								requiredComponentCount = 1;
+								break;
+
+							case ImageType::E2D:
+							case ImageType::E2D_Array:
+								requiredComponentCount = 2;
+								break;
+
+							case ImageType::E3D:
+							case ImageType::Cubemap:
+								requiredComponentCount = 3;
+								break;
+						}
 					}
 
 					if (requiredComponentCount == 0)

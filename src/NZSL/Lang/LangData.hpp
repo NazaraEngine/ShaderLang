@@ -200,7 +200,8 @@ namespace nzsl::LangData
 			Numerical,          // Integer/Floating-point/Unsigned integer
 			NumericalVec,       // Numerical or vector of numerical
 			Sampler,            // sampler
-			SampleCoordinates,  // Floating-point vector used to sample the texture parameter
+			SampleCoordinates,  // Floating-point primitive or vector used to sample the texture parameter
+			SampleGrad,         // Floating-point primitive or vector used to specificy the gradients to sample the the texture parameter
 			Scalar,             // Boolean/Integer/Floating-point/Unsigned integer
 			ScalarVec,          // Scalar or vector of scalar
 			SignedNumerical,    // Integer/Floating-point value
@@ -357,6 +358,7 @@ namespace nzsl::LangData
 			{ Ast::IntrinsicType::TextureQuerySizeLod,               Build("textureQuerySizeLod",               true,  ReturnType::Param0TextureSize,  Params<ParameterType::Sampler, ParameterType::I32>{}) },
 			{ Ast::IntrinsicType::TextureRead,                       Build("textureRead",                       true,  ReturnType::Param0TextureValue, Params<ParameterType::Texture, ParameterType::TextureCoordinates>{}) },
 			{ Ast::IntrinsicType::TextureSampleExplicitLod,          Build("textureSampleExplicitLod",          true,  ReturnType::Param0SampledValue, Params<ParameterType::Sampler, ParameterType::SampleCoordinates, ParameterType::F32>{}) },
+			{ Ast::IntrinsicType::TextureSampleGrad,                 Build("textureSampleGrad",                 true,  ReturnType::Param0SampledValue, Params<ParameterType::Sampler, ParameterType::SampleCoordinates, ParameterType::SampleGrad, ParameterType::SampleGrad>{}) },
 			{ Ast::IntrinsicType::TextureSampleImplicitLod,          Build("textureSampleImplicitLod",          true,  ReturnType::Param0SampledValue, Params<ParameterType::Sampler, ParameterType::SampleCoordinates>{}, ShaderStageType::Fragment) },
 			{ Ast::IntrinsicType::TextureSampleImplicitLodDepthComp, Build("textureSampleImplicitLodDepthComp", true,  ReturnType::Param0SampledValue, Params<ParameterType::Sampler, ParameterType::SampleCoordinates, ParameterType::F32>{}, ShaderStageType::Fragment) },
 			{ Ast::IntrinsicType::TextureWrite,                      Build("textureWrite",                      true,  ReturnType::None,               Params<ParameterType::Texture, ParameterType::TextureCoordinates, ParameterType::TextureData>{}) },
