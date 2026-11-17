@@ -788,12 +788,11 @@ external
 	[binding(0)] data: mat4[f32]
 }
 )"), "(7,15 -> 29): CExtTypeNotAllowed error: external variable data has unauthorized type (mat4[f32]): only storage buffers, samplers, push constants and uniform buffers (and primitives, vectors and matrices if primitive external feature is enabled) are allowed in external blocks");
-		}
 
-		// NZSL 1.1 features
+			// NZSL 1.1 features
 
-		// Implicit types
-		CHECK_THROWS_WITH(Compile(R"(
+			// Implicit types
+			CHECK_THROWS_WITH(Compile(R"(
 [nzsl_version("1.0")]
 module;
 
@@ -803,8 +802,8 @@ fn main()
 }
 )"), "(7,10 -> 22): CUnsupportedFeature error: \"implicit types\" feature requires NZSL 1.1 (current module version is 1.0)");
 
-		// Type constants
-		CHECK_THROWS_WITH(Compile(R"(
+			// Type constants
+			CHECK_THROWS_WITH(Compile(R"(
 [nzsl_version("1.0")]
 module;
 
@@ -813,6 +812,45 @@ fn main()
 	let x = u32.Max;
 }
 )"), "(7,10 -> 16): CUnsupportedFeature error: \"type constant\" feature requires NZSL 1.1 (current module version is 1.0)");
+
+			// NZSL 1.2 features
+
+			// Workgroup shared
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.1")]
+module;
+
+workgroup_shared
+{
+	sharedData: array[u32, 64]
+}
+
+fn main()
+{
+}
+)"), "(5,1 -> 16): CUnsupportedFeature error: \"workgroup shared memory\" feature requires NZSL 1.2 (current module version is 1.1)");
+
+			// Atomics
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl_version("1.1")]
+module;
+
+struct Data
+{
+	counter: i32
+}
+
+external
+{
+	[binding(0)] data: storage[Data]
+}
+
+fn main()
+{
+	atomicAdd(data.counter, 1);
+}
+)"), "(17,2 -> 10): CUnknownIdentifier error: unknown identifier atomicAdd");
+		}
 
 		/************************************************************************/
 

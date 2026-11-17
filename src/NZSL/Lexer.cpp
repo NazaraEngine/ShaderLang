@@ -43,7 +43,7 @@ namespace nzsl
 			{ "struct",           TokenType::Struct },
 			{ "true",             TokenType::BoolTrue },
 			{ "while",            TokenType::While },
-			{ "workgroup_shared", TokenType::WorkgroupShared }
+			{ "workgroup_shared", TokenType::WorkgroupShared } //< TODO: Guard behind version check (requires the lexer to parse the version)
 		});
 	}
 

@@ -991,7 +991,7 @@ namespace nzsl::Ast
 
 		for (const auto& [intrinsic, data] : LangData::s_intrinsicData)
 		{
-			if (!data.isMethod)
+			if (!data.isMethod && m_states->currentModule->metadata->langVersion >= data.requiredVersion)
 				RegisterBuiltinIntrinsic(std::string(data.name), intrinsic);
 		}
 
@@ -3024,6 +3024,9 @@ namespace nzsl::Ast
 
 	auto ResolveTransformer::Transform(DeclareWorkgroupSharedStatement&& declWorkgroupShared) -> StatementTransformation
 	{
+		if (m_states->currentModule->metadata->langVersion < Version::WorkgroupSharedMemory)
+			throw CompilerUnsupportedFeatureError{ declWorkgroupShared.sourceLocation, "workgroup shared memory", VersionTag{ Version::WorkgroupSharedMemory }, VersionTag{ m_states->currentModule->metadata->langVersion } };
+
 		assert(m_context);
 
 		std::shared_ptr<Environment> previousEnv;

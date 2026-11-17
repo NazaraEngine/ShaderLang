@@ -11,6 +11,7 @@
 #include <NZSL/Enums.hpp>
 #include <NZSL/Ast/Enums.hpp>
 #include <NZSL/Ast/ExpressionType.hpp>
+#include <NZSL/Lang/Constants.hpp>
 #include <frozen/string.h>
 #include <frozen/unordered_map.h>
 #include <string_view>
@@ -243,6 +244,7 @@ namespace nzsl::LangData
 			std::size_t nonConstraintParameterCount;
 			std::size_t parameterCount;
 			std::optional<ShaderStageType> requiredStage;
+			std::uint32_t requiredVersion;
 		};
 
 		template<ParameterType... Types>
@@ -261,7 +263,7 @@ namespace nzsl::LangData
 		};
 
 		template<ParameterType... Types>
-		constexpr IntrinsicData Build(std::string_view name, bool isMethod, ReturnType retType, Params<Types...>, std::optional<ShaderStageType> requiredStage = std::nullopt)
+		constexpr IntrinsicData Build(std::string_view name, bool isMethod, ReturnType retType, Params<Types...>, std::optional<ShaderStageType> requiredStage = std::nullopt, std::uint32_t requiredVersion = Version::MinVersion)
 		{
 			constexpr auto& parameterArray = IntrinsicFuncHelper<Types...>::parameterArray;
 
@@ -272,7 +274,7 @@ namespace nzsl::LangData
 					nonConstraintParameterCount++;
 			}
 
-			return { name, isMethod, retType, parameterArray.data(), nonConstraintParameterCount, parameterArray.size(), requiredStage };
+			return { name, isMethod, retType, parameterArray.data(), nonConstraintParameterCount, parameterArray.size(), requiredStage, requiredVersion };
 		}
 
 		constexpr auto data = frozen::make_unordered_map<Ast::IntrinsicType, IntrinsicData>({
@@ -287,19 +289,19 @@ namespace nzsl::LangData
 			{ Ast::IntrinsicType::ArcTan2,                           Build("atan2",                             false, ReturnType::Param0Type,         Params<ParameterType::FValVec1632, ParameterType::FValVec1632, ParameterType::SameType>{}) },
 			{ Ast::IntrinsicType::ArcTanh,                           Build("atanh",                             false, ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
 			{ Ast::IntrinsicType::ArraySize,                         Build("arraySize",                         true,  ReturnType::U32,                Params<ParameterType::ArrayDyn>{}) },
-			{ Ast::IntrinsicType::AtomicAdd,                         Build("atomicAdd",                         false, ReturnType::Param0Type,         Params<ParameterType::IntegerScalar, ParameterType::IntegerScalar, ParameterType::SameType>{}) },
-			{ Ast::IntrinsicType::AtomicAnd,                         Build("atomicAnd",                         false, ReturnType::Param0Type,         Params<ParameterType::IntegerScalar, ParameterType::IntegerScalar, ParameterType::SameType>{}) },
-			{ Ast::IntrinsicType::AtomicCompareExchange,             Build("atomicCompareExchange",             false, ReturnType::Param0Type,         Params<ParameterType::IntegerScalar, ParameterType::IntegerScalar, ParameterType::IntegerScalar, ParameterType::SameType>{}) },
-			{ Ast::IntrinsicType::AtomicExchange,                    Build("atomicExchange",                    false, ReturnType::Param0Type,         Params<ParameterType::Numerical, ParameterType::Numerical, ParameterType::SameType>{}) },
-			{ Ast::IntrinsicType::AtomicMax,                         Build("atomicMax",                         false, ReturnType::Param0Type,         Params<ParameterType::IntegerScalar, ParameterType::IntegerScalar, ParameterType::SameType>{}) },
-			{ Ast::IntrinsicType::AtomicMin,                         Build("atomicMin",                         false, ReturnType::Param0Type,         Params<ParameterType::IntegerScalar, ParameterType::IntegerScalar, ParameterType::SameType>{}) },
-			{ Ast::IntrinsicType::AtomicOr,                          Build("atomicOr",                          false, ReturnType::Param0Type,         Params<ParameterType::IntegerScalar, ParameterType::IntegerScalar, ParameterType::SameType>{}) },
-			{ Ast::IntrinsicType::AtomicSub,                         Build("atomicSub",                         false, ReturnType::Param0Type,         Params<ParameterType::IntegerScalar, ParameterType::IntegerScalar, ParameterType::SameType>{}) },
-			{ Ast::IntrinsicType::AtomicXor,                         Build("atomicXor",                         false, ReturnType::Param0Type,         Params<ParameterType::IntegerScalar, ParameterType::IntegerScalar, ParameterType::SameType>{}) },
-			//{ Ast::IntrinsicType::ControlAndMemoryBarrierSubgroup,   Build("subgroupBarrierWithMemory",         false, ReturnType::None,               Params<>{}) },
-			{ Ast::IntrinsicType::ControlAndMemoryBarrierWorkgroup,  Build("workgroupBarrierWithMemory",        false, ReturnType::None,               Params<>{}) },
-			//{ Ast::IntrinsicType::ControlBarrierSubgroup,            Build("subgroupBarrier",                   false, ReturnType::None,               Params<>{}) },
-			{ Ast::IntrinsicType::ControlBarrierWorkgroup,           Build("workgroupBarrier",                  false, ReturnType::None,               Params<>{}) },
+			{ Ast::IntrinsicType::AtomicAdd,                         Build("atomicAdd",                         false, ReturnType::Param0Type,         Params<ParameterType::IntegerScalar, ParameterType::IntegerScalar, ParameterType::SameType>{}, {}, Version::Atomics) },
+			{ Ast::IntrinsicType::AtomicAnd,                         Build("atomicAnd",                         false, ReturnType::Param0Type,         Params<ParameterType::IntegerScalar, ParameterType::IntegerScalar, ParameterType::SameType>{}, {}, Version::Atomics) },
+			{ Ast::IntrinsicType::AtomicCompareExchange,             Build("atomicCompareExchange",             false, ReturnType::Param0Type,         Params<ParameterType::IntegerScalar, ParameterType::IntegerScalar, ParameterType::IntegerScalar, ParameterType::SameType>{}, {}, Version::Atomics) },
+			{ Ast::IntrinsicType::AtomicExchange,                    Build("atomicExchange",                    false, ReturnType::Param0Type,         Params<ParameterType::Numerical,     ParameterType::Numerical,     ParameterType::SameType>{}, {}, Version::Atomics) },
+			{ Ast::IntrinsicType::AtomicMax,                         Build("atomicMax",                         false, ReturnType::Param0Type,         Params<ParameterType::IntegerScalar, ParameterType::IntegerScalar, ParameterType::SameType>{}, {}, Version::Atomics) },
+			{ Ast::IntrinsicType::AtomicMin,                         Build("atomicMin",                         false, ReturnType::Param0Type,         Params<ParameterType::IntegerScalar, ParameterType::IntegerScalar, ParameterType::SameType>{}, {}, Version::Atomics) },
+			{ Ast::IntrinsicType::AtomicOr,                          Build("atomicOr",                          false, ReturnType::Param0Type,         Params<ParameterType::IntegerScalar, ParameterType::IntegerScalar, ParameterType::SameType>{}, {}, Version::Atomics) },
+			{ Ast::IntrinsicType::AtomicSub,                         Build("atomicSub",                         false, ReturnType::Param0Type,         Params<ParameterType::IntegerScalar, ParameterType::IntegerScalar, ParameterType::SameType>{}, {}, Version::Atomics) },
+			{ Ast::IntrinsicType::AtomicXor,                         Build("atomicXor",                         false, ReturnType::Param0Type,         Params<ParameterType::IntegerScalar, ParameterType::IntegerScalar, ParameterType::SameType>{}, {}, Version::Atomics) },
+			//{ Ast::IntrinsicType::ControlAndMemoryBarrierSubgroup,   Build("subgroupBarrierWithMemory",         false, ReturnType::None,               Params<>{}, {}, Version::Atomics) },
+			{ Ast::IntrinsicType::ControlAndMemoryBarrierWorkgroup,  Build("workgroupBarrierWithMemory",        false, ReturnType::None,               Params<>{}, {}, Version::Atomics) },
+			//{ Ast::IntrinsicType::ControlBarrierSubgroup,            Build("subgroupBarrier",                   false, ReturnType::None,               Params<>{}, {}, Version::Atomics) },
+			{ Ast::IntrinsicType::ControlBarrierWorkgroup,           Build("workgroupBarrier",                  false, ReturnType::None,               Params<>{}, {}, Version::Atomics) },
 			{ Ast::IntrinsicType::Ceil,                              Build("ceil",                              false, ReturnType::Param0Type,         Params<ParameterType::FValVec>{}) },
 			{ Ast::IntrinsicType::Clamp,                             Build("clamp",                             false, ReturnType::Param0Type,         Params<ParameterType::FValVec, ParameterType::FValVec, ParameterType::FValVec, ParameterType::SameType>{}) },
 			{ Ast::IntrinsicType::Cos,                               Build("cos",                               false, ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
@@ -331,11 +333,11 @@ namespace nzsl::LangData
 			{ Ast::IntrinsicType::MatrixInverse,                     Build("inverse",                           false, ReturnType::Param0Type,         Params<ParameterType::MatrixSquare>{}) },
 			{ Ast::IntrinsicType::MatrixTranspose,                   Build("transpose",                         false, ReturnType::Param0Transposed,   Params<ParameterType::Matrix>{}) },
 			{ Ast::IntrinsicType::Max,                               Build("max",                               false, ReturnType::Param0Type,         Params<ParameterType::NumericalVec, ParameterType::NumericalVec, ParameterType::SameType>{}) },
-			{ Ast::IntrinsicType::MemoryBarrierDevice,               Build("deviceMemoryBarrier",               false, ReturnType::None,               Params<>{}) },
-			{ Ast::IntrinsicType::MemoryBarrierStorage,              Build("storageMemoryBarrier",              false, ReturnType::None,               Params<>{}) },
-			//{ Ast::IntrinsicType::MemoryBarrierSubgroup,             Build("subgroupMemoryBarrier",             false, ReturnType::None,               Params<>{}) },
-			{ Ast::IntrinsicType::MemoryBarrierTexture,              Build("textureMemoryBarrier",              false, ReturnType::None,               Params<>{}) },
-			{ Ast::IntrinsicType::MemoryBarrierWorkgroup,            Build("workgroupMemoryBarrier",            false, ReturnType::None,               Params<>{}) },
+			{ Ast::IntrinsicType::MemoryBarrierDevice,               Build("deviceMemoryBarrier",               false, ReturnType::None,               Params<>{}, {}, Version::Atomics) },
+			{ Ast::IntrinsicType::MemoryBarrierStorage,              Build("storageMemoryBarrier",              false, ReturnType::None,               Params<>{}, {}, Version::Atomics) },
+			//{ Ast::IntrinsicType::MemoryBarrierSubgroup,             Build("subgroupMemoryBarrier",             false, ReturnType::None,               Params<>{}, {}, Version::Atomics) },
+			{ Ast::IntrinsicType::MemoryBarrierTexture,              Build("textureMemoryBarrier",              false, ReturnType::None,               Params<>{}, {}, Version::Atomics) },
+			{ Ast::IntrinsicType::MemoryBarrierWorkgroup,            Build("workgroupMemoryBarrier",            false, ReturnType::None,               Params<>{}, {}, Version::Atomics) },
 			{ Ast::IntrinsicType::Min,                               Build("min",                               false, ReturnType::Param0Type,         Params<ParameterType::NumericalVec, ParameterType::NumericalVec, ParameterType::SameType>{}) },
 			{ Ast::IntrinsicType::Normalize,                         Build("normalize",                         false, ReturnType::Param0Type,         Params<ParameterType::FVec>{}) },
 			{ Ast::IntrinsicType::Not,                               Build("not",                               false, ReturnType::Param0Type,         Params<ParameterType::BVec>{}) },

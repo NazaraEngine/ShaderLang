@@ -12,13 +12,15 @@
 namespace nzsl::Version
 {
 	// Constants
-	constexpr std::uint32_t MaxSupportedVersion = Build(1, 1, 0);
+	constexpr std::uint32_t MaxSupportedVersion = Build(1, 2, 0);
 	constexpr std::uint32_t MinVersion = Build(1, 0, 0);
 
 	// Features
+	constexpr std::uint32_t Atomics = Build(1, 2, 0);
 	constexpr std::uint32_t ImplicitTypes = Build(1, 1, 0);
 	constexpr std::uint32_t TypeConstants = Build(1, 1, 0);
 	constexpr std::uint32_t UntypedLiterals = Build(1, 1, 0);
+	constexpr std::uint32_t WorkgroupSharedMemory = Build(1, 2, 0);
 }
 
 #endif // NZSL_LANG_CONSTANTS_HPP
