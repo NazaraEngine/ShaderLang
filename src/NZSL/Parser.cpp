@@ -54,6 +54,31 @@ namespace nzsl
 
 			return frozen::make_unordered_map(identifierToBuiltin);
 		}
+		
+		template<typename K, typename V, std::size_t N, std::size_t N2>
+		constexpr auto BuildIdentifierMapping(const frozen::unordered_map<K, V, N>& container, const std::array<std::pair<std::string_view, K>, N2>& alias)
+		{
+			std::array<std::pair<std::string_view, K>, N + N2> identifierToBuiltin;
+
+			std::size_t index = 0;
+			for (const auto& [entry, data] : container)
+			{
+				identifierToBuiltin[index].first = data.identifier;
+				identifierToBuiltin[index].second = entry;
+
+				++index;
+			}
+
+			for (const auto& [aliasName, value] : alias)
+			{
+				identifierToBuiltin[index].first = aliasName;
+				identifierToBuiltin[index].second = value;
+
+				++index;
+			}
+
+			return frozen::make_unordered_map(identifierToBuiltin);
+		}
 
 		template<typename K, typename V, std::size_t N>
 		constexpr auto BuildIdentifierMappingWithName(const frozen::unordered_map<K, V, N>& container)
@@ -75,7 +100,7 @@ namespace nzsl
 			return frozen::make_unordered_map(identifierToBuiltin);
 		}
 
-		constexpr auto s_attributeMapping     = BuildIdentifierMapping(LangData::s_attributeData);
+		constexpr auto s_attributeMapping     = BuildIdentifierMapping(LangData::s_attributeData, std::array<std::pair<std::string_view, Ast::AttributeType>, 1>{ { { "nzsl_version", Ast::AttributeType::LangVersion } }});
 		constexpr auto s_builtinMapping       = BuildIdentifierMapping(LangData::s_builtinData);
 		constexpr auto s_depthWriteMapping    = BuildIdentifierMapping(LangData::s_depthWriteModes);
 		constexpr auto s_entryPointMapping    = BuildIdentifierMappingWithName(LangData::s_entryPoints);

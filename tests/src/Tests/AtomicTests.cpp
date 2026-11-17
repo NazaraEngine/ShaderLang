@@ -10,7 +10,7 @@ TEST_CASE("atomic", "[Shader]")
 	SECTION("Atomic operations")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.1")]
+[nzsl("1.2")]
 module;
 
 workgroup_shared
@@ -176,7 +176,7 @@ fn main(input: Input)
 	SECTION("Simple atomic operations")
 	{
 		std::string_view nzslSource = R"(
-[nzsl_version("1.1")]
+[nzsl("1.2")]
 module;
 
 [layout(std430)]

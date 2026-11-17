@@ -679,8 +679,11 @@ namespace nzsl
 
 	void LangWriter::AppendAttribute(LangVersionAttribute attribute)
 	{
-		// nzsl_version
-		Append("nzsl_version(\"", Version::ToString(attribute.version), "\")");
+		// nzsl attribute (nzsl_version before 1.2)
+		if (attribute.version >= Version::Build(1, 2, 0))
+			Append("nzsl(\"", Version::ToString(attribute.version), "\")");
+		else
+			Append("nzsl_version(\"", Version::ToString(attribute.version), "\")");
 	}
 
 	void LangWriter::AppendAttribute(LayoutAttribute attribute)

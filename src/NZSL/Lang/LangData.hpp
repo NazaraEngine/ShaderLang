@@ -51,7 +51,7 @@ namespace nzsl::LangData
 		{ Ast::AttributeType::Layout,             { "layout" } },
 		{ Ast::AttributeType::License,            { "license" } },
 		{ Ast::AttributeType::Location,           { "location" } },
-		{ Ast::AttributeType::LangVersion,        { "nzsl_version" } },
+		{ Ast::AttributeType::LangVersion,        { "nzsl" } },
 		{ Ast::AttributeType::Set,                { "set" } },
 		{ Ast::AttributeType::Tag,                { "tag" } },
 		{ Ast::AttributeType::Unroll,             { "unroll" } },
