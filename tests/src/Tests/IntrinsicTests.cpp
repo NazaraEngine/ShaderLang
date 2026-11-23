@@ -176,19 +176,25 @@ fn main(input: VertOutput)
 		// sampler1D and sampler1D_array are not supported by GLSL ES
 		nzsl::GlslWriter::Environment glslEnv;
 		glslEnv.glES = false;
+		glslEnv.glMajorVersion = 4;
+		glslEnv.glMinorVersion = 6;
+
+		nzsl::GlslWriter::Parameters glslParameters;
+		for (unsigned int i = 0; i < 11; ++i)
+			glslParameters.bindingMapping.emplace(i, 10 - i);
 
 		ExpectGLSL(*shaderModule, R"(
-uniform sampler1D tex1D;
-uniform sampler1DArray tex1DArray;
-uniform sampler2D tex2D;
-uniform sampler2DArray tex2DArray;
-uniform sampler3D tex3D;
-uniform samplerCube texCube;
-uniform sampler1DShadow tex1DDepth;
-uniform sampler1DArrayShadow tex1DArrayDepth;
-uniform sampler2DShadow tex2DDepth;
-uniform sampler2DArrayShadow tex2DArrayDepth;
-uniform samplerCubeShadow texCubeDepth;
+layout(binding = 10) uniform sampler1D tex1D;
+layout(binding = 9) uniform sampler1DArray tex1DArray;
+layout(binding = 8) uniform sampler2D tex2D;
+layout(binding = 7) uniform sampler2DArray tex2DArray;
+layout(binding = 6) uniform sampler3D tex3D;
+layout(binding = 5) uniform samplerCube texCube;
+layout(binding = 4) uniform sampler1DShadow tex1DDepth;
+layout(binding = 3) uniform sampler1DArrayShadow tex1DArrayDepth;
+layout(binding = 2) uniform sampler2DShadow tex2DDepth;
+layout(binding = 1) uniform sampler2DArrayShadow tex2DArrayDepth;
+layout(binding = 0) uniform samplerCubeShadow texCubeDepth;
 
 struct VertOutput
 {
@@ -196,12 +202,12 @@ struct VertOutput
 };
 
 /**************** Inputs ****************/
-in vec3 _nzslVarying0; // _nzslInuv
+layout(location = 0) in vec3 _nzslInuv;
 
 void main()
 {
 	VertOutput input_;
-	input_.uv = _nzslVarying0;
+	input_.uv = _nzslInuv;
 
 	float depth = 0.5;
 	float uv1f = input_.uv.x;
@@ -225,7 +231,7 @@ void main()
 	vec4 sampleGradResult5 = textureGrad(tex3D, uv3f, dFdx(uv3f), dFdy(uv3f));
 	vec4 sampleGradResult6 = textureGrad(texCube, uv3f, dFdx(uv3f), dFdy(uv3f));
 }
-)", {}, glslEnv);
+)", {}, glslEnv, true, glslParameters);
 
 		ExpectNZSL(*shaderModule, R"(
 [auto_binding(true)]

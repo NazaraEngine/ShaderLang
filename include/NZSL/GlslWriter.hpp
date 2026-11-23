@@ -58,6 +58,7 @@ namespace nzsl
 			struct Output
 			{
 				std::string code;
+				std::unordered_map<std::string, unsigned int> explicitStorageBlockBinding;
 				std::unordered_map<std::string, unsigned int> explicitTextureBinding;
 				std::unordered_map<std::string, unsigned int> explicitUniformBlockBinding;
 				bool usesDrawParameterBaseInstanceUniform;

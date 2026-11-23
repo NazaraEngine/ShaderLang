@@ -384,6 +384,7 @@ namespace nzsl
 		std::unordered_map<std::size_t, std::string> constantNames;
 		std::unordered_map<std::size_t, StructData> structs;
 		std::unordered_map<std::size_t, std::string> variableNames;
+		std::unordered_map<std::string, unsigned int> explicitStorageBlockBinding;
 		std::unordered_map<std::string, unsigned int> explicitTextureBinding;
 		std::unordered_map<std::string, unsigned int> explicitUniformBlockBinding;
 		std::unordered_set<std::string> reservedNames;
@@ -520,6 +521,7 @@ namespace nzsl
 
 		Output output;
 		output.code = std::move(state.stream).str();
+		output.explicitStorageBlockBinding = std::move(state.explicitStorageBlockBinding);
 		output.explicitTextureBinding = std::move(state.explicitTextureBinding);
 		output.explicitUniformBlockBinding = std::move(state.explicitUniformBlockBinding);
 		output.usesDrawParameterBaseInstanceUniform = m_currentState->hasDrawParametersBaseInstanceUniform;
@@ -2651,7 +2653,7 @@ namespace nzsl
 					Append(") ");
 			};
 
-			if (IsStorageType(exprType) || IsUniformType(exprType))
+			if (IsSamplerType(exprType) || IsStorageType(exprType) || IsTextureType(exprType) || IsUniformType(exprType))
 			{
 				if (!m_currentState->glslParameters.bindingMapping.empty())
 				{
@@ -2680,9 +2682,11 @@ namespace nzsl
 						// Ensure name is unique
 						varName += std::to_string(glslBindingIndex);
 
-						if (IsSamplerType(exprType))
+						if (IsStorageType(exprType))
+							m_currentState->explicitStorageBlockBinding.emplace(std::string(s_glslWriterBlockBindingPrefix) + varName, glslBindingIndex);
+						else if (IsSamplerType(exprType) || IsTextureType(exprType))
 							m_currentState->explicitTextureBinding.emplace(varName, glslBindingIndex);
-						else
+						else if (IsUniformType(exprType))
 							m_currentState->explicitUniformBlockBinding.emplace(std::string(s_glslWriterBlockBindingPrefix) + varName, glslBindingIndex);
 					}
 				}
@@ -2749,14 +2753,7 @@ namespace nzsl
 
 				EnterScope();
 				{
-					std::size_t structIndex;
-					if (IsStorageType(exprType))
-						structIndex = std::get<Ast::StorageType>(exprType).containedType.structIndex;
-					else if (IsUniformType(exprType))
-						structIndex = std::get<Ast::UniformType>(exprType).containedType.structIndex;
-					else if (IsPushConstantType(exprType))
-						structIndex = std::get<Ast::PushConstantType>(exprType).containedType.structIndex;
-
+					std::size_t structIndex = Ast::ResolveStructIndex(exprType);
 					const auto& structData = Nz::Retrieve(m_currentState->structs, structIndex);
 
 					bool first = true;

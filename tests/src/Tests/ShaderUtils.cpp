@@ -241,7 +241,7 @@ namespace NAZARA_ANONYMOUS_NAMESPACE
 	}
 }
 
-void ExpectGLSL(nzsl::ShaderStageType stageType, nzsl::Ast::Module& shaderModule, std::string_view expectedOutput, const nzsl::BackendParameters& options, const nzsl::GlslWriter::Environment& env, bool testShaderCompilation)
+void ExpectGLSL(nzsl::ShaderStageType stageType, nzsl::Ast::Module& shaderModule, std::string_view expectedOutput, const nzsl::BackendParameters& options, const nzsl::GlslWriter::Environment& env, bool testShaderCompilation, const nzsl::GlslWriter::Parameters& glslParameters)
 {
 	NAZARA_USE_ANONYMOUS_NAMESPACE
 
@@ -270,7 +270,7 @@ void ExpectGLSL(nzsl::ShaderStageType stageType, nzsl::Ast::Module& shaderModule
 		nzsl::GlslWriter writer;
 		writer.SetEnv(env);
 
-		nzsl::GlslWriter::Output output = writer.Generate(stageType, *moduleClone, options);
+		nzsl::GlslWriter::Output output = writer.Generate(stageType, *moduleClone, options, glslParameters);
 
 		SECTION("Validating expected code")
 		{
@@ -322,7 +322,7 @@ void ExpectGLSL(nzsl::ShaderStageType stageType, nzsl::Ast::Module& shaderModule
 	}
 }
 
-void ExpectGLSL(nzsl::Ast::Module& shaderModule, std::string_view expectedOutput, const nzsl::BackendParameters& options, const nzsl::GlslWriter::Environment& env, bool testShaderCompilation)
+void ExpectGLSL(nzsl::Ast::Module& shaderModule, std::string_view expectedOutput, const nzsl::BackendParameters& options, const nzsl::GlslWriter::Environment& env, bool testShaderCompilation, const nzsl::GlslWriter::Parameters& glslParameters)
 {
 	// Retrieve entry-point to get shader type
 	std::optional<nzsl::ShaderStageType> entryShaderStage;
@@ -344,7 +344,7 @@ void ExpectGLSL(nzsl::Ast::Module& shaderModule, std::string_view expectedOutput
 		REQUIRE(entryShaderStage.has_value());
 	}
 
-	ExpectGLSL(entryShaderStage.value(), shaderModule, expectedOutput, options, env, testShaderCompilation);
+	ExpectGLSL(entryShaderStage.value(), shaderModule, expectedOutput, options, env, testShaderCompilation, glslParameters);
 }
 
 void ExpectNZSL(const nzsl::Ast::Module& shaderModule, std::string_view expectedOutput)
