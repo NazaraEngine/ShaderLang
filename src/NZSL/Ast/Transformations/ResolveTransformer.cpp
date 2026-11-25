@@ -1414,6 +1414,12 @@ namespace nzsl::Ast
 					methodType.methodIndex = 4;
 				else if (identifierEntry.identifier == "SampleGrad")
 					methodType.methodIndex = 5;
+				else if (identifierEntry.identifier == "SampleOffset")
+					methodType.methodIndex = 6;
+				else if (identifierEntry.identifier == "SampleLevelOffset")
+					methodType.methodIndex = 7;
+				else if (identifierEntry.identifier == "SampleGradOffset")
+					methodType.methodIndex = 8;
 				else
 					throw CompilerUnknownMethodError{ identifierEntry.sourceLocation, ToString(resolvedType, indexedExpr->sourceLocation), identifierEntry.identifier };
 
@@ -2074,6 +2080,9 @@ namespace nzsl::Ast
 					case 3: intrinsicType = IntrinsicType::TextureFetch; break;
 					case 4: intrinsicType = IntrinsicType::TextureQuerySizeLod; break;
 					case 5: intrinsicType = IntrinsicType::TextureSampleGrad; break;
+					case 6: intrinsicType = IntrinsicType::TextureSampleImplicitLodOffset; break;
+					case 7: intrinsicType = IntrinsicType::TextureSampleExplicitLodOffset; break;
+					case 8: intrinsicType = IntrinsicType::TextureSampleGradOffset; break;
 					default:
 						throw AstInvalidMethodIndexError{ callFuncExpr.sourceLocation, methodType.methodIndex, ToString(objectType, callFuncExpr.sourceLocation) };
 				}
@@ -2393,7 +2402,31 @@ namespace nzsl::Ast
 
 	auto ResolveTransformer::Transform(IntrinsicExpression&& intrinsicExpr) -> ExpressionTransformation
 	{
+		using namespace LangData::IntrinsicHelper;
+
 		HandleChildren(intrinsicExpr);
+
+		auto intrinsicIt = LangData::s_intrinsicData.find(intrinsicExpr.intrinsic);
+		if (intrinsicIt == LangData::s_intrinsicData.end())
+			throw AstInternalError{ intrinsicExpr.sourceLocation, fmt::format("missing intrinsic data for intrinsic {}", Nz::UnderlyingCast(intrinsicExpr.intrinsic)) };
+
+		const auto& intrinsicData = intrinsicIt->second;
+		std::size_t paramIndex = 0;
+		for (std::size_t i = 0; i < intrinsicData.parameterCount; ++i)
+		{
+			ParameterType parameterType = intrinsicData.parameterTypes[i];
+
+			// Offset must be constant values and thus should be optimized
+			if (parameterType == ParameterType::SampleOffset)
+			{
+				PropagateConstants(intrinsicExpr.parameters[paramIndex]);
+				if (intrinsicExpr.parameters[paramIndex]->GetType() != NodeType::ConstantValueExpression)
+					throw CompilerConstantExpressionRequiredError{ intrinsicExpr.parameters[paramIndex]->sourceLocation };
+			}
+
+			if (parameterType < ParameterType::ConstraintStart)
+				paramIndex++;
+		}
 
 		intrinsicExpr.cachedExpressionType = ComputeExpressionType(intrinsicExpr, BuildStringifier(intrinsicExpr.sourceLocation));
 		return DontVisitChildren{};

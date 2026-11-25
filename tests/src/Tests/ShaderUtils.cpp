@@ -208,14 +208,14 @@ namespace NAZARA_ANONYMOUS_NAMESPACE
 		return std::string_view(&fullCode[prefixIndex], suffixIndex - prefixIndex);
 	}
 
-	void HandleSourceError(std::string_view lang, std::string_view expectedCode, std::string_view outputCode)
+	void HandleSourceError(std::string_view lang, std::string_view expectedCode, std::string_view outputCode, bool allowPartialMatch)
 	{
 		constexpr std::size_t PartialMatchLength = 30;
 		constexpr std::size_t PartialMatchLinePrefix = 3;
 		constexpr std::size_t PartialMatchLineSuffix = 20;
 
 		// Find difference byte (only works when expecting full output)
-		if (std::size_t offset = expectedCode.find(CappedView(outputCode, PartialMatchLength)); offset != expectedCode.npos)
+		if (std::size_t offset = expectedCode.find(CappedView(outputCode, PartialMatchLength)); allowPartialMatch && offset != expectedCode.npos)
 		{
 			std::size_t minSize = std::min(expectedCode.size(), outputCode.size()) - PartialMatchLength;
 			for (; offset < minSize; ++offset)
@@ -277,7 +277,7 @@ void ExpectGLSL(nzsl::ShaderStageType stageType, nzsl::Ast::Module& shaderModule
 			std::string outputCode = SanitizeSource(output.code);
 
 			if (outputCode.find(expectedSource) == std::string::npos)
-				HandleSourceError("GLSL", expectedSource, outputCode);
+				HandleSourceError("GLSL", expectedSource, outputCode, true);
 		}
 
 		if (!testShaderCompilation)
@@ -373,7 +373,7 @@ void ExpectNZSL(const nzsl::Ast::Module& shaderModule, std::string_view expected
 		DYNAMIC_SECTION("Validating expected code")
 		{
 			if (output.find(source) == std::string::npos)
-				HandleSourceError("NZSL", source, output);
+				HandleSourceError("NZSL", source, output, true);
 		}
 
 		WHEN("Validating full NZSL code (by recompiling it)")
@@ -423,7 +423,7 @@ void ExpectSPIRV(nzsl::Ast::Module& shaderModule, std::string_view expectedOutpu
 				nzsl::LangWriter langWriter;
 				INFO("AST to NZSL (for debugging):\n" << langWriter.Generate(targetModule));
 
-				HandleSourceError("SPIR-V", source, output);
+				HandleSourceError("SPIR-V", source, output, false);
 			}
 		}
 

@@ -203,12 +203,13 @@ namespace nzsl::LangData
 			Sampler,            // sampler
 			SampleCoordinates,  // Floating-point primitive or vector used to sample the texture parameter
 			SampleGrad,         // Floating-point primitive or vector used to specificy the gradients to sample the the texture parameter
+			SampleOffset,       // Integer vector/scalar used to address a texel of the sampler/texture parameter (not taking layer into account)
 			Scalar,             // Boolean/Integer/Floating-point/Unsigned integer
 			ScalarVec,          // Scalar or vector of scalar
 			SignedNumerical,    // Integer/Floating-point value
 			SignedNumericalVec, // Signed numerical or vector of signed numerical
 			Texture,            // texture
-			TextureCoordinates, // Integer vector used to address a texel of the sampler/texture parameter
+			TextureCoordinates, // Integer vector/scalar used to address a texel of the sampler/texture parameter
 			TextureData,        // Texture content
 
 			// Constraints
@@ -360,9 +361,12 @@ namespace nzsl::LangData
 			{ Ast::IntrinsicType::TextureQuerySizeLod,               Build("textureQuerySizeLod",               true,  ReturnType::Param0TextureSize,  Params<ParameterType::Sampler, ParameterType::I32>{}) },
 			{ Ast::IntrinsicType::TextureRead,                       Build("textureRead",                       true,  ReturnType::Param0TextureValue, Params<ParameterType::Texture, ParameterType::TextureCoordinates>{}) },
 			{ Ast::IntrinsicType::TextureSampleExplicitLod,          Build("textureSampleExplicitLod",          true,  ReturnType::Param0SampledValue, Params<ParameterType::Sampler, ParameterType::SampleCoordinates, ParameterType::F32>{}) },
+			{ Ast::IntrinsicType::TextureSampleExplicitLodOffset,    Build("textureSampleExplicitLodOffset",    true,  ReturnType::Param0SampledValue, Params<ParameterType::Sampler, ParameterType::SampleCoordinates, ParameterType::F32, ParameterType::SampleOffset>{}) },
 			{ Ast::IntrinsicType::TextureSampleGrad,                 Build("textureSampleGrad",                 true,  ReturnType::Param0SampledValue, Params<ParameterType::Sampler, ParameterType::SampleCoordinates, ParameterType::SampleGrad, ParameterType::SampleGrad>{}) },
+			{ Ast::IntrinsicType::TextureSampleGradOffset,           Build("textureSampleGradOffset",           true,  ReturnType::Param0SampledValue, Params<ParameterType::Sampler, ParameterType::SampleCoordinates, ParameterType::SampleGrad, ParameterType::SampleGrad, ParameterType::SampleOffset>{}) },
 			{ Ast::IntrinsicType::TextureSampleImplicitLod,          Build("textureSampleImplicitLod",          true,  ReturnType::Param0SampledValue, Params<ParameterType::Sampler, ParameterType::SampleCoordinates>{}, ShaderStageType::Fragment) },
 			{ Ast::IntrinsicType::TextureSampleImplicitLodDepthComp, Build("textureSampleImplicitLodDepthComp", true,  ReturnType::Param0SampledValue, Params<ParameterType::Sampler, ParameterType::SampleCoordinates, ParameterType::F32>{}, ShaderStageType::Fragment) },
+			{ Ast::IntrinsicType::TextureSampleImplicitLodOffset,    Build("textureSampleImplicitLodOffset",    true,  ReturnType::Param0SampledValue, Params<ParameterType::Sampler, ParameterType::SampleCoordinates, ParameterType::SampleOffset>{}, ShaderStageType::Fragment) },
 			{ Ast::IntrinsicType::TextureWrite,                      Build("textureWrite",                      true,  ReturnType::None,               Params<ParameterType::Texture, ParameterType::TextureCoordinates, ParameterType::TextureData>{}) },
 			{ Ast::IntrinsicType::Trunc,                             Build("trunc",                             false, ReturnType::Param0Type,         Params<ParameterType::FValVec>{}) },
 		});

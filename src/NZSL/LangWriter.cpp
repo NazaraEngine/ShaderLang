@@ -1388,10 +1388,31 @@ namespace nzsl
 				method = true;
 				break;
 
+			case Ast::IntrinsicType::TextureSampleImplicitLodDepthComp:
+				assert(!node.parameters.empty());
+				Visit(node.parameters.front(), true);
+				Append(".SampleDepthComp");
+				method = true;
+				break;
+
+			case Ast::IntrinsicType::TextureSampleImplicitLodOffset:
+				assert(!node.parameters.empty());
+				Visit(node.parameters.front(), true);
+				Append(".SampleOffset");
+				method = true;
+				break;
+
 			case Ast::IntrinsicType::TextureSampleExplicitLod:
 				assert(!node.parameters.empty());
 				Visit(node.parameters.front(), true);
 				Append(".SampleLevel");
+				method = true;
+				break;
+
+			case Ast::IntrinsicType::TextureSampleExplicitLodOffset:
+				assert(!node.parameters.empty());
+				Visit(node.parameters.front(), true);
+				Append(".SampleLevelOffset");
 				method = true;
 				break;
 
@@ -1402,10 +1423,10 @@ namespace nzsl
 				method = true;
 				break;
 
-			case Ast::IntrinsicType::TextureSampleImplicitLodDepthComp:
+			case Ast::IntrinsicType::TextureSampleGradOffset:
 				assert(!node.parameters.empty());
 				Visit(node.parameters.front(), true);
-				Append(".SampleDepthComp");
+				Append(".SampleGradOffset");
 				method = true;
 				break;
 

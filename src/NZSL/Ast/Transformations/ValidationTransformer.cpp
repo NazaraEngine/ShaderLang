@@ -2334,6 +2334,7 @@ namespace nzsl::Ast
 					break;
 				}
 
+				case ParameterType::SampleOffset:
 				case ParameterType::TextureCoordinates:
 				{
 					// Special check: vector dimensions must match sample type
@@ -2357,14 +2358,23 @@ namespace nzsl::Ast
 							break;
 
 						case ImageType::E1D_Array:
+							requiredComponentCount = (intrinsicData.parameterTypes[i] == ParameterType::TextureCoordinates) ? 2 : 1;
+							break;
+
 						case ImageType::E2D:
 							requiredComponentCount = 2;
 							break;
 
 						case ImageType::E2D_Array:
+							requiredComponentCount = (intrinsicData.parameterTypes[i] == ParameterType::TextureCoordinates) ? 3 : 2;
+							break;
+
 						case ImageType::E3D:
-						case ImageType::Cubemap:
 							requiredComponentCount = 3;
+							break;
+
+						case ImageType::Cubemap:
+							requiredComponentCount = (intrinsicData.parameterTypes[i] == ParameterType::TextureCoordinates) ? 3 : 0; //< SampleOffset is not supported on cubemap
 							break;
 					}
 

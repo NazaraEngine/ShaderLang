@@ -13,6 +13,7 @@
 #include <NZSL/SpirV/SpirvGenData.hpp>
 #include <NZSL/SpirV/SpirvSection.hpp>
 #include <fmt/format.h>
+#include <frozen/unordered_map.h>
 
 namespace nzsl
 {
@@ -1653,59 +1654,93 @@ namespace nzsl
 		PushResultId(resultId);
 	}
 
-	void SpirvAstVisitor::BuildTextureSampleExplicitLodIntrinsic(const Ast::IntrinsicExpression& node)
+	void SpirvAstVisitor::BuildTextureSampleIntrinsic(const Ast::IntrinsicExpression& node)
 	{
-		if (node.parameters.size() != 3)
-			throw std::runtime_error("textureSampleExplicitLod intrinsic: unexpected parameter count");
-
-		std::uint32_t resultTypeId = m_writer.GetTypeId(ResolveAlias(EnsureExpressionType(node)));
-
-		std::uint32_t samplerId = EvaluateExpression(*node.parameters[0]);
-		std::uint32_t coordinatesId = EvaluateExpression(*node.parameters[1]);
-		std::uint32_t lodId = EvaluateExpression(*node.parameters[2]);
-
-		HandleSourceLocation(node.sourceLocation);
-
-		std::uint32_t resultId = m_writer.AllocateResultId();
-
-		m_currentBlock->AppendVariadic(SpirvOp::OpImageSampleExplicitLod, [&](auto&& append)
+		struct SamplingData
 		{
-			append(resultTypeId);
-			append(resultId);
-			append(samplerId);
-			append(coordinatesId);
-			append(SpirvImageOperands::Lod);
-			append(lodId);
+			SpirvOp op;
+			int depthParam;
+			int lodParam;
+			int offsetParam;
+			int ddxParam;
+			int ddyParam;
+		};
+
+		constexpr auto s_samplingData = frozen::make_unordered_map<Ast::IntrinsicType, SamplingData>({
+			{ Ast::IntrinsicType::TextureSampleExplicitLod, { SpirvOp::OpImageSampleExplicitLod, -1, 2, -1, -1, -1 } },
+			{ Ast::IntrinsicType::TextureSampleExplicitLodOffset, { SpirvOp::OpImageSampleExplicitLod, -1, 2, 3, -1, -1 } },
+			{ Ast::IntrinsicType::TextureSampleGrad, { SpirvOp::OpImageSampleExplicitLod, -1, -1, -1, 2, 3 } },
+			{ Ast::IntrinsicType::TextureSampleGradOffset, { SpirvOp::OpImageSampleExplicitLod, -1, -1, 4, 2, 3 } },
+			{ Ast::IntrinsicType::TextureSampleImplicitLod, { SpirvOp::OpImageSampleImplicitLod, -1, -1, -1, -1, -1 } },
+			{ Ast::IntrinsicType::TextureSampleImplicitLodOffset, { SpirvOp::OpImageSampleImplicitLod, -1, -1, 2, -1, -1 } },
+			{ Ast::IntrinsicType::TextureSampleImplicitLodDepthComp, { SpirvOp::OpImageSampleDrefImplicitLod, 2, -1, -1, -1, -1 } }
 		});
 
-		PushResultId(resultId);
-	}
+		auto it = s_samplingData.find(node.intrinsic);
+		NazaraAssert(it != s_samplingData.end());
 
-	void SpirvAstVisitor::BuildTextureSampleGradIntrinsic(const Ast::IntrinsicExpression& node)
-	{
-		if (node.parameters.size() != 4)
-			throw std::runtime_error("textureSampleGrad intrinsic: unexpected parameter count");
+		const auto& samplingData = it->second;
 
 		std::uint32_t resultTypeId = m_writer.GetTypeId(ResolveAlias(EnsureExpressionType(node)));
 
+		constexpr std::uint32_t InvalidValue = Nz::MaxValue();
+
 		std::uint32_t samplerId = EvaluateExpression(*node.parameters[0]);
 		std::uint32_t coordinatesId = EvaluateExpression(*node.parameters[1]);
-		std::uint32_t dxId = EvaluateExpression(*node.parameters[2]);
-		std::uint32_t dyId = EvaluateExpression(*node.parameters[3]);
+		std::uint32_t depthId = samplingData.depthParam >= 0 ? EvaluateExpression(*node.parameters[samplingData.depthParam]) : InvalidValue;
+		std::uint32_t lodId = samplingData.lodParam >= 0 ? EvaluateExpression(*node.parameters[samplingData.lodParam]) : InvalidValue;
+		std::uint32_t ddxId = samplingData.ddxParam >= 0 ? EvaluateExpression(*node.parameters[samplingData.ddxParam]) : InvalidValue;
+		std::uint32_t ddyId = samplingData.ddyParam >= 0 ? EvaluateExpression(*node.parameters[samplingData.ddyParam]) : InvalidValue;
+
+		std::uint32_t offsetId = InvalidValue;
+		if (samplingData.offsetParam >= 0)
+		{
+			auto& exprPtr = *node.parameters[samplingData.offsetParam];
+			if (exprPtr.GetType() != Ast::NodeType::ConstantValueExpression)
+				throw std::runtime_error("texture sample offset parameter must a constant value");
+
+			offsetId = m_writer.RegisterSingleConstant(Nz::SafeCast<Ast::ConstantValueExpression&>(exprPtr).value);
+		}
 
 		HandleSourceLocation(node.sourceLocation);
 
 		std::uint32_t resultId = m_writer.AllocateResultId();
 
-		m_currentBlock->AppendVariadic(SpirvOp::OpImageSampleExplicitLod, [&](auto&& append)
+		m_currentBlock->AppendVariadic(samplingData.op, [&](auto&& append)
 		{
 			append(resultTypeId);
 			append(resultId);
 			append(samplerId);
 			append(coordinatesId);
-			append(SpirvImageOperands::Grad);
-			append(dxId);
-			append(dyId);
+
+			if (depthId != InvalidValue)
+				append(depthId);
+
+			Nz::Flags<SpirvImageOperands> operandFlags;
+			if (lodId != InvalidValue)
+				operandFlags |= SpirvImageOperands::Lod;
+
+			if (ddxId != InvalidValue && ddyId != InvalidValue)
+				operandFlags |= SpirvImageOperands::Grad;
+
+			if (offsetId != InvalidValue)
+				operandFlags |= SpirvImageOperands::ConstOffset;
+
+			if (operandFlags != 0)
+				append(static_cast<std::uint32_t>(operandFlags));
+
+			// Order matters for values (smaller bits appear first)
+			if (lodId != InvalidValue) //< lod (2)
+				append(lodId);
+
+			if (ddxId != InvalidValue && ddyId != InvalidValue) //< grad (4)
+			{
+				append(ddxId);
+				append(ddyId);
+			}
+
+			if (offsetId != InvalidValue) //< offset (8)
+				append(offsetId);
 		});
 
 		PushResultId(resultId);

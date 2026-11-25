@@ -616,6 +616,7 @@ namespace nzsl::Ast
 				}
 
 				case ParameterType::I32:
+				case ParameterType::SampleOffset:
 				case ParameterType::TextureCoordinates:
 				{
 					if (ResolveLiteral(intrinsicExpr.parameters[paramIndex], PrimitiveType::Int32, intrinsicExpr.sourceLocation))

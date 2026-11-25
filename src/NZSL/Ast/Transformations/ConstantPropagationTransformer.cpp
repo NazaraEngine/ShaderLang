@@ -670,6 +670,7 @@ namespace nzsl::Ast
 			case IntrinsicType::AtomicMax:
 			case IntrinsicType::AtomicMin:
 			case IntrinsicType::AtomicOr:
+			case IntrinsicType::AtomicSub:
 			case IntrinsicType::AtomicXor:
 			//case IntrinsicType::ControlBarrierSubgroup:
 			case IntrinsicType::ControlBarrierWorkgroup:
@@ -695,14 +696,13 @@ namespace nzsl::Ast
 			case IntrinsicType::TextureRead:
 			case IntrinsicType::TextureWrite:
 			case IntrinsicType::TextureSampleExplicitLod:
+			case IntrinsicType::TextureSampleExplicitLodOffset:
 			case IntrinsicType::TextureSampleGrad:
+			case IntrinsicType::TextureSampleGradOffset:
 			case IntrinsicType::TextureSampleImplicitLod:
 			case IntrinsicType::TextureSampleImplicitLodDepthComp:
+			case IntrinsicType::TextureSampleImplicitLodOffset:
 				break;
-
-			default:
-				break;
-			
 		}
 
 		return DontVisitChildren{};
