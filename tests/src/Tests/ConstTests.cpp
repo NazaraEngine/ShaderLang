@@ -393,4 +393,54 @@ fn main()
 )");
 	}
 
+
+	WHEN("using an option as a texture sample offset")
+	{
+		// Sample offsets must be constant, but partial compilation must not reject an offset which is not resolved yet
+		std::string_view shaderSource = R"(
+[nzsl("1.2")]
+module;
+
+option OffsetX: i32 = 1;
+
+external
+{
+	[binding(0)] tex: sampler2D[f32]
+}
+
+[entry(frag)]
+fn main()
+{
+	let color = tex.SampleOffset(vec2[f32](0.0, 1.0), vec2[i32](OffsetX, 0));
+}
+)";
+
+		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(shaderSource);
+
+		nzsl::Ast::ResolveTransformer resolverTransformer;
+
+		// First pass
+		{
+			nzsl::Ast::TransformerContext context;
+			context.partialCompilation = true;
+
+			REQUIRE_NOTHROW(resolverTransformer.Transform(*shaderModule, context, {}));
+		}
+
+		// Second pass
+		{
+			nzsl::Ast::TransformerContext context;
+
+			REQUIRE_NOTHROW(resolverTransformer.Transform(*shaderModule, context, {}));
+		}
+
+		ExpectNZSL(*shaderModule, R"(
+[entry(frag)]
+fn main()
+{
+	let color: vec4[f32] = tex.SampleOffset(vec2[f32](0.0, 1.0), vec2[i32](1, 0));
+}
+)");
+	}
+
 }
