@@ -1054,6 +1054,8 @@ namespace nzsl
 			{
 				std::invoke(arg, this, node);
 			}
+			else if constexpr (std::is_same_v<T, std::monostate>)
+				throw std::runtime_error("unexpected intrinsic that should have been transformed before");
 			else
 				static_assert(Nz::AlwaysFalse<T>(), "non-exhaustive visitor");
 		}, it->second.op);

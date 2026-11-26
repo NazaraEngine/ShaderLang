@@ -622,6 +622,7 @@ namespace nzsl::Ast
 			case IntrinsicType::ArcTanh:
 			case IntrinsicType::Ceil:
 			case IntrinsicType::Clamp:
+			case IntrinsicType::Clamp01:
 			case IntrinsicType::Cos:
 			case IntrinsicType::Cosh:
 			case IntrinsicType::CrossProduct:

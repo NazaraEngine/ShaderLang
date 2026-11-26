@@ -21,6 +21,7 @@
 #include <NZSL/Ast/Transformations/EliminateUnusedTransformer.hpp>
 #include <NZSL/Ast/Transformations/ForToWhileTransformer.hpp>
 #include <NZSL/Ast/Transformations/IdentifierTransformer.hpp>
+#include <NZSL/Ast/Transformations/IntrinsicTransformer.hpp>
 #include <NZSL/Ast/Transformations/LiteralTransformer.hpp>
 #include <NZSL/Ast/Transformations/LoopUnrollTransformer.hpp>
 #include <NZSL/Ast/Transformations/ResolveTransformer.hpp>
@@ -639,6 +640,10 @@ namespace nzsl
 		{
 			opt.removeConstArraySize = false;
 			opt.removeTypeConstant = false;
+		});
+		executor.AddPass<Ast::IntrinsicTransformer>([](Ast::IntrinsicTransformer::Options& opt)
+		{
+			opt.transformClamp01 = true;
 		});
 		executor.AddPass<Ast::AliasTransformer>();
 		executor.AddPass<Ast::IdentifierTransformer>(secondIdentifierPassOptions);
@@ -2241,6 +2246,10 @@ namespace nzsl
 			case Ast::IntrinsicType::TextureWrite:                     Append("imageStore");            break;
 			case Ast::IntrinsicType::Trunc:                            Append("trunc");                 break;
 
+			// Unsupported intrinsic (should have been transformed before)
+			case Ast::IntrinsicType::Clamp01:
+				throw std::runtime_error("unexpected intrinsic that should have been transformed before");
+
 			// select using mix (order of parameters)
 			case Ast::IntrinsicType::Select:
 			{
@@ -2929,7 +2938,7 @@ namespace nzsl
 
 		Append(";");
 	}
-	
+
 	void GlslWriter::Visit(Ast::DeclareWorkgroupSharedStatement& node)
 	{
 		HandleSourceLocation(node.sourceLocation, DebugLevel::Regular);

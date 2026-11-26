@@ -1302,7 +1302,7 @@ namespace nzsl::Ast
 
 		return DontVisitChildren{};
 	}
-	
+
 	auto ValidationTransformer::Transform(DeclareWorkgroupSharedStatement&& node) -> StatementTransformation
 	{
 		HandleChildren(node);

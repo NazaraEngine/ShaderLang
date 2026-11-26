@@ -2406,32 +2406,6 @@ namespace nzsl::Ast
 
 		HandleChildren(intrinsicExpr);
 
-		auto intrinsicIt = LangData::s_intrinsicData.find(intrinsicExpr.intrinsic);
-		if (intrinsicIt == LangData::s_intrinsicData.end())
-			throw AstInternalError{ intrinsicExpr.sourceLocation, fmt::format("missing intrinsic data for intrinsic {}", Nz::UnderlyingCast(intrinsicExpr.intrinsic)) };
-
-		const auto& intrinsicData = intrinsicIt->second;
-
-		if (intrinsicExpr.parameters.size() != intrinsicData.nonConstraintParameterCount)
-			throw CompilerIntrinsicExpectedParameterCountError{ intrinsicExpr.sourceLocation, Nz::SafeCast<std::uint32_t>(intrinsicData.nonConstraintParameterCount), intrinsicData.name, Nz::SafeCast<std::uint32_t>(intrinsicExpr.parameters.size()) };
-
-		std::size_t paramIndex = 0;
-		for (std::size_t i = 0; i < intrinsicData.parameterCount; ++i)
-		{
-			ParameterType parameterType = intrinsicData.parameterTypes[i];
-
-			// Offset must be constant values and thus should be optimized
-			if (parameterType == ParameterType::SampleOffset)
-			{
-				PropagateConstants(intrinsicExpr.parameters[paramIndex]);
-				if (intrinsicExpr.parameters[paramIndex]->GetType() != NodeType::ConstantValueExpression && !m_context->partialCompilation)
-					throw CompilerConstantExpressionRequiredError{ intrinsicExpr.parameters[paramIndex]->sourceLocation };
-			}
-
-			if (parameterType < ParameterType::ConstraintStart)
-				paramIndex++;
-		}
-
 		intrinsicExpr.cachedExpressionType = ComputeExpressionType(intrinsicExpr, BuildStringifier(intrinsicExpr.sourceLocation));
 		return DontVisitChildren{};
 	}

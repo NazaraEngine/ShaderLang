@@ -31,7 +31,6 @@ namespace nzsl::Ast
 
 			struct Options
 			{
-				// TODO: Turn all of theses into separate passes
 				std::shared_ptr<ModuleResolver> moduleResolver;
 			};
 

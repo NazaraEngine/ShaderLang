@@ -2,6 +2,7 @@
 #include <NZSL/FilesystemModuleResolver.hpp>
 #include <NZSL/ShaderBuilder.hpp>
 #include <NZSL/Parser.hpp>
+#include <NZSL/Ast/Transformations/IntrinsicTransformer.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <cctype>
 
@@ -429,9 +430,14 @@ fn main()
 
 		// Second pass
 		{
+			nzsl::Ast::IntrinsicTransformer intrinsicTransformer;
+			nzsl::Ast::IntrinsicTransformer::Options intrinsicTransformerOptions;
+			intrinsicTransformerOptions.resolveConstantParameters = true;
+
 			nzsl::Ast::TransformerContext context;
 
 			REQUIRE_NOTHROW(resolverTransformer.Transform(*shaderModule, context, {}));
+			REQUIRE_NOTHROW(intrinsicTransformer.Transform(*shaderModule, context, intrinsicTransformerOptions));
 		}
 
 		ExpectNZSL(*shaderModule, R"(
@@ -442,5 +448,4 @@ fn main()
 }
 )");
 	}
-
 }

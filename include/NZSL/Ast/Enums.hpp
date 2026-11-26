@@ -160,7 +160,7 @@ namespace nzsl::Ast
 
 	enum class IntrinsicType
 	{
-		// Next free index: 90
+		// Next free index: 91
 		Abs                               = 31,
 		All                               = 48,
 		Any                               = 49,
@@ -187,6 +187,7 @@ namespace nzsl::Ast
 		ControlAndMemoryBarrierWorkgroup  = 77,
 		Ceil                              = 34,
 		Clamp                             = 41,
+		Clamp01                           = 90,
 		Cos                               = 15,
 		Cosh                              = 16,
 		CrossProduct                      = 0,

@@ -1117,26 +1117,6 @@ external
 	[binding(0)] tex: sampler2D[f32]
 }
 
-struct FragInput
-{
-	offset: vec2[i32]
-}
-
-fn main(input: FragInput)
-{
-	let a = tex.SampleOffset(vec2[f32](0.0, 1.0), input.offset);
-}
-)"), "(17,48 -> 59): CConstantExpressionRequired error: a constant expression is required in this context");
-
-			CHECK_THROWS_WITH(Compile(R"(
-[nzsl("1.2")]
-module;
-
-external
-{
-	[binding(0)] tex: sampler2D[f32]
-}
-
 fn main()
 {
 	let a = tex.SampleOffset(vec2[f32](0.0, 1.0));

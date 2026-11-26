@@ -95,7 +95,7 @@ namespace nzsl::Ast
 
 			if (!castExpr.targetType.IsResultingValue())
 				return false;
-			
+
 			if (auto targetTypeOpt = ResolveLiteralType(castExpr.targetType.GetResultingValue(), referenceType, sourceLocation))
 			{
 				castExpr.targetType = *targetTypeOpt;

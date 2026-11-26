@@ -1286,6 +1286,7 @@ namespace nzsl
 			case Ast::IntrinsicType::AtomicXor:
 			case Ast::IntrinsicType::Ceil:
 			case Ast::IntrinsicType::Clamp:
+			case Ast::IntrinsicType::Clamp01:
 			//case Ast::IntrinsicType::ControlBarrierSubgroup:
 			case Ast::IntrinsicType::ControlBarrierWorkgroup:
 			//case Ast::IntrinsicType::ControlAndMemoryBarrierSubgroup:
@@ -1740,7 +1741,7 @@ namespace nzsl
 
 		Append(";");
 	}
-	
+
 	void LangWriter::Visit(Ast::DeclareWorkgroupSharedStatement& node)
 	{
 		AppendAttributes(true, TagAttribute{ node.tag });

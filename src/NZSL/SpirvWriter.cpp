@@ -26,6 +26,7 @@
 #include <NZSL/Ast/Transformations/ConstantRemovalTransformer.hpp>
 #include <NZSL/Ast/Transformations/EliminateUnusedTransformer.hpp>
 #include <NZSL/Ast/Transformations/ForToWhileTransformer.hpp>
+#include <NZSL/Ast/Transformations/IntrinsicTransformer.hpp>
 #include <NZSL/Ast/Transformations/LiteralTransformer.hpp>
 #include <NZSL/Ast/Transformations/LoopUnrollTransformer.hpp>
 #include <NZSL/Ast/Transformations/MatrixTransformer.hpp>
@@ -525,7 +526,7 @@ namespace nzsl
 				var.sourceLocation = node.sourceLocation;
 				var.typeId = m_constantCache.Register(*m_constantCache.BuildPointerType(node.varType.GetResultingValue(), SpirvStorageClass::Function));
 			}
-			
+
 			void Visit(Ast::DeclareWorkgroupSharedStatement& node) override
 			{
 				for (auto& extVar : node.vars)
@@ -602,6 +603,8 @@ namespace nzsl
 					{
 						/* Part of SPIR-V core */
 					}
+					else if constexpr (std::is_same_v<T, std::monostate>)
+						throw std::runtime_error("unexpected intrinsic that should have been transformed before");
 					else
 						static_assert(Nz::AlwaysFalse<T>(), "non-exhaustive visitor");
 				}, intrinsicData.op);
@@ -1029,6 +1032,12 @@ namespace nzsl
 		executor.AddPass<Ast::BindingResolverTransformer>();
 		executor.AddPass<Ast::AliasTransformer>();
 		executor.AddPass<Ast::ReturningStatementTransformer>();
+
+		executor.AddPass<Ast::IntrinsicTransformer>([](Ast::IntrinsicTransformer::Options& opt)
+		{
+			opt.resolveConstantParameters = true;
+			opt.transformClamp01 = true;
+		});
 	}
 
 	std::uint32_t SpirvWriter::AllocateResultId()

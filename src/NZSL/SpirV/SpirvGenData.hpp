@@ -70,7 +70,7 @@ namespace nzsl::SpirvGenData
 
 	struct IntrinsicData
 	{
-		std::variant<SpirvOp, SpirvGlslStd450Op, SpirvGlslStd450Selector, SpirvCodeGenerator> op;
+		std::variant<std::monostate, SpirvOp, SpirvGlslStd450Op, SpirvGlslStd450Selector, SpirvCodeGenerator> op;
 		std::optional<SpirvCapability> capability = std::nullopt;
 	};
 
@@ -97,6 +97,7 @@ namespace nzsl::SpirvGenData
 		{ Ast::IntrinsicType::AtomicXor,                         { &SpirvAstVisitor::BuildAtomicIntrinsic } },
 		{ Ast::IntrinsicType::Ceil,                              { SpirvGlslStd450Op::Ceil } },
 		{ Ast::IntrinsicType::Clamp,                             { &SpirvAstVisitor::SelectClamp } },
+		{ Ast::IntrinsicType::Clamp01,                           { std::monostate{} } },
 		//{ Ast::IntrinsicType::ControlAndMemoryBarrierSubgroup,   { &SpirvAstVisitor::BuildControlBarrierIntrinsic } },
 		{ Ast::IntrinsicType::ControlAndMemoryBarrierWorkgroup,  { &SpirvAstVisitor::BuildControlBarrierIntrinsic } },
 		//{ Ast::IntrinsicType::ControlBarrierSubgroup,            { &SpirvAstVisitor::BuildControlBarrierIntrinsic } },

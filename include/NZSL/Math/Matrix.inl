@@ -48,7 +48,7 @@ namespace nzsl
 
 		return true;
 	}
-	
+
 	template<typename T, std::size_t C, std::size_t R>
 	constexpr bool Matrix<T, C, R>::operator!=(const Matrix& mat) const
 	{

@@ -3060,4 +3060,226 @@ fn main(input: Input)
       OpReturn
       OpFunctionEnd)", {}, {}, true);
 	}
+
+	WHEN("testing clamp01 intrinsic")
+	{
+		std::string_view nzslSource = R"(
+[nzsl_version("1.1")]
+[feature(float64)]
+module;
+
+[entry(frag)]
+fn main()
+{
+	// values don't matter here
+	let d: f64 = 4.2;
+	let f: f32 = -1.0;
+
+	let dv2 = vec2[f64](0.5, 1.0);
+	let dv3 = vec3[f64](0.5, 1.0, -1.02);
+	let dv4 = vec4[f64](0.5, 1.0, -1.02, 0.3);
+
+	let fv2 = vec2[f32](0.5, 1.0);
+	let fv3 = vec3[f32](0.5, 1.0, -1.02);
+	let fv4 = vec4[f32](0.5, 1.0, -1.02, 0.3);
+
+	let result = clamp01(d);
+	let result = clamp01(f);
+	let result = clamp01(dv2);
+	let result = clamp01(dv3);
+	let result = clamp01(dv4);
+	let result = clamp01(fv2);
+	let result = clamp01(fv3);
+	let result = clamp01(fv4);
+
+	// literal tests
+	let result = clamp01(0.5);
+	let result = clamp01(vec2(0.1, 0.2));
+	let result = clamp01(vec3(-1.0, 0.0, 2.0));
+	let result = clamp01(vec4(-1.0, 0.0, 2.0, 0.5));
+}
+)";
+
+		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
+		ResolveModule(*shaderModule);
+
+		// We need GLSL 4.0 for fp64
+		nzsl::GlslWriter::Environment glslEnv;
+		glslEnv.glMajorVersion = 4;
+		glslEnv.glMinorVersion = 0;
+		glslEnv.glES = false;
+
+		ExpectGLSL(*shaderModule, R"(
+void main()
+{
+	double d = 4.2lf;
+	float f = -1.0;
+	dvec2 dv2 = dvec2(0.5lf, 1.0lf);
+	dvec3 dv3 = dvec3(0.5lf, 1.0lf, -1.02lf);
+	dvec4 dv4 = dvec4(0.5lf, 1.0lf, -1.02lf, 0.3lf);
+	vec2 fv2 = vec2(0.5, 1.0);
+	vec3 fv3 = vec3(0.5, 1.0, -1.02);
+	vec4 fv4 = vec4(0.5, 1.0, -1.02, 0.3);
+	double result = clamp(d, 0.0lf, 1.0lf);
+	float result_2 = clamp(f, 0.0, 1.0);
+	dvec2 result_3 = clamp(dv2, dvec2(0.0lf, 0.0lf), dvec2(1.0lf, 1.0lf));
+	dvec3 result_4 = clamp(dv3, dvec3(0.0lf, 0.0lf, 0.0lf), dvec3(1.0lf, 1.0lf, 1.0lf));
+	dvec4 result_5 = clamp(dv4, dvec4(0.0lf, 0.0lf, 0.0lf, 0.0lf), dvec4(1.0lf, 1.0lf, 1.0lf, 1.0lf));
+	vec2 result_6 = clamp(fv2, vec2(0.0, 0.0), vec2(1.0, 1.0));
+	vec3 result_7 = clamp(fv3, vec3(0.0, 0.0, 0.0), vec3(1.0, 1.0, 1.0));
+	vec4 result_8 = clamp(fv4, vec4(0.0, 0.0, 0.0, 0.0), vec4(1.0, 1.0, 1.0, 1.0));
+	float result_9 = clamp(0.5, 0.0, 1.0);
+	vec2 result_10 = clamp(vec2(0.1, 0.2), vec2(0.0, 0.0), vec2(1.0, 1.0));
+	vec3 result_11 = clamp(vec3(-1.0, 0.0, 2.0), vec3(0.0, 0.0, 0.0), vec3(1.0, 1.0, 1.0));
+	vec4 result_12 = clamp(vec4(-1.0, 0.0, 2.0, 0.5), vec4(0.0, 0.0, 0.0, 0.0), vec4(1.0, 1.0, 1.0, 1.0));
+}
+)", {}, glslEnv);
+
+		ExpectNZSL(*shaderModule, R"(
+[entry(frag)]
+fn main()
+{
+	let d: f64 = 4.2;
+	let f: f32 = -1.0;
+	let dv2: vec2[f64] = vec2[f64](0.5, 1.0);
+	let dv3: vec3[f64] = vec3[f64](0.5, 1.0, -1.02);
+	let dv4: vec4[f64] = vec4[f64](0.5, 1.0, -1.02, 0.3);
+	let fv2: vec2[f32] = vec2[f32](0.5, 1.0);
+	let fv3: vec3[f32] = vec3[f32](0.5, 1.0, -1.02);
+	let fv4: vec4[f32] = vec4[f32](0.5, 1.0, -1.02, 0.3);
+	let result: f64 = clamp01(d);
+	let result: f32 = clamp01(f);
+	let result: vec2[f64] = clamp01(dv2);
+	let result: vec3[f64] = clamp01(dv3);
+	let result: vec4[f64] = clamp01(dv4);
+	let result: vec2[f32] = clamp01(fv2);
+	let result: vec3[f32] = clamp01(fv3);
+	let result: vec4[f32] = clamp01(fv4);
+	let result: f32 = clamp01(0.5);
+	let result: vec2[f32] = clamp01(vec2(0.1, 0.2));
+	let result: vec3[f32] = clamp01(vec3(-1.0, 0.0, 2.0));
+	let result: vec4[f32] = clamp01(vec4(-1.0, 0.0, 2.0, 0.5));
+}
+)");
+
+		ExpectSPIRV(*shaderModule, R"(
+ %1 = OpTypeVoid
+ %2 = OpTypeFunction %1
+ %3 = OpTypeFloat 64
+ %4 = OpConstant %3 f64(4.2)
+ %5 = OpTypePointer StorageClass(Function) %3
+ %6 = OpTypeFloat 32
+ %7 = OpConstant %6 f32(-1)
+ %8 = OpTypePointer StorageClass(Function) %6
+ %9 = OpConstant %3 f64(0.5)
+%10 = OpConstant %3 f64(1)
+%11 = OpTypeVector %3 2
+%12 = OpTypePointer StorageClass(Function) %11
+%13 = OpConstant %3 f64(-1.02)
+%14 = OpTypeVector %3 3
+%15 = OpTypePointer StorageClass(Function) %14
+%16 = OpConstant %3 f64(0.3)
+%17 = OpTypeVector %3 4
+%18 = OpTypePointer StorageClass(Function) %17
+%19 = OpConstant %6 f32(0.5)
+%20 = OpConstant %6 f32(1)
+%21 = OpTypeVector %6 2
+%22 = OpTypePointer StorageClass(Function) %21
+%23 = OpConstant %6 f32(-1.02)
+%24 = OpTypeVector %6 3
+%25 = OpTypePointer StorageClass(Function) %24
+%26 = OpConstant %6 f32(0.3)
+%27 = OpTypeVector %6 4
+%28 = OpTypePointer StorageClass(Function) %27
+%29 = OpConstant %3 f64(0)
+%30 = OpConstant %6 f32(0)
+%31 = OpConstantComposite %11 %29 %29
+%32 = OpConstantComposite %11 %10 %10
+%33 = OpConstantComposite %14 %29 %29 %29
+%34 = OpConstantComposite %14 %10 %10 %10
+%35 = OpConstantComposite %17 %29 %29 %29 %29
+%36 = OpConstantComposite %17 %10 %10 %10 %10
+%37 = OpConstantComposite %21 %30 %30
+%38 = OpConstantComposite %21 %20 %20
+%39 = OpConstantComposite %24 %30 %30 %30
+%40 = OpConstantComposite %24 %20 %20 %20
+%41 = OpConstantComposite %27 %30 %30 %30 %30
+%42 = OpConstantComposite %27 %20 %20 %20 %20
+%43 = OpConstant %6 f32(0.1)
+%44 = OpConstant %6 f32(0.2)
+%45 = OpConstantComposite %21 %43 %44
+%46 = OpConstant %6 f32(2)
+%47 = OpConstantComposite %24 %7 %30 %46
+%48 = OpConstantComposite %27 %7 %30 %46 %19
+%50 = OpFunction %1 FunctionControl(0) %2
+%51 = OpLabel
+%52 = OpVariable %5 StorageClass(Function)
+%53 = OpVariable %8 StorageClass(Function)
+%54 = OpVariable %12 StorageClass(Function)
+%55 = OpVariable %15 StorageClass(Function)
+%56 = OpVariable %18 StorageClass(Function)
+%57 = OpVariable %22 StorageClass(Function)
+%58 = OpVariable %25 StorageClass(Function)
+%59 = OpVariable %28 StorageClass(Function)
+%60 = OpVariable %5 StorageClass(Function)
+%61 = OpVariable %8 StorageClass(Function)
+%62 = OpVariable %12 StorageClass(Function)
+%63 = OpVariable %15 StorageClass(Function)
+%64 = OpVariable %18 StorageClass(Function)
+%65 = OpVariable %22 StorageClass(Function)
+%66 = OpVariable %25 StorageClass(Function)
+%67 = OpVariable %28 StorageClass(Function)
+%68 = OpVariable %8 StorageClass(Function)
+%69 = OpVariable %22 StorageClass(Function)
+%70 = OpVariable %25 StorageClass(Function)
+%71 = OpVariable %28 StorageClass(Function)
+      OpStore %52 %4
+      OpStore %53 %7
+%72 = OpCompositeConstruct %11 %9 %10
+      OpStore %54 %72
+%73 = OpCompositeConstruct %14 %9 %10 %13
+      OpStore %55 %73
+%74 = OpCompositeConstruct %17 %9 %10 %13 %16
+      OpStore %56 %74
+%75 = OpCompositeConstruct %21 %19 %20
+      OpStore %57 %75
+%76 = OpCompositeConstruct %24 %19 %20 %23
+      OpStore %58 %76
+%77 = OpCompositeConstruct %27 %19 %20 %23 %26
+      OpStore %59 %77
+%78 = OpLoad %3 %52
+%79 = OpExtInst %3 GLSLstd450 FClamp %78 %29 %10
+      OpStore %60 %79
+%80 = OpLoad %6 %53
+%81 = OpExtInst %6 GLSLstd450 FClamp %80 %30 %20
+      OpStore %61 %81
+%82 = OpLoad %11 %54
+%83 = OpExtInst %11 GLSLstd450 FClamp %82 %31 %32
+      OpStore %62 %83
+%84 = OpLoad %14 %55
+%85 = OpExtInst %14 GLSLstd450 FClamp %84 %33 %34
+      OpStore %63 %85
+%86 = OpLoad %17 %56
+%87 = OpExtInst %17 GLSLstd450 FClamp %86 %35 %36
+      OpStore %64 %87
+%88 = OpLoad %21 %57
+%89 = OpExtInst %21 GLSLstd450 FClamp %88 %37 %38
+      OpStore %65 %89
+%90 = OpLoad %24 %58
+%91 = OpExtInst %24 GLSLstd450 FClamp %90 %39 %40
+      OpStore %66 %91
+%92 = OpLoad %27 %59
+%93 = OpExtInst %27 GLSLstd450 FClamp %92 %41 %42
+      OpStore %67 %93
+%94 = OpExtInst %6 GLSLstd450 FClamp %19 %30 %20
+      OpStore %68 %94
+%95 = OpExtInst %21 GLSLstd450 FClamp %45 %37 %38
+      OpStore %69 %95
+%96 = OpExtInst %24 GLSLstd450 FClamp %47 %39 %40
+      OpStore %70 %96
+%97 = OpExtInst %27 GLSLstd450 FClamp %48 %41 %42
+      OpStore %71 %97
+      OpReturn
+      OpFunctionEnd)", {}, {}, true);
+	}
 }

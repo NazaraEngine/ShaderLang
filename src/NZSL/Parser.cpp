@@ -54,7 +54,7 @@ namespace nzsl
 
 			return frozen::make_unordered_map(identifierToBuiltin);
 		}
-		
+
 		template<typename K, typename V, std::size_t N, std::size_t N2>
 		constexpr auto BuildIdentifierMapping(const frozen::unordered_map<K, V, N>& container, const std::array<std::pair<std::string_view, K>, N2>& alias)
 		{
@@ -225,7 +225,7 @@ namespace nzsl
 
 		NAZARA_UNREACHABLE();
 	}
-	
+
 	std::string_view Parser::ToString(AccessPolicy accessPolicy)
 	{
 		switch (accessPolicy)

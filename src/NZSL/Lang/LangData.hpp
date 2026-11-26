@@ -139,7 +139,7 @@ namespace nzsl::LangData
 		{ ShaderStageType::Fragment, { "frag", "fragment" }},
 		{ ShaderStageType::Vertex,   { "vert", "vertex" }},
 	});
-	
+
 	struct ImageFormatData
 	{
 		std::string_view identifier;
@@ -305,6 +305,7 @@ namespace nzsl::LangData
 			{ Ast::IntrinsicType::ControlBarrierWorkgroup,           Build("workgroupBarrier",                  false, ReturnType::None,               Params<>{}, {}, Version::Atomics) },
 			{ Ast::IntrinsicType::Ceil,                              Build("ceil",                              false, ReturnType::Param0Type,         Params<ParameterType::FValVec>{}) },
 			{ Ast::IntrinsicType::Clamp,                             Build("clamp",                             false, ReturnType::Param0Type,         Params<ParameterType::FValVec, ParameterType::FValVec, ParameterType::FValVec, ParameterType::SameType>{}) },
+			{ Ast::IntrinsicType::Clamp01,                           Build("clamp01",                           false, ReturnType::Param0Type,         Params<ParameterType::FValVec>{}) },
 			{ Ast::IntrinsicType::Cos,                               Build("cos",                               false, ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
 			{ Ast::IntrinsicType::Cosh,                              Build("cosh",                              false, ReturnType::Param0Type,         Params<ParameterType::FValVec1632>{}) },
 			{ Ast::IntrinsicType::CrossProduct,                      Build("cross",                             false, ReturnType::Param0Type,         Params<ParameterType::FVec3, ParameterType::FVec3, ParameterType::SameType>{}) },
