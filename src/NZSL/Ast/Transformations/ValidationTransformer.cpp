@@ -2374,8 +2374,13 @@ namespace nzsl::Ast
 							break;
 
 						case ImageType::Cubemap:
-							requiredComponentCount = (intrinsicData.parameterTypes[i] == ParameterType::TextureCoordinates) ? 3 : 0; //< SampleOffset is not supported on cubemap
+						{
+							if (intrinsicData.parameterTypes[i] == ParameterType::SampleOffset)
+								throw CompilerIntrinsicSampleOffsetUnsupportedError{ node.parameters[paramIndex]->sourceLocation };
+
+							requiredComponentCount = 3;
 							break;
+						}
 					}
 
 					if (requiredComponentCount == 0)
