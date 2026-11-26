@@ -2424,7 +2424,7 @@ namespace nzsl::Ast
 			if (parameterType == ParameterType::SampleOffset)
 			{
 				PropagateConstants(intrinsicExpr.parameters[paramIndex]);
-				if (intrinsicExpr.parameters[paramIndex]->GetType() != NodeType::ConstantValueExpression)
+				if (intrinsicExpr.parameters[paramIndex]->GetType() != NodeType::ConstantValueExpression && !m_context->partialCompilation)
 					throw CompilerConstantExpressionRequiredError{ intrinsicExpr.parameters[paramIndex]->sourceLocation };
 			}
 
