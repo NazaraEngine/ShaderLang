@@ -25,6 +25,8 @@ fn foo()
 	let bar = max(min(1.0, 2.0), 3.0);
 	let bar = max(1, u32(2));
 	let bar: vec3[u32] = vec3(1, 2, 3);
+	let bar = vec4(bar, 4);
+	let bar = bar + vec4(1, 0, 1, 0);
 }
 )";
 
@@ -42,6 +44,8 @@ void main()
 	float bar_5 = max(min(1.0, 2.0), 3.0);
 	uint bar_6 = max(1u, 2u);
 	uvec3 bar_7 = uvec3(1u, 2u, 3u);
+	uvec4 bar_8 = uvec4(bar_7, 4u);
+	uvec4 bar_9 = bar_8 + uvec4(1u, 0u, 1u, 0u);
 })");
 
 		ExpectNZSL(*shaderModule, R"(
@@ -54,35 +58,45 @@ fn foo()
 	let bar: f32 = max(min(1.0, 2.0), 3.0);
 	let bar: u32 = max(u32(1), u32(2));
 	let bar: vec3[u32] = vec3[u32](1, 2, 3);
+	let bar: vec4[u32] = vec4[u32](bar, 4);
+	let bar: vec4[u32] = bar + vec4[u32](1, 0, 1, 0);
 }
 )");
 
 		ExpectSPIRV(*shaderModule, R"(
-%23 = OpFunction %1 FunctionControl(0) %2
-%24 = OpLabel
-%25 = OpVariable %5 StorageClass(Function)
-%26 = OpVariable %10 StorageClass(Function)
-%27 = OpVariable %10 StorageClass(Function)
-%28 = OpVariable %5 StorageClass(Function)
-%29 = OpVariable %5 StorageClass(Function)
-%30 = OpVariable %17 StorageClass(Function)
-%31 = OpVariable %21 StorageClass(Function)
-      OpStore %25 %4
-%32 = OpLoad %3 %25
-%33 = OpFAdd %3 %6 %32
-%34 = OpCompositeConstruct %9 %33 %33 %33
-      OpStore %26 %34
-      OpStore %27 %12
-%35 = OpExtInst %3 GLSLstd450 FMax %6 %11
-%36 = OpExtInst %3 GLSLstd450 FMin %11 %6
-%37 = OpFAdd %3 %35 %36
-      OpStore %28 %37
-%38 = OpExtInst %3 GLSLstd450 FMin %6 %11
-%39 = OpExtInst %3 GLSLstd450 FMax %38 %13
-      OpStore %29 %39
-%40 = OpExtInst %14 GLSLstd450 UMax %15 %16
-      OpStore %30 %40
-      OpStore %31 %20
+%28 = OpFunction %1 FunctionControl(0) %2
+%29 = OpLabel
+%30 = OpVariable %5 StorageClass(Function)
+%31 = OpVariable %10 StorageClass(Function)
+%32 = OpVariable %10 StorageClass(Function)
+%33 = OpVariable %5 StorageClass(Function)
+%34 = OpVariable %5 StorageClass(Function)
+%35 = OpVariable %17 StorageClass(Function)
+%36 = OpVariable %21 StorageClass(Function)
+%37 = OpVariable %24 StorageClass(Function)
+%38 = OpVariable %24 StorageClass(Function)
+      OpStore %30 %4
+%39 = OpLoad %3 %30
+%40 = OpFAdd %3 %6 %39
+%41 = OpCompositeConstruct %9 %40 %40 %40
+      OpStore %31 %41
+      OpStore %32 %12
+%42 = OpExtInst %3 GLSLstd450 FMax %6 %11
+%43 = OpExtInst %3 GLSLstd450 FMin %11 %6
+%44 = OpFAdd %3 %42 %43
+      OpStore %33 %44
+%45 = OpExtInst %3 GLSLstd450 FMin %6 %11
+%46 = OpExtInst %3 GLSLstd450 FMax %45 %13
+      OpStore %34 %46
+%47 = OpExtInst %14 GLSLstd450 UMax %15 %16
+      OpStore %35 %47
+      OpStore %36 %20
+%48 = OpLoad %18 %36
+%49 = OpCompositeConstruct %23 %48 %22
+      OpStore %37 %49
+%50 = OpLoad %23 %37
+%51 = OpIAdd %23 %50 %26
+      OpStore %38 %51
       OpReturn
       OpFunctionEnd)", {}, {}, true);
 	}

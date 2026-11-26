@@ -2262,12 +2262,21 @@ namespace nzsl::Ast
 			for (std::size_t i = 0; i < castExpr.expressions.size(); ++i)
 			{
 				const ExpressionType* exprType = GetResolvedExpressionType(MandatoryExpr(castExpr.expressions[i], castExpr.sourceLocation), true);
-				if (!exprType || !IsPrimitiveType(*exprType))
-					break;
+				if (!exprType)
+					break; //< unresolved
 
-				innerType = std::get<PrimitiveType>(*exprType);
-				if (!IsLiteralType(*innerType))
-					break; //< continue if literal type as we could encounter a non-literal type later (e.g. vec3(1, u32(2), 3))
+				if (IsPrimitiveType(*exprType))
+				{
+					innerType = std::get<PrimitiveType>(*exprType);
+					if (!IsLiteralType(*innerType))
+						break; //< continue if literal type as we could encounter a non-literal type later (e.g. vec3(1, u32(2), 3))
+				}
+				else if (IsVectorType(*exprType))
+				{
+					innerType = std::get<VectorType>(*exprType).type;
+					if (!IsLiteralType(*innerType))
+						break; //< continue if literal type as we could encounter a non-literal type later (e.g. vec3(1, u32(2), 3))
+				}
 			}
 
 			if (innerType)
