@@ -833,6 +833,247 @@ fn main(input: VertOutput)
        OpFunctionEnd)", {}, {}, true);
 	}
 
+	WHEN("testing texture sample level offset intrinsics")
+	{
+		std::string_view nzslSource = R"(
+[nzsl_version("1.1")]
+[feature(texture1D)]
+module;
+
+[auto_binding]
+external
+{
+	tex1D: sampler1D[f32],
+	tex1DArray: sampler1D_array[f32],
+	tex2D: sampler2D[f32],
+	tex2DArray: sampler2D_array[f32],
+	tex3D: sampler3D[f32]
+}
+
+struct VertOutput
+{
+	[location(0)] uv: vec3[f32]
+}
+
+[entry(frag)]
+fn main(input: VertOutput)
+{
+	let uv1f = input.uv.x;
+	let uv2f = input.uv.xy;
+	let uv3f = input.uv.xyz;
+
+	let sampleLevelResult1 = tex1D.SampleLevelOffset(uv1f, 0.0, 4);
+	let sampleLevelResult2 = tex1DArray.SampleLevelOffset(uv2f, 1.0, -2);
+	let sampleLevelResult3 = tex2D.SampleLevelOffset(uv2f, 2.0, vec2(1, -4));
+	let sampleLevelResult4 = tex2DArray.SampleLevelOffset(uv3f, 3.0, vec2[i32](1, 1));
+	let sampleLevelResult5 = tex3D.SampleLevelOffset(uv3f, 4.0, vec3(-1, 0, 1));
+}
+)";
+
+		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
+		ResolveModule(*shaderModule);
+
+		// sampler1D and sampler1D_array are not supported by GLSL ES
+		nzsl::GlslWriter::Environment glslEnv;
+		glslEnv.glES = false;
+		glslEnv.glMajorVersion = 4;
+		glslEnv.glMinorVersion = 6;
+
+		nzsl::GlslWriter::Parameters glslParameters;
+		for (unsigned int i = 0; i < 5; ++i)
+			glslParameters.bindingMapping.emplace(i, 4 - i);
+
+		ExpectGLSL(*shaderModule, R"(
+layout(binding = 4) uniform sampler1D tex1D;
+layout(binding = 3) uniform sampler1DArray tex1DArray;
+layout(binding = 2) uniform sampler2D tex2D;
+layout(binding = 1) uniform sampler2DArray tex2DArray;
+layout(binding = 0) uniform sampler3D tex3D;
+
+struct VertOutput
+{
+	vec3 uv;
+};
+
+/**************** Inputs ****************/
+layout(location = 0) in vec3 _nzslInuv;
+
+void main()
+{
+	VertOutput input_;
+	input_.uv = _nzslInuv;
+
+	float uv1f = input_.uv.x;
+	vec2 uv2f = input_.uv.xy;
+	vec3 uv3f = input_.uv.xyz;
+	vec4 sampleLevelResult1 = textureLodOffset(tex1D, uv1f, 0.0, 4);
+	vec4 sampleLevelResult2 = textureLodOffset(tex1DArray, uv2f, 1.0, -2);
+	vec4 sampleLevelResult3 = textureLodOffset(tex2D, uv2f, 2.0, ivec2(1, -4));
+	vec4 sampleLevelResult4 = textureLodOffset(tex2DArray, uv3f, 3.0, ivec2(1, 1));
+	vec4 sampleLevelResult5 = textureLodOffset(tex3D, uv3f, 4.0, ivec3(-1, 0, 1));
+}
+)", {}, glslEnv, true, glslParameters);
+
+		ExpectNZSL(*shaderModule, R"(
+[auto_binding(true)]
+external
+{
+	[set(0), binding(0)] tex1D: sampler1D[f32],
+	[set(0), binding(1)] tex1DArray: sampler1D_array[f32],
+	[set(0), binding(2)] tex2D: sampler2D[f32],
+	[set(0), binding(3)] tex2DArray: sampler2D_array[f32],
+	[set(0), binding(4)] tex3D: sampler3D[f32]
+}
+
+struct VertOutput
+{
+	[location(0)] uv: vec3[f32]
+}
+
+[entry(frag)]
+fn main(input: VertOutput)
+{
+	let uv1f: f32 = input.uv.x;
+	let uv2f: vec2[f32] = input.uv.xy;
+	let uv3f: vec3[f32] = input.uv.xyz;
+	let sampleLevelResult1: vec4[f32] = tex1D.SampleLevelOffset(uv1f, 0.0, 4);
+	let sampleLevelResult2: vec4[f32] = tex1DArray.SampleLevelOffset(uv2f, 1.0, -2);
+	let sampleLevelResult3: vec4[f32] = tex2D.SampleLevelOffset(uv2f, 2.0, vec2(1, -4));
+	let sampleLevelResult4: vec4[f32] = tex2DArray.SampleLevelOffset(uv3f, 3.0, vec2[i32](1, 1));
+	let sampleLevelResult5: vec4[f32] = tex3D.SampleLevelOffset(uv3f, 4.0, vec3(-1, 0, 1));
+}
+)");
+
+		ExpectSPIRV(*shaderModule, R"(
+OpCapability Capability(Shader)
+      OpCapability Capability(Sampled1D)
+      OpMemoryModel AddressingModel(Logical) MemoryModel(GLSL450)
+      OpEntryPoint ExecutionModel(Fragment) %53 "main" %26
+      OpExecutionMode %53 ExecutionMode(OriginUpperLeft)
+      OpSource SourceLanguage(NZSL) 4198400
+      OpSourceExtension "Version: 1.1"
+      OpName %30 "VertOutput"
+      OpMemberName %30 0 "uv"
+      OpName %5 "tex1D"
+      OpName %9 "tex1DArray"
+      OpName %13 "tex2D"
+      OpName %17 "tex2DArray"
+      OpName %21 "tex3D"
+      OpName %26 "uv"
+      OpName %53 "main"
+      OpDecorate %5 Decoration(Binding) 0
+      OpDecorate %5 Decoration(DescriptorSet) 0
+      OpDecorate %9 Decoration(Binding) 1
+      OpDecorate %9 Decoration(DescriptorSet) 0
+      OpDecorate %13 Decoration(Binding) 2
+      OpDecorate %13 Decoration(DescriptorSet) 0
+      OpDecorate %17 Decoration(Binding) 3
+      OpDecorate %17 Decoration(DescriptorSet) 0
+      OpDecorate %21 Decoration(Binding) 4
+      OpDecorate %21 Decoration(DescriptorSet) 0
+      OpDecorate %26 Decoration(Location) 0
+      OpMemberDecorate %30 0 Decoration(Offset) 0
+ %1 = OpTypeFloat 32
+ %2 = OpTypeImage %1 Dim(Dim1D) 0 0 0 1 ImageFormat(Unknown)
+ %3 = OpTypeSampledImage %2
+ %4 = OpTypePointer StorageClass(UniformConstant) %3
+ %6 = OpTypeImage %1 Dim(Dim1D) 0 1 0 1 ImageFormat(Unknown)
+ %7 = OpTypeSampledImage %6
+ %8 = OpTypePointer StorageClass(UniformConstant) %7
+%10 = OpTypeImage %1 Dim(Dim2D) 0 0 0 1 ImageFormat(Unknown)
+%11 = OpTypeSampledImage %10
+%12 = OpTypePointer StorageClass(UniformConstant) %11
+%14 = OpTypeImage %1 Dim(Dim2D) 0 1 0 1 ImageFormat(Unknown)
+%15 = OpTypeSampledImage %14
+%16 = OpTypePointer StorageClass(UniformConstant) %15
+%18 = OpTypeImage %1 Dim(Dim3D) 0 0 0 1 ImageFormat(Unknown)
+%19 = OpTypeSampledImage %18
+%20 = OpTypePointer StorageClass(UniformConstant) %19
+%22 = OpTypeVoid
+%23 = OpTypeFunction %22
+%24 = OpTypeVector %1 3
+%25 = OpTypePointer StorageClass(Input) %24
+%27 = OpTypeInt 32 1
+%28 = OpConstant %27 i32(0)
+%29 = OpTypePointer StorageClass(Function) %24
+%30 = OpTypeStruct %24
+%31 = OpTypePointer StorageClass(Function) %30
+%32 = OpTypePointer StorageClass(Function) %1
+%33 = OpConstant %27 i32(1)
+%34 = OpTypeVector %1 2
+%35 = OpTypePointer StorageClass(Function) %34
+%36 = OpConstant %27 i32(2)
+%37 = OpConstant %1 f32(0)
+%38 = OpConstant %27 i32(4)
+%39 = OpTypeVector %1 4
+%40 = OpTypePointer StorageClass(Function) %39
+%41 = OpConstant %1 f32(1)
+%42 = OpConstant %27 i32(-2)
+%43 = OpConstant %1 f32(2)
+%44 = OpTypeVector %27 2
+%45 = OpConstant %27 i32(-4)
+%46 = OpConstantComposite %44 %33 %45
+%47 = OpConstant %1 f32(3)
+%48 = OpConstantComposite %44 %33 %33
+%49 = OpConstant %1 f32(4)
+%50 = OpTypeVector %27 3
+%51 = OpConstant %27 i32(-1)
+%52 = OpConstantComposite %50 %51 %28 %33
+ %5 = OpVariable %4 StorageClass(UniformConstant)
+ %9 = OpVariable %8 StorageClass(UniformConstant)
+%13 = OpVariable %12 StorageClass(UniformConstant)
+%17 = OpVariable %16 StorageClass(UniformConstant)
+%21 = OpVariable %20 StorageClass(UniformConstant)
+%26 = OpVariable %25 StorageClass(Input)
+%53 = OpFunction %22 FunctionControl(0) %23
+%54 = OpLabel
+%55 = OpVariable %32 StorageClass(Function)
+%56 = OpVariable %35 StorageClass(Function)
+%57 = OpVariable %29 StorageClass(Function)
+%58 = OpVariable %40 StorageClass(Function)
+%59 = OpVariable %40 StorageClass(Function)
+%60 = OpVariable %40 StorageClass(Function)
+%61 = OpVariable %40 StorageClass(Function)
+%62 = OpVariable %40 StorageClass(Function)
+%63 = OpVariable %31 StorageClass(Function)
+%64 = OpAccessChain %29 %63 %28
+      OpCopyMemory %64 %26
+%65 = OpAccessChain %29 %63 %28
+%66 = OpLoad %24 %65
+%67 = OpCompositeExtract %1 %66 0
+      OpStore %55 %67
+%68 = OpAccessChain %29 %63 %28
+%69 = OpLoad %24 %68
+%70 = OpVectorShuffle %34 %69 %69 0 1
+      OpStore %56 %70
+%71 = OpAccessChain %29 %63 %28
+%72 = OpLoad %24 %71
+%73 = OpVectorShuffle %24 %72 %72 0 1 2
+      OpStore %57 %73
+%74 = OpLoad %3 %5
+%75 = OpLoad %1 %55
+%76 = OpImageSampleExplicitLod %39 %74 %75 ImageOperands(10) ImageOperands(37) ImageOperands(38)
+      OpStore %58 %76
+%77 = OpLoad %7 %9
+%78 = OpLoad %34 %56
+%79 = OpImageSampleExplicitLod %39 %77 %78 ImageOperands(10) ImageOperands(41) ImageOperands(42)
+      OpStore %59 %79
+%80 = OpLoad %11 %13
+%81 = OpLoad %34 %56
+%82 = OpImageSampleExplicitLod %39 %80 %81 ImageOperands(10) ImageOperands(43) ImageOperands(46)
+      OpStore %60 %82
+%83 = OpLoad %15 %17
+%84 = OpLoad %24 %57
+%85 = OpImageSampleExplicitLod %39 %83 %84 ImageOperands(10) ImageOperands(47) ImageOperands(48)
+      OpStore %61 %85
+%86 = OpLoad %19 %21
+%87 = OpLoad %24 %57
+%88 = OpImageSampleExplicitLod %39 %86 %87 ImageOperands(10) ImageOperands(49) ImageOperands(52)
+      OpStore %62 %88
+      OpReturn
+      OpFunctionEnd)", {}, {}, true);
+	}
+
 	WHEN("testing math intrinsics")
 	{
 		std::string_view nzslSource = R"(

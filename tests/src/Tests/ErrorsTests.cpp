@@ -1187,6 +1187,21 @@ fn main()
 	let a = tex.SampleOffset(vec3[f32](0.0, 1.0, 0.0), vec3[i32](1, 0, 0));
 }
 )"), "(12,53 -> 70): CIntrinsicSampleOffsetUnsupported error: sample offsets are not supported on cubemap samplers/textures");
+
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl("1.2")]
+module;
+
+external
+{
+	[binding(0)] tex: sampler2D[f32]
+}
+
+fn main()
+{
+	let a = tex.SampleOffset(vec2[f32](0.0, 1.0), vec3[i32](1, 0, 0));
+}
+)"), "(12,48 -> 65): CIntrinsicExpectedType error: expected type integer vector of 2 components for parameter #2, got vec3[i32]");
 		}
 
 		/************************************************************************/
