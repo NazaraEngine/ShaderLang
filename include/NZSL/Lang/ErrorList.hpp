@@ -124,6 +124,7 @@ NZSL_SHADERLANG_COMPILER_ERROR(IntegralModuloByZero, "integral modulo by zero in
 NZSL_SHADERLANG_COMPILER_ERROR(IntrinsicExpectedFloat, "expected scalar or vector floating-points")
 NZSL_SHADERLANG_COMPILER_ERROR(IntrinsicExpectedParameterCount, "expected {} parameter(s) for {} intrinsic, got {}", std::uint32_t, std::string, std::uint32_t)
 NZSL_SHADERLANG_COMPILER_ERROR(IntrinsicExpectedType, "expected type {1} for parameter #{0}, got {2}", std::uint32_t, std::string, std::string)
+NZSL_SHADERLANG_COMPILER_ERROR(IntrinsicSampleOffsetUnsupported, "sample offsets are not supported on cubemap samplers/textures")
 NZSL_SHADERLANG_COMPILER_ERROR(IntrinsicUnexpectedBoolean, "boolean parameters are not allowed")
 NZSL_SHADERLANG_COMPILER_ERROR(IntrinsicUnmatchingParameterType, "unmatching intrinsic types (param #{}->#{} types must match)", std::uint32_t, std::uint32_t)
 NZSL_SHADERLANG_COMPILER_ERROR(IntrinsicUnmatchingVecComponent, "unmatching intrinsic types (param #{}->#{} types must match)", std::uint32_t, std::uint32_t)
