@@ -2411,6 +2411,10 @@ namespace nzsl::Ast
 			throw AstInternalError{ intrinsicExpr.sourceLocation, fmt::format("missing intrinsic data for intrinsic {}", Nz::UnderlyingCast(intrinsicExpr.intrinsic)) };
 
 		const auto& intrinsicData = intrinsicIt->second;
+
+		if (intrinsicExpr.parameters.size() != intrinsicData.nonConstraintParameterCount)
+			throw CompilerIntrinsicExpectedParameterCountError{ intrinsicExpr.sourceLocation, Nz::SafeCast<std::uint32_t>(intrinsicData.nonConstraintParameterCount), intrinsicData.name, Nz::SafeCast<std::uint32_t>(intrinsicExpr.parameters.size()) };
+
 		std::size_t paramIndex = 0;
 		for (std::size_t i = 0; i < intrinsicData.parameterCount; ++i)
 		{
