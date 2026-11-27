@@ -17,8 +17,10 @@ namespace nzsl::Ast
 		return TransformModule(module, context, error);
 	}
 
-	void AliasTransformer::Transform(ExpressionType& expressionType, const SourceLocation& /*sourceLocation*/)
+	void AliasTransformer::Transform(ExpressionType& expressionType, const SourceLocation& sourceLocation)
 	{
+		Transformer::Transform(expressionType, sourceLocation);
+
 		if (IsAliasType(expressionType))
 			expressionType = ResolveAlias(std::move(expressionType));
 	}

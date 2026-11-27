@@ -629,4 +629,74 @@ fn main()
        OpReturn
        OpFunctionEnd)", {}, {}, true);
 	}
+
+	SECTION("Array of alias")
+	{
+		// Bug found by @SirLynix where arrays of aliases (e.g. imported struct from another module) were not resolved properly
+		std::string_view nzslSource = R"(
+[nzsl("1.2")]
+module;
+
+struct Foo {}
+alias Bar = Foo;
+
+struct Baz
+{
+	foo: array[Bar, 8]
+}
+
+[entry(frag)]
+fn main()
+{
+	let baz: Baz;
+}
+)";
+
+		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
+		ResolveModule(*shaderModule);
+
+		ExpectGLSL(*shaderModule, R"(
+struct Foo
+{
+	int dummy;
+
+};
+
+struct Baz
+{
+	Foo foo[8];
+};
+
+void main()
+{
+	Baz baz;
+}
+)");
+
+		ExpectSPIRV(*shaderModule, R"(
+      OpCapability Capability(Shader)
+      OpMemoryModel AddressingModel(Logical) MemoryModel(GLSL450)
+      OpEntryPoint ExecutionModel(Fragment) %9 "main"
+      OpExecutionMode %9 ExecutionMode(OriginUpperLeft)
+      OpSource SourceLanguage(NZSL) 4202496
+      OpSourceExtension "Version: 1.2"
+      OpName %3 "Foo"
+      OpName %7 "Baz"
+      OpMemberName %7 0 "foo"
+      OpName %9 "main"
+      OpMemberDecorate %7 0 Decoration(Offset) 0
+ %1 = OpTypeVoid
+ %2 = OpTypeFunction %1
+ %3 = OpTypeStruct
+ %4 = OpTypeInt 32 0
+ %5 = OpConstant %4 u32(8)
+ %6 = OpTypeArray %3 %5
+ %7 = OpTypeStruct %6
+ %8 = OpTypePointer StorageClass(Function) %7
+ %9 = OpFunction %1 FunctionControl(0) %2
+%10 = OpLabel
+%11 = OpVariable %8 StorageClass(Function)
+      OpReturn
+      OpFunctionEnd)", {}, {}, true);
+	}
 }
