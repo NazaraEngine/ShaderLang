@@ -308,17 +308,28 @@ namespace nzsl
 
 	void LangWriter::Append(const Ast::ImplicitArrayType& /*arrayType*/)
 	{
-		throw std::runtime_error("unexpected ImplicitVectorType");
+		Append("array");
 	}
 
-	void LangWriter::Append(const Ast::ImplicitMatrixType& /*matrixType*/)
+	void LangWriter::Append(const Ast::ImplicitMatrixType& matrixType)
 	{
-		throw std::runtime_error("unexpected ImplicitMatrixType");
+		if (matrixType.columnCount == matrixType.rowCount)
+		{
+			Append("mat");
+			Append(matrixType.columnCount);
+		}
+		else
+		{
+			Append("mat");
+			Append(matrixType.columnCount);
+			Append("x");
+			Append(matrixType.rowCount);
+		}
 	}
 
-	void LangWriter::Append(const Ast::ImplicitVectorType& /*vecType*/)
+	void LangWriter::Append(const Ast::ImplicitVectorType& vecType)
 	{
-		throw std::runtime_error("unexpected ImplicitVectorType");
+		Append("vec", vecType.componentCount);
 	}
 
 	void LangWriter::Append(const Ast::IntrinsicFunctionType& /*functionType*/)
