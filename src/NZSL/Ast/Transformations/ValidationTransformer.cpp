@@ -1571,9 +1571,9 @@ namespace nzsl::Ast
 			{
 				case ParameterType::ArrayDyn:
 				{
-					auto Check = [](const ExpressionType& type)
+					auto Check = [this](const ExpressionType& type)
 					{
-						return IsArrayType(type) || IsDynArrayType(type);
+						return IsArrayType(type) || IsDynArrayType(type) || (IsImplicitArrayType(type) && m_context->partialCompilation);
 					};
 
 					if (ValidateIntrinsicParameterType(node, Check, "array/dyn-array", paramIndex) == ValidationResult::Unresolved)
@@ -1590,13 +1590,15 @@ namespace nzsl::Ast
 
 				case ParameterType::BValVec:
 				{
-					auto Check = [](const ExpressionType& type)
+					auto Check = [this](const ExpressionType& type)
 					{
 						PrimitiveType primitiveType;
 						if (IsPrimitiveType(type))
 							primitiveType = std::get<PrimitiveType>(type);
 						else if (IsVectorType(type))
 							primitiveType = std::get<VectorType>(type).type;
+						else if (IsImplicitVectorType(type) && m_context->partialCompilation)
+							return true;
 						else
 							return false;
 
@@ -1620,11 +1622,13 @@ namespace nzsl::Ast
 
 				case ParameterType::BVec:
 				{
-					auto Check = [](const ExpressionType& type)
+					auto Check = [this](const ExpressionType& type)
 					{
 						PrimitiveType primitiveType;
 						if (IsVectorType(type))
 							primitiveType = std::get<VectorType>(type).type;
+						else if (IsImplicitVectorType(type) && m_context->partialCompilation)
+							return true;
 						else
 							return false;
 
@@ -1698,13 +1702,15 @@ namespace nzsl::Ast
 
 				case ParameterType::FValVec:
 				{
-					auto Check = [](const ExpressionType& type)
+					auto Check = [this](const ExpressionType& type)
 					{
 						PrimitiveType primitiveType;
 						if (IsPrimitiveType(type))
 							primitiveType = std::get<PrimitiveType>(type);
 						else if (IsVectorType(type))
 							primitiveType = std::get<VectorType>(type).type;
+						else if (IsImplicitVectorType(type) && m_context->partialCompilation)
+							return true;
 						else
 							return false;
 
@@ -1730,13 +1736,15 @@ namespace nzsl::Ast
 
 				case ParameterType::FValVec1632:
 				{
-					auto Check = [](const ExpressionType& type)
+					auto Check = [this](const ExpressionType& type)
 					{
 						PrimitiveType primitiveType;
 						if (IsPrimitiveType(type))
 							primitiveType = std::get<PrimitiveType>(type);
 						else if (IsVectorType(type))
 							primitiveType = std::get<VectorType>(type).type;
+						else if (IsImplicitVectorType(type) && m_context->partialCompilation)
+							return true;
 						else
 							return false;
 
@@ -1762,11 +1770,13 @@ namespace nzsl::Ast
 
 				case ParameterType::FVec:
 				{
-					auto Check = [](const ExpressionType& type)
+					auto Check = [this](const ExpressionType& type)
 					{
 						PrimitiveType primitiveType;
 						if (IsVectorType(type))
 							primitiveType = std::get<VectorType>(type).type;
+						else if (IsImplicitVectorType(type) && m_context->partialCompilation)
+							return true;
 						else
 							return false;
 
@@ -1791,10 +1801,21 @@ namespace nzsl::Ast
 
 				case ParameterType::FVec3:
 				{
-					auto Check = [](const ExpressionType& type)
+					auto Check = [this](const ExpressionType& type)
 					{
 						if (!IsVectorType(type))
+						{
+							if (IsImplicitVectorType(type) && m_context->partialCompilation)
+							{
+								const ImplicitVectorType& vectorType = std::get<ImplicitVectorType>(type);
+								if (vectorType.componentCount != 3)
+									return false;
+
+								return true;
+							}
+
 							return false;
+						}
 
 						const VectorType& vectorType = std::get<VectorType>(type);
 						if (vectorType.componentCount != 3)
@@ -1882,7 +1903,18 @@ namespace nzsl::Ast
 
 				case ParameterType::Matrix:
 				{
-					if (ValidateIntrinsicParameterType(node, IsMatrixType, "matrix", paramIndex) == ValidationResult::Unresolved)
+					auto Check = [this](const ExpressionType& type)
+					{
+						if (IsMatrixType(type))
+							return true;
+
+						if (IsImplicitVectorType(type) && m_context->partialCompilation)
+							return true;
+
+						return false;
+					};
+
+					if (ValidateIntrinsicParameterType(node, Check, "matrix", paramIndex) == ValidationResult::Unresolved)
 					{
 						if (!unresolvedParameter)
 							unresolvedParameter = paramIndex;
@@ -1899,11 +1931,19 @@ namespace nzsl::Ast
 				{
 					auto Check = [](const ExpressionType& type)
 					{
-						if (!IsMatrixType(type))
+						if (IsMatrixType(type))
+						{
+							const MatrixType& matrixType = std::get<MatrixType>(type);
+							return matrixType.columnCount == matrixType.rowCount;
+						}
+						else if (IsImplicitMatrixType(type))
+						{
+							const ImplicitMatrixType& matrixType = std::get<ImplicitMatrixType>(type);
+							return matrixType.columnCount == matrixType.rowCount;
+						}
+						else
 							return false;
 
-						const MatrixType& matrixType = std::get<MatrixType>(type);
-						return matrixType.columnCount == matrixType.rowCount;
 					};
 
 					if (ValidateIntrinsicParameterType(node, Check, "square matrix", paramIndex) == ValidationResult::Unresolved)
@@ -1962,13 +2002,15 @@ namespace nzsl::Ast
 
 				case ParameterType::NumericalVec:
 				{
-					auto Check = [](const ExpressionType& type)
+					auto Check = [this](const ExpressionType& type)
 					{
 						PrimitiveType primitiveType;
 						if (IsPrimitiveType(type))
 							primitiveType = std::get<PrimitiveType>(type);
 						else if (IsVectorType(type))
 							primitiveType = std::get<VectorType>(type).type;
+						else if (IsImplicitVectorType(type) && m_context->partialCompilation)
+							return true;
 						else
 							return false;
 
@@ -2071,14 +2113,25 @@ namespace nzsl::Ast
 						// Vector coordinates
 						auto Check = [=](const ExpressionType& type)
 						{
-							if (!IsVectorType(type))
+							if (IsVectorType(type))
+							{
+								const VectorType& vectorType = std::get<VectorType>(type);
+								if (vectorType.componentCount != requiredComponentCount)
+									return false;
+
+								return vectorType.type == PrimitiveType::Float32 || vectorType.type == PrimitiveType::Float64 || vectorType.type == PrimitiveType::FloatLiteral;
+							}
+							else if (IsImplicitVectorType(type) && m_context->partialCompilation)
+							{
+								const ImplicitVectorType& vectorType = std::get<ImplicitVectorType>(type);
+								if (vectorType.componentCount != requiredComponentCount)
+									return false;
+
+								return true;
+							}
+							else
 								return false;
 
-							const VectorType& vectorType = std::get<VectorType>(type);
-							if (vectorType.componentCount != requiredComponentCount)
-								return false;
-
-							return vectorType.type == PrimitiveType::Float32 || vectorType.type == PrimitiveType::Float64 || vectorType.type == PrimitiveType::FloatLiteral;
 						};
 
 						char errMessage[] = "floating-point vector of X components";
@@ -2163,13 +2216,15 @@ namespace nzsl::Ast
 
 				case ParameterType::ScalarVec:
 				{
-					auto Check = [](const ExpressionType& type)
+					auto Check = [this](const ExpressionType& type)
 					{
 						PrimitiveType primitiveType;
 						if (IsPrimitiveType(type))
 							primitiveType = std::get<PrimitiveType>(type);
 						else if (IsVectorType(type))
 							primitiveType = std::get<VectorType>(type).type;
+						else if (IsImplicitVectorType(type) && m_context->partialCompilation)
+							return true;
 						else
 							return false;
 
@@ -2247,13 +2302,15 @@ namespace nzsl::Ast
 
 				case ParameterType::SignedNumericalVec:
 				{
-					auto Check = [](const ExpressionType& type)
+					auto Check = [this](const ExpressionType& type)
 					{
 						PrimitiveType primitiveType;
 						if (IsPrimitiveType(type))
 							primitiveType = std::get<PrimitiveType>(type);
 						else if (IsVectorType(type))
 							primitiveType = std::get<VectorType>(type).type;
+						else if (IsImplicitVectorType(type) && m_context->partialCompilation)
+							return true;
 						else
 							return false;
 
@@ -2413,14 +2470,24 @@ namespace nzsl::Ast
 						// Vector coordinates
 						auto Check = [=](const ExpressionType& type)
 						{
-							if (!IsVectorType(type))
-								return false;
+							if (IsVectorType(type))
+							{
+								const VectorType& vectorType = std::get<VectorType>(type);
+								if (vectorType.componentCount != requiredComponentCount)
+									return false;
 
-							const VectorType& vectorType = std::get<VectorType>(type);
-							if (vectorType.componentCount != requiredComponentCount)
-								return false;
+								return vectorType.type == PrimitiveType::Int32 || vectorType.type == PrimitiveType::IntLiteral;
+							}
+							else if (IsImplicitVectorType(type) && m_context->partialCompilation)
+							{
+								const ImplicitVectorType& vectorType = std::get<ImplicitVectorType>(type);
+								if (vectorType.componentCount != requiredComponentCount)
+									return false;
 
-							return vectorType.type == PrimitiveType::Int32 || vectorType.type == PrimitiveType::IntLiteral;
+								return true;
+							}
+							else
+								return false;
 						};
 
 						char errMessage[] = "integer vector of X components";
@@ -2533,15 +2600,17 @@ namespace nzsl::Ast
 		std::size_t componentCount = 0;
 		for (; from < to; ++from)
 		{
-			const ExpressionType* firstParameterType = GetExpressionType(*node.parameters[from]);
-			if (!firstParameterType)
+			const ExpressionType* exprType = GetResolvedExpressionType(*node.parameters[from]);
+			if (!exprType)
 				return ValidationResult::Unresolved;
 
-			const ExpressionType& exprType = ResolveAlias(*firstParameterType);
-			if (!IsVectorType(exprType))
+			if (IsVectorType(*exprType))
+				componentCount = std::get<VectorType>(*exprType).componentCount;
+			else if (IsImplicitVectorType(*exprType))
+				componentCount = std::get<ImplicitVectorType>(*exprType).componentCount;
+			else
 				continue;
 
-			componentCount = std::get<VectorType>(exprType).componentCount;
 			break;
 		}
 
@@ -2552,11 +2621,16 @@ namespace nzsl::Ast
 				return ValidationResult::Unresolved;
 
 			const ExpressionType& exprType = ResolveAlias(*parameterType);
-			if (!IsVectorType(exprType))
-				continue;
-
-			if (componentCount != std::get<VectorType>(exprType).componentCount)
-				throw CompilerIntrinsicUnmatchingVecComponentError{ node.parameters[i]->sourceLocation, Nz::SafeCast<std::uint32_t>(from), Nz::SafeCast<std::uint32_t>(to) };
+			if (IsVectorType(exprType))
+			{
+				if (componentCount != std::get<VectorType>(exprType).componentCount)
+					throw CompilerIntrinsicUnmatchingVecComponentError{ node.parameters[i]->sourceLocation, Nz::SafeCast<std::uint32_t>(from), Nz::SafeCast<std::uint32_t>(to) };
+			}
+			else if (IsImplicitVectorType(exprType))
+			{
+				if (componentCount != std::get<ImplicitVectorType>(exprType).componentCount)
+					throw CompilerIntrinsicUnmatchingVecComponentError{ node.parameters[i]->sourceLocation, Nz::SafeCast<std::uint32_t>(from), Nz::SafeCast<std::uint32_t>(to) };
+			}
 		}
 
 		return ValidationResult::Validated;

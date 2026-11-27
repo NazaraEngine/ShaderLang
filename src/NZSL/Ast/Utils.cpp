@@ -718,6 +718,25 @@ namespace nzsl::Ast
 				return ValidateMatchingTypes(std::get<ArrayType>(resolvedLeftType).InnerType(), std::get<ArrayType>(resolvedRightType).InnerType());
 		}
 
+		if (IsImplicitType(resolvedLeftType) != IsImplicitType(resolvedRightType))
+		{
+			const ExpressionType& implicitType = IsImplicitType(resolvedLeftType) ? resolvedLeftType : resolvedRightType;
+			const ExpressionType& explicitType = IsImplicitType(resolvedLeftType) ? resolvedRightType : resolvedLeftType;
+
+			if (IsImplicitArrayType(implicitType) && IsArrayType(implicitType))
+				return true;
+
+			if (IsImplicitMatrixType(implicitType) && IsMatrixType(explicitType))
+			{
+				const ImplicitMatrixType& implicitMatrix = std::get<ImplicitMatrixType>(implicitType);
+				const MatrixType& matrix = std::get<MatrixType>(explicitType);
+				return implicitMatrix.columnCount == matrix.columnCount && implicitMatrix.rowCount == matrix.rowCount;
+			}
+
+			if (IsImplicitVectorType(implicitType) && IsVectorType(explicitType))
+				return std::get<ImplicitVectorType>(implicitType).componentCount == std::get<VectorType>(explicitType).componentCount;
+		}
+
 		return false;
 	}
 

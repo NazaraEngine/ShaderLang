@@ -399,12 +399,20 @@ module;
 
 import Foo from Bar;
 
-[entry(vert)]
+external
+{
+	[binding(0)] inputTexture: sampler2D[f32]
+}
+
+[entry(frag)]
 fn main()
 {
 	let x = array(Foo.bar, Foo.baz, Foo.foo);
 	let x = vec2(Foo.x, Foo.y);
 	let x = mat3(Foo.vec, Foo.bar, Foo.baz);
+
+	let x = inputTexture.Sample(vec2(Foo.x, Foo.y));
+	let x = clamp(vec3(Foo.x, Foo.y, Foo.z), vec3[f32](0.0, 0.0, 0.0), vec3[f32](1.0, 1.0, 1.0));
 }
 )";
 
