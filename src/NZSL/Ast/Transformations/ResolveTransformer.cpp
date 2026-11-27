@@ -3263,7 +3263,12 @@ namespace nzsl::Ast
 		if (!targetModule)
 		{
 			if (!m_context->partialCompilation)
-				throw CompilerNoModuleResolverError{ importStatement.sourceLocation };
+			{
+				if (m_options->moduleResolver)
+					throw CompilerModuleNotFoundError{ importStatement.sourceLocation, importStatement.moduleName };
+				else
+					throw CompilerNoModuleResolverError{ importStatement.sourceLocation };
+			}
 
 			// when partially compiling, importing everything from a module could register any identifier, so at this point we can't see unknown identifiers as errors
 			if (importEverythingElse)
