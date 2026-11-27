@@ -2226,6 +2226,8 @@ namespace nzsl::Ast
 
 				targetType = std::move(targetArrayType);
 			}
+			else if (!m_context->partialCompilation)
+				throw CompilerUnresolvedImplicitError{ castExpr.sourceLocation };
 		}
 		else if (IsImplicitMatrixType(targetType))
 		{
@@ -2255,6 +2257,8 @@ namespace nzsl::Ast
 
 				targetType = MatrixType{ columnCount, rowCount, *innerType };
 			}
+			else if (!m_context->partialCompilation)
+				throw CompilerUnresolvedImplicitError{ castExpr.sourceLocation };
 		}
 		else if (IsImplicitVectorType(targetType))
 		{
@@ -2266,17 +2270,12 @@ namespace nzsl::Ast
 					break; //< unresolved
 
 				if (IsPrimitiveType(*exprType))
-				{
 					innerType = std::get<PrimitiveType>(*exprType);
-					if (!IsLiteralType(*innerType))
-						break; //< continue if literal type as we could encounter a non-literal type later (e.g. vec3(1, u32(2), 3))
-				}
 				else if (IsVectorType(*exprType))
-				{
 					innerType = std::get<VectorType>(*exprType).type;
-					if (!IsLiteralType(*innerType))
-						break; //< continue if literal type as we could encounter a non-literal type later (e.g. vec3(1, u32(2), 3))
-				}
+
+				if (innerType && !IsLiteralType(*innerType))
+					break; //< continue if literal type as we could encounter a non-literal type later (e.g. vec3(1, u32(2), 3))
 			}
 
 			if (innerType)
@@ -2285,6 +2284,8 @@ namespace nzsl::Ast
 
 				targetType = VectorType{ componentCount, *innerType };
 			}
+			else if (!m_context->partialCompilation)
+				throw CompilerUnresolvedImplicitError{ castExpr.sourceLocation };
 		}
 
 		castExpr.cachedExpressionType = targetType;

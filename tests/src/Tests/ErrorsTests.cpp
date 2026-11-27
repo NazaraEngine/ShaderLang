@@ -920,6 +920,21 @@ fn main()
 
 		/************************************************************************/
 
+		SECTION("Implicit")
+		{
+			CHECK_THROWS_WITH(Compile(R"(
+[nzsl("1.2")]
+module;
+
+fn main()
+{
+	let x = vec3();
+}
+)"), "(7,10 -> 15): CUnresolvedImplicit error: unresolved implicit type");
+		}
+
+		/************************************************************************/
+
 		SECTION("Import")
 		{
 			CHECK_THROWS_WITH(Compile(R"(
