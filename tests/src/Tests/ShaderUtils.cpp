@@ -504,6 +504,9 @@ void ResolveModule(nzsl::Ast::Module& module, const ResolveOptions& resolveOptio
 		if (resolveOptions.bindingResolverOptions)
 			executor.AddPass<nzsl::Ast::BindingResolverTransformer>(*resolveOptions.bindingResolverOptions);
 
+		if (resolveOptions.validationOptions)
+			executor.AddPass<nzsl::Ast::ValidationTransformer>(*resolveOptions.validationOptions);
+
 		REQUIRE_NOTHROW(executor.Transform(module, context));
 		hasBeenResolved = true;
 	};
@@ -575,3 +578,4 @@ const nzsl::Ast::BindingResolverTransformer::Options ResolveOptions::defaultBind
 const nzsl::Ast::ResolveTransformer::Options ResolveOptions::defaultIdentifierResolveOptions;
 const nzsl::Ast::LiteralTransformer::Options ResolveOptions::defaultLiteralOptions;
 const nzsl::Ast::LoopUnrollTransformer::Options ResolveOptions::defaultLoopUnrollOptions;
+const nzsl::Ast::ValidationTransformer::Options ResolveOptions::defaultValidationOptions;

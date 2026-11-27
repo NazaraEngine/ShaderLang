@@ -389,4 +389,29 @@ fn foo()
       OpReturn
       OpFunctionEnd)", {}, {}, true);
 	}
+
+	SECTION("Implicit types of unresolved type")
+	{
+		// Bug found by @SirLynix where using implicit vectors on unresolved types lead to compilation errors
+		std::string_view nzslSource = R"(
+[nzsl("1.2")]
+module;
+
+import Foo from Bar;
+
+[entry(vert)]
+fn main()
+{
+	let x = array(Foo.bar, Foo.baz, Foo.foo);
+	let x = vec2(Foo.x, Foo.y);
+	let x = mat3(Foo.vec, Foo.bar, Foo.baz);
+}
+)";
+
+		ResolveOptions resolveOptions;
+		resolveOptions.partialCompilation = true;
+
+		nzsl::Ast::ModulePtr shaderModule = nzsl::Parse(nzslSource);
+		ResolveModule(*shaderModule, resolveOptions);
+	}
 }

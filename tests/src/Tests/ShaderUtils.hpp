@@ -11,6 +11,7 @@
 #include <NZSL/Ast/Transformations/ResolveTransformer.hpp>
 #include <NZSL/Ast/Transformations/LiteralTransformer.hpp>
 #include <NZSL/Ast/Transformations/LoopUnrollTransformer.hpp>
+#include <NZSL/Ast/Transformations/ValidationTransformer.hpp>
 #include <spirv-tools/libspirv.hpp>
 #include <filesystem>
 
@@ -20,6 +21,7 @@ struct ResolveOptions
 	static const nzsl::Ast::ResolveTransformer::Options defaultIdentifierResolveOptions;
 	static const nzsl::Ast::LiteralTransformer::Options defaultLiteralOptions;
 	static const nzsl::Ast::LoopUnrollTransformer::Options defaultLoopUnrollOptions;
+	static const nzsl::Ast::ValidationTransformer::Options defaultValidationOptions;
 
 	std::unordered_map<nzsl::Ast::OptionHash, nzsl::Ast::ConstantValue> optionValues;
 	bool partialCompilation = false;
@@ -28,6 +30,7 @@ struct ResolveOptions
 	const nzsl::Ast::ResolveTransformer::Options* identifierResolverOptions = &defaultIdentifierResolveOptions;
 	const nzsl::Ast::LiteralTransformer::Options* literalOptions = nullptr;
 	const nzsl::Ast::LoopUnrollTransformer::Options* loopUnrollOptions = &defaultLoopUnrollOptions;
+	const nzsl::Ast::ValidationTransformer::Options* validationOptions = &defaultValidationOptions;
 };
 
 void ExpectGLSL(nzsl::ShaderStageType stageType, nzsl::Ast::Module& shader, std::string_view expectedOutput, const nzsl::BackendParameters& options = {}, const nzsl::GlslWriter::Environment& env = {}, bool testShaderCompilation = true, const nzsl::GlslWriter::Parameters& glslParameters = {});

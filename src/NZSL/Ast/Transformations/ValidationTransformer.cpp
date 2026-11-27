@@ -709,11 +709,29 @@ namespace nzsl::Ast
 			throw AstInternalError{ node.sourceLocation, "unexpected cast from " + Ast::ToString(from) + " to " + Ast::ToString(to) };
 		};
 
-		if (IsMatrixType(targetType))
+		if (IsMatrixType(targetType) || (IsImplicitMatrixType(targetType) && m_context->partialCompilation))
 		{
-			const MatrixType& targetMatrixType = std::get<MatrixType>(targetType);
+			std::size_t targetColumnCount;
+			std::size_t targetRowCount;
+			std::optional<PrimitiveType> targetBaseType;
+			if (IsMatrixType(targetType))
+			{
+				const MatrixType& targetMatrixType = std::get<MatrixType>(targetType);
+				targetColumnCount = targetMatrixType.columnCount;
+				targetRowCount = targetMatrixType.rowCount;
+				targetBaseType = targetMatrixType.type;
+			}
+			else
+			{
+				assert(IsImplicitMatrixType(targetType));
+
+				const ImplicitMatrixType& targetMatrixType = std::get<ImplicitMatrixType>(targetType);
+				targetColumnCount = targetMatrixType.columnCount;
+				targetRowCount = targetMatrixType.rowCount;
+			}
+
 			if (expressionCount == 0)
-				throw CompilerCastComponentMismatchError{ node.sourceLocation, 0, Nz::SafeCast<std::uint32_t>(targetMatrixType.columnCount * targetMatrixType.rowCount) };
+				throw CompilerCastComponentMismatchError{ node.sourceLocation, 0, Nz::SafeCast<std::uint32_t>(targetColumnCount * targetRowCount) };
 
 			auto& firstExprPtr = MandatoryExpr(node.expressions.front(), node.sourceLocation);
 
@@ -733,11 +751,11 @@ namespace nzsl::Ast
 			{
 				// Matrix builder (from vectors)
 
-				assert(targetMatrixType.columnCount <= 4);
-				if (expressionCount != targetMatrixType.columnCount)
-					throw CompilerCastComponentMismatchError{ node.sourceLocation, Nz::SafeCast<std::uint32_t>(expressionCount), Nz::SafeCast<std::uint32_t>(targetMatrixType.columnCount) };
+				assert(targetColumnCount <= 4);
+				if (expressionCount != targetColumnCount)
+					throw CompilerCastComponentMismatchError{ node.sourceLocation, Nz::SafeCast<std::uint32_t>(expressionCount), Nz::SafeCast<std::uint32_t>(targetColumnCount) };
 
-				for (std::size_t i = 0; i < targetMatrixType.columnCount; ++i)
+				for (std::size_t i = 0; i < targetColumnCount; ++i)
 				{
 					auto& exprPtr = MandatoryExpr(node.expressions[i], node.sourceLocation);
 
@@ -750,17 +768,17 @@ namespace nzsl::Ast
 						throw CompilerCastMatrixExpectedVectorOrScalarError{ node.sourceLocation, ToString(resolvedExprType, node.expressions[i]->sourceLocation) };
 
 					const VectorType& vecType = std::get<VectorType>(resolvedExprType);
-					if (vecType.componentCount != targetMatrixType.rowCount)
-						throw CompilerCastMatrixVectorComponentMismatchError{ node.expressions[i]->sourceLocation, Nz::SafeCast<std::uint32_t>(vecType.componentCount), Nz::SafeCast<std::uint32_t>(targetMatrixType.rowCount) };
+					if (vecType.componentCount != targetRowCount)
+						throw CompilerCastMatrixVectorComponentMismatchError{ node.expressions[i]->sourceLocation, Nz::SafeCast<std::uint32_t>(vecType.componentCount), Nz::SafeCast<std::uint32_t>(targetRowCount) };
 
-					if (!ValidateMatchingTypes(targetMatrixType.type, vecType.type))
-						throw CompilerCastIncompatibleBaseTypesError{ node.expressions[i]->sourceLocation, ToString(targetMatrixType.type, node.sourceLocation), ToString(vecType.type, node.sourceLocation) };
+					if (targetBaseType && !ValidateMatchingTypes(*targetBaseType, vecType.type))
+						throw CompilerCastIncompatibleBaseTypesError{ node.expressions[i]->sourceLocation, ToString(*targetBaseType, node.sourceLocation), ToString(vecType.type, node.sourceLocation) };
 				}
 			}
 			else if (IsPrimitiveType(resolvedFirstExprType))
 			{
 				// Matrix builder (from scalars)
-				std::size_t requiredComponentCount = targetMatrixType.columnCount * targetMatrixType.rowCount;
+				std::size_t requiredComponentCount = targetColumnCount * targetRowCount;
 				if (expressionCount != requiredComponentCount && expressionCount != 1) //< special case where matrices can be built using one value
 					throw CompilerCastComponentMismatchError{ node.sourceLocation, Nz::SafeCast<std::uint32_t>(expressionCount), Nz::SafeCast<std::uint32_t>(requiredComponentCount) };
 
@@ -779,8 +797,8 @@ namespace nzsl::Ast
 						throw CompilerCastMatrixExpectedVectorOrScalarError{ node.sourceLocation, ToString(resolvedExprType, node.expressions[i]->sourceLocation) };
 
 					PrimitiveType baseType = std::get<PrimitiveType>(resolvedExprType);
-					if (!ValidateMatchingTypes(targetMatrixType.type, baseType))
-						throw CompilerCastIncompatibleBaseTypesError{ node.expressions[exprIndex]->sourceLocation, ToString(targetMatrixType.type, node.sourceLocation), ToString(baseType, node.sourceLocation) };
+					if (targetBaseType && !ValidateMatchingTypes(*targetBaseType, baseType))
+						throw CompilerCastIncompatibleBaseTypesError{ node.expressions[exprIndex]->sourceLocation, ToString(*targetBaseType, node.sourceLocation), ToString(baseType, node.sourceLocation) };
 				}
 			}
 			else
@@ -806,17 +824,21 @@ namespace nzsl::Ast
 			if (!areTypeCompatibles(fromPrimitiveType, targetPrimitiveType))
 				throw CompilerCastIncompatibleTypesError{ node.expressions[0]->sourceLocation, ToString(targetType, node.sourceLocation), ToString(resolvedFromType, node.sourceLocation) };
 		}
-		else if (IsVectorType(targetType))
+		else if (IsVectorType(targetType) || (IsImplicitVectorType(targetType) && m_context->partialCompilation))
 		{
-			PrimitiveType targetBaseType = std::get<VectorType>(targetType).type;
+			std::optional<PrimitiveType> targetBaseType;
+			if (IsVectorType(targetType))
+				targetBaseType = std::get<VectorType>(targetType).type;
 
 			auto GetComponentCount = [](const ExpressionType& exprType) -> std::size_t
 			{
 				if (IsVectorType(exprType))
 					return std::get<VectorType>(exprType).componentCount;
+				else if (IsImplicitVectorType(exprType))
+					return std::get<ImplicitVectorType>(exprType).componentCount;
 				else
 				{
-					assert(IsPrimitiveType(exprType));
+					NazaraAssert(IsPrimitiveType(exprType));
 					return 1;
 				}
 			};
@@ -834,8 +856,8 @@ namespace nzsl::Ast
 				if (IsPrimitiveType(resolvedExprType))
 				{
 					PrimitiveType primitiveType = std::get<PrimitiveType>(resolvedExprType);
-					if (!ValidateMatchingTypes(targetBaseType, primitiveType))
-						throw CompilerCastIncompatibleBaseTypesError{ exprPtr->sourceLocation, ToString(targetBaseType, node.sourceLocation), ToString(primitiveType, node.sourceLocation) };
+					if (targetBaseType && !ValidateMatchingTypes(*targetBaseType, primitiveType))
+						throw CompilerCastIncompatibleBaseTypesError{ exprPtr->sourceLocation, ToString(*targetBaseType, node.sourceLocation), ToString(primitiveType, node.sourceLocation) };
 				}
 				else if (IsVectorType(resolvedExprType))
 				{
@@ -845,11 +867,11 @@ namespace nzsl::Ast
 					// Conversion between base types (vec2[i32] => vec2[u32])
 					if (componentCount == 0 && requiredComponents == vecType.componentCount)
 					{
-						if (!areTypeCompatibles(primitiveType, targetBaseType))
+						if (targetBaseType && !areTypeCompatibles(primitiveType, *targetBaseType))
 							throw CompilerCastIncompatibleTypesError{ exprPtr->sourceLocation, ToString(targetType, node.sourceLocation), ToString(resolvedExprType, node.sourceLocation) };
 					}
-					else if (!ValidateMatchingTypes(targetBaseType, primitiveType))
-						throw CompilerCastIncompatibleBaseTypesError{ exprPtr->sourceLocation, ToString(targetBaseType, node.sourceLocation), ToString(primitiveType, node.sourceLocation) };
+					else if (targetBaseType && !ValidateMatchingTypes(*targetBaseType, primitiveType))
+						throw CompilerCastIncompatibleBaseTypesError{ exprPtr->sourceLocation, ToString(*targetBaseType, node.sourceLocation), ToString(primitiveType, node.sourceLocation) };
 				}
 				else
 					throw CompilerCastIncompatibleTypesError{ exprPtr->sourceLocation, ToString(targetType, node.sourceLocation), ToString(resolvedExprType, exprPtr->sourceLocation) };
@@ -885,7 +907,7 @@ namespace nzsl::Ast
 					throw CompilerCastIncompatibleTypesError{ exprPtr->sourceLocation, ToString(innerType, node.sourceLocation), ToString(*exprType, node.sourceLocation) };
 			}
 		}
-		else
+		else if (!IsImplicitArrayType(targetType) || !m_context->partialCompilation)
 			throw CompilerInvalidCastError{ node.sourceLocation, ToString(targetType, node.sourceLocation) };
 
 		return DontVisitChildren{};
