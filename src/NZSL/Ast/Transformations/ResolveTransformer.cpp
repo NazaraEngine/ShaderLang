@@ -3258,16 +3258,19 @@ namespace nzsl::Ast
 			}
 		}
 
-		if (!m_options->moduleResolver)
+		// Resolve module everytime and get module name from its metadata, this way we allow multiple names resolving to the same modules (path, url, etc.)
+		ModulePtr targetModule = (m_options->moduleResolver) ? m_options->moduleResolver->Resolve(importStatement.moduleName) : nullptr;
+		if (!targetModule)
 		{
 			if (!m_context->partialCompilation)
 				throw CompilerNoModuleResolverError{ importStatement.sourceLocation };
 
-			// when partially compiling, importing a whole module could register any identifier, so at this point we can't see unknown identifiers as errors
+			// when partially compiling, importing everything from a module could register any identifier, so at this point we can't see unknown identifiers as errors
 			if (importEverythingElse)
 				m_context->allowUnknownIdentifiers = true;
 			else
 			{
+				// otherwise just register the symbols from that module as unresolved (or the module identifier if imported whole)
 				if (!importedSymbols.empty())
 				{
 					for (const auto& [identifier, aliases] : importedSymbols)
@@ -3287,11 +3290,6 @@ namespace nzsl::Ast
 
 			return VisitChildren{};
 		}
-
-		// Resolve module everytime and get module name from its metadata, this way we allow multiple names resolving to the same modules (path, url, etc.)
-		ModulePtr targetModule = m_options->moduleResolver->Resolve(importStatement.moduleName);
-		if (!targetModule)
-			throw CompilerModuleNotFoundError{ importStatement.sourceLocation, importStatement.moduleName };
 
 		// Check enabled features
 		for (ModuleFeature feature : targetModule->metadata->enabledFeatures)
